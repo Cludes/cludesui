@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Slots.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local tonumber, type, select = tonumber, type, select
@@ -94,9 +90,7 @@ end
 -- than stored itself, so there is only ever one number to keep in step.
 local function CycleNext(slot)
     local last = tonumber(slot and slot.cyclePos) or 0
-    if last < 1 or last > CYCLE_N then
-        last = 0
-    end
+    if last < 1 or last > CYCLE_N then last = 0 end
     return last % CYCLE_N + 1
 end
 
@@ -105,13 +99,9 @@ end
 -- Called from the release; a cell that does not cycle answers nothing and
 -- leaves the slot alone.
 local function CyclePosBack(button, position, slot)
-    if not button or not position or not slot then
-        return
-    end
+    if not button or not position or not slot then return end
     local place = tonumber(button:GetAttribute("eqdCycPos" .. position))
-    if place and CycleSteps(slot.kind) then
-        slot.cyclePos = place
-    end
+    if place and CycleSteps(slot.kind) then slot.cyclePos = place end
 end
 
 -- "Summon Random Favorite Mount", used only to DRAW the entry -- its icon and
@@ -124,9 +114,7 @@ end
 -- FireInsecure the way a battle pet does.
 local RANDOM_FAVORITE_MOUNT = 150544
 
-local function MarkerIcon(ident)
-    return "Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. ident
-end
+local function MarkerIcon(ident) return "Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. ident end
 
 -- The CURRENT index of the specialization a slot names, for both kinds that
 -- name one. Either way, nil leaves the slot doing nothing.
@@ -137,31 +125,21 @@ end
 -- dynamicspec slot banks the position instead, and means it -- the second on a
 -- druid and the second on a warrior are both simply "the second one".
 local function SpecIndexFor(slot)
-    if not slot or not C_SpecializationInfo then
-        return nil
-    end
+    if not slot or not C_SpecializationInfo then return nil end
     local classID = select(3, UnitClass("player"))
-    if not classID then
-        return nil
-    end
+    if not classID then return nil end
     local total = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
 
     if slot.kind == "dynamicspec" then
         local i = tonumber(slot.index)
-        if i and i >= 1 and i <= total then
-            return i
-        end
+        if i and i >= 1 and i <= total then return i end
         return nil
     end
 
     local wanted = tonumber(slot.specID)
-    if not wanted then
-        return nil
-    end
+    if not wanted then return nil end
     for i = 1, total do
-        if C_SpecializationInfo.GetSpecializationInfo(i) == wanted then
-            return i
-        end
+        if C_SpecializationInfo.GetSpecializationInfo(i) == wanted then return i end
     end
     return nil
 end
@@ -173,9 +151,7 @@ end
 -- On ns with no local alias, and called back through ns below: written when
 -- the module was one file whose main chunk was at Lua's ceiling of 200 locals
 -- (see UsableSlots), where a local here spent the last one.
-mod.SpecPositionName = function(index)
-    return CludesUI.Lf("Specialization %1$d", index or 0)
-end
+mod.SpecPositionName = function(index) return CludesUI.Lf("Specialization %1$d", index or 0) end
 
 -------------------------------------------------------------------------------
 --  Dynamic Profession: a dynamicprofession slot names a POSITION (1/2 = the
@@ -195,18 +171,12 @@ do
     local cache = {}
 
     local function Resolve(slot)
-        if not slot or slot.kind ~= "dynamicprofession" then
-            return nil, nil
-        end
+        if not slot or slot.kind ~= "dynamicprofession" then return nil, nil end
         local i = tonumber(slot.index)
-        if not i then
-            return nil, nil
-        end
+        if not i then return nil, nil end
         local key = i * 4 + (slot.extra and 1 or 0) + (slot.specialization and 2 or 0)
         local hit = cache[key]
-        if hit then
-            return hit.book, hit.spell
-        end
+        if hit then return hit.book, hit.spell end
 
         local prof1, prof2, arch, fish, cook = GetProfessions()
         local book
@@ -273,15 +243,9 @@ do
         return book, spell
     end
 
-    mod.ProfessionBookIndexFor = function(slot)
-        return (Resolve(slot))
-    end
-    mod.ProfessionSpellFor = function(slot)
-        return (select(2, Resolve(slot)))
-    end
-    mod.WipeProfessionCache = function()
-        wipe(cache)
-    end
+    mod.ProfessionBookIndexFor = function(slot) return (Resolve(slot)) end
+    mod.ProfessionSpellFor = function(slot) return (select(2, Resolve(slot))) end
+    mod.WipeProfessionCache = function() wipe(cache) end
 end
 
 -- Picker / unresolved-placeholder name for a dynamicprofession position (the
@@ -300,9 +264,7 @@ mod.ProfessionPositionName = function(index, extra, specialization)
         -- by its skill line (129) as the client spells it.
         if CludesUI.IS_FOREVER then
             base = C_TradeSkillUI.GetTradeSkillDisplayName(129)
-            if type(base) ~= "string" or base == "" then
-                base = CludesUI.L("First Aid")
-            end
+            if type(base) ~= "string" or base == "" then base = CludesUI.L("First Aid") end
         else
             base = ARCHAEOLOGY or "Archaeology"
         end
@@ -347,9 +309,7 @@ end
 -- Set IDs are character-local even when the palette is shared.
 local function EquipmentSetOwner()
     local unitGuid = UnitGUID("player")
-    if not issecretvalue(unitGuid) then
-        return unitGuid
-    end
+    if not issecretvalue(unitGuid) then return unitGuid end
 end
 
 function mod.EquipmentSetInfo(slot)
@@ -362,9 +322,7 @@ end
 function mod.EquipmentSetSlots()
     local result = {}
     local ownerFrame = EquipmentSetOwner()
-    if not ownerFrame then
-        return result
-    end
+    if not ownerFrame then return result end
     for _, ident in ipairs(C_EquipmentSet.GetEquipmentSetIDs()) do
         local name, iconTex = C_EquipmentSet.GetEquipmentSetInfo(ident)
         if name then
@@ -459,13 +417,9 @@ do
             key = "pvp",
             icon = ART .. "menu-pvp.png",
             fire = function()
-                if TogglePVPUI then
-                    TogglePVPUI()
-                end
+                if TogglePVPUI then TogglePVPUI() end
             end,
-            exists = function()
-                return TogglePVPUI ~= nil
-            end,
+            exists = function() return TogglePVPUI ~= nil end,
             label = { "PLAYER_V_PLAYER", "PVP" },
             default = "Player vs Player",
         },
@@ -504,13 +458,9 @@ do
             key = "map",
             icon = ART .. "menu-map.png",
             fire = function()
-                if ToggleWorldMap then
-                    ToggleWorldMap()
-                end
+                if ToggleWorldMap then ToggleWorldMap() end
             end,
-            exists = function()
-                return ToggleWorldMap ~= nil
-            end,
+            exists = function() return ToggleWorldMap ~= nil end,
             label = { "WORLD_MAP", "WORLDMAP_BUTTON" },
             default = "Map",
         },
@@ -518,13 +468,9 @@ do
             key = "bags",
             icon = ART .. "menu-bags.png",
             fire = function()
-                if ToggleAllBags then
-                    ToggleAllBags()
-                end
+                if ToggleAllBags then ToggleAllBags() end
             end,
-            exists = function()
-                return ToggleAllBags ~= nil
-            end,
+            exists = function() return ToggleAllBags ~= nil end,
             label = { "BAGSLOTTEXT", "INVENTORY_TOOLTIP" },
             default = "Bags",
         },
@@ -543,9 +489,7 @@ do
                     WeeklyRewards_ShowUI()
                 end
             end,
-            exists = function()
-                return WeeklyRewards_ShowUI ~= nil
-            end,
+            exists = function() return WeeklyRewards_ShowUI ~= nil end,
             label = "GREAT_VAULT_REWARDS",
             default = "Great Vault",
         },
@@ -562,9 +506,7 @@ do
                     GameMenuFrame_Show()
                 end
             end,
-            exists = function()
-                return GameMenuFrame_Show ~= nil
-            end,
+            exists = function() return GameMenuFrame_Show ~= nil end,
             label = "MAINMENU_BUTTON",
             default = "Game Menu",
         },
@@ -600,9 +542,7 @@ do
     -- are on and click the micro buttons otherwise.
     if CludesUI.IS_FOREVER then
         for _, def in ipairs(PANELS) do
-            if def.key == "greatvault" then
-                def.fire = nil
-            end
+            if def.key == "greatvault" then def.fire = nil end
         end
         for i, def in ipairs(PANELS) do
             if def.key == "spellbook" then
@@ -631,38 +571,24 @@ do
     -- (SlashCommands.lua:738), so an entry pointing at one would fire nothing.
     local function PanelButton(def)
         local nameList = def and def.button
-        if not nameList then
-            return nil
-        end
-        if type(nameList) == "string" then
-            nameList = { nameList }
-        end
+        if not nameList then return nil end
+        if type(nameList) == "string" then nameList = { nameList } end
         for _, name in ipairs(nameList) do
             local frame = _G[name]
-            if frame and frame.Click and frame.IsForbidden and not frame:IsForbidden() then
-                return name
-            end
+            if frame and frame.Click and frame.IsForbidden and not frame:IsForbidden() then return name end
         end
         return nil
     end
 
-    mod.PanelDef = function(slot)
-        return slot and byKey[slot.key]
-    end
+    mod.PanelDef = function(slot) return slot and byKey[slot.key] end
 
     mod.PanelName = function(def)
-        if not def then
-            return nil
-        end
+        if not def then return nil end
         local nameList = def.label
-        if type(nameList) == "string" then
-            nameList = { nameList }
-        end
+        if type(nameList) == "string" then nameList = { nameList } end
         for _, g in ipairs(nameList) do
             local s = _G[g]
-            if type(s) == "string" and s ~= "" then
-                return s
-            end
+            if type(s) == "string" and s ~= "" then return s end
         end
         return CludesUI.L(def.default)
     end
@@ -674,9 +600,7 @@ do
     end
 
     mod.PanelFire = function(def)
-        if def and def.fire and (not def.exists or def.exists()) then
-            def.fire()
-        end
+        if def and def.fire and (not def.exists or def.exists()) then def.fire() end
     end
 
     -- Whether this client has the panel at all: Housing arrived in 12.0, the
@@ -684,12 +608,8 @@ do
     -- never loaded has no toggle to call. An entry that answers no goes dark
     -- under Hide Unavailable Actions rather than sitting there firing nothing.
     mod.PanelAvailable = function(def)
-        if not def then
-            return false
-        end
-        if def.button then
-            return PanelButton(def) ~= nil
-        end
+        if not def then return false end
+        if def.button then return PanelButton(def) ~= nil end
         return (def.fire ~= nil) and (not def.exists or def.exists())
     end
 

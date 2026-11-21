@@ -1,14 +1,10 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CUI_GroupFinder_Search.lua: the premade search panel (rows, menus, filters,
 -- list tweaks, bottom buttons).
 -------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then
-    return
-end -- held back (CludesUIGroupFinder.lua)
+if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then return end -- held back (CludesUIGroupFinder.lua)
 local FOLDER = ADDON_NAME
 local CUI = CludesUI
 
@@ -67,28 +63,18 @@ function Finder.Untip()
 end
 
 -- our text in the module's font
-function Finder.Font(fontStr, px, flags)
-    CUI.ApplyModuleFont(fontStr, nil, px, ADDON_NAME, flags or "")
-end
+function Finder.Font(fontStr, px, flags) CUI.ApplyModuleFont(fontStr, nil, px, ADDON_NAME, flags or "") end
 
 -- blizzard's frames only move out of combat: queued till it ends
-function Finder.Defer(filterKey, func)
-    mod.CombatQueue.Defer(filterKey, func)
-end
+function Finder.Defer(filterKey, func) mod.CombatQueue.Defer(filterKey, func) end
 
 -- click-outside close for our menus
 function Finder.ClickOff(menu, inside)
     menu:SetScript("OnEvent", function(self, _, btnFrame)
-        if btnFrame == "LeftButton" and not inside(self) then
-            self:Hide()
-        end
+        if btnFrame == "LeftButton" and not inside(self) then self:Hide() end
     end)
-    menu:HookScript("OnShow", function(self)
-        self:RegisterEvent("GLOBAL_MOUSE_DOWN")
-    end)
-    menu:HookScript("OnHide", function(self)
-        self:UnregisterEvent("GLOBAL_MOUSE_DOWN")
-    end)
+    menu:HookScript("OnShow", function(self) self:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
+    menu:HookScript("OnHide", function(self) self:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
 end
 
 local SP
@@ -116,9 +102,7 @@ local DIFFS = {
     { key = "difficultyMythicPlus", label = PLAYER_DIFFICULTY_MYTHIC_PLUS or "Mythic+" },
 }
 
-local function FinderCfg()
-    return mod.Cfg()
-end
+local function FinderCfg() return mod.Cfg() end
 local function AccentRGB()
     local a = CUI.CLUDES_GREEN
     return a.r, a.g, a.b
@@ -132,26 +116,18 @@ end
 -- when the window skin itself installs: a card toggle swaps both with the reload it asks for
 function Finder.SkinOn()
     local isOn = Finder.skinOn
-    if isOn ~= nil then
-        return isOn
-    end
+    if isOn ~= nil then return isOn end
     local style = CUI.GetBlizzWindowStyle -- nil while blizzard skins+ is off
     isOn = (WindowSkin() ~= nil and style ~= nil and style("lfg") ~= "off") and true or false
-    if IsLoggedIn() then
-        Finder.skinOn = isOn
-    end
+    if IsLoggedIn() then Finder.skinOn = isOn end
     return isOn
 end
 mod.SkinOn = Finder.SkinOn
 local function ThemeBorder()
-    if not Finder.SkinOn() then
-        return 0.38, 0.38, 0.38, 1
-    end -- blizzard's search box grey
+    if not Finder.SkinOn() then return 0.38, 0.38, 0.38, 1 end -- blizzard's search box grey
     local S = WindowSkin()
     local T = S and S.Theme
-    if T and T.brdR then
-        return T.brdR, T.brdG, T.brdB, T.brdA
-    end
+    if T and T.brdR then return T.brdR, T.brdG, T.brdB, T.brdA end
     return 0.2, 0.2, 0.2, 1
 end
 mod.Skin, mod.ThemeBorder = WindowSkin, ThemeBorder
@@ -213,20 +189,14 @@ end
 local function BuildDungeons()
     local CMode = C_ChallengeMode
     local maps = CMode and CMode.GetMapTable and CMode.GetMapTable()
-    if type(maps) ~= "table" or #maps == 0 then
-        return nil
-    end
+    if type(maps) ~= "table" or #maps == 0 then return nil end
     local byMap, byName = {}, {}
     for _, groupId in ipairs(GroupsFor(SeasonFilter())) do
         local gname = C_LFGList.GetActivityGroupInfo(groupId)
-        if gname then
-            byName[gname] = groupId
-        end
+        if gname then byName[gname] = groupId end
         for _, aid in ipairs(C_LFGList.GetAvailableActivities(DUNGEONS, groupId) or {}) do
             local details = C_LFGList.GetActivityInfoTable(aid)
-            if details and details.mapID then
-                byMap[details.mapID] = groupId
-            end
+            if details and details.mapID then byMap[details.mapID] = groupId end
         end
     end
     local result = {}
@@ -237,9 +207,7 @@ local function BuildDungeons()
             result[#result + 1] = { cmID = cmID, name = label, icon = texture, groupID = groupId }
         end
     end
-    table.sort(result, function(lhs, rhs)
-        return (lhs.name or "") < (rhs.name or "")
-    end)
+    table.sort(result, function(lhs, rhs) return (lhs.name or "") < (rhs.name or "") end)
     return #result > 0 and result or nil
 end
 
@@ -254,9 +222,7 @@ end
 
 local function Contains(entries, val)
     for index = 1, #entries do
-        if entries[index] == val then
-            return index
-        end
+        if entries[index] == val then return index end
     end
     return nil
 end
@@ -264,13 +230,9 @@ end
 -- no dungeon restriction: none or all picked
 local function DungeonsDefault(frame)
     local acts = frame.activities or {}
-    if #acts == 0 or not dungeons then
-        return true
-    end
+    if #acts == 0 or not dungeons then return true end
     for _, skinData in ipairs(dungeons) do
-        if not Contains(acts, skinData.groupID) then
-            return false
-        end
+        if not Contains(acts, skinData.groupID) then return false end
     end
     return true
 end
@@ -278,9 +240,7 @@ end
 local function DiffAllOrNone(frame)
     local count = 0
     for _, skinData in ipairs(DIFFS) do
-        if frame[skinData.key] then
-            count = count + 1
-        end
+        if frame[skinData.key] then count = count + 1 end
     end
     return count == 0 or count == #DIFFS, count
 end
@@ -308,9 +268,7 @@ local PICK_KEYS = {
     "generalPlaystyle4",
 }
 
-local function DimOn()
-    return mod.OwnListGet and mod.OwnListGet("visibility") == "dimmed"
-end
+local function DimOn() return mod.OwnListGet and mod.OwnListGet("visibility") == "dimmed" end
 
 local function Picks(frame)
     local p = {}
@@ -335,9 +293,7 @@ end
 
 -- keep this character's picks so another character's don't carry over
 function Finder.Remember(frame)
-    if frame then
-        mod.SetCharBlizzFilter(Picks(frame))
-    end
+    if frame then mod.SetCharBlizzFilter(Picks(frame)) end
 end
 
 function Finder.GetFilter()
@@ -369,13 +325,9 @@ end
 -- that, which would undo it. The first time, the character keeps the picks
 -- blizzard holds now (the account's, from before)
 function Finder.RestoreCharFilter()
-    if Finder.filterRestored then
-        return
-    end
+    if Finder.filterRestored then return end
     local frame = C_LFGList.GetAdvancedFilter()
-    if not frame then
-        return
-    end
+    if not frame then return end
     local saved = mod.CharBlizzFilter()
     if type(saved) == "table" then
         for _, key in ipairs(PICK_KEYS) do
@@ -386,9 +338,7 @@ function Finder.RestoreCharFilter()
     -- dimmed keeps the picks with us and blizzard's search wide
     local cfg = FinderCfg()
     if DimOn() then
-        if type(cfg.dimPicks) ~= "table" then
-            cfg.dimPicks = Picks(frame)
-        end
+        if type(cfg.dimPicks) ~= "table" then cfg.dimPicks = Picks(frame) end
         Widen(frame)
     elseif type(cfg.dimPicks) == "table" then
         for _, key in ipairs(PICK_KEYS) do
@@ -412,9 +362,7 @@ local function ToggleDungeon(groupId)
         else
             acts[#acts + 1] = groupId
         end
-        if #acts == 0 or DungeonsDefault(frame) then
-            frame.activities = AllDungeonGroups()
-        end
+        if #acts == 0 or DungeonsDefault(frame) then frame.activities = AllDungeonGroups() end
     end
     Apply(frame)
 end
@@ -447,14 +395,10 @@ end
 -- region filter (us regions, eu languages)
 -------------------------------------------------------------------------------
 -- the list comes from CUI_GroupFinder_Regions.lua (us regions, eu languages)
-local function Regions()
-    return mod.RegionList() or Finder.EMPTY
-end
+local function Regions() return mod.RegionList() or Finder.EMPTY end
 
 local SecretVal = CludesUI.IsSecret
-local function RegionsAvailable()
-    return mod.RegionList() ~= nil
-end
+local function RegionsAvailable() return mod.RegionList() ~= nil end
 
 local function ChosenRegions()
     local cfg = FinderCfg()
@@ -463,14 +407,10 @@ end
 
 local function RegionFilterActive()
     local region = RegionsAvailable() and ChosenRegions()
-    if not region then
-        return false
-    end
+    if not region then return false end
     local count = 0
     for _, skinData in ipairs(Regions()) do
-        if region[skinData.key] then
-            count = count + 1
-        end
+        if region[skinData.key] then count = count + 1 end
     end
     return count > 0 and count < #Regions()
 end
@@ -494,9 +434,7 @@ function Finder.ActInfo(activity)
     local activityInfo = Finder.actInfo[activity]
     if activityInfo == nil then
         activityInfo = C_LFGList.GetActivityInfoTable(activity)
-        if type(activityInfo) ~= "table" then
-            return nil
-        end
+        if type(activityInfo) ~= "table" then return nil end
         Finder.actInfo[activity] = activityInfo
     end
     return activityInfo
@@ -506,13 +444,9 @@ end
 Finder.regionByRealm = {}
 local function LeaderRegion(details)
     local leader = details and details.leaderName
-    if not leader or SecretVal(leader) then
-        return nil
-    end
+    if not leader or SecretVal(leader) then return nil end
     local realm = leader:match("%-(.+)$") or (GetNormalizedRealmName and GetNormalizedRealmName())
-    if not realm or SecretVal(realm) then
-        return nil
-    end
+    if not realm or SecretVal(realm) then return nil end
     local regionFrame = Finder.regionByRealm[realm]
     if not regionFrame then
         regionFrame = mod.RegionOfRealm(realm)
@@ -530,21 +464,15 @@ local SKIP_WORDS = { the = true, of = true, a = true, an = true }
 local function Abbrev(label)
     local initials = {}
     for word in (label:gsub("\226\128\153", " ")):gmatch("[^%s%-':]+") do
-        if not SKIP_WORDS[word:lower()] then
-            initials[#initials + 1] = word
-        end
+        if not SKIP_WORDS[word:lower()] then initials[#initials + 1] = word end
     end
-    local firstChar = function(wid)
-        return wid:match("^[%z\1-\127\194-\244][\128-\191]*") or ""
-    end
+    local firstChar = function(wid) return wid:match("^[%z\1-\127\194-\244][\128-\191]*") or "" end
     if #initials == 1 then
         local wid, result, n = initials[1], {}, 0
         for ch in wid:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
             n = n + 1
             result[n] = (n == 1) and ch:upper() or ch:lower()
-            if n == 3 then
-                break
-            end
+            if n == 3 then break end
         end
         return table.concat(result)
     end
@@ -557,13 +485,9 @@ end
 
 -- tier from the activity name; '?' is 12 and '??' is 13.
 function Finder.TierOf(fullName)
-    if type(fullName) ~= "string" or SecretVal(fullName) then
-        return nil
-    end
+    if type(fullName) ~= "string" or SecretVal(fullName) then return nil end
     local n = tonumber(fullName:match("(%d+)%D*$"))
-    if n then
-        return n
-    end
+    if n then return n end
     local q = fullName:match("(%?+)[^%?]*$")
     if q == "??" then
         return 13
@@ -601,12 +525,8 @@ local function BuildDelves()
             end
         end
     end
-    table.sort(entries, function(lhs, rhs)
-        return lhs.name < rhs.name
-    end)
-    if #entries == 0 then
-        return nil
-    end
+    table.sort(entries, function(lhs, rhs) return lhs.name < rhs.name end)
+    if #entries == 0 then return nil end
     return entries, byAct
 end
 
@@ -618,9 +538,7 @@ Finder.bountifulScanAt = nil
 Finder.delveZones = nil -- map IDs of the zones with delve pins
 function Finder.ScanZone(POI, mapID, season)
     local okPins, pins = pcall(POI.GetDelvesForMap, mapID)
-    if not (okPins and type(pins) == "table") then
-        return false
-    end
+    if not (okPins and type(pins) == "table") then return false end
     for _, poiID in ipairs(pins) do
         local pin = POI.GetAreaPOIInfo(mapID, poiID)
         local label, art = pin and pin.name, pin and pin.atlasName
@@ -632,9 +550,7 @@ function Finder.ScanZone(POI, mapID, season)
 end
 local function ScanBountiful()
     local nowTime = GetTime()
-    if Finder.bountifulScanAt and nowTime - Finder.bountifulScanAt < 60 then
-        return
-    end
+    if Finder.bountifulScanAt and nowTime - Finder.bountifulScanAt < 60 then return end
     local POI, MAP = C_AreaPoiInfo, C_Map
     if not (POI and POI.GetDelvesForMap and POI.GetAreaPOIInfo and MAP and MAP.GetMapChildrenInfo) then
         return
@@ -643,9 +559,7 @@ local function ScanBountiful()
     for _, skinData in ipairs(delves or {}) do
         season[skinData.name] = true
     end
-    if not next(season) then
-        return
-    end
+    if not next(season) then return end
     Finder.bountifulScanAt = nowTime
     wipe(bountiful)
     if Finder.delveZones then
@@ -657,13 +571,9 @@ local function ScanBountiful()
     local found = {}
     local okZones, zones = pcall(MAP.GetMapChildrenInfo, 946, Enum.UIMapType.Zone, true)
     for _, zone in ipairs(okZones and type(zones) == "table" and zones or {}) do
-        if Finder.ScanZone(POI, zone.mapID, season) then
-            found[#found + 1] = zone.mapID
-        end
+        if Finder.ScanZone(POI, zone.mapID, season) then found[#found + 1] = zone.mapID end
     end
-    if #found > 0 then
-        Finder.delveZones = found
-    end
+    if #found > 0 then Finder.delveZones = found end
 end
 
 local function ChosenDelves()
@@ -675,14 +585,10 @@ local MAX_TIER = 13 -- 1-11, then ? and ??
 
 local function PickedTiers()
     local tbl = FinderCfg().delveTiers
-    if type(tbl) ~= "table" then
-        return nil
-    end
+    if type(tbl) ~= "table" then return nil end
     local count = 0
     for index = 1, MAX_TIER do
-        if tbl[index] then
-            count = count + 1
-        end
+        if tbl[index] then count = count + 1 end
     end
     return (count > 0 and count < MAX_TIER) and tbl or nil, count
 end
@@ -696,17 +602,11 @@ local function DelveKeep(details)
     local acts = details and details.activityIDs
     local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
     local skinData = activity and not SecretVal(activity) and delveByActivity and delveByActivity[activity]
-    if not skinData then
-        return true
-    end
+    if not skinData then return true end
     local chosen = ChosenDelves()
-    if chosen and not chosen[skinData.groupID] then
-        return false
-    end
+    if chosen and not chosen[skinData.groupID] then return false end
     local tiers = PickedTiers()
-    if tiers and skinData.tier and not tiers[skinData.tier] then
-        return false
-    end
+    if tiers and skinData.tier and not tiers[skinData.tier] then return false end
     return true
 end
 
@@ -725,21 +625,15 @@ end
 -- fallback: newest tier's journal raids by name.
 local function JournalRaidsByName()
     local result = {}
-    if not (EJ_GetNumTiers and EJ_SelectTier and EJ_GetInstanceByIndex) then
-        return result
-    end
+    if not (EJ_GetNumTiers and EJ_SelectTier and EJ_GetInstanceByIndex) then return result end
     local previous = EJ_GetCurrentTier and EJ_GetCurrentTier()
     EJ_SelectTier(EJ_GetNumTiers())
     for index = 1, 20 do
         local joinId, label = EJ_GetInstanceByIndex(index, true)
-        if not joinId then
-            break
-        end
+        if not joinId then break end
         result[label] = joinId
     end
-    if previous then
-        EJ_SelectTier(previous)
-    end
+    if previous then EJ_SelectTier(previous) end
     return result
 end
 
@@ -756,18 +650,14 @@ local function JournalInstance(details, groupName, byName)
         and CEJ
         and CEJ.GetInstanceForGameMap
         and CEJ.GetInstanceForGameMap(details.mapID)
-    if joinId then
-        return joinId
-    end
+    if joinId then return joinId end
     return groupName and byName()[groupName] or nil
 end
 
 local RAID_DIFFS = { 14, 15, 16, 17 }
 local function Encounters(joinId)
     local result = {}
-    if not (EJ_SelectInstance and EJ_GetEncounterInfoByIndex) then
-        return result
-    end
+    if not (EJ_SelectInstance and EJ_GetEncounterInfoByIndex) then return result end
     local EJ = EncounterJournal
     local prevInst = EJ and EJ.instanceID
     local prevDiff = EJ_GetDifficulty and EJ_GetDifficulty()
@@ -780,18 +670,12 @@ local function Encounters(joinId)
     end
     for index = 1, 30 do
         local label, _, encID = EJ_GetEncounterInfoByIndex(index)
-        if not label then
-            break
-        end
+        if not label then break end
         local iconTex = EJ_GetCreatureInfo and select(5, EJ_GetCreatureInfo(1, encID))
         result[#result + 1] = { key = encID, name = label, icon = iconTex }
     end
-    if prevInst then
-        EJ_SelectInstance(prevInst)
-    end
-    if prevDiff and EJ_SetDifficulty then
-        EJ_SetDifficulty(prevDiff)
-    end
+    if prevInst then EJ_SelectInstance(prevInst) end
+    if prevDiff and EJ_SetDifficulty then EJ_SetDifficulty(prevDiff) end
     return result
 end
 
@@ -812,22 +696,16 @@ function Finder.SeasonRaidSets()
         EJ_SelectTier(EJ_GetNumTiers())
         for index = 1, 20 do
             local joinId = EJ_GetInstanceByIndex(index, true)
-            if not joinId then
-                break
-            end
+            if not joinId then break end
             tier[joinId] = true
         end
-        if previous then
-            EJ_SelectTier(previous)
-        end
+        if previous then EJ_SelectTier(previous) end
     end
     return groups, tier
 end
 
 local function BuildBosses()
-    if not (EJ_SelectInstance and EJ_GetEncounterInfoByIndex) then
-        return nil
-    end
+    if not (EJ_SelectInstance and EJ_GetEncounterInfoByIndex) then return nil end
     local seasonGroups, seasonTier = Finder.SeasonRaidSets()
     local byGroup, byTier = {}, {}
     local entries, byAct, seen, raids = {}, {}, {}, {}
@@ -844,15 +722,9 @@ local function BuildBosses()
             local joinId = JournalInstance(details, groupName, byName)
             if joinId then
                 byAct[aid] = joinId
-                if details and details.isCurrentRaidActivity then
-                    current[joinId] = true
-                end
-                if seasonGroups[groupId] then
-                    byGroup[joinId] = true
-                end
-                if seasonTier[joinId] then
-                    byTier[joinId] = true
-                end
+                if details and details.isCurrentRaidActivity then current[joinId] = true end
+                if seasonGroups[groupId] then byGroup[joinId] = true end
+                if seasonTier[joinId] then byTier[joinId] = true end
                 if not seen[joinId] then
                     seen[joinId] = true
                     local raidName = EJ_GetInstanceInfo and EJ_GetInstanceInfo(joinId)
@@ -868,9 +740,7 @@ local function BuildBosses()
             end
         end
     end
-    if #entries == 0 then
-        return nil
-    end
+    if #entries == 0 then return nil end
     -- none flagged = all count
     wipe(Finder.raidCurrent)
     if next(byGroup) then
@@ -888,35 +758,23 @@ end
 
 -- current season only, older raids are out
 Finder.raidCurrent = {}
-function Finder.SeasonOnly()
-    return FinderCfg().extraSeasonRaids ~= false
-end
-function Finder.RaidEligible(joinId)
-    return not (Finder.SeasonOnly() and Finder.raidCurrent[joinId] == false)
-end
+function Finder.SeasonOnly() return FinderCfg().extraSeasonRaids ~= false end
+function Finder.RaidEligible(joinId) return not (Finder.SeasonOnly() and Finder.raidCurrent[joinId] == false) end
 
 -- raids show unless hidden in the raid menu
 local function RaidShown(joinId)
-    if not Finder.RaidEligible(joinId) then
-        return false
-    end
+    if not Finder.RaidEligible(joinId) then return false end
     local hgt = FinderCfg().raidsHidden
-    if not (type(hgt) == "table" and hgt[joinId]) then
-        return true
-    end
+    if not (type(hgt) == "table" and hgt[joinId]) then return true end
     for _, raid in ipairs(raidList or {}) do
-        if Finder.RaidEligible(raid.jid) and not hgt[raid.jid] then
-            return false
-        end
+        if Finder.RaidEligible(raid.jid) and not hgt[raid.jid] then return false end
     end
     return true
 end
 
 function Finder.AnyRaidHidden()
     for _, raid in ipairs(raidList or {}) do
-        if Finder.RaidEligible(raid.jid) and not RaidShown(raid.jid) then
-            return true
-        end
+        if Finder.RaidEligible(raid.jid) and not RaidShown(raid.jid) then return true end
     end
     return false
 end
@@ -926,9 +784,7 @@ local function ChosenBosses()
     return type(cfg.bosses) == "table" and next(cfg.bosses) and cfg.bosses or nil
 end
 
-local function BossFilterActive()
-    return RaidsCurrent() and ChosenBosses() ~= nil or false
-end
+local function BossFilterActive() return RaidsCurrent() and ChosenBosses() ~= nil or false end
 
 -- scratch set of a group's killed bosses
 Finder.dead = {}
@@ -936,18 +792,12 @@ local function BossKeep(resultID, details)
     local acts = details and details.activityIDs
     local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
     local raid = activity and not SecretVal(activity) and raidByActivity and raidByActivity[activity]
-    if not raid then
-        return true
-    end
+    if not raid then return true end
     local done = C_LFGList.GetSearchResultEncounterInfo(resultID)
-    if done and (SecretVal(done) or (canaccesstable and not canaccesstable(done))) then
-        return true
-    end
+    if done and (SecretVal(done) or (canaccesstable and not canaccesstable(done))) then return true end
     local dead = wipe(Finder.dead)
     for _, label in ipairs(done or Finder.EMPTY) do
-        if SecretVal(label) then
-            return true
-        end
+        if SecretVal(label) then return true end
         dead[label] = true
     end
     -- c.bosses[key]: true = must be alive, "dead" = must be dead
@@ -955,9 +805,7 @@ local function BossKeep(resultID, details)
     for _, b in ipairs(bosses or {}) do
         local pick = b.raid == raid and chosen[b.key]
         if pick then
-            if (pick == "dead") ~= (dead[b.name] == true) then
-                return false
-            end
+            if (pick == "dead") ~= (dead[b.name] == true) then return false end
             wanted = true
         end
     end
@@ -975,21 +823,15 @@ local RAID_DIFFS_MENU = {
 
 local function ChosenRaidDiffs()
     local tbl = FinderCfg().raidDiffs
-    if type(tbl) ~= "table" then
-        return nil, 0
-    end
+    if type(tbl) ~= "table" then return nil, 0 end
     local count = 0
     for _, skinData in ipairs(RAID_DIFFS_MENU) do
-        if tbl[skinData.key] then
-            count = count + 1
-        end
+        if tbl[skinData.key] then count = count + 1 end
     end
     return (count > 0 and count < #RAID_DIFFS_MENU) and tbl or nil, count
 end
 
-local function HideWorldBosses()
-    return FinderCfg().hideWorldBosses == true
-end
+local function HideWorldBosses() return FinderCfg().hideWorldBosses == true end
 
 -- playstyles (generalPlaystyle 1-4).
 local PLAYSTYLES = {
@@ -1001,14 +843,10 @@ local PLAYSTYLES = {
 
 local function ChosenRaidPlaystyles()
     local tbl = FinderCfg().raidPlaystyles
-    if type(tbl) ~= "table" then
-        return nil, 0
-    end
+    if type(tbl) ~= "table" then return nil, 0 end
     local count = 0
     for index = 1, #PLAYSTYLES do
-        if tbl[index] then
-            count = count + 1
-        end
+        if tbl[index] then count = count + 1 end
     end
     return (count > 0 and count < #PLAYSTYLES) and tbl or nil, count
 end
@@ -1017,9 +855,7 @@ end
 local function DungeonPlaystyles(frame)
     local count = 0
     for index = 1, #PLAYSTYLES do
-        if frame["generalPlaystyle" .. index] then
-            count = count + 1
-        end
+        if frame["generalPlaystyle" .. index] then count = count + 1 end
     end
     return (count > 0 and count < #PLAYSTYLES) and frame or nil, count
 end
@@ -1038,9 +874,7 @@ end
 
 local function DungeonRolesSet(frame)
     for _, region in ipairs(ROLES) do
-        if frame[region.key] then
-            return true
-        end
+        if frame[region.key] then return true end
     end
     return (frame.needsMyClass or frame.hasTank or frame.hasHealer) and true or false
 end
@@ -1069,26 +903,17 @@ Finder.DIFF_WORDS = {
     normal = PLAYER_DIFFICULTY1 or "Normal",
 }
 local function ActivityDiffKey(activityInfo)
-    local byID = RAID_DIFF_BY_ID[activityInfo.difficultyID] or RAID_DIFF_BY_ID[activityInfo.redirectedDifficultyID]
-    if byID then
-        return byID
-    end
-    if activityInfo.isMythicActivity then
-        return "mythic"
-    end
-    if activityInfo.isHeroicActivity then
-        return "heroic"
-    end
-    if activityInfo.isNormalActivity then
-        return "normal"
-    end
+    local byID = RAID_DIFF_BY_ID[activityInfo.difficultyID]
+        or RAID_DIFF_BY_ID[activityInfo.redirectedDifficultyID]
+    if byID then return byID end
+    if activityInfo.isMythicActivity then return "mythic" end
+    if activityInfo.isHeroicActivity then return "heroic" end
+    if activityInfo.isNormalActivity then return "normal" end
     -- last resort: the difficulty word in the name.
     local label = activityInfo.fullName
     if type(label) == "string" and not SecretVal(label) then
         for filterKey, word in pairs(Finder.DIFF_WORDS) do
-            if label:find(word, 1, true) then
-                return filterKey
-            end
+            if label:find(word, 1, true) then return filterKey end
         end
     end
     return nil
@@ -1103,21 +928,13 @@ local function RaidListKeep(resultID, details)
     local acts = details and details.activityIDs
     local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
     local activityInfo = activity and not SecretVal(activity) and Finder.ActInfo(activity)
-    if not activityInfo then
-        return true
-    end
-    if HideWorldBosses() and IsWorldBoss(activityInfo) then
-        return false
-    end
+    if not activityInfo then return true end
+    if HideWorldBosses() and IsWorldBoss(activityInfo) then return false end
     local joinId = raidByActivity and raidByActivity[activity]
-    if joinId and not RaidShown(joinId) then
-        return false
-    end
+    if joinId and not RaidShown(joinId) then return false end
     local diffs = ChosenRaidDiffs()
     local filterKey = diffs and ActivityDiffKey(activityInfo)
-    if filterKey and not diffs[filterKey] then
-        return false
-    end
+    if filterKey and not diffs[filterKey] then return false end
     local styles = ChosenRaidPlaystyles()
     local ps = styles and details.generalPlaystyle
     if type(ps) == "number" and not SecretVal(ps) and ps >= 1 and ps <= #PLAYSTYLES and not styles[ps] then
@@ -1135,15 +952,9 @@ local function RaidListKeep(resultID, details)
                     or (roles.needsDamage and (num(c, "DAMAGER_REMAINING") or 1) > 0)
                     or false
             end
-            if roles.needsTank and (num(c, "TANK_REMAINING") or 1) <= 0 then
-                return false
-            end
-            if roles.needsHealer and (num(c, "HEALER_REMAINING") or 1) <= 0 then
-                return false
-            end
-            if roles.needsDamage and (num(c, "DAMAGER_REMAINING") or 1) <= 0 then
-                return false
-            end
+            if roles.needsTank and (num(c, "TANK_REMAINING") or 1) <= 0 then return false end
+            if roles.needsHealer and (num(c, "HEALER_REMAINING") or 1) <= 0 then return false end
+            if roles.needsDamage and (num(c, "DAMAGER_REMAINING") or 1) <= 0 then return false end
         end
     end
     return true
@@ -1173,30 +984,20 @@ function Finder.CountRule(roleName)
     local tbl = FinderCfg().roleCounts
     local region = type(tbl) == "table" and tbl[roleName]
     local n = type(region) == "table" and region.on and tonumber(region.n)
-    if n then
-        return region.op or "lt", n
-    end
+    if n then return region.op or "lt", n end
     return nil
 end
 
 function Finder.ExtraFilterActive()
-    if not SP or (SP.categoryID ~= DUNGEONS and SP.categoryID ~= RAIDS) then
-        return false
-    end
+    if not SP or (SP.categoryID ~= DUNGEONS and SP.categoryID ~= RAIDS) then return false end
     local cfg = FinderCfg()
-    if cfg.partyFit or cfg.notDeclined or cfg.hasLust or cfg.hasBrez then
-        return true
-    end
+    if cfg.partyFit or cfg.notDeclined or cfg.hasLust or cfg.hasBrez then return true end
     if mod.ExtraClassKeep and cfg[SP.categoryID == RAIDS and "raidMyClass" or "extraMyClass"] then
         return true
     end
-    if mod.ExtraExprActive and mod.ExtraExprActive() then
-        return true
-    end
+    if mod.ExtraExprActive and mod.ExtraExprActive() then return true end
     for _, region in ipairs(Finder.COUNT_ROLES) do
-        if Finder.CountRule(region.key) then
-            return true
-        end
+        if Finder.CountRule(region.key) then return true end
     end
     return false
 end
@@ -1204,12 +1005,8 @@ end
 -- info: the result's readable info, or false when it has none.
 function Finder.IsDeclinedResult(ident, details)
     local _, status = C_LFGList.GetApplicationInfo(ident)
-    if SecretVal(status) then
-        return false
-    end
-    if status == "declined" or status == "declined_full" or status == "declined_delisted" then
-        return true
-    end
+    if SecretVal(status) then return false end
+    if status == "declined" or status == "declined_full" or status == "declined_delisted" then return true end
     local unitGuid = details and details.partyGUID
     local declines = LFGListFrame and LFGListFrame.declines
     return (declines and unitGuid and not SecretVal(unitGuid) and declines[unitGuid]) and true or false
@@ -1221,9 +1018,7 @@ function Finder.PartyNeeds(need)
     local members = IsInRaid() and 0 or GetNumSubgroupMembers()
     for index = 0, math.min(members, #Finder.PARTY) do
         local roleName, secret = CUI.UnitEffectiveRole(index == 0 and "player" or Finder.PARTY[index])
-        if secret then
-            return nil
-        end
+        if secret then return nil end
         if roleName == "TANK" or roleName == "HEALER" then
             need[roleName] = need[roleName] + 1
         else
@@ -1235,18 +1030,14 @@ end
 
 function Finder.ExtraKeep(ident, details, need)
     local cfg = FinderCfg()
-    if cfg.notDeclined and Finder.IsDeclinedResult(ident, details) then
-        return false
-    end
+    if cfg.notDeclined and Finder.IsDeclinedResult(ident, details) then return false end
     local counts = C_LFGList.GetSearchResultMemberCounts(ident)
     if type(counts) == "table" and not SecretVal(counts) then
         local num = Finder.Num
         if cfg.partyFit and need then
             for roleName, n in pairs(need) do
                 local leftX = num(counts, Finder.REMAINING[roleName])
-                if leftX and leftX < n then
-                    return false
-                end
+                if leftX and leftX < n then return false end
             end
         end
         -- match any role
@@ -1266,19 +1057,13 @@ function Finder.ExtraKeep(ident, details, need)
                 end
             end
         end
-        if anySet and not anyHit then
-            return false
-        end
+        if anySet and not anyHit then return false end
     end
     -- the expressions box
-    if mod.ExtraExprKeep and not mod.ExtraExprKeep(ident, details) then
-        return false
-    end
+    if mod.ExtraExprKeep and not mod.ExtraExprKeep(ident, details) then return false end
     -- has / missing bloodlust, battle res and your class
     if mod.ExtraClassKeep then
-        if not mod.ExtraClassKeep(ident, details, cfg, SP and SP.categoryID == RAIDS) then
-            return false
-        end
+        if not mod.ExtraClassKeep(ident, details, cfg, SP and SP.categoryID == RAIDS) then return false end
     elseif cfg.hasLust or cfg.hasBrez then
         local n = details and details.numMembers
         if type(n) == "number" and not SecretVal(n) then
@@ -1287,20 +1072,12 @@ function Finder.ExtraKeep(ident, details, need)
                 local p = C_LFGList.GetSearchResultPlayerInfo(ident, index)
                 local cls = p and p.classFilename
                 if cls and not SecretVal(cls) then
-                    if Finder.LUST_CLASSES[cls] then
-                        lust = true
-                    end
-                    if Finder.BREZ_CLASSES[cls] then
-                        brez = true
-                    end
+                    if Finder.LUST_CLASSES[cls] then lust = true end
+                    if Finder.BREZ_CLASSES[cls] then brez = true end
                 end
             end
-            if cfg.hasLust and not lust then
-                return false
-            end
-            if cfg.hasBrez and not brez then
-                return false
-            end
+            if cfg.hasLust and not lust then return false end
+            if cfg.hasBrez and not brez then return false end
         end
     end
     return true
@@ -1310,19 +1087,11 @@ end
 function Finder.ResultsSecret()
     local res = SP and SP.results
     local first = type(res) == "table" and res[1]
-    if not first then
-        return false
-    end
-    if SecretVal(first) then
-        return true
-    end
+    if not first then return false end
+    if SecretVal(first) then return true end
     local details = C_LFGList.GetSearchResultInfo(first)
-    if not details then
-        return false
-    end
-    if SecretVal(details) or (canaccesstable and not canaccesstable(details)) then
-        return true
-    end
+    if not details then return false end
+    if SecretVal(details) or (canaccesstable and not canaccesstable(details)) then return true end
     return SecretVal(details.activityIDs) and true or false
 end
 
@@ -1332,9 +1101,7 @@ function Finder.Pass()
     local P = Finder.pass
     local nowTime = GetTime()
     local res = SP and SP.results
-    if P.at == nowTime and P.res == res then
-        return P
-    end
+    if P.at == nowTime and P.res == res then return P end
     P.at, P.res = nowTime, res
     P.secret = Finder.ResultsSecret()
     P.regions = RegionFilterActive()
@@ -1347,16 +1114,12 @@ function Finder.Pass()
     P.need = (P.extraOn and FinderCfg().partyFit) and Finder.PartyNeeds(P.needT) or nil
     return P
 end
-function Finder.NewPass()
-    Finder.pass.at = nil
-end
+function Finder.NewPass() Finder.pass.at = nil end
 
 -- any picks waiting on our side?
 function Finder.DimActive()
     local p = SP and SP.categoryID == DUNGEONS and DimOn() and FinderCfg().dimPicks
-    if type(p) ~= "table" then
-        return false
-    end
+    if type(p) ~= "table" then return false end
     return (
         not DungeonsDefault(p)
         or not DiffAllOrNone(p)
@@ -1371,9 +1134,7 @@ end
 -- blizzard's search would have done this if it wasn't wide
 function Finder.DimKeep(ident, details)
     local p = FinderCfg().dimPicks
-    if not details then
-        return true
-    end
+    if not details then return true end
     local acts = details.activityIDs
     local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
     local activityInfo = activity and not SecretVal(activity) and C_LFGList.GetActivityInfoTable(activity)
@@ -1389,16 +1150,12 @@ function Finder.DimKeep(ident, details)
             elseif filterKey then
                 filterKey = "difficulty" .. filterKey:sub(1, 1):upper() .. filterKey:sub(2)
             end
-            if filterKey and not p[filterKey] then
-                return false
-            end
+            if filterKey and not p[filterKey] then return false end
         end
     end
     local min = tonumber(p.minimumRating) or 0
     local score = details.leaderOverallDungeonScore
-    if min > 0 and not SecretVal(score) and type(score) == "number" and score < min then
-        return false
-    end
+    if min > 0 and not SecretVal(score) and type(score) == "number" and score < min then return false end
     local ps = details.generalPlaystyle
     if
         DungeonPlaystyles(p)
@@ -1413,21 +1170,11 @@ function Finder.DimKeep(ident, details)
         local counts = C_LFGList.GetSearchResultMemberCounts(ident)
         if type(counts) == "table" and not SecretVal(counts) then
             local num = Finder.Num
-            if p.hasTank and (num(counts, "TANK") or 1) < 1 then
-                return false
-            end
-            if p.hasHealer and (num(counts, "HEALER") or 1) < 1 then
-                return false
-            end
-            if p.needsTank and (num(counts, "TANK_REMAINING") or 1) < 1 then
-                return false
-            end
-            if p.needsHealer and (num(counts, "HEALER_REMAINING") or 1) < 1 then
-                return false
-            end
-            if p.needsDamage and (num(counts, "DAMAGER_REMAINING") or 1) < 1 then
-                return false
-            end
+            if p.hasTank and (num(counts, "TANK") or 1) < 1 then return false end
+            if p.hasHealer and (num(counts, "HEALER") or 1) < 1 then return false end
+            if p.needsTank and (num(counts, "TANK_REMAINING") or 1) < 1 then return false end
+            if p.needsHealer and (num(counts, "HEALER_REMAINING") or 1) < 1 then return false end
+            if p.needsDamage and (num(counts, "DAMAGER_REMAINING") or 1) < 1 then return false end
         end
         if p.needsMyClass then
             local _, mine = UnitClass("player")
@@ -1435,9 +1182,7 @@ function Finder.DimKeep(ident, details)
             for index = 1, (type(n) == "number" and not SecretVal(n)) and n or 0 do
                 local member = C_LFGList.GetSearchResultPlayerInfo(ident, index)
                 local cls = member and member.classFilename
-                if cls and not SecretVal(cls) and cls == mine then
-                    return false
-                end
+                if cls and not SecretVal(cls) and cls == mine then return false end
             end
         end
     end
@@ -1446,13 +1191,9 @@ end
 
 -- visibility switched: move the picks to where they now belong
 function mod.DimFiltersChanged()
-    if not SP then
-        return
-    end
+    if not SP then return end
     local frame = C_LFGList.GetAdvancedFilter()
-    if not frame then
-        return
-    end
+    if not frame then return end
     local cfg = FinderCfg()
     if DimOn() then
         cfg.dimPicks = Picks(frame)
@@ -1477,76 +1218,44 @@ end
 -- nil to fetch it
 function Finder.PassesFilters(ident, details)
     local P = Finder.Pass()
-    if not SP or P.secret or not P.any then
-        return true
-    end
+    if not SP or P.secret or not P.any then return true end
     local cfg = FinderCfg()
     local _, appStatus = C_LFGList.GetApplicationInfo(ident)
-    if SecretVal(appStatus) then
-        return true
-    end
-    if details == nil then
-        details = ResultInfo(ident) or false
-    end
+    if SecretVal(appStatus) then return true end
+    if details == nil then details = ResultInfo(ident) or false end
     if appStatus and appStatus ~= "none" then
         -- applied groups stay lit, unless declined with not declined on.
         return not (P.extraOn and cfg.notDeclined and Finder.IsDeclinedResult(ident, details))
     end
-    if P.dimOn and not Finder.DimKeep(ident, details) then
-        return false
-    end
+    if P.dimOn and not Finder.DimKeep(ident, details) then return false end
     if P.regions then
         local regionFrame = LeaderRegion(details)
-        if regionFrame ~= nil and not ChosenRegions()[regionFrame] then
-            return false
-        end
+        if regionFrame ~= nil and not ChosenRegions()[regionFrame] then return false end
     end
-    if P.delveOn and not DelveKeep(details) then
-        return false
-    end
-    if P.bossOn and not BossKeep(ident, details) then
-        return false
-    end
-    if P.raidOn and not RaidListKeep(ident, details) then
-        return false
-    end
-    if P.extraOn and not Finder.ExtraKeep(ident, details, P.need) then
-        return false
-    end
+    if P.delveOn and not DelveKeep(details) then return false end
+    if P.bossOn and not BossKeep(ident, details) then return false end
+    if P.raidOn and not RaidListKeep(ident, details) then return false end
+    if P.extraOn and not Finder.ExtraKeep(ident, details, P.need) then return false end
     return true
 end
 
 -- read-only filter checks for our results list
-mod.ExtraPasses = function(ident)
-    return Finder.PassesFilters(ident)
-end
-mod.ExtraResultsSecret = function()
-    return Finder.ResultsSecret()
-end
+mod.ExtraPasses = function(ident) return Finder.PassesFilters(ident) end
+mod.ExtraResultsSecret = function() return Finder.ResultsSecret() end
 
 -- filters changed: re-fade the visible rows, no search.
 function Finder.RefilterEntry(record)
     local ident = record.resultID
-    if ident then
-        record:SetAlpha(Finder.PassesFilters(ident) and 1 or Finder.DIM_ALPHA)
-    end
+    if ident then record:SetAlpha(Finder.PassesFilters(ident) and 1 or Finder.DIM_ALPHA) end
 end
 local function RunFilters()
     Finder.NewPass()
-    if mod.ExtraRefilter then
-        mod.ExtraRefilter()
-    end -- our results list
-    if not (SP and SP:IsVisible()) then
-        return
-    end
+    if mod.ExtraRefilter then mod.ExtraRefilter() end -- our results list
+    if not (SP and SP:IsVisible()) then return end
     -- blizzard's rows hidden under ours stay as they are
-    if mod.OwnListActive and mod.OwnListActive() then
-        return
-    end
+    if mod.OwnListActive and mod.OwnListActive() then return end
     local checkBox = SP.ScrollBox
-    if checkBox and checkBox.ForEachFrame then
-        checkBox:ForEachFrame(Finder.RefilterEntry)
-    end
+    if checkBox and checkBox.ForEachFrame then checkBox:ForEachFrame(Finder.RefilterEntry) end
 end
 
 -------------------------------------------------------------------------------
@@ -1554,9 +1263,7 @@ end
 -------------------------------------------------------------------------------
 local function Opt(filterKey)
     local val = FinderCfg()[filterKey]
-    if val == nil then
-        return true
-    end
+    if val == nil then return true end
     return val and true or false
 end
 
@@ -1566,9 +1273,7 @@ local prevCategory
 -- spec icons by class + spec name (the search API only gives names).
 local specIcon, specIconAny
 local function SpecIcon(classFile, specName)
-    if not specName then
-        return nil
-    end
+    if not specName then return nil end
     if not specIcon then
         specIcon, specIconAny = {}, {}
         for c = 1, (GetNumClasses and GetNumClasses() or 0) do
@@ -1577,9 +1282,7 @@ local function SpecIcon(classFile, specName)
                 specIcon[file] = {}
                 for sx = 1, 5 do
                     local ident, label, _, iconTex = GetSpecializationInfoForClassID(classID, sx)
-                    if not ident then
-                        break
-                    end
+                    if not ident then break end
                     if label then
                         specIcon[file][label] = iconTex
                         specIconAny[label] = specIconAny[label] or iconTex
@@ -1593,28 +1296,21 @@ end
 
 -- locked to this activity's instance and difficulty?
 local function LockedOut(activityInfo, resultID)
-    if not (activityInfo and activityInfo.mapID and GetNumSavedInstances) then
-        return false
-    end
+    if not (activityInfo and activityInfo.mapID and GetNumSavedInstances) then return false end
     for index = 1, GetNumSavedInstances() do
-        local _, _, _, diffID, locked, _, _, _, _, _, numBosses, _, _, instanceID = GetSavedInstanceInfo(index)
+        local _, _, _, diffID, locked, _, _, _, _, _, numBosses, _, _, instanceID =
+            GetSavedInstanceInfo(index)
         if locked and instanceID == activityInfo.mapID and diffID == activityInfo.difficultyID then
             local perBoss = (activityInfo.maxNumPlayers or 5) > 5 and diffID ~= 16
-            if not perBoss then
-                return true
-            end
-            if not (GetSavedInstanceEncounterInfo and resultID) then
-                return false
-            end
+            if not perBoss then return true end
+            if not (GetSavedInstanceEncounterInfo and resultID) then return false end
             local done = C_LFGList.GetSearchResultEncounterInfo(resultID)
             if done and (SecretVal(done) or (canaccesstable and not canaccesstable(done))) then
                 return false
             end
             local dead = wipe(Finder.dead)
             for _, label in ipairs(done or Finder.EMPTY) do
-                if SecretVal(label) then
-                    return false
-                end
+                if SecretVal(label) then return false end
                 dead[label] = true
             end
             local anyAlive = false
@@ -1622,9 +1318,7 @@ local function LockedOut(activityInfo, resultID)
                 local boss, _, killed = GetSavedInstanceEncounterInfo(index, jdx)
                 if boss and not dead[boss] then
                     anyAlive = true
-                    if not killed then
-                        return false
-                    end
+                    if not killed then return false end
                 end
             end
             return anyAlive
@@ -1636,21 +1330,15 @@ end
 -- raider.io's api, looked up once (each global read logs a taint line)
 local rioApi
 local function RatingColor(score)
-    if rioApi == nil then
-        rioApi = _G.RaiderIO or false
-    end
+    if rioApi == nil then rioApi = _G.RaiderIO or false end
     if Opt("rioRatingColors") and rioApi and rioApi.GetScoreColor then
         local success, red, green, blue = pcall(rioApi.GetScoreColor, score)
-        if success and type(red) == "number" then
-            return red, green, blue
-        end
+        if success and type(red) == "number" then return red, green, blue end
     end
     local color = C_ChallengeMode
         and C_ChallengeMode.GetDungeonScoreRarityColor
         and C_ChallengeMode.GetDungeonScoreRarityColor(score)
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 1, 1, 1
 end
 
@@ -1679,9 +1367,7 @@ local MISSING_ATLAS = {
 -- our own drawing over one of blizzard's role icons.
 local function IconLayer(iconTex)
     local skinData = FFD[iconTex]
-    if skinData then
-        return skinData
-    end
+    if skinData then return skinData end
     skinData = {}
     FFD[iconTex] = skinData
     local frame = CreateFrame("Frame", nil, iconTex)
@@ -1742,14 +1428,10 @@ end
 function Finder.ClearIcons(record)
     local enum = record.DataDisplay and record.DataDisplay.Enumerate
     local icons = enum and enum.Icons
-    if not icons then
-        return
-    end
+    if not icons then return end
     for index = 1, #icons do
         local skinData = FFD[icons[index]]
-        if skinData then
-            ClearLayer(skinData)
-        end
+        if skinData then ClearLayer(skinData) end
     end
 end
 
@@ -1757,16 +1439,12 @@ Finder.members, Finder.used, Finder.missing = {}, {}, {}
 Finder.ROLE_RANK = { TANK = 1, HEALER = 2, DAMAGER = 3 }
 Finder.ROLE_ORDER = { "TANK", "HEALER", "DAMAGER" }
 Finder.FIVE_SLOTS = { TANK = 1, HEALER = 1, DAMAGER = 3 } -- a 5-player group's roles
-function Finder.ByOrder(posX, posY)
-    return posX._cmOrder < posY._cmOrder
-end
+function Finder.ByOrder(posX, posY) return posX._cmOrder < posY._cmOrder end
 
 local function DecorateIcons(record, resultID, details, activityInfo)
     local enum = record.DataDisplay and record.DataDisplay.Enumerate
     local icons = enum and enum.Icons
-    if not icons then
-        return
-    end
+    if not icons then return end
     local isShown = enum:IsShown()
     -- none = no missing roles
     local crownOn, specOn = Opt("leaderCrown"), Opt("specIcons")
@@ -1817,26 +1495,14 @@ local function DecorateIcons(record, resultID, details, activityInfo)
         if live and (SecretVal(ccAtlas) or SecretVal(riAtlas) or SecretVal(bgAtlas)) then
             -- restricted row: its art reads secret, blizzard's stays
             local a = disabled and 0.5 or 1
-            if cc then
-                cc:SetAlpha(a)
-            end
-            if ri then
-                ri:SetAlpha(a)
-            end
-            if backdrop then
-                backdrop:SetAlpha(a)
-            end
+            if cc then cc:SetAlpha(a) end
+            if ri then ri:SetAlpha(a) end
+            if backdrop then backdrop:SetAlpha(a) end
         elseif live then
             if bgAtlas == "groupfinder-icon-emptyslot" then
-                if cc then
-                    cc:SetAlpha(0)
-                end
-                if ri then
-                    ri:SetAlpha(0)
-                end
-                if backdrop then
-                    backdrop:SetAlpha(0)
-                end
+                if cc then cc:SetAlpha(0) end
+                if ri then ri:SetAlpha(0) end
+                if backdrop then backdrop:SetAlpha(0) end
                 mi = mi + 1
                 local roleName = missing and missing[mi]
                 if roleName then
@@ -1877,32 +1543,18 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                             break
                         end
                     end
-                    if m then
-                        break
-                    end
+                    if m then break end
                 end
                 if not specOn then
                     -- spec icons off: the game's icons stay, only the crown is ours
                     local a = disabled and 0.5 or 1
-                    if cc then
-                        cc:SetAlpha(a)
-                    end
-                    if ri then
-                        ri:SetAlpha(a)
-                    end
-                    if backdrop then
-                        backdrop:SetAlpha(a)
-                    end
+                    if cc then cc:SetAlpha(a) end
+                    if ri then ri:SetAlpha(a) end
+                    if backdrop then backdrop:SetAlpha(a) end
                 else
-                    if cc then
-                        cc:SetAlpha(0)
-                    end
-                    if ri then
-                        ri:SetAlpha(0)
-                    end
-                    if backdrop then
-                        backdrop:SetAlpha(0)
-                    end
+                    if cc then cc:SetAlpha(0) end
+                    if ri then ri:SetAlpha(0) end
+                    if backdrop then backdrop:SetAlpha(0) end
                     local specInfo = m
                         and m.specName
                         and not SecretVal(m.specName)
@@ -1978,43 +1630,29 @@ end
 
 -- at the limit and hovering a group you could sign up to.
 function Finder.ShouldCancelOldest(resultID)
-    if not FinderCfg().cancelOldest or not resultID or Finder.ResultsSecret() then
-        return false
-    end
+    if not FinderCfg().cancelOldest or not resultID or Finder.ResultsSecret() then return false end
     local _, isActive = C_LFGList.GetNumApplications()
-    if type(isActive) ~= "number" or isActive < (MAX_LFG_LIST_APPLICATIONS or 5) then
-        return false
-    end
+    if type(isActive) ~= "number" or isActive < (MAX_LFG_LIST_APPLICATIONS or 5) then return false end
     local _, status, pendingStatus = C_LFGList.GetApplicationInfo(resultID)
-    if status ~= "none" or pendingStatus then
-        return false
-    end
+    if status ~= "none" or pendingStatus then return false end
     local details = ResultInfo(resultID)
     return details ~= nil and not SecretVal(details.isDelisted) and not details.isDelisted
 end
 
 -- same for our rows
 function mod.GFCancelOldest(resultID)
-    if not Finder.ShouldCancelOldest(resultID) then
-        return
-    end
+    if not Finder.ShouldCancelOldest(resultID) then return end
     local oldest = Finder.OldestApplication()
-    if oldest then
-        C_LFGList.CancelApplication(oldest)
-    end
+    if oldest then C_LFGList.CancelApplication(oldest) end
 end
 
 -- rows decorate only while the panel shows
 local function DecorateEntry(record)
     local resultID = record and record.resultID
-    if not resultID or not SP or not SP:IsVisible() then
-        return
-    end
+    if not resultID or not SP or not SP:IsVisible() then return end
     -- our results list covers blizzard's: its hidden rows are left alone
     -- (ns.RedecorateRows catches them up when it hands the panel back)
-    if mod.OwnListActive and mod.OwnListActive() then
-        return
-    end
+    if mod.OwnListActive and mod.OwnListActive() then return end
     local frameData = FFD[record]
     if not frameData then
         frameData = {}
@@ -2026,13 +1664,9 @@ local function DecorateEntry(record)
         frameData.rating = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         frameData.rating:SetJustifyH("RIGHT")
         record:HookScript("OnClick", function(self, btnFrame)
-            if btnFrame ~= "LeftButton" or not Finder.ShouldCancelOldest(self.resultID) then
-                return
-            end
+            if btnFrame ~= "LeftButton" or not Finder.ShouldCancelOldest(self.resultID) then return end
             local oldest = Finder.OldestApplication()
-            if oldest then
-                C_LFGList.CancelApplication(oldest)
-            end
+            if oldest then C_LFGList.CancelApplication(oldest) end
         end)
     end
     frameData.rating:Hide()
@@ -2045,9 +1679,7 @@ local function DecorateEntry(record)
     end
     local details = ResultInfo(resultID)
     -- filtered out: faded
-    if not Finder.PassesFilters(resultID, details or false) then
-        record:SetAlpha(Finder.DIM_ALPHA)
-    end
+    if not Finder.PassesFilters(resultID, details or false) then record:SetAlpha(Finder.DIM_ALPHA) end
     if not details then
         Finder.ClearIcons(record)
         return
@@ -2105,9 +1737,7 @@ local function DecorateEntry(record)
         local extra = math.floor((scale - 1) * 102 + 0.5) -- 5 icons 18 apart + 12 gap
         if extra > 0 then
             local actName = record.ActivityName
-            if actName then
-                actName:SetWidth(176 - extra)
-            end
+            if actName then actName:SetWidth(176 - extra) end
             local label = record.Name
             if label and not censored then
                 local success, wid = pcall(label.GetWidth, label)
@@ -2129,23 +1759,15 @@ mod.GFSpecIcon = SpecIcon
 -- the name colour a row gets (nil = blizzard's own): red when declined or
 -- locked out, green when new since the last search
 function mod.GFNameColor(resultID, details, activityInfo)
-    if FinderCfg().nameColors ~= true then
-        return nil
-    end
+    if FinderCfg().nameColors ~= true then return nil end
     local delisted, censored = details.isDelisted, details.censored
-    if SecretVal(delisted) or SecretVal(censored) or delisted or censored then
-        return nil
-    end
+    if SecretVal(delisted) or SecretVal(censored) or delisted or censored then return nil end
     local _, appStatus = C_LFGList.GetApplicationInfo(resultID)
-    if SecretVal(appStatus) then
-        return nil
-    end
+    if SecretVal(appStatus) then return nil end
     local declined = appStatus == "declined"
         or appStatus == "declined_full"
         or appStatus == "declined_delisted"
-    if declined or LockedOut(activityInfo, resultID) then
-        return 1, 0.25, 0.25
-    end
+    if declined or LockedOut(activityInfo, resultID) then return 1, 0.25, 0.25 end
     if prevResults and not prevResults[resultID] and (appStatus == "none" or appStatus == nil) then
         return 0.3, 1, 0.3
     end
@@ -2155,31 +1777,19 @@ end
 -- display settings changed: redecorate the visible rows.
 function Finder.Redecorate()
     Finder.NewPass()
-    if mod.OwnListPreviewPaint then
-        mod.OwnListPreviewPaint()
-    end
-    if not (SP and SP:IsVisible()) then
-        return
-    end
+    if mod.OwnListPreviewPaint then mod.OwnListPreviewPaint() end
+    if not (SP and SP:IsVisible()) then return end
     local checkBox = SP.ScrollBox
-    if checkBox and checkBox.ForEachFrame then
-        checkBox:ForEachFrame(DecorateEntry)
-    end
-    if mod.ExtraRedecorate then
-        mod.ExtraRedecorate()
-    end
+    if checkBox and checkBox.ForEachFrame then checkBox:ForEachFrame(DecorateEntry) end
+    if mod.ExtraRedecorate then mod.ExtraRedecorate() end
 end
 
 -- our results list handed the panel back: blizzard's rows take their look
 function mod.RedecorateRows()
     Finder.NewPass()
-    if not (SP and SP:IsVisible()) then
-        return
-    end
+    if not (SP and SP:IsVisible()) then return end
     local checkBox = SP.ScrollBox
-    if checkBox and checkBox.ForEachFrame then
-        checkBox:ForEachFrame(DecorateEntry)
-    end
+    if checkBox and checkBox.ForEachFrame then checkBox:ForEachFrame(DecorateEntry) end
 end
 
 -- tooltip hint while a click would cancel your oldest application.
@@ -2199,26 +1809,16 @@ local ROLE_ICON = {
     DAMAGER = "groupfinder-icon-role-micro-dps",
 }
 local function AddClassesByRole(tooltip, resultID)
-    if not Opt("classTooltip") or not (tooltip and tooltip.IsShown and tooltip:IsShown()) then
-        return
-    end
-    if Finder.ResultsSecret() then
-        return
-    end
+    if not Opt("classTooltip") or not (tooltip and tooltip.IsShown and tooltip:IsShown()) then return end
+    if Finder.ResultsSecret() then return end
     local details = ResultInfo(resultID)
-    if not details or SecretVal(details.isDelisted) or details.isDelisted then
-        return
-    end
+    if not details or SecretVal(details.isDelisted) or details.isDelisted then return end
     local acts = details.activityIDs
     local activity = type(acts) == "table" and not SecretVal(acts) and acts[1]
     local activityInfo = activity and not SecretVal(activity) and Finder.ActInfo(activity)
-    if not activityInfo then
-        return
-    end
+    if not activityInfo then return end
     local n = details.numMembers
-    if type(n) ~= "number" or SecretVal(n) or n < 1 then
-        return
-    end
+    if type(n) ~= "number" or SecretVal(n) or n < 1 then return end
     local players = {}
     for index = 1, n do
         players[index] = C_LFGList.GetSearchResultPlayerInfo(resultID, index) or false
@@ -2255,9 +1855,7 @@ function Finder.AddMembers(tooltip, players, enumerate)
                 end
             end
         end
-        if #nameList == 0 then
-            return
-        end
+        if #nameList == 0 then return end
         tooltip:AddLine(" ")
         tooltip:AddLine(
             CludesUI.L("Names:") .. " " .. table.concat(nameList, Finder.DIM_HEX .. ",|r "),
@@ -2290,9 +1888,7 @@ function Finder.AddMembers(tooltip, players, enumerate)
             tooltip:AddDoubleLine(leftX, label, colour.r, colour.g, colour.b, colour.r, colour.g, colour.b)
         end
     end
-    if added then
-        tooltip:Show()
-    end
+    if added then tooltip:Show() end
 end
 mod.GFTooltipMembers = Finder.AddMembers
 
@@ -2301,9 +1897,7 @@ local ITEM_H, CHECK_SZ, ITEM_FONT = 20, 12, 9
 local function ThemeFill()
     local S = WindowSkin()
     local T = S and S.Theme
-    if T and T.bgR then
-        return T.bgR, T.bgG, T.bgB
-    end
+    if T and T.bgR then return T.bgR, T.bgG, T.bgB end
     return 0.08, 0.08, 0.08
 end
 
@@ -2367,9 +1961,7 @@ end
 local hairlines = {} -- parent -> its dividers
 local function FitHairline(texture)
     local es = texture:GetParent():GetEffectiveScale()
-    if es and es > 0 then
-        texture:SetHeight(CUI.PP.perfect / es)
-    end
+    if es and es > 0 then texture:SetHeight(CUI.PP.perfect / es) end
 end
 function Finder.Hairline(texture)
     local p = texture:GetParent()
@@ -2415,14 +2007,10 @@ local function AddPlaystyleItems(menu, posY, raids)
         menu.items["style_" .. index] = MenuItem(menu, posY, labelText, function()
             if raids then
                 local cfg = FinderCfg()
-                if type(cfg.raidPlaystyles) ~= "table" then
-                    cfg.raidPlaystyles = {}
-                end
+                if type(cfg.raidPlaystyles) ~= "table" then cfg.raidPlaystyles = {} end
                 cfg.raidPlaystyles[index] = (not cfg.raidPlaystyles[index]) or nil
                 local _, n = ChosenRaidPlaystyles()
-                if n == #PLAYSTYLES then
-                    wipe(cfg.raidPlaystyles)
-                end
+                if n == #PLAYSTYLES then wipe(cfg.raidPlaystyles) end
                 RunFilters()
                 Paint()
             else
@@ -2504,9 +2092,7 @@ local function AddRoleItems(menu, posY, raids)
         menu.items["role_" .. filterKey] = MenuItem(menu, posY, region.label, function()
             if raids then
                 local cfg = FinderCfg()
-                if type(cfg.raidRoles) ~= "table" then
-                    cfg.raidRoles = {}
-                end
+                if type(cfg.raidRoles) ~= "table" then cfg.raidRoles = {} end
                 cfg.raidRoles[filterKey] = (not cfg.raidRoles[filterKey]) or nil
                 RunFilters()
                 Paint()
@@ -2580,9 +2166,7 @@ function Finder.OpenOpList(button, roleName)
             entry.opKey = o.key
             entry:SetScript("OnClick", function()
                 local cfg = FinderCfg()
-                if type(cfg.roleCounts) ~= "table" then
-                    cfg.roleCounts = {}
-                end
+                if type(cfg.roleCounts) ~= "table" then cfg.roleCounts = {} end
                 local region = cfg.roleCounts[OpList.role] or {}
                 region.op = o.key
                 cfg.roleCounts[OpList.role] = region
@@ -2593,9 +2177,10 @@ function Finder.OpenOpList(button, roleName)
             OpList.items[index] = entry
         end
         OpList:SetHeight(4 + #Finder.COUNT_OPS * ITEM_H)
-        Finder.ClickOff(OpList, function(self)
-            return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver())
-        end)
+        Finder.ClickOff(
+            OpList,
+            function(self) return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver()) end
+        )
         OpList:Hide()
     end
     if OpList:IsShown() and OpList.owner == button then
@@ -2633,12 +2218,8 @@ function Finder.MenuBox(hostFrame, wid, letters)
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0, 0, 0, 1)
     CUI.MakeBorder(checkBox, ThemeBorder())
-    checkBox:SetScript("OnEnterPressed", function(self)
-        self:ClearFocus()
-    end)
-    checkBox:SetScript("OnEscapePressed", function(self)
-        self:ClearFocus()
-    end)
+    checkBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    checkBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     return checkBox
 end
 
@@ -2646,9 +2227,7 @@ end
 function Finder.AddCountRow(menu, posY, roleName, textValue)
     local function Rule()
         local cfg = FinderCfg()
-        if type(cfg.roleCounts) ~= "table" then
-            cfg.roleCounts = {}
-        end
+        if type(cfg.roleCounts) ~= "table" then cfg.roleCounts = {} end
         local region = cfg.roleCounts[roleName] or {}
         cfg.roleCounts[roleName] = region
         return region
@@ -2673,9 +2252,7 @@ function Finder.AddCountRow(menu, posY, roleName, textValue)
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         RunFilters()
         Paint()
-        if region.on and menu.counts and menu.counts[roleName] then
-            menu.counts[roleName].box:SetFocus()
-        end
+        if region.on and menu.counts and menu.counts[roleName] then menu.counts[roleName].box:SetFocus() end
     end)
     local op = CreateFrame("Button", nil, rowF)
     op:SetSize(20, 16)
@@ -2691,15 +2268,11 @@ function Finder.AddCountRow(menu, posY, roleName, textValue)
     local highlight = op:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetAllPoints()
     highlight:SetColorTexture(1, 1, 1, 0.08)
-    op:SetScript("OnClick", function(self)
-        Finder.OpenOpList(self, roleName)
-    end)
+    op:SetScript("OnClick", function(self) Finder.OpenOpList(self, roleName) end)
     local checkBox = Finder.MenuBox(rowF, 22, 2)
     checkBox:SetPoint("LEFT", op, "RIGHT", 3, 0)
     checkBox:SetScript("OnTextChanged", function(self, user)
-        if not user then
-            return
-        end
+        if not user then return end
         Rule().n = tonumber(self:GetText())
         RunFilters()
         Paint()
@@ -2737,9 +2310,7 @@ function Finder.PaintCountRows(menu)
             local a = isOn and 1 or 0.4
             line.op:SetAlpha(a)
             line.box:SetAlpha(a)
-            if not isOn and line.box:HasFocus() then
-                line.box:ClearFocus()
-            end
+            if not isOn and line.box:HasFocus() then line.box:ClearFocus() end
             line.box:SetEnabled(isOn)
             line.label:SetAlpha(a)
         end
@@ -2773,9 +2344,7 @@ function Finder.PaintFlagItems(menu)
     local cfg = FinderCfg()
     for _, filterKey in ipairs(Finder.FLAG_KEYS) do
         local entry = menu.items["flag_" .. filterKey]
-        if entry then
-            entry:SetChecked(cfg[filterKey] == true)
-        end
+        if entry then entry:SetChecked(cfg[filterKey] == true) end
     end
 end
 
@@ -2783,9 +2352,7 @@ local function PaintRoleItems(menu, raids)
     local source = raids and (ChosenRaidRoles() or Finder.EMPTY) or Finder.GetFilter()
     for _, region in ipairs(ROLES) do
         local entry = menu.items["role_" .. region.key]
-        if entry then
-            entry:SetChecked(source[region.key] == true)
-        end
+        if entry then entry:SetChecked(source[region.key] == true) end
     end
     Finder.PaintFlagItems(menu)
     Finder.PaintCountRows(menu)
@@ -2811,16 +2378,12 @@ local function AddRatingRow(menu, posY)
     local RATING_TIP =
         CludesUI.L("Only groups whose leader has at least this Mythic+ rating. Applied on Search Again.")
     rowF:EnableMouse(true)
-    rowF:SetScript("OnEnter", function(self)
-        Finder.Tip(self, RATING, RATING_TIP)
-    end)
+    rowF:SetScript("OnEnter", function(self) Finder.Tip(self, RATING, RATING_TIP) end)
     rowF:SetScript("OnLeave", Finder.Untip)
     local callback = CreateFrame("Button", nil, rowF)
     callback:SetSize(CHECK_SZ, CHECK_SZ)
     callback:SetPoint("LEFT", rowF, "LEFT", 8, 0)
-    callback:SetScript("OnEnter", function(self)
-        Finder.Tip(self, RATING, RATING_TIP)
-    end)
+    callback:SetScript("OnEnter", function(self) Finder.Tip(self, RATING, RATING_TIP) end)
     callback:SetScript("OnLeave", Finder.Untip)
     local cbg = callback:CreateTexture(nil, "BACKGROUND")
     cbg:SetAllPoints()
@@ -2835,9 +2398,7 @@ local function AddRatingRow(menu, posY)
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Send()
         Paint()
-        if cfg.ratingOn and menu.rating then
-            menu.rating.box:SetFocus()
-        end
+        if cfg.ratingOn and menu.rating then menu.rating.box:SetFocus() end
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
     Finder.Font(labelText, ITEM_FONT)
@@ -2858,9 +2419,7 @@ end
 -- restore the saved rating when ticked again.
 function Finder.AdoptRating()
     local cfg = FinderCfg()
-    if cfg.ratingOn ~= nil or cfg.ratingValue ~= nil then
-        return
-    end
+    if cfg.ratingOn ~= nil or cfg.ratingValue ~= nil then return end
     local frame = Finder.GetFilter()
     local val = frame and tonumber(frame.minimumRating) or 0
     if val > 0 then
@@ -2870,9 +2429,7 @@ end
 
 function Finder.PaintRating(menu)
     local region = menu and menu.rating
-    if not region then
-        return
-    end
+    if not region then return end
     local cfg = FinderCfg()
     local isOn = cfg.ratingOn == true
     local ar, ag, ab = AccentRGB()
@@ -2890,16 +2447,12 @@ function Finder.PaintRating(menu)
     local a = isOn and 1 or 0.4
     region.label:SetAlpha(a)
     region.box:SetAlpha(a)
-    if not isOn and region.box:HasFocus() then
-        region.box:ClearFocus()
-    end
+    if not isOn and region.box:HasFocus() then region.box:ClearFocus() end
     region.box:SetEnabled(isOn)
 end
 
 local function AddRegionItems(menu, posY)
-    if not RegionsAvailable() then
-        return posY
-    end
+    if not RegionsAvailable() then return posY end
     -- eu lists languages, short names in two columns
     local lang = mod.RegionIsLanguage()
     posY = AddSection(menu, posY, lang and CludesUI.L("Language") or CludesUI.L("Region"))
@@ -2907,19 +2460,13 @@ local function AddRegionItems(menu, posY)
         local filterKey = region.key
         local entry = MenuItem(menu, posY, lang and region.tag or region.label, function()
             local cfg = FinderCfg()
-            if type(cfg.regions) ~= "table" then
-                cfg.regions = {}
-            end
+            if type(cfg.regions) ~= "table" then cfg.regions = {} end
             cfg.regions[filterKey] = (not cfg.regions[filterKey]) or nil
             local count = 0
             for _, o in ipairs(Regions()) do
-                if cfg.regions[o.key] then
-                    count = count + 1
-                end
+                if cfg.regions[o.key] then count = count + 1 end
             end
-            if count == #Regions() then
-                wipe(cfg.regions)
-            end
+            if count == #Regions() then wipe(cfg.regions) end
             RunFilters()
             Paint()
         end)
@@ -2933,9 +2480,7 @@ local function AddRegionItems(menu, posY)
                 entry:SetPoint("TOPLEFT", menu, "TOP", 0, -posY)
                 entry:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -posY)
             end
-            if index % 2 == 0 or index == #Regions() then
-                posY = posY + ITEM_H
-            end
+            if index % 2 == 0 or index == #Regions() then posY = posY + ITEM_H end
         else
             posY = posY + ITEM_H
         end
@@ -2947,9 +2492,7 @@ local function PaintRegionItems(menu)
     local chosen = RegionFilterActive() and ChosenRegions()
     for _, region in ipairs(Regions()) do
         local entry = menu.items["region_" .. region.key]
-        if entry then
-            entry:SetChecked(chosen and chosen[region.key] == true or false)
-        end
+        if entry then entry:SetChecked(chosen and chosen[region.key] == true or false) end
     end
 end
 
@@ -2964,9 +2507,7 @@ local function PaintMenu()
         PaintRegionItems(raidDiffMenu.side)
         PaintPlaystyleItems(raidDiffMenu.side, true)
     end
-    if not (dropMenu and dropMenu:IsShown()) then
-        return
-    end
+    if not (dropMenu and dropMenu:IsShown()) then return end
     local frame = Finder.GetFilter()
     local all = DiffAllOrNone(frame)
     for _, skinData in ipairs(DIFFS) do
@@ -2983,22 +2524,12 @@ end
 Finder.DIM_ALPHA = 0.35
 local function DimForMenu(isOn)
     local a = isOn and Finder.DIM_ALPHA or 1
-    if line then
-        line:SetAlpha(a)
-    end
+    if line then line:SetAlpha(a) end
     local face = Finder.FilterFace()
-    if face then
-        face:SetAlpha(a)
-    end
-    if SP.ScrollBox then
-        SP.ScrollBox:SetAlpha(a)
-    end
-    if SP.ScrollBar then
-        SP.ScrollBar:SetAlpha(a)
-    end
-    if mod.ExtraOnDim then
-        mod.ExtraOnDim(isOn)
-    end -- row 1 blocked too
+    if face then face:SetAlpha(a) end
+    if SP.ScrollBox then SP.ScrollBox:SetAlpha(a) end
+    if SP.ScrollBar then SP.ScrollBar:SetAlpha(a) end
+    if mod.ExtraOnDim then mod.ExtraOnDim(isOn) end -- row 1 blocked too
 end
 
 local function BuildSidePanel(menu, raids)
@@ -3034,9 +2565,7 @@ local function BuildSidePanel(menu, raids)
         CludesUI.L("Not Declined"),
         CludesUI.L("Hides groups that have declined you this session.")
     )
-    if not raids then
-        posY = AddRatingRow(sidePane, posY)
-    end
+    if not raids then posY = AddRatingRow(sidePane, posY) end
     sidePane.extraEndY = posY
     -- both columns the same height, one border around them
     local hgt = math.max(posY + 3, menu:GetHeight() or 0)
@@ -3062,9 +2591,7 @@ local function BuildSidePanel(menu, raids)
     menu:SetScript("OnHide", function()
         sidePane:Hide()
         DimForMenu(false)
-        if Finder.opList then
-            Finder.opList:Hide()
-        end
+        if Finder.opList then Finder.opList:Hide() end
     end)
     Finder.ClickOff(menu, Finder.FiltersInside)
     return sidePane
@@ -3113,9 +2640,7 @@ local function BuildMenu()
     posY = AddRoleItems(dropMenu, posY, false)
     dropMenu:SetHeight(posY + 3)
     BuildSidePanel(dropMenu, false)
-    if mod.ExtraDecorateMenu then
-        mod.ExtraDecorateMenu(dropMenu, dropMenu.side)
-    end
+    if mod.ExtraDecorateMenu then mod.ExtraDecorateMenu(dropMenu, dropMenu.side) end
     dropMenu:Hide()
 end
 
@@ -3133,9 +2658,7 @@ local function BuildRaidDiffMenu()
     backdrop:SetColorTexture(red, green, blue, 0.98)
     local function Diffs()
         local cfg = FinderCfg()
-        if type(cfg.raidDiffs) ~= "table" then
-            cfg.raidDiffs = {}
-        end
+        if type(cfg.raidDiffs) ~= "table" then cfg.raidDiffs = {} end
         return cfg.raidDiffs
     end
     menu.items = {}
@@ -3147,32 +2670,24 @@ local function BuildRaidDiffMenu()
             local tbl = Diffs()
             tbl[filterKey] = (not tbl[filterKey]) or nil
             local _, n = ChosenRaidDiffs()
-            if n == #RAID_DIFFS_MENU then
-                wipe(tbl)
-            end
+            if n == #RAID_DIFFS_MENU then wipe(tbl) end
             RunFilters()
             Paint()
         end)
         posY = posY + ITEM_H
     end
     -- gap for the missing m+ row, keeps roles lined up
-    if mod.ExtraClassRows then
-        posY = posY + math.max(0, #DIFFS - #RAID_DIFFS_MENU) * ITEM_H
-    end
+    if mod.ExtraClassRows then posY = posY + math.max(0, #DIFFS - #RAID_DIFFS_MENU) * ITEM_H end
     posY = AddRoleItems(menu, posY, true)
     menu:SetHeight(posY + 3)
     BuildSidePanel(menu, true)
-    if mod.ExtraDecorateMenu then
-        mod.ExtraDecorateMenu(menu, menu.side)
-    end
+    if mod.ExtraDecorateMenu then mod.ExtraDecorateMenu(menu, menu.side) end
     menu:Hide()
 end
 
 local function ToggleMenu()
     if SP.categoryID == RAIDS then
-        if not raidDiffMenu then
-            BuildRaidDiffMenu()
-        end
+        if not raidDiffMenu then BuildRaidDiffMenu() end
         if raidDiffMenu:IsShown() then
             raidDiffMenu:Hide()
             return
@@ -3187,9 +2702,7 @@ local function ToggleMenu()
         PaintMenu()
         return
     end
-    if not dropMenu then
-        BuildMenu()
-    end
+    if not dropMenu then BuildMenu() end
     if dropMenu:IsShown() then
         dropMenu:Hide()
         return
@@ -3216,9 +2729,7 @@ local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
     widget:SetHighlightFontObject("GameFontHighlight")
     widget:SetDisabledFontObject("GameFontDisable")
     widget:SetText(" ")
-    if decorate then
-        decorate(widget)
-    end
+    if decorate then decorate(widget) end
     local S = WindowSkin()
     if stock then
         -- no edge of ours: a picked square holds the template's highlight on (XF.PickBorder), and a
@@ -3276,9 +2787,7 @@ end
 -- blizzard's cancel x restyled, its button still gets the click
 function Finder.CancelLook(record)
     local callback = record and record.CancelButton
-    if type(callback) ~= "table" or not callback.GetRegions or not Finder.SkinOn() then
-        return
-    end
+    if type(callback) ~= "table" or not callback.GetRegions or not Finder.SkinOn() then return end
     local skinData = FFD[callback]
     if not skinData then
         skinData = {}
@@ -3287,9 +2796,7 @@ function Finder.CancelLook(record)
             region:SetAlpha(0)
         end
         local highlight = callback.GetHighlightTexture and callback:GetHighlightTexture()
-        if highlight then
-            highlight:SetAlpha(0)
-        end
+        if highlight then highlight:SetAlpha(0) end
         local lookName = GlyphButton(callback, ROW1_H - 4, X_TEX)
         lookName:EnableMouse(false)
         lookName:SetPoint("CENTER", callback, "CENTER", 0, 0)
@@ -3298,9 +2805,7 @@ function Finder.CancelLook(record)
         lookName.Glyph:SetVertexColor(Finder.GLYPH, Finder.GLYPH, Finder.GLYPH, 1)
         skinData.look = lookName
         callback:HookScript("OnEnter", function(self)
-            if not self:IsEnabled() then
-                return
-            end
+            if not self:IsEnabled() then return end
             SetBorderColor(skinData.look, 1, 0.15, 0.15, 1)
             skinData.look.Glyph:SetVertexColor(1, 0.15, 0.15, 1)
             skinData.look.Glyph:SetAlpha(1)
@@ -3320,9 +2825,7 @@ mod.Redecorate = Finder.Redecorate -- for the settings page
 
 local function SquareEnter(self)
     local skinData = self.dungeon
-    if not skinData then
-        return
-    end
+    if not skinData then return end
     Finder.Tip(self, skinData.name or "?", CludesUI.L("Click to toggle"))
 end
 
@@ -3349,21 +2852,15 @@ local function MakeSquare(hostFrame)
     widget:SetScript("OnEnter", SquareEnter)
     widget:SetScript("OnLeave", Finder.Untip)
     widget:SetScript("OnClick", function(self)
-        if self.dungeon then
-            ToggleDungeon(self.dungeon.groupID)
-        end
-        if Finder.tipOwner == self then
-            SquareEnter(self)
-        end
+        if self.dungeon then ToggleDungeon(self.dungeon.groupID) end
+        if Finder.tipOwner == self then SquareEnter(self) end
     end)
     return widget
 end
 
 local function DelveEnter(self)
     local skinData = self.delve
-    if not skinData then
-        return
-    end
+    if not skinData then return end
     Finder.Tip(
         self,
         skinData.name or "?",
@@ -3374,9 +2871,7 @@ end
 
 -- delve square: same button with the short name.
 local function MakeDelveSquare(hostFrame)
-    local widget = SkinnedButton(hostFrame, BTN, BTN, nil, function(button)
-        button:SetText("")
-    end)
+    local widget = SkinnedButton(hostFrame, BTN, BTN, nil, function(button) button:SetText("") end)
     local fontStr = widget:GetFontString()
     fontStr:ClearAllPoints()
     fontStr:SetPoint("CENTER")
@@ -3404,28 +2899,18 @@ local function MakeDelveSquare(hostFrame)
     widget:SetScript("OnLeave", Finder.Untip)
     widget:SetScript("OnClick", function(self)
         local skinData = self.delve
-        if not skinData then
-            return
-        end
+        if not skinData then return end
         local cfg = FinderCfg()
-        if type(cfg.delves) ~= "table" then
-            cfg.delves = {}
-        end
+        if type(cfg.delves) ~= "table" then cfg.delves = {} end
         cfg.delves[skinData.groupID] = (not cfg.delves[skinData.groupID]) or nil
         local count = 0
         for _, o in ipairs(delves or {}) do
-            if cfg.delves[o.groupID] then
-                count = count + 1
-            end
+            if cfg.delves[o.groupID] then count = count + 1 end
         end
-        if count == #(delves or {}) then
-            wipe(cfg.delves)
-        end
+        if count == #(delves or {}) then wipe(cfg.delves) end
         RunFilters()
         Paint()
-        if Finder.tipOwner == self then
-            DelveEnter(self)
-        end
+        if Finder.tipOwner == self then DelveEnter(self) end
     end)
     return widget
 end
@@ -3458,9 +2943,7 @@ local function LayoutDelves(px, after, show, cols, slots)
         return mod.ExtraDelveStrip(
             entries,
             delveSquares,
-            function()
-                return MakeDelveSquare(line)
-            end,
+            function() return MakeDelveSquare(line) end,
             px,
             after,
             show,
@@ -3468,9 +2951,7 @@ local function LayoutDelves(px, after, show, cols, slots)
             slots,
             line,
             SQ_GAP,
-            function()
-                Paint()
-            end
+            function() Paint() end
         )
     end
     for index = 1, math.max(#entries, #delveSquares) do
@@ -3496,9 +2977,7 @@ end
 
 local function BossEnter(self)
     local b = self.boss
-    if not b then
-        return
-    end
+    if not b then return end
     local pick = FinderCfg().bosses
     pick = type(pick) == "table" and pick[b.key]
     Finder.Tip(
@@ -3534,9 +3013,7 @@ local BOSS_PICKS = {
 local bossPick
 
 local function BossPickList()
-    if bossPick then
-        return bossPick
-    end
+    if bossPick then return bossPick end
     local entries = CreateFrame("Frame", nil, SP)
     entries:SetFrameStrata("FULLSCREEN_DIALOG")
     entries:SetFrameLevel(330)
@@ -3560,36 +3037,29 @@ local function BossPickList()
         local highlight = entry:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, CUI.DD_ITEM_HL_A or 0.08)
-        entry:SetScript("OnEnter", function(self)
-            Finder.Tip(self, p.tip)
-        end)
+        entry:SetScript("OnEnter", function(self) Finder.Tip(self, p.tip) end)
         entry:SetScript("OnLeave", Finder.Untip)
         entry:SetScript("OnClick", function()
             local skinData = entries.owner and entries.owner.boss
             entries:Hide()
-            if not skinData then
-                return
-            end
+            if not skinData then return end
             local cfg = FinderCfg()
-            if type(cfg.bosses) ~= "table" then
-                cfg.bosses = {}
-            end
+            if type(cfg.bosses) ~= "table" then cfg.bosses = {} end
             cfg.bosses[skinData.key] = p.value
             RunFilters()
             Paint()
         end)
         entries.rows[index] = entry
     end
-    Finder.ClickOff(entries, function(self)
-        return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver())
-    end)
+    Finder.ClickOff(
+        entries,
+        function(self) return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver()) end
+    )
     entries:SetScript("OnHide", Finder.Untip)
     entries:Hide()
     bossPick = entries
     -- a strip that scrolls takes the square away from its list
-    mod.ExtraHideBossPick = function()
-        entries:Hide()
-    end
+    mod.ExtraHideBossPick = function() entries:Hide() end
     return entries
 end
 
@@ -3634,9 +3104,7 @@ local function MakeBossSquare(hostFrame)
     end
     widget:SetScript("OnEnter", BossEnter)
     widget:SetScript("OnClick", function(self)
-        if self.boss then
-            OpenBossPick(self)
-        end
+        if self.boss then OpenBossPick(self) end
     end)
     return widget
 end
@@ -3644,18 +3112,14 @@ end
 local function LayoutBosses(px, after, show, cols, slots)
     local entries = {}
     for _, b in ipairs(bosses or {}) do
-        if RaidShown(b.raid) then
-            entries[#entries + 1] = b
-        end
+        if RaidShown(b.raid) then entries[#entries + 1] = b end
     end
     -- one scrolling line instead of a grid
     if mod.ExtraBossStrip then
         return mod.ExtraBossStrip(
             entries,
             bossSquares,
-            function()
-                return MakeBossSquare(line)
-            end,
+            function() return MakeBossSquare(line) end,
             px,
             after,
             show,
@@ -3663,9 +3127,7 @@ local function LayoutBosses(px, after, show, cols, slots)
             slots,
             line,
             SQ_GAP,
-            function()
-                Paint()
-            end
+            function() Paint() end
         )
     end
     for index = 1, math.max(#entries, #bossSquares) do
@@ -3713,9 +3175,7 @@ local function BuildRaidMenu()
         cfg.extraSeasonRaids = not Finder.SeasonOnly()
         if type(cfg.bosses) == "table" then
             for _, bo in ipairs(bosses or {}) do
-                if not RaidShown(bo.raid) then
-                    cfg.bosses[bo.key] = nil
-                end
+                if not RaidShown(bo.raid) then cfg.bosses[bo.key] = nil end
             end
         end
         mod.Search_Layout()
@@ -3732,27 +3192,19 @@ local function BuildRaidMenu()
         local joinId = raid.jid
         raidMenu.items[joinId] = MenuItem(raidMenu, posY, raid.name, function()
             local cfg = FinderCfg()
-            if type(cfg.raidsHidden) ~= "table" then
-                cfg.raidsHidden = {}
-            end
+            if type(cfg.raidsHidden) ~= "table" then cfg.raidsHidden = {} end
             if RaidShown(joinId) then
                 -- keep at least one raid ticked.
                 local isShown = 0
                 for _, o in ipairs(raidList or {}) do
-                    if RaidShown(o.jid) then
-                        isShown = isShown + 1
-                    end
+                    if RaidShown(o.jid) then isShown = isShown + 1 end
                 end
-                if isShown <= 1 then
-                    return
-                end
+                if isShown <= 1 then return end
             end
             cfg.raidsHidden[joinId] = (not cfg.raidsHidden[joinId]) or nil
             if cfg.raidsHidden[joinId] and type(cfg.bosses) == "table" then
                 for _, bo in ipairs(bosses or {}) do
-                    if bo.raid == joinId then
-                        cfg.bosses[bo.key] = nil
-                    end
+                    if bo.raid == joinId then cfg.bosses[bo.key] = nil end
                 end
             end
             mod.Search_Layout()
@@ -3774,16 +3226,15 @@ local function BuildRaidMenu()
     end)
     posY = posY + ITEM_H
     raidMenu:SetHeight(posY + 3)
-    Finder.ClickOff(raidMenu, function(menu)
-        return menu:IsMouseOver() or (raidBtn and raidBtn:IsMouseOver())
-    end)
+    Finder.ClickOff(
+        raidMenu,
+        function(menu) return menu:IsMouseOver() or (raidBtn and raidBtn:IsMouseOver()) end
+    )
     raidMenu:Hide()
 end
 
 local function PaintRaidMenu()
-    if not (raidMenu and raidMenu:IsShown()) then
-        return
-    end
+    if not (raidMenu and raidMenu:IsShown()) then return end
     for _, raid in ipairs(raidList or {}) do
         local entry = raidMenu.items[raid.jid]
         if entry then
@@ -3791,18 +3242,12 @@ local function PaintRaidMenu()
             entry:SetDimmed(not Finder.RaidEligible(raid.jid))
         end
     end
-    if raidMenu.items.season then
-        raidMenu.items.season:SetChecked(Finder.SeasonOnly())
-    end
-    if raidMenu.items.worldBosses then
-        raidMenu.items.worldBosses:SetChecked(not HideWorldBosses())
-    end
+    if raidMenu.items.season then raidMenu.items.season:SetChecked(Finder.SeasonOnly()) end
+    if raidMenu.items.worldBosses then raidMenu.items.worldBosses:SetChecked(not HideWorldBosses()) end
 end
 
 local function ToggleRaidMenu()
-    if not raidMenu then
-        BuildRaidMenu()
-    end
+    if not raidMenu then BuildRaidMenu() end
     if raidMenu:IsShown() then
         raidMenu:Hide()
         return
@@ -3832,9 +3277,7 @@ local function BuildTierMenu()
     end
     local function Tiers()
         local cfg = FinderCfg()
-        if type(cfg.delveTiers) ~= "table" then
-            cfg.delveTiers = {}
-        end
+        if type(cfg.delveTiers) ~= "table" then cfg.delveTiers = {} end
         return cfg.delveTiers
     end
     tierMenu.items = {}
@@ -3856,31 +3299,24 @@ local function BuildTierMenu()
             local tbl = Tiers()
             tbl[tier] = (not tbl[tier]) or nil
             local _, n = PickedTiers()
-            if n == MAX_TIER then
-                wipe(tbl)
-            end
+            if n == MAX_TIER then wipe(tbl) end
             RunFilters()
             Paint()
         end)
         posY = posY + ITEM_H
     end
     tierMenu:SetHeight(posY + 3)
-    tierMenu:SetScript("OnShow", function()
-        DimForMenu(true)
-    end)
-    tierMenu:SetScript("OnHide", function()
-        DimForMenu(false)
-    end)
-    Finder.ClickOff(tierMenu, function(menu)
-        return menu:IsMouseOver() or (tierBtn and tierBtn:IsMouseOver())
-    end)
+    tierMenu:SetScript("OnShow", function() DimForMenu(true) end)
+    tierMenu:SetScript("OnHide", function() DimForMenu(false) end)
+    Finder.ClickOff(
+        tierMenu,
+        function(menu) return menu:IsMouseOver() or (tierBtn and tierBtn:IsMouseOver()) end
+    )
     tierMenu:Hide()
 end
 
 local function PaintTierMenu()
-    if not (tierMenu and tierMenu:IsShown()) then
-        return
-    end
+    if not (tierMenu and tierMenu:IsShown()) then return end
     local chosen = PickedTiers()
     tierMenu.items.all:SetChecked(chosen == nil)
     for tier = 1, MAX_TIER do
@@ -3889,9 +3325,7 @@ local function PaintTierMenu()
 end
 
 local function ToggleTierMenu()
-    if not tierMenu then
-        BuildTierMenu()
-    end
+    if not tierMenu then BuildTierMenu() end
     if tierMenu:IsShown() then
         tierMenu:Hide()
         return
@@ -3911,21 +3345,15 @@ local function BuildRow()
     difficultyBtn:SetFrameLevel(SP:GetFrameLevel() + 5)
     difficultyBtn:SetScript("OnClick", ToggleMenu)
     difficultyBtn:SetScript("OnHide", function()
-        if dropMenu then
-            dropMenu:Hide()
-        end
-        if raidDiffMenu then
-            raidDiffMenu:Hide()
-        end
+        if dropMenu then dropMenu:Hide() end
+        if raidDiffMenu then raidDiffMenu:Hide() end
     end)
     difficultyBtn:SetScript("OnLeave", Finder.PaintLabel)
     tierBtn = DropButton(SP, DIFF_W, ROW1_H)
     tierBtn:SetFrameLevel(SP:GetFrameLevel() + 5)
     tierBtn:SetScript("OnClick", ToggleTierMenu)
     tierBtn:SetScript("OnHide", function()
-        if tierMenu then
-            tierMenu:Hide()
-        end
+        if tierMenu then tierMenu:Hide() end
     end)
     tierBtn:SetScript("OnLeave", Finder.PaintLabel)
 end
@@ -3941,13 +3369,9 @@ end
 
 -- repaint the filter row
 Paint = function()
-    if not SP then
-        return
-    end
+    if not SP then return end
     local frame = Finder.GetFilter()
-    if not frame then
-        return
-    end
+    if not frame then return end
     if difficultyBtn then
         local isActive
         if SP.categoryID == RAIDS then
@@ -3958,7 +3382,8 @@ Paint = function()
                 or DungeonRolesSet(frame)
                 or (frame.minimumRating or 0) ~= 0
         end
-        difficultyBtn.active = (isActive or RegionFilterActive() or Finder.ExtraFilterActive()) and true or false
+        difficultyBtn.active = (isActive or RegionFilterActive() or Finder.ExtraFilterActive()) and true
+            or false
         -- green edge while a filter's on, same as the expressions button
         if not difficultyBtn.activeEdge then
             local edge = CreateFrame("Frame", nil, difficultyBtn)
@@ -3978,9 +3403,7 @@ Paint = function()
             local textValue = CludesUI.Lf("Tier (%d)", n)
             if n == 1 then
                 for index = 1, MAX_TIER do
-                    if chosen[index] then
-                        textValue = Finder.TierLabel(index)
-                    end
+                    if chosen[index] then textValue = Finder.TierLabel(index) end
                 end
             end
             tierBtn:SetText(textValue)
@@ -4005,13 +3428,9 @@ Paint = function()
     if raidBtn then
         local hidden = false
         for _, raid in ipairs(raidList or Finder.EMPTY) do
-            if Finder.RaidEligible(raid.jid) and not RaidShown(raid.jid) then
-                hidden = true
-            end
+            if Finder.RaidEligible(raid.jid) and not RaidShown(raid.jid) then hidden = true end
         end
-        if HideWorldBosses() then
-            hidden = true
-        end
+        if HideWorldBosses() then hidden = true end
         if hidden then
             raidBtn.Glyph:SetVertexColor(AccentRGB())
         else
@@ -4064,9 +3483,7 @@ Paint = function()
             local success, val = pcall(callback)
             isDefault = (not success) or (val and true or false)
         end
-        if Finder.DimActive() then
-            isDefault = false
-        end
+        if Finder.DimActive() then isDefault = false end
         if
             RegionFilterActive()
             or DelveFilterActive()
@@ -4086,12 +3503,8 @@ end
 
 -- search again glyph: dim on cooldown, accent when filters changed.
 PaintRefresh = function()
-    if not refreshButton then
-        return
-    end
-    if refreshButton.cover then
-        refreshButton.cover:SetShown(GetTime() < cdUntil)
-    end
+    if not refreshButton then return end
+    if refreshButton.cover then refreshButton.cover:SetShown(GetTime() < cdUntil) end
     local g = refreshButton.Glyph
     if GetTime() < cdUntil then
         g:SetVertexColor(1, 1, 1)
@@ -4107,13 +3520,9 @@ end
 
 local function StartCooldown(sec)
     local nowTime = GetTime()
-    if nowTime + sec <= cdUntil then
-        return
-    end
+    if nowTime + sec <= cdUntil then return end
     cdUntil = nowTime + sec
-    if refreshButton and refreshButton.cd then
-        refreshButton.cd:SetCooldown(nowTime, sec)
-    end
+    if refreshButton and refreshButton.cd then refreshButton.cd:SetCooldown(nowTime, sec) end
     PaintRefresh()
     C_Timer.After(sec, PaintRefresh)
 end
@@ -4131,17 +3540,11 @@ mod.GFFilterFace = Finder.FilterFace
 
 -- blizzard's filter dropdown becomes our settings cog.
 local function CogFilterButton(button)
-    if not button or FFD[button] then
-        return
-    end
+    if not button or FFD[button] then return end
     local skinData = { size = BTN }
     FFD[button] = skinData
-    if button.Text then
-        button.Text:SetAlpha(0)
-    end
-    if button.Background then
-        button.Background:SetAlpha(0)
-    end
+    if button.Text then button.Text:SetAlpha(0) end
+    if button.Background then button.Background:SetAlpha(0) end
     -- our own fixed-size face. blizzard's button grows with its text and
     -- only shrinks out of combat, so the row anchors to this
     button:SetAlpha(0)
@@ -4166,9 +3569,7 @@ local function CogFilterButton(button)
     -- blizzard resizes it with its text; size it back (after combat if in it).
     hooksecurefunc(button, "UpdateText", function(self)
         local frameData = FFD[self]
-        if not frameData then
-            return
-        end
+        if not frameData then return end
         if InCombatLockdown() then
             Finder.Defer("layout", Finder.Layout)
             return
@@ -4218,35 +3619,17 @@ local function CogFilterButton(button)
         end
         frame.activities = AllDungeonGroups()
         local cfg = FinderCfg()
-        if type(cfg.regions) == "table" then
-            wipe(cfg.regions)
-        end
-        if type(cfg.delves) == "table" then
-            wipe(cfg.delves)
-        end
-        if type(cfg.delveTiers) == "table" then
-            wipe(cfg.delveTiers)
-        end
-        if type(cfg.bosses) == "table" then
-            wipe(cfg.bosses)
-        end
-        if type(cfg.raidDiffs) == "table" then
-            wipe(cfg.raidDiffs)
-        end
-        if type(cfg.raidPlaystyles) == "table" then
-            wipe(cfg.raidPlaystyles)
-        end
-        if type(cfg.raidRoles) == "table" then
-            wipe(cfg.raidRoles)
-        end
+        if type(cfg.regions) == "table" then wipe(cfg.regions) end
+        if type(cfg.delves) == "table" then wipe(cfg.delves) end
+        if type(cfg.delveTiers) == "table" then wipe(cfg.delveTiers) end
+        if type(cfg.bosses) == "table" then wipe(cfg.bosses) end
+        if type(cfg.raidDiffs) == "table" then wipe(cfg.raidDiffs) end
+        if type(cfg.raidPlaystyles) == "table" then wipe(cfg.raidPlaystyles) end
+        if type(cfg.raidRoles) == "table" then wipe(cfg.raidRoles) end
         cfg.partyFit, cfg.notDeclined, cfg.hasLust, cfg.hasBrez = nil, nil, nil, nil
         cfg.extraMyClass, cfg.raidMyClass = nil, nil
-        if mod.ExtraExprReset then
-            mod.ExtraExprReset()
-        end
-        if type(cfg.roleCounts) == "table" then
-            wipe(cfg.roleCounts)
-        end
+        if mod.ExtraExprReset then mod.ExtraExprReset() end
+        if type(cfg.roleCounts) == "table" then wipe(cfg.roleCounts) end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Apply(frame)
         RunFilters()
@@ -4264,9 +3647,7 @@ end
 -- short dungeon name ('Altar of Fangs' -> AoF)
 Finder.SMALL_WORDS = { of = true, the = true, ["and"] = true, to = true, ["in"] = true, on = true, at = true }
 function Finder.Abbr(label)
-    if type(label) ~= "string" then
-        return ""
-    end
+    if type(label) ~= "string" then return "" end
     label = label:match("^([^,:]+)") or label
     local result = {}
     for word in label:gmatch("[^%s%-]+") do
@@ -4282,25 +3663,17 @@ function Finder.Abbr(label)
         end
     end
     local abbr = table.concat(result)
-    if abbr == "" then
-        abbr = Abbrev(label)
-    end
-    if abbr == "" then
-        abbr = label
-    end
+    if abbr == "" then abbr = Abbrev(label) end
+    if abbr == "" then abbr = label end
     local shade = CludesUI._dungeonAbbrevOverride
-    if shade and shade[abbr] then
-        abbr = shade[abbr]
-    end
+    if shade and shade[abbr] then abbr = shade[abbr] end
     return abbr
 end
 
 -- the season's portal label when it's a seasonal dungeon, else initials
 local portalShort, portalsDone
 function Finder.ShortName(label)
-    if type(label) ~= "string" or SecretVal(label) then
-        return ""
-    end
+    if type(label) ~= "string" or SecretVal(label) then return "" end
     if not portalsDone then
         -- dungeon names can be missing right after login, so keep asking until they're all in
         portalShort, portalsDone = {}, true
@@ -4343,9 +3716,7 @@ function Finder.SquareAbbr(square, skinData, px)
         square.abbr:SetJustifyH("CENTER")
         square.abbr:SetWordWrap(false)
     end
-    if not square.abbr then
-        return
-    end
+    if not square.abbr then return end
     if isOn then
         square.abbr:ClearAllPoints()
         if FinderCfg().dungeonScore == true then
@@ -4363,7 +3734,8 @@ function Finder.SquareAbbr(square, skinData, px)
         square.abbr:SetText(Finder.ShortName(skinData.name))
         while
             fontStr > 8
-            and ((square.abbr.GetUnboundedStringWidth and square.abbr:GetUnboundedStringWidth()) or 0) > px - 4
+            and ((square.abbr.GetUnboundedStringWidth and square.abbr:GetUnboundedStringWidth()) or 0)
+                > px - 4
         do
             fontStr = fontStr - 1
             Finder.Font(square.abbr, fontStr, "OUTLINE")
@@ -4379,21 +3751,15 @@ function Finder.SquareScore(square, skinData, px)
     if FinderCfg().dungeonScore == true and skinData ~= nil then
         local intime, overtime = C_MythicPlus.GetSeasonBestForMap(skinData.cmID)
         best = intime
-        if overtime and (not best or overtime.dungeonScore >= best.dungeonScore) then
-            best = overtime
-        end
-        if best and best.level <= 0 then
-            best = nil
-        end
+        if overtime and (not best or overtime.dungeonScore >= best.dungeonScore) then best = overtime end
+        if best and best.level <= 0 then best = nil end
     end
     if best and not square.score then
         square.score = Finder.SquareOverlay(square):CreateFontString(nil, "OVERLAY")
         square.score:SetWordWrap(false)
     end
     local fontStr = square.score
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     if best then
         local _, overall = C_MythicPlus.GetSeasonBestAffixScoreInfoForMap(skinData.cmID)
         local color = C_ChallengeMode.GetSpecificDungeonOverallScoreRarityColor(overall or best.dungeonScore)
@@ -4449,21 +3815,15 @@ function Finder.ButtonFont()
     if fontStr then
         filePath, px, flags = fontStr:GetFont()
     end
-    if not filePath then
-        return nil
-    end
-    if not gfFont then
-        gfFont = CreateFont("CUIGroupFinderButtonFont")
-    end
+    if not filePath then return nil end
+    if not gfFont then gfFont = CreateFont("CUIGroupFinderButtonFont") end
     gfFont:SetFont(filePath, math.max(8, px - 1), flags or "")
     gfFont:SetTextColor(1, 1, 1)
     return gfFont
 end
 
 local function MatchButtonFont(checkBox)
-    if not Finder.ButtonFont() then
-        return
-    end
+    if not Finder.ButtonFont() then return end
     difficultyBtn:SetNormalFontObject(gfFont)
     difficultyBtn:SetHighlightFontObject(gfFont)
     tierBtn:SetNormalFontObject(gfFont)
@@ -4481,9 +3841,7 @@ end
 function mod.Search_Rows()
     local padding = tonumber(FinderCfg().padding) or 12
     local wid = SP and SP:GetWidth()
-    if not wid or wid < 100 then
-        wid = 338
-    end
+    if not wid or wid < 100 then wid = 338 end
     local entries = Finder.Dungeons()
     local n = (entries and #entries > 0) and #entries or 8
     return ROW1_Y, ROW2_Y, math.max(18, (wid - padding * 2 - (n + 1) * SQ_GAP) / (n + 2)), ROW1_H
@@ -4491,9 +3849,7 @@ end
 
 -- lays the panel out. blizzard's frames only move out of combat
 local function LayoutPanel()
-    if not (SP and SP:IsVisible()) then
-        return
-    end
+    if not (SP and SP:IsVisible()) then return end
     if InCombatLockdown() then
         Finder.Defer("layout", Finder.Layout)
         Paint()
@@ -4506,9 +3862,7 @@ local function LayoutPanel()
     local showDiff = SP.categoryID == DUNGEONS or SP.categoryID == RAIDS
     local showDelves = SP.categoryID == DELVES
     local showBosses = RaidsCurrent()
-    if not line then
-        BuildRow()
-    end
+    if not line then BuildRow() end
     local entries = Finder.Dungeons()
     if showDelves then
         if not delves then
@@ -4527,9 +3881,7 @@ local function LayoutPanel()
 
     -- row 1: search box, filters, search again.
     local filter, checkBox, title = SP.FilterButton, SP.SearchBox, SP.CategoryName
-    if title then
-        title:SetAlpha(0)
-    end
+    if title then title:SetAlpha(0) end
     if not refreshButton then
         local refreshBtn = SP.RefreshButton
         refreshButton = GlyphButton(SP, ROW1_H, "UI-RefreshButton", true)
@@ -4540,15 +3892,9 @@ local function LayoutPanel()
         local cd = CreateFrame("Cooldown", nil, refreshButton, "CooldownFrameTemplate")
         cd:SetPoint("TOPLEFT", refreshButton, "TOPLEFT", px, -px)
         cd:SetPoint("BOTTOMRIGHT", refreshButton, "BOTTOMRIGHT", -px, px)
-        if cd.SetDrawEdge then
-            cd:SetDrawEdge(false)
-        end
-        if cd.SetHideCountdownNumbers then
-            cd:SetHideCountdownNumbers(true)
-        end
-        if cd.SetSwipeColor then
-            cd:SetSwipeColor(0, 0, 0, 0.65)
-        end
+        if cd.SetDrawEdge then cd:SetDrawEdge(false) end
+        if cd.SetHideCountdownNumbers then cd:SetHideCountdownNumbers(true) end
+        if cd.SetSwipeColor then cd:SetSwipeColor(0, 0, 0, 0.65) end
         refreshButton.cd = cd
         local function Tip(ownerFrame)
             refreshButton.hover = true
@@ -4592,38 +3938,41 @@ local function LayoutPanel()
     -- a button left of refresh; row 1 ends at it
     local row1End = refreshButton
     if mod.ExtraExprButton then
-        row1End = mod.ExtraExprButton(SP, refreshButton, SP.categoryID == DUNGEONS or SP.categoryID == RAIDS, {
-            GlyphButton = GlyphButton,
-            ROW1_H = ROW1_H,
-            GAP = SQ_GAP,
-            Refilter = RunFilters,
-            Tip = Finder.Tip,
-            Untip = Finder.Untip,
-            ClickOff = Finder.ClickOff,
-            Font = Finder.Font,
-            ThemeFill = ThemeFill,
-            ThemeBorder = ThemeBorder,
-            Accent = AccentRGB,
-            GLYPH = Finder.GLYPH,
-            Dim = DimForMenu,
-            Filters = difficultyBtn,
-            DIM_ALPHA = Finder.DIM_ALPHA,
-            FiltersOpen = function()
-                return (dropMenu and dropMenu:IsShown()) or (raidDiffMenu and raidDiffMenu:IsShown()) or false
-            end,
-        }) or refreshButton
+        row1End = mod.ExtraExprButton(
+            SP,
+            refreshButton,
+            SP.categoryID == DUNGEONS or SP.categoryID == RAIDS,
+            {
+                GlyphButton = GlyphButton,
+                ROW1_H = ROW1_H,
+                GAP = SQ_GAP,
+                Refilter = RunFilters,
+                Tip = Finder.Tip,
+                Untip = Finder.Untip,
+                ClickOff = Finder.ClickOff,
+                Font = Finder.Font,
+                ThemeFill = ThemeFill,
+                ThemeBorder = ThemeBorder,
+                Accent = AccentRGB,
+                GLYPH = Finder.GLYPH,
+                Dim = DimForMenu,
+                Filters = difficultyBtn,
+                DIM_ALPHA = Finder.DIM_ALPHA,
+                FiltersOpen = function()
+                    return (dropMenu and dropMenu:IsShown())
+                        or (raidDiffMenu and raidDiffMenu:IsShown())
+                        or false
+                end,
+            }
+        ) or refreshButton
     end
     difficultyBtn:ClearAllPoints()
     difficultyBtn:SetPoint("RIGHT", row1End, "LEFT", -SQ_GAP, 0)
     difficultyBtn:SetShown(showDiff)
     if not showDiff or SP.categoryID ~= RAIDS then
-        if raidDiffMenu then
-            raidDiffMenu:Hide()
-        end
+        if raidDiffMenu then raidDiffMenu:Hide() end
     end
-    if SP.categoryID ~= DUNGEONS and dropMenu then
-        dropMenu:Hide()
-    end
+    if SP.categoryID ~= DUNGEONS and dropMenu then dropMenu:Hide() end
     tierBtn:ClearAllPoints()
     tierBtn:SetPoint("RIGHT", row1End, "LEFT", -SQ_GAP, 0)
     tierBtn:SetShown(showDelves)
@@ -4685,9 +4034,7 @@ local function LayoutPanel()
         raidBtn = GlyphButton(line, BTN, mod.ExtraRaidTex)
         raidBtn:SetScript("OnClick", ToggleRaidMenu)
         raidBtn:SetScript("OnHide", function()
-            if raidMenu then
-                raidMenu:Hide()
-            end
+            if raidMenu then raidMenu:Hide() end
         end)
         raidBtn:SetScript("OnEnter", function(self)
             self.Glyph:SetAlpha(1)
@@ -4744,21 +4091,15 @@ function Finder.PanelShown()
     Finder.RestoreCharFilter()
     if not Finder.mapInfoAsked then
         Finder.mapInfoAsked = true
-        if C_MythicPlus and C_MythicPlus.RequestMapInfo then
-            C_MythicPlus.RequestMapInfo()
-        end
+        if C_MythicPlus and C_MythicPlus.RequestMapInfo then C_MythicPlus.RequestMapInfo() end
     end
     LayoutPanel()
 end
 
 -- bottom row: the buttons split the width.
 local function PinBottomButtons(panelFrame, lefts, right)
-    if not panelFrame or InCombatLockdown() then
-        return
-    end
-    if type(lefts) ~= "table" then
-        lefts = { lefts }
-    end
+    if not panelFrame or InCombatLockdown() then return end
+    if type(lefts) ~= "table" then lefts = { lefts } end
     local padding = tonumber(FinderCfg().padding) or 12
     local x0 = padding
     local pw = panelFrame:GetWidth()
@@ -4768,18 +4109,14 @@ local function PinBottomButtons(panelFrame, lefts, right)
         if type(widget) == "table" then
             widget:ClearAllPoints()
             widget:SetPoint("BOTTOMLEFT", panelFrame, "BOTTOMLEFT", x0, BOTTOM_Y)
-            if wid then
-                widget:SetWidth(wid)
-            end
+            if wid then widget:SetWidth(wid) end
         end
     end
     local rb = panelFrame[right]
     if type(rb) == "table" then
         rb:ClearAllPoints()
         rb:SetPoint("BOTTOMRIGHT", panelFrame, "BOTTOMRIGHT", -padding, BOTTOM_Y)
-        if wid then
-            rb:SetWidth(wid)
-        end
+        if wid then rb:SetWidth(wid) end
     end
 end
 Finder.PinBottomButtons = PinBottomButtons
@@ -4792,9 +4129,7 @@ local function LayoutCategoryList()
     end
     local CS = LFGListFrame and LFGListFrame.CategorySelection
     local cfg = FinderCfg()
-    if not (CS and type(CS.CategoryButtons) == "table") then
-        return
-    end
+    if not (CS and type(CS.CategoryButtons) == "table") then return end
     local padding = tonumber(cfg.padding) or 12
     for index, btn in ipairs(CS.CategoryButtons) do
         btn:ClearAllPoints()
@@ -4824,9 +4159,7 @@ end
 
 -- blizzard dropdown in our filters button look.
 local function StyleEntryDropdown(dropdown)
-    if not dropdown then
-        return
-    end
+    if not dropdown then return end
     SetBorderColor(dropdown, ThemeBorder())
     local labelText = dropdown.Text
     local font = gfFont or Finder.ButtonFont()
@@ -4872,14 +4205,10 @@ local function LayoutEntryFields()
     end
     local EntryCreate = LFGListFrame and LFGListFrame.EntryCreation
     local cfg = FinderCfg()
-    if not EntryCreate then
-        return
-    end
+    if not EntryCreate then return end
     local padding = tonumber(cfg.padding) or 12
     local W = EntryCreate:GetWidth()
-    if type(W) ~= "number" or W <= 0 then
-        return
-    end
+    if type(W) ~= "number" or W <= 0 then return end
     local inner = W - padding * 2
     local set, activity = EntryCreate.GroupDropdown, EntryCreate.ActivityDropdown
     if set then
@@ -4911,9 +4240,7 @@ local function LayoutEntryFields()
         desc:ClearAllPoints()
         desc:SetPoint("TOPLEFT", descLabel, "BOTTOMLEFT", 0, -10)
         desc:SetPoint("TOPRIGHT", descLabel, "BOTTOMLEFT", inner, -10)
-        if desc.EditBox then
-            desc.EditBox:SetWidth(inner - 18)
-        end
+        if desc.EditBox then desc.EditBox:SetWidth(inner - 18) end
     end
     local TXT_X, TXT_Y = Finder.TXT_X, Finder.TXT_Y
     if label and label.SetTextInsets then
@@ -4936,13 +4263,9 @@ local function LayoutEntryFields()
     end
     -- shorter placeholders (voice chat says discord).
     local vc = EntryCreate.VoiceChat and EntryCreate.VoiceChat.EditBox
-    if vc and type(vc.Instructions) == "table" then
-        vc.Instructions:SetText("Discord")
-    end
+    if vc and type(vc.Instructions) == "table" then vc.Instructions:SetText("Discord") end
     local il = EntryCreate.ItemLevel and EntryCreate.ItemLevel.EditBox
-    if il and type(il.Instructions) == "table" then
-        il.Instructions:SetAlpha(0)
-    end
+    if il and type(il.Instructions) == "table" then il.Instructions:SetAlpha(0) end
     local style = EntryCreate.PlayStyleDropdown
     if style and desc then
         style:ClearAllPoints()
@@ -4961,9 +4284,7 @@ end
 
 -- the switch's width, or blizzard's check box with the skin off
 function Finder.CheckW(callback)
-    if Finder.SkinOn() then
-        return 30
-    end
+    if Finder.SkinOn() then return 30 end
     local wid = callback:GetWidth()
     return (type(wid) == "number" and wid > 0) and wid or 22
 end
@@ -4978,9 +4299,7 @@ function Finder.AlignEntryRows()
     local EntryCreate = LFGListFrame and LFGListFrame.EntryCreation
     local style = EntryCreate and EntryCreate.PlayStyleDropdown
     local sr = style and style:GetRight()
-    if not sr then
-        return
-    end
+    if not sr then return end
     local TXT_X = Finder.TXT_X
     local lg = EntryCreate.ListGroupButton
     local bw = type(lg) == "table" and lg:GetWidth()
@@ -4993,9 +4312,7 @@ function Finder.AlignEntryRows()
             checkBox:ClearAllPoints()
             checkBox:SetPoint("RIGHT", line, "RIGHT", off, 0)
             checkBox:SetWidth((type(bw) == "number" and bw > 0) and bw or (125 + 5 + off))
-            if checkBox.SetTextInsets then
-                pcall(checkBox.SetTextInsets, checkBox, TXT_X, TXT_X, 0, 0)
-            end
+            if checkBox.SetTextInsets then pcall(checkBox.SetTextInsets, checkBox, TXT_X, TXT_X, 0, 0) end
             local ins = checkBox.Instructions
             if type(ins) == "table" then
                 ins:ClearAllPoints()
@@ -5042,17 +4359,13 @@ local SW_W, SW_H, SW_PAD = 30, 16, 2
 -- returns nil, true.
 local function CheckedState(callback)
     local val = callback:GetChecked()
-    if SecretVal(val) then
-        return nil, true
-    end
+    if SecretVal(val) then return nil, true end
     return val and true or false, false
 end
 
 local function PaintSwitch(callback)
     local skinData = FFD[callback]
-    if not skinData then
-        return
-    end
+    if not skinData then return end
     local raw = callback:GetChecked()
     local enabled = callback:IsEnabled()
     local swatchBtn = skinData.switch
@@ -5075,30 +4388,20 @@ local function PaintSwitch(callback)
     swatchBtn:SetAlpha(enabled and 1 or 0.4)
     local line = skinData.row
     local dim = (isOn and enabled) and 1 or 0.45
-    if line and line.Label then
-        line.Label:SetAlpha(dim)
-    end
+    if line and line.Label then line.Label:SetAlpha(dim) end
     local checkBox = line and line.EditBox
     if checkBox then
         checkBox:SetAlpha(dim)
         -- no typing while it's off.
-        if not (isOn and enabled) and checkBox.HasFocus and checkBox:HasFocus() then
-            checkBox:ClearFocus()
-        end
-        if checkBox.SetEnabled then
-            checkBox:SetEnabled(isOn and enabled)
-        end
+        if not (isOn and enabled) and checkBox.HasFocus and checkBox:HasFocus() then checkBox:ClearFocus() end
+        if checkBox.SetEnabled then checkBox:SetEnabled(isOn and enabled) end
     end
 end
 
 local function SwitchCheckbox(line)
-    if type(line) ~= "table" then
-        return
-    end
+    if type(line) ~= "table" then return end
     local callback = line.CheckButton
-    if type(callback) ~= "table" then
-        return
-    end
+    if type(callback) ~= "table" then return end
     if not FFD[callback] then
         local skinData = { row = line }
         FFD[callback] = skinData
@@ -5134,39 +4437,34 @@ local function SwitchCheckbox(line)
             if frameData then
                 -- don't remember secret values.
                 local nowTime = nil
-                if not SecretVal(val) then
-                    nowTime = val and true or false
-                end
+                if not SecretVal(val) then nowTime = val and true or false end
                 frameData.prevOn, frameData.curOn, frameData.setAt = frameData.curOn, nowTime, GetTime()
             end
             PaintSwitch(self)
         end)
-        if callback.SetEnabled then
-            hooksecurefunc(callback, "SetEnabled", PaintSwitch)
-        end
+        if callback.SetEnabled then hooksecurefunc(callback, "SetEnabled", PaintSwitch) end
         callback:HookScript("OnClick", function(self)
             local frameData = FFD[self]
             local isOn = CheckedState(self)
-            if frameData then
-                frameData.curOn = isOn
-            end
+            if frameData then frameData.curOn = isOn end
             PaintSwitch(self)
             -- blizzard focuses the box before we enable it.
             local checkBox = frameData and frameData.row and frameData.row.EditBox
-            if checkBox and isOn and checkBox.SetFocus then
-                checkBox:SetFocus()
-            end
+            if checkBox and isOn and checkBox.SetFocus then checkBox:SetFocus() end
         end)
         if line.EditBox and line.EditBox.HookScript then
             -- blizzard re-enables these, so refuse focus while off
             line.EditBox:HookScript("OnEditFocusGained", function(checkBox)
-                if CheckedState(callback) == false then
-                    checkBox:ClearFocus()
-                end
+                if CheckedState(callback) == false then checkBox:ClearFocus() end
             end)
             if line.EditBox.SetEnabled then
                 hooksecurefunc(line.EditBox, "SetEnabled", function(checkBox, val)
-                    if not SecretVal(val) and val and CheckedState(callback) == false and not FFD[callback].reEnable then
+                    if
+                        not SecretVal(val)
+                        and val
+                        and CheckedState(callback) == false
+                        and not FFD[callback].reEnable
+                    then
                         FFD[callback].reEnable = true
                         checkBox:SetEnabled(false)
                         FFD[callback].reEnable = nil
@@ -5175,7 +4473,12 @@ local function SwitchCheckbox(line)
             end
             line.EditBox:HookScript("OnEditFocusLost", function()
                 local frameData = FFD[callback]
-                if frameData and frameData.prevOn and frameData.curOn == false and frameData.setAt == GetTime() then
+                if
+                    frameData
+                    and frameData.prevOn
+                    and frameData.curOn == false
+                    and frameData.setAt == GetTime()
+                then
                     callback:SetChecked(true)
                 end
             end)
@@ -5191,9 +4494,7 @@ local function LayoutEntrySwitches()
         return
     end
     local EntryCreate = LFGListFrame and LFGListFrame.EntryCreation
-    if not EntryCreate or not Finder.SkinOn() then
-        return
-    end
+    if not EntryCreate or not Finder.SkinOn() then return end
     for _, key in ipairs(Finder.ENTRY_SWITCH_ROWS) do
         SwitchCheckbox(EntryCreate[key])
     end
@@ -5215,11 +4516,10 @@ local function LayoutViewerButtons(AppViewer)
     local padding = tonumber(FinderCfg().padding) or 12
     local x0 = padding
     local pw = AppViewer:GetWidth()
-    if not (type(pw) == "number" and pw > 0) then
-        return
-    end
+    if not (type(pw) == "number" and pw > 0) then return end
     local wid = (pw - padding - x0 - SQ_GAP * 2) / 3
-    local browse, delist, edit = AppViewer.BrowseGroupsButton, AppViewer.RemoveEntryButton, AppViewer.EditButton
+    local browse, delist, edit =
+        AppViewer.BrowseGroupsButton, AppViewer.RemoveEntryButton, AppViewer.EditButton
     browse:ClearAllPoints()
     browse:SetPoint("BOTTOMLEFT", AppViewer, "BOTTOMLEFT", x0, BOTTOM_Y)
     browse:SetWidth(wid)
@@ -5243,18 +4543,10 @@ local function LayoutViewerRefresh(AppViewer)
         local cd = CreateFrame("Cooldown", nil, lookName, "CooldownFrameTemplate")
         cd:SetPoint("TOPLEFT", lookName, "TOPLEFT", px, -px)
         cd:SetPoint("BOTTOMRIGHT", lookName, "BOTTOMRIGHT", -px, px)
-        if cd.SetDrawEdge then
-            cd:SetDrawEdge(false)
-        end
-        if cd.SetHideCountdownNumbers then
-            cd:SetHideCountdownNumbers(true)
-        end
-        if cd.SetSwipeColor then
-            cd:SetSwipeColor(0, 0, 0, 0.65)
-        end
-        refreshBtn:HookScript("OnClick", function()
-            cd:SetCooldown(GetTime(), 1)
-        end)
+        if cd.SetDrawEdge then cd:SetDrawEdge(false) end
+        if cd.SetHideCountdownNumbers then cd:SetHideCountdownNumbers(true) end
+        if cd.SetSwipeColor then cd:SetSwipeColor(0, 0, 0, 0.65) end
+        refreshBtn:HookScript("OnClick", function() cd:SetCooldown(GetTime(), 1) end)
         refreshBtn:SetAlpha(0)
         refreshBtn:HookScript("OnEnter", function()
             lookName:LockHighlight()
@@ -5273,7 +4565,13 @@ local function LayoutViewerRefresh(AppViewer)
     local ar, ir = AppViewer:GetRight(), AppViewer.Inset:GetRight()
     lookName:ClearAllPoints()
     -- 3 in from the rows' edge, over the decline buttons
-    lookName:SetPoint("BOTTOMRIGHT", AppViewer.Inset, "TOPRIGHT", (ar and ir) and (ar - ir - padding - 3) or 0, 0)
+    lookName:SetPoint(
+        "BOTTOMRIGHT",
+        AppViewer.Inset,
+        "TOPRIGHT",
+        (ar and ir) and (ar - ir - padding - 3) or 0,
+        0
+    )
     refreshBtn:ClearAllPoints()
     refreshBtn:SetAllPoints(lookName)
     refreshBtn:SetFrameLevel(lookName:GetFrameLevel() + 4)
@@ -5281,9 +4579,7 @@ end
 
 -- own list off: back to blizzard's layout
 local function RestoreViewer(AppViewer)
-    if not Finder.viewerLaid then
-        return
-    end
+    if not Finder.viewerLaid then return end
     Finder.viewerLaid = nil
     AppViewer.BrowseGroupsButton:ClearAllPoints()
     AppViewer.BrowseGroupsButton:SetPoint("BOTTOMLEFT", AppViewer, "BOTTOMLEFT", -3, 4)
@@ -5308,9 +4604,7 @@ end
 
 local function LayoutViewer()
     local AppViewer = LFGListFrame and LFGListFrame.ApplicationViewer
-    if not (AppViewer and AppViewer:IsVisible()) then
-        return
-    end
+    if not (AppViewer and AppViewer:IsVisible()) then return end
     if InCombatLockdown() then
         Finder.Defer("viewerLayout", LayoutViewer)
         return
@@ -5330,14 +4624,10 @@ mod.LayoutViewer = LayoutViewer
 -------------------------------------------------------------------------------
 local function Init()
     SP = LFGListFrame and LFGListFrame.SearchPanel
-    if not SP then
-        return
-    end
+    if not SP then return end
     -- the picks come back when premade groups first opens, before "find group"
     -- runs its first search (and again on the search panel's show, XF.PanelShown)
-    if LFGListFrame:IsVisible() then
-        Finder.RestoreCharFilter()
-    end
+    if LFGListFrame:IsVisible() then Finder.RestoreCharFilter() end
     LFGListFrame:HookScript("OnShow", Finder.RestoreCharFilter)
     SP:HookScript("OnShow", Finder.PanelShown)
     local CS = LFGListFrame.CategorySelection
@@ -5346,9 +4636,7 @@ local function Init()
         if LFGListCategorySelection_AddButton then
             hooksecurefunc("LFGListCategorySelection_AddButton", LayoutCategoryList)
         end
-        if CS:IsShown() then
-            LayoutCategoryButtons()
-        end
+        if CS:IsShown() then LayoutCategoryButtons() end
     end
     local EntryCreate = LFGListFrame.EntryCreation
     if EntryCreate then
@@ -5361,9 +4649,7 @@ local function Init()
                 end
             end)
         end
-        if EntryCreate:IsShown() then
-            LayoutEntryButtons()
-        end
+        if EntryCreate:IsShown() then LayoutEntryButtons() end
     end
     local AppViewer = LFGListFrame.ApplicationViewer
     if
@@ -5389,37 +4675,27 @@ local function Init()
     -- remember results for the new-group color
     hooksecurefunc("LFGListSearchPanel_UpdateResultList", function()
         local res = SP.results
-        if SP.searching or type(res) ~= "table" or not SP:IsVisible() then
-            return
-        end
+        if SP.searching or type(res) ~= "table" or not SP:IsVisible() then return end
         for index = 1, #res do
             local ident = res[index]
-            if not SecretVal(ident) then
-                seenResults[ident] = true
-            end
+            if not SecretVal(ident) then seenResults[ident] = true end
         end
     end)
     if LFGListUtil_SetSearchEntryTooltip then
         hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", AddClassesByRole)
         hooksecurefunc("LFGListUtil_SetSearchEntryTooltip", Finder.CancelHint)
     end
-    if LFGListSearchEntry_Update then
-        hooksecurefunc("LFGListSearchEntry_Update", DecorateEntry)
-    end
+    if LFGListSearchEntry_Update then hooksecurefunc("LFGListSearchEntry_Update", DecorateEntry) end
     -- every search clears the changed hint and starts the sweep
     hooksecurefunc("LFGListSearchPanel_DoSearch", function()
         -- previous search, same category only.
         prevResults = (prevCategory == SP.categoryID) and seenResults or nil
         prevCategory = SP.categoryID
         seenResults = {}
-        if Finder.filterRestored then
-            Finder.Remember(C_LFGList.GetAdvancedFilter())
-        end
+        if Finder.filterRestored then Finder.Remember(C_LFGList.GetAdvancedFilter()) end
         pending = false
         StartCooldown(CD_SEARCH)
-        if SP:IsVisible() then
-            Paint()
-        end
+        if SP:IsVisible() then Paint() end
     end)
     local eventFrame = CreateFrame("Frame")
     eventFrame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")

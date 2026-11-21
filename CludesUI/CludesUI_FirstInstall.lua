@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_FirstInstall.lua
 --
@@ -17,9 +15,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 
 -- Standalone builds bundle this file too, but the multi-module picker is
 -- meaningless there: its GROUPS reference suite sibling addons (Action Bars,
@@ -103,17 +99,13 @@ do
     for _, set in ipairs(GROUPS) do
         for idx = #set.entries, 1, -1 do
             local addon = set.entries[idx].addon
-            if addon and hidden[addon] then
-                table.remove(set.entries, idx)
-            end
+            if addon and hidden[addon] then table.remove(set.entries, idx) end
         end
     end
 end
 
 local function IsAddonEnabled(folder)
-    if not folder then
-        return true
-    end
+    if not folder then return true end
     if C_AddOns and C_AddOns.GetAddOnEnableState then
         local char = UnitName("player")
         return (C_AddOns.GetAddOnEnableState(folder, char) or 0) > 0
@@ -122,17 +114,11 @@ local function IsAddonEnabled(folder)
 end
 
 local function SetAddonEnabled(folder, enabled)
-    if not folder or not C_AddOns then
-        return
-    end
+    if not folder or not C_AddOns then return end
     if enabled then
-        if C_AddOns.EnableAddOn then
-            C_AddOns.EnableAddOn(folder)
-        end
+        if C_AddOns.EnableAddOn then C_AddOns.EnableAddOn(folder) end
     else
-        if C_AddOns.DisableAddOn then
-            C_AddOns.DisableAddOn(folder)
-        end
+        if C_AddOns.DisableAddOn then C_AddOns.DisableAddOn(folder) end
     end
 end
 
@@ -155,9 +141,7 @@ local function ShowFirstInstallPopup()
     -- Compute popup height from the tallest group
     local tallestRows = 0
     for _, group in ipairs(GROUPS) do
-        if #group.entries > tallestRows then
-            tallestRows = #group.entries
-        end
+        if #group.entries > tallestRows then tallestRows = #group.entries end
     end
     local contentH = HEADER_H + HEADER_PAD + tallestRows * ROW_H
     local POPUP_H = CONTENT_TOP + contentH + 110 -- room for links + button
@@ -271,12 +255,8 @@ local function ShowFirstInstallPopup()
     checkAllLbl:SetPoint("CENTER")
     checkAllBtn:SetSize(checkAllLbl:GetStringWidth() + 4, 20)
     Pix.Point(checkAllBtn, "TOPLEFT", dialog, "TOPLEFT", CONTENT_LEFT, LINK_Y)
-    checkAllBtn:SetScript("OnEnter", function()
-        checkAllLbl:SetTextColor(1, 1, 1, 0.80)
-    end)
-    checkAllBtn:SetScript("OnLeave", function()
-        checkAllLbl:SetTextColor(1, 1, 1, 0.45)
-    end)
+    checkAllBtn:SetScript("OnEnter", function() checkAllLbl:SetTextColor(1, 1, 1, 0.80) end)
+    checkAllBtn:SetScript("OnLeave", function() checkAllLbl:SetTextColor(1, 1, 1, 0.45) end)
 
     local linkDivider = dialog:CreateTexture(nil, "OVERLAY", nil, 7)
     linkDivider:SetColorTexture(1, 1, 1, 0.18)
@@ -297,12 +277,8 @@ local function ShowFirstInstallPopup()
     uncheckAllLbl:SetPoint("CENTER")
     uncheckAllBtn:SetSize(uncheckAllLbl:GetStringWidth() + 4, 20)
     Pix.Point(uncheckAllBtn, "LEFT", checkAllBtn, "RIGHT", LINK_GAP, 0)
-    uncheckAllBtn:SetScript("OnEnter", function()
-        uncheckAllLbl:SetTextColor(1, 1, 1, 0.80)
-    end)
-    uncheckAllBtn:SetScript("OnLeave", function()
-        uncheckAllLbl:SetTextColor(1, 1, 1, 0.45)
-    end)
+    uncheckAllBtn:SetScript("OnEnter", function() uncheckAllLbl:SetTextColor(1, 1, 1, 0.80) end)
+    uncheckAllBtn:SetScript("OnLeave", function() uncheckAllLbl:SetTextColor(1, 1, 1, 0.45) end)
 
     -- Track all checkbox rows for check-all / uncheck-all
     local allRows = {}
@@ -395,9 +371,7 @@ local function ShowFirstInstallPopup()
             UpdateVisual(row)
 
             row:SetScript("OnClick", function(self)
-                if self._informational then
-                    return
-                end
+                if self._informational then return end
                 self._checked = not self._checked
                 UpdateVisual(self)
             end)
@@ -410,9 +384,7 @@ local function ShowFirstInstallPopup()
             end)
             row:SetScript("OnLeave", function(self)
                 CUI.HideWidgetTooltip()
-                if self._informational then
-                    return
-                end
+                if self._informational then return end
                 self._lbl:SetTextColor(1, 1, 1, 0.65)
             end)
 
@@ -455,9 +427,7 @@ local function ShowFirstInstallPopup()
     for _, row in ipairs(allRows) do
         local origOnClick = row:GetScript("OnClick")
         row:SetScript("OnClick", function(self, ...)
-            if origOnClick then
-                origOnClick(self, ...)
-            end
+            if origOnClick then origOnClick(self, ...) end
             SyncButtonLabel()
         end)
     end
@@ -485,9 +455,7 @@ local function ShowFirstInstallPopup()
     end)
 
     local function Close(triggerReload)
-        if not CludesUIDB then
-            CludesUIDB = {}
-        end
+        if not CludesUIDB then CludesUIDB = {} end
         CludesUIDB.firstInstallPopupShown = true
         CludesUIDB.bagsUserChosen = true
         -- WoW Forever: the stamp the loader below set at ADDON_LOADED is still
@@ -504,26 +472,16 @@ local function ShowFirstInstallPopup()
         -- survives even if the user also disables the QoL addon. NewDB merges
         -- defaults with stored values at next init, so the written value sticks.
         local function ApplyCursorCircle(enabled)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            if not CludesUIDB.profiles then
-                CludesUIDB.profiles = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
+            if not CludesUIDB.profiles then CludesUIDB.profiles = {} end
             local profileName = CludesUIDB.activeProfile or "Default"
             if type(CludesUIDB.profiles[profileName]) ~= "table" then
                 CludesUIDB.profiles[profileName] = {}
             end
             local prof = CludesUIDB.profiles[profileName]
-            if not prof.addons then
-                prof.addons = {}
-            end
-            if not prof.addons.CludesUIQoL then
-                prof.addons.CludesUIQoL = {}
-            end
-            if not prof.addons.CludesUIQoL.cursor then
-                prof.addons.CludesUIQoL.cursor = {}
-            end
+            if not prof.addons then prof.addons = {} end
+            if not prof.addons.CludesUIQoL then prof.addons.CludesUIQoL = {} end
+            if not prof.addons.CludesUIQoL.cursor then prof.addons.CludesUIQoL.cursor = {} end
             prof.addons.CludesUIQoL.cursor.enabled = enabled and true or false
         end
 
@@ -531,9 +489,7 @@ local function ShowFirstInstallPopup()
         -- since the default (cursor.enabled = true) differs from the popup's
         -- default-unchecked state.
         for _, row in ipairs(allRows) do
-            if row._entry.setting == "cursorCircle" then
-                ApplyCursorCircle(row._checked)
-            end
+            if row._entry.setting == "cursorCircle" then ApplyCursorCircle(row._checked) end
         end
 
         if triggerReload then
@@ -546,16 +502,9 @@ local function ShowFirstInstallPopup()
             -- it cannot load, the picker offers the look as its default instead.
             CUI.RequestReload(nil, nil, function()
                 for _, row in ipairs(allRows) do
-                    if row._entry.addon then
-                        SetAddonEnabled(row._entry.addon, row._checked)
-                    end
+                    if row._entry.addon then SetAddonEnabled(row._entry.addon, row._checked) end
                 end
-                if
-                    CUI.IS_FOREVER
-                    and lookOpen
-                    and not InCombatLockdown()
-                    and CUI.EnsureOptionsLoaded()
-                then
+                if CUI.IS_FOREVER and lookOpen and not InCombatLockdown() and CUI.EnsureOptionsLoaded() then
                     CUI.ApplyFirstInstallLook("forever")
                 end
             end)
@@ -565,13 +514,9 @@ local function ShowFirstInstallPopup()
         dimmer:Hide()
         -- Re-apply the cursor so the written setting takes effect live
         -- (the QoL addon had already applied its default at login).
-        if _G._CUCL_Apply then
-            pcall(_G._CUCL_Apply)
-        end
+        if _G._CUCL_Apply then pcall(_G._CUCL_Apply) end
         -- No reload needed, so run the deferred conflict check now
-        if CUI._RunConflictCheck then
-            C_Timer.After(0.5, CUI._RunConflictCheck)
-        end
+        if CUI._RunConflictCheck then C_Timer.After(0.5, CUI._RunConflictCheck) end
     end
 
     doneBtn:SetScript("OnClick", function()
@@ -581,9 +526,7 @@ local function ShowFirstInstallPopup()
 
     dimmer:Show()
     -- Controller cursor: the picker has no other way out, so bring the gamepad pointer up.
-    if CUI.PadNative() then
-        CUI.RaiseGamePadCursor()
-    end
+    if CUI.PadNative() then CUI.RaiseGamePadCursor() end
 end
 
 CUI.ShowFirstInstallPopup = ShowFirstInstallPopup
@@ -599,9 +542,7 @@ CUI.ShowFirstInstallPopup = ShowFirstInstallPopup
 -- file). This makes the non-firing explicit rather than relying on the incidental
 -- addon-name mismatch (the renamed "CludesUI" ADDON_LOADED gate would point at the
 -- core token, never the real child/folder token, so it never matched anyway).
-if IS_STANDALONE then
-    return
-end
+if IS_STANDALONE then return end
 
 local _showPopupOnLogin = false
 
@@ -610,9 +551,7 @@ local function ComputeShowOnLogin()
         -- Truly fresh: SV not written yet.
         return true
     end
-    if CludesUIDB.firstInstallPopupShown then
-        return false
-    end
+    if CludesUIDB.firstInstallPopupShown then return false end
     local profiles = CludesUIDB.profiles
     if type(profiles) == "table" then
         for _, prof in pairs(profiles) do
@@ -632,17 +571,13 @@ loader:RegisterEvent("ADDON_LOADED")
 loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function(self, evt, addonName)
     if evt == "ADDON_LOADED" then
-        if addonName ~= "CludesUI" then
-            return
-        end
+        if addonName ~= "CludesUI" then return end
         self:UnregisterEvent("ADDON_LOADED")
         _showPopupOnLogin = ComputeShowOnLogin()
         -- WoW Forever: the style picker (WoW Forever by default there) is due
         -- even if this session ends before the module picker's reload.
         if _showPopupOnLogin and CUI.IS_FOREVER then
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.styleChoicePending = true
         end
         if _showPopupOnLogin then
@@ -654,20 +589,14 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
         end
     elseif evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
-        if not _showPopupOnLogin then
-            return
-        end
+        if not _showPopupOnLogin then return end
         C_Timer.After(0.5, function()
-            if CludesUIDB and CludesUIDB.firstInstallPopupShown then
-                return
-            end
+            if CludesUIDB and CludesUIDB.firstInstallPopupShown then return end
             -- A registered external installer owns the first-run experience:
             -- keep the picker silent (the pending handshake stays armed; the
             -- installer's import stamps first-install state, and a session
             -- with no registration brings the picker back).
-            if CUI._externalInstaller then
-                return
-            end
+            if CUI._externalInstaller then return end
             ShowFirstInstallPopup()
         end)
     end

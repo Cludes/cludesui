@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ActionBarProfiles.lua  (WoW Forever only)
 --  Action Bar Profiles: save every action bar slot (spells, items, macros,
@@ -21,13 +17,9 @@ local MAX_SLOT = 180
 local F = module.Feature("actionBarProfiles", { enabled = true, bindings = false })
 local Get = F.Get
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Action Bars:|r " .. textValue)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Action Bars:|r " .. textValue) end
 local function Plain(val, kind)
-    if not (issecretvalue and issecretvalue(val)) and type(val) == (kind or "number") then
-        return val
-    end
+    if not (issecretvalue and issecretvalue(val)) and type(val) == (kind or "number") then return val end
 end
 
 local _, CLASS = UnitClass("player")
@@ -52,9 +44,7 @@ end
 
 local function ReadSlot(slot)
     local kind, ident, sub = GetActionInfo(slot)
-    if not kind then
-        return nil
-    end
+    if not kind then return nil end
     local row = { kind = kind, id = Plain(ident), sub = sub }
     if kind == "macro" and row.id then
         local name, iconTex, body = GetMacroInfo(row.id)
@@ -67,9 +57,7 @@ end
 
 function module.SaveActionProfile(name)
     name = (name or ""):match("^%s*(.-)%s*$")
-    if name == "" then
-        return Say("give the profile a name.")
-    end
+    if name == "" then return Say("give the profile a name.") end
     local p = { actions = {}, saved = time() }
     for slot = 1, MAX_SLOT do
         p.actions[slot] = ReadSlot(slot)
@@ -78,9 +66,7 @@ function module.SaveActionProfile(name)
         p.bindings = {}
         for index = 1, GetNumBindings() do
             local command, _, key1, key2 = GetBinding(index)
-            if command and (key1 or key2) then
-                p.bindings[#p.bindings + 1] = { command, key1, key2 }
-            end
+            if command and (key1 or key2) then p.bindings[#p.bindings + 1] = { command, key1, key2 } end
         end
     end
     Profiles()[name] = p
@@ -98,14 +84,10 @@ end
 local function Pickup(row)
     ClearCursor()
     if row.kind == "spell" and row.id then
-        if not C_SpellBook.IsSpellKnown(row.id) then
-            return false
-        end
+        if not C_SpellBook.IsSpellKnown(row.id) then return false end
         C_Spell.PickupSpell(row.id)
     elseif row.kind == "item" and row.id then
-        if (C_Item.GetItemCount(row.id) or 0) == 0 and not C_Item.IsEquippedItem(row.id) then
-            return false
-        end
+        if (C_Item.GetItemCount(row.id) or 0) == 0 and not C_Item.IsEquippedItem(row.id) then return false end
         C_Item.PickupItem(row.id)
     elseif row.kind == "macro" and row.name then
         local index = GetMacroIndexByName(row.name)
@@ -114,15 +96,11 @@ local function Pickup(row)
                 pcall(CreateMacro, row.name, row.icon or "INV_Misc_QuestionMark", row.body, true)
             index = success and made or 0
         end
-        if not index or index == 0 then
-            return false
-        end
+        if not index or index == 0 then return false end
         PickupMacro(index)
     elseif row.kind == "equipmentset" and row.name then
         local ident = C_EquipmentSet.GetEquipmentSetID(row.name)
-        if not ident then
-            return false
-        end
+        if not ident then return false end
         C_EquipmentSet.PickupEquipmentSet(ident)
     else
         return false
@@ -132,12 +110,8 @@ end
 
 function module.LoadActionProfile(name)
     local p = Profiles()[name]
-    if not p then
-        return Say("there is no profile called " .. tostring(name) .. ".")
-    end
-    if InCombatLockdown() then
-        return Say("action bars cannot change in combat.")
-    end
+    if not p then return Say("there is no profile called " .. tostring(name) .. ".") end
+    if InCombatLockdown() then return Say("action bars cannot change in combat.") end
     local placed, skipped = 0, 0
     for slot = 1, MAX_SLOT do
         local row = p.actions[slot]
@@ -162,20 +136,12 @@ function module.LoadActionProfile(name)
     if p.bindings and Get("bindings") then
         for index = 1, GetNumBindings() do
             local _, _, key1, key2 = GetBinding(index)
-            if key1 then
-                SetBinding(key1)
-            end
-            if key2 then
-                SetBinding(key2)
-            end
+            if key1 then SetBinding(key1) end
+            if key2 then SetBinding(key2) end
         end
         for _, bind in ipairs(p.bindings) do
-            if bind[2] then
-                SetBinding(bind[2], bind[1])
-            end
-            if bind[3] then
-                SetBinding(bind[3], bind[1])
-            end
+            if bind[2] then SetBinding(bind[2], bind[1]) end
+            if bind[3] then SetBinding(bind[3], bind[1]) end
         end
         SaveBindings(GetCurrentBindingSet())
     end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Spec.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local GetTime = GetTime
@@ -33,17 +29,11 @@ local ECME, SpellStore = Inner.ECME, Inner.SpellStore
 local _cachedSpecKey = nil
 
 function mod.GetActiveSpecKey()
-    if _cachedSpecKey then
-        return _cachedSpecKey
-    end
+    if _cachedSpecKey then return _cachedSpecKey end
     local specIndex = C_SpecializationInfo.GetSpecialization()
-    if not specIndex or specIndex == 0 then
-        return nil
-    end
+    if not specIndex or specIndex == 0 then return nil end
     local specID = select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
-    if not specID or specID == 0 then
-        return nil
-    end
+    if not specID or specID == 0 then return nil end
     _cachedSpecKey = tostring(specID)
     return _cachedSpecKey
 end
@@ -58,13 +48,9 @@ end
 -- Live spec key from the game API without touching the cache; nil if not ready.
 local function ComputeLiveSpecKey()
     local specIndex = C_SpecializationInfo.GetSpecialization()
-    if not specIndex or specIndex == 0 then
-        return nil
-    end
+    if not specIndex or specIndex == 0 then return nil end
     local specID = select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
-    if not specID or specID == 0 then
-        return nil
-    end
+    if not specID or specID == 0 then return nil end
     return tostring(specID)
 end
 mod.ComputeLiveSpecKey = ComputeLiveSpecKey
@@ -83,31 +69,21 @@ if CludesUI.IS_FOREVER then
     -- profile's store is never served against another's.
     ComputeLiveSpecKey = function()
         local specIndex = C_SpecializationInfo.GetSpecialization()
-        if not specIndex or specIndex == 0 then
-            return nil
-        end
+        if not specIndex or specIndex == 0 then return nil end
         local specID = select(1, C_SpecializationInfo.GetSpecializationInfo(specIndex))
-        if not specID or specID == 0 then
-            return nil
-        end
+        if not specID or specID == 0 then return nil end
         local specProfiles = mod.GetActiveSpecProfiles()
         local m = mod._fvSpecKeyMemo
-        if m and m.root == specProfiles and m.raw == specID then
-            return m.key
-        end
+        if m and m.root == specProfiles and m.raw == specID then return m.key end
         local key = tostring(CludesUI.SpecFor(specID, CludesUI.SpecHasStringEntry, specProfiles))
         mod._fvSpecKeyMemo = { root = specProfiles, raw = specID, key = key }
         return key
     end
     mod.ComputeLiveSpecKey = ComputeLiveSpecKey
     function mod.GetActiveSpecKey()
-        if _cachedSpecKey and mod._fvSpecKeyRoot == mod.GetActiveSpecProfiles() then
-            return _cachedSpecKey
-        end
+        if _cachedSpecKey and mod._fvSpecKeyRoot == mod.GetActiveSpecProfiles() then return _cachedSpecKey end
         local key = ComputeLiveSpecKey()
-        if not key then
-            return nil
-        end
+        if not key then return nil end
         _cachedSpecKey = key
         mod._fvSpecKeyRoot = mod.GetActiveSpecProfiles()
         return key
@@ -139,9 +115,7 @@ local function GetStore()
 end
 
 local function EnsureMappings(storage)
-    if not storage.mappings then
-        storage.mappings = {}
-    end
+    if not storage.mappings then storage.mappings = {} end
     if #storage.mappings == 0 then
         storage.mappings[1] = {
             enabled = false,
@@ -156,26 +130,14 @@ local function EnsureMappings(storage)
         }
     end
     storage.selectedMapping = tonumber(storage.selectedMapping) or 1
-    if storage.selectedMapping < 1 then
-        storage.selectedMapping = 1
-    end
-    if storage.selectedMapping > #storage.mappings then
-        storage.selectedMapping = #storage.mappings
-    end
+    if storage.selectedMapping < 1 then storage.selectedMapping = 1 end
+    if storage.selectedMapping > #storage.mappings then storage.selectedMapping = #storage.mappings end
     for _, m in ipairs(storage.mappings) do
-        if m.enabled == nil then
-            m.enabled = true
-        end
-        if m.hideFromCDM == nil then
-            m.hideFromCDM = false
-        end
-        if m.mode ~= "MISSING" then
-            m.mode = "ACTIVE"
-        end
+        if m.enabled == nil then m.enabled = true end
+        if m.hideFromCDM == nil then m.hideFromCDM = false end
+        if m.mode ~= "MISSING" then m.mode = "ACTIVE" end
         m.glowStyle = tonumber(m.glowStyle) or 1
-        if not m.glowColor then
-            m.glowColor = { r = 1, g = 0.82, b = 0.1 }
-        end
+        if not m.glowColor then m.glowColor = { r = 1, g = 0.82, b = 0.1 } end
         m.name = tostring(m.name or "")
         if type(m.actionBar) ~= "string" or not mod.CDM_BAR_ROOTS[m.actionBar] then
             m.actionBar = tonumber(m.actionBar) or 1
@@ -207,9 +169,7 @@ MAIN_BAR_KEYS[GHOST_CD_BAR_KEY] = true
 --  can be a spec aura (e.g. 137007 "Unholy Death Knight") while the real tracked spell lives in linkedSpellIDs.
 -------------------------------------------------------------------------------
 local function ResolveInfoSpellID(details)
-    if not details then
-        return nil
-    end
+    if not details then return nil end
     local spellRef
     if details.overrideSpellID and details.overrideSpellID > 0 then
         spellRef = details.overrideSpellID
@@ -223,9 +183,7 @@ local function ResolveInfoSpellID(details)
                 end
             end
         end
-        if not spellRef and details.spellID and details.spellID > 0 then
-            spellRef = details.spellID
-        end
+        if not spellRef and details.spellID and details.spellID > 0 then spellRef = details.spellID end
     end
     return spellRef
 end
@@ -237,31 +195,21 @@ end
 --  to ResolveInfoSpellID when those are unavailable. ONLY used in out-of-combat paths (snapshot, dropdown, reconcile).
 -------------------------------------------------------------------------------
 local function ResolveChildSpellID(childFrame)
-    if not childFrame then
-        return nil
-    end
+    if not childFrame then return nil end
     -- Prefer the aura spellID (most accurate for buff viewers). Comparisons are pcall-wrapped:
     -- these methods can return SECRET numbers in combat, which cannot be compared with > 0.
     if childFrame.GetAuraSpellID then
         local success, auraID = pcall(childFrame.GetAuraSpellID, childFrame)
         if success and auraID then
-            local cmpOk, gt = pcall(function()
-                return auraID > 0
-            end)
-            if cmpOk and gt then
-                return auraID
-            end
+            local cmpOk, gt = pcall(function() return auraID > 0 end)
+            if cmpOk and gt then return auraID end
         end
     end
     if childFrame.GetSpellID then
         local success, fid = pcall(childFrame.GetSpellID, childFrame)
         if success and fid then
-            local cmpOk, gt = pcall(function()
-                return fid > 0
-            end)
-            if cmpOk and gt then
-                return fid
-            end
+            local cmpOk, gt = pcall(function() return fid > 0 end)
+            if cmpOk and gt then return fid end
         end
     end
     local cdID = childFrame.cooldownID or (childFrame.cooldownInfo and childFrame.cooldownInfo.cooldownID)
@@ -280,38 +228,24 @@ local DeepCopy = CludesUI.Lite.DeepCopy
 --  CludesUIDB.cdmCachedBarSizes[charKey][specKey][barKey] = count
 -------------------------------------------------------------------------------
 function mod.SaveCachedBarSizes()
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     local charKey = mod.GetCharKey()
     local specKey = mod.GetActiveSpecKey()
-    if not specKey or specKey == "0" then
-        return
-    end
-    if not CludesUIDB.cdmCachedBarSizes then
-        CludesUIDB.cdmCachedBarSizes = {}
-    end
-    if not CludesUIDB.cdmCachedBarSizes[charKey] then
-        CludesUIDB.cdmCachedBarSizes[charKey] = {}
-    end
+    if not specKey or specKey == "0" then return end
+    if not CludesUIDB.cdmCachedBarSizes then CludesUIDB.cdmCachedBarSizes = {} end
+    if not CludesUIDB.cdmCachedBarSizes[charKey] then CludesUIDB.cdmCachedBarSizes[charKey] = {} end
     local frameList = mod.cdmBarFrames
     local iconsByKey = mod.cdmBarIcons
-    if not frameList or not iconsByKey then
-        return
-    end
+    if not frameList or not iconsByKey then return end
     local counts = {}
     for key, widget in pairs(frameList) do
         local icons = iconsByKey[key]
         if icons then
             local vis = 0
             for _, iconTex in ipairs(icons) do
-                if iconTex:IsShown() then
-                    vis = vis + 1
-                end
+                if iconTex:IsShown() then vis = vis + 1 end
             end
-            if vis > 0 then
-                counts[key] = vis
-            end
+            if vis > 0 then counts[key] = vis end
         end
     end
     CludesUIDB.cdmCachedBarSizes[charKey][specKey] = counts
@@ -321,13 +255,9 @@ end
 local function SaveCurrentSpecProfile()
     local profile = ECME.db.profile
     local specKey = mod.GetActiveSpecKey()
-    if not specKey or specKey == "0" then
-        return
-    end
+    if not specKey or specKey == "0" then return end
     local specProfiles = SpellStore.GetSpecProfiles()
-    if not specProfiles[specKey] then
-        specProfiles[specKey] = { barSpells = {} }
-    end
+    if not specProfiles[specKey] then specProfiles[specKey] = { barSpells = {} } end
     local prof = specProfiles[specKey]
 
     -- Bar Glows and Tracked Buff Bars live in specProfiles[specKey]; GetBarGlows()/GetTrackedBuffBars() read/write there directly, so nothing extra to copy here.
@@ -342,9 +272,7 @@ end
 --- CheckSpecChange compares the live spec key to the cached one on every SPELLS_CHANGED and runs
 --- a full talent_reconcile rebuild on a difference. The cached key swaps atomically BEFORE the rebuild so GetBarSpellData always has a valid key. No nil window.
 local function ProcessSpecChange(newSpecKey)
-    if not newSpecKey then
-        return
-    end
+    if not newSpecKey then return end
     mod._spellOrderDirty = true -- force spell order cache rebuild
 
     -- Atomic swap: write the new key BEFORE rebuilding so every GetBarSpellData call during the rebuild reads the correct spec.
@@ -379,9 +307,7 @@ local function ProcessSpecChange(newSpecKey)
     -- Refresh the CDM options pages now that _cachedSpecKey is swapped: their own
     -- PLAYER_SPECIALIZATION_CHANGED watcher can fire before SPELLS_CHANGED, so driving it
     -- here guarantees they rebuild against the new spec instead of keeping the old spec's selected bar.
-    if mod.OnTBBSpecChanged then
-        mod.OnTBBSpecChanged()
-    end
+    if mod.OnTBBSpecChanged then mod.OnTBBSpecChanged() end
 end
 mod.ProcessSpecChange = ProcessSpecChange
 
@@ -389,9 +315,7 @@ mod.ProcessSpecChange = ProcessSpecChange
 -- SPELLS_CHANGED. Idempotent: after ProcessSpecChange the cached key matches live and subsequent calls are no-ops.
 local function CheckSpecChange()
     local liveKey = ComputeLiveSpecKey()
-    if liveKey and liveKey ~= _cachedSpecKey then
-        ProcessSpecChange(liveKey)
-    end
+    if liveKey and liveKey ~= _cachedSpecKey then ProcessSpecChange(liveKey) end
 end
 mod.CheckSpecChange = CheckSpecChange
 
@@ -408,7 +332,5 @@ Inner.ComputeLiveSpecKey, Inner.EnsureMappings = ComputeLiveSpecKey, EnsureMappi
 Inner.GetStore, Inner.GHOST_CD_BAR_KEY, Inner.MAIN_BAR_KEYS = GetStore, GHOST_CD_BAR_KEY, MAIN_BAR_KEYS
 Inner.ResolveChildSpellID, Inner.ResolveInfoSpellID = ResolveChildSpellID, ResolveInfoSpellID
 Inner.SaveCurrentSpecProfile = SaveCurrentSpecProfile
-Inner.GetCachedSpecKey = function()
-    return _cachedSpecKey
-end
+Inner.GetCachedSpecKey = function() return _cachedSpecKey end
 Inner.broken = false

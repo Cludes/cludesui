@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\Shared.lua
 -- Shared scaffolding for the DataBars block factories. Loads before every other
 -- Blocks\*.lua file; each block file lives in its own file and imports helpers
@@ -31,12 +29,8 @@ mod.BlockKit = K
 -- the check.
 function K.AtMaxLevel()
     local level = UnitLevel("player") or 0
-    if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then
-        return true
-    end
-    if IsLevelAtEffectiveMaxLevel and IsLevelAtEffectiveMaxLevel(level) then
-        return true
-    end
+    if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then return true end
+    if IsLevelAtEffectiveMaxLevel and IsLevelAtEffectiveMaxLevel(level) then return true end
     local maxLevel = (GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion())
         or (GetMaxPlayerLevel and GetMaxPlayerLevel())
     return (maxLevel and level >= maxLevel) or false
@@ -62,34 +56,26 @@ local InCombatLockdown = InCombatLockdown
 --  What every block uses
 -------------------------------------------------------------------------------
 -- A block's key, unique per bar and block (frame names, deferred work).
-local function InstKey(barCtx, blockCfg)
-    return "EDB" .. barCtx.id .. "_" .. blockCfg.id
-end
+local function InstKey(barCtx, blockCfg) return "EDB" .. barCtx.id .. "_" .. blockCfg.id end
 
 -- An event frame that calls handler(block, event, ...).
 local function MakeEventFrame(block, handler)
     local frame = CreateFrame("Frame")
-    frame:SetScript("OnEvent", function(_, event, ...)
-        handler(block, event, ...)
-    end)
+    frame:SetScript("OnEvent", function(_, event, ...) handler(block, event, ...) end)
     return frame
 end
 
 -- block.events onto block.eventFrame; an event the client lacks is skipped.
 local function RegisterInstEvents(block)
     local frame, events = block.eventFrame, block.events
-    if not (frame and events) then
-        return
-    end
+    if not (frame and events) then return end
     for _, event in ipairs(events) do
         pcall(frame.RegisterEvent, frame, event)
     end
 end
 
 local function UnregisterInstEvents(block)
-    if block.eventFrame then
-        block.eventFrame:UnregisterAllEvents()
-    end
+    if block.eventFrame then block.eventFrame:UnregisterAllEvents() end
 end
 
 -- Fonts and icons size from this constant, never the live bar height: the
@@ -107,18 +93,14 @@ end
 -- The width a horizontal block may use: its slot's, once the bar has laid out.
 local function HBudget(block, fallback)
     local width = block.slot and block.slot:GetWidth()
-    if width and width > 8 then
-        return width / ScaleOf(block)
-    end
+    if width and width > 8 then return width / ScaleOf(block) end
     return fallback
 end
 
 -- A vertical block's width: its slot's, or the bar's thickness before layout.
 local function VSlotW(block)
     local width = block.slot and block.slot:GetWidth()
-    if width and width > 2 then
-        return width / ScaleOf(block)
-    end
+    if width and width > 2 then return width / ScaleOf(block) end
     return block.ctx.GetThickness()
 end
 
@@ -128,23 +110,17 @@ end
 -- which takes what is left.
 local function MaybeRelayout(block)
     local barCfg = block.ctx and block.ctx.cfg
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local length = block.GetAutoLength and block:GetAutoLength() or 0
     local last = block._lastAuto
     if mod.BarSizingMode(barCfg) ~= "auto" then
         -- Even sizing ignores lengths, but a block appearing or leaving
         -- (length 0) changes how many shares there are.
         block._lastAuto = length
-        if last ~= nil and (last <= 0) ~= (length <= 0) then
-            block.ctx.RequestLayout()
-        end
+        if last ~= nil and (last <= 0) ~= (length <= 0) then block.ctx.RequestLayout() end
         return
     end
-    if barCfg.fillBlockId == block.cfg.id then
-        return
-    end
+    if barCfg.fillBlockId == block.cfg.id then return end
     if last == nil or math.abs(length - last) > 0.5 then
         block._lastAuto = length
         block.ctx.RequestLayout()
@@ -156,9 +132,7 @@ end
 -- (Gold's slot count, Spec's loot spec) move with it already and would be
 -- shifted twice.
 local function AttachTextOffset(block, text)
-    if not text or text._cuiOffset then
-        return
-    end
+    if not text or text._cuiOffset then return end
     text._cuiOffset = true
     local SetPoint = text.SetPoint
     text.SetPoint = function(self, point, a2, a3, a4, a5)
@@ -176,30 +150,22 @@ end
 local function ClassColour()
     local _, class = UnitClass("player")
     local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
 end
 
 -- A block's text colour (the Text Color row: Custom, Class, Accent or
 -- Dynamic; white by default). Hover and other state colours are applied
 -- where they happen.
 local function BlockColorOf(b)
-    if b.useDynamicColor then
-        return mod.BlockTextDynamic(b.type)
-    end
+    if b.useDynamicColor then return mod.BlockTextDynamic(b.type) end
     if b.useClassColor then
         local red, green, blue = ClassColour()
-        if red then
-            return red, green, blue
-        end
+        if red then return red, green, blue end
     elseif b.useAccentColor then
         return mod.GetAccent()
     end
     local color = b.color
-    if color then
-        return color.r or 1, color.g or 1, color.b or 1
-    end
+    if color then return color.r or 1, color.g or 1, color.b or 1 end
     return 1, 1, 1
 end
 
@@ -303,17 +269,13 @@ local ICON_ART = {
 local OWN_ICON_STYLE = { spec = true, profession = true, profession2 = true, micromenu = true }
 
 function mod.BlockHasIconStyle(bType)
-    if OWN_ICON_STYLE[bType] then
-        return true
-    end
+    if OWN_ICON_STYLE[bType] then return true end
     local art = ICON_ART[bType]
     return art ~= nil and art.wow ~= nil
 end
 
 -- Crops a stock item/spell icon (Interface\Icons, fileID) off its baked-in border.
-function K.CropStockIcon(iconTex)
-    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-end
+function K.CropStockIcon(iconTex) iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
 
 -- Paints a block icon in its selected style. key defaults to the block type.
 -- Cheap to call from Refresh: the texture is only set when it changes.
@@ -322,9 +284,7 @@ function K.SetBlockIcon(iconTex, blockCfg, key)
     local cfg = blockCfg.settings
     local texture = art.wow and cfg and cfg.iconStyle == "wow" and art.wow
     local wanted = texture or art.custom
-    if iconTex._cuiIconArt == wanted then
-        return
-    end
+    if iconTex._cuiIconArt == wanted then return end
     iconTex._cuiIconArt = wanted
     if texture then
         iconTex:SetTexture(texture)
@@ -350,14 +310,10 @@ function mod.BlockIconDefault(bType, prefs)
     if bType == "spec" then
         local _, class = UnitClass("player")
         local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        if cc then
-            return cc.r, cc.g, cc.b
-        end
+        if cc then return cc.r, cc.g, cc.b end
         return 1, 1, 1
     end
-    if bType == "profession" or bType == "profession2" then
-        return mod.GetAccent()
-    end
+    if bType == "profession" or bType == "profession2" then return mod.GetAccent() end
     if bType == "durability" then
         -- White(100%) fades to soft red(1,.35,.35) over 20..100; <=20% is fully red.
         local pct = K.lastDurabilityPct or 100
@@ -371,9 +327,7 @@ function mod.BlockIconDefault(bType, prefs)
         return 1, gb, gb
     end
     local skinData = ICON_DEFAULTS[bType]
-    if skinData then
-        return skinData[1], skinData[2], skinData[3]
-    end
+    if skinData then return skinData[1], skinData[2], skinData[3] end
     return 1, 1, 1
 end
 
@@ -388,9 +342,7 @@ local TEXT_DYNAMIC = {
     -- gear sits in. Below the lowest track it stays white.
     ilvl = function()
         local lvl = K.lastAvgIlvl
-        if not lvl then
-            return 1, 1, 1
-        end
+        if not lvl then return 1, 1, 1 end
         for index = 1, #ILVL_BANDS do
             local band = ILVL_BANDS[index]
             if lvl >= band[1] then
@@ -403,9 +355,7 @@ local TEXT_DYNAMIC = {
 }
 function mod.BlockTextDynamic(bType)
     local func = TEXT_DYNAMIC[bType]
-    if func then
-        return func()
-    end
+    if func then return func() end
     return mod.BlockIconDefault(bType)
 end
 
@@ -418,25 +368,19 @@ local function IconColorOf(b)
     end
     if b.useIconClassColor then
         local red, green, blue = ClassColour()
-        if red then
-            return red, green, blue
-        end
+        if red then return red, green, blue end
     elseif b.useIconAccentColor then
         return mod.GetAccent()
     end
     local color = b.iconColor
-    if color then
-        return color.r or 1, color.g or 1, color.b or 1
-    end
+    if color then return color.r or 1, color.g or 1, color.b or 1 end
     return mod.BlockIconDefault(b.type, b.settings)
 end
 
 -- Retires a secure frame: hidden and moved to the bar engine's park frame.
 -- In combat it is made invisible now and moved when combat ends.
 local function ParkSecureFrame(frame, key)
-    if not frame then
-        return
-    end
+    if not frame then return end
     local function Park()
         frame:Hide()
         frame:SetParent(mod._park)

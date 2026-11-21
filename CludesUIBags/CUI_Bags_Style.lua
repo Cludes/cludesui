@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end
 local mod = select(2, ...)
 local CUI = CludesUI
 local forever
@@ -12,22 +10,16 @@ local BAG_FRAME_SCALE = 0.8
 --- profile's), so a profile on the WoW Forever look gets it with no write.
 function mod.BagsForeverWanted(profile, addons)
     local pick = profile and profile.useForeverStyle
-    if pick == nil then
-        return CUI.ForeverLookMajority(addons)
-    end
+    if pick == nil then return CUI.ForeverLookMajority(addons) end
     return pick == true
 end
 
 -- Latched at the first read (0.5 s after login: every module has loaded), so a
 -- change takes effect after the reload the Style page asks for.
 function mod.BagsForever()
-    if not CUI.IS_FOREVER then
-        return false
-    end
+    if not CUI.IS_FOREVER then return false end
     if forever == nil then
-        if not CUI.Lite.IsDBReady() then
-            return false
-        end
+        if not CUI.Lite.IsDBReady() then return false end
         forever = mod.BagsForeverWanted(CUI._bagsDB.profile)
     end
     return forever
@@ -41,9 +33,7 @@ local function InsetBagBackground(texture, ownerFrame)
 end
 
 function mod.SkinForeverBagWindow(ownerFrame, backdrop, overlayFrame, hasTitle, hasPortrait)
-    if not mod.BagsForever() then
-        return
-    end
+    if not mod.BagsForever() then return end
     local nineSlice = hasPortrait and NineSliceUtil
     local layout = nineSlice
         and nineSlice.GetLayout
@@ -75,9 +65,10 @@ function mod.SkinForeverBagWindow(ownerFrame, backdrop, overlayFrame, hasTitle, 
         end
         if nineSlice.UpdateCornerCropping then
             local panelFrame = { NineSlice = border }
-            border:SetScript("OnSizeChanged", function(_, _, height)
-                nineSlice.UpdateCornerCropping(panelFrame, height)
-            end)
+            border:SetScript(
+                "OnSizeChanged",
+                function(_, _, height) nineSlice.UpdateCornerCropping(panelFrame, height) end
+            )
         end
         -- Align the visible rim with the window; the native slices include a shadow.
         border:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", 1, -3)
@@ -97,9 +88,7 @@ function mod.SkinForeverBagWindow(ownerFrame, backdrop, overlayFrame, hasTitle, 
     if heavyOK then
         ownerFrame._foreverBagFrameScale = BAG_FRAME_SCALE
         InsetBagBackground(backdrop, ownerFrame)
-        if overlayFrame then
-            InsetBagBackground(overlayFrame, ownerFrame)
-        end
+        if overlayFrame then InsetBagBackground(overlayFrame, ownerFrame) end
     end
     backdrop:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock")
     backdrop:SetVertexColor(0.55, 0.55, 0.55)
@@ -125,9 +114,7 @@ function mod.SkinForeverBagTitle(title, total)
     title:SetJustifyH("CENTER")
     title:SetWordWrap(false)
     title:SetTextColor(1, 0.82, 0)
-    if not total then
-        return
-    end
+    if not total then return end
     total:ClearAllPoints()
     total:SetPoint("RIGHT", header, "TOPRIGHT", -31, posY)
     total:SetWidth(85)
@@ -199,9 +186,7 @@ function mod.PositionForeverBagClose(close)
     close:SetPoint("CENTER", header, "TOPRIGHT", -12, 1 - 13 * scale)
     local size = 25 * scale
     close:SetSize(size, size)
-    if not C_Texture.GetAtlasInfo("RedButton-Exit") then
-        return
-    end
+    if not C_Texture.GetAtlasInfo("RedButton-Exit") then return end
     close.icon:Hide()
     close:SetScript("OnEnter", nil)
     close:SetScript("OnLeave", nil)
@@ -254,9 +239,7 @@ function mod.SkinForeverBagSearch(search, backdrop, placeholder, clear)
     placeholder:ClearAllPoints()
     placeholder:SetPoint("LEFT", search, "LEFT", 16, 0)
     placeholder:SetTextColor(0.35, 0.35, 0.35)
-    if SEARCH then
-        placeholder:SetText(SEARCH)
-    end
+    if SEARCH then placeholder:SetText(SEARCH) end
 
     if getAtlas("common-search-clearbutton") then
         clear.tex:Hide()
@@ -269,9 +252,7 @@ function mod.SkinForeverBagSearch(search, backdrop, placeholder, clear)
 end
 
 function mod.SkinForeverBagFooter(footer, backdrop, separator)
-    if separator then
-        separator:Hide()
-    end
+    if separator then separator:Hide() end
     -- Keep the coin box on the bottom row when tracked currencies wrap.
     local rowCenter = footer:GetHeight() / 2
     backdrop:ClearAllPoints()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_PartyMode.lua
 --
@@ -13,14 +11,10 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  nothing, so none of them needs to change.
 -------------------------------------------------------------------------------
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 
 local function Nothing() end
 
 --- Used to build a spin engine for a set of frames and return its refresh
 --- function. Returns a refresh that does nothing.
-function CUI.PartySpin_Create()
-    return Nothing
-end
+function CUI.PartySpin_Create() return Nothing end

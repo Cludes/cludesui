@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_ArcaneSoul.lua
 -- 12.1 ONLY: engine-slot driver for the Sunfury Arcane Mage "Arcane Soul" callout.
 --
@@ -87,12 +85,8 @@ end
 local function PhaseMode(phaseNum)
     local profile = SoulCfg()
     local m = profile and profile.countMode
-    if m == "gcd" then
-        return "gcd"
-    end
-    if m == "secondsGcd" then
-        return (phaseNum == "soul") and "gcd" or "seconds"
-    end
+    if m == "gcd" then return "gcd" end
+    if m == "secondsGcd" then return (phaseNum == "soul") and "gcd" or "seconds" end
     return "seconds"
 end
 
@@ -160,9 +154,7 @@ local function GetASFont()
     local cacheKey = (profile and profile.font) or "__global"
     if cacheKey ~= "__global" and CUI and CUI.ResolveFontName then
         local filePath = CUI.ResolveFontName(cacheKey)
-        if filePath then
-            return filePath
-        end
+        if filePath then return filePath end
     end
     return (CUI.GetFontPath("resourceBars")) or STANDARD_TEXT_FONT
 end
@@ -170,18 +162,10 @@ end
 local function GetASOutline()
     local profile = SoulCfg()
     local modeName = (profile and profile.outlineMode) or "__global"
-    if modeName == "outline" then
-        return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
-    end
-    if modeName == "thick" then
-        return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
-    end
-    if modeName == "none" then
-        return ""
-    end
-    return (CUI.GetFontOutlineFlag("resourceBars"))
-        or (CUI.SlugFlag("OUTLINE, SLUG"))
-        or "OUTLINE, SLUG"
+    if modeName == "outline" then return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG" end
+    if modeName == "thick" then return (CUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG" end
+    if modeName == "none" then return "" end
+    return (CUI.GetFontOutlineFlag("resourceBars")) or (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
 end
 
 -- Empty flags = Drop Shadow mode, primed via FontObject (instance shadow
@@ -189,9 +173,7 @@ end
 -- color is always re-stated afterwards -- it is also the fallback tint if the
 -- engine ever refuses the color curve.
 local function ApplyFsLook(phaseNum, fontStr)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local flags = GetASOutline()
     CUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(GetASFont(), TextSize(), flags)
@@ -219,51 +201,31 @@ end
 local function ReadLiveGcd()
     local cd = C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(GCD_SPELL_ID)
     local skinData = cd and cd.duration
-    if skinData == nil then
-        return nil
-    end
-    if issecretvalue and issecretvalue(skinData) then
-        return nil
-    end
-    if type(skinData) ~= "number" then
-        return nil
-    end
+    if skinData == nil then return nil end
+    if issecretvalue and issecretvalue(skinData) then return nil end
+    if type(skinData) ~= "number" then return nil end
     -- duration only means anything while the cooldown runs; idle it reports 0.
-    if skinData >= 0.7 and skinData <= 1.6 then
-        return skinData
-    end
+    if skinData >= 0.7 and skinData <= 1.6 then return skinData end
     return nil
 end
 
 local function ReadHasteGcd()
     local haste = UnitSpellHaste and UnitSpellHaste("player")
-    if haste == nil then
-        return nil
-    end
-    if issecretvalue and issecretvalue(haste) then
-        return nil
-    end
-    if type(haste) ~= "number" then
-        return nil
-    end
+    if haste == nil then return nil end
+    if issecretvalue and issecretvalue(haste) then return nil end
+    if type(haste) ~= "number" then return nil end
     return 1.5 / (1 + haste / 100)
 end
 
 -- Reads only; GetGcdLen also records the result as the bound GCD.
 local function CalcGcdLen()
     local success, length = pcall(ReadLiveGcd)
-    if not success then
-        length = nil
-    end
+    if not success then length = nil end
     if not length then
         local ok2, hasted = pcall(ReadHasteGcd)
-        if ok2 then
-            length = hasted
-        end
+        if ok2 then length = hasted end
     end
-    if not length then
-        length = SoulState.gcdLen or 1.5
-    end
+    if not length then length = SoulState.gcdLen or 1.5 end
     if length < 0.75 then
         length = 0.75
     elseif length > 1.6 then
@@ -304,9 +266,7 @@ local function NewFormatter(points)
         return nil
     end
     local frame = C_StringUtil.CreateNumericRuleFormatter()
-    if not pcall(frame.SetBreakpoints, frame, points) then
-        return nil
-    end
+    if not pcall(frame.SetBreakpoints, frame, points) then return nil end
     return frame
 end
 
@@ -327,9 +287,7 @@ local function GcdBandPoints(fmt, gcdInfo, upTo, firstLabel)
     local pts = {}
     for num = 1, BAND_MAX do
         local t = (num == 1) and 0 or ((num - 1) * gcdInfo + BAND_EPS)
-        if num > 1 and t >= upTo then
-            break
-        end
+        if num > 1 and t >= upTo then break end
         pts[#pts + 1] = { threshold = t, format = (num == 1 and firstLabel) or string.format(fmt, num) }
     end
     return pts
@@ -346,9 +304,7 @@ local surgeFmtCache = {}
 local function SurgeFormatter(modeName, thresholdVal, gcdInfo)
     local cacheKey = modeName .. "|" .. thresholdVal .. "|" .. tostring(gcdInfo or 0)
     local cached = surgeFmtCache[cacheKey]
-    if cached ~= nil then
-        return cached or nil
-    end
+    if cached ~= nil then return cached or nil end
 
     local Up = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Up
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
@@ -387,9 +343,7 @@ local function SurgeFormatter(modeName, thresholdVal, gcdInfo)
             end
             -- Every band sits strictly below thr (GcdBandPoints stops there),
             -- so the hide rule always lands last and never duplicates a threshold.
-            if hides[hgt] then
-                points[#points + 1] = { threshold = thresholdVal, format = hides[hgt] }
-            end
+            if hides[hgt] then points[#points + 1] = { threshold = thresholdVal, format = hides[hgt] } end
             local frame = NewFormatter(points)
             if frame then
                 surgeFmtCache[cacheKey] = frame
@@ -410,9 +364,7 @@ local soulFmtCache = {}
 local function SoulFormatter(modeName, gcdInfo)
     local cacheKey = modeName .. "|" .. tostring(gcdInfo or 0)
     local cached = soulFmtCache[cacheKey]
-    if cached ~= nil then
-        return cached or nil
-    end
+    if cached ~= nil then return cached or nil end
 
     local Up = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Up
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
@@ -433,7 +385,13 @@ local function SoulFormatter(modeName, gcdInfo)
             }
             frame = NewFormatter({ { threshold = 0, format = lastText }, total })
                 or NewFormatter({
-                    { threshold = 0, format = "%d", step = 1, rounding = Up, components = { { div = gcdInfo } } },
+                    {
+                        threshold = 0,
+                        format = "%d",
+                        step = 1,
+                        rounding = Up,
+                        components = { { div = gcdInfo } },
+                    },
                     total,
                 })
         end
@@ -469,9 +427,7 @@ end
 
 local function StepCurve(cacheKey, points)
     local cached = curves[cacheKey]
-    if cached ~= nil then
-        return cached or nil
-    end
+    if cached ~= nil then return cached or nil end
     if not (C_CurveUtil and C_CurveUtil.CreateColorCurve and Enum and Enum.LuaCurveType) then
         curves[cacheKey] = false
         return nil
@@ -508,7 +464,8 @@ local function SoulCurve(modeName, gcdInfo)
         return StepCurve(cacheKey, { { 0, sr, sg, scrollBar, 1 }, { 60, sr, sg, scrollBar, 1 } })
     end
     local lr, lg, lb = LastColor()
-    local cacheKey = string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcdInfo, sr, sg, scrollBar, lr, lg, lb)
+    local cacheKey =
+        string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcdInfo, sr, sg, scrollBar, lr, lg, lb)
     return StepCurve(cacheKey, { { 0, lr, lg, lb, 1 }, { gcdInfo + 0.0001, sr, sg, scrollBar, 1 } })
 end
 
@@ -526,7 +483,15 @@ end
 local function StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
     if phaseNum == "surge" then
         local red, green, blue = PreColor()
-        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", modeName, thresholdVal, gcdInfo or 0, red, green, blue)
+        return string.format(
+            "%s|%d|%.2f|%.3f|%.3f|%.3f",
+            modeName,
+            thresholdVal,
+            gcdInfo or 0,
+            red,
+            green,
+            blue
+        )
     end
     local sr, sg, scrollBar = SoulColor()
     local lr, lg, lb = LastColor()
@@ -546,17 +511,13 @@ end
 local function BindPhase(phaseNum, force)
     local AK = CUI.AuraKit
     local state = SoulState.ph[phaseNum]
-    if not (AK and state.btn and state.fs) then
-        return
-    end
+    if not (AK and state.btn and state.fs) then return end
 
     local modeName = PhaseMode(phaseNum)
     local thresholdVal = Thr()
     local gcdInfo = (modeName == "gcd") and GetGcdLen() or nil
     local stamp = StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
-    if not force and state.stamp == stamp then
-        return
-    end
+    if not force and state.stamp == stamp then return end
 
     local fmt, colorCurve
     if phaseNum == "surge" then
@@ -565,7 +526,8 @@ local function BindPhase(phaseNum, force)
         fmt, colorCurve = SoulFormatter(modeName, gcdInfo), SoulCurve(modeName, gcdInfo)
     end
 
-    local success, full = AK.SetDurationTextSafe(state.btn, state.fs, AK.BuildDurationTextOpts(fmt, colorCurve))
+    local success, full =
+        AK.SetDurationTextSafe(state.btn, state.fs, AK.BuildDurationTextOpts(fmt, colorCurve))
     if success and (full or not colorCurve) then
         state.stamp = stamp
     else
@@ -579,9 +541,7 @@ end
 -------------------------------------------------------------------------------
 
 local function MakeProxy()
-    if SoulState.proxy then
-        return
-    end
+    if SoulState.proxy then return end
     SoulState.proxy = CreateFrame("Frame", nil, UIParent)
     SoulState.proxy:SetSize(ProxySize())
     SoulState.proxy:Hide()
@@ -593,9 +553,7 @@ local SOUL_INCLUDE = { [SOUL_AURA_ID] = true }
 local function BuildPhase(phaseNum, include)
     local AK = CUI.AuraKit
     local state = SoulState.ph[phaseNum]
-    if state.container then
-        return
-    end
+    if state.container then return end
 
     local boxHolder = AK.CreateContainerShell(SoulState.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
@@ -611,12 +569,8 @@ local function BuildPhase(phaseNum, include)
             -- Display-only overlay with no OnClick: an engine aura button comes
             -- mouse-enabled, and clicks alone would make it an invisible blocker
             -- over its whole rect for as long as the buff is up.
-            if btnFrame.SetMouseClickEnabled then
-                btnFrame:SetMouseClickEnabled(false)
-            end
-            if btnFrame.SetMouseMotionEnabled then
-                btnFrame:SetMouseMotionEnabled(false)
-            end
+            if btnFrame.SetMouseClickEnabled then btnFrame:SetMouseClickEnabled(false) end
+            if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
             state.btn = btnFrame
 
             -- ARMORED: an uncaught error here aborts the engine's
@@ -633,9 +587,7 @@ local function BuildPhase(phaseNum, include)
                 state.fs = fontStr
                 BindPhase(phaseNum, true)
             end)
-            if not okFS then
-                SoulState.fsErr = errFS
-            end
+            if not okFS then SoulState.fsErr = errFS end
         end,
     })
     AK.FinishContainer(boxHolder, "player")
@@ -651,16 +603,12 @@ end
 -- applyPos and ordinary (non-unlock) applies call it. Same split as the Target
 -- Distance element, whose getFrame deliberately skips ApplyFrameSettings.
 local function PlaceProxy()
-    if not SoulState.proxy then
-        return
-    end
+    if not SoulState.proxy then return end
     -- Anchored to another element: the unlock anchor system owns placement;
     -- re-applying the stored absolute here would slam the frame back to a
     -- stale spot on every apply (same guard as the GCD / totem bars).
     local anchored = CUI.IsUnlockAnchored and CUI.IsUnlockAnchored(UNLOCK_KEY)
-    if anchored and SoulState.proxy:GetLeft() then
-        return
-    end
+    if anchored and SoulState.proxy:GetLeft() then return end
 
     local profile = SoulCfg()
     local place = (profile and profile.unlockPos) or DEFAULT_POS
@@ -687,9 +635,7 @@ end
 -- LOOK ONLY: size, fonts, colors, duration bindings. Safe to run at any time,
 -- including mid-drag.
 local function ApplyLook()
-    if not SoulState.proxy then
-        return
-    end
+    if not SoulState.proxy then return end
     SoulState.proxy:SetSize(ProxySize())
 
     -- Font/size/color live on OUR regions, but they are children of an engine
@@ -697,9 +643,7 @@ local function ApplyLook()
     -- any other write into that subtree: pcall and defer to the lift.
     for phaseNum, state in pairs(SoulState.ph) do
         if state.fs then
-            if not pcall(ApplyFsLook, phaseNum, state.fs) then
-                SoulState.dirty = true
-            end
+            if not pcall(ApplyFsLook, phaseNum, state.fs) then SoulState.dirty = true end
         end
         BindPhase(phaseNum)
     end
@@ -712,9 +656,7 @@ end
 
 local function Build()
     local AK = CUI.AuraKit
-    if SoulState.built or not AK then
-        return
-    end
+    if SoulState.built or not AK then return end
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY] or { noRegions = true, width = 1, height = 1 }
     MakeProxy()
     BuildPhase("surge", SURGE_INCLUDE)
@@ -726,25 +668,17 @@ local function Build()
     if not SoulState.liftHooked and AK.OnRestrictionLift then
         SoulState.liftHooked = true
         AK.OnRestrictionLift(function()
-            if not SoulState.dirty then
-                return
-            end
+            if not SoulState.dirty then return end
             SoulState.dirty = nil
-            if mod.AS_Apply then
-                mod.AS_Apply()
-            end
+            if mod.AS_Apply then mod.AS_Apply() end
         end)
     end
 end
 
 local function EnsureBuilt()
-    if SoulState.built or SoulState.queued or SoulState.buildErr then
-        return
-    end
+    if SoulState.built or SoulState.queued or SoulState.buildErr then return end
     local AK = CUI.AuraKit
-    if not (AK and AK.QueueBuildJob) then
-        return
-    end
+    if not (AK and AK.QueueBuildJob) then return end
     SoulState.queued = true
     AKWorker:Queue(function()
         SoulState.queued = nil
@@ -803,20 +737,14 @@ local function ShowPreview()
         SoulState.sample = fontStr
     end
     StyleSample(fontStr)
-    if SoulState.demo then
-        SoulState.demo:Hide()
-    end
+    if SoulState.demo then SoulState.demo:Hide() end
     fontStr:Show()
     SoulState.sampleHost:Show()
 end
 
 local function HidePreview()
-    if SoulState.sampleHost then
-        SoulState.sampleHost:Hide()
-    end
-    if SoulState.demo then
-        SoulState.demo:Hide()
-    end
+    if SoulState.sampleHost then SoulState.sampleHost:Hide() end
+    if SoulState.demo then SoulState.demo:Hide() end
 end
 
 -------------------------------------------------------------------------------
@@ -878,18 +806,14 @@ local function DemoTick(self)
     if NeedsGcd() and (not self._demoGcd or t - (self._demoGcdAt or 0) > DEMO_GCD_AGE) then
         self._demoGcd, self._demoGcdAt = CalcGcdLen(), t
     end
-    if self._fs then
-        DemoText(self._fs, t, self._demoGcd)
-    end
+    if self._fs then DemoText(self._fs, t, self._demoGcd) end
 end
 _G._CURB_ArcaneSoulDemoTick = DemoTick
 
 local function DemoOnUpdate(self, elapsed)
     self._demoT = (self._demoT or 0) + elapsed
     self._demoAcc = (self._demoAcc or 0) + elapsed
-    if self._demoAcc < 0.1 then
-        return
-    end
+    if self._demoAcc < 0.1 then return end
     self._demoAcc = 0
     DemoTick(self)
 end
@@ -918,9 +842,7 @@ local function OnForClass()
 end
 
 local function GateOK()
-    if not OnForClass() then
-        return false
-    end
+    if not OnForClass() then return false end
     -- Both spellings are live in this codebase (the options pages use the
     -- C_ namespace, the modules the globals); take whichever answers.
     local position = (
@@ -928,31 +850,23 @@ local function GateOK()
         and C_SpecializationInfo.GetSpecialization
         and C_SpecializationInfo.GetSpecialization()
     ) or (GetSpecialization and GetSpecialization())
-    if not position then
-        return false
-    end
+    if not position then return false end
     local specID = (
         C_SpecializationInfo
         and C_SpecializationInfo.GetSpecializationInfo
         and C_SpecializationInfo.GetSpecializationInfo(position)
     ) or (GetSpecializationInfo and GetSpecializationInfo(position))
-    if specID ~= ARCANE_SPEC_ID then
-        return false
-    end
+    if specID ~= ARCANE_SPEC_ID then return false end
     if C_ClassTalents and C_ClassTalents.GetActiveHeroTalentSpec then
         local success, tree = pcall(C_ClassTalents.GetActiveHeroTalentSpec)
-        if success and type(tree) == "number" and tree ~= SUNFURY_TREE_ID then
-            return false
-        end
+        if success and type(tree) == "number" and tree ~= SUNFURY_TREE_ID then return false end
     end
     return true
 end
 
 local function Park()
     HidePreview()
-    if SoulState.proxy then
-        SoulState.proxy:Hide()
-    end
+    if SoulState.proxy then SoulState.proxy:Hide() end
 end
 
 -- Mover callbacks are NOT unlock-mode-only: the spec-override layer flush
@@ -962,9 +876,7 @@ end
 -- the Surge slot would render). Placement is always safe; SHOWING is the gate's
 -- to decide, and unlock mode is the one caller that overrides it (the mover has
 -- to be grabbable for any Mage).
-local function MoverShowOK()
-    return (CUI and CUI._unlockActive) or GateOK()
-end
+local function MoverShowOK() return (CUI and CUI._unlockActive) or GateOK() end
 
 -- placeOnly: size and position the proxy but keep it, and with it any engine
 -- slot built earlier, hidden (the options live preview for a Mage the gate
@@ -977,17 +889,13 @@ local function StartTracking(placeOnly)
         ApplyLook()
     end
     -- Placement belongs to the mover while unlock mode is open (see ApplyPosition).
-    if not (CUI and CUI._unlockActive) then
-        PlaceProxy()
-    end
+    if not (CUI and CUI._unlockActive) then PlaceProxy() end
     if placeOnly then
         SoulState.proxy:Hide()
         return
     end
     SoulState.proxy:Show()
-    if not SoulState.built then
-        EnsureBuilt()
-    end
+    if not SoulState.built then EnsureBuilt() end
 end
 
 -------------------------------------------------------------------------------
@@ -999,26 +907,20 @@ end
 local applyPending
 local function RunPendingApply()
     applyPending = nil
-    if mod.AS_Apply then
-        mod.AS_Apply()
-    end
+    if mod.AS_Apply then mod.AS_Apply() end
 end
 
 -- Talent/loadout changes fire in a burst (a loadout swap applies many nodes at
 -- once); coalesce into one gate re-evaluation.
 local function ScheduleApply()
-    if applyPending then
-        return
-    end
+    if applyPending then return end
     applyPending = true
     C_Timer.After(0.1, RunPendingApply)
 end
 
 local function OnGateEvent(_, evt, _, _, spellId)
     if evt == "UNIT_SPELLCAST_SUCCEEDED" then
-        if spellId ~= SURGE_CAST_ID then
-            return
-        end
+        if spellId ~= SURGE_CAST_ID then return end
         -- Rebind only on a genuine change: the deadband stops haste jitter from
         -- churning the formatter cache, and a denied rebind leaves the previous
         -- (still ticking) binding in place.
@@ -1058,9 +960,7 @@ local function EnsureGateEvents()
 end
 
 local function DropGateEvents()
-    if not SoulState.ev then
-        return
-    end
+    if not SoulState.ev then return end
     SoulState.ev:UnregisterAllEvents()
     SoulState.evGate, SoulState.evCast = nil, nil
 end
@@ -1074,18 +974,14 @@ end
 
 local function DemoOnEvent(_, evt)
     SoulState.demoCombat = (evt == "PLAYER_REGEN_DISABLED")
-    if mod.AS_Apply then
-        mod.AS_Apply()
-    end
+    if mod.AS_Apply then mod.AS_Apply() end
 end
 
 -- Brings S.demoApplied (what AS_Apply reads) and the combat events in line
 -- with the owner; true when that changed anything.
 local function SyncDemo()
     local wanted = (SoulState.demoOwner ~= nil) and OnForClass()
-    if wanted == (SoulState.demoApplied or false) then
-        return false
-    end
+    if wanted == (SoulState.demoApplied or false) then return false end
     SoulState.demoApplied = wanted
     if wanted then
         if not SoulState.demoEv then
@@ -1138,9 +1034,7 @@ end
 -- Applied a frame later, once: a rebuild hides and shows the watcher in one pass.
 local function ApplyDemoState()
     SoulState.demoPending = nil
-    if SyncDemo() and mod.AS_Apply then
-        mod.AS_Apply()
-    end
+    if SyncDemo() and mod.AS_Apply then mod.AS_Apply() end
 end
 
 _G._CURB_ArcaneSoulScreenDemo = function(ownerFrame, on)
@@ -1162,9 +1056,7 @@ end
 -------------------------------------------------------------------------------
 
 function mod.AS_MakeUnlockElement(MK)
-    if not MK or SoulState.class ~= "MAGE" or FOREVER then
-        return nil
-    end
+    if not MK or SoulState.class ~= "MAGE" or FOREVER then return nil end
 
     if not SoulState.unlockHooked and CUI and CUI.RegisterUnlockModeListener then
         SoulState.unlockHooked = true
@@ -1176,9 +1068,7 @@ function mod.AS_MakeUnlockElement(MK)
                 end
             else
                 HidePreview()
-                if mod.AS_Apply then
-                    mod.AS_Apply()
-                end
+                if mod.AS_Apply then mod.AS_Apply() end
             end
         end)
     end
@@ -1190,13 +1080,9 @@ function mod.AS_MakeUnlockElement(MK)
         order = 507,
         noResize = true,
         noAnchorTarget = true,
-        isHidden = function()
-            return not OnForClass()
-        end,
+        isHidden = function() return not OnForClass() end,
         getFrame = function()
-            if not OnForClass() then
-                return nil
-            end
+            if not OnForClass() then return nil end
             if CUI._unlockActive then
                 StartTracking()
                 ShowPreview()
@@ -1205,27 +1091,18 @@ function mod.AS_MakeUnlockElement(MK)
                 -- resolution), so it hands back the proxy WITHOUT showing it.
                 -- See MoverShowOK: Activate() ends in proxy:Show().
                 MakeProxy()
-                if MoverShowOK() then
-                    StartTracking()
-                end
+                if MoverShowOK() then StartTracking() end
             end
             return SoulState.proxy
         end,
-        getSize = function()
-            return ProxySize()
-        end,
+        getSize = function() return ProxySize() end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
-            if not anchorPoint then
-                return
-            end
+            if not anchorPoint then return end
             local profile = SoulCfg()
-            if not profile then
-                return
-            end
-            profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-            if not CUI._unlockActive then
-                PlaceProxy()
-            end
+            if not profile then return end
+            profile.unlockPos =
+                { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+            if not CUI._unlockActive then PlaceProxy() end
         end,
         loadPos = function()
             local profile = SoulCfg()
@@ -1247,27 +1124,17 @@ function mod.AS_MakeUnlockElement(MK)
         end,
         clearPos = function()
             local profile = SoulCfg()
-            if profile then
-                profile.unlockPos = nil
-            end
-            if SoulState.proxy then
-                PlaceProxy()
-            end
+            if profile then profile.unlockPos = nil end
+            if SoulState.proxy then PlaceProxy() end
         end,
         applyPos = function()
-            if not OnForClass() then
-                return
-            end
+            if not OnForClass() then return end
             MakeProxy()
             -- applyPos IS the "put it where it is stored" request, so it PLACES
             -- unconditionally -- but placing is not showing (see MoverShowOK).
-            if MoverShowOK() then
-                StartTracking()
-            end
+            if MoverShowOK() then StartTracking() end
             PlaceProxy()
-            if CUI._unlockActive then
-                ShowPreview()
-            end
+            if CUI._unlockActive then ShowPreview() end
         end,
     })
 end

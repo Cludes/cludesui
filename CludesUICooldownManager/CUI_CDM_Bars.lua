@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Bars.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor = math.floor
@@ -25,9 +21,7 @@ local cdmBarIcons = Inner.cdmBarIcons
 local BuildCDMBar, LayoutCDMBar
 
 local _CDMApplyVisibility
-Inner.SetCDMApplyVisibility = function(func)
-    _CDMApplyVisibility = func
-end
+Inner.SetCDMApplyVisibility = function(func) _CDMApplyVisibility = func end
 
 -------------------------------------------------------------------------------
 --  CDM Bar Position Helpers
@@ -77,9 +71,7 @@ function mod.ResolveGrowAnchorPoint(barInfo, ignoreRowGrow)
         end
     end
     local point = (vert or "") .. (horiz or "")
-    if point == "" then
-        return "CENTER"
-    end
+    if point == "" then return "CENTER" end
     return point
 end
 
@@ -125,24 +117,16 @@ end
 -- and re-apply it on exit. nil/0 = zero work and zero movement (purely
 -- additive feature). On ns: this file is at the 200-local cap.
 mod.CDMAddOffset = function(edge)
-    if not edge then
-        return 0, 0
-    end
+    if not edge then return 0, 0 end
     local ox = edge.addOffsetX or 0
     local oy = edge.addOffsetY or 0
-    if ox == 0 and oy == 0 then
-        return 0, 0
-    end
-    if CludesUI._unlockActive then
-        return 0, 0
-    end
+    if ox == 0 and oy == 0 then return 0, 0 end
+    if CludesUI._unlockActive then return 0, 0 end
     return ox, oy
 end
 
 local function ApplyBarPositionCentered(widget, place, barId)
-    if not place or not place.point then
-        return
-    end
+    if not place or not place.point then return end
     local fw = widget:GetWidth() or 0
     local fh = widget:GetHeight() or 0
     local pixelX, pixelY = place.x or 0, place.y or 0
@@ -214,9 +198,7 @@ local function ApplyBarPositionCentered(widget, place, barId)
 end
 
 local function SaveCDMBarPosition(barId, widget)
-    if not widget then
-        return
-    end
+    if not widget then return end
     local profile = ECME.db.profile
     local scale = widget:GetScale() or 1
     local uiScale = UIParent:GetEffectiveScale()
@@ -230,36 +212,26 @@ local function SaveCDMBarPosition(barId, widget)
 
     -- Read each axis from the matching frame edge (corner points pin both).
     local cx, cy = widget:GetCenter()
-    if not cx or not cy then
-        return
-    end
+    if not cx or not cy then return end
     local ax, ay
     if point:find("LEFT", 1, true) then
         local lx = widget:GetLeft()
-        if not lx then
-            return
-        end
+        if not lx then return end
         ax = lx * ratio
     elseif point:find("RIGHT", 1, true) then
         local rx = widget:GetRight()
-        if not rx then
-            return
-        end
+        if not rx then return end
         ax = rx * ratio
     else
         ax = cx * ratio
     end
     if point:find("TOP", 1, true) then
         local ty = widget:GetTop()
-        if not ty then
-            return
-        end
+        if not ty then return end
         ay = ty * ratio
     elseif point:find("BOTTOM", 1, true) then
         local by = widget:GetBottom()
-        if not by then
-            return
-        end
+        if not by then return end
         ay = by * ratio
     else
         ay = cy * ratio
@@ -286,21 +258,13 @@ end
 -- the bar sits now. Free-standing bars only -- snapped bars are owned by the unlock anchor system, which reads unlockAnchors, not cdmBarPositions.
 function mod.RecaptureBarAnchor(barId)
     local widget = cdmBarFrames[barId]
-    if not widget then
-        return
-    end
+    if not widget then return end
     -- anchorTo bars (cursor, party/player frame, ERB, another bar) are positioned by their
     -- anchor, not cdmBarPositions -- saving live geometry would overwrite the free-standing position with the anchored spot.
     local edge = barDataByKey[barId]
-    if edge and edge.anchorTo and edge.anchorTo ~= "none" then
-        return
-    end
-    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barId) then
-        return
-    end
-    if not widget:GetLeft() then
-        return
-    end
+    if edge and edge.anchorTo and edge.anchorTo ~= "none" then return end
+    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barId) then return end
+    if not widget:GetLeft() then return end
     SaveCDMBarPosition(barId, widget)
 end
 
@@ -309,21 +273,11 @@ end
 --  from the target). RIGHT -> LEFT, LEFT -> RIGHT, DOWN -> TOP, UP -> BOTTOM.
 -------------------------------------------------------------------------------
 local function CDMFrameAnchorPoint(anchorSide, growDir, centered)
-    if growDir == "RIGHT" then
-        return "LEFT"
-    end
-    if growDir == "LEFT" then
-        return "RIGHT"
-    end
-    if growDir == "DOWN" then
-        return "TOP"
-    end
-    if growDir == "UP" then
-        return "BOTTOM"
-    end
-    if growDir == "CENTER" then
-        return "CENTER"
-    end
+    if growDir == "RIGHT" then return "LEFT" end
+    if growDir == "LEFT" then return "RIGHT" end
+    if growDir == "DOWN" then return "TOP" end
+    if growDir == "UP" then return "BOTTOM" end
+    if growDir == "CENTER" then return "CENTER" end
     return "CENTER"
 end
 
@@ -331,20 +285,12 @@ end
 --  Recursive click-through helper -- disables/restores mouse on a frame tree
 -------------------------------------------------------------------------------
 local function SetFrameClickThrough(widget, clickThrough)
-    if not widget then
-        return
-    end
+    if not widget then return end
     if clickThrough then
-        if _cdmMouseState[widget] == nil then
-            _cdmMouseState[widget] = widget:IsMouseEnabled()
-        end
+        if _cdmMouseState[widget] == nil then _cdmMouseState[widget] = widget:IsMouseEnabled() end
         widget:EnableMouse(false)
-        if widget.EnableMouseClicks then
-            widget:EnableMouseClicks(false)
-        end
-        if widget.EnableMouseMotion then
-            widget:EnableMouseMotion(false)
-        end
+        if widget.EnableMouseClicks then widget:EnableMouseClicks(false) end
+        if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
     else
         if _cdmMouseState[widget] ~= nil then
             widget:EnableMouse(_cdmMouseState[widget])
@@ -363,9 +309,7 @@ BuildCDMBar = function(barIndex)
     local profile = ECME.db.profile
     local barList = profile.cdmBars.bars
     local barInfo = barList[barIndex]
-    if not barInfo then
-        return
-    end
+    if not barInfo then return end
 
     local barKey = barInfo.key
     local widget = cdmBarFrames[barKey]
@@ -375,20 +319,12 @@ BuildCDMBar = function(barIndex)
         -- Per-bar Bar Strata (Extras); MEDIUM = the historical hardcoded value.
         widget:SetFrameStrata(barInfo.barStrata or "MEDIUM")
         widget:SetFrameLevel(5)
-        if widget.SetSnapToPixelGrid then
-            widget:SetSnapToPixelGrid(false)
-        end
-        if widget.SetTexelSnappingBias then
-            widget:SetTexelSnappingBias(0)
-        end
-        if widget.EnableMouseClicks then
-            widget:EnableMouseClicks(false)
-        end
+        if widget.SetSnapToPixelGrid then widget:SetSnapToPixelGrid(false) end
+        if widget.SetTexelSnappingBias then widget:SetTexelSnappingBias(0) end
+        if widget.EnableMouseClicks then widget:EnableMouseClicks(false) end
         -- Containers NEVER capture mouse motion: the rect spans the bar's full layout area and a
         -- motion-enabled frame with no unit steals mouseover focus from unit frames underneath. Hover is managed per-icon, gated on the bar's tooltip setting.
-        if widget.EnableMouseMotion then
-            widget:EnableMouseMotion(false)
-        end
+        if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
         widget._barKey = barKey
         widget._barIndex = barIndex
         cdmBarFrames[barKey] = widget
@@ -409,18 +345,14 @@ BuildCDMBar = function(barIndex)
             end
             widget._preMousePos = nil
             SetFrameClickThrough(widget, false)
-            if widget.EnableMouseMotion then
-                widget:EnableMouseMotion(false)
-            end
+            if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
         end
         CludesUI.SetElementVisibility(widget, false)
         return
     end
 
     -- All sizing is width/height based; scale stays 1.
-    if not InCombatLockdown() then
-        widget:SetScale(1)
-    end
+    if not InCombatLockdown() then widget:SetScale(1) end
 
     -- Restore configured strata/level (cursor-anchored uses TOOLTIP/9980)
     if not widget._mouseTrack then
@@ -445,9 +377,7 @@ BuildCDMBar = function(barIndex)
         widget:SetFrameStrata(barInfo.barStrata or "MEDIUM")
         widget:SetFrameLevel(5)
         SetFrameClickThrough(widget, false)
-        if widget.EnableMouseMotion then
-            widget:EnableMouseMotion(false)
-        end
+        if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
     end
     widget._mouseGrow = nil
 
@@ -469,9 +399,7 @@ BuildCDMBar = function(barIndex)
     local anchorKey = barInfo.anchorTo
     if anchorKey == "mouse" then
         -- Stash saved position for restore on unanchor
-        if profile.cdmBarPositions[barKey] then
-            widget._preMousePos = profile.cdmBarPositions[barKey]
-        end
+        if profile.cdmBarPositions[barKey] then widget._preMousePos = profile.cdmBarPositions[barKey] end
         -- Anchor position acts as build direction for cursor tracking
         local anchorPoint = barInfo.anchorPosition or "right"
         local offX = barInfo.anchorOffsetX or 0
@@ -527,9 +455,7 @@ BuildCDMBar = function(barIndex)
                 local firstMove = lastMX == nil
                 lastMX, lastMY = cx, cy
                 local uiScale = UIParent:GetEffectiveScale()
-                if firstMove then
-                    widget:ClearAllPoints()
-                end
+                if firstMove then widget:ClearAllPoints() end
                 widget:SetPoint(
                     pointFrom,
                     UIParent,
@@ -558,9 +484,7 @@ BuildCDMBar = function(barIndex)
             if panelOpen then
                 GlueOff()
                 widget._mouseHiddenByPanel = true
-                if widget:GetAlpha() > 0 then
-                    widget:SetAlpha(0)
-                end
+                if widget:GetAlpha() > 0 then widget:SetAlpha(0) end
                 local iconList = cdmBarIcons[barKey]
                 if iconList then
                     for iconIndex = 1, #iconList do
@@ -601,9 +525,7 @@ BuildCDMBar = function(barIndex)
                 return
             end
             -- Visible and unobstructed: ensure the glue rides the service (covers the visibility show edge and setup re-runs; resume snaps to the cursor via the lastMX reset).
-            if widget._mouseParked or not glueActive then
-                widget._mouseResume()
-            end
+            if widget._mouseParked or not glueActive then widget._mouseResume() end
             -- Mouse-through re-assert: the Decorate/Show/Cooldown path can re-enable mouse on
             -- icons mid-session, and an icon riding the cursor with mouse enabled intermittently
             -- kills [@mouseover] hovercast keys. MUST live here (0.15s, motion-independent) not in the glue: cooldown repaints re-enable mouse with the cursor perfectly still. Cheap no-op when state is clean.
@@ -612,9 +534,7 @@ BuildCDMBar = function(barIndex)
                 for iconIndex = 1, #iconList do
                     local ic = iconList[iconIndex]
                     if ic then
-                        if ic:IsMouseEnabled() then
-                            ic:EnableMouse(false)
-                        end
+                        if ic:IsMouseEnabled() then ic:EnableMouse(false) end
                         if ic.IsMouseMotionEnabled and ic:IsMouseMotionEnabled() then
                             ic:EnableMouseMotion(false)
                         end
@@ -798,18 +718,14 @@ end
 -- "LEFT" (vertical) pins the trailing edge (BOTTOM/RIGHT), so the base (first data) row hugs it
 -- and extra rows grow away. Shared by the layout and the options preview so both agree. ns.* field: 200-local cap.
 function mod.CDMRowsReversed(barInfo)
-    if not barInfo then
-        return false
-    end
+    if not barInfo then return false end
     local growDir = barInfo.growDirection or "CENTER"
     local horizontal = (
         growDir == "RIGHT"
         or growDir == "LEFT"
         or (growDir == "CENTER" and not barInfo.verticalOrientation)
     )
-    if horizontal then
-        return barInfo.rowGrowDirection == "UP"
-    end
+    if horizontal then return barInfo.rowGrowDirection == "UP" end
     return barInfo.rowGrowDirection == "LEFT"
 end
 
@@ -821,9 +737,7 @@ end
 -- Mutual exclusivity is enforced in options; if both are set, base wins.
 local function ComputeTopRowStride(barInfo, total)
     local numRows = barInfo.numRows or 1
-    if numRows < 1 then
-        numRows = 1
-    end
+    if numRows < 1 then numRows = 1 end
     if numRows == 2 then
         local topCount
         if barInfo.customTopRowEnabled and barInfo.topRowCount and barInfo.topRowCount > 0 then
@@ -832,22 +746,16 @@ local function ComputeTopRowStride(barInfo, total)
             topCount = total - math.min(barInfo.bottomRowCount, total)
         end
         if topCount then
-            if topCount < 0 then
-                topCount = 0
-            end
+            if topCount < 0 then topCount = 0 end
             local bottomCount = total - topCount
             -- Custom-row mode uses a second row only once BOTH rows are non-empty; until then report ONE effective row so the bar doesn't reserve or lay out an empty row.
-            if bottomCount <= 0 or topCount <= 0 then
-                return total, 1, total
-            end
+            if bottomCount <= 0 or topCount <= 0 then return total, 1, total end
             return math.max(topCount, bottomCount), numRows, topCount
         end
     end
     local stride = math.ceil(total / numRows)
     local topCount = total - (numRows - 1) * stride
-    if topCount < 0 then
-        topCount = 0
-    end
+    if topCount < 0 then topCount = 0 end
     return stride, numRows, topCount
 end
 
@@ -858,9 +766,7 @@ end
 -- reserved surplus becomes a single centering offset. nil/0 (the default) is a straight passthrough.
 local function ReserveStride(barInfo, stride)
     local minN = barInfo.minSizeIcons
-    if minN and minN > stride then
-        return minN
-    end
+    if minN and minN > stride then return minN end
     return stride
 end
 
@@ -871,13 +777,9 @@ local EMPTY_CDM_BAR_SIZE = { 100, 36 }
 local function CountCDMBarSpells(barId)
     local total = 0
     local sd = mod.GetBarSpellData(barId)
-    if not sd or not sd.assignedSpells then
-        return 0
-    end
+    if not sd or not sd.assignedSpells then return 0 end
     for _, spellRef in ipairs(sd.assignedSpells) do
-        if spellRef and spellRef ~= 0 then
-            total = total + 1
-        end
+        if spellRef and spellRef ~= 0 then total = total + 1 end
     end
     return total
 end
@@ -893,18 +795,18 @@ local function ComputeCDMBarSize(barInfo, total)
     -- EFFECTIVE row count from ComputeTopRowStride: collapses to 1 while a
     -- custom top-row split's second row is empty, so no empty row is reserved.
     local stride, rowList = ComputeTopRowStride(barInfo, total)
-    if rowList < 1 then
-        rowList = 1
-    end
+    if rowList < 1 then rowList = 1 end
     -- Minimum Bar Size reserves extra growth-axis slots (no-op when unset). Unlike LayoutCDMBar
     -- there is no match gate here: this is the pre-layout footprint estimate, and a matched bar's live frame rect (checked first by GetStableCDMBarSize) always wins over it.
     local resStride = ReserveStride(barInfo, stride)
     local growDir = barInfo.growDirection or "CENTER"
     -- Same orientation rule as LayoutCDMBar: a centred bar grows along its orientation.
-    local isH = (growDir == "RIGHT" or growDir == "LEFT" or (growDir == "CENTER" and not barInfo.verticalOrientation))
-    if isH then
-        return resStride * iW + (resStride - 1) * sp, rowList * iH + (rowList - 1) * sp
-    end
+    local isH = (
+        growDir == "RIGHT"
+        or growDir == "LEFT"
+        or (growDir == "CENTER" and not barInfo.verticalOrientation)
+    )
+    if isH then return resStride * iW + (resStride - 1) * sp, rowList * iH + (rowList - 1) * sp end
     return rowList * iW + (rowList - 1) * sp, resStride * iH + (resStride - 1) * sp
 end
 
@@ -912,15 +814,11 @@ end
 local function GetStableCDMBarSize(barId, widget, barInfo)
     if widget then
         local wid, hgt = widget:GetWidth() or 0, widget:GetHeight() or 0
-        if wid > 1 and hgt > 1 then
-            return wid, hgt
-        end
+        if wid > 1 and hgt > 1 then return wid, hgt end
     end
 
     local total = CountCDMBarSpells(barId)
-    if barInfo and total > 0 then
-        return ComputeCDMBarSize(barInfo, total)
-    end
+    if barInfo and total > 0 then return ComputeCDMBarSize(barInfo, total) end
 
     -- Buff-family/custom-buff bars have no assigned spells (icons are auras added live), so
     -- before the first aura count is 0. Size from one icon's configured dimensions so the empty frame -- and the unlock overlay mirroring it -- reflect icon size, not the generic placeholder.
@@ -941,13 +839,9 @@ end
 function mod.CdmMatchInsetSize(targetKey, targetFrame, barFrame)
     local elementList = CludesUI._unlockRegisteredElements
     local elem = elementList and elementList[targetKey]
-    if not (elem and elem.getInsets) then
-        return nil
-    end
+    if not (elem and elem.getInsets) then return nil end
     local left, right, top, bottom = elem.getInsets(targetKey)
-    if not left then
-        return nil
-    end
+    if not left then return nil end
     local k = targetFrame:GetEffectiveScale() / barFrame:GetEffectiveScale()
     return (targetFrame:GetWidth() - left - right) * k, (targetFrame:GetHeight() - top - bottom) * k
 end
@@ -974,28 +868,16 @@ mod._cdmUKey = setmetatable({}, {
 function mod.CdmBarMatchPad(barId)
     local edge = barDataByKey[barId]
     local frame = cdmBarFrames[barId]
-    if not edge or not frame or not CludesUI.BorderMatchPad then
-        return nil
-    end
+    if not edge or not frame or not CludesUI.BorderMatchPad then return nil end
     local texture = edge.borderTexture or "solid"
-    if texture == "solid" then
-        return nil
-    end
-    if mod.IsBarBuffFamily(edge) or edge.barType == "custom_buff" then
-        return nil
-    end
-    if mod.CdmBlizzIcons() then
-        return nil
-    end
+    if texture == "solid" then return nil end
+    if mod.IsBarBuffFamily(edge) or edge.barType == "custom_buff" then return nil end
+    if mod.CdmBlizzIcons() then return nil end
     local shape = edge.iconShape or "none"
-    if shape ~= "none" and shape ~= "cropped" then
-        return nil
-    end
+    if shape ~= "none" and shape ~= "cropped" then return nil end
     local effScale, uiES = frame:GetEffectiveScale(), UIParent:GetEffectiveScale()
     local ratio = 1
-    if effScale and effScale > 0.01 and uiES and uiES > 0 then
-        ratio = uiES / effScale
-    end
+    if effScale and effScale > 0.01 and uiES and uiES > 0 then ratio = uiES / effScale end
     local sz = edge.borderSize or 1
     return CludesUI.BorderMatchPad(
         sz,
@@ -1030,9 +912,7 @@ function mod.CdmMatchAdj(barId, targetKey, isWidth, insetUsed)
             else
                 val = ph
             end
-            if val and val > 0 then
-                t = val
-            end
+            if val and val > 0 then t = val end
         end
     end
     local ow, oh = mod.CdmBarMatchPad(barId)
@@ -1042,9 +922,7 @@ function mod.CdmMatchAdj(barId, targetKey, isWidth, insetUsed)
     else
         val = oh
     end
-    if val and val > 0 then
-        o = val
-    end
+    if val and val > 0 then o = val end
     return t - o
 end
 
@@ -1054,14 +932,10 @@ end
 LayoutCDMBar = function(barId)
     local widget = cdmBarFrames[barId]
     local iconList = cdmBarIcons[barId]
-    if not widget or not iconList then
-        return
-    end
+    if not widget or not iconList then return end
 
     local barInfo = barDataByKey[barId]
-    if not barInfo or not barInfo.enabled then
-        return
-    end
+    if not barInfo or not barInfo.enabled then return end
     local blizzIcons = mod.CdmBlizzIcons()
 
     -- A visibility-hidden cursor bar must NEVER be laid back on-screen: its glue is parked and
@@ -1094,9 +968,7 @@ LayoutCDMBar = function(barId)
                 filtered[#filtered + 1] = iconList[index]
             end
         end
-        if filtered then
-            iconList = filtered
-        end
+        if filtered then iconList = filtered end
     end
 
     local growDir = widget._mouseGrow or barInfo.growDirection or "CENTER"
@@ -1140,14 +1012,10 @@ LayoutCDMBar = function(barId)
     end
     -- Resolve a width/height match target unlock key to a live frame. The match DB stores keys like "CDM_cooldowns" or "MainBar"; the registered unlock element provides a getFrame() callback.
     local function GetMatchTargetFrame(targetKey)
-        if not targetKey then
-            return nil
-        end
+        if not targetKey then return nil end
         local elementList = CludesUI._unlockRegisteredElements
         local elem = elementList and elementList[targetKey]
-        if elem and elem.getFrame then
-            return elem.getFrame(targetKey)
-        end
+        if elem and elem.getFrame then return elem.getFrame(targetKey) end
         return nil
     end
     if widthMatchTarget and #iconList > 0 then
@@ -1155,17 +1023,13 @@ LayoutCDMBar = function(barId)
         local targetW = targetFrame and targetFrame:GetWidth() or 0
         if targetFrame then
             local artW = mod.CdmMatchInsetSize(widthMatchTarget, targetFrame, widget)
-            if artW then
-                targetW = artW
-            end
+            if artW then targetW = artW end
             -- Border-aware match (ns.CdmMatchAdj). Skipped at 0 (no textured
             -- border on either side, or equal ones cancelling); never moves the
             -- targetW > 1 gate below either way.
             if targetW > 1 then
                 local adj = mod.CdmMatchAdj(barId, widthMatchTarget, true, artW ~= nil)
-                if math.abs(adj) > 1e-6 and targetW + adj > 1 then
-                    targetW = targetW + adj
-                end
+                if math.abs(adj) > 1e-6 and targetW + adj > 1 then targetW = targetW + adj end
             end
         end
         local nowDim = CurWidthDim()
@@ -1174,37 +1038,27 @@ LayoutCDMBar = function(barId)
             -- The match's Extra Width: whole physical px on the floored target,
             -- so no second rounding. nil = none stored.
             local mx = CludesUI.GetMatchExtra and CludesUI.GetMatchExtra("w", mod._cdmUKey[barId])
-            if mx then
-                physTarget = physTarget + mx
-            end
+            if mx then physTarget = physTarget + mx end
             local physSp = math.floor(spacing / pixel + 0.5)
             local rawPhysIcon = (physTarget - (nowDim - 1) * physSp) / nowDim
-            if rawPhysIcon < 8 then
-                rawPhysIcon = 8
-            end
+            if rawPhysIcon < 8 then rawPhysIcon = 8 end
             local basePhysIcon = math.floor(rawPhysIcon)
             iconWidth = basePhysIcon * pixel
             widthMatchApplied = true
             local idealPhys = nowDim * basePhysIcon + (nowDim - 1) * physSp
             local extra = physTarget - idealPhys
-            if extra > 0 and extra <= nowDim then
-                extraPixels = extra
-            end
+            if extra > 0 and extra <= nowDim then extraPixels = extra end
         end
     elseif heightMatchTarget and #iconList > 0 then
         local targetFrame = GetMatchTargetFrame(heightMatchTarget)
         local targetH = targetFrame and targetFrame:GetHeight() or 0
         if targetFrame then
             local _, artH = mod.CdmMatchInsetSize(heightMatchTarget, targetFrame, widget)
-            if artH then
-                targetH = artH
-            end
+            if artH then targetH = artH end
             -- Border-aware match, as for width.
             if targetH > 1 then
                 local adj = mod.CdmMatchAdj(barId, heightMatchTarget, false, artH ~= nil)
-                if math.abs(adj) > 1e-6 and targetH + adj > 1 then
-                    targetH = targetH + adj
-                end
+                if math.abs(adj) > 1e-6 and targetH + adj > 1 then targetH = targetH + adj end
             end
         end
         local nowDim = CurHeightDim()
@@ -1214,23 +1068,17 @@ LayoutCDMBar = function(barId)
             local physTarget = math.floor(targetH / pixel + 0.5)
             -- The match's Extra Height, as for width.
             local mx = CludesUI.GetMatchExtra and CludesUI.GetMatchExtra("h", mod._cdmUKey[barId])
-            if mx then
-                physTarget = physTarget + mx
-            end
+            if mx then physTarget = physTarget + mx end
             local physSp = math.floor(spacing / pixel + 0.5)
             local rawPhysIcon = (physTarget - (nowDim - 1) * physSp) / nowDim / cropFactor
-            if rawPhysIcon < 8 then
-                rawPhysIcon = 8
-            end
+            if rawPhysIcon < 8 then rawPhysIcon = 8 end
             local basePhysIcon = math.floor(rawPhysIcon)
             iconWidth = basePhysIcon * pixel
             local basePhysIconH = math.floor(basePhysIcon * cropFactor)
             heightMatchIconHPx = basePhysIconH
             local idealPhys = nowDim * basePhysIconH + (nowDim - 1) * physSp
             local extra = physTarget - idealPhys
-            if extra > 0 and extra <= nowDim then
-                extraPixelsH = extra
-            end
+            if extra > 0 and extra <= nowDim then extraPixelsH = extra end
         end
     end
     if not iconWidth then
@@ -1267,9 +1115,7 @@ LayoutCDMBar = function(barId)
         -- is zero and let it re-anchor (it centers on the bar's position
         -- instead of appending to the frozen edge).
         widget._acLiveW, widget._acLiveH = 0, 0
-        if mod._AuraCustomPoke then
-            mod._AuraCustomPoke(barId)
-        end
+        if mod._AuraCustomPoke then mod._AuraCustomPoke(barId) end
         local curW = widget:GetWidth() or 0
         local curH = widget:GetHeight() or 0
         if curW <= 1 or curH <= 1 then
@@ -1287,9 +1133,7 @@ LayoutCDMBar = function(barId)
                 -- when that icon lands. The assigned-spell estimate would size it for every spell
                 -- on its list, learned or not (a low-level character).
                 local _, rowList = ComputeTopRowStride(barInfo, 1)
-                if rowList < 1 then
-                    rowList = 1
-                end
+                if rowList < 1 then rowList = 1 end
                 local wPx = math.floor(iconWidth / pixel + 0.5)
                 local hPx = math.floor(iconH / pixel + 0.5)
                 local spPx = math.floor(spacing / pixel + 0.5)
@@ -1311,9 +1155,7 @@ LayoutCDMBar = function(barId)
             widget._prevLayoutH = fallbackH
         end
         -- NEVER permanently hide containers on a transient count=0 (spec swaps, viewer pool churn): the next reanchor refills the bar, and hiding would need an explicit re-show that nothing guarantees.
-        if widget._barBg then
-            widget._barBg:Hide()
-        end
+        if widget._barBg then widget._barBg:Hide() end
         return
     end
 
@@ -1350,9 +1192,7 @@ LayoutCDMBar = function(barId)
     then
         local base = barInfo.iconSize or 36
         local function RowSizePx(sz)
-            if sz < 16 then
-                sz = 16
-            end -- clamp to the Icon Scale minimum
+            if sz < 16 then sz = 16 end -- clamp to the Icon Scale minimum
             local wpx = math.floor(sz / pixel + 0.5)
             local hCoord = (shape == "cropped") and math.floor(sz * mod.CdmCropFactor(barInfo) + 0.5) or sz
             local hpx = math.floor(hCoord / pixel + 0.5)
@@ -1399,17 +1239,13 @@ LayoutCDMBar = function(barId)
             local botRowW = botN * rowWPx[2] + math.max(0, botN - 1) * gapPx
             fullWPx = math.max(topRowW, botRowW)
             -- No pad offset needed: both rows are centered against totalWPx below, so growing it IS the centering.
-            if reservedPixels > fullWPx then
-                fullWPx = reservedPixels
-            end
+            if reservedPixels > fullWPx then fullWPx = reservedPixels end
             fullHPx = rowHPx[1] + rowHPx[2] + gapPx
         else
             local topColH = topN * rowHPx[1] + math.max(0, topN - 1) * gapPx
             local botColH = botN * rowHPx[2] + math.max(0, botN - 1) * gapPx
             fullHPx = math.max(topColH, botColH)
-            if reservedPixels > fullHPx then
-                fullHPx = reservedPixels
-            end
+            if reservedPixels > fullHPx then fullHPx = reservedPixels end
             fullWPx = rowWPx[1] + rowWPx[2] + gapPx
         end
     elseif horizontal then
@@ -1439,9 +1275,7 @@ LayoutCDMBar = function(barId)
     -- can land on the SAME total size (1 buff returning to a 1-wide stale
     -- rect), which fires no size/point event -- the tail would stay in its
     -- empty-centered mode underneath the returning real icon.
-    if mod._AuraCustomPoke then
-        mod._AuraCustomPoke(barId)
-    end
+    if mod._AuraCustomPoke then mod._AuraCustomPoke(barId) end
 
     -- SetSize is deferred to AFTER icon positioning (below) so icons and bar resize land on the
     -- same rendered frame. Positioning first is safe: icons use absolute offsets from TOPLEFT, not the frame's current dimensions.
@@ -1451,9 +1285,7 @@ LayoutCDMBar = function(barId)
 
     -- Bar background
     if barInfo.barBgEnabled then
-        if not widget._barBg then
-            widget._barBg = widget:CreateTexture(nil, "BACKGROUND", nil, -8)
-        end
+        if not widget._barBg then widget._barBg = widget:CreateTexture(nil, "BACKGROUND", nil, -8) end
         widget._barBg:ClearAllPoints()
         widget._barBg:SetPoint("TOPLEFT", 0, 0)
         widget._barBg:SetPoint("BOTTOMRIGHT", 0, 0)
@@ -1481,9 +1313,7 @@ LayoutCDMBar = function(barId)
         local topN = customTopCount
         for index, iconTex in ipairs(visibleIcons) do
             local iconScale = iconTex:GetScale() or 1
-            if iconScale < 0.01 then
-                iconScale = 1
-            end
+            if iconScale < 0.01 then iconScale = 1 end
             local iconScale = 1 / iconScale
 
             local rowIdx = (index <= topN) and 1 or 2 -- 1 = top, 2 = bottom
@@ -1493,9 +1323,7 @@ LayoutCDMBar = function(barId)
 
             FC(iconTex).matchExpanded = nil
             iconTex:SetSize(wPx * pixel * iconScale, hPx * pixel * iconScale)
-            if blizzIcons then
-                mod.CdmApplyBlizzIconArt(iconTex)
-            end
+            if blizzIcons then mod.CdmApplyBlizzIconArt(iconTex) end
 
             if isMouseBar then
                 iconTex:SetFrameStrata("TOOLTIP")
@@ -1540,9 +1368,7 @@ LayoutCDMBar = function(barId)
             end
 
             local fd = _getFD(iconTex)
-            if fd then
-                fd._cdmAnchor = { "TOPLEFT", widget, "TOPLEFT", anchorX, anchorY }
-            end
+            if fd then fd._cdmAnchor = { "TOPLEFT", widget, "TOPLEFT", anchorX, anchorY } end
             iconTex:SetPoint("TOPLEFT", widget, "TOPLEFT", anchorX, anchorY)
         end
     else
@@ -1553,19 +1379,13 @@ LayoutCDMBar = function(barId)
         local padOffset = padOffsetPx * pixel
 
         local topRowCount = customTopCount
-        if topRowCount < 0 then
-            topRowCount = 0
-        end
+        if topRowCount < 0 then topRowCount = 0 end
         local bottomRowCount = #visibleIcons - topRowCount
-        if bottomRowCount < 0 then
-            bottomRowCount = 0
-        end
+        if bottomRowCount < 0 then bottomRowCount = 0 end
 
         -- Per-row centering: rows with fewer icons than stride get centered.
         local function RowIconCount(rowIndex)
-            if rowIndex == 0 then
-                return topRowCount
-            end
+            if rowIndex == 0 then return topRowCount end
             return bottomRowCount
         end
 
@@ -1584,9 +1404,7 @@ LayoutCDMBar = function(barId)
         for index, iconTex in ipairs(visibleIcons) do
             -- Compensate for Blizzard's per-icon scale so visual size matches.
             local iconScale = iconTex:GetScale() or 1
-            if iconScale < 0.01 then
-                iconScale = 1
-            end
+            if iconScale < 0.01 then iconScale = 1 end
             local iconScale = 1 / iconScale
 
             -- Sequential index -> bottom-up grid position. Icons 1..topRowCount fill the top row (visual row 0); the rest fill rows 1..effRows-1.
@@ -1618,9 +1436,7 @@ LayoutCDMBar = function(barId)
             end
             FC(iconTex).matchExpanded = (expandedCol or expandedRow) or nil
             iconTex:SetSize(thisIconW * iconScale, thisIconH * iconScale)
-            if blizzIcons then
-                mod.CdmApplyBlizzIconArt(iconTex)
-            end
+            if blizzIcons then mod.CdmApplyBlizzIconArt(iconTex) end
 
             -- Cumulative offsets: each prior expanded icon shifts later icons by 1 physical pixel on
             -- the same axis (extraBefore = growth axis/col; extraBeforeR = perpendicular axis/row).
@@ -1657,16 +1473,12 @@ LayoutCDMBar = function(barId)
             local anchorPt, anchorRelPt, anchorX, anchorY
             local rowOffset = 0
             if horizontal then
-                if rowHasLess then
-                    rowOffset = math.floor((stride - rowCount) * stepW / 2 + 0.5)
-                end
+                if rowHasLess then rowOffset = math.floor((stride - rowCount) * stepW / 2 + 0.5) end
                 anchorPt, anchorRelPt = "TOPLEFT", "TOPLEFT"
                 anchorX = (posX + rowOffset + padOffset) * iconScale
                 anchorY = -(posY + extraBeforeR) * iconScale
             else
-                if rowHasLess then
-                    rowOffset = math.floor((stride - rowCount) * stepH / 2 + 0.5)
-                end
+                if rowHasLess then rowOffset = math.floor((stride - rowCount) * stepH / 2 + 0.5) end
                 anchorPt, anchorRelPt = "TOPLEFT", "TOPLEFT"
                 anchorX = (vRow * stepW + extraBeforeR) * iconScale
                 anchorY = -(colour * stepH + extraBefore + rowOffset + padOffset) * iconScale
@@ -1675,9 +1487,7 @@ LayoutCDMBar = function(barId)
             if anchorPt then
                 -- Stamp BEFORE SetPoint so the synchronous hook sees the new anchor and treats our own SetPoint as a no-op.
                 local fd = _getFD(iconTex)
-                if fd then
-                    fd._cdmAnchor = { anchorPt, widget, anchorRelPt, anchorX, anchorY }
-                end
+                if fd then fd._cdmAnchor = { anchorPt, widget, anchorRelPt, anchorX, anchorY } end
                 iconTex:SetPoint(anchorPt, widget, anchorRelPt, anchorX, anchorY)
             end
         end
@@ -1755,9 +1565,7 @@ LayoutCDMBar = function(barId)
                     elseif growDir == "LEFT" then
                         anchorInfo.offsetX = anchorInfo.offsetX - dw / 2
                     end
-                    if PPo and uiES then
-                        anchorInfo.offsetX = PPo.SnapForES(anchorInfo.offsetX, uiES)
-                    end
+                    if PPo and uiES then anchorInfo.offsetX = PPo.SnapForES(anchorInfo.offsetX, uiES) end
                 end
                 -- Vertical growth: adjust offsetY on LEFT/RIGHT anchors
                 local dh = totalH - oldH
@@ -1774,22 +1582,16 @@ LayoutCDMBar = function(barId)
                     elseif growDir == "UP" then
                         anchorInfo.offsetY = anchorInfo.offsetY + dh / 2
                     end
-                    if PPo and uiES then
-                        anchorInfo.offsetY = PPo.SnapForES(anchorInfo.offsetY, uiES)
-                    end
+                    if PPo and uiES then anchorInfo.offsetY = PPo.SnapForES(anchorInfo.offsetY, uiES) end
                 end
             end
         end
     end
 
-    if CludesUI.IsPointAnchored(unlockKey) then
-        CludesUI.ReapplyOwnAnchor(unlockKey)
-    end
+    if CludesUI.IsPointAnchored(unlockKey) then CludesUI.ReapplyOwnAnchor(unlockKey) end
 
     -- FocusKick: re-anchor against the focus nameplate after every layout pass so the bar tracks size/icon-count changes from the options panel.
-    if barId == mod.FOCUSKICK_BAR_KEY and mod.ReapplyFocusKick then
-        mod.ReapplyFocusKick()
-    end
+    if barId == mod.FOCUSKICK_BAR_KEY and mod.ReapplyFocusKick then mod.ReapplyFocusKick() end
 end
 
 -- Shift-Icons cd-state modes: write the per-frame shift-hidden flag (on the external FC table,
@@ -1800,9 +1602,7 @@ end
 mod._cdShiftLayoutPending = {}
 function mod.SetCdStateShiftHidden(fc, shiftHidden)
     shiftHidden = shiftHidden or false
-    if (fc._cdStateShiftHidden or false) == shiftHidden then
-        return
-    end
+    if (fc._cdStateShiftHidden or false) == shiftHidden then return end
     fc._cdStateShiftHidden = shiftHidden
     -- Overflow-diverted frames render on the target bar, so the gap-close relayout must hit the
     -- bar the frame is actually laid out on. Normally unreachable for diverted frames (Phase 3b's no-op rule), but a one-reanchor window exists after a shift effect is first configured.
@@ -1821,9 +1621,7 @@ end
 -- based at that moment (anchored bars mid-cascade, first-row corner pins, legacy CENTER
 -- positions). Anchored bars still get their deferred anchor batch reapply afterwards (OnSizeChanged fired during LayoutCDMBar), which remains authoritative.
 function mod.QueueShiftLayout(bk)
-    if not bk or mod._cdShiftLayoutPending[bk] then
-        return
-    end
+    if not bk or mod._cdShiftLayoutPending[bk] then return end
     mod._cdShiftLayoutPending[bk] = true
     C_Timer.After(0, function()
         mod._cdShiftLayoutPending[bk] = nil
@@ -1885,12 +1683,8 @@ end
 --  CDM frame pool (so isBuff cannot actually select a tab).
 -------------------------------------------------------------------------------
 local function OpenBlizzardCDMTab(isBuff)
-    if not CooldownViewerSettings then
-        return
-    end
-    if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
-        CludesUI._mainFrame:Hide()
-    end
+    if not CooldownViewerSettings then return end
+    if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then CludesUI._mainFrame:Hide() end
     if CooldownViewerSettings:IsShown() then
         CooldownViewerSettings:Hide()
     else
@@ -1919,9 +1713,7 @@ local function ApplyCDMTooltipState(barId)
         -- Clear a tooltip showing for an icon on this bar
         local ownerFrame = GameTooltip:GetOwner()
         local sfc = ownerFrame and _ecmeFC[ownerFrame]
-        if sfc and sfc.barKey == barId then
-            GameTooltip:Hide()
-        end
+        if sfc and sfc.barKey == barId then GameTooltip:Hide() end
     end
     -- Mouse-motion follows the tooltip setting. A motion-enabled icon with no unit becomes the
     -- mouseover-focus frame and steals hover from unit frames underneath (raid frame hover

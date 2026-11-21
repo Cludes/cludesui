@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Layout.lua
 --
@@ -23,22 +21,16 @@ local ApplyHealthBarTexture, ApplyHealthBarAlpha = Inner.ApplyHealthBarTexture, 
 local ApplyClassIconTexture, ResolveRestrictedClassColor =
     Inner.ApplyClassIconTexture, Inner.ResolveRestrictedClassColor
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- A main frame a mini frame can take its look from: the key of a pick
 -- ("player" always; "target" / "focus" while that frame is enabled and
 -- Visibility does not keep it off screen entirely), else nil.
 local function DonorPick(profile, pick)
-    if pick == "player" then
-        return "player"
-    end
+    if pick == "player" then return "player" end
     if pick == "target" or pick == "focus" then
         local s = profile[pick]
-        if profile.enabledFrames[pick] ~= false and s and mod.VisEffective(s) ~= "never" then
-            return pick
-        end
+        if profile.enabledFrames[pick] ~= false and s and mod.VisEffective(s) ~= "never" then return pick end
     end
     return nil
 end
@@ -51,11 +43,12 @@ end
 function mod.UF_MiniDonorKey(unitKey)
     local profile = saved.profile
     local own = unitKey and profile[unitKey]
-    return DonorPick(profile, own and own.lookSource) or DonorPick(profile, "focus") or DonorPick(profile, "target") or "player"
+    return DonorPick(profile, own and own.lookSource)
+        or DonorPick(profile, "focus")
+        or DonorPick(profile, "target")
+        or "player"
 end
-function mod.GetMiniDonorSettings(unitKey)
-    return saved.profile[mod.UF_MiniDonorKey(unitKey)]
-end
+function mod.GetMiniDonorSettings(unitKey) return saved.profile[mod.UF_MiniDonorKey(unitKey)] end
 local GetMiniDonorSettings = mod.GetMiniDonorSettings
 
 -- The frame a mini frame's auras take their look from (the pet's Copy Auras
@@ -83,9 +76,7 @@ end
 -- mini frame donor's. Boss1-5 share the one boss table.
 function mod.UF_BossBorderSettings()
     local cfg = saved.profile.boss
-    if cfg and cfg.borderCustom == true then
-        return cfg
-    end
+    if cfg and cfg.borderCustom == true then return cfg end
     return GetMiniDonorSettings()
 end
 
@@ -106,12 +97,8 @@ end
 -- only the side differs.
 function mod.GetBossSimpleDebuffMode(cfg)
     local val = cfg and cfg.simpleDebuffs
-    if val == "none" or val == "left" or val == "right" then
-        return val
-    end
-    if val == false then
-        return "none"
-    end
+    if val == "none" or val == "left" or val == "right" then return val end
+    if val == false then return "none" end
     return "left" -- nil or legacy true
 end
 
@@ -119,17 +106,11 @@ end
 -- the regular debuff offsets, so existing offsets carry over as simple-mode defaults
 -- (zero-migration view; import-safe). Once the cog is edited, dedicated keys take over.
 function mod.GetBossSimpleDebuffOffset(cfg)
-    if not cfg then
-        return 0, 0
-    end
+    if not cfg then return 0, 0 end
     local posX = cfg.simpleDebuffOffsetX
-    if posX == nil then
-        posX = cfg.debuffOffsetX or 0
-    end
+    if posX == nil then posX = cfg.debuffOffsetX or 0 end
     local posY = cfg.simpleDebuffOffsetY
-    if posY == nil then
-        posY = cfg.debuffOffsetY or 0
-    end
+    if posY == nil then posY = cfg.debuffOffsetY or 0 end
     return posX, posY
 end
 
@@ -137,29 +118,19 @@ end
 -- (nil/false/unknown -> "none"); a stray boolean true reads as "left" (symmetry with the debuff resolver).
 function mod.GetBossSimpleBuffMode(cfg)
     local val = cfg and cfg.simpleBuffs
-    if val == "none" or val == "left" or val == "right" then
-        return val
-    end
-    if val == true then
-        return "left"
-    end
+    if val == "none" or val == "left" or val == "right" then return val end
+    if val == true then return "left" end
     return "none"
 end
 
 -- Boss Simple Buff Display X/Y offsets. Mirrors ns.GetBossSimpleDebuffOffset
 -- (simpleBuffOffsetX/Y if set, else regular buff offsets; zero-migration, import-safe).
 function mod.GetBossSimpleBuffOffset(cfg)
-    if not cfg then
-        return 0, 0
-    end
+    if not cfg then return 0, 0 end
     local posX = cfg.simpleBuffOffsetX
-    if posX == nil then
-        posX = cfg.buffOffsetX or 0
-    end
+    if posX == nil then posX = cfg.buffOffsetX or 0 end
     local posY = cfg.simpleBuffOffsetY
-    if posY == nil then
-        posY = cfg.buffOffsetY or 0
-    end
+    if posY == nil then posY = cfg.buffOffsetY or 0 end
     return posX, posY
 end
 
@@ -169,24 +140,18 @@ end
 -- to coordinate space with PP.FromPixels for physical-pixel-perfect gaps at any scale.
 -- (0 and negatives are truthy in Lua, so `or 1` only fills nil.)
 function mod.GetBossBuffSpacing(cfg, simpleOn)
-    if simpleOn then
-        return (cfg and cfg.simpleBuffSpacing) or 1
-    end
+    if simpleOn then return (cfg and cfg.simpleBuffSpacing) or 1 end
     return (cfg and cfg.buffSpacing) or 1
 end
 function mod.GetBossDebuffSpacing(cfg, simpleOn)
-    if simpleOn then
-        return (cfg and cfg.simpleDebuffSpacing) or 1
-    end
+    if simpleOn then return (cfg and cfg.simpleDebuffSpacing) or 1 end
     return (cfg and cfg.debuffSpacing) or 1
 end
 
 -- Per-slot Width % of the slot's computed clamp width (100 = normal truncation,
 -- above 100 grants extra room). Applied by the position code to the slot
 -- FontString's width box.
-local function SlotWidthMul(prefs, prefixText)
-    return (prefs[prefixText .. "WidthPct"] or 100) / 100
-end
+local function SlotWidthMul(prefs, prefixText) return (prefs[prefixText .. "WidthPct"] or 100) / 100 end
 
 -- Build the per-slot "Name > Target" indicator tag. The separator is hex-encoded
 -- per byte so any user-typed character (commas, parens, multibyte symbols)
@@ -220,17 +185,13 @@ local ufTextWidths = {
 -- on the right slot (isRight), whose estimate cuts the left text: there a name
 -- keeps the schema's width so a long target name is not overlapped.
 local function NoNameWidth(key)
-    if key == "name" or key == "target" then
-        return 0
-    end
+    if key == "name" or key == "target" then return 0 end
 end
 local function EstimateUFTextWidth(contentFrame, customFmt, isRight)
     if contentFrame == "custom" then
         local TT, category = CludesUI.TextTags, mod.UF_TextTags
         local parsed = TT.Parse(category, customFmt)
-        if not parsed then
-            return UF_TEXT_PADDING
-        end
+        if not parsed then return UF_TEXT_PADDING end
         return TT.EstimateWidth(category, parsed, not isRight and NoNameWidth or nil) + UF_TEXT_PADDING
     end
     return (ufTextWidths[contentFrame] or 0) + UF_TEXT_PADDING
@@ -250,18 +211,14 @@ function mod.UF_IsPowerContent(contentFrame, customFmt)
     then
         return true
     end
-    if contentFrame ~= "custom" then
-        return false
-    end
+    if contentFrame ~= "custom" then return false end
     local parsed = CludesUI.TextTags.Parse(mod.UF_TextTags, customFmt)
     return parsed ~= nil and parsed.reads.pp == true
 end
 
 -- Apply class color to a FontString based on the unit.
 local function ApplyClassColor(fontStr, unitToken, useClassColor, customR, customG, customB)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     if useClassColor and unitToken then
         -- Class color for players (and AI party members), reaction color for NPCs,
         -- matching the health bar and the custom Enemy Colors override. Shared
@@ -299,16 +256,12 @@ end
 -- resolved strictly from the unit token, so an unmapped token recolours nothing.
 -- On ns for the 200-locals cap.
 function mod.UF_RecolorTexts(widget, unitToken, cfg)
-    if not widget or not unitToken then
-        return
-    end
+    if not widget or not unitToken then return end
     if not cfg then
         local k = unitSettingsKey[unitToken]
         cfg = k and saved.profile[k]
     end
-    if not cfg then
-        return
-    end
+    if not cfg then return end
     if widget.LeftText and cfg.leftTextClassColor ~= nil then
         ApplyClassColor(
             widget.LeftText,
@@ -381,9 +334,7 @@ function mod.UF_RecolorTexts(widget, unitToken, cfg)
                 cfg.btbCenterColorB
             )
         end
-        if btb._applyBTBPowerColors then
-            btb._applyBTBPowerColors(cfg)
-        end
+        if btb._applyBTBPowerColors then btb._applyBTBPowerColors(cfg) end
     end
 end
 
@@ -391,13 +342,9 @@ end
 -- so the class-colored ones repaint here with the new palette.
 CludesUI._UFRecolorAllTexts = function()
     local frameList = Inner.frames
-    if not (frameList and saved) then
-        return
-    end
+    if not (frameList and saved) then return end
     for unitToken in pairs(unitSettingsKey) do
-        if frameList[unitToken] then
-            mod.UF_RecolorTexts(frameList[unitToken], unitToken)
-        end
+        if frameList[unitToken] then mod.UF_RecolorTexts(frameList[unitToken], unitToken) end
     end
 end
 
@@ -469,9 +416,7 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
     -- tag updates and power-type changes. The per-slot early-out (no power-color
     -- flag) keeps it ~free when unused.
     local function ApplyBTBPowerColor(fontStr, contentKey, usePowerColor, customFmt)
-        if not fontStr or not usePowerColor then
-            return
-        end
+        if not fontStr or not usePowerColor then return end
         if mod.UF_IsPowerContent(contentKey, customFmt) then
             -- Secret-safe per-unit power color: player resolves via the clean
             -- string token; non-player units recover it from the clean integer
@@ -485,8 +430,18 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
         end
     end
     local function ApplyBTBPowerColors(cfg)
-        ApplyBTBPowerColor(leftFS, cfg.btbLeftContent or "none", cfg.btbLeftPowerColor, cfg.btbLeftCustomFormat)
-        ApplyBTBPowerColor(rightFS, cfg.btbRightContent or "none", cfg.btbRightPowerColor, cfg.btbRightCustomFormat)
+        ApplyBTBPowerColor(
+            leftFS,
+            cfg.btbLeftContent or "none",
+            cfg.btbLeftPowerColor,
+            cfg.btbLeftCustomFormat
+        )
+        ApplyBTBPowerColor(
+            rightFS,
+            cfg.btbRightContent or "none",
+            cfg.btbRightPowerColor,
+            cfg.btbRightCustomFormat
+        )
         ApplyBTBPowerColor(
             centerFS,
             cfg.btbCenterContent or "none",
@@ -625,9 +580,7 @@ end
 -- Positioning is handled by Unlock Mode.
 
 local function ApplyFramePosition(widget, unitToken)
-    if not widget or not saved.profile.positions[unitToken] then
-        return
-    end
+    if not widget or not saved.profile.positions[unitToken] then return end
     local place = saved.profile.positions[unitToken]
     -- UIParent offsets read in the frame's own scale (identity outside Frame Scale).
     local posX, posY = mod.UF_ScaledOffsets(widget, place.x, place.y)
@@ -659,9 +612,7 @@ end
 -- where independent pixel-snapping pushes edges 1px out. Inset by the border
 -- thickness so the GPU cannot render bar pixels outside the border.
 local function EnsureBarClip(widget)
-    if widget._barClip then
-        return widget._barClip
-    end
+    if widget._barClip then return widget._barClip end
     local clip = CreateFrame("Frame", nil, widget)
     clip:SetAllPoints(widget)
     clip:SetClipsChildren(true)
@@ -673,19 +624,13 @@ end
 
 local function ReparentBarsToClip(widget, powerPosition, prefs)
     local clip = EnsureBarClip(widget)
-    if widget.Health and widget.Health:GetParent() ~= clip then
-        widget.Health:SetParent(clip)
-    end
+    if widget.Health and widget.Health:GetParent() ~= clip then widget.Health:SetParent(clip) end
     if widget.Power then
         local detached = (powerPosition == "detached_top" or powerPosition == "detached_bottom")
         if detached then
-            if widget.Power:GetParent() == clip then
-                widget.Power:SetParent(widget)
-            end
+            if widget.Power:GetParent() == clip then widget.Power:SetParent(widget) end
         else
-            if widget.Power:GetParent() ~= clip then
-                widget.Power:SetParent(clip)
-            end
+            if widget.Power:GetParent() ~= clip then widget.Power:SetParent(clip) end
         end
         -- SetParent resets frame level, so re-assert after every reparent.
         if detached then
@@ -702,9 +647,7 @@ local function ReparentBarsToClip(widget, powerPosition, prefs)
         end
         -- Reparent/SetFrameLevel leave the border and text overlay at stale
         -- absolute levels; re-apply after the final level is set.
-        if prefs then
-            mod.UpdatePowerBorder(widget.Power, prefs)
-        end
+        if prefs then mod.UpdatePowerBorder(widget.Power, prefs) end
     end
 end
 
@@ -713,13 +656,9 @@ end
 -- their sum can exceed the frame's snapped total by 1px at some scales; overflow is
 -- trimmed off the last element after re-snapping.
 local function UpdateBordersForScale(widget, unitToken)
-    if not widget then
-        return
-    end
+    if not widget then return end
     local prefs = GetSettingsForUnit(unitToken)
-    if not prefs then
-        return
-    end
+    if not prefs then return end
     local borderSize = prefs.borderSize or 1
 
     -- 1) Main frame border textures.
@@ -761,26 +700,20 @@ local function UpdateBordersForScale(widget, unitToken)
     local btbH = (prefs.bottomTextBar and btbIsAtt) and (prefs.bottomTextBarHeight or 16) or 0
 
     local pStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
-    if isMini and pStyle == "detached" then
-        pStyle = "attached"
-    end
+    if isMini and pStyle == "detached" then pStyle = "attached" end
     local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
     local isAttached = pStyle == "attached"
     -- Use the side the frame was actually built with, so frames like the pet that
     -- hard-code "left" are not treated as "right".
     local pSide = CludesUI._ufPortraitSide[widget] or prefs.portraitSide or "right"
     local effectiveSide = pSide
-    if isAttached and pSide == "top" then
-        effectiveSide = "right"
-    end
+    if isAttached and pSide == "top" then effectiveSide = "right" end
 
     -- Class power above adds height (player only, only if the spec has a resource).
     local cpAboveH = 0
     if unitToken == "player" and SpecHasClassPower() then
         local cpSt = prefs.classPowerStyle or "none"
-        if mod.UF_ForeverCPStyle then
-            cpSt = mod.UF_ForeverCPStyle(cpSt)
-        end
+        if mod.UF_ForeverCPStyle then cpSt = mod.UF_ForeverCPStyle(cpSt) end
         local cpPo = (cpSt == "modern") and (prefs.classPowerPosition or "top") or "none"
         if cpSt == "modern" and cpPo == "above" then
             local cpSizeAdj = prefs.classPowerSize or 8
@@ -795,13 +728,9 @@ local function UpdateBordersForScale(widget, unitToken)
         or pSideSnap == "insideright"
         or pSideSnap == "insidecenter"
     local pSizeAdj = prefs.portraitSize or 0
-    if not isAttached and not isInsideSnap then
-        pSizeAdj = pSizeAdj + 10
-    end
+    if not isAttached and not isInsideSnap then pSizeAdj = pSizeAdj + 10 end
     local adjPortraitH = barHeight + pSizeAdj
-    if adjPortraitH < 8 then
-        adjPortraitH = 8
-    end
+    if adjPortraitH < 8 then adjPortraitH = 8 end
 
     local expectedFrameW
     if not showPortrait or not isAttached then
@@ -827,9 +756,7 @@ local function UpdateBordersForScale(widget, unitToken)
             snappedPortW = widget.Portrait.backdrop:GetWidth()
         end
         -- Trim portrait height to frame height on overflow.
-        if snappedPortH > snappedFrameH + 0.01 then
-            Pix.Height(widget.Portrait.backdrop, snappedFrameH)
-        end
+        if snappedPortH > snappedFrameH + 0.01 then Pix.Height(widget.Portrait.backdrop, snappedFrameH) end
     end
 
     -- 5) Re-snap health bar height and re-anchor to the snapped portrait width.
@@ -848,9 +775,7 @@ local function UpdateBordersForScale(widget, unitToken)
     -- 6) Re-snap power bar.
     if widget.Power and ppPos ~= "none" then
         local pw = prefs.frameWidth
-        if ppIsDet and (prefs.powerWidth or 0) > 0 then
-            pw = prefs.powerWidth
-        end
+        if ppIsDet and (prefs.powerWidth or 0) > 0 then pw = prefs.powerWidth end
         Pix.Size(widget.Power, pw, ph)
         if ppIsAtt and widget.Health then
             -- Height: health + power must not exceed the bar area.
@@ -869,9 +794,7 @@ local function UpdateBordersForScale(widget, unitToken)
         elseif not ppIsDet then
             -- Non-attached non-detached should not happen; trim width to frame.
             local snappedPowerW = widget.Power:GetWidth()
-            if snappedPowerW > snappedFrameW + 0.01 then
-                Pix.Width(widget.Power, snappedFrameW)
-            end
+            if snappedPowerW > snappedFrameW + 0.01 then Pix.Width(widget.Power, snappedFrameW) end
         end
     end
 
@@ -881,17 +804,11 @@ local function UpdateBordersForScale(widget, unitToken)
         local snappedBtbW = widget.BottomTextBar:GetWidth()
         local snappedBtbH = widget.BottomTextBar:GetHeight()
         -- Width: trim to frame width.
-        if snappedBtbW > snappedFrameW + 0.01 then
-            Pix.Width(widget.BottomTextBar, snappedFrameW)
-        end
+        if snappedBtbW > snappedFrameW + 0.01 then Pix.Width(widget.BottomTextBar, snappedFrameW) end
         -- Height: the full stack must fit inside the frame height.
         local usedH = cpAboveH
-        if widget.Health then
-            usedH = usedH + widget.Health:GetHeight()
-        end
-        if widget.Power and ppIsAtt then
-            usedH = usedH + widget.Power:GetHeight()
-        end
+        if widget.Health then usedH = usedH + widget.Health:GetHeight() end
+        if widget.Power and ppIsAtt then usedH = usedH + widget.Power:GetHeight() end
         if usedH + snappedBtbH > snappedFrameH + 0.01 then
             Pix.Height(widget.BottomTextBar, snappedBtbH - (usedH + snappedBtbH - snappedFrameH))
         end
@@ -957,9 +874,7 @@ local function UpdateBordersForScale(widget, unitToken)
 
     -- Blizzard Style: the stock geometry is re-asserted over everything above
     -- (a reload runs its own sweep after the per-unit re-anchors instead).
-    if mod.UF_Blizz() and not mod._ufReloadSweep then
-        mod.UF_ApplyBlizzardLayout(widget, unitToken)
-    end
+    if mod.UF_Blizz() and not mod._ufReloadSweep then mod.UF_ApplyBlizzardLayout(widget, unitToken) end
     if prefs.portraitSeparator or widget._portraitSeparator then
         mod.UpdatePortraitSeparator(
             widget,
@@ -982,9 +897,7 @@ local function GetFrameDimensions(unitToken, settingsOnly)
     -- CludesUI look builds from the unit's settings, whatever the style).
     if not settingsOnly and mod.UF_Blizz() then
         local G = mod.UF_BLIZZ[mod.UF_BlizzKind(unitToken)]
-        if G then
-            return G.w, G.h
-        end
+        if G then return G.w, G.h end
     end
     local prefs = GetSettingsForUnit(unitToken)
     local pStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
@@ -992,9 +905,7 @@ local function GetFrameDimensions(unitToken, settingsOnly)
         or unitToken == "targettarget"
         or unitToken == "focustarget"
         or (unitToken and unitToken:match("^boss%d$"))
-    if miniUnit and pStyle == "detached" then
-        pStyle = "attached"
-    end
+    if miniUnit and pStyle == "detached" then pStyle = "attached" end
     local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
     local isAttached = pStyle == "attached"
     local pSizeAdj = prefs.portraitSize or 0
@@ -1005,31 +916,23 @@ local function GetFrameDimensions(unitToken, settingsOnly)
     local powerIsAtt = (powerPos == "below" or powerPos == "above")
     local powerExtra = powerIsAtt and (prefs.powerHeight or 6) or 0
 
-    if not isAttached then
-        pSizeAdj = pSizeAdj + 10
-    end
+    if not isAttached then pSizeAdj = pSizeAdj + 10 end
     -- Snap returned dimensions to the physical pixel grid so width-matching and
     -- the cog display agree with the rendered frame size.
     local snap = Pix.Snap
     if unitToken == "player" or unitToken == "target" then
         local ptH = prefs.healthHeight + powerExtra
         local adjPH = ptH + pSizeAdj
-        if adjPH < 8 then
-            adjPH = 8
-        end
+        if adjPH < 8 then adjPH = 8 end
         local pSide = prefs.portraitSide or (unitToken == "player" and "left" or "right")
-        if isAttached and pSide == "top" then
-            pSide = (unitToken == "player") and "left" or "right"
-        end
+        if isAttached and pSide == "top" then pSide = (unitToken == "player") and "left" or "right" end
         local wid = (showPortrait and isAttached) and (adjPH + prefs.frameWidth) or prefs.frameWidth
         return snap(wid), snap(ptH + btbExtra)
     elseif unitToken == "focus" then
         local pH = powerIsAtt and (prefs.powerHeight or 6) or 0
         local barH = prefs.healthHeight + pH
         local adjPH = barH + pSizeAdj
-        if adjPH < 8 then
-            adjPH = 8
-        end
+        if adjPH < 8 then adjPH = 8 end
         local wid = (showPortrait and isAttached) and (adjPH + prefs.frameWidth) or prefs.frameWidth
         return snap(wid), snap(barH + btbExtra)
     elseif unitToken == "pet" or unitToken == "targettarget" or unitToken == "focustarget" then
@@ -1047,9 +950,7 @@ local function GetFrameDimensions(unitToken, settingsOnly)
         local pH = powerIsAtt and (prefs.powerHeight or 6) or 0
         local barH = prefs.healthHeight + pH
         local adjPH = barH + pSizeAdj
-        if adjPH < 8 then
-            adjPH = 8
-        end
+        if adjPH < 8 then adjPH = 8 end
         local wid = (showPortrait and isAttached) and (adjPH + prefs.frameWidth) or prefs.frameWidth
         return snap(wid), snap(barH)
     end
@@ -1066,13 +967,14 @@ end
 -- and must NOT happen. Tiling is read back off the live fill texture rather than passed
 -- in, so this stays correct no matter which style function last touched the bar.
 function mod.ApplyFillRotation(barFrame)
-    if not (barFrame and barFrame.SetRotatesTexture) then
-        return
-    end
+    if not (barFrame and barFrame.SetRotatesTexture) then return end
     local vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
     local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
     local tiled = fillTex
-        and ((fillTex.GetHorizTile and fillTex:GetHorizTile()) or (fillTex.GetVertTile and fillTex:GetVertTile()))
+        and (
+            (fillTex.GetHorizTile and fillTex:GetHorizTile())
+            or (fillTex.GetVertTile and fillTex:GetVertTile())
+        )
     barFrame:SetRotatesTexture((vert and not tiled) and true or false)
 end
 
@@ -1080,9 +982,7 @@ end
 -- flips direction WITHIN that axis (horizontal: left-right/right-left; vertical:
 -- bottom-top/top-bottom). On ns so the options preview paints the same way.
 function mod.ApplyHealthOrientation(barFrame, prefs)
-    if not barFrame then
-        return
-    end
+    if not barFrame then return end
     local vert = (prefs and prefs.healthVerticalFill) and true or false
     barFrame:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
     mod.ApplyFillRotation(barFrame)

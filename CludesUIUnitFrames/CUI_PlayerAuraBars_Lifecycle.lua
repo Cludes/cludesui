@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Lifecycle.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local PAB, ComputeGrid, DefaultBuffsCfg = Inner.PAB, Inner.ComputeGrid, Inner.DefaultBuffsCfg
@@ -31,25 +27,15 @@ local RegisterPABCustomUnlock = Inner.RegisterPABCustomUnlock
 local ReloadAllCustomBars, SetPabSuppressed = Inner.ReloadAllCustomBars, Inner.SetPabSuppressed
 
 local buffsContainer
-Inner.buffsContainerSetters[#Inner.buffsContainerSetters + 1] = function(val)
-    buffsContainer = val
-end
+Inner.buffsContainerSetters[#Inner.buffsContainerSetters + 1] = function(val) buffsContainer = val end
 local debuffsContainer
-Inner.debuffsContainerSetters[#Inner.debuffsContainerSetters + 1] = function(val)
-    debuffsContainer = val
-end
+Inner.debuffsContainerSetters[#Inner.debuffsContainerSetters + 1] = function(val) debuffsContainer = val end
 local buffsParent
-Inner.buffsParentSetters[#Inner.buffsParentSetters + 1] = function(val)
-    buffsParent = val
-end
+Inner.buffsParentSetters[#Inner.buffsParentSetters + 1] = function(val) buffsParent = val end
 local debuffsParent
-Inner.debuffsParentSetters[#Inner.debuffsParentSetters + 1] = function(val)
-    debuffsParent = val
-end
+Inner.debuffsParentSetters[#Inner.debuffsParentSetters + 1] = function(val) debuffsParent = val end
 local buffsSlotSig
-Inner.buffsSlotSigSetters[#Inner.buffsSlotSigSetters + 1] = function(val)
-    buffsSlotSig = val
-end
+Inner.buffsSlotSigSetters[#Inner.buffsSlotSigSetters + 1] = function(val) buffsSlotSig = val end
 
 local ClearDegraded -- forward-declared; defined in the recovery section, called from PAB_SetEnabled
 local vehicleHidden = false -- vehicle ride state; feeds pabSuppressed
@@ -79,9 +65,7 @@ end
 -- default bars hid: Disable All must be a complete visual no-op.
 function mod.PAB_SetEnabled(val)
     local pabCfg = PAB()
-    if not pabCfg then
-        return
-    end
+    if not pabCfg then return end
     pabCfg.enabled = val and true or nil
     if val then
         -- A stand-down latched before the module went off has no lane to lift
@@ -90,12 +74,8 @@ function mod.PAB_SetEnabled(val)
         CreateBars()
         return
     end
-    if buffsParent then
-        buffsParent:Hide()
-    end
-    if debuffsParent then
-        debuffsParent:Hide()
-    end
+    if buffsParent then buffsParent:Hide() end
+    if debuffsParent then debuffsParent:Hide() end
     for _, hostFrame in pairs(customBuffParents) do
         hostFrame:Hide()
     end
@@ -123,17 +103,13 @@ function mod.PAB_Style()
     local val = mod._pabStyle
     if val == nil then
         local pabCfg = PAB()
-        if not pabCfg then
-            return "cui"
-        end
+        if not pabCfg then return "cui" end
         val = (pabCfg.useClassicStyle and "classic") or (pabCfg.useBlizzardStyle and "blizzard") or "cui"
         mod._pabStyle = val
     end
     return val
 end
-function mod.PAB_Blizz()
-    return mod.PAB_Style() ~= "cui"
-end
+function mod.PAB_Blizz() return mod.PAB_Style() ~= "cui" end
 
 -- Profile-grade resync, called from the _CUUF_ReloadFrames tail (profile
 -- switches, imports, spec-override swaps all land there): re-asserts the
@@ -145,7 +121,12 @@ end
 -- SAME profile and would corrupt the new profile's saved positions.
 function mod.PAB_ProfileResync()
     local pabCfg = PAB()
-    if pabCfg and pabCfg.enabled == true and pabCfg.useBlizzardBuffs ~= true and not (buffsParent or debuffsParent) then
+    if
+        pabCfg
+        and pabCfg.enabled == true
+        and pabCfg.useBlizzardBuffs ~= true
+        and not (buffsParent or debuffsParent)
+    then
         -- Enabled profile, module never built this session: full build
         -- (covers customs + unlock + natives itself).
         CreateBars()
@@ -177,9 +158,7 @@ end
 -- the natives again, entirely live. Custom bars run in both modes.
 function mod.PAB_ApplyUseBlizzard()
     local pabCfg = PAB()
-    if not (pabCfg and pabCfg.enabled == true) then
-        return
-    end
+    if not (pabCfg and pabCfg.enabled == true) then return end
     if pabCfg.useBlizzardBuffs == true then
         ApplyDefaultBarShown(true)
         ApplyDefaultBarShown(false)
@@ -230,13 +209,9 @@ local pabDegraded = false
 local pabSettleTicker
 local function PabAssistProbe()
     local probe = UnitUsingVehicle or UnitInVehicle
-    if probe("player") then
-        return false
-    end
+    if probe("player") then return false end
     local success, canSelf = pcall(UnitCanAssist, "player", "player")
-    if success and not (issecretvalue and issecretvalue(canSelf)) and canSelf == false then
-        return false
-    end
+    if success and not (issecretvalue and issecretvalue(canSelf)) and canSelf == false then return false end
     return true
 end
 
@@ -252,9 +227,7 @@ local function SetSuppressed(hidden)
     SetPabSuppressed(hidden)
     local pabCfg = PAB()
     -- Regen replay re-derives from the LIVE vehicle state, not the argument.
-    local function recompute()
-        SetSuppressed(vehicleHidden)
-    end
+    local function recompute() SetSuppressed(vehicleHidden) end
     -- Master enable + Use Blizzard Buffs both stand the defaults down: a
     -- vehicle exit during the disabled "Later" window must not re-show them.
     if buffsParent then
@@ -263,7 +236,11 @@ local function SetSuppressed(hidden)
             buffsParent,
             (
                 not pabCfg
-                or (pabCfg.enabled == true and DefaultBuffsCfg(pabCfg).enabled ~= false and pabCfg.useBlizzardBuffs ~= true)
+                or (
+                    pabCfg.enabled == true
+                    and DefaultBuffsCfg(pabCfg).enabled ~= false
+                    and pabCfg.useBlizzardBuffs ~= true
+                )
             ),
             recompute
         )
@@ -308,9 +285,7 @@ local function SetSuppressed(hidden)
     end
 end
 local function HideForVehicle(hidden)
-    if vehicleHidden == hidden then
-        return
-    end
+    if vehicleHidden == hidden then return end
     vehicleHidden = hidden
     -- Lifting: the containers kept parsing behind alpha 0 (dimmed, not hidden,
     -- so their engine events stayed live) and the spell-ID filters are still
@@ -319,9 +294,7 @@ local function HideForVehicle(hidden)
     -- instead: the same event arms it, and it un-dims and forces the clean
     -- re-parse in one execution. Both callers reach the lane immediately, and
     -- every lane exit clears the latch (ClearDegraded below).
-    if not hidden then
-        pabDegraded = true
-    end
+    if not hidden then pabDegraded = true end
     SetSuppressed(hidden)
 end
 
@@ -331,18 +304,14 @@ end
 -- Forward-declared at the top of this file (the enable path clears a
 -- latch that was set while the module was off, where no lane runs at all).
 function ClearDegraded()
-    if not pabDegraded then
-        return
-    end
+    if not pabDegraded then return end
     pabDegraded = false
     SetSuppressed(vehicleHidden)
 end
 
 local cineFixPending = false
 local function ReapplyAfterCinematic()
-    if cineFixPending then
-        return
-    end
+    if cineFixPending then return end
     -- Custom containers count as live consumers too: under Use Blizzard
     -- Buffs the default containers never exist, but custom bars still need
     -- the filter-degradation repair.
@@ -422,12 +391,8 @@ local function ReapplyAfterCinematic()
         -- regain, UF player lane and CDM FakeActive use); the vehicle path only
         -- got it for free through the parents' Hide/Show. Bounded to this
         -- coalesced edge: one full parse per live container per cinematic edge.
-        if buffsContainer then
-            buffsContainer:UpdateAllAuras()
-        end
-        if debuffsContainer then
-            debuffsContainer:UpdateAllAuras()
-        end
+        if buffsContainer then buffsContainer:UpdateAllAuras() end
+        if debuffsContainer then debuffsContainer:UpdateAllAuras() end
         for _, c in pairs(customBuffContainers) do
             c:UpdateAllAuras()
         end
@@ -454,27 +419,21 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- next spec change. Re-drive once per world entry (gated = one
         -- table read for profiles without buckets; idempotent otherwise).
         local pabCfg = PAB()
-        if pabCfg and pabCfg.pabSpecBars then
-            ReloadAllCustomBars()
-        end
+        if pabCfg and pabCfg.pabSpecBars then ReloadAllCustomBars() end
         return
     end
     if evt == "UNIT_ENTERING_VEHICLE" or evt == "UNIT_ENTERED_VEHICLE" then
         HideForVehicle(true)
         return
     end
-    if evt == "UNIT_EXITED_VEHICLE" then
-        HideForVehicle(false)
-    end
+    if evt == "UNIT_EXITED_VEHICLE" then HideForVehicle(false) end
     if evt == "PLAYER_SPECIALIZATION_CHANGED" then
         -- Editing-spec bucket bars activate/park with the spec. Gated to
         -- profiles that actually built buckets -- everyone else pays one
         -- table read per spec change. Unlock elements re-sync through the
         -- per-bar reload wrappers.
         local pabCfg = PAB()
-        if pabCfg and pabCfg.pabSpecBars then
-            ReloadAllCustomBars()
-        end
+        if pabCfg and pabCfg.pabSpecBars then ReloadAllCustomBars() end
         return
     end
     ReapplyAfterCinematic()
@@ -485,9 +444,7 @@ end)
 -- CreateBars can run more than once per session (login build, live enable).
 local recoveryArmed = false
 function mod.PAB_ArmRecovery()
-    if recoveryArmed then
-        return
-    end
+    if recoveryArmed then return end
     recoveryArmed = true
     initFrame:RegisterEvent("CINEMATIC_STOP")
     -- Player-only registration: cinematics fire UNIT_FACTION for every unit;

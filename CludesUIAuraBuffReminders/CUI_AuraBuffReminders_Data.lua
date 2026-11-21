@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Data.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local AURA_SCAN_LIMIT, REMIND, InCombat = Inner.AURA_SCAN_LIMIT, Inner.EABR, Inner.InCombat
@@ -23,9 +19,7 @@ local SpellName, Tex, _AC, GetWeaponCategory = Inner.SpellName, Inner.Tex, Inner
 local IsUnderDuration = Inner.IsUnderDuration
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 --  SPELL DATA Raid Buffs (all non-secret in 12.0, work in combat)
@@ -516,9 +510,7 @@ local WARLOCK_PETS = {
 REMIND.SetWarlockPetSpell = function(e, pets, fallbackTexture, labelOverride)
     local num = #pets
     local position = REMIND._petCycleIndex or 1
-    if position > num then
-        position = 1
-    end
+    if position > num then position = 1 end
     local pet = pets[position]
     e.mode = "spell"
     e.spellID = pet.castSpell
@@ -603,9 +595,7 @@ for _, frame in ipairs(FLASK_ITEMS) do
     -- Build name set from localized spell names (works in all languages)
     local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(frame.buffID)
     local locName = details and details.name
-    if locName then
-        FLASK_NAME_SET[locName] = true
-    end
+    if locName then FLASK_NAME_SET[locName] = true end
     FLASK_NAME_SET[frame.name] = true -- English fallback
 end
 -- Every flask buff of the shared list, the PvP variants and the TWW flasks
@@ -730,9 +720,7 @@ local INKY_BLACK_BUFF = 185394 -- "Inky Blackness" buff (icon 136122); detected 
 -- index scans HARD-ERROR under restriction, even out of combat in raids).
 -- Weapon enchants and raid buffs use other APIs and are not gated here.
 function REMIND.ConsumablePresenceUnverifiable()
-    if InCombat() or InMythicPlusKey() then
-        return true
-    end
+    if InCombat() or InMythicPlusKey() then return true end
     return CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() or false
 end
 
@@ -743,29 +731,19 @@ end
 --  the payload and index scans are secret/blocked -- the tracker simply
 --  reports "not eating" there (the food reminder is suppressed anyway).
 -------------------------------------------------------------------------------
-function REMIND.IsPlayerEating()
-    return REMIND._eatingIID ~= nil
-end
+function REMIND.IsPlayerEating() return REMIND._eatingIID ~= nil end
 
 function REMIND.ScanEatingState()
     REMIND._eatingIID = nil
-    if REMIND.FOREVER then
-        return
-    end -- no food reminder on WoW Forever, so no eating channel to track
-    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
-        return
-    end
+    if REMIND.FOREVER then return end -- no food reminder on WoW Forever, so no eating channel to track
+    if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then return end
     for i = 1, AURA_SCAN_LIMIT do
         local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not success or not aura then
-            break
-        end
+        if not success or not aura then break end
         local ic = aura.icon
         if ic and not isSecret(ic) and ic == 133950 then
             local iid = aura.auraInstanceID
-            if iid ~= nil and not isSecret(iid) then
-                REMIND._eatingIID = iid
-            end
+            if iid ~= nil and not isSecret(iid) then REMIND._eatingIID = iid end
             return
         end
     end
@@ -774,9 +752,7 @@ end
 function REMIND.UpdateEatingState(updateInfo)
     -- 12.1: the whole payload and each list can be secret in restricted
     -- content; indexing a secret errors, so every layer is gated.
-    if updateInfo == nil or isSecret(updateInfo) then
-        return
-    end
+    if updateInfo == nil or isSecret(updateInfo) then return end
     local added = updateInfo.addedAuras
     if added ~= nil and not isSecret(added) then
         for _, aura in ipairs(added) do
@@ -804,25 +780,17 @@ function REMIND.UpdateEatingState(updateInfo)
 end
 
 function REMIND.GetEatingExpirationTime()
-    if not REMIND._eatingIID then
-        return nil
-    end
+    if not REMIND._eatingIID then return nil end
     local success, auraData = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", REMIND._eatingIID)
-    if not success or not auraData then
-        return nil
-    end
+    if not success or not auraData then return nil end
     local exp = auraData.expirationTime
-    if exp == nil or isSecret(exp) or exp == 0 then
-        return nil
-    end
+    if exp == nil or isSecret(exp) or exp == 0 then return nil end
     return exp
 end
 
 local function PlayerHasBuffByName(buffName)
     -- Cannot verify -> treat as present so the reminder never false-fires.
-    if REMIND.ConsumablePresenceUnverifiable() then
-        return true
-    end
+    if REMIND.ConsumablePresenceUnverifiable() then return true end
     if _AC.valid then
         _AC.ensureNames()
         return _AC.byName[buffName] or false
@@ -830,45 +798,29 @@ local function PlayerHasBuffByName(buffName)
     local sawReadableName = false
     for i = 1, AURA_SCAN_LIMIT do
         local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not success then
-            return true
-        end -- can't verify absence
-        if not aura then
-            break
-        end
+        if not success then return true end -- can't verify absence
+        if not aura then break end
         local aName = aura.name
         if aName and not isSecret(aName) then
             sawReadableName = true
-            if aName == buffName then
-                return true
-            end
+            if aName == buffName then return true end
         end
     end
-    if not sawReadableName then
-        return true
-    end -- names secret / empty: suppress
+    if not sawReadableName then return true end -- names secret / empty: suppress
     return false
 end
 
 local function PlayerHasWellFed()
-    if InPvPInstance() then
-        return true
-    end -- food not trackable in PvP, suppress
-    if REMIND.ConsumablePresenceUnverifiable() then
-        return true
-    end
+    if InPvPInstance() then return true end -- food not trackable in PvP, suppress
+    if REMIND.ConsumablePresenceUnverifiable() then return true end
     -- Well Fed has no whitelisted spell ID (icon scan). If icons aren't
     -- readable, suppress rather than false-fire "missing".
     if _AC.valid then
         -- Read from the refresh's one aura pass (shared with the flask check).
         _AC.ensureNames()
-        if not _AC.sawIcon then
-            return true
-        end
+        if not _AC.sawIcon then return true end
         local aura = _AC.wellFed
-        if not aura then
-            return false
-        end
+        if not aura then return false end
         local dur, exp = aura.duration, aura.expirationTime
         if
             dur ~= nil
@@ -884,12 +836,8 @@ local function PlayerHasWellFed()
     local sawReadableIcon = false
     for i = 1, AURA_SCAN_LIMIT do
         local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not success then
-            return true
-        end -- can't verify absence
-        if not aura then
-            break
-        end
+        if not success then return true end -- can't verify absence
+        if not aura then break end
         local ic = aura.icon
         if ic and not isSecret(ic) then
             sawReadableIcon = true
@@ -908,19 +856,13 @@ local function PlayerHasWellFed()
             end
         end
     end
-    if not sawReadableIcon then
-        return true
-    end -- icons secret: suppress
+    if not sawReadableIcon then return true end -- icons secret: suppress
     return false
 end
 
 local function PlayerHasFlaskBuff()
-    if InPvPInstance() then
-        return true
-    end
-    if REMIND.ConsumablePresenceUnverifiable() then
-        return true
-    end
+    if InPvPInstance() then return true end
+    if REMIND.ConsumablePresenceUnverifiable() then return true end
     -- Direct ID lookup for known flask buff IDs (zero allocation)
     for ident in pairs(FLASK_BUFF_ID_SET) do
         local success, result = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
@@ -942,35 +884,23 @@ local function PlayerHasFlaskBuff()
     if _AC.valid then
         _AC.ensureNames()
         for aName in pairs(_AC.byName) do
-            if FLASK_NAME_SET[aName] then
-                return true
-            end
+            if FLASK_NAME_SET[aName] then return true end
         end
     end
     return false
 end
 
 local function PlayerHasInkyBlackness()
-    if InPvPInstance() then
-        return true
-    end
-    if REMIND.ConsumablePresenceUnverifiable() then
-        return true
-    end
+    if InPvPInstance() then return true end
+    if REMIND.ConsumablePresenceUnverifiable() then return true end
     local sawReadable = false
     for i = 1, AURA_SCAN_LIMIT do
         local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not success then
-            return true
-        end -- can't verify absence
-        if not aura then
-            break
-        end
+        if not success then return true end -- can't verify absence
+        if not aura then break end
         local spellRef = aura.spellId
         local ic = aura.icon
-        if (spellRef and not isSecret(spellRef)) or (ic and not isSecret(ic)) then
-            sawReadable = true
-        end
+        if (spellRef and not isSecret(spellRef)) or (ic and not isSecret(ic)) then sawReadable = true end
         if
             (spellRef and not isSecret(spellRef) and spellRef == INKY_BLACK_BUFF)
             or (ic and not isSecret(ic) and ic == 136122)
@@ -988,9 +918,7 @@ local function PlayerHasInkyBlackness()
             return true
         end
     end
-    if not sawReadable then
-        return true
-    end -- fields secret: suppress
+    if not sawReadable then return true end -- fields secret: suppress
     return false
 end
 
@@ -1035,9 +963,7 @@ local function RebuildBagCounts()
 end
 
 local function BagCount(itemId)
-    if _itemCountDirty then
-        RebuildBagCounts()
-    end
+    if _itemCountDirty then RebuildBagCounts() end
     return _bagCounts[itemId] or 0
 end
 
@@ -1046,15 +972,11 @@ end
 -------------------------------------------------------------------------------
 local function FindFlaskItem(preferredKey, lastUsedItemID)
     if preferredKey == "last_used" then
-        if lastUsedItemID and BagCount(lastUsedItemID) > 0 then
-            return lastUsedItemID
-        end
+        if lastUsedItemID and BagCount(lastUsedItemID) > 0 then return lastUsedItemID end
         -- Fallback: first flask found in bags
         for _, frame in ipairs(FLASK_ITEMS) do
             for _, ident in ipairs(frame.items) do
-                if BagCount(ident) > 0 then
-                    return ident
-                end
+                if BagCount(ident) > 0 then return ident end
             end
         end
         return nil
@@ -1062,9 +984,7 @@ local function FindFlaskItem(preferredKey, lastUsedItemID)
     for _, frame in ipairs(FLASK_ITEMS) do
         if frame.key == preferredKey then
             for _, ident in ipairs(frame.items) do
-                if BagCount(ident) > 0 then
-                    return ident
-                end
+                if BagCount(ident) > 0 then return ident end
             end
         end
     end
@@ -1074,18 +994,14 @@ end
 local function FindFoodItem(preferredKey, lastUsedItemID)
     if preferredKey ~= "last_used" then
         for _, frame in ipairs(FOOD_ITEMS) do
-            if frame.key == preferredKey and BagCount(frame.itemID) > 0 then
-                return frame.itemID
-            end
+            if frame.key == preferredKey and BagCount(frame.itemID) > 0 then return frame.itemID end
         end
         -- Preferred food out of stock: try the base variant of the same food
         -- (e.g. "hearty_royal_roast" -> "royal_roast") before giving up on it.
         local baseKey = preferredKey:gsub("^hearty_", "")
         if baseKey ~= preferredKey then
             for _, frame in ipairs(FOOD_ITEMS) do
-                if frame.key == baseKey and BagCount(frame.itemID) > 0 then
-                    return frame.itemID
-                end
+                if frame.key == baseKey and BagCount(frame.itemID) > 0 then return frame.itemID end
             end
         end
     elseif lastUsedItemID and BagCount(lastUsedItemID) > 0 then
@@ -1100,9 +1016,7 @@ local function FindFoodItem(preferredKey, lastUsedItemID)
             local q = 0
             if C_TradeSkillUI and C_TradeSkillUI.GetItemCraftedQualityByItemInfo then
                 local success, tier = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, frame.itemID)
-                if success and tier then
-                    q = tier
-                end
+                if success and tier then q = tier end
             end
             if q > bestQ then
                 bestID = frame.itemID
@@ -1115,15 +1029,11 @@ end
 
 local function FindWeaponEnchantItem(preferredKey, lastUsedItemID, targetCat)
     if preferredKey == "last_used" then
-        if lastUsedItemID and BagCount(lastUsedItemID) > 0 then
-            return lastUsedItemID
-        end
+        if lastUsedItemID and BagCount(lastUsedItemID) > 0 then return lastUsedItemID end
         -- Fallback: first matching weapon enchant in bags
         for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
             local wt = we.weaponType
-            if ((wt == "NEUTRAL") or (wt == targetCat)) and BagCount(we.itemID) > 0 then
-                return we.itemID
-            end
+            if ((wt == "NEUTRAL") or (wt == targetCat)) and BagCount(we.itemID) > 0 then return we.itemID end
         end
         return nil
     end
@@ -1131,9 +1041,7 @@ local function FindWeaponEnchantItem(preferredKey, lastUsedItemID, targetCat)
     for _, choice in ipairs(WEAPON_ENCHANT_CHOICES) do
         if choice.key == preferredKey then
             for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
-                if we.name == choice.name and BagCount(we.itemID) > 0 then
-                    return we.itemID
-                end
+                if we.name == choice.name and BagCount(we.itemID) > 0 then return we.itemID end
             end
             break
         end
@@ -1147,13 +1055,9 @@ end
 --  lazily on change, CollectConsumables reads resolved records each refresh and derives the icon at emit. NOTE: any FUTURE resolution input must also set _resolved.dirty (or join the signature below), or a stale item could show.
 -------------------------------------------------------------------------------
 function REMIND.ResolveConsumables()
-    if not saved then
-        return
-    end
+    if not saved then return end
     local co = saved.profile and saved.profile.consumables
-    if not co then
-        return
-    end
+    if not co then return end
 
     local R = REMIND._resolved
     local popFrame = co.preferredFlask or "last_used"
@@ -1161,9 +1065,7 @@ function REMIND.ResolveConsumables()
     local pwe = co.preferredWeaponEnchant or "last_used"
     -- Lazy gate: rebuild only when dirty (bag/equip event) or a preferred-item setting changed -- options setters only RequestRefresh with no bag event, so a signature compare catches it here.
     local sig = R.sig
-    if not R.dirty and sig.pf == popFrame and sig.pfd == pfd and sig.pwe == pwe then
-        return
-    end
+    if not R.dirty and sig.pf == popFrame and sig.pfd == pfd and sig.pwe == pwe then return end
     R.dirty = false
     sig.pf, sig.pfd, sig.pwe = popFrame, pfd, pwe
 
@@ -1199,9 +1101,7 @@ function REMIND.ResolveConsumables()
                 end
             end
         end
-        if not flaskItemID and FLASK_ITEMS[1] then
-            flaskItemID = FLASK_ITEMS[1].items[1]
-        end
+        if not flaskItemID and FLASK_ITEMS[1] then flaskItemID = FLASK_ITEMS[1].items[1] end
     end
     R.flask.itemID = flaskItemID
 
@@ -1219,9 +1119,7 @@ function REMIND.ResolveConsumables()
                 end
             end
         end
-        if not foodItemID and FOOD_ITEMS[1] then
-            foodItemID = FOOD_ITEMS[1].itemID
-        end
+        if not foodItemID and FOOD_ITEMS[1] then foodItemID = FOOD_ITEMS[1].itemID end
     end
     R.food.itemID = foodItemID
     -- Amber-count flag when the shown food is a backup because the

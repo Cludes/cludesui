@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 -- Core.lua is loaded before this file (see TOC), so ns.K and ns.DB exist.
 
 -- ── Fonts ──────────────────────────────────────────────────────────────────
@@ -10,13 +8,9 @@ end
 -- addon has registered available here, and nothing has to be bundled. The
 -- built-in game fonts remain as the fallback list.
 local function GetLSM()
-    if not LibStub then
-        return nil
-    end
+    if not LibStub then return nil end
     local success, LSM = pcall(LibStub, "LibSharedMedia-3.0", true)
-    if success and LSM and LSM.Fetch then
-        return LSM
-    end
+    if success and LSM and LSM.Fetch then return LSM end
     return nil
 end
 
@@ -51,24 +45,16 @@ function mod.FontPath()
     if value == nil then
         -- No font chosen: follow the CludesUI global font.
         local filePath = CludesUI and CludesUI.GetFontPath and CludesUI.GetFontPath()
-        if type(filePath) == "string" and filePath ~= "" then
-            return filePath
-        end
+        if type(filePath) == "string" and filePath ~= "" then return filePath end
         value = mod.K.DEFAULT_FONT_FACE
     end
-    if type(value) ~= "string" or value == "" then
-        return mod.K.DEFAULT_FONT_FACE
-    end
-    if value:find("\\", 1, true) or value:find("/", 1, true) then
-        return value
-    end
+    if type(value) ~= "string" or value == "" then return mod.K.DEFAULT_FONT_FACE end
+    if value:find("\\", 1, true) or value:find("/", 1, true) then return value end
 
     local LSM = GetLSM()
     if LSM then
         local success, filePath = pcall(LSM.Fetch, LSM, "font", value, true)
-        if success and type(filePath) == "string" and filePath ~= "" then
-            return filePath
-        end
+        if success and type(filePath) == "string" and filePath ~= "" then return filePath end
     end
     return mod.K.DEFAULT_FONT_FACE
 end
@@ -76,9 +62,7 @@ end
 function mod.FontFlags()
     local flags = mod.DB().fontFlags
     for _, f in ipairs(mod.K.FONT_FLAGS) do
-        if f.id == flags then
-            return f.flags
-        end
+        if f.id == flags then return f.flags end
     end
     return "OUTLINE"
 end
@@ -87,14 +71,10 @@ end
 function mod.FontColor(key)
     local stored = mod.DB()[key]
     local default = mod.K.FONT_COLOR_DEFAULTS[key] or { 1, 1, 1 }
-    if type(stored) ~= "table" then
-        return default[1], default[2], default[3]
-    end
+    if type(stored) ~= "table" then return default[1], default[2], default[3] end
     return tonumber(stored[1]) or default[1],
         tonumber(stored[2]) or default[2],
         tonumber(stored[3]) or default[3]
 end
 
-function mod.SetFontColor(key, red, green, blue)
-    mod.DB()[key] = { red, green, blue }
-end
+function mod.SetFontColor(key, red, green, blue) mod.DB()[key] = { red, green, blue } end

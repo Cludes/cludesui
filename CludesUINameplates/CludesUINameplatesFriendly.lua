@@ -1,11 +1,7 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local addon, mod = ...
 
-if not mod then
-    return
-end
+if not mod then return end
 
 local GetFont = mod.GetFont
 local GetNPOutline = mod.GetNPOutline
@@ -15,9 +11,7 @@ local GetFriendlyHealthBarHeight = mod.GetFriendlyHealthBarHeight
 local GetFriendlyHealthBarWidth = mod.GetFriendlyHealthBarWidth
 
 -- Profile alias: reads from the centralized store via ns.db
-local function FP()
-    return mod.db and mod.db.profile
-end
+local function FP() return mod.db and mod.db.profile end
 
 local pairs, ipairs = pairs, ipairs
 local UnitHealth, UnitHealthMax = UnitHealth, UnitHealthMax
@@ -45,34 +39,22 @@ local function IsInFollowerDungeon()
     end
     -- Delves (difficultyID 208) also have follower NPCs
     local _, _, difficultyID = GetInstanceInfo()
-    if difficultyID == 208 then
-        return true
-    end
+    if difficultyID == 208 then return true end
     return false
 end
 
 local function IsFriendlyEnabled()
-    if IsInFollowerDungeon() then
-        return false
-    end
+    if IsInFollowerDungeon() then return false end
     local plate = FP()
-    if not plate or plate.showFriendlyPlayers == false then
-        return false
-    end
+    if not plate or plate.showFriendlyPlayers == false then return false end
     return (plate.friendlyNameOnly == false)
 end
 
 local function IsNameOnlyMode()
-    if IsInFollowerDungeon() then
-        return false
-    end
+    if IsInFollowerDungeon() then return false end
     local plate = FP()
-    if not plate then
-        return false
-    end
-    if plate.showFriendlyPlayers == false then
-        return false
-    end
+    if not plate then return false end
+    if plate.showFriendlyPlayers == false then return false end
     return (plate.friendlyNameOnly ~= false)
 end
 
@@ -90,19 +72,13 @@ end
 -- this gate our overlay / custom plate would draw a name on NPCs the game
 -- intentionally leaves nameless. nil-guarded for safety.
 local function IsFriendlyNPCShownForUnit(unitToken)
-    if not IsFriendlyNPCEnabled() then
-        return false
-    end
+    if not IsFriendlyNPCEnabled() then return false end
     if GetCVarBool("nameplateForceShowUnitName") then
         local plateFrame = C_NamePlate.GetNamePlateForUnit(unitToken)
         local unitFrame = plateFrame and plateFrame.UnitFrame
-        if unitFrame and not unitFrame:IsForbidden() then
-            return unitFrame:ShouldShowName()
-        end
+        if unitFrame and not unitFrame:IsForbidden() then return unitFrame:ShouldShowName() end
     end
-    if unitToken and UnitShouldDisplayName and not UnitShouldDisplayName(unitToken) then
-        return false
-    end
+    if unitToken and UnitShouldDisplayName and not UnitShouldDisplayName(unitToken) then return false end
     return true
 end
 
@@ -120,35 +96,21 @@ do
 end
 
 local function GetNPCTitle(unitToken)
-    if not C_TooltipInfo or not C_TooltipInfo.GetUnit then
-        return nil
-    end
+    if not C_TooltipInfo or not C_TooltipInfo.GetUnit then return nil end
     local payload = C_TooltipInfo.GetUnit(unitToken)
-    if not payload or not payload.lines then
-        return nil
-    end
+    if not payload or not payload.lines then return nil end
     local cbMode = tonumber(GetCVar("colorblindMode")) or 0
     local line = payload.lines[2 + cbMode]
-    if not line then
-        return nil
-    end
+    if not line then return nil end
     local textValue = line.leftText
     -- The secret guard MUST come before any comparison: line.leftText is a secret
     -- string under nameplate taint, and "text == ''" throws on a secret value.
     -- A truthiness check (not text) is secret-safe, so the nil-guard stays first.
-    if not textValue then
-        return nil
-    end
-    if issecretvalue and issecretvalue(textValue) then
-        return nil
-    end
-    if textValue == "" then
-        return nil
-    end
+    if not textValue then return nil end
+    if issecretvalue and issecretvalue(textValue) then return nil end
+    if textValue == "" then return nil end
     -- Filter out level strings (e.g. "Level 70 Humanoid")
-    if textValue:lower():match(LEVEL_PATTERN) then
-        return nil
-    end
+    if textValue:lower():match(LEVEL_PATTERN) then return nil end
     return textValue
 end
 
@@ -161,9 +123,7 @@ local NPC_COLOR_R, NPC_COLOR_G, NPC_COLOR_B = 0, 1, 0
 local function GetFriendlyNPCColor()
     local plate = FP()
     local color = plate and plate.friendlyNPCColor
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return NPC_COLOR_R, NPC_COLOR_G, NPC_COLOR_B
 end
 
@@ -187,9 +147,7 @@ local stockPlateFont, stockPlateOutlined
 local fontOverridden = false
 
 local function SaveOriginalFonts()
-    if not stockPlateFont then
-        stockPlateFont = CludesUI.SnapshotFontObject(SystemFont_NamePlate)
-    end
+    if not stockPlateFont then stockPlateFont = CludesUI.SnapshotFontObject(SystemFont_NamePlate) end
     if not stockPlateOutlined then
         stockPlateOutlined = CludesUI.SnapshotFontObject(SystemFont_NamePlate_Outlined)
     end
@@ -246,9 +204,7 @@ local function ApplySubtitleFont()
     local file = GetFont()
     local px = GetSubTextSize()
     local fontFlags = (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
-    if file == _sfFile and px == _sfSize and fontFlags == _sfFlags then
-        return
-    end
+    if file == _sfFile and px == _sfSize and fontFlags == _sfFlags then return end
     _sfFile, _sfSize, _sfFlags = file, px, fontFlags
     for i = 1, #subTexts do
         CludesUI.SetFontFamily(subTexts[i], file, px, fontFlags, false)
@@ -269,9 +225,7 @@ local function ApplyFriendlyFontOverride(force)
     -- (instanced content) the per-string SetTextHeight re-stamp is denied,
     -- and this relayout is the only lever that clears Blizzard's per-instance
     -- height, so the deferred re-apply forces it there (once per burst).
-    if not force and fontOverridden and font == _ffFile and px == _ffSize then
-        return
-    end
+    if not force and fontOverridden and font == _ffFile and px == _ffSize then return end
     -- Restore to known-good originals first, so a member the new font does not
     -- take (a script it lacks) is back on Blizzard's own face.
     if fontOverridden then
@@ -291,23 +245,13 @@ local function ApplyFriendlyFontOverride(force)
     -- the same), which is what the objects carry after the restore above.
     local function WithOutline(fontFlags)
         fontFlags = fontFlags or ""
-        if fontFlags:find("OUTLINE", 1, true) then
-            return fontFlags
-        end
-        if fontFlags == "" then
-            return "OUTLINE"
-        end
+        if fontFlags:find("OUTLINE", 1, true) then return fontFlags end
+        if fontFlags == "" then return "OUTLINE" end
         return fontFlags .. ", OUTLINE"
     end
     -- Our font, size and outline on every member that takes the font (the
     -- scripts it draws); the other members keep Blizzard's faces at our size.
-    CludesUI.SetFontObjectFace(
-        SystemFont_NamePlate,
-        font,
-        px,
-        WithOutline(SnapFlags(stockPlateFont)),
-        nil
-    )
+    CludesUI.SetFontObjectFace(SystemFont_NamePlate, font, px, WithOutline(SnapFlags(stockPlateFont)), nil)
     CludesUI.SetFontObjectFace(
         SystemFont_NamePlate_Outlined,
         font,
@@ -320,9 +264,7 @@ local function ApplyFriendlyFontOverride(force)
 end
 
 local function RestoreFriendlyFontOverride()
-    if not fontOverridden then
-        return
-    end
+    if not fontOverridden then return end
     fontOverridden = false
     CludesUI.RestoreFontObject(SystemFont_NamePlate, stockPlateFont)
     CludesUI.RestoreFontObject(SystemFont_NamePlate_Outlined, stockPlateOutlined)
@@ -353,9 +295,7 @@ local _nameFixGuard = false
 local ReanchorAllPlayerNames -- forward decl (defined with the sweep helpers)
 
 local function FixNameSizing(nameText)
-    if _nameFixGuard then
-        return
-    end
+    if _nameFixGuard then return end
     _nameFixGuard = true
     local okp, pts = pcall(nameText.GetNumPoints, nameText)
     if okp and (pts or 0) >= 2 then
@@ -382,12 +322,8 @@ end
 -- axes. Deliberately does NOT touch anchors -- re-anchoring from inside
 -- Blizzard's own anchor pass re-enters UpdateAnchors.
 local function _OnNameWidthChanged(self)
-    if _nameFixGuard then
-        return
-    end
-    if not IsNameOnlyMode() then
-        return
-    end
+    if _nameFixGuard then return end
+    if not IsNameOnlyMode() then return end
     _nameFixGuard = true
     self:SetWidth(0)
     self:SetHeight(0)
@@ -401,37 +337,23 @@ end
 -- Blizzard re-stamps it. Guarded because our own write re-enters the hook.
 local _nameHeightGuard = false
 local function ApplyNameTextHeight(nameText)
-    if _nameHeightGuard then
-        return
-    end
-    if not (nameText and nameText.SetTextHeight) then
-        return
-    end
-    if not IsNameOnlyMode() then
-        return
-    end
+    if _nameHeightGuard then return end
+    if not (nameText and nameText.SetTextHeight) then return end
+    if not IsNameOnlyMode() then return end
     _nameHeightGuard = true
     pcall(nameText.SetTextHeight, nameText, GetFriendlyNameSize())
     _nameHeightGuard = false
 end
 
 local function EnsureNameUnconstrained(nameText)
-    if not nameText then
-        return
-    end
+    if not nameText then return end
     FixNameSizing(nameText)
     ApplyNameTextHeight(nameText)
-    if hookedNameFonts[nameText] then
-        return
-    end
+    if hookedNameFonts[nameText] then return end
     hookedNameFonts[nameText] = true
     hooksecurefunc(nameText, "SetWidth", _OnNameWidthChanged)
-    if nameText.SetSize then
-        hooksecurefunc(nameText, "SetSize", _OnNameWidthChanged)
-    end
-    if nameText.SetTextHeight then
-        hooksecurefunc(nameText, "SetTextHeight", ApplyNameTextHeight)
-    end
+    if nameText.SetSize then hooksecurefunc(nameText, "SetSize", _OnNameWidthChanged) end
+    if nameText.SetTextHeight then hooksecurefunc(nameText, "SetTextHeight", ApplyNameTextHeight) end
 end
 
 -- Exposed so the options panel can live-apply a new friendly name-only size.
@@ -442,14 +364,10 @@ function mod.RefreshFriendlyNameSize()
         ApplyFriendlyFontOverride()
         -- Blizzard's per-instance name height overrides the font object, so the
         -- visible plates need the new size stamped on directly.
-        if ReanchorAllPlayerNames then
-            ReanchorAllPlayerNames()
-        end
+        if ReanchorAllPlayerNames then ReanchorAllPlayerNames() end
         -- The guild line hangs half a name-height below the plate centre, so
         -- a new name size moves it (ns lookup: defined later in this file).
-        if mod.RefreshFriendlyBelowName then
-            mod.RefreshFriendlyBelowName()
-        end
+        if mod.RefreshFriendlyBelowName then mod.RefreshFriendlyBelowName() end
     end
 end
 
@@ -464,28 +382,20 @@ end
 local _nameSizeReapplyPending = false
 local _nameSizeReapplyForce = false
 local function ScheduleNameSizeReapply(force)
-    if force then
-        _nameSizeReapplyForce = true
-    end
-    if _nameSizeReapplyPending or not IsNameOnlyMode() then
-        return
-    end
+    if force then _nameSizeReapplyForce = true end
+    if _nameSizeReapplyPending or not IsNameOnlyMode() then return end
     _nameSizeReapplyPending = true
     C_Timer.After(0, function()
         _nameSizeReapplyPending = false
         local forced = _nameSizeReapplyForce
         _nameSizeReapplyForce = false
-        if not IsNameOnlyMode() then
-            return
-        end
+        if not IsNameOnlyMode() then return end
         ApplyFriendlyFontOverride(forced)
         -- Blizzard's own ApplyFrameOptions pass re-anchors the name (that is
         -- what fires this), so re-collapse it here rather than from a
         -- SetPoint hook, which would re-enter UpdateAnchors mid-pass. Rides
         -- the existing debounce, so a burst costs one sweep.
-        if ReanchorAllPlayerNames then
-            ReanchorAllPlayerNames()
-        end
+        if ReanchorAllPlayerNames then ReanchorAllPlayerNames() end
     end)
 end
 
@@ -520,9 +430,7 @@ local function GetNPCTitleColor(unitToken)
     local plate = FP()
     local color = (plate and plate.friendlyNPCTitleColor) or mod.defaults.friendlyNPCTitleColor
     local reactionId = unitToken and UnitReaction(unitToken, "player")
-    if reactionId and reactionId == 4 then
-        return 0.9, 0.7, 0.0, color.a or 1
-    end
+    if reactionId and reactionId == 4 then return 0.9, 0.7, 0.0, color.a or 1 end
     return color.r, color.g, color.b, color.a or 1
 end
 
@@ -530,32 +438,22 @@ local NPC_TITLE_FONT_SIZE = 10
 
 local function AcquireOverlay()
     local overlayFrame = table.remove(npcOverlayPool)
-    if overlayFrame then
-        return overlayFrame
-    end
+    if overlayFrame then return overlayFrame end
     overlayFrame = CreateFrame("Frame", nil, UIParent)
     overlayFrame:SetSize(1, 1)
     overlayFrame.name = overlayFrame:CreateFontString(nil, "OVERLAY")
     SetFSFont(overlayFrame.name, 9, "")
     overlayFrame.name:SetPoint("CENTER", overlayFrame, "CENTER", 0, 0)
     -- The shadow rides the font family SetFSFont gives it (a font object).
-    if overlayFrame.name.SetSnapToPixelGrid then
-        overlayFrame.name:SetSnapToPixelGrid(false)
-    end
-    if overlayFrame.name.SetTexelSnappingBias then
-        overlayFrame.name:SetTexelSnappingBias(0)
-    end
+    if overlayFrame.name.SetSnapToPixelGrid then overlayFrame.name:SetSnapToPixelGrid(false) end
+    if overlayFrame.name.SetTexelSnappingBias then overlayFrame.name:SetTexelSnappingBias(0) end
     -- Title FontString (below name)
     overlayFrame.title = overlayFrame:CreateFontString(nil, "OVERLAY")
     SetFSFont(overlayFrame.title, 9, "")
     overlayFrame.title:SetPoint("TOP", overlayFrame.name, "BOTTOM", 0, -1)
     -- The shadow rides the font family SetFSFont gives it (a font object).
-    if overlayFrame.title.SetSnapToPixelGrid then
-        overlayFrame.title:SetSnapToPixelGrid(false)
-    end
-    if overlayFrame.title.SetTexelSnappingBias then
-        overlayFrame.title:SetTexelSnappingBias(0)
-    end
+    if overlayFrame.title.SetSnapToPixelGrid then overlayFrame.title:SetSnapToPixelGrid(false) end
+    if overlayFrame.title.SetTexelSnappingBias then overlayFrame.title:SetTexelSnappingBias(0) end
     overlayFrame.title:Hide()
     return overlayFrame
 end
@@ -570,14 +468,10 @@ end
 -- plates' marker, it stays hidden while the Raid Marker element is off.
 local function UpdateOverlayRaidIcon(overlayFrame)
     local position
-    if mod.GetRaidMarkerPos() ~= "none" then
-        position = GetRaidTargetIndex(overlayFrame.unit)
-    end
+    if mod.GetRaidMarkerPos() ~= "none" then position = GetRaidTargetIndex(overlayFrame.unit) end
     -- type() is taint-safe: "nil" / "number" without reading a secret index
     if type(position) == "nil" then
-        if overlayFrame.raid then
-            overlayFrame.raid:Hide()
-        end
+        if overlayFrame.raid then overlayFrame.raid:Hide() end
         return
     end
     if not overlayFrame.raid then
@@ -615,12 +509,8 @@ local function ApplyOverlayStyle(overlayFrame, unitToken)
     local font, outline, shadow = GetFont(), GetNPOutline(), GetNPUseShadow()
     CludesUI.SetFontFamily(overlayFrame.name, font, GetNPCOverlayNameSize(), outline, shadow)
     overlayFrame.name:SetTextColor(GetNPCNameColor(unitToken))
-    if overlayFrame.name.SetSnapToPixelGrid then
-        overlayFrame.name:SetSnapToPixelGrid(false)
-    end
-    if overlayFrame.name.SetTexelSnappingBias then
-        overlayFrame.name:SetTexelSnappingBias(0)
-    end
+    if overlayFrame.name.SetSnapToPixelGrid then overlayFrame.name:SetSnapToPixelGrid(false) end
+    if overlayFrame.name.SetTexelSnappingBias then overlayFrame.name:SetTexelSnappingBias(0) end
     CludesUI.SetFontFamily(overlayFrame.title, font, GetNPCTitleSize(), outline, shadow)
     overlayFrame.title:SetTextColor(GetNPCTitleColor(unitToken))
 end
@@ -630,16 +520,12 @@ end
 local function FormatNPCName(label)
     local plate = FP()
     local modeName = plate and plate.friendlyNPCNameFormat
-    if not modeName then
-        return label
-    end
+    if not modeName then return label end
     return CludesUI.ShortName(label, modeName)
 end
 
 local function ShowNPCOverlay(plateFrame, unitToken)
-    if npcOverlays[plateFrame] then
-        return
-    end
+    if npcOverlays[plateFrame] then return end
     local overlayFrame = AcquireOverlay()
     overlayFrame:SetParent(plateFrame)
     overlayFrame:ClearAllPoints()
@@ -686,15 +572,11 @@ end
 
 local function HideNPCOverlay(plateFrame)
     local overlayFrame = npcOverlays[plateFrame]
-    if not overlayFrame then
-        return
-    end
+    if not overlayFrame then return end
     overlayFrame:UnregisterAllEvents()
     overlayFrame:Hide()
     overlayFrame.title:Hide()
-    if overlayFrame.raid then
-        overlayFrame.raid:Hide()
-    end
+    if overlayFrame.raid then overlayFrame.raid:Hide() end
     overlayFrame:SetParent(UIParent)
     overlayFrame:ClearAllPoints()
     overlayFrame.unit = nil
@@ -707,9 +589,7 @@ local function RefreshAllNPCOverlays()
     -- Snapshot first since Hide/Show modifies npcOverlays
     local snapshot = {}
     for plateFrame, overlayFrame in pairs(npcOverlays) do
-        if overlayFrame.unit then
-            snapshot[#snapshot + 1] = { np = plateFrame, unit = overlayFrame.unit }
-        end
+        if overlayFrame.unit then snapshot[#snapshot + 1] = { np = plateFrame, unit = overlayFrame.unit } end
     end
     for _, record in ipairs(snapshot) do
         HideNPCOverlay(record.np)
@@ -722,9 +602,7 @@ mod.RefreshAllNPCOverlays = RefreshAllNPCOverlays
 -- rebuild every overlay, which would re-read each unit's tooltip for the title.
 function mod.RefreshNPCOverlayStyle()
     for _, overlayFrame in pairs(npcOverlays) do
-        if overlayFrame.unit then
-            ApplyOverlayStyle(overlayFrame, overlayFrame.unit)
-        end
+        if overlayFrame.unit then ApplyOverlayStyle(overlayFrame, overlayFrame.unit) end
     end
 end
 
@@ -739,22 +617,14 @@ end
 local function ClassRGB(unitToken, plainOnly)
     local _, tok = UnitClass(unitToken)
     if issecretvalue(tok) then
-        if plainOnly then
-            return false
-        end
+        if plainOnly then return false end
         local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, tok)
-        if success then
-            return true, red, green, blue
-        end
+        if success then return true, red, green, blue end
         local color = C_ClassColor.GetClassColor(tok)
-        if color then
-            return true, color:GetRGB()
-        end
+        if color then return true, color:GetRGB() end
         return false
     end
-    if not tok then
-        return false
-    end
+    if not tok then return false end
     local color = CludesUI.GetClassColor(tok)
     return true, color.r, color.g, color.b
 end
@@ -804,23 +674,15 @@ local function GetSubTextColor(unitToken)
     local plate = FP()
     if plate and plate.friendlyBelowNameClassColor then
         local success, red, green, blue = ClassRGB(unitToken, true)
-        if success then
-            return red, green, blue
-        end
+        if success then return red, green, blue end
     end
     local color = plate and plate.friendlyBelowNameColor
-    if color then
-        return color.r or SUB_TEXT_R, color.g or SUB_TEXT_G, color.b or SUB_TEXT_B
-    end
+    if color then return color.r or SUB_TEXT_R, color.g or SUB_TEXT_G, color.b or SUB_TEXT_B end
     return SUB_TEXT_R, SUB_TEXT_G, SUB_TEXT_B
 end
 
-local function ModeHasTitle(modeName)
-    return modeName == "title" or modeName == "both"
-end
-local function ModeHasGuild(modeName)
-    return modeName == "guild" or modeName == "both"
-end
+local function ModeHasTitle(modeName) return modeName == "title" or modeName == "both" end
+local function ModeHasGuild(modeName) return modeName == "guild" or modeName == "both" end
 -- Show Level (friendlyShowLevel, default off): a friendly PLAYER's level ahead
 -- of the name, "60 | Name", in both friendly modes.
 local function ShowFriendlyLevel()
@@ -845,16 +707,10 @@ end
 -- is no titled form to use (no API, no name yet, or a secret value: secrets
 -- cannot be compared, and the plain-name fallback covers them).
 local function GetTitledName(unitToken)
-    if not UnitPVPName then
-        return nil
-    end
+    if not UnitPVPName then return nil end
     local titled = UnitPVPName(unitToken)
-    if not titled then
-        return nil
-    end
-    if issecretvalue and issecretvalue(titled) then
-        return nil
-    end
+    if not titled then return nil end
+    if issecretvalue and issecretvalue(titled) then return nil end
     return titled
 end
 
@@ -905,33 +761,21 @@ do
     FormatFriendlyName = function(unitToken, label, mayHaveTitle)
         local modeName = FriendlyNameFormat()
         local nameCache = modeName and TitledCache(modeName)
-        if not nameCache then
-            return label
-        end
-        if not mayHaveTitle then
-            return short(label, modeName)
-        end
-        if issecretvalue(label) or type(label) ~= "string" then
-            return label
-        end
+        if not nameCache then return label end
+        if not mayHaveTitle then return short(label, modeName) end
+        if issecretvalue(label) or type(label) ~= "string" then return label end
         local first, surname = UnitName(unitToken)
-        if issecretvalue(first) or type(first) ~= "string" or first == "" then
-            return label
-        end
+        if issecretvalue(first) or type(first) ~= "string" or first == "" then return label end
         local full = WithSurname(first, surname)
         local line = nameCache[full]
         local s = line and line[label]
-        if s then
-            return s
-        end
+        if s then return s end
         local i, jdx = FindWords(label, full)
         if not i and full ~= first then
             -- The first name alone, unless the surname shows too (a form this
             -- does not know: shown whole).
             i, jdx = FindWords(label, first)
-            if i and FindWords(label, surname) then
-                i = nil
-            end
+            if i and FindWords(label, surname) then i = nil end
         end
         s = i and (label:sub(1, i - 1) .. short(full, modeName) .. label:sub(jdx + 1)) or label
         if titledTotal[modeName] >= 256 then
@@ -950,9 +794,7 @@ do
     local aFormat, aMode, aBrackets, aLevel, aDiff, stamped
     StampFriendlyNames = function()
         local plate = FP()
-        if not plate then
-            return
-        end
+        if not plate then return end
         aFormat, aMode = plate.friendlyNameFormat, plate.friendlyBelowName or "none"
         aBrackets, stamped = plate.friendlyBelowNameGuildBrackets ~= false, true
         aLevel, aDiff = plate.friendlyShowLevel == true, plate.friendlyLevelDiffColor == true
@@ -961,9 +803,7 @@ do
     -- profile switches, Spec Overrides). Before the first record it only records.
     function mod.NP_SyncFriendlyNameFormat()
         local plate = FP()
-        if not plate then
-            return
-        end
+        if not plate then return end
         if not stamped then
             StampFriendlyNames()
             return
@@ -987,16 +827,17 @@ end
 -- (display sinks accept secrets), never concatenated or compared.
 local function ApplySubText(fontStr, unitToken)
     local guildName
-    if ModeHasGuild(GetBelowNameMode()) then
-        guildName = GetGuildInfo and GetGuildInfo(unitToken)
-    end
+    if ModeHasGuild(GetBelowNameMode()) then guildName = GetGuildInfo and GetGuildInfo(unitToken) end
     if not guildName then
         fontStr:SetText("")
         return 0
     end
     -- "<GuildName>" by default; the Subtitle Text cog can drop the brackets.
     local plate = FP()
-    fontStr:SetFormattedText((not plate or plate.friendlyBelowNameGuildBrackets ~= false) and "<%s>" or "%s", guildName)
+    fontStr:SetFormattedText(
+        (not plate or plate.friendlyBelowNameGuildBrackets ~= false) and "<%s>" or "%s",
+        guildName
+    )
     local red, green, blue = GetSubTextColor(unitToken)
     fontStr:SetTextColor(red, green, blue)
     return 1
@@ -1031,53 +872,35 @@ local _titledNameGuard = false
 -- Subtitle Text setting off this resolves to the plain single-line name.
 local function UpdateNameOnlyText(nameText)
     local unitToken = nameFSUnits[nameText]
-    if not unitToken or not UnitExists(unitToken) then
-        return
-    end
+    if not unitToken or not UnitExists(unitToken) then return end
     -- Nameplate tokens are recycled: a plate reused for an enemy keeps our
     -- hook and a stale friendly token, so never write on a hostile unit
     -- (Blizzard's own name write is already correct there).
-    if UnitCanAttack("player", unitToken) then
-        return
-    end
+    if UnitCanAttack("player", unitToken) then return end
     local modeName = GetBelowNameMode()
     local isPlayer = UnitIsPlayer(unitToken)
 
     local wanted
-    if ModeHasTitle(modeName) and isPlayer then
-        wanted = GetTitledName(unitToken)
-    end
-    if not wanted then
-        wanted = CludesUI.WithSurname(UnitName(unitToken))
-    end
-    if not wanted or (issecretvalue and issecretvalue(wanted)) then
-        return
-    end
+    if ModeHasTitle(modeName) and isPlayer then wanted = GetTitledName(unitToken) end
+    if not wanted then wanted = CludesUI.WithSurname(UnitName(unitToken)) end
+    if not wanted or (issecretvalue and issecretvalue(wanted)) then return end
     -- The friendly Name Format, while one is saved (players only).
     if isPlayer and FriendlyNameFormat() then
         wanted = FormatFriendlyName(unitToken, wanted, ModeHasTitle(modeName))
     end
-    if isPlayer and ShowFriendlyLevel() then
-        wanted = FriendlyLevelText(unitToken) .. " | " .. wanted
-    end
+    if isPlayer and ShowFriendlyLevel() then wanted = FriendlyLevelText(unitToken) .. " | " .. wanted end
 
     local guildName
-    if ModeHasGuild(modeName) and isPlayer then
-        guildName = GetGuildInfo and GetGuildInfo(unitToken)
-    end
+    if ModeHasGuild(modeName) and isPlayer then guildName = GetGuildInfo and GetGuildInfo(unitToken) end
 
     -- Dedupe key. A secret guild cannot be compared, so it collapses to a
     -- plain "present" marker: a guild RENAME then rides the next respawn
     -- rather than the next hook fire, which is a fair trade for never
     -- touching a secret with ==.
     local guildKey = guildName
-    if guildKey ~= nil and issecretvalue and issecretvalue(guildKey) then
-        guildKey = true
-    end
+    if guildKey ~= nil and issecretvalue and issecretvalue(guildKey) then guildKey = true end
     local st = nameFSText[nameText]
-    if st and st.name == wanted and st.guild == guildKey then
-        return
-    end
+    if st and st.name == wanted and st.guild == guildKey then return end
     if not st then
         st = {}
         nameFSText[nameText] = st
@@ -1129,9 +952,7 @@ local function AttachNameOnlyText(nameText, unitToken)
     if not hookedNameText[nameText] then
         hookedNameText[nameText] = true
         hooksecurefunc(nameText, "SetText", function(self)
-            if _titledNameGuard then
-                return
-            end
+            if _titledNameGuard then return end
             if GetBelowNameMode() == "none" and not FriendlyNameFormat() and not ShowFriendlyLevel() then
                 return
             end
@@ -1152,13 +973,9 @@ end
 -- same way). C_NamePlate.GetNamePlates does not return friendly player plates, so it
 -- cannot drive this sweep.
 local function SweepPlayerSubText()
-    if not IsNameOnlyMode() then
-        return
-    end
+    if not IsNameOnlyMode() then return end
     local pending = mod.pendingUnits
-    if not pending then
-        return
-    end
+    if not pending then return end
     for unitToken, plateFrame in pairs(pending) do
         if
             UnitIsPlayer(unitToken)
@@ -1181,9 +998,7 @@ end
 -- plate and writes only where the two-point anchor came back.
 function ReanchorAllPlayerNames()
     local pending = mod.pendingUnits
-    if not pending then
-        return
-    end
+    if not pending then return end
     for unitToken, plateFrame in pairs(pending) do
         if
             UnitIsPlayer(unitToken)
@@ -1216,13 +1031,9 @@ local hookedUFs = {} -- UnitFrame → true  (hooks are permanent, only applied o
 local modifiedUFs = {} -- unit → { uf = UnitFrame, nameplate = nameplate }
 
 local function SuppressBlizzardUF(unitToken, plateFrame)
-    if modifiedUFs[unitToken] then
-        return
-    end -- already suppressed
+    if modifiedUFs[unitToken] then return end -- already suppressed
     local unitFrame = plateFrame and plateFrame.UnitFrame
-    if not unitFrame then
-        return
-    end
+    if not unitFrame then return end
 
     -- Hand back what an enemy plate parked on this pooled UnitFrame first: the
     -- enemy reclaim hook runs after this one and would otherwise pull the
@@ -1237,15 +1048,11 @@ local function SuppressBlizzardUF(unitToken, plateFrame)
     unitFrame:SetParent(hiddenFrame)
     -- Keep UI widgets (progress gauges on untargetable objectives) visible, as the
     -- enemy plate does.
-    if unitFrame.WidgetContainer then
-        unitFrame.WidgetContainer:SetParent(plateFrame)
-    end
+    if unitFrame.WidgetContainer then unitFrame.WidgetContainer:SetParent(plateFrame) end
     -- Keep the soft-target interact icon visible too, as the enemy plate does:
     -- world objects (herbs, ore, mailboxes) land here as non-attackable
     -- non-players, and their icon lives on this UnitFrame.
-    if unitFrame.SoftTargetFrame then
-        unitFrame.SoftTargetFrame:SetParent(plateFrame)
-    end
+    if unitFrame.SoftTargetFrame then unitFrame.SoftTargetFrame:SetParent(plateFrame) end
 
     modifiedUFs[unitToken] = { uf = unitFrame, nameplate = plateFrame }
 
@@ -1254,14 +1061,10 @@ local function SuppressBlizzardUF(unitToken, plateFrame)
         hookedUFs[unitFrame] = true
         local locked = false
         hooksecurefunc(unitFrame, "SetAlpha", function(self)
-            if locked or self:IsForbidden() then
-                return
-            end
+            if locked or self:IsForbidden() then return end
             locked = true
             local ufUnit = self.unit or (self.GetUnit and self:GetUnit())
-            if ufUnit and modifiedUFs[ufUnit] then
-                self:SetAlpha(0)
-            end
+            if ufUnit and modifiedUFs[ufUnit] then self:SetAlpha(0) end
             locked = false
         end)
     end
@@ -1269,20 +1072,14 @@ end
 
 local function RestoreBlizzardUF(unitToken)
     local record = modifiedUFs[unitToken]
-    if not record then
-        return
-    end
+    if not record then return end
     -- Clear from modifiedUFs FIRST so the SetAlpha hook stops suppressing
     modifiedUFs[unitToken] = nil
     -- Restore UnitFrame back to its nameplate parent
     local unitFrame = record.uf
     unitFrame:SetParent(record.nameplate)
-    if unitFrame.WidgetContainer then
-        unitFrame.WidgetContainer:SetParent(unitFrame)
-    end
-    if unitFrame.SoftTargetFrame then
-        unitFrame.SoftTargetFrame:SetParent(unitFrame)
-    end
+    if unitFrame.WidgetContainer then unitFrame.WidgetContainer:SetParent(unitFrame) end
+    if unitFrame.SoftTargetFrame then unitFrame.SoftTargetFrame:SetParent(unitFrame) end
     unitFrame:SetAlpha(1)
     unitFrame:Show()
 end
@@ -1296,9 +1093,7 @@ end
 local nameOnlyNPCSuppressed = {} -- nameplate → true
 
 local function SuppressNPCNameplate(plateFrame, unitToken)
-    if nameOnlyNPCSuppressed[plateFrame] then
-        return
-    end
+    if nameOnlyNPCSuppressed[plateFrame] then return end
     nameOnlyNPCSuppressed[plateFrame] = true
     -- Always hide Blizzard's default plate (its health bar) for friendly NPCs so
     -- nothing leaks through...
@@ -1306,22 +1101,16 @@ local function SuppressNPCNameplate(plateFrame, unitToken)
     -- ...but only draw our name overlay for NPCs Blizzard would actually name
     -- (respects the "NPC Names" filter via IsFriendlyNPCShownForUnit). Filtered
     -- flavor NPCs stay suppressed with no overlay = fully hidden, matching Blizz.
-    if IsFriendlyNPCShownForUnit(unitToken) then
-        ShowNPCOverlay(plateFrame, unitToken)
-    end
+    if IsFriendlyNPCShownForUnit(unitToken) then ShowNPCOverlay(plateFrame, unitToken) end
 end
 
 local function RestoreNPCNameplate(plateFrame, unitToken)
-    if not nameOnlyNPCSuppressed[plateFrame] then
-        return
-    end
+    if not nameOnlyNPCSuppressed[plateFrame] then return end
     nameOnlyNPCSuppressed[plateFrame] = nil
     -- Hide our overlay
     HideNPCOverlay(plateFrame)
     -- Restore Blizzard UF
-    if unitToken then
-        RestoreBlizzardUF(unitToken)
-    end
+    if unitToken then RestoreBlizzardUF(unitToken) end
 end
 
 -- Name-only friendly NPCs never touch friendlyPlates[] -- they're suppressed
@@ -1335,9 +1124,7 @@ end
 -- over suppression independently in the enemy plate's SetUnit.
 function mod.RemoveFriendlyNPCOverlayForUnit(unitToken, plateFrame)
     plateFrame = plateFrame or (unitToken and C_NamePlate.GetNamePlateForUnit(unitToken))
-    if not plateFrame or not nameOnlyNPCSuppressed[plateFrame] then
-        return
-    end
+    if not plateFrame or not nameOnlyNPCSuppressed[plateFrame] then return end
     nameOnlyNPCSuppressed[plateFrame] = nil
     HideNPCOverlay(plateFrame)
 end
@@ -1348,15 +1135,9 @@ end
 --  NAME_PLATE_UNIT_ADDED reaches any addon event handler.
 -------------------------------------------------------------------------------
 hooksecurefunc(NamePlateDriverFrame, "OnNamePlateAdded", function(_, unitToken)
-    if not unitToken or unitToken == "preview" then
-        return
-    end
-    if UnitCanAttack("player", unitToken) then
-        return
-    end
-    if UnitIsUnit(unitToken, "player") then
-        return
-    end
+    if not unitToken or unitToken == "preview" then return end
+    if UnitCanAttack("player", unitToken) then return end
+    if UnitIsUnit(unitToken, "player") then return end
 
     -- Re-assert the name-only font size for this newly added / camera-revealed
     -- plate -- Blizzard's per-plate setup resets the shared font object to default.
@@ -1371,22 +1152,16 @@ hooksecurefunc(NamePlateDriverFrame, "OnNamePlateAdded", function(_, unitToken)
         -- Suppress Blizzard's default plate for players and ALL enabled friendly
         -- NPCs. The custom plate itself is gated per-NPC in TryAddFriendlyPlate, so
         -- filtered NPCs end up suppressed with no plate = hidden.
-        if not UnitIsPlayer(unitToken) and not IsFriendlyNPCEnabled() then
-            return
-        end
+        if not UnitIsPlayer(unitToken) and not IsFriendlyNPCEnabled() then return end
         local plateFrame = C_NamePlate.GetNamePlateForUnit(unitToken)
-        if plateFrame then
-            SuppressBlizzardUF(unitToken, plateFrame)
-        end
+        if plateFrame then SuppressBlizzardUF(unitToken, plateFrame) end
         return
     end
 
     -- Name-only mode: suppress Blizzard UF and show our own name overlay for NPCs
     if IsNameOnlyMode() and not UnitIsPlayer(unitToken) and IsFriendlyNPCEnabled() then
         local plateFrame = C_NamePlate.GetNamePlateForUnit(unitToken)
-        if plateFrame then
-            SuppressNPCNameplate(plateFrame, unitToken)
-        end
+        if plateFrame then SuppressNPCNameplate(plateFrame, unitToken) end
     end
 
     -- Name-only mode (players): remove Blizzard's width constraint on the
@@ -1425,9 +1200,7 @@ end)
 
 hooksecurefunc(NamePlateDriverFrame, "OnNamePlateRemoved", function(_, unitToken)
     -- Guard: Blizzard settings panel can fire this with "preview" which is not a valid unit
-    if not unitToken or not unitToken:find("^nameplate") then
-        return
-    end
+    if not unitToken or not unitToken:find("^nameplate") then return end
     -- Clean up the NPC overlay if present. The player name-only text needs no
     -- teardown -- it lives on Blizzard's own FontString, which Blizzard
     -- rewrites when the plate is reused (our SetText hook recomposes then).
@@ -1436,9 +1209,7 @@ hooksecurefunc(NamePlateDriverFrame, "OnNamePlateRemoved", function(_, unitToken
         HideNPCOverlay(plateFrame)
         nameOnlyNPCSuppressed[plateFrame] = nil
     end
-    if modifiedUFs[unitToken] then
-        RestoreBlizzardUF(unitToken)
-    end
+    if modifiedUFs[unitToken] then RestoreBlizzardUF(unitToken) end
 end)
 
 -------------------------------------------------------------------------------
@@ -1468,15 +1239,11 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
         -- The classic plate's fixed 1px edge, else the friendly profile's own size.
         local sz = mod.NP_Classic() and 1 or ((FP() and FP().borderSize) or mod.defaults.borderSize)
         Pix.CreateBorder(backing.health, cr, cg, callback, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
-        if not mod.IsBorderEnabled() or mod.NP_Classic() then
-            Pix.HideBorder(backing.health)
-        end
+        if not mod.IsBorderEnabled() or mod.NP_Classic() then Pix.HideBorder(backing.health) end
     end
 
     function backing:ApplyBorder()
-        if not Pix then
-            return
-        end
+        if not Pix then return end
         if mod.NP_Classic() then
             -- Classic WoW UI: the vanilla border art replaces every CUI border.
             Pix.HideBorder(backing.health)
@@ -1502,15 +1269,11 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
             end
         end
         -- WoW Forever: the level box right of the bar, as on the enemy plates.
-        if mod._npForever then
-            mod.NP_ApplyForeverLevelBox(backing, GetFriendlyHealthBarHeight())
-        end
+        if mod._npForever then mod.NP_ApplyForeverLevelBox(backing, GetFriendlyHealthBarHeight()) end
         mod.NP_ApplyRounding(backing)
     end
     function backing:ApplyBorderColor()
-        if not Pix then
-            return
-        end
+        if not Pix then return end
         if mod.IsCustomBorderEnabled() then
             mod.ApplyCustomBorderColor(backing)
         else
@@ -1581,9 +1344,7 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
     SetFSFont(backing.hpText, 10, "OUTLINE, SLUG")
     backing.hpText:SetPoint("RIGHT", backing.health, -2, 0)
     -- Blizzard Style: above the deselected overlay / ring (OVERLAY 4/5).
-    if mod.NP_Style and mod.NP_Style() == "blizzard" then
-        backing.hpText:SetDrawLayer("OVERLAY", 7)
-    end
+    if mod.NP_Style and mod.NP_Style() == "blizzard" then backing.hpText:SetDrawLayer("OVERLAY", 7) end
 
     -- Blizzard Style: under the stock ring / deselected overlay (OVERLAY 4/5);
     -- the CUI and classic looks keep it at 6.
@@ -1660,9 +1421,7 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
 
     backing:SetScript("OnEvent", function(self, evt, ...)
         local handler = self[evt]
-        if handler then
-            handler(self, ...)
-        end
+        if handler then handler(self, ...) end
     end)
 end)
 
@@ -1702,20 +1461,14 @@ function FriendlyFrame:SetUnit(unitToken, plateFrame)
     mod.NP_FriendlyFactionRefresh(self)
     -- Re-apply the enemy border settings every spawn: a pooled plate may have
     -- been released while the user changed the border size/color/toggle.
-    if self.ApplyBorder then
-        self:ApplyBorder()
-    end
-    if self.ApplyBorderColor then
-        self:ApplyBorderColor()
-    end
+    if self.ApplyBorder then self:ApplyBorder() end
+    if self.ApplyBorderColor then self:ApplyBorderColor() end
     -- The base border is back: a recycled plate's target/hover border flags are stale.
     -- ApplyTarget runs after the pair so a plate that spawns as your target keeps the
     -- Target Border Effects instead of losing them to the base repaint.
     self._targetBorderSized, self._fxBorderTinted = nil, nil
     self:ApplyTarget()
-    if mod.ApplyHealthBarTexture then
-        mod.ApplyHealthBarTexture(self)
-    end
+    if mod.ApplyHealthBarTexture then mod.ApplyHealthBarTexture(self) end
 end
 
 function FriendlyFrame:ClearUnit()
@@ -1725,13 +1478,9 @@ function FriendlyFrame:ClearUnit()
     -- _subOff itself survives the pool round-trip: the next UpdateSubText
     -- compares against the freshly computed offset, so a stale anchor can
     -- never leak while the feature-off path stays zero-write.
-    if self._subOff and self._subOff ~= 4 then
-        self.subText1:SetText("")
-    end
+    if self._subOff and self._subOff ~= 4 then self.subText1:SetText("") end
     -- Restore Blizzard UF before clearing our reference
-    if self.unit then
-        RestoreBlizzardUF(self.unit)
-    end
+    if self.unit then RestoreBlizzardUF(self.unit) end
     -- Its faction badge lives on the nameplate, not on this frame.
     mod.NP_FriendlyFactionHide(self)
     self.unit = nil
@@ -1752,9 +1501,7 @@ end
 
 function FriendlyFrame:UpdateHealth()
     local unitToken = self.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     if self.hpCalculator and self.hpCalculator.GetMaximumHealth then
         UnitGetDetailedHealPrediction(unitToken, nil, self.hpCalculator)
         self.hpCalculator:SetMaximumHealthMode(Enum.UnitMaximumHealthMode.Default)
@@ -1784,9 +1531,7 @@ end
 
 function FriendlyFrame:UpdateName()
     local unitToken = self.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     -- Title (when the Subtitle Text mode includes it) rides the name as ONE
     -- string via UnitPVPName; everything else shows the plain name. The Name
     -- Format then shortens a player's name. The player test runs only while a
@@ -1796,15 +1541,9 @@ function FriendlyFrame:UpdateName()
     local showLevel = ShowFriendlyLevel()
     local isPlayer = (hasTitle or fmt or showLevel) and UnitIsPlayer(unitToken)
     local unitName
-    if hasTitle and isPlayer then
-        unitName = GetTitledName(unitToken)
-    end
-    if not unitName then
-        unitName = CludesUI.WithSurname(UnitName(unitToken))
-    end
-    if fmt and isPlayer and unitName then
-        unitName = FormatFriendlyName(unitToken, unitName, hasTitle)
-    end
+    if hasTitle and isPlayer then unitName = GetTitledName(unitToken) end
+    if not unitName then unitName = CludesUI.WithSurname(UnitName(unitToken)) end
+    if fmt and isPlayer and unitName then unitName = FormatFriendlyName(unitToken, unitName, hasTitle) end
     if showLevel and isPlayer and unitName then
         -- The name may be secret: only ever a display argument.
         self.name:SetFormattedText("%s | %s", FriendlyLevelText(unitToken), unitName)
@@ -1824,9 +1563,7 @@ end
 -- zero-write fast path while the feature is off.
 function FriendlyFrame:UpdateSubText()
     local unitToken = self.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     local lines = 0
     local px = 0
     if ModeHasGuild(GetBelowNameMode()) and UnitIsPlayer(unitToken) then
@@ -1853,9 +1590,7 @@ function FriendlyFrame:UpdateSubText()
 end
 
 function FriendlyFrame:UpdateRaidIcon()
-    if not self.unit then
-        return
-    end
+    if not self.unit then return end
     local place = mod.GetRaidMarkerPos()
     if place == "none" then
         self.raidFrame:Hide()
@@ -1903,9 +1638,7 @@ function FriendlyFrame:UpdateRaidIcon()
 end
 
 function FriendlyFrame:ApplyTarget()
-    if not self.unit then
-        return
-    end
+    if not self.unit then return end
     local isTarget = UnitIsUnit(self.unit, "target")
     self.glow:SetShown(isTarget)
     local plate = FP()
@@ -1924,9 +1657,7 @@ function FriendlyFrame:ApplyTarget()
     self.leftArrow:SetShown(showArrows or false)
     self.rightArrow:SetShown(showArrows or false)
     -- Blizzard Style: stock selection ring / deselected overlay on friendly plates too.
-    if mod.NP_Style and mod.NP_Style() == "blizzard" then
-        mod.NP_ApplyBlizzSelection(self)
-    end
+    if mod.NP_Style and mod.NP_Style() == "blizzard" then mod.NP_ApplyBlizzSelection(self) end
     -- Target Border Effects (friendlyTargetBorderFx, default off): the enemy plate's
     -- target Border Size and Border Color channels, restored on untarget. The hover
     -- effect's target-wins checks (ApplyHoverExtras) read _isTarget and
@@ -1938,9 +1669,7 @@ function FriendlyFrame:ApplyTarget()
     if fx or self._targetBorderSized or self._fxBorderTinted then
         local Pix = CludesUI.PP
         local tbsz
-        if fx and mod.GetTargetGlowBorderSize() then
-            tbsz = mod.GetTargetBorderSizeValue()
-        end
+        if fx and mod.GetTargetGlowBorderSize() then tbsz = mod.GetTargetBorderSizeValue() end
         if tbsz then
             if mod.IsCustomBorderEnabled() then
                 mod.ApplyCustomBorderStyle(self, tbsz)
@@ -1956,9 +1685,7 @@ function FriendlyFrame:ApplyTarget()
         if fx and mod.GetTargetGlowBorderColor() then
             local bc = mod.GetTargetBorderColor()
             if mod.IsCustomBorderEnabled() then
-                if not self._customBorder then
-                    mod.ApplyCustomBorderStyle(self)
-                end
+                if not self._customBorder then mod.ApplyCustomBorderStyle(self) end
                 CludesUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
             else
                 mod.NP_BasicBorderColor(self, bc.r, bc.g, bc.b, 1)
@@ -1971,12 +1698,8 @@ function FriendlyFrame:ApplyTarget()
     end
 end
 
-function FriendlyFrame:UNIT_HEALTH()
-    self:UpdateHealth()
-end
-function FriendlyFrame:UNIT_NAME_UPDATE()
-    self:UpdateName()
-end
+function FriendlyFrame:UNIT_HEALTH() self:UpdateHealth() end
+function FriendlyFrame:UNIT_NAME_UPDATE() self:UpdateName() end
 
 -------------------------------------------------------------------------------
 --  Friendly event manager (target, mouseover, raid icons)
@@ -2011,24 +1734,14 @@ local function TryAddFriendlyPlate(unitToken)
             return
         end
     end
-    if UnitCanAttack("player", unitToken) then
-        return
-    end
-    if UnitIsUnit(unitToken, "player") then
-        return
-    end
+    if UnitCanAttack("player", unitToken) then return end
+    if UnitIsUnit(unitToken, "player") then return end
     -- Skip non-player units unless friendly NPC plates are enabled (and the unit
     -- isn't filtered out by Blizzard's "NPC Names" setting).
-    if not UnitIsPlayer(unitToken) and not IsFriendlyNPCShownForUnit(unitToken) then
-        return
-    end
+    if not UnitIsPlayer(unitToken) and not IsFriendlyNPCShownForUnit(unitToken) then return end
     local plateFrame = C_NamePlate.GetNamePlateForUnit(unitToken)
-    if not plateFrame then
-        return
-    end
-    if friendlyPlates[unitToken] then
-        return
-    end
+    if not plateFrame then return end
+    if friendlyPlates[unitToken] then return end
 
     local backing = friendlyFrameCache:Acquire()
     if not backing._mixedIn then
@@ -2042,15 +1755,9 @@ mod.TryAddFriendlyPlate = TryAddFriendlyPlate
 
 function mod.RemoveFriendlyPlate(unitToken)
     local backing = friendlyPlates[unitToken]
-    if not backing then
-        return
-    end
-    if mod._ClearMouseoverPlate then
-        mod._ClearMouseoverPlate(backing)
-    end
-    if _cachedFriendlyTargetPlate == backing then
-        _cachedFriendlyTargetPlate = nil
-    end
+    if not backing then return end
+    if mod._ClearMouseoverPlate then mod._ClearMouseoverPlate(backing) end
+    if _cachedFriendlyTargetPlate == backing then _cachedFriendlyTargetPlate = nil end
     backing:ClearUnit()
     friendlyFrameCache:Release(backing)
     friendlyPlates[unitToken] = nil
@@ -2061,21 +1768,13 @@ end
 -- until HideBlizzardFrame takes over in the enemy plate's SetUnit.
 function mod.RemoveFriendlyPlateNoRestore(unitToken)
     local backing = friendlyPlates[unitToken]
-    if not backing then
-        return
-    end
-    if mod._ClearMouseoverPlate then
-        mod._ClearMouseoverPlate(backing)
-    end
-    if _cachedFriendlyTargetPlate == backing then
-        _cachedFriendlyTargetPlate = nil
-    end
+    if not backing then return end
+    if mod._ClearMouseoverPlate then mod._ClearMouseoverPlate(backing) end
+    if _cachedFriendlyTargetPlate == backing then _cachedFriendlyTargetPlate = nil end
     -- Clean up our plate without restoring Blizzard UF
     backing:UnregisterAllEvents()
     backing.name:SetText("")
-    if backing._subOff and backing._subOff ~= 4 then
-        backing.subText1:SetText("")
-    end
+    if backing._subOff and backing._subOff ~= 4 then backing.subText1:SetText("") end
     -- Clear modifiedUFs entry so the friendly SetAlpha hook stops interfering
     modifiedUFs[unitToken] = nil
     -- Promoted to an enemy plate, which draws its own faction badge.
@@ -2102,18 +1801,14 @@ end
 --  Friendly event manager function definitions
 -------------------------------------------------------------------------------
 function RegisterFriendlyManager()
-    if friendlyManagerRegistered then
-        return
-    end
+    if friendlyManagerRegistered then return end
     friendlyManager:RegisterEvent("PLAYER_TARGET_CHANGED")
     friendlyManager:RegisterEvent("RAID_TARGET_UPDATE")
     friendlyManagerRegistered = true
 end
 
 function UnregisterFriendlyManager()
-    if not friendlyManagerRegistered then
-        return
-    end
+    if not friendlyManagerRegistered then return end
     friendlyManager:UnregisterAllEvents()
     friendlyManagerRegistered = false
 end
@@ -2129,9 +1824,7 @@ friendlyManager:SetScript("OnEvent", function(self, evt)
                 break
             end
         end
-        if oldTarget and oldTarget.unit then
-            oldTarget:ApplyTarget()
-        end
+        if oldTarget and oldTarget.unit then oldTarget:ApplyTarget() end
         if _cachedFriendlyTargetPlate and _cachedFriendlyTargetPlate ~= oldTarget then
             _cachedFriendlyTargetPlate:ApplyTarget()
         end
@@ -2205,9 +1898,7 @@ function mod.RefreshFriendlyColors(paletteChanged)
     for unitToken, backing in pairs(friendlyPlates) do
         PaintFriendlyColors(backing, unitToken, plate)
     end
-    if paletteChanged and plate and plate.friendlyBelowNameClassColor then
-        mod.RefreshFriendlyBelowName()
-    end
+    if paletteChanged and plate and plate.friendlyBelowNameClassColor then mod.RefreshFriendlyBelowName() end
 end
 
 -- Re-apply the full-plate friendly name text size to all live plates so the
@@ -2215,9 +1906,7 @@ end
 function mod.RefreshFriendlyNameTextSize()
     local px = GetFriendlyNameTextSize()
     for _, backing in pairs(friendlyPlates) do
-        if backing.name then
-            SetFSFont(backing.name, px, "OUTLINE, SLUG")
-        end
+        if backing.name then SetFSFont(backing.name, px, "OUTLINE, SLUG") end
     end
 end
 
@@ -2243,16 +1932,10 @@ do
     end
     function mod.NP_FriendlyLevelWatch()
         local wanted = (ShowFriendlyLevel() and (FriendlyLevelDiffColor() and 2 or 1)) or 0
-        if wanted == (armed or 0) then
-            return
-        end
+        if wanted == (armed or 0) then return end
         armed = wanted
-        if levelEv then
-            levelEv:UnregisterAllEvents()
-        end
-        if wanted == 0 then
-            return
-        end
+        if levelEv then levelEv:UnregisterAllEvents() end
+        if wanted == 0 then return end
         if not levelEv then
             levelEv = CreateFrame("Frame")
             levelEv:SetScript("OnEvent", function(_, evt, unitToken)
@@ -2263,23 +1946,17 @@ do
                     local pending = mod.pendingUnits
                     if pending then
                         for u in pairs(pending) do
-                            if not friendlyPlates[u] then
-                                RepaintUnit(u)
-                            end
+                            if not friendlyPlates[u] then RepaintUnit(u) end
                         end
                     end
                     return
                 end
-                if not unitToken or not unitToken:find("^nameplate") then
-                    return
-                end
+                if not unitToken or not unitToken:find("^nameplate") then return end
                 RepaintUnit(unitToken)
             end)
         end
         levelEv:RegisterEvent("UNIT_LEVEL")
-        if wanted == 2 then
-            levelEv:RegisterEvent("PLAYER_LEVEL_CHANGED")
-        end
+        if wanted == 2 then levelEv:RegisterEvent("PLAYER_LEVEL_CHANGED") end
     end
 end
 
@@ -2329,9 +2006,7 @@ local function ApplyFriendlyClickThrough()
     local plate = FP()
     local enabled = plate and plate.friendlyClickThrough == true
     -- Never applied and feature is off: leave Blizzard's hit rect untouched.
-    if not enabled and not clickThroughApplied then
-        return
-    end
+    if not enabled and not clickThroughApplied then return end
     if InCombatLockdown() then
         mod.CombatQueue.Defer("FriendlyClickThrough", ApplyFriendlyClickThrough)
         return
@@ -2369,12 +2044,8 @@ local _liveVisCVar -- resolved lazily; nil until a name reads back
 --- answers yet. Resolved on first successful read and cached, so it never runs
 --- before the CVar system is up and costs nothing afterwards.
 local function LiveFriendlyVisCVar()
-    if _liveVisCVar then
-        return _liveVisCVar
-    end
-    if not GetCVar then
-        return nil
-    end
+    if _liveVisCVar then return _liveVisCVar end
+    if not GetCVar then return nil end
     for i = 1, #FRIENDLY_VIS_CVARS do
         local success, val = pcall(GetCVar, FRIENDLY_VIS_CVARS[i])
         if success and val ~= nil then
@@ -2392,9 +2063,7 @@ function mod.ForceFriendlyPlayerCVarsOn()
     for i = 1, #FRIENDLY_VIS_CVARS do
         pcall(CludesUI.SetCVar, FRIENDLY_VIS_CVARS[i], 1, "CludesUINameplates")
     end
-    if CludesUIDB then
-        CludesUIDB.friendlyPlateVisSaved = nil
-    end
+    if CludesUIDB then CludesUIDB.friendlyPlateVisSaved = nil end
 end
 
 --- Follower dungeons force friendly plates off, so we have to remember what
@@ -2404,29 +2073,19 @@ end
 --- lost capture would strand their preference off.
 --- Returns true once there is a capture on file to hand back later.
 local function CaptureFriendlyVis()
-    if not CludesUIDB then
-        return false
-    end
-    if CludesUIDB.friendlyPlateVisSaved ~= nil then
-        return true
-    end
+    if not CludesUIDB then return false end
+    if CludesUIDB.friendlyPlateVisSaved ~= nil then return true end
     local cvar = LiveFriendlyVisCVar()
-    if not cvar then
-        return false
-    end -- can't read it: don't guess, don't hide
+    if not cvar then return false end -- can't read it: don't guess, don't hide
     local current = GetCVar(cvar)
     CludesUIDB.friendlyPlateVisSaved = (current == "1" or current == 1) and 1 or 0
     return true
 end
 
 local function RestoreFriendlyVis()
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     local saved = CludesUIDB.friendlyPlateVisSaved
-    if saved == nil then
-        return
-    end -- nothing of ours to undo: leave them alone
+    if saved == nil then return end -- nothing of ours to undo: leave them alone
     CludesUIDB.friendlyPlateVisSaved = nil
     for i = 1, #FRIENDLY_VIS_CVARS do
         pcall(CludesUI.ReleaseCVar, FRIENDLY_VIS_CVARS[i], saved, "CludesUINameplates")
@@ -2558,9 +2217,7 @@ function mod.UpdateFriendlyNameplateSystem()
         if allPlates then
             for _, plateFrame in ipairs(allPlates) do
                 local unitToken = plateFrame.namePlateUnitToken
-                if unitToken then
-                    units[unitToken] = true
-                end
+                if unitToken then units[unitToken] = true end
             end
         end
         for unitToken, _ in pairs(units) do
@@ -2573,9 +2230,7 @@ function mod.UpdateFriendlyNameplateSystem()
         if allPlates then
             for _, plateFrame in ipairs(allPlates) do
                 local unitToken = plateFrame.namePlateUnitToken
-                if unitToken then
-                    TryAddFriendlyPlate(unitToken)
-                end
+                if unitToken then TryAddFriendlyPlate(unitToken) end
             end
         end
     elseif not shouldEnable and friendlyEnabled then
@@ -2657,9 +2312,7 @@ end
 if C_AddOns.IsAddOnLoaded("totalRP3") or C_AddOns.DoesAddOnExist("totalRP3") then
     local _npOptsPending = false
     hooksecurefunc(NamePlateDriverFrame, "UpdateNamePlateOptions", function()
-        if _npOptsPending then
-            return
-        end
+        if _npOptsPending then return end
         _npOptsPending = true
         C_Timer.After(0, function()
             _npOptsPending = false
@@ -2673,9 +2326,11 @@ end
 -- Re-assert it for everyone (the TRP3 branch above only runs when TRP3 is loaded).
 -- Font objects only -- safe, debounced, no CVar feedback.
 if NamePlateDriverFrame and NamePlateDriverFrame.UpdateNamePlateOptions then
-    hooksecurefunc(NamePlateDriverFrame, "UpdateNamePlateOptions", function()
-        ScheduleNameSizeReapply(IsInInstance())
-    end)
+    hooksecurefunc(
+        NamePlateDriverFrame,
+        "UpdateNamePlateOptions",
+        function() ScheduleNameSizeReapply(IsInInstance()) end
+    )
 end
 
 -------------------------------------------------------------------------------
@@ -2696,9 +2351,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         mod.UpdateFriendlyNameplateSystem()
         -- Delayed re-check: instance/follower dungeon state may not be
         -- available yet when PLAYER_ENTERING_WORLD first fires on zone-in.
-        C_Timer.After(1, function()
-            mod.UpdateFriendlyNameplateSystem()
-        end)
+        C_Timer.After(1, function() mod.UpdateFriendlyNameplateSystem() end)
         -- Sweep every zone transition / reload to pick up any plates that
         -- were missed during the initial enable or that appeared between
         -- PLAYER_LOGIN and the world being fully rendered.
@@ -2708,9 +2361,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 if allPlates then
                     for _, plateFrame in ipairs(allPlates) do
                         local u = plateFrame.namePlateUnitToken
-                        if u then
-                            TryAddFriendlyPlate(u)
-                        end
+                        if u then TryAddFriendlyPlate(u) end
                     end
                 end
             end
@@ -2755,14 +2406,10 @@ end
 
 function mod.RestoreFriendlyNPCNameColor(plateFrame)
     local unitToken = plateFrame and plateFrame.namePlateUnitToken
-    if unitToken and not UnitIsPlayer(unitToken) then
-        RestoreNPCNameplate(plateFrame, unitToken)
-    end
+    if unitToken and not UnitIsPlayer(unitToken) then RestoreNPCNameplate(plateFrame, unitToken) end
 end
 
 function mod.RestoreNPCHealthBar(plateFrame)
     local unitToken = plateFrame and plateFrame.namePlateUnitToken
-    if unitToken and not UnitIsPlayer(unitToken) then
-        RestoreNPCNameplate(plateFrame, unitToken)
-    end
+    if unitToken and not UnitIsPlayer(unitToken) then RestoreNPCNameplate(plateFrame, unitToken) end
 end

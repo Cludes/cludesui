@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  RaidFrames_Options\VisualIndicators_Options.lua
 --  Raid Frames options: the Indicators, Dispels, Top Name Bar, Friendly Boss
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Shared helpers come from ns._RFO_OptEnv.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIRaidFrames"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (a kept page wrapper or cog popup and every frame it hands out) are
@@ -24,37 +20,37 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- first build that has the eye.
 local hmEyeOnHide
 local function StopHMPreviewOnHide()
-    if not (mod._hmPreview and mod.HM_SetPreview) then
-        return
-    end
+    if not (mod._hmPreview and mod.HM_SetPreview) then return end
     mod.HM_SetPreview(false)
     local eyes = mod._eye
     if eyes then
         for _, eye in pairs(eyes) do
-            if eye.refreshHMEye then
-                eye.refreshHMEye()
-            end
+            if eye.refreshHMEye then eye.refreshHMEye() end
         end
     end
 end
 
 local pgEyeOnHide
 local function StopPGPreviewOnHide()
-    if not (mod._pgPreview and mod.PG_SetPreview) then
-        return
-    end
+    if not (mod._pgPreview and mod.PG_SetPreview) then return end
     mod.PG_SetPreview(false)
     local eyes = mod._eye
     if eyes then
         for _, eye in pairs(eyes) do
-            if eye.refreshPGEye then
-                eye.refreshPGEye()
-            end
+            if eye.refreshPGEye then eye.refreshPGEye() end
         end
     end
 end
 
-local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, CustomBorderOff, CustomBorderOffTip)
+local function BuildVisualIndicators(
+    hostFrame,
+    cursorY,
+    W,
+    onSection,
+    EYE,
+    CustomBorderOff,
+    CustomBorderOffTip
+)
     local environ = mod._RFO_OptEnv
     local saved, floor, IsPreviewOff, MissingGlowDesc =
         environ.db, environ.floor, environ.IsPreviewOff, environ.MissingGlowDesc
@@ -63,15 +59,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     local SSet, SVal, SWrite = environ.SSet, environ.SVal, environ.SWrite
     -- A row getter over SVal: the key's value, or the default given.
     local function SValRow(key, default)
-        return function()
-            return SVal(key, default)
-        end
+        return function() return SVal(key, default) end
     end
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(key)
-        return function(value)
-            SSet(key, value)
-        end
+        return function(value) SSet(key, value) end
     end
     local _, height, heading
     local row
@@ -109,9 +101,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         eyeTex:SetAllPoints()
 
         -- On ns so the preview can read it.
-        if mod._indicatorsVisible == nil then
-            mod._indicatorsVisible = false
-        end
+        if mod._indicatorsVisible == nil then mod._indicatorsVisible = false end
 
         local function RefreshIndicatorEye()
             if IsPreviewOff() then
@@ -125,39 +115,25 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         EYE.refreshIndicatorEye = RefreshIndicatorEye
         RefreshIndicatorEye()
         eyeButton:SetScript("OnClick", function()
-            if IsPreviewOff() then
-                return
-            end
+            if IsPreviewOff() then return end
             mod._indicatorsVisible = not mod._indicatorsVisible
             -- Indicators are exclusive with health/power/dispel effects.
             if mod._indicatorsVisible then
                 if mod._healthAnimActive then
-                    if mod._stopHealthAnim then
-                        mod._stopHealthAnim()
-                    end
-                    if EYE.refreshHealthEye then
-                        EYE.refreshHealthEye()
-                    end
+                    if mod._stopHealthAnim then mod._stopHealthAnim() end
+                    if EYE.refreshHealthEye then EYE.refreshHealthEye() end
                 end
                 if mod._powerAnimActive then
-                    if mod._stopPowerAnim then
-                        mod._stopPowerAnim()
-                    end
-                    if EYE.refreshPowerEye then
-                        EYE.refreshPowerEye()
-                    end
+                    if mod._stopPowerAnim then mod._stopPowerAnim() end
+                    if EYE.refreshPowerEye then EYE.refreshPowerEye() end
                 end
                 if mod._dispelsVisible then
                     mod._dispelsVisible = false
-                    if EYE.refreshDispelEye then
-                        EYE.refreshDispelEye()
-                    end
+                    if EYE.refreshDispelEye then EYE.refreshDispelEye() end
                 end
             end
             RefreshIndicatorEye()
-            if mod.PvRefresh then
-                mod.PvRefresh()
-            end
+            if mod.PvRefresh then mod.PvRefresh() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
@@ -171,9 +147,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             )
         end)
         eyeButton:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then
-                CludesUI.SetGlyphAlpha(self, 0.4)
-            end
+            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
             CludesUI.HideWidgetTooltip()
         end)
     end -- close do (indicators eyeball)
@@ -214,9 +188,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             order = mbPositionOrder,
             tooltip = "Shows Fortitude, Mark of the Wild, Spirit or Thorns on a member who is missing it, for the buffs you can cast yourself (choose which in the cog).",
             getValue = function()
-                if not SVal("showMissingBuffs", true) then
-                    return "none"
-                end
+                if not SVal("showMissingBuffs", true) then return "none" end
                 return SVal("missingBuffsPosition", "top")
             end,
             setValue = function(val)
@@ -234,9 +206,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             min = 8,
             max = 40,
             step = 1,
-            disabled = function()
-                return not SVal("showMissingBuffs", true)
-            end,
+            disabled = function() return not SVal("showMissingBuffs", true) end,
             disabledTooltip = "Missing Buffs",
             getValue = SValRow("missingBuffsSize", 22),
             setValue = SSetRow("missingBuffsSize"),
@@ -279,9 +249,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 blessItems[#blessItems + 1] = { key = keyName, label = blessValues[keyName] }
             end
             local view = setmetatable({}, {
-                __index = function(_, keyName)
-                    return SGet(keyName)
-                end,
+                __index = function(_, keyName) return SGet(keyName) end,
             })
             -- A priority list per role: the checked blessings in the order
             -- shown (drag to reorder); the first one the member lacks shows.
@@ -294,14 +262,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     for _, keyName in ipairs(picked()) do
                         keep[keyName] = true
                     end
-                    if key then
-                        keep[key] = on or nil
-                    end
+                    if key then keep[key] = on or nil end
                     local entries = {}
                     for _, keyName in ipairs(sequence) do
-                        if keep[keyName] then
-                            entries[#entries + 1] = keyName
-                        end
+                        if keep[keyName] then entries[#entries + 1] = keyName end
                     end
                     write(entries)
                 end
@@ -314,18 +278,12 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     items = blessItems,
                     get = function(key)
                         for _, keyName in ipairs(picked()) do
-                            if keyName == key then
-                                return true
-                            end
+                            if keyName == key then return true end
                         end
                         return false
                     end,
-                    set = function(key, on, sequence)
-                        Save(sequence, key, on)
-                    end,
-                    setOrder = function(keyList)
-                        Save(keyList)
-                    end,
+                    set = function(key, on, sequence) Save(sequence, key, on) end,
+                    setOrder = function(keyList) Save(keyList) end,
                     openOrder = picked,
                 }
             end
@@ -350,9 +308,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             local ROLE_TITLE =
                 { TANK = "Tank Exceptions", HEALER = "Healer Exceptions", DAMAGER = "DPS Exceptions" }
             local function BlessRow(labelText, tipText, role)
-                local function Picked()
-                    return mod.RF_FvBlessingChoice(view, role)
-                end
+                local function Picked() return mod.RF_FvBlessingChoice(view, role) end
                 local exKey = mod.RF_FvBlessingExKey[role]
                 local function Own(class)
                     local ex = SGet(exKey)
@@ -380,18 +336,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         for _, token in ipairs(ROLE_CLASSES[role]) do
                             local name = LOCALIZED_CLASS_NAMES_MALE[token] or token
                             local color = CludesUI.GetClassColor(token)
-                            local r = ListRow(CludesUI.HexColor(color.r, color.g, color.b) .. name .. "|r", function()
-                                return Own(token) or Picked()
-                            end, function(entries)
-                                SetOwn(token, entries)
-                            end)
+                            local r = ListRow(
+                                CludesUI.HexColor(color.r, color.g, color.b) .. name .. "|r",
+                                function() return Own(token) or Picked() end,
+                                function(entries) SetOwn(token, entries) end
+                            )
                             r.tail = { { key = "reset", label = reset } }
-                            r.onTail = function()
-                                SetOwn(token, nil)
-                            end
-                            r.tailSelected = function()
-                                return Own(token) == nil
-                            end
+                            r.onTail = function() SetOwn(token, nil) end
+                            r.tailSelected = function() return Own(token) == nil end
                             rowList[#rowList + 1] = r
                         end
                         local popFrame = dropdownBtn:GetParent()
@@ -407,9 +359,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         exAnchor:SetSize(1, 1)
                         exAnchor:SetScript("OnHide", function()
                             local frame = exShow._popupFrame
-                            if frame and frame:IsShown() then
-                                frame:Hide()
-                            end
+                            if frame and frame:IsShown() then frame:Hide() end
                         end)
                     end
                     exShow(exAnchor)
@@ -418,9 +368,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     exAnchor:SetPoint("BOTTOM", exAnchor:GetParent(), "TOPRIGHT", 4 + frame:GetWidth() / 2, 5)
                     dropdownBtn._sidePopup = frame
                 end
-                local r = ListRow(labelText, Picked, function(entries)
-                    SSet(mod.RF_FvBlessingKey[role], entries)
-                end)
+                local r = ListRow(
+                    labelText,
+                    Picked,
+                    function(entries) SSet(mod.RF_FvBlessingKey[role], entries) end
+                )
                 r.tooltip = tipText
                 r.tail = { { key = "exceptions", label = "Class Exceptions" } }
                 r.onTail = OpenExceptions
@@ -446,12 +398,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         { key = "missingBuffsThorns", label = "Thorns", fixed = true },
                         { key = "missingBuffsSalvation", label = "Salvation", fixed = true },
                     },
-                    get = function(key)
-                        return SVal(key, true)
-                    end,
-                    set = function(key, on)
-                        SSet(key, on)
-                    end,
+                    get = function(key) return SVal(key, true) end,
+                    set = function(key, on) SSet(key, on) end,
                 },
                 -- Stored false, not nil, so a party tab with its own settings
                 -- can turn it off over a raid value that is on.
@@ -459,14 +407,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     type = "toggle",
                     label = "Thorns Only on Tank",
                     tooltip = "Thorns shows on tanks only while the group has one, and on you while solo or without a tank.",
-                    disabled = function()
-                        return not SVal("missingBuffsThorns", true)
-                    end,
+                    disabled = function() return not SVal("missingBuffsThorns", true) end,
                     disabledTooltip = "Thorns",
                     get = SValRow("missingBuffsThornsTank", false),
-                    set = function(val)
-                        SSet("missingBuffsThornsTank", val and true or false)
-                    end,
+                    set = function(val) SSet("missingBuffsThornsTank", val and true or false) end,
                 },
                 BlessRow(
                     "Tank Blessing",
@@ -511,9 +455,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             CludesUI.BuildInlineCog(region, {
                 title = "Missing Buffs",
                 rows = rowList,
-                disabled = function()
-                    return not SVal("showMissingBuffs", true)
-                end,
+                disabled = function() return not SVal("showMissingBuffs", true) end,
                 disabledTooltip = "Missing Buffs",
             })
         end
@@ -536,22 +478,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         _menuOpts = {
             icon = function(key)
                 local map = RI_STYLES[key]
-                if not map or not playerRole or map[playerRole] == nil then
-                    return nil
-                end
-                if map._isTexture then
-                    return map[playerRole]
-                end
+                if not map or not playerRole or map[playerRole] == nil then return nil end
+                if map._isTexture then return map[playerRole] end
                 return nil
             end,
             iconAtlas = function(key)
                 local map = RI_STYLES[key]
-                if not map or not playerRole or map[playerRole] == nil then
-                    return nil
-                end
-                if not map._isTexture then
-                    return map[playerRole]
-                end
+                if not map or not playerRole or map[playerRole] == nil then return nil end
+                if not map._isTexture then return map[playerRole] end
                 return nil
             end,
         },
@@ -572,9 +506,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         text = "Role Icons",
         values = roleStyleValues,
         order = roleStyleOrder,
-        disabled = function()
-            return SVal("roleText", false)
-        end,
+        disabled = function() return SVal("roleText", false) end,
         disabledTooltip = "Role Text",
         requireState = "disabled",
         getValue = SValRow("roleIconStyle", "modern"),
@@ -591,18 +523,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         disabledTooltip = "Role Icons",
         values = { __placeholder = "All Roles" },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
     cursorY = cursorY - height
     -- Right side placeholder dropdown is swapped for a checkbox dropdown.
     if not CludesUI._prebuilding then
         local rightRegion = row._rightRegion
-        if rightRegion._control then
-            rightRegion._control:Hide()
-        end
+        if rightRegion._control then rightRegion._control:Hide() end
         local function ShowRoleItems()
             local itemList = {
                 { key = "tank", label = "Tank" },
@@ -619,9 +547,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         end,
                         set = function(red, green, blue)
                             SSet(colorKey, { r = red, g = green, b = blue })
-                            if mod._UpdateRoleIcons then
-                                mod._UpdateRoleIcons()
-                            end
+                            if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
                         end,
                     }
                 end
@@ -634,12 +560,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             170,
             rightRegion:GetFrameLevel() + 2,
             ShowRoleItems,
-            function(keyName)
-                return SVal(roleKeyMap[keyName], true)
-            end,
-            function(keyName, val)
-                SSet(roleKeyMap[keyName], val)
-            end
+            function(keyName) return SVal(roleKeyMap[keyName], true) end,
+            function(keyName, val) SSet(roleKeyMap[keyName], val) end
         )
         Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
         rightRegion._control = checkDrop
@@ -657,9 +579,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     get = SValRow("roleText", false),
                     set = function(val)
                         SSet("roleText", val)
-                        if mod._UpdateRoleIcons then
-                            mod._UpdateRoleIcons()
-                        end
+                        if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
                         CludesUI:RefreshPage()
                     end,
                 },
@@ -670,9 +590,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     get = SValRow("roleIconHideInCombat", false),
                     set = function(val)
                         SSet("roleIconHideInCombat", val)
-                        if mod._UpdateRoleIcons then
-                            mod._UpdateRoleIcons()
-                        end
+                        if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
                     end,
                 },
                 {
@@ -698,9 +616,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     }
     local rolePositionOrder = CludesUI.POSITION_GRID_ORDER
     -- Attach Role Icons (Top Name Bar section) takes over the role icon's placement
-    local function RoleAttached()
-        return SVal("roleIconOnNameBar", false) and SVal("topNameBarEnabled", false)
-    end
+    local function RoleAttached() return SVal("roleIconOnNameBar", false) and SVal("topNameBarEnabled", false) end
     local roleRow2
     -- Party Frames kit: role, ready check and leader take the stock spots
     -- (their offset cogs stay live).
@@ -716,12 +632,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 return RoleAttached()
                     or (not SVal("roleText", false) and SVal("roleIconStyle", "modern") == "none")
             end,
-            disabledTooltip = function()
-                return RoleAttached() and "Attach Role Icons" or "Role Icons"
-            end,
-            requireState = function()
-                return RoleAttached() and "disabled" or nil
-            end,
+            disabledTooltip = function() return RoleAttached() and "Attach Role Icons" or "Role Icons" end,
+            requireState = function() return RoleAttached() and "disabled" or nil end,
             getValue = SValRow("roleIconPosition", "bottomleft"),
             setValue = SSetRow("roleIconPosition"),
         }),
@@ -800,9 +712,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         values = markerPositionValues,
         order = markerPositionOrder,
         getValue = function()
-            if not SVal("showRaidMarker", true) then
-                return "none"
-            end
+            if not SVal("showRaidMarker", true) then return "none" end
             return SVal("raidMarkerPosition", "center")
         end,
         setValue = function(val)
@@ -820,9 +730,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         min = 8,
         max = 40,
         step = 1,
-        disabled = function()
-            return not SVal("showRaidMarker", true)
-        end,
+        disabled = function() return not SVal("showRaidMarker", true) end,
         disabledTooltip = "Marker Position",
         getValue = SValRow("raidMarkerSize", 16),
         setValue = SSetRow("raidMarkerSize"),
@@ -1029,9 +937,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             local region = stRow._rightRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, stRow:GetFrameLevel() + 3, function()
                 local color = SGet("statusTextColor")
-                if color then
-                    return color.r, color.g, color.b, 1
-                end
+                if color then return color.r, color.g, color.b, 1 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)
                 SWrite("statusTextColor", { r = red, g = green, b = blue })
@@ -1072,9 +978,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             text = "Leader Icon",
             values = { kit = "Party Frame", none = "None" },
             order = { "kit", "none" },
-            getValue = function()
-                return SVal("showLeaderIcon", false) and "kit" or "none"
-            end,
+            getValue = function() return SVal("showLeaderIcon", false) and "kit" or "none" end,
             setValue = function(val)
                 SSet("showLeaderIcon", val ~= "none")
                 CludesUI:RefreshPage()
@@ -1085,9 +989,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             values = leaderPositionValues,
             order = leaderPositionOrder,
             getValue = function()
-                if not SVal("showLeaderIcon", false) then
-                    return "none"
-                end
+                if not SVal("showLeaderIcon", false) then return "none" end
                 return SVal("leaderIconPosition", "top")
             end,
             setValue = function(val)
@@ -1105,9 +1007,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             min = 8,
             max = 30,
             step = 1,
-            disabled = function()
-                return not SVal("showLeaderIcon", false)
-            end,
+            disabled = function() return not SVal("showLeaderIcon", false) end,
             disabledTooltip = "Leader Icon",
             getValue = SValRow("leaderIconSize", 14),
             setValue = SSetRow("leaderIconSize"),
@@ -1125,9 +1025,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         get = SValRow("showLeaderIconInCombat", true),
                         set = function(val)
                             SSet("showLeaderIconInCombat", val)
-                            if mod._UpdateLeaderIcons then
-                                mod._UpdateLeaderIcons()
-                            end
+                            if mod._UpdateLeaderIcons then mod._UpdateLeaderIcons() end
                         end,
                     },
                     {
@@ -1196,9 +1094,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             values = combatPositionValues,
             order = combatPositionOrder,
             getValue = function()
-                if not SVal("showCombatIndicator", false) then
-                    return "none"
-                end
+                if not SVal("showCombatIndicator", false) then return "none" end
                 return SVal("combatIndicatorPosition", "right")
             end,
             setValue = function(val)
@@ -1208,9 +1104,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     SWrite("showCombatIndicator", true)
                     SSet("combatIndicatorPosition", val)
                 end
-                if mod._UpdateCombatIcons then
-                    mod._UpdateCombatIcons()
-                end
+                if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -1219,9 +1113,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             min = 8,
             max = 40,
             step = 1,
-            disabled = function()
-                return not SVal("showCombatIndicator", false)
-            end,
+            disabled = function() return not SVal("showCombatIndicator", false) end,
             disabledTooltip = "Combat Icon",
             getValue = SValRow("combatIndicatorSize", 16),
             setValue = SSetRow("combatIndicatorSize"),
@@ -1240,9 +1132,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         get = SValRow("combatIndicatorStyle", "standard"),
                         set = function(val)
                             SSet("combatIndicatorStyle", val)
-                            if mod._UpdateCombatIcons then
-                                mod._UpdateCombatIcons()
-                            end
+                            if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
                         end,
                     },
                     {
@@ -1255,14 +1145,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         end,
                         disabledTooltip = "Not available for this combat icon style.",
                         rawTooltip = true,
-                        get = function()
-                            return SVal("combatIndicatorColor", "custom") == "classcolor"
-                        end,
+                        get = function() return SVal("combatIndicatorColor", "custom") == "classcolor" end,
                         set = function(val)
                             SSet("combatIndicatorColor", val and "classcolor" or "custom")
-                            if mod._UpdateCombatIcons then
-                                mod._UpdateCombatIcons()
-                            end
+                            if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
                         end,
                     },
                     {
@@ -1290,15 +1176,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             local region = ciRow._rightRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, ciRow:GetFrameLevel() + 3, function()
                 local color = SGet("combatIndicatorCustomColor")
-                if color then
-                    return color.r, color.g, color.b, 1
-                end
+                if color then return color.r, color.g, color.b, 1 end
                 return 1, 0.2, 0.2, 1
             end, function(red, green, blue)
                 SWrite("combatIndicatorCustomColor", { r = red, g = green, b = blue })
-                if mod._UpdateCombatIcons then
-                    mod._UpdateCombatIcons()
-                end
+                if mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
@@ -1326,9 +1208,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 local region = gnRow._rightRegion
                 local colorSwatch = CludesUI.BuildColorSwatch(region, gnRow:GetFrameLevel() + 3, function()
                     local color = SGet("groupNumberColor")
-                    if color then
-                        return color.r, color.g, color.b, color.a or 0.75
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 0.75 end
                     return 1, 1, 1, 0.75
                 end, function(red, green, blue, a)
                     SWrite("groupNumberColor", { r = red, g = green, b = blue, a = a })
@@ -1400,9 +1280,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             order = pingPositionOrder,
             tooltip = "Shows the ping mark on a member's frame when someone pings them (needs Blizzard's Show Pings on Raid Frames setting on).",
             getValue = function()
-                if not SVal("showPingMarker", true) then
-                    return "none"
-                end
+                if not SVal("showPingMarker", true) then return "none" end
                 return SVal("pingMarkerPosition", "center")
             end,
             setValue = function(val)
@@ -1420,9 +1298,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             min = 10,
             max = 60,
             step = 1,
-            disabled = function()
-                return not SVal("showPingMarker", true)
-            end,
+            disabled = function() return not SVal("showPingMarker", true) end,
             disabledTooltip = "Ping Marker",
             getValue = SValRow("pingMarkerSize", 30),
             setValue = SSetRow("pingMarkerSize"),
@@ -1469,9 +1345,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     --  DISPELS
     -------------------------------------------------------------------
     local dispelHeader
-    if onSection then
-        onSection("indicators", _secY, cursorY)
-    end
+    if onSection then onSection("indicators", _secY, cursorY) end
     _secY = cursorY
     dispelHeader, height = W:SectionHeader(hostFrame, "DISPELS", cursorY)
     cursorY = cursorY - height
@@ -1501,9 +1375,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
 
-        if mod._dispelsVisible == nil then
-            mod._dispelsVisible = false
-        end
+        if mod._dispelsVisible == nil then mod._dispelsVisible = false end
 
         local function RefreshDispelEye()
             if IsPreviewOff() then
@@ -1517,23 +1389,17 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         EYE.refreshDispelEye = RefreshDispelEye
         RefreshDispelEye()
         eyeButton:SetScript("OnClick", function()
-            if IsPreviewOff() then
-                return
-            end
+            if IsPreviewOff() then return end
             mod._dispelsVisible = not mod._dispelsVisible
             -- Dispels and indicators are mutually exclusive.
             if mod._dispelsVisible then
                 if mod._indicatorsVisible then
                     mod._indicatorsVisible = false
-                    if EYE.refreshIndicatorEye then
-                        EYE.refreshIndicatorEye()
-                    end
+                    if EYE.refreshIndicatorEye then EYE.refreshIndicatorEye() end
                 end
             end
             RefreshDispelEye()
-            if mod.PvRefresh then
-                mod.PvRefresh()
-            end
+            if mod.PvRefresh then mod.PvRefresh() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
@@ -1547,9 +1413,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             )
         end)
         eyeButton:SetScript("OnLeave", function(self)
-            if not IsPreviewOff() then
-                CludesUI.SetGlyphAlpha(self, 0.4)
-            end
+            if not IsPreviewOff() then CludesUI.SetGlyphAlpha(self, 0.4) end
             CludesUI.HideWidgetTooltip()
         end)
     end -- close do (dispels eyeball)
@@ -1580,9 +1444,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         min = 5,
         max = 100,
         step = 1,
-        disabled = function()
-            return SVal("dispelOverlay", "fill") == "none"
-        end,
+        disabled = function() return SVal("dispelOverlay", "fill") == "none" end,
         disabledTooltip = "Dispel Overlay",
         getValue = SValRow("dispelOverlayOpacity", 100),
         setValue = SSetRow("dispelOverlayOpacity"),
@@ -1627,9 +1489,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         values = dispelIconPositionValues,
         order = dispelIconPositionOrder,
         getValue = function()
-            if not SVal("showDispelIcons", false) then
-                return "none"
-            end
+            if not SVal("showDispelIcons", false) then return "none" end
             return SVal("dispelIconPosition", "center")
         end,
         setValue = function(val)
@@ -1646,9 +1506,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     do
         local region = row._rightRegion
         CludesUI.BuildInlineCog(region, {
-            disabled = function()
-                return not SVal("showDispelIcons", false)
-            end,
+            disabled = function() return not SVal("showDispelIcons", false) end,
             disabledTooltip = "This option requires a Type Icon Position other than None",
             title = "Dispel Icon",
             rows = {
@@ -1712,9 +1570,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                             and SVal("dispelCustomBorder", false)
                     end,
                     set = function(val)
-                        if val and CustomBorderOff() then
-                            return
-                        end
+                        if val and CustomBorderOff() then return end
                         SSet("dispelCustomBorder", val)
                     end,
                 },
@@ -1733,9 +1589,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = true,
                 getValue = function()
                     local color = SGet("dispelColorMagic")
-                    if color then
-                        return color.r, color.g, color.b, color.a or 1
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.354, 0.396, 0.74, 1
                 end,
                 setValue = function(red, green, blue, a)
@@ -1748,9 +1602,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = true,
                 getValue = function()
                     local color = SGet("dispelColorCurse")
-                    if color then
-                        return color.r, color.g, color.b, color.a or 1
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.636, 0.0, 0.64, 1
                 end,
                 setValue = function(red, green, blue, a)
@@ -1763,9 +1615,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = true,
                 getValue = function()
                     local color = SGet("dispelColorDisease")
-                    if color then
-                        return color.r, color.g, color.b, color.a or 1
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.71, 0.379, 0.0, 1
                 end,
                 setValue = function(red, green, blue, a)
@@ -1778,9 +1628,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = true,
                 getValue = function()
                     local color = SGet("dispelColorPoison")
-                    if color then
-                        return color.r, color.g, color.b, color.a or 1
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.052, 0.586, 0.62, 1
                 end,
                 setValue = function(red, green, blue, a)
@@ -1793,9 +1641,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = true,
                 getValue = function()
                     local color = SGet("dispelColorBleed")
-                    if color then
-                        return color.r, color.g, color.b, color.a or 1
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.75, 0.15, 0.15, 1
                 end,
                 setValue = function(red, green, blue, a)
@@ -1808,18 +1654,12 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         type = "toggle",
         text = "Only Show Dispellable",
         -- Inverse of dispelShowAll: ON = only-mine (dispelShowAll=false).
-        getValue = function()
-            return not SVal("dispelShowAll", true)
-        end,
-        setValue = function(val)
-            SSet("dispelShowAll", not val)
-        end,
+        getValue = function() return not SVal("dispelShowAll", true) end,
+        setValue = function(val) SSet("dispelShowAll", not val) end,
     })
     cursorY = cursorY - height
 
-    if onSection then
-        onSection("dispels", _secY, cursorY)
-    end
+    if onSection then onSection("dispels", _secY, cursorY) end
     _secY = cursorY
 
     -- Party Frames kit: the stock frame has no Top Name Bar (the whole
@@ -1831,18 +1671,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         _, height = W:SectionHeader(hostFrame, "TOP NAME BAR", cursorY)
         cursorY = cursorY - height
 
-        local function TNBOff()
-            return not SVal("topNameBarEnabled", false)
-        end
+        local function TNBOff() return not SVal("topNameBarEnabled", false) end
 
         -- Enable Top Name Bar | Height. The master toggle HIDES the dependent rows while off; SectionToggleSetValue forces that rebuild.
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Top Name Bar",
             getValue = SValRow("topNameBarEnabled", false),
-            setValue = CludesUI.SectionToggleSetValue(function(val)
-                SSet("topNameBarEnabled", val)
-            end),
+            setValue = CludesUI.SectionToggleSetValue(function(val) SSet("topNameBarEnabled", val) end),
         }, TNBOff() and { type = "label", text = "" } or {
             type = "slider",
             text = "Height",
@@ -1878,9 +1714,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         type = "toggle",
                         label = "Match Highlight Colors",
                         tooltip = "The divider follows hover and target colors.",
-                        disabled = function()
-                            return not SVal("topNameBarDivider", false)
-                        end,
+                        disabled = function() return not SVal("topNameBarDivider", false) end,
                         disabledTooltip = "Requires Divider.",
                         rawTooltip = true,
                         get = SValRow("topNameBarDividerMatchColor", false),
@@ -1914,9 +1748,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 local region = tnbRow2._leftRegion
                 local bgSwatch = CludesUI.BuildColorSwatch(region, tnbRow2:GetFrameLevel() + 3, function()
                     local color = SGet("topNameBarBgColor")
-                    if color then
-                        return color.r, color.g, color.b, 1
-                    end
+                    if color then return color.r, color.g, color.b, 1 end
                     return 17 / 255, 17 / 255, 17 / 255, 1
                 end, function(red, green, blue)
                     SWrite("topNameBarBgColor", { r = red, g = green, b = blue })
@@ -1990,17 +1822,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                             CludesUI:RefreshPage()
                             return
                         end
-                        if opensPicker and self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if opensPicker and self._eabOrigClick then self._eabOrigClick(self) end
                     end)
                     if tooltip then
-                        sw:HookScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(sw, tooltip)
-                        end)
-                        sw:HookScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
+                        sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tooltip) end)
+                        sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                     end
                     local function vis()
                         sw:SetAlpha(SVal("topNameBarTextColorMode", "class") == mode and 1 or 0.3)
@@ -2011,9 +1837,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 -- Custom (rightmost): editable, opens the picker when active.
                 AddTNBSwatch(function()
                     local color = SGet("topNameBarTextColor")
-                    if color then
-                        return color.r, color.g, color.b, 1
-                    end
+                    if color then return color.r, color.g, color.b, 1 end
                     return 1, 1, 1, 1
                 end, function(red, green, blue)
                     SWrite("topNameBarTextColor", { r = red, g = green, b = blue })
@@ -2045,9 +1869,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             if not CludesUI._prebuilding then
                 CludesUI.BuildInlineCog(tnbRow4._leftRegion, {
                     title = "Role Icon Position",
-                    disabled = function()
-                        return not SVal("roleIconOnNameBar", false)
-                    end,
+                    disabled = function() return not SVal("roleIconOnNameBar", false) end,
                     disabledTooltip = "Attach Role Icons",
                     rows = {
                         {
@@ -2081,9 +1903,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             end
         end -- close Top Name Bar hidden-while-disabled gate
 
-        if onSection then
-            onSection("topNameBar", _secY, cursorY)
-        end
+        if onSection then onSection("topNameBar", _secY, cursorY) end
     end -- not Party Frames kit
     _secY = cursorY
 
@@ -2102,9 +1922,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             return profile.friendlyBoss
         end
         -- Everything below the display dropdown is inert while "Never".
-        local function FBEnabled()
-            return (FBSet().display or "never") ~= "never"
-        end
+        local function FBEnabled() return (FBSet().display or "never") ~= "never" end
         local FB_DISABLED_TIP = "This option requires Add Friendly Boss Group to be set to Healers or Always."
 
         row, height = W:DualRow(hostFrame, cursorY, {
@@ -2112,9 +1930,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             text = "Add Friendly Boss Group",
             values = { never = "Never", healers = "Healers", always = "Always" },
             order = { "never", "healers", "always" },
-            getValue = function()
-                return FBSet().display or "never"
-            end,
+            getValue = function() return FBSet().display or "never" end,
             -- Rows below are HIDDEN while Never; only the Never <-> enabled flip forces the full rebuild.
             setValue = CludesUI.DependentSetValue(FBEnabled, function(val)
                 FBSet().display = val
@@ -2126,14 +1942,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             text = "Position",
             values = { left = "Before First Group", right = "After Last Group", free = "Free Move" },
             order = { "left", "right", "free" },
-            getValue = function()
-                return FBSet().position or "right"
-            end,
+            getValue = function() return FBSet().position or "right" end,
             setValue = function(val)
                 FBSet().position = val
-                if val ~= "free" then
-                    mod.FB_SetMoverShown(false)
-                end
+                if val ~= "free" then mod.FB_SetMoverShown(false) end
                 mod.FB_Apply()
                 CludesUI:RefreshPage()
             end,
@@ -2145,18 +1957,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         if not CludesUI._prebuilding then
             local region = row._leftRegion
             CludesUI.BuildInlineCog(region, {
-                disabled = function()
-                    return not FBEnabled()
-                end,
+                disabled = function() return not FBEnabled() end,
                 disabledTooltip = FB_DISABLED_TIP,
                 title = "Friendly Boss Group",
                 rows = {
                     {
                         type = "toggle",
                         label = "Show in Dungeons",
-                        get = function()
-                            return FBSet().showInDungeons == true
-                        end,
+                        get = function() return FBSet().showInDungeons == true end,
                         set = function(val)
                             -- Absent = off (additive key); FB_Apply re-registers
                             -- the secure group driver, so the flip is live.
@@ -2189,25 +1997,19 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 CludesUI.BuildInlineCog(row, {
                     anchorTo = button,
                     chain = false,
-                    disabled = function()
-                        return not (FBEnabled() and FBSet().position == "free")
-                    end,
+                    disabled = function() return not (FBEnabled() and FBSet().position == "free") end,
                     disabledTooltip = "This option requires Position to be set to Free Move",
                     title = "Free Move Options",
                     rows = {
                         {
                             type = "toggle",
                             label = "Horizontal Frames",
-                            get = function()
-                                return FBSet().freeHorizontal == true
-                            end,
+                            get = function() return FBSet().freeHorizontal == true end,
                             set = function(val)
                                 FBSet().freeHorizontal = val
                                 mod.FB_Apply()
                                 -- Resize/reposition the drag overlay if it is up.
-                                if mod.FB_IsMoverShown() then
-                                    mod.FB_SetMoverShown(true)
-                                end
+                                if mod.FB_IsMoverShown() then mod.FB_SetMoverShown(true) end
                             end,
                         },
                     },
@@ -2217,9 +2019,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 local region = row._rightRegion
                 local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
                     local color = FBSet().healthColor
-                    if color then
-                        return color.r, color.g, color.b, 1
-                    end
+                    if color then return color.r, color.g, color.b, 1 end
                     return 23 / 255, 172 / 255, 49 / 255, 1
                 end, function(red, green, blue)
                     FBSet().healthColor = { r = red, g = green, b = blue }
@@ -2229,19 +2029,16 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 region._lastInline = colorSwatch
                 -- Dimming alone leaves the swatch clickable; this blocks it.
                 local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
-                swatchBlock:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, FB_DISABLED_TIP)
-                end)
-                swatchBlock:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                swatchBlock:SetScript(
+                    "OnEnter",
+                    function() CludesUI.ShowWidgetTooltip(colorSwatch, FB_DISABLED_TIP) end
+                )
+                swatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 local function UpdateFBSwatch()
                     local on = FBEnabled()
                     colorSwatch:SetAlpha(on and 1 or 0.3)
                     swatchBlock:SetShown(not on)
-                    if region._label then
-                        region._label:SetAlpha(on and 1 or 0.3)
-                    end
+                    if region._label then region._label:SetAlpha(on and 1 or 0.3) end
                 end
                 CludesUI.RegisterWidgetRefresh(UpdateFBSwatch)
                 UpdateFBSwatch()
@@ -2255,15 +2052,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 max = 100,
                 step = 1,
                 tooltip = "Widens or narrows the boss frames relative to the raid frame size.",
-                getValue = function()
-                    return FBSet().extraWidth or 0
-                end,
+                getValue = function() return FBSet().extraWidth or 0 end,
                 setValue = function(val)
                     FBSet().extraWidth = val
                     mod.FB_Apply()
-                    if mod.FB_IsMoverShown() then
-                        mod.FB_SetMoverShown(true)
-                    end
+                    if mod.FB_IsMoverShown() then mod.FB_SetMoverShown(true) end
                 end,
             }, {
                 type = "slider",
@@ -2272,23 +2065,17 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 max = 100,
                 step = 1,
                 tooltip = "Makes the boss frames taller or shorter relative to the raid frame size.",
-                getValue = function()
-                    return FBSet().extraHeight or 0
-                end,
+                getValue = function() return FBSet().extraHeight or 0 end,
                 setValue = function(val)
                     FBSet().extraHeight = val
                     mod.FB_Apply()
-                    if mod.FB_IsMoverShown() then
-                        mod.FB_SetMoverShown(true)
-                    end
+                    if mod.FB_IsMoverShown() then mod.FB_SetMoverShown(true) end
                 end,
             })
             cursorY = cursorY - height
         end -- close Friendly Boss Frames hidden-while-disabled gate
 
-        if onSection then
-            onSection("friendlyBossFrames", _secY, cursorY)
-        end
+        if onSection then onSection("friendlyBossFrames", _secY, cursorY) end
         _secY = cursorY
 
         -------------------------------------------------------------------
@@ -2313,17 +2100,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             type = "toggle",
             text = "Show Tanks in Extra Group",
             tooltip = "Automatically duplicates the raid's tanks into the Extra Frames group. Shares the frame cap with hotkey picks.",
-            getValue = function()
-                return ExtraFramesCfg().showTanks == true
-            end,
+            getValue = function() return ExtraFramesCfg().showTanks == true end,
             -- Rows below are HIDDEN while unconfigured (no tanks toggle AND no hotkey); only a configured-state flip forces the rebuild.
             setValue = CludesUI.DependentSetValue(XFConfigured, function(val)
                 ExtraFramesCfg().showTanks = val
                 mod.XF_Apply()
                 -- Feature may have just gone dark; the mover can't stay up.
-                if not XFConfigured() then
-                    mod.XF_SetMoverShown(false)
-                end
+                if not XFConfigured() then mod.XF_SetMoverShown(false) end
                 CludesUI:RefreshPage()
             end),
         })
@@ -2338,9 +2121,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         type = "toggle",
                         label = "Exclude Myself",
                         tooltip = "Skips your own frame when Show Tanks duplicates the raid's tanks. Hotkey picks can still add you.",
-                        get = function()
-                            return ExtraFramesCfg().excludeSelfTank == true
-                        end,
+                        get = function() return ExtraFramesCfg().excludeSelfTank == true end,
                         set = function(val)
                             ExtraFramesCfg().excludeSelfTank = val or nil
                             mod.XF_Apply()
@@ -2357,32 +2138,20 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 font = 13,
                 level = 5,
                 tooltip = "Left-click to set a keybind. Right-click to unbind.\nPress the key while hovering a raid frame to add or remove that player from the Extra Frames group.",
-                get = function()
-                    return CludesUIDB and CludesUIDB.extraFramesKey
-                end,
+                get = function() return CludesUIDB and CludesUIDB.extraFramesKey end,
                 set = function(key)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
+                    if not CludesUIDB then CludesUIDB = {} end
                     local bindBtn = _G["ERFExtraFramesBindBtn"]
                     if bindBtn then
                         -- Override bindings cannot change in combat: keep the old key.
-                        if InCombatLockdown() then
-                            return
-                        end
-                        if key or CludesUIDB.extraFramesKey then
-                            ClearOverrideBindings(bindBtn)
-                        end
-                        if key then
-                            SetOverrideBindingClick(bindBtn, true, key, "ERFExtraFramesBindBtn")
-                        end
+                        if InCombatLockdown() then return end
+                        if key or CludesUIDB.extraFramesKey then ClearOverrideBindings(bindBtn) end
+                        if key then SetOverrideBindingClick(bindBtn, true, key, "ERFExtraFramesBindBtn") end
                     end
                     local wasConfigured = XFConfigured()
                     CludesUIDB.extraFramesKey = key
                     -- The mover can't stay up once the feature goes dark.
-                    if not XFConfigured() then
-                        mod.XF_SetMoverShown(false)
-                    end
+                    if not XFConfigured() then mod.XF_SetMoverShown(false) end
                     -- Hidden rows below: a configured-state flip needs the full rebuild, not the fast refresh.
                     if XFConfigured() ~= wasConfigured then
                         CludesUI:RefreshPage(true)
@@ -2403,14 +2172,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 text = "Position",
                 values = { left = "Before First Group", right = "After Last Group", free = "Free Move" },
                 order = { "left", "right", "free" },
-                getValue = function()
-                    return ExtraFramesCfg().position or "right"
-                end,
+                getValue = function() return ExtraFramesCfg().position or "right" end,
                 setValue = function(val)
                     ExtraFramesCfg().position = val
-                    if val ~= "free" then
-                        mod.XF_SetMoverShown(false)
-                    end
+                    if val ~= "free" then mod.XF_SetMoverShown(false) end
                     mod.XF_Apply()
                     -- Full rebuild: the Grow/Wrap Direction row only exists while the position is Free Move.
                     CludesUI:RefreshPage(true)
@@ -2435,9 +2200,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 end
                 local function XFReapply()
                     mod.XF_Apply()
-                    if mod.XF_IsMoverShown() then
-                        mod.XF_SetMoverShown(true)
-                    end
+                    if mod.XF_IsMoverShown() then mod.XF_SetMoverShown(true) end
                 end
 
                 -- The wrap dropdown only offers the two directions perpendicular to the primary run, so a grow change forces a full rebuild to swap its value set.
@@ -2487,9 +2250,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                                 min = 0,
                                 max = 20,
                                 step = 1,
-                                get = function()
-                                    return ExtraFramesCfg().wrapAfter or 0
-                                end,
+                                get = function() return ExtraFramesCfg().wrapAfter or 0 end,
                                 set = function(val)
                                     ExtraFramesCfg().wrapAfter = val
                                     XFReapply()
@@ -2508,15 +2269,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 max = 100,
                 step = 1,
                 tooltip = "Widens or narrows the extra frames relative to the raid frame size.",
-                getValue = function()
-                    return ExtraFramesCfg().extraWidth or 0
-                end,
+                getValue = function() return ExtraFramesCfg().extraWidth or 0 end,
                 setValue = function(val)
                     ExtraFramesCfg().extraWidth = val
                     mod.XF_Apply()
-                    if mod.XF_IsMoverShown() then
-                        mod.XF_SetMoverShown(true)
-                    end
+                    if mod.XF_IsMoverShown() then mod.XF_SetMoverShown(true) end
                 end,
             }, {
                 type = "slider",
@@ -2525,15 +2282,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 max = 100,
                 step = 1,
                 tooltip = "Makes the extra frames taller or shorter relative to the raid frame size.",
-                getValue = function()
-                    return ExtraFramesCfg().extraHeight or 0
-                end,
+                getValue = function() return ExtraFramesCfg().extraHeight or 0 end,
                 setValue = function(val)
                     ExtraFramesCfg().extraHeight = val
                     mod.XF_Apply()
-                    if mod.XF_IsMoverShown() then
-                        mod.XF_SetMoverShown(true)
-                    end
+                    if mod.XF_IsMoverShown() then mod.XF_SetMoverShown(true) end
                 end,
             })
             cursorY = cursorY - height
@@ -2548,9 +2301,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         {
                             type = "toggle",
                             label = "Auto Resize Indicators",
-                            get = function()
-                                return ExtraFramesCfg().autoResizeIndicators ~= false
-                            end,
+                            get = function() return ExtraFramesCfg().autoResizeIndicators ~= false end,
                             set = function(val)
                                 -- nil = on (additive key, zero migration); false = off.
                                 if val then
@@ -2566,9 +2317,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             end
         end -- close Extra Frames hidden-while-unconfigured gate
 
-        if onSection then
-            onSection("extraFrames", _secY, cursorY)
-        end
+        if onSection then onSection("extraFrames", _secY, cursorY) end
         _secY = cursorY
     end
 
@@ -2582,9 +2331,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
 
         local function PFSet()
             local profile = saved.profile
-            if not profile.petFrames then
-                profile.petFrames = { position = "right" }
-            end
+            if not profile.petFrames then profile.petFrames = { position = "right" } end
             return profile.petFrames
         end
         local tabKey = optionState._partyCtx and "party" or "raid"
@@ -2595,26 +2342,18 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             PFSet()
             return mod.PF_View(tabKey)
         end
-        local function PFEnabled()
-            return PFSet()[tabKey] == true
-        end
+        local function PFEnabled() return PFSet()[tabKey] == true end
         -- Only a preview already on screen: starting one here would show the raid preview on the
         -- party tab, or a preview with Preview Mode set to None.
         local function RedrawPetPreview()
-            if mod.previewActive() then
-                mod.ShowPreview()
-            end
-            if mod.partyPvActive() then
-                mod.ShowPartyPreview()
-            end
+            if mod.previewActive() then mod.ShowPreview() end
+            if mod.partyPvActive() then mod.ShowPartyPreview() end
         end
         -- The last row holds what the chosen position needs: the Move Frames button (Free Move)
         -- or Pet Side (Beside Owner). The other positions have none.
         local function PFPlacement()
             local p = PFTab().position
-            if p == "free" or (p == "owner" and onParty) then
-                return p
-            end
+            if p == "free" or (p == "owner" and onParty) then return p end
         end
         local BLANK = CludesUI.BlankRowCfg
 
@@ -2622,17 +2361,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             type = "toggle",
             text = "Show Pets",
             tooltip = "Adds your group's pets beside these frames, with their health, name, range and click-casting.",
-            getValue = function()
-                return PFEnabled()
-            end,
+            getValue = function() return PFEnabled() end,
             -- Rows below are HIDDEN while off; only the on/off flip forces the rebuild.
             setValue = CludesUI.DependentSetValue(PFEnabled, function(val)
                 PFSet()[tabKey] = val and true or false
                 mod.PF_Apply()
                 -- The Move Frames button goes with the page rebuild; the overlay can't stay up.
-                if not val and mod.PF_IsMoverShown(tabKey) then
-                    mod.PF_SetMoverShown(false)
-                end
+                if not val and mod.PF_IsMoverShown(tabKey) then mod.PF_SetMoverShown(false) end
                 RedrawPetPreview()
                 CludesUI:RefreshPage()
             end),
@@ -2647,15 +2382,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 owner = "Beside Owner",
             } or { left = "Before First Group", right = "After Last Group", free = "Free Move" },
             order = onParty and { "left", "right", "free", "owner" } or { "left", "right", "free" },
-            getValue = function()
-                return PFTab().position or "right"
-            end,
+            getValue = function() return PFTab().position or "right" end,
             setValue = function(val)
                 local before = PFPlacement()
                 PFTab().position = val
-                if val ~= "free" and mod.PF_IsMoverShown(tabKey) then
-                    mod.PF_SetMoverShown(false)
-                end
+                if val ~= "free" and mod.PF_IsMoverShown(tabKey) then mod.PF_SetMoverShown(false) end
                 mod.PF_Apply()
                 RedrawPetPreview()
                 -- A new last row needs the full rebuild.
@@ -2672,9 +2403,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 max = 100,
                 step = 1,
                 tooltip = "Widens or narrows the pet frames relative to the frame size.",
-                getValue = function()
-                    return PFTab().extraWidth or 0
-                end,
+                getValue = function() return PFTab().extraWidth or 0 end,
                 setValue = function(val)
                     PFTab().extraWidth = val
                     mod.PF_Apply()
@@ -2688,9 +2417,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 max = 100,
                 step = 1,
                 tooltip = "Makes the pet frames taller or shorter relative to the frame size.",
-                getValue = function()
-                    return PFTab().extraHeight or 0
-                end,
+                getValue = function() return PFTab().extraHeight or 0 end,
                 setValue = function(val)
                     PFTab().extraHeight = val
                     mod.PF_Apply()
@@ -2714,9 +2441,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         LEFT = "Left",
                     },
                     order = { "frames", "DOWN", "UP", "RIGHT", "LEFT" },
-                    getValue = function()
-                        return PFTab().freeGrowth or "frames"
-                    end,
+                    getValue = function() return PFTab().freeGrowth or "frames" end,
                     setValue = function(val)
                         PFTab().freeGrowth = (val ~= "frames") and val or nil
                         mod.PF_Apply()
@@ -2725,15 +2450,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 })
                 cursorY = cursorY - height
                 mod.RF_OptMoveFramesButton(row, row._leftRegion, {
-                    isShown = function()
-                        return mod.PF_IsMoverShown(tabKey)
-                    end,
-                    setShown = function(show)
-                        mod.PF_SetMoverShown(show, tabKey)
-                    end,
-                    allowed = function()
-                        return PFTab().position == "free" and not InCombatLockdown()
-                    end,
+                    isShown = function() return mod.PF_IsMoverShown(tabKey) end,
+                    setShown = function(show) mod.PF_SetMoverShown(show, tabKey) end,
+                    allowed = function() return PFTab().position == "free" and not InCombatLockdown() end,
                 })
             elseif placement == "owner" then
                 -- Across the party frames' stack only: beside stacked frames, above or below
@@ -2748,14 +2467,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         return across ~= (saved.profile.partyHorizontal and true or false)
                     end,
                     itemDisabledTooltip = function(val)
-                        if val == "above" or val == "below" then
-                            return "Horizontal Frames"
-                        end
+                        if val == "above" or val == "below" then return "Horizontal Frames" end
                         return "This option requires Horizontal Frames to be disabled"
                     end,
-                    getValue = function()
-                        return mod.PF_OwnerSide()
-                    end,
+                    getValue = function() return mod.PF_OwnerSide() end,
                     setValue = function(val)
                         PFSet().ownerSide = val
                         mod.PF_Apply()
@@ -2791,15 +2506,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     -- Same derive as the runtime ns._ResolveTooltipMode.
     local function CurTooltipMode()
         local m = SVal("tooltipMode", nil)
-        if m ~= nil then
-            return m
-        end
-        if SVal("showTooltip", true) == false then
-            return "never"
-        end
-        if CludesUIDB and CludesUIDB.showUnitTooltipsInCombat then
-            return "always"
-        end
+        if m ~= nil then return m end
+        if SVal("showTooltip", true) == false then return "never" end
+        if CludesUIDB and CludesUIDB.showUnitTooltipsInCombat then return "always" end
         return "outOfCombat"
     end
     row, height = W:DualRow(hostFrame, cursorY, {
@@ -2808,16 +2517,12 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         min = 10,
         max = 100,
         step = 1,
-        getValue = function()
-            return floor((SVal("oorAlpha", 0.4)) * 100)
-        end,
+        getValue = function() return floor((SVal("oorAlpha", 0.4)) * 100) end,
         setValue = function(val)
             SSet("oorAlpha", val / 100)
             -- SetAlphaFromBoolean bakes the value in at call time, so already-OOR units keep the old alpha until a range re-eval.
             -- Seed all buttons so the slider takes effect now.
-            if mod._RangeSeedAll then
-                mod._RangeSeedAll()
-            end
+            if mod._RangeSeedAll then mod._RangeSeedAll() end
         end,
     }, {
         type = "dropdown",
@@ -2830,9 +2535,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             never = "Never",
         },
         order = { "always", "outOfCombat", "outOfBossCombat", "never" },
-        getValue = function()
-            return CurTooltipMode()
-        end,
+        getValue = function() return CurTooltipMode() end,
         setValue = SSetRow("tooltipMode"),
     })
     cursorY = cursorY - height
@@ -2855,12 +2558,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 order = { "hidden", "shown", "cursor", "combat" },
                 get = function()
                     local val = SVal("buffHideTooltips", true)
-                    if val == false then
-                        return "shown"
-                    end
-                    if val == "cursor" or val == "combat" then
-                        return val
-                    end
+                    if val == false then return "shown" end
+                    if val == "cursor" or val == "combat" then return val end
                     return "hidden"
                 end,
                 set = function(keyName)
@@ -2871,9 +2570,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         val = true
                     end
                     SSet("buffHideTooltips", val)
-                    if mod.ReloadFrames then
-                        mod.ReloadFrames()
-                    end
+                    if mod.ReloadFrames then mod.ReloadFrames() end
                 end,
             },
         }
@@ -2887,15 +2584,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     -- riding the existing power-event plumbing (see ns.HM_Rebuild).
     local function HealerManaCfg()
         local profile = saved.profile
-        if not profile.healerMana then
-            profile.healerMana = { mode = "none" }
-        end
+        if not profile.healerMana then profile.healerMana = { mode = "none" } end
         return profile.healerMana
     end
     local function RebuildHealthMarkers()
-        if mod.HM_Rebuild then
-            mod.HM_Rebuild()
-        end
+        if mod.HM_Rebuild then mod.HM_Rebuild() end
     end
     local hmRow
     hmRow, height = W:DualRow(hostFrame, cursorY, {
@@ -2911,15 +2604,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         setValue = function(val)
             HealerManaCfg().mode = val
             -- Re-syncs healer power-event registrations and rebuilds.
-            if mod.UpdatePowerEventRegistration then
-                mod.UpdatePowerEventRegistration()
-            end
+            if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
             -- Re-register unlock elements: the mover's isHidden verdict
             -- just changed, and re-registration applies it live to an
             -- open unlock session (both directions).
-            if mod._RFRegisterUnlock then
-                mod._RFRegisterUnlock()
-            end
+            if mod._RFRegisterUnlock then mod._RFRegisterUnlock() end
         end,
     }, {
         type = "multiSwatch",
@@ -2945,13 +2634,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         CludesUI:RefreshPage()
                         return
                     end
-                    if self._eabOrigClick then
-                        self._eabOrigClick(self)
-                    end
+                    if self._eabOrigClick then self._eabOrigClick(self) end
                 end,
-                refreshAlpha = function()
-                    return (HealerManaCfg().colorMode == "power") and 0.3 or 1
-                end,
+                refreshAlpha = function() return (HealerManaCfg().colorMode == "power") and 0.3 or 1 end,
             },
             {
                 tooltip = "Power Colored",
@@ -2959,13 +2644,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     -- Same resolver chain as the runtime rows: the global
                     -- custom power color first, stock mana color after.
                     local details = CludesUI.GetPowerColor("MANA")
-                    if details then
-                        return details.r, details.g, details.b, 1
-                    end
+                    if details then return details.r, details.g, details.b, 1 end
                     local mc = PowerBarColor and PowerBarColor.MANA
-                    if mc then
-                        return mc.r, mc.g, mc.b, 1
-                    end
+                    if mc then return mc.r, mc.g, mc.b, 1 end
                     return 0.3, 0.5, 0.85, 1
                 end,
                 setValue = function() end,
@@ -2975,9 +2656,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     RebuildHealthMarkers()
                     CludesUI:RefreshPage()
                 end,
-                refreshAlpha = function()
-                    return (HealerManaCfg().colorMode == "power") and 1 or 0.3
-                end,
+                refreshAlpha = function() return (HealerManaCfg().colorMode == "power") and 1 or 0.3 end,
             },
         },
     })
@@ -2994,9 +2673,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     min = 8,
                     max = 24,
                     step = 1,
-                    get = function()
-                        return HealerManaCfg().textSize or 12
-                    end,
+                    get = function() return HealerManaCfg().textSize or 12 end,
                     set = function(val)
                         HealerManaCfg().textSize = val
                         RebuildHealthMarkers()
@@ -3009,9 +2686,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     max = 12,
                     step = 1,
                     tooltip = "Vertical space between rows.",
-                    get = function()
-                        return HealerManaCfg().spacing or 2
-                    end,
+                    get = function() return HealerManaCfg().spacing or 2 end,
                     set = function(val)
                         HealerManaCfg().spacing = val
                         RebuildHealthMarkers()
@@ -3037,9 +2712,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     tooltip = "Which way the rows stack as healers are added.",
                     values = { DOWN = "Down", UP = "Up" },
                     order = { "DOWN", "UP" },
-                    get = function()
-                        return HealerManaCfg().growth == "UP" and "UP" or "DOWN"
-                    end,
+                    get = function() return HealerManaCfg().growth == "UP" and "UP" or "DOWN" end,
                     set = function(keyName)
                         HealerManaCfg().growth = keyName
                         RebuildHealthMarkers()
@@ -3049,9 +2722,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     type = "toggle",
                     label = "Show Names in Raid",
                     tooltip = "Shows each healer's name before the number while in a raid. In a party the display always shows numbers only.",
-                    get = function()
-                        return HealerManaCfg().showNames ~= false
-                    end,
+                    get = function() return HealerManaCfg().showNames ~= false end,
                     -- if/else, NOT `v and nil or false`: that expression is
                     -- ALWAYS false (the nil arm falls through the or).
                     set = function(val)
@@ -3066,9 +2737,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 {
                     type = "toggle",
                     label = "Class Colored Names",
-                    get = function()
-                        return HealerManaCfg().classNames ~= false
-                    end,
+                    get = function() return HealerManaCfg().classNames ~= false end,
                     set = function(val)
                         if val then
                             HealerManaCfg().classNames = nil
@@ -3092,14 +2761,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         eyeTex:SetTexture(EYE_VISIBLE)
-        local function RefreshHMEye()
-            eyeTex:SetTexture(mod._hmPreview and EYE_INVISIBLE or EYE_VISIBLE)
-        end
+        local function RefreshHMEye() eyeTex:SetTexture(mod._hmPreview and EYE_INVISIBLE or EYE_VISIBLE) end
         EYE.refreshHMEye = RefreshHMEye
         eyeButton:SetScript("OnClick", function()
-            if mod.HM_SetPreview then
-                mod.HM_SetPreview(not mod._hmPreview)
-            end
+            if mod.HM_SetPreview then mod.HM_SetPreview(not mod._hmPreview) end
             RefreshHMEye()
         end)
         eyeButton:SetScript("OnEnter", function(s)
@@ -3123,23 +2788,15 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
     if not optionState._partyCtx then
         local function PGS()
             local profile = saved.profile
-            if not profile.playerGroup then
-                profile.playerGroup = {}
-            end
+            if not profile.playerGroup then profile.playerGroup = {} end
             return profile.playerGroup
         end
         local function ApplyPowerGlow()
-            if mod.PG_Apply then
-                mod.PG_Apply()
-            end
+            if mod.PG_Apply then mod.PG_Apply() end
         end
-        local function PGOff()
-            return not PGS().enabled
-        end
+        local function PGOff() return not PGS().enabled end
         local function PGModeSwatches(modeKey, colorKey)
-            local function Mode()
-                return PGS()[modeKey] or "accent"
-            end
+            local function Mode() return PGS()[modeKey] or "accent" end
             local function Pick(m)
                 return function()
                     PGS()[modeKey] = m
@@ -3148,9 +2805,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 end
             end
             local function Alpha(m)
-                return function()
-                    return (Mode() == m) and 1 or 0.3
-                end
+                return function() return (Mode() == m) and 1 or 0.3 end
             end
             return {
                 {
@@ -3179,9 +2834,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     refreshAlpha = Alpha("class"),
                     getValue = function()
                         local color = CludesUI.GetClassColor(CludesUI._playerClass)
-                        if color then
-                            return color.r, color.g, color.b, 1
-                        end
+                        if color then return color.r, color.g, color.b, 1 end
                         return 1, 1, 1, 1
                     end,
                     setValue = function() end,
@@ -3205,19 +2858,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             type = "toggle",
             text = "Player Group Label",
             tooltip = "Shows your raid group number in its own movable frame. Position it in Layout Mode.",
-            getValue = function()
-                return PGS().enabled and true or false
-            end,
+            getValue = function() return PGS().enabled and true or false end,
             setValue = function(val)
                 PGS().enabled = val
-                if not val then
-                    mod._pgPreview = nil
-                end
+                if not val then mod._pgPreview = nil end
                 ApplyPowerGlow()
                 -- The mover's isHidden verdict changed: re-register.
-                if mod._RFRegisterUnlock then
-                    mod._RFRegisterUnlock()
-                end
+                if mod._RFRegisterUnlock then mod._RFRegisterUnlock() end
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -3265,9 +2912,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     max = 200,
                     step = 1,
                     tooltip = "0 sizes the frame to the text plus padding.",
-                    get = function()
-                        return PGS()[key] or 0
-                    end,
+                    get = function() return PGS()[key] or 0 end,
                     set = function(val)
                         PGS()[key] = (val > 0) and val or nil
                         ApplyPowerGlow()
@@ -3284,9 +2929,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         label = "Text Format",
                         values = { number = "3", full = GROUP_NUMBER:format(3) },
                         order = { "number", "full" },
-                        get = function()
-                            return PGS().format == "full" and "full" or "number"
-                        end,
+                        get = function() return PGS().format == "full" and "full" or "number" end,
                         set = function(keyName)
                             PGS().format = keyName
                             ApplyPowerGlow()
@@ -3298,9 +2941,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         min = 6,
                         max = 40,
                         step = 1,
-                        get = function()
-                            return (mod._PGStyle())
-                        end,
+                        get = function() return (mod._PGStyle()) end,
                         set = function(val)
                             PGS().textSize = val
                             ApplyPowerGlow()
@@ -3312,9 +2953,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         min = 0,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return PGS().padding or 4
-                        end,
+                        get = function() return PGS().padding or 4 end,
                         set = function(val)
                             PGS().padding = val
                             ApplyPowerGlow()
@@ -3328,9 +2967,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         min = 0,
                         max = 4,
                         step = 1,
-                        get = function()
-                            return (select(4, mod._PGStyle()))
-                        end,
+                        get = function() return (select(4, mod._PGStyle())) end,
                         set = function(val)
                             PGS().borderSize = val
                             ApplyPowerGlow()
@@ -3359,9 +2996,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             CludesUI.RegisterWidgetRefresh(PaintPowerGlowEye)
             PaintPowerGlowEye()
             eyeButton:SetScript("OnClick", function()
-                if mod.PG_SetPreview then
-                    mod.PG_SetPreview(not mod._pgPreview)
-                end
+                if mod.PG_SetPreview then mod.PG_SetPreview(not mod._pgPreview) end
                 PaintPowerGlowEye()
             end)
             eyeButton:SetScript("OnEnter", function(s)
@@ -3387,13 +3022,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         type = "toggle",
         text = "Hide Blizzard Party Panel",
         tooltip = "Hides the collapsed Blizzard party/raid sidebar panel on the side of the screen.",
-        getValue = function()
-            return CludesUIDB and CludesUIDB.hideBlizzardPartyFrame or false
-        end,
+        getValue = function() return CludesUIDB and CludesUIDB.hideBlizzardPartyFrame or false end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.hideBlizzardPartyFrame = val
             CludesUI._applyHideBlizzardPartyFrame()
         end,
@@ -3406,9 +3037,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = false,
                 getValue = function()
                     local color = SGet("statusColorOffline")
-                    if color then
-                        return color.r, color.g, color.b
-                    end
+                    if color then return color.r, color.g, color.b end
                     return 0x66 / 255, 0x66 / 255, 0x66 / 255
                 end,
                 setValue = function(red, green, blue)
@@ -3421,9 +3050,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 hasAlpha = false,
                 getValue = function()
                     local color = SGet("statusColorDead")
-                    if color then
-                        return color.r, color.g, color.b
-                    end
+                    if color then return color.r, color.g, color.b end
                     return 0x24 / 255, 0x17 / 255, 0x17 / 255
                 end,
                 setValue = function(red, green, blue)
@@ -3443,9 +3070,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         getValue = SValRow("freeRightClickCamera", false),
         setValue = function(val)
             SSet("freeRightClickCamera", val)
-            if mod.FRCM_Refresh then
-                mod.FRCM_Refresh()
-            end
+            if mod.FRCM_Refresh then mod.FRCM_Refresh() end
         end,
     }, {
         type = "dropdown",
@@ -3457,17 +3082,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         setValue = function(val)
             -- Reload after changing strata to restore child frame levels.
             SWrite("frameStrata", val)
-            if mod.ApplyFrameStrata then
-                mod.ApplyFrameStrata()
-            end
+            if mod.ApplyFrameStrata then mod.ApplyFrameStrata() end
             ReloadAndUpdate()
         end,
     })
     cursorY = cursorY - height
 
-    if onSection then
-        onSection("rangeTooltip", _secY, cursorY)
-    end
+    if onSection then onSection("rangeTooltip", _secY, cursorY) end
     return cursorY
 end
 

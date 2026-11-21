@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end -- Forever Essentials loads on WoW Forever only
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Threat_Options.lua
 --  Builds the "Threat" page inside the Forever Essentials module: a live
@@ -13,9 +9,7 @@ end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 local module = CludesUI._ModuleNS["CludesUIForeverEssentials"]
 local mod = module and module.ThreatMeter
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The preview surface in the content header. Exported so the module's
 -- getHeaderBuilder can hand it back when the page cache outlives its header.
@@ -77,44 +71,30 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
 
     -- Style page gates: Gate() for settings neither stock look uses,
     -- BlizzOnly() for those only Blizzard Style ignores.
-    local function ThreatGate(rowConf)
-        return BS.Gate("threatmeter", rowConf)
-    end
+    local function ThreatGate(rowConf) return BS.Gate("threatmeter", rowConf) end
     local function BlizzOnly(rowConf)
-        if BS.Active("threatmeter") == "blizzard" then
-            return ThreatGate(rowConf)
-        end
+        if BS.Active("threatmeter") == "blizzard" then return ThreatGate(rowConf) end
         return rowConf
     end
 
     mod.BarTextures()
     CludesUI:SetContentHeader(HeaderBuilder)
 
-    local function off()
-        return not Get("enabled")
-    end
+    local function off() return not Get("enabled") end
     -- A row that needs the meter on and one more condition: greyed by either,
     -- with the requirement that is actually blocking it. raw marks a whole
     -- sentence (shown as is instead of wrapped).
     local function Needs(cond, requirement, raw)
-        return function()
-            return off() or cond()
-        end,
+        return function() return off() or cond() end,
             function()
-                if off() then
-                    return "Threat Meter"
-                end
+                if off() then return "Threat Meter" end
                 return requirement
             end,
-            raw and function()
-                return not off()
-            end or nil
+            raw and function() return not off() end or nil
     end
     -- Writes only (read live by the meter), writes that restyle, and writes
     -- whose toggle gates other rows.
-    local function Store(key, val)
-        mod.Cfg()[key] = val
-    end
+    local function Store(key, val) mod.Cfg()[key] = val end
     local function Set(key, val)
         mod.Cfg()[key] = val
         mod.ApplyStyle()
@@ -125,15 +105,11 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     end
     -- A size whose swatch greys out at zero refreshes the page only when it
     -- crosses zero, so a slider drag just restyles.
-    local function IsZero(set, key)
-        return (GetStyle(set, key) or 0) == 0
-    end
+    local function IsZero(set, key) return (GetStyle(set, key) or 0) == 0 end
     local function SetStyleSize(set, key, val)
         local was = IsZero(set, key)
         mod.SetStyleValue(set, key, val)
-        if IsZero(set, key) ~= was then
-            CludesUI:RefreshPage()
-        end
+        if IsZero(set, key) ~= was then CludesUI:RefreshPage() end
     end
     -- The separator options exist only for border styles with divider art (the
     -- Pixels styles): role "sepH" (under a bar or the header) or "sepV" (beside
@@ -150,12 +126,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             tooltip = tooltip,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return Get(key)
-            end,
-            setValue = setValue or function(val)
-                Set(key, val)
-            end,
+            getValue = function() return Get(key) end,
+            setValue = setValue or function(val) Set(key, val) end,
         }
     end
     -- The threat list's own settings, which a Damage Meters Threat window shows
@@ -175,12 +147,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             tooltip = tooltip,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return Get(key)
-            end,
-            setValue = function(val)
-                Set(key, val)
-            end,
+            getValue = function() return Get(key) end,
+            setValue = function(val) Set(key, val) end,
         }
     end
     local function StyleToggle(set, key, textValue, gates)
@@ -189,14 +157,10 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             text = textValue,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return GetStyle(set, key)
-            end,
+            getValue = function() return GetStyle(set, key) end,
             setValue = function(val)
                 mod.SetStyleValue(set, key, val)
-                if gates then
-                    CludesUI:RefreshPage()
-                end
+                if gates then CludesUI:RefreshPage() end
             end,
         }
     end
@@ -209,12 +173,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             step = step or 1,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return GetStyle(set, key)
-            end,
-            setValue = function(val)
-                mod.SetStyleValue(set, key, val)
-            end,
+            getValue = function() return GetStyle(set, key) end,
+            setValue = function(val) mod.SetStyleValue(set, key, val) end,
         }
     end
 
@@ -229,9 +189,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 local color = Get(key)
                 return color.r, color.g, color.b
             end,
-            setValue = function(red, green, blue)
-                Set(key, { r = red, g = green, b = blue })
-            end,
+            setValue = function(red, green, blue) Set(key, { r = red, g = green, b = blue }) end,
         }
     end
     local function StyleSwatch(set, key, tooltip)
@@ -257,31 +215,25 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     -- The custom alternative to a class or accent colour: dimmed while that one
     -- is in use, and its first click switches to the custom colour.
     local function Alternative(sc, isActive, activate)
-        sc.refreshAlpha = function()
-            return isActive() and 1 or 0.3
-        end
+        sc.refreshAlpha = function() return isActive() and 1 or 0.3 end
         sc.onClick = function(self)
             if not isActive() then
                 activate()
                 CludesUI:RefreshPage()
                 return
             end
-            if self._eabOrigClick then
-                self._eabOrigClick(self)
-            end
+            if self._eabOrigClick then self._eabOrigClick(self) end
         end
         return sc
     end
     local function AlternativeTo(sc, set, flag)
-        return Alternative(sc, function()
-            return not GetStyle(set, flag)
-        end, function()
-            mod.SetStyleValue(set, flag, false)
-        end)
+        return Alternative(
+            sc,
+            function() return not GetStyle(set, flag) end,
+            function() mod.SetStyleValue(set, flag, false) end
+        )
     end
-    local function Swatch(regionFrame, sc)
-        CludesUI.BuildInlineSwatches(regionFrame, { sc })
-    end
+    local function Swatch(regionFrame, sc) CludesUI.BuildInlineSwatches(regionFrame, { sc }) end
     -- head (optional): a row above the offsets; the cog then takes the
     -- settings icon, as it holds more than a position.
     local function OffsetCog(regionFrame, title, keyX, keyY, disabled, disabledTooltip, rawTooltip, head)
@@ -292,12 +244,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 min = -20,
                 max = 20,
                 step = 1,
-                get = function()
-                    return GetStyle(keyX[1], keyX[2])
-                end,
-                set = function(val)
-                    mod.SetStyleValue(keyX[1], keyX[2], val)
-                end,
+                get = function() return GetStyle(keyX[1], keyX[2]) end,
+                set = function(val) mod.SetStyleValue(keyX[1], keyX[2], val) end,
             },
             {
                 type = "slider",
@@ -305,17 +253,11 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 min = -20,
                 max = 20,
                 step = 1,
-                get = function()
-                    return GetStyle(keyY[1], keyY[2])
-                end,
-                set = function(val)
-                    mod.SetStyleValue(keyY[1], keyY[2], val)
-                end,
+                get = function() return GetStyle(keyY[1], keyY[2]) end,
+                set = function(val) mod.SetStyleValue(keyY[1], keyY[2], val) end,
             },
         }
-        if head then
-            table.insert(rowList, 1, head)
-        end
+        if head then table.insert(rowList, 1, head) end
         CludesUI.BuildInlineCog(regionFrame, {
             title = title,
             disabled = disabled,
@@ -342,9 +284,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Enable Threat Meter",
             tooltip = "Shows everyone's threat on your target, highest first. With a friendly target, it shows the threat on what they are fighting.",
-            getValue = function()
-                return not off()
-            end,
+            getValue = function() return not off() end,
             setValue = function(val)
                 mod.Cfg().enabled = val
                 mod.Apply()
@@ -387,12 +327,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Ignore Pets",
             tooltip = "Leaves pets out of the list.",
-            getValue = function()
-                return not Get("pets")
-            end,
-            setValue = function(val)
-                Set("pets", not val)
-            end,
+            getValue = function() return not Get("pets") end,
+            setValue = function(val) Set("pets", not val) end,
         }
     )
     cursorY = cursorY - height
@@ -411,9 +347,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         "warnSound",
         "Warning Sound",
         "Plays once when your threat climbs past the threshold, and again only after it has dropped back below.",
-        CludesUI.SectionToggleSetValue(function(val)
-            Store("warnSound", val)
-        end)
+        CludesUI.SectionToggleSetValue(function(val) Store("warnSound", val) end)
     )
     if warnOn then
         local sndValues, sndOrder = CludesUI.BuildSoundDropdownValues(mod.Sounds())
@@ -424,12 +358,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             order = sndOrder,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return Get("warnSoundKey")
-            end,
-            setValue = function(val)
-                Store("warnSoundKey", val)
-            end,
+            getValue = function() return Get("warnSoundKey") end,
+            setValue = function(val) Store("warnSoundKey", val) end,
         })
         cursorY = cursorY - height
 
@@ -445,16 +375,15 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 tooltip = "100% is where you pull aggro.",
                 disabled = off,
                 disabledTooltip = "Threat Meter",
-                getValue = function()
-                    return Get("warnAt")
-                end,
-                setValue = function(val)
-                    Store("warnAt", val)
-                end,
+                getValue = function() return Get("warnAt") end,
+                setValue = function(val) Store("warnAt", val) end,
             },
-            Toggle("warnSkipTank", "Not While Tanking", "No warning while you are the tank.", function(val)
-                Store("warnSkipTank", val)
-            end)
+            Toggle(
+                "warnSkipTank",
+                "Not While Tanking",
+                "No warning while you are the tank.",
+                function(val) Store("warnSkipTank", val) end
+            )
         )
         cursorY = cursorY - height
     else
@@ -493,20 +422,14 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             positionOrder,
             withGap
         )
-            local function PGet(key)
-                return profile()[key]
-            end
+            local function PGet(key) return profile()[key] end
             local function PSet(key, val)
                 profile()[key] = val
                 apply(key, val)
             end
-            local function pctOff()
-                return (blocked and blocked()) or not PGet("threatPctEnabled")
-            end
+            local function pctOff() return (blocked and blocked()) or not PGet("threatPctEnabled") end
             local function pctOffTip()
-                if blocked and blocked() then
-                    return blockedTip
-                end
+                if blocked and blocked() then return blockedTip end
                 return textValue
             end
             local function Offset(key, labelText, low, high)
@@ -516,12 +439,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                     min = low,
                     max = high,
                     step = 1,
-                    get = function()
-                        return PGet(key)
-                    end,
-                    set = function(val)
-                        PSet(key, val)
-                    end,
+                    get = function() return PGet(key) end,
+                    set = function(val) PSet(key, val) end,
                 }
             end
             local row
@@ -529,13 +448,9 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 type = "toggle",
                 text = textValue,
                 tooltip = tooltip,
-                disabled = blocked and function()
-                    return blocked() and not PGet("threatPctEnabled")
-                end,
+                disabled = blocked and function() return blocked() and not PGet("threatPctEnabled") end,
                 disabledTooltip = blocked and blockedTip,
-                getValue = function()
-                    return PGet("threatPctEnabled")
-                end,
+                getValue = function() return PGet("threatPctEnabled") end,
                 setValue = function(val)
                     PSet("threatPctEnabled", val)
                     -- The withGap row is built while the text is on.
@@ -548,12 +463,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 order = positionOrder or PCT_POSITION_ORDER,
                 disabled = pctOff,
                 disabledTooltip = pctOffTip,
-                getValue = function()
-                    return PGet("threatPctPosition")
-                end,
-                setValue = function(val)
-                    PSet("threatPctPosition", val)
-                end,
+                getValue = function() return PGet("threatPctPosition") end,
+                setValue = function(val) PSet("threatPctPosition", val) end,
             })
             cursorY = cursorY - height
             if not CludesUI._prebuilding then
@@ -567,12 +478,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                         type = "toggle",
                         label = "Color by Threat",
                         tooltip = "Colors the number by threat status. Off shows it in white.",
-                        get = function()
-                            return PGet("threatPctColorByThreat")
-                        end,
-                        set = function(val)
-                            PSet("threatPctColorByThreat", val)
-                        end,
+                        get = function() return PGet("threatPctColorByThreat") end,
+                        set = function(val) PSet("threatPctColorByThreat", val) end,
                     })
                 end
                 CludesUI.BuildInlineCog(row._rightRegion, {
@@ -585,12 +492,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             -- What the text shows and how it is coloured. The Threat Gap colours
             -- sit on Color by Threat while the gap is picked.
             if withGap and PGet("threatPctEnabled") then
-                local function Gap()
-                    return PGet("threatPctMode") == "gap"
-                end
-                local function ColorOff()
-                    return not PGet("threatPctColorByThreat")
-                end
+                local function Gap() return PGet("threatPctMode") == "gap" end
+                local function ColorOff() return not PGet("threatPctColorByThreat") end
                 local modeRow
                 modeRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
@@ -598,19 +501,13 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                     values = PCT_MODES,
                     order = PCT_MODE_ORDER,
                     tooltip = "Threat Gap shows on your target's plate only.",
-                    getValue = function()
-                        return PGet("threatPctMode") or "percent"
-                    end,
-                    setValue = CludesUI.DependentSetValue(Gap, function(val)
-                        PSet("threatPctMode", val)
-                    end),
+                    getValue = function() return PGet("threatPctMode") or "percent" end,
+                    setValue = CludesUI.DependentSetValue(Gap, function(val) PSet("threatPctMode", val) end),
                 }, {
                     type = "toggle",
                     text = "Color by Threat",
                     tooltip = "Colors the number. Off shows it in white.",
-                    getValue = function()
-                        return PGet("threatPctColorByThreat")
-                    end,
+                    getValue = function() return PGet("threatPctColorByThreat") end,
                     setValue = function(val)
                         PSet("threatPctColorByThreat", val)
                         CludesUI:RefreshPage()
@@ -625,14 +522,10 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                             disabledTooltip = "Color by Threat",
                             getValue = function()
                                 local color = PGet(key)
-                                if color then
-                                    return color.r, color.g, color.b
-                                end
+                                if color then return color.r, color.g, color.b end
                                 return 1, 1, 1
                             end,
-                            setValue = function(red, green, blue)
-                                PSet(key, { r = red, g = green, b = blue })
-                            end,
+                            setValue = function(red, green, blue) PSet(key, { r = red, g = green, b = blue }) end,
                         }
                     end
                     CludesUI.BuildInlineSwatches(modeRow._rightRegion, {
@@ -648,12 +541,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             PctRow(
                 "Show on Nameplates",
                 "Shows your threat percentage on each enemy nameplate while you are in combat with it.",
-                function()
-                    return np.db.profile
-                end,
-                function()
-                    np.RefreshThreatPct()
-                end,
+                function() return np.db.profile end,
+                function() np.RefreshThreatPct() end,
                 nil,
                 nil,
                 nil,
@@ -666,9 +555,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             local row, pctOff, pctOffTip = PctRow(
                 "Show on Target Frame",
                 "Shows your threat percentage on the target frame while you are in combat with it. The cog adds the focus frame.",
-                function()
-                    return uf.db.profile
-                end,
+                function() return uf.db.profile end,
                 function(key, val)
                     if key == "threatPctEnabled" then
                         uf.SetThreatPctEnabled(val)
@@ -676,9 +563,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                         uf.RefreshThreatPct()
                     end
                 end,
-                function()
-                    return not (uf.frames.target or uf.frames.focus)
-                end,
+                function() return not (uf.frames.target or uf.frames.focus) end,
                 "This option requires an CludesUI Target or Focus frame.",
                 uf._threatPctPositions,
                 uf._threatPctPositionOrder
@@ -692,9 +577,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                         {
                             type = "toggle",
                             label = "Show on Focus",
-                            get = function()
-                                return uf.db.profile.threatPctFocus
-                            end,
+                            get = function() return uf.db.profile.threatPctFocus end,
                             set = function(val)
                                 uf.db.profile.threatPctFocus = val
                                 uf.RefreshThreatPct()
@@ -727,16 +610,12 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     do
         local lookup, nameList = mod.BarTextures(), mod.BarTextureNames
         for _, key in ipairs(mod.BarTextureOrder) do
-            if key ~= "---" then
-                texValues[key] = nameList[key] or key
-            end
+            if key ~= "---" then texValues[key] = nameList[key] or key end
             texOrder[#texOrder + 1] = key
         end
         texValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return lookup[key]
-            end,
+            background = function(key) return lookup[key] end,
         }
     end
     local iconRow
@@ -747,12 +626,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         order = texOrder,
         disabled = off,
         disabledTooltip = "Threat Meter",
-        getValue = function()
-            return GetStyle("bars", "barTexture")
-        end,
-        setValue = function(val)
-            mod.SetStyleValue("bars", "barTexture", val)
-        end,
+        getValue = function() return GetStyle("bars", "barTexture") end,
+        setValue = function(val) mod.SetStyleValue("bars", "barTexture", val) end,
     }, {
         type = "dropdown",
         text = "Icon Style",
@@ -760,18 +635,15 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         order = ICON_STYLE_ORDER,
         disabled = off,
         disabledTooltip = "Threat Meter",
-        getValue = function()
-            return GetStyle("bars", "iconStyle")
-        end,
-        setValue = function(val)
-            mod.SetStyleValue("bars", "iconStyle", val)
-        end,
+        getValue = function() return GetStyle("bars", "iconStyle") end,
+        setValue = function(val) mod.SetStyleValue("bars", "iconStyle", val) end,
     })
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
-        local zoomOff, zoomTip = Needs(function()
-            return GetStyle("bars", "iconStyle") == "none"
-        end, "Icon Style")
+        local zoomOff, zoomTip = Needs(
+            function() return GetStyle("bars", "iconStyle") == "none" end,
+            "Icon Style"
+        )
         CludesUI.BuildInlineCog(iconRow._rightRegion, {
             title = "Icon Settings",
             disabled = zoomOff,
@@ -783,30 +655,18 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                     min = 0,
                     max = 0.20,
                     step = 0.01,
-                    get = function()
-                        return GetStyle("bars", "iconZoom")
-                    end,
-                    set = function(val)
-                        mod.SetStyleValue("bars", "iconZoom", val)
-                    end,
+                    get = function() return GetStyle("bars", "iconZoom") end,
+                    set = function(val) mod.SetStyleValue("bars", "iconZoom", val) end,
                 },
                 ThreatGate({
                     type = "toggle",
                     label = "Separator",
                     tooltip = "Adds a divider between each icon and its bar.",
-                    hidden = function()
-                        return not DividerArt("borderTexture", "sepV")
-                    end,
-                    disabled = function()
-                        return IsZero("borders", "borderSize")
-                    end,
+                    hidden = function() return not DividerArt("borderTexture", "sepV") end,
+                    disabled = function() return IsZero("borders", "borderSize") end,
                     disabledTooltip = "Bar Border Size",
-                    get = function()
-                        return GetStyle("bars", "iconSeparator")
-                    end,
-                    set = function(val)
-                        mod.SetStyleValue("bars", "iconSeparator", val)
-                    end,
+                    get = function() return GetStyle("bars", "iconSeparator") end,
+                    set = function(val) mod.SetStyleValue("bars", "iconSeparator", val) end,
                 }),
             },
         })
@@ -820,9 +680,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             "pullBar",
             "Pull Aggro Bar",
             "An extra bar showing how much threat takes aggro from the tank.",
-            function(val)
-                SetAndRefresh("pullBar", val)
-            end
+            function(val) SetAndRefresh("pullBar", val) end
         ),
         Toggle("growUp", "Grow Upward", "Lists the highest threat at the bottom instead of the top.")
     )
@@ -830,9 +688,12 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         Swatch(
             pullRow._leftRegion,
-            ColorSwatch("pullColor", "Pull Aggro Bar Color", function()
-                return not Get("pullBar")
-            end, "Pull Aggro Bar")
+            ColorSwatch(
+                "pullColor",
+                "Pull Aggro Bar Color",
+                function() return not Get("pullBar") end,
+                "Pull Aggro Bar"
+            )
         )
     end
 
@@ -849,9 +710,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
         "showHeader",
         "Show Header",
         "A title row with the name of the mob whose threat is shown.",
-        CludesUI.SectionToggleSetValue(function(val)
-            Set("showHeader", val)
-        end)
+        CludesUI.SectionToggleSetValue(function(val) Set("showHeader", val) end)
     )
     if Get("showHeader") then
         _, height = W:DualRow(
@@ -896,9 +755,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 and not IsZero("borders", "windowBorderSize")
                 and DividerArt("windowBorderTexture", "sepH")
         end
-        local function LineState()
-            return not off() and SeparatorShown() and "disabled" or nil
-        end
+        local function LineState() return not off() and SeparatorShown() and "disabled" or nil end
         local bgRow
         bgRow, height = W:DualRow(
             hostFrame,
@@ -910,19 +767,11 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 min = 0,
                 max = 4,
                 step = 1,
-                disabled = function()
-                    return off() or SeparatorShown()
-                end,
-                disabledTooltip = function()
-                    return off() and "Threat Meter" or "Bottom Separator"
-                end,
+                disabled = function() return off() or SeparatorShown() end,
+                disabledTooltip = function() return off() and "Threat Meter" or "Bottom Separator" end,
                 requireState = LineState,
-                getValue = function()
-                    return GetStyle("header", "hdrBottomBorderSize")
-                end,
-                setValue = function(val)
-                    SetStyleSize("header", "hdrBottomBorderSize", val)
-                end,
+                getValue = function() return GetStyle("header", "hdrBottomBorderSize") end,
+                setValue = function(val) SetStyleSize("header", "hdrBottomBorderSize", val) end,
             })
         )
         cursorY = cursorY - height
@@ -950,9 +799,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                                 end
                                 return "Window Border Size"
                             end,
-                            get = function()
-                                return GetStyle("header", "hdrBottomSeparator")
-                            end,
+                            get = function() return GetStyle("header", "hdrBottomSeparator") end,
                             set = function(val)
                                 mod.SetStyleValue("header", "hdrBottomSeparator", val)
                                 CludesUI:RefreshPage()
@@ -966,9 +813,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 return off() or SeparatorShown() or IsZero("header", "hdrBottomBorderSize")
             end
             lineSwatch.disabledTooltip = function()
-                if off() then
-                    return "Threat Meter"
-                end
+                if off() then return "Threat Meter" end
                 return SeparatorShown() and "Bottom Separator" or "Header Bottom Border"
             end
             lineSwatch.requireState = LineState
@@ -1010,12 +855,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     local function BarColorMode()
-        if GetStyle("colors", "showClassColor") ~= false then
-            return "class"
-        end
-        if GetStyle("colors", "barColorUseAccent") ~= false then
-            return "accent"
-        end
+        if GetStyle("colors", "showClassColor") ~= false then return "class" end
+        if GetStyle("colors", "barColorUseAccent") ~= false then return "accent" end
         return "custom"
     end
     local function SetBarColorMode(val)
@@ -1043,11 +884,11 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         Swatch(
             fillRow._leftRegion,
-            Alternative(StyleSwatch("colors", "barColor", "Custom Color"), function()
-                return BarColorMode() == "custom"
-            end, function()
-                SetBarColorMode("custom")
-            end)
+            Alternative(
+                StyleSwatch("colors", "barColor", "Custom Color"),
+                function() return BarColorMode() == "custom" end,
+                function() SetBarColorMode("custom") end
+            )
         )
     end
 
@@ -1059,17 +900,13 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             "playerColorOn",
             "Custom Player Color",
             "Your own bar in a fixed color instead of your class color.",
-            function(val)
-                SetAndRefresh("playerColorOn", val)
-            end
+            function(val) SetAndRefresh("playerColorOn", val) end
         ),
         ListToggle(
             "tankColorOn",
             "Custom Tank Color",
             "The bar of whoever holds aggro in a fixed color instead of their class color.",
-            function(val)
-                SetAndRefresh("tankColorOn", val)
-            end
+            function(val) SetAndRefresh("tankColorOn", val) end
         )
     )
     cursorY = cursorY - height
@@ -1083,26 +920,28 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Show Player Marker",
                     tooltip = "Shows a white stripe on your own bar.",
-                    get = function()
-                        return Get("showPlayerMarker")
-                    end,
-                    set = function(val)
-                        Set("showPlayerMarker", val)
-                    end,
+                    get = function() return Get("showPlayerMarker") end,
+                    set = function(val) Set("showPlayerMarker", val) end,
                 },
             },
         })
         Swatch(
             customRow._leftRegion,
-            ColorSwatch("playerColor", "Player Color", function()
-                return not Get("playerColorOn")
-            end, "Custom Player Color")
+            ColorSwatch(
+                "playerColor",
+                "Player Color",
+                function() return not Get("playerColorOn") end,
+                "Custom Player Color"
+            )
         )
         Swatch(
             customRow._rightRegion,
-            ColorSwatch("tankColor", "Tank Color", function()
-                return not Get("tankColorOn")
-            end, "Custom Tank Color")
+            ColorSwatch(
+                "tankColor",
+                "Tank Color",
+                function() return not Get("tankColorOn") end,
+                "Custom Tank Color"
+            )
         )
     end
 
@@ -1160,12 +999,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             order = fontOrder,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return Get("font")
-            end,
-            setValue = function(val)
-                Set("font", val)
-            end,
+            getValue = function() return Get("font") end,
+            setValue = function(val) Set("font", val) end,
         }, {
             type = "dropdown",
             text = "Font Outline",
@@ -1173,20 +1008,18 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             order = OUTLINE_ORDER,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return Get("outlineMode")
-            end,
-            setValue = function(val)
-                Set("outlineMode", val)
-            end,
+            getValue = function() return Get("outlineMode") end,
+            setValue = function(val) Set("outlineMode", val) end,
         })
         cursorY = cursorY - height
     end
 
     -- Value text settings do nothing while no value is displayed.
-    local valueOff, valueTip, valueRaw = Needs(function()
-        return mod.GetDisplayedValue() == "none"
-    end, "This option requires a Displayed Value other than None.", true)
+    local valueOff, valueTip, valueRaw = Needs(
+        function() return mod.GetDisplayedValue() == "none" end,
+        "This option requires a Displayed Value other than None.",
+        true
+    )
     local valuesToggle = StyleToggle("colors", "rightTextUseClassColor", "Class-Colored Values", true)
     valuesToggle.disabled, valuesToggle.disabledTooltip, valuesToggle.rawTooltip =
         valueOff, valueTip, valueRaw
@@ -1213,11 +1046,10 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             off,
             "Threat Meter",
             nil,
-            CludesUI.NameFormatCogRow(function()
-                return Get("nameFormat")
-            end, function(val)
-                Set("nameFormat", val)
-            end)
+            CludesUI.NameFormatCogRow(
+                function() return Get("nameFormat") end,
+                function(val) Set("nameFormat", val) end
+            )
         )
         Swatch(
             nameRow._leftRegion,
@@ -1236,15 +1068,19 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             valueTip,
             valueRaw
         )
-        local valueSwatch = Alternative(StyleSwatch("colors", "rightTextColor", "Value Color"), function()
-            return not GetStyle("colors", "rightTextUseClassColor")
-                and not GetStyle("colors", "rightTextUseThreatGradient")
-        end, function()
-            mod.SetStyleValues(
-                "colors",
-                { rightTextUseClassColor = false, rightTextUseThreatGradient = false }
-            )
-        end)
+        local valueSwatch = Alternative(
+            StyleSwatch("colors", "rightTextColor", "Value Color"),
+            function()
+                return not GetStyle("colors", "rightTextUseClassColor")
+                    and not GetStyle("colors", "rightTextUseThreatGradient")
+            end,
+            function()
+                mod.SetStyleValues(
+                    "colors",
+                    { rightTextUseClassColor = false, rightTextUseThreatGradient = false }
+                )
+            end
+        )
         valueSwatch.disabled, valueSwatch.disabledTooltip, valueSwatch.rawTooltip =
             valueOff, valueTip, valueRaw
         Swatch(nameRow._rightRegion, valueSwatch)
@@ -1255,13 +1091,9 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             disabled = valueOff,
             disabledTooltip = valueTip,
             rawTooltip = valueRaw,
-            getValue = function()
-                return 1, 1, 1
-            end,
+            getValue = function() return 1, 1, 1 end,
             setValue = function() end,
-            refreshAlpha = function()
-                return GetStyle("colors", "rightTextUseThreatGradient") and 1 or 0.3
-            end,
+            refreshAlpha = function() return GetStyle("colors", "rightTextUseThreatGradient") and 1 or 0.3 end,
             onClick = function()
                 mod.SetStyleValues("colors", {
                     rightTextUseClassColor = false,
@@ -1281,9 +1113,10 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     _, height = W:SectionHeader(hostFrame, "WINDOW & BORDERS", cursorY)
     cursorY = cursorY - height
 
-    local windowBorderOff, windowBorderTip = Needs(function()
-        return IsZero("borders", "windowBorderSize")
-    end, "Window Border Size")
+    local windowBorderOff, windowBorderTip = Needs(
+        function() return IsZero("borders", "windowBorderSize") end,
+        "Window Border Size"
+    )
     local includeHeader =
         StyleToggle("borders", "windowBorderIncludeHeader", "Include Header in Border", true)
     includeHeader.disabled, includeHeader.disabledTooltip = windowBorderOff, windowBorderTip
@@ -1298,12 +1131,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             order = texOrder,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return GetStyle("colors", "bgTexture")
-            end,
-            setValue = function(val)
-                mod.SetStyleValue("colors", "bgTexture", val)
-            end,
+            getValue = function() return GetStyle("colors", "bgTexture") end,
+            setValue = function(val) mod.SetStyleValue("colors", "bgTexture", val) end,
         }),
         StyleSlider("colors", "bgAlpha", "Background", 0, 1, 0.01)
     )
@@ -1321,9 +1150,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
     local barValues, barOrder = CludesUI.GetBorderTextureDropdown()
     barValues.shadow = nil
     for idx = #barOrder, 1, -1 do
-        if barOrder[idx] == "shadow" then
-            table.remove(barOrder, idx)
-        end
+        if barOrder[idx] == "shadow" then table.remove(barOrder, idx) end
     end
     local function BorderStyle(window, textValue)
         local key = window and "windowBorderTexture" or "borderTexture"
@@ -1334,9 +1161,7 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             order = window and borderOrder or barOrder,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getValue = function()
-                return GetStyle("borders", key)
-            end,
+            getValue = function() return GetStyle("borders", key) end,
             setValue = function(val)
                 local color = CludesUI.GetBorderStyleSelectDefaults(val)
                 local size = CludesUI.GetBorderDefaultSize(mod.BORDER_KEY, val) or 1
@@ -1366,28 +1191,16 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             text = textValue,
             disabled = off,
             disabledTooltip = "Threat Meter",
-            getStep = function()
-                return GetStyle("borders", stepKey)
-            end,
-            setStep = function(val)
-                pending[stepKey] = val
-            end,
-            getTex = function()
-                return GetStyle("borders", texKey)
-            end,
-            getPx = function()
-                return GetStyle("borders", pxKey)
-            end,
-            setPx = function(val)
-                pending[pxKey] = val
-            end,
+            getStep = function() return GetStyle("borders", stepKey) end,
+            setStep = function(val) pending[stepKey] = val end,
+            getTex = function() return GetStyle("borders", texKey) end,
+            getPx = function() return GetStyle("borders", pxKey) end,
+            setPx = function(val) pending[pxKey] = val end,
             apply = function()
                 local was = IsZero("borders", stepKey)
                 mod.SetStyleValues("borders", pending)
                 wipe(pending)
-                if IsZero("borders", stepKey) ~= was then
-                    CludesUI:RefreshPage()
-                end
+                if IsZero("borders", stepKey) ~= was then CludesUI:RefreshPage() end
             end,
         })
     end
@@ -1426,29 +1239,22 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                         type = "toggle",
                         label = "Separators",
                         tooltip = "Replaces each bar's border with a divider under it.",
-                        disabled = function()
-                            return IsZero("borders", "borderSize")
-                        end,
+                        disabled = function() return IsZero("borders", "borderSize") end,
                         disabledTooltip = "Bar Border Size",
-                        get = function()
-                            return GetStyle("borders", "barSeparators")
-                        end,
-                        set = function(val)
-                            mod.SetStyleValue("borders", "barSeparators", val)
-                        end,
+                        get = function() return GetStyle("borders", "barSeparators") end,
+                        set = function(val) mod.SetStyleValue("borders", "barSeparators", val) end,
                     },
                 },
             })
         )
-        local function SyncSepCog()
-            sepCog:SetShown(DividerArt("borderTexture", "sepH"))
-        end
+        local function SyncSepCog() sepCog:SetShown(DividerArt("borderTexture", "sepH")) end
         SyncSepCog()
         CludesUI.RegisterWidgetRefresh(SyncSepCog)
         local sc = StyleSwatch("borders", { "borderR", "borderG", "borderB" }, "Bar Border Color")
-        sc.disabled, sc.disabledTooltip = Needs(function()
-            return IsZero("borders", "borderSize")
-        end, "Bar Border Size")
+        sc.disabled, sc.disabledTooltip = Needs(
+            function() return IsZero("borders", "borderSize") end,
+            "Bar Border Size"
+        )
         Swatch(barBorderRow._rightRegion, ThreatGate(sc))
     end
 

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_EbonMight121.lua
 -- 12.1 ONLY: engine-slot driver for the Aug Evoker Ebon Might power bar.
 --
@@ -43,9 +41,7 @@ local EbonState = {}
 -- duration formatter, then to the engine default.
 local timeFmt
 local function GetTimeFormatter()
-    if timeFmt ~= nil then
-        return timeFmt or nil
-    end
+    if timeFmt ~= nil then return timeFmt or nil end
     timeFmt = false
     if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding then
         local frame = C_StringUtil.CreateNumericRuleFormatter()
@@ -54,9 +50,7 @@ local function GetTimeFormatter()
             { threshold = 0, format = "%.1f", step = 0.1, rounding = Down },
             { threshold = 60, format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
         })
-        if success then
-            timeFmt = frame
-        end
+        if success then timeFmt = frame end
     end
     if not timeFmt then
         local AK = CUI.AuraKit
@@ -67,9 +61,7 @@ end
 
 local function Build()
     local AK = CUI.AuraKit
-    if EbonState.built or not AK or not EbonState.rbBar then
-        return
-    end
+    if EbonState.built or not AK or not EbonState.rbBar then return end
     local rb, pp, pc = EbonState.rbBar, EbonState.pp or {}, EbonState.pc
 
     AK.styles["erb:emb121"] = AK.styles["erb:emb121"] or { noRegions = true, width = 1, height = 1 }
@@ -123,12 +115,8 @@ local function Build()
             -- up, swallowing clicks meant for the world (nameplates behind the
             -- bar stop responding mid-combat). It is a display-only overlay and
             -- has no OnClick, so it should never take mouse input at all.
-            if btnFrame.SetMouseClickEnabled then
-                btnFrame:SetMouseClickEnabled(false)
-            end
-            if btnFrame.SetMouseMotionEnabled then
-                btnFrame:SetMouseMotionEnabled(false)
-            end
+            if btnFrame.SetMouseClickEnabled then btnFrame:SetMouseClickEnabled(false) end
+            if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
 
             local barFrame = CreateFrame("StatusBar", nil, btnFrame)
             barFrame:SetAllPoints(btnFrame)
@@ -182,9 +170,7 @@ local function Build()
                             "OUTLINE"
                         )
                     end
-                    if rbText and rbText.GetTextColor then
-                        fontStr:SetTextColor(rbText:GetTextColor())
-                    end
+                    if rbText and rbText.GetTextColor then fontStr:SetTextColor(rbText:GetTextColor()) end
                     fontStr:SetPoint(
                         tPoint or "CENTER",
                         btnFrame,
@@ -207,9 +193,7 @@ local function Build()
                         btnFrame:SetDurationText(fontStr, dopts)
                     end
                 end)
-                if not okFS then
-                    EbonState.fsErr = errFS
-                end
+                if not okFS then EbonState.fsErr = errFS end
             end
 
             EbonState.btn, EbonState.bar = btnFrame, barFrame
@@ -221,13 +205,9 @@ local function Build()
 end
 
 local function EnsureBuilt()
-    if EbonState.built or EbonState.queued then
-        return
-    end
+    if EbonState.built or EbonState.queued then return end
     local AK = CUI.AuraKit
-    if not (AK and AK.QueueBuildJob) then
-        return
-    end
+    if not (AK and AK.QueueBuildJob) then return end
     EbonState.queued = true
     AKWorker:Queue(function()
         EbonState.queued = nil
@@ -245,18 +225,14 @@ end
 -- fall back to the legacy numeric text instead of leaving the bar
 -- permanently blank for the rest of the session (S.built never gets a second
 -- attempt once set -- only a /reload resets it).
-function mod.EMB121_TextOk()
-    return EbonState.built and not EbonState.fsErr
-end
+function mod.EMB121_TextOk() return EbonState.built and not EbonState.fsErr end
 
 -- Called from UpdatePrimaryBar whenever the primary power type resolves:
 -- parks the overlay the moment the bar stops being Ebon Might (spec swap).
 function mod.EMB121_Gate(isEbon)
     if not isEbon and EbonState.armed then
         EbonState.armed = nil
-        if EbonState.proxy then
-            EbonState.proxy:Hide()
-        end
+        if EbonState.proxy then EbonState.proxy:Hide() end
     end
 end
 

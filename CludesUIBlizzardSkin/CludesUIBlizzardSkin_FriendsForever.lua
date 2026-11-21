@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  Friends list on WoW Forever
 --
@@ -44,13 +42,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 local Skin = mod.WSkin
-if not (Skin and Skin.RegisterWindow and Skin.Shell) then
-    return
-end
+if not (Skin and Skin.RegisterWindow and Skin.Shell) then return end
 
 local WIN = "socialui"
 
@@ -60,13 +54,9 @@ local FFD, GetFFD = CUI.NewFrameData()
 -- and takes the house font; a friend or ignore row keeps Blizzard's colours
 -- and icons and only takes the font on its text.
 local function SkinListRow(button)
-    if not button or (button.IsForbidden and button:IsForbidden()) then
-        return
-    end
+    if not button or (button.IsForbidden and button:IsForbidden()) then return end
     local skinData = GetFFD(button)
-    if skinData.done then
-        return
-    end
+    if skinData.done then return end
     skinData.done = true
     if button.Title then
         Skin.FadeRegions(button)
@@ -76,30 +66,18 @@ local function SkinListRow(button)
     end
     -- A friend's or ignored player's name and its info line (place, broadcast):
     -- font families, which draw the scripts the house font lacks
-    if button.name then
-        Skin.FontFamily(button.name)
-    end
-    if button.info then
-        Skin.FontFamily(button.info)
-    end
+    if button.name then Skin.FontFamily(button.name) end
+    if button.info then Skin.FontFamily(button.info) end
 end
 
 -- The rows are recycled by the scroll box: the frames alive now, then every
 -- initialisation from here on (the event hands owner, frame, elementData).
 local function HookRows(box)
-    if not box or GetFFD(box).hooked then
-        return
-    end
+    if not box or GetFFD(box).hooked then return end
     GetFFD(box).hooked = true
     if ScrollUtil and ScrollUtil.AddInitializedFrameCallback then
-        ScrollUtil.AddInitializedFrameCallback(box, function(_, widget)
-            SkinListRow(widget)
-        end, nil, false)
-        if box.ForEachFrame then
-            box:ForEachFrame(function(widget)
-                SkinListRow(widget)
-            end)
-        end
+        ScrollUtil.AddInitializedFrameCallback(box, function(_, widget) SkinListRow(widget) end, nil, false)
+        if box.ForEachFrame then box:ForEachFrame(function(widget) SkinListRow(widget) end) end
     end
 end
 
@@ -112,28 +90,18 @@ end
 
 local function SkinFriends()
     local frame = _G.FriendsFrame
-    if not frame then
-        return
-    end
+    if not frame then return end
     local skinData = GetFFD(frame)
-    if skinData.done then
-        return
-    end
+    if skinData.done then return end
     skinData.done = true
 
     Skin.Shell(WIN, frame)
     Skin.RemovePortrait(frame)
     -- The Battle.net portrait art that rides the corner beside the portrait.
-    if _G.FriendsFrameIcon then
-        _G.FriendsFrameIcon:SetAlpha(0)
-    end
+    if _G.FriendsFrameIcon then _G.FriendsFrameIcon:SetAlpha(0) end
     Skin.CommonChrome(frame, "FriendsFrame")
-    if frame.NineSlice then
-        Skin.FadeNineSlice(frame.NineSlice)
-    end
-    if frame.Inset then
-        Skin.Inset(frame.Inset)
-    end
+    if frame.NineSlice then Skin.FadeNineSlice(frame.NineSlice) end
+    if frame.Inset then Skin.Inset(frame.Inset) end
     local titleText = _G.FriendsFrameTitleText or (frame.TitleContainer and frame.TitleContainer.TitleText)
     if titleText then
         Skin.Font(titleText)
@@ -144,9 +112,7 @@ local function SkinFriends()
     -- status dropdown, all owned by the tab header that spans the frame.
     local heading = frame.FriendsTabHeader
     if heading then
-        if heading.TabSystem then
-            Skin.TabSystem(heading.TabSystem, { darkActive = true })
-        end
+        if heading.TabSystem then Skin.TabSystem(heading.TabSystem, { darkActive = true }) end
         local bn = heading.BattlenetFrame or _G.FriendsFrameBattlenetFrame
         if bn then
             Skin.FadeRegions(bn)
@@ -154,26 +120,18 @@ local function SkinFriends()
                 Skin.FontFamily(bn.Tag)
                 Skin.White(bn.Tag)
             end
-            if bn.UnavailableLabel then
-                Skin.Font(bn.UnavailableLabel)
-            end
+            if bn.UnavailableLabel then Skin.Font(bn.UnavailableLabel) end
             local subFrame = bn.BroadcastFrame
             if subFrame then
                 Skin.Panel(subFrame)
-                if subFrame.Border then
-                    Skin.FadeRegions(subFrame.Border)
-                end
-                if subFrame.EditBox then
-                    Skin.EditBox(subFrame.EditBox)
-                end
+                if subFrame.Border then Skin.FadeRegions(subFrame.Border) end
+                if subFrame.EditBox then Skin.EditBox(subFrame.EditBox) end
                 SkinButton(subFrame.UpdateButton)
                 SkinButton(subFrame.CancelButton)
             end
         end
         local dropdown = heading.StatusDropdown or _G.FriendsFrameStatusDropdown
-        if dropdown then
-            Skin.Dropdown(dropdown)
-        end
+        if dropdown then Skin.Dropdown(dropdown) end
     end
 
     -- The friends list: its bottom buttons, its rows and headers.
@@ -181,9 +139,7 @@ local function SkinFriends()
     if entries then
         SkinButton(_G.FriendsFrameAddFriendButton)
         SkinButton(_G.FriendsFrameSendMessageButton)
-        if entries.FriendsDisabledText then
-            Skin.Font(entries.FriendsDisabledText)
-        end
+        if entries.FriendsDisabledText then Skin.Font(entries.FriendsDisabledText) end
         HookRows(entries.ScrollBox)
     end
 
@@ -193,12 +149,8 @@ local function SkinFriends()
         Skin.Shell(WIN, ig)
         Skin.RemovePortrait(ig)
         Skin.CommonChrome(ig, "FriendsFrameIgnoreList")
-        if ig.NineSlice then
-            Skin.FadeNineSlice(ig.NineSlice)
-        end
-        if ig.Inset then
-            Skin.Inset(ig.Inset)
-        end
+        if ig.NineSlice then Skin.FadeNineSlice(ig.NineSlice) end
+        if ig.Inset then Skin.Inset(ig.Inset) end
         local it = ig.TitleContainer and ig.TitleContainer.TitleText
         if it then
             Skin.Font(it)
@@ -265,26 +217,20 @@ local CARD_DEFAULTS = {
 -- while the card is skinned (CludesUI or Modern) and off under Blizz
 -- Default. A pick is kept only where it differs from that (FriendsCardSet),
 -- so a card that never deviated keeps following its look.
-local function CustomTilesDefault()
-    return CUI.GetBlizzWindowStyle(WIN) ~= "off"
-end
+local function CustomTilesDefault() return CUI.GetBlizzWindowStyle(WIN) ~= "off" end
 
 local cardView = setmetatable({}, {
     __index = function(_, keyName)
         local tbl = CludesUIDB and CludesUIDB.friendsListCard
         local val = tbl and tbl[keyName]
         if val == nil then
-            if keyName == "customTiles" then
-                return CustomTilesDefault()
-            end
+            if keyName == "customTiles" then return CustomTilesDefault() end
             val = CARD_DEFAULTS[keyName]
         end
         return val
     end,
 })
-local function CardSettings()
-    return cardView
-end
+local function CardSettings() return cardView end
 
 -- The card's look as it stood at login: the tiles on Blizzard's cards follow
 -- it for the session (a change across Blizz Default reloads)
@@ -298,9 +244,7 @@ local loggedIn, skinnedAtLogin = false, false
 -- Blizzard's own card art at the alpha given here (onlineCards): whole under
 -- Blizz Default, a quarter of it under the card's own tiles.
 local function StartHost()
-    if not loggedIn then
-        return
-    end
+    if not loggedIn then return end
     CUI.FriendsKit.StartTiles({
         Settings = CardSettings,
         style = "cui",
@@ -311,29 +255,21 @@ local function StartHost()
     CUI.FriendsList.Start()
 end
 
-function mod.FriendsCardGet(keyName)
-    return cardView[keyName]
-end
+function mod.FriendsCardGet(keyName) return cardView[keyName] end
 
 function mod.FriendsCardSet(keyName, val)
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     local tbl = CludesUIDB.friendsListCard
     if not tbl then
         tbl = {}
         CludesUIDB.friendsListCard = tbl
     end
-    if keyName == "customTiles" and val == CustomTilesDefault() then
-        val = nil
-    end
+    if keyName == "customTiles" and val == CustomTilesDefault() then val = nil end
     tbl[keyName] = val
     if keyName == "autoAcceptFriendInvites" or keyName == "autoAcceptGuildInvites" then
         CUI.FriendsKit.SyncAutoAccept(CardSettings)
     else
-        if keyName == "customTiles" and cardView.customTiles then
-            StartHost()
-        end
+        if keyName == "customTiles" and cardView.customTiles then StartHost() end
         CUI.FriendsKit.RedecorateTiles()
         CUI.FriendsList.Refresh()
     end
@@ -342,9 +278,7 @@ end
 -- After a reset cleared the settings
 function mod.FriendsCardRefresh()
     CUI.FriendsKit.SyncAutoAccept(CardSettings)
-    if cardView.customTiles then
-        StartHost()
-    end
+    if cardView.customTiles then StartHost() end
     CUI.FriendsKit.RedecorateTiles()
     CUI.FriendsList.Refresh()
 end
@@ -358,7 +292,5 @@ boot:SetScript("OnEvent", function(self)
     CUI.FriendsKit.SyncAutoAccept(CardSettings)
     loggedIn = true
     skinnedAtLogin = CUI.GetBlizzWindowStyle(WIN) ~= "off"
-    if skinnedAtLogin or cardView.customTiles then
-        StartHost()
-    end
+    if skinnedAtLogin or cardView.customTiles then StartHost() end
 end)

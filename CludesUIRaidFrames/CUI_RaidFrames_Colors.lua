@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Colors.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -41,9 +37,7 @@ local unitToButton = Inner.unitToButton
 local AbbreviateValue = mod.CludesUI.AbbreviateValue
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 --  Color helpers
@@ -52,9 +46,7 @@ end
 -- missing-health percent instead (100-0, the reversed curve), for a bar under
 -- Inverted Fill.
 local function GetSafeHealthPercent(unitToken, inv)
-    if inv then
-        return UnitHealthPercent(unitToken, true, CurveConstants.ReverseTo100)
-    end
+    if inv then return UnitHealthPercent(unitToken, true, CurveConstants.ReverseTo100) end
     return UnitHealthPercent(unitToken, true, CurveConstants.ScaleTo100)
 end
 
@@ -63,9 +55,7 @@ end
 -- values internally and returns a clean ColorMixin.
 local classicHealthCurve
 local function GetClassicHealthCurve()
-    if classicHealthCurve then
-        return classicHealthCurve
-    end
+    if classicHealthCurve then return classicHealthCurve end
     local curve = C_CurveUtil.CreateColorCurve()
     curve:SetType(Enum.LuaCurveType.Linear)
     curve:AddPoint(0, CreateColor(1, 0, 0, 1)) -- red at 0%
@@ -212,22 +202,16 @@ end
 -- while the fill is opaque, with the flat background under it painted clear.
 do
     local SetColor -- the stock SetColorTexture
-    local function PaintTinted(self, red, green, blue, a)
-        self:SetVertexColor(red, green, blue, a)
-    end
+    local function PaintTinted(self, red, green, blue, a) self:SetVertexColor(red, green, blue, a) end
     local function PaintLayer(self, red, green, blue, a)
         SetColor(self, red, green, blue, 0)
         self._rfTexBgLayer:SetVertexColor(red, green, blue, a)
     end
     -- The background texture path in settings s (nil = flat); the previews share it.
     function mod.RF_TexBgPath(cfg)
-        if not (cfg and cfg.textureBg) then
-            return nil
-        end
+        if not (cfg and cfg.textureBg) then return nil end
         local key = cfg.healthBarTexture or "atrocity"
-        if key == "none" then
-            return nil
-        end
+        if key == "none" then return nil end
         return mod.CludesUI.ResolveTexturePath(mod.healthBarTextures, key, nil)
     end
     -- Whether a health fill painted from s is opaque (dark: the Dark Mode Fill).
@@ -293,9 +277,7 @@ do
     -- reload). Nil until the option is first on.
     local watched
     function mod.RF_TexBgRecheck()
-        if not watched then
-            return
-        end
+        if not watched then return end
         for btnFrame, health in pairs(watched) do
             local skinData = GetFFD(btnFrame)
             local cfg = skinData._isParty and mod._scaledPartyProxy
@@ -311,37 +293,28 @@ do
                 mod.RF_TexBgLayer(health, skinData.bg, filePath)
                 skinData._bgSt, skinData._bgA = nil, nil
                 local u = btnFrame:GetAttribute("unit")
-                if u and UnitExists(u) then
-                    mod._ApplyHealthBg(skinData, health, cfg, u)
-                end
+                if u and UnitExists(u) then mod._ApplyHealthBg(skinData, health, cfg, u) end
             end
         end
-        if mod._PT_TexBgRecheck then
-            mod._PT_TexBgRecheck()
-        end
+        if mod._PT_TexBgRecheck then mod._PT_TexBgRecheck() end
     end
     function mod.RF_TexBgWatch()
-        if not watched then
-            watched = setmetatable({}, { __mode = "k" })
-        end
+        if not watched then watched = setmetatable({}, { __mode = "k" }) end
         return watched
     end
     -- The raid, party and Extra Frames buttons (ReanchorAbsorbToFill: built, and
     -- every settings reload before both backgrounds repaint). s: the button's view.
     function mod.RF_TexBgApply(btnFrame, skinData, health, cfg)
         local filePath = mod.RF_TexBgPath(cfg)
-        if not (filePath or skinData._rfTexBg) then
-            return
-        end
+        if not (filePath or skinData._rfTexBg) then return end
         skinData._rfTexBg = filePath and true or nil
-        local hp = filePath and not skinData.kit and mod.RF_TexBgOpaque(cfg, cfg.healthColorMode == "dark") and filePath
+        local hp = filePath
+                and not skinData.kit
+                and mod.RF_TexBgOpaque(cfg, cfg.healthColorMode == "dark")
+                and filePath
             or nil
-        if skinData.bg then
-            mod.RF_TexBgLayer(health, skinData.bg, hp)
-        end
-        if skinData.powerBg then
-            mod.RF_TexBgTint(skinData.powerBg, filePath)
-        end
+        if skinData.bg then mod.RF_TexBgLayer(health, skinData.bg, hp) end
+        if skinData.powerBg then mod.RF_TexBgTint(skinData.powerBg, filePath) end
         if hp then
             mod.RF_TexBgWatch()[btnFrame] = health
         elseif watched then
@@ -364,12 +337,8 @@ end
 function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrGhost)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
     local backdrop = skinData.bg
-    if connected == nil then
-        connected = UnitIsConnected(unitToken)
-    end
-    if deadOrGhost == nil then
-        deadOrGhost = UnitIsDeadOrGhost(unitToken)
-    end
+    if connected == nil then connected = UnitIsConnected(unitToken) end
+    if deadOrGhost == nil then deadOrGhost = UnitIsDeadOrGhost(unitToken) end
     -- Party Frames kit: the portrait greys out while offline, as stock does
     -- (every connection edge passes through here).
     local kp = skinData.kitPortrait
@@ -382,9 +351,7 @@ function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrG
     end
     -- Party portrait (CUI_RaidFrames_Portrait.lua): the same grey.
     local pt = skinData.pt
-    if pt and pt._on and pt._desat ~= not connected then
-        mod.RF_PtOffline(skinData, unitToken, connected)
-    end
+    if pt and pt._on and pt._desat ~= not connected then mod.RF_PtOffline(skinData, unitToken, connected) end
     -- Dead/offline: bg covers the FULL bar, fill dims. State+color stamped so
     -- a repeated tick in the same state re-applies nothing; entering either
     -- state clears the alive-path anchor/color stamps AND the fill-color
@@ -397,10 +364,13 @@ function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrG
         -- Under Inverted Fill a corpse paints a full missing-health bar (UpdateButton):
         -- its own state, so that fill is hidden and the status colour shows undimmed.
         local hideFill = deadOrGhost and health and health._cuiInv
-        if hideFill then
-            st = st + 2
-        end
-        if skinData._bgSt ~= st or skinData._bgR ~= color.r or skinData._bgG ~= color.g or skinData._bgB ~= color.b then
+        if hideFill then st = st + 2 end
+        if
+            skinData._bgSt ~= st
+            or skinData._bgR ~= color.r
+            or skinData._bgG ~= color.g
+            or skinData._bgB ~= color.b
+        then
             skinData._bgSt, skinData._bgR, skinData._bgG, skinData._bgB = st, color.r, color.g, color.b
             skinData._bgTex, skinData._bgA = nil, nil
             skinData._hcR = nil
@@ -421,9 +391,7 @@ function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrG
         end
         return
     end
-    if not backdrop then
-        return
-    end
+    if not backdrop then return end
     -- Alive: the bg covers exactly the half of the bar the fill texture does NOT
     -- paint, so it hangs off the fill's leading edge -- the fill's right edge
     -- normally, its top edge on a vertical bar, and the opposite edge under
@@ -485,16 +453,12 @@ local function GetHealthColor(unitToken, cfg)
     elseif mode == "classic" then
         -- Native WoW health gradient via Blizzard's curve system (secret-value safe)
         local color = UnitHealthPercent(unitToken, true, GetClassicHealthCurve())
-        if color and color.GetRGB then
-            return color:GetRGB()
-        end
+        if color and color.GetRGB then return color:GetRGB() end
         return 0, 1, 0
     elseif mode == "customDynamic" then
         -- User-customizable gradient via the same secret-safe curve path as Classic
         local color = UnitHealthPercent(unitToken, true, mod.GetCustomDynamicCurve(cfg))
-        if color and color.GetRGB then
-            return color:GetRGB()
-        end
+        if color and color.GetRGB then return color:GetRGB() end
         return 0, 1, 0
     elseif mode == "classReactive" then
         -- Class color at full health bleeding into the reactive palette as the
@@ -503,9 +467,7 @@ local function GetHealthColor(unitToken, cfg)
         local _, classToken = UnitClass(unitToken)
         if classToken and not issecretvalue(classToken) then
             local color = UnitHealthPercent(unitToken, true, mod.GetClassReactiveCurve(cfg, classToken))
-            if color and color.GetRGB then
-                return color:GetRGB()
-            end
+            if color and color.GetRGB then return color:GetRGB() end
         end
         return 0.5, 0.5, 0.5
     elseif mode == "custom" then
@@ -516,9 +478,7 @@ local function GetHealthColor(unitToken, cfg)
         -- Secret-safe: a secret classToken would throw on GetClassColor's table index.
         if classToken and not issecretvalue(classToken) then
             local classColor = CludesUI.GetClassColor(classToken)
-            if classColor then
-                return classColor.r, classColor.g, classColor.b
-            end
+            if classColor then return classColor.r, classColor.g, classColor.b end
         end
         return 0.5, 0.5, 0.5
     end
@@ -530,20 +490,12 @@ end
 -- secret name shows verbatim and uncapped. nameMaxLength 0 = off.
 -- Takes the caller's settings table `s` so a party override applies correctly.
 function mod.CapName(display, cfg)
-    if type(display) ~= "string" then
-        return display
-    end
-    if issecretvalue and issecretvalue(display) then
-        return display
-    end
-    if display == "" then
-        return display
-    end
+    if type(display) ~= "string" then return display end
+    if issecretvalue and issecretvalue(display) then return display end
+    if display == "" then return display end
     cfg = cfg or (saved and saved.profile)
     local maxLen = cfg and cfg.nameMaxLength or 15
-    if not maxLen or maxLen <= 0 then
-        return display
-    end
+    if not maxLen or maxLen <= 0 then return display end
     return CludesUI.Utf8Prefix(display, maxLen)
 end
 
@@ -555,12 +507,8 @@ end
 -- targets included). A tag's modifier shapes any name.
 function mod.RF_FormatName(display, cfg, fmt, unitToken)
     local mode = fmt or (cfg and cfg.nameFormat)
-    if not mode or mode == "full" then
-        return display
-    end
-    if not fmt then
-        mode = CludesUI.UnitNameFormat(mode, unitToken)
-    end
+    if not mode or mode == "full" then return display end
+    if not fmt then mode = CludesUI.UnitNameFormat(mode, unitToken) end
     return CludesUI.ShortName(display, mode)
 end
 
@@ -670,15 +618,11 @@ local function ResolveDisplayName(unitToken, applyCap, s, fmt)
         end
     end
     if not display then
-        if Ambiguate then
-            name = Ambiguate(name, "short")
-        end
+        if Ambiguate then name = Ambiguate(name, "short") end
         display = mod.RF_FormatName(CludesUI.WithSurname(name, surname), s, fmt, unitToken)
     end
     -- Cap only the in-frame name (applyCap), not the top name bar banner.
-    if applyCap then
-        display = mod.CapName(display, s)
-    end
+    if applyCap then display = mod.CapName(display, s) end
     return display
 end
 
@@ -693,9 +637,7 @@ function mod.GetBgColor(unitToken, cfg)
         -- tables with one throws "table index is secret"; fall back to custom bg when secret/nil.
         if classToken and not issecretvalue(classToken) then
             local classColor = CludesUI.GetClassColor(classToken)
-            if classColor then
-                return classColor.r, classColor.g, classColor.b, a
-            end
+            if classColor then return classColor.r, classColor.g, classColor.b, a end
         end
     end
     -- Partial/imported profiles can lack the key (field report 2026-08-16).
@@ -713,9 +655,7 @@ local function GetTopNameBarColor(unitToken, cfg)
     local _, classToken = UnitClass(unitToken)
     if classToken and not issecretvalue(classToken) then
         local classColor = CludesUI.GetClassColor(classToken)
-        if classColor then
-            return classColor.r, classColor.g, classColor.b
-        end
+        if classColor then return classColor.r, classColor.g, classColor.b end
     end
     return 1, 1, 1
 end
@@ -804,13 +744,9 @@ local function LayoutTopNameBar(cfg, baseH, powerH, healthBar, tnb, tnbBg, tnbTe
             end
         end
     end
-    if not tnb then
-        return topBarH
-    end
+    if not tnb then return topBarH end
     if not enabled then
-        if tnb._divider then
-            mod.RF_ApplyTopNameDivider(tnb, cfg, preview)
-        end
+        if tnb._divider then mod.RF_ApplyTopNameDivider(tnb, cfg, preview) end
         tnb:Hide()
         return topBarH
     end
@@ -846,9 +782,7 @@ local function LayoutTopNameBar(cfg, baseH, powerH, healthBar, tnb, tnbBg, tnbTe
         end
     end
     tnb:Show()
-    if cfg.topNameBarDivider == true or tnb._divider then
-        mod.RF_ApplyTopNameDivider(tnb, cfg, preview)
-    end
+    if cfg.topNameBarDivider == true or tnb._divider then mod.RF_ApplyTopNameDivider(tnb, cfg, preview) end
     return topBarH
 end
 
@@ -856,16 +790,12 @@ end
 -- nickname-provider callbacks so changes apply instantly without a /reload.
 function mod.RefreshAllNames()
     local s = saved and saved.profile
-    if not s then
-        return
-    end
+    if not s then return end
     local function refresh(unitToken, button)
         local skinData = GetFFD(button)
         -- Party buttons read through the party proxy so a per-party cap applies.
         local bs = (skinData and skinData._isParty) and (mod._scaledPartyProxy or s) or s
-        if skinData then
-            mod.RF_TextNames(skinData, unitToken)
-        end
+        if skinData then mod.RF_TextNames(skinData, unitToken) end
         -- The Top Name Bar keeps the level in front of the name as the name does.
         local attach = mod.RF_TextNameAttach(bs)
         if skinData and skinData.topNameBarText and bs.topNameBarEnabled then
@@ -897,17 +827,13 @@ end
 function mod.RF_PreviewTextColor(mode, custom, classToken, red, green, blue, pToken)
     if mode == "accent" then
         local ar, ag, ab = CludesUI.ResolveActiveAccent()
-        if ar then
-            return ar, ag, ab
-        end
+        if ar then return ar, ag, ab end
     elseif mode == "class" then
         local classColor = CludesUI.GetClassColor(classToken)
         return classColor.r, classColor.g, classColor.b
     elseif mode == "power" then
         local pc = CludesUI.GetPowerColor(pToken or "MANA")
-        if pc then
-            return pc.r, pc.g, pc.b
-        end
+        if pc then return pc.r, pc.g, pc.b end
     elseif custom then
         return custom.r, custom.g, custom.b
     end
@@ -917,9 +843,7 @@ end
 -- Anchor a FontString to the health bar using the shared position scheme of the texts.
 -- Optional width clamps long values like health text.
 function mod.AnchorRFText(fontStr, health, place, ox, oy, width)
-    if not fontStr or not health then
-        return
-    end
+    if not fontStr or not health then return end
     fontStr:ClearAllPoints()
     if width then
         fontStr:SetWidth(width)
@@ -988,33 +912,21 @@ do
     -- OFFLINE / DEAD, nil while alive and connected (clean booleans for group units).
     local function Status(unitToken, pv)
         if unitToken then
-            if not UnitIsConnected(unitToken) then
-                return CludesUI.L("OFFLINE")
-            end
-            if UnitIsDeadOrGhost(unitToken) then
-                return CludesUI.L("DEAD")
-            end
+            if not UnitIsConnected(unitToken) then return CludesUI.L("OFFLINE") end
+            if UnitIsDeadOrGhost(unitToken) then return CludesUI.L("DEAD") end
         elseif pv then
-            if pv.offline then
-                return CludesUI.L("OFFLINE")
-            end
-            if pv.dead then
-                return CludesUI.L("DEAD")
-            end
+            if pv.offline then return CludesUI.L("OFFLINE") end
+            if pv.dead then return CludesUI.L("DEAD") end
         end
     end
 
     local function GetHealth(unitToken, max)
-        if max then
-            return UnitHealthMax(unitToken) or 0
-        end
+        if max then return UnitHealthMax(unitToken) or 0 end
         return UnitHealth(unitToken, true) or 0
     end
     local function GetPower(unitToken, max)
         local pType = UnitPowerType(unitToken)
-        if max then
-            return UnitPowerMax(unitToken, pType) or 0
-        end
+        if max then return UnitPowerMax(unitToken, pType) or 0 end
         return UnitPower(unitToken, pType) or 0
     end
 
@@ -1029,9 +941,7 @@ do
         local valueType = kind == "hp" and (max and "maxHealth" or "health") or nil
         return function(unitToken, s, pv)
             local st = status and Status(unitToken, pv)
-            if st then
-                return st
-            end
+            if st then return st end
             local val
             if unitToken then
                 val = get(unitToken, max)
@@ -1041,9 +951,7 @@ do
                 return sample
             end
             if abr then
-                if valueType then
-                    return AbbreviateValue(val, valueType)
-                end
+                if valueType then return AbbreviateValue(val, valueType) end
                 return AbbreviateNumbers(val)
             end
             return sformat("%d", val)
@@ -1052,14 +960,10 @@ do
 
     local function HealthPct(unitToken, s, pv)
         if unitToken then
-            if UnitIsDeadOrGhost(unitToken) then
-                return "0"
-            end
+            if UnitIsDeadOrGhost(unitToken) then return "0" end
             return sformat("%.0f", GetSafeHealthPercent(unitToken) or 0)
         end
-        if pv and pv.hpPct then
-            return sformat("%.0f", pv.dead and 0 or pv.hpPct)
-        end
+        if pv and pv.hpPct then return sformat("%.0f", pv.dead and 0 or pv.hpPct) end
         return SCHEMA["hp:pct"].sample
     end
     local function PowerPct(unitToken, s, pv)
@@ -1069,9 +973,7 @@ do
                 UnitPowerPercent(unitToken, UnitPowerType(unitToken), true, CurveConstants.ScaleTo100) or 0
             )
         end
-        if pv and pv.ppPct then
-            return sformat("%.0f", pv.ppPct)
-        end
+        if pv and pv.ppPct then return sformat("%.0f", pv.ppPct) end
         return SCHEMA["pp:pct"].sample
     end
 
@@ -1079,14 +981,10 @@ do
     local function AbsorbRow(key, get)
         local abr, sample = sfind(key, ":abr", 1, true) ~= nil, SCHEMA[key].sample
         return function(unitToken)
-            if not unitToken then
-                return sample
-            end
+            if not unitToken then return sample end
             local val = get(unitToken) or 0
             if abr then
-                if IsZeroValue(val) then
-                    return ""
-                end
+                if IsZeroValue(val) then return "" end
                 return AbbreviateValue(val, "absorb")
             end
             return C_StringUtil.TruncateWhenZero(val)
@@ -1101,16 +999,10 @@ do
     local function NamePiece(key, fmt)
         local sample = SCHEMA[key].sample
         return function(unitToken, s, pv)
-            if unitToken and fmt == "last" and CludesUI.OwnSurnameHidden(unitToken) then
-                return ""
-            end
-            if unitToken then
-                return ResolveDisplayName(unitToken, true, s, fmt)
-            end
+            if unitToken and fmt == "last" and CludesUI.OwnSurnameHidden(unitToken) then return "" end
+            if unitToken then return ResolveDisplayName(unitToken, true, s, fmt) end
             -- A preview member's name as its name text would show it.
-            if fmt and pv and pv.rawName then
-                return mod.CapName(mod.RF_FormatName(pv.rawName, s, fmt), s)
-            end
+            if fmt and pv and pv.rawName then return mod.CapName(mod.RF_FormatName(pv.rawName, s, fmt), s) end
             return pv and pv.name or sample
         end
     end
@@ -1126,30 +1018,18 @@ do
     local function TargetPiece(key, fmt)
         local sample = SCHEMA[key].sample
         return function(unitToken, s)
-            if not unitToken then
-                return sample
-            end
+            if not unitToken then return sample end
             local tunit = targetOf[unitToken]
-            if not UnitExists(tunit) then
-                return ""
-            end
-            if fmt == "last" and CludesUI.OwnSurnameHidden(tunit) then
-                return ""
-            end
+            if not UnitExists(tunit) then return "" end
+            if fmt == "last" and CludesUI.OwnSurnameHidden(tunit) then return "" end
             local name = UnitName(tunit)
-            if issecretvalue(name) then
-                return name
-            end
+            if issecretvalue(name) then return name end
             return ResolveDisplayName(tunit, false, s, fmt)
         end
     end
     local function Group(unitToken)
-        if not unitToken then
-            return SCHEMA.group.sample
-        end
-        if not IsInRaid() then
-            return ""
-        end
+        if not unitToken then return SCHEMA.group.sample end
+        if not IsInRaid() then return "" end
         local position = UnitInRaid(unitToken)
         if position and not issecretvalue(position) then
             local _, _, subgroup = GetRaidRosterInfo(position)
@@ -1191,13 +1071,9 @@ do
     local compiled = setmetatable({}, { __mode = "k" })
     function mod.RF_CustomCompile(template)
         local parsed = TextTags.Parse(CATALOG, template)
-        if not parsed then
-            return nil
-        end
+        if not parsed then return nil end
         local cc = compiled[parsed]
-        if cc then
-            return cc
-        end
+        if cc then return cc end
         local keyList, map, pieces, cls = parsed.keys, CATALOG.map, {}, {}
         for i = 1, #keyList do
             pieces[i], cls[i] = map[keyList[i]], SCHEMA[keyList[i]].reads
@@ -1227,9 +1103,7 @@ do
         end
         local pieces, cls, n = cc.pieces, cc.cls, cc.n
         for k = 1, n do
-            if not a or cls[k] == a or cls[k] == b then
-                args[k] = pieces[k](unitToken, s, pv)
-            end
+            if not a or cls[k] == a or cls[k] == b then args[k] = pieces[k](unitToken, s, pv) end
         end
         fontStr:SetFormattedText(cc.fmt, unpack(args, 1, n))
         return cc.reads
@@ -1297,9 +1171,7 @@ end
 -- never compare it (== "" taints). "short" gates on GetText truthiness alone (non-nil exactly when
 -- non-zero) before abbreviating.
 function mod.FormatHealAbsorbInto(fontStr, amt, mode)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     if not mode or mode == "none" then
         fontStr:SetText("")
         return
@@ -1312,9 +1184,7 @@ end
 
 -- Update one button's Heal Absorb Texts. Called from the absorb-only event path
 -- (UNIT_HEAL_ABSORB_AMOUNT_CHANGED), which runs no full button update.
-function mod.UpdateHealAbsorbTextFor(btnFrame, unitToken)
-    mod.RF_TextHealAbsorb(GetFFD(btnFrame), unitToken)
-end
+function mod.UpdateHealAbsorbTextFor(btnFrame, unitToken) mod.RF_TextHealAbsorb(GetFFD(btnFrame), unitToken) end
 
 -- Maps a dispel type to its saved-color key. The "" type (Bleed/physical) is
 -- stored under dispelColorBleed.
@@ -1333,9 +1203,7 @@ local function GetDispelColor(dtype, cfg)
     local key = DISPEL_COLOR_KEYS[dtype]
     if key then
         local c = cfg[key]
-        if c then
-            return c
-        end
+        if c then return c end
     end
     return DISPEL_COLORS[dtype]
 end
@@ -1344,15 +1212,11 @@ local function GetPowerColor(unitToken)
     local _, pToken = UnitPowerType(unitToken)
     if pToken and CludesUI.GetPowerColor then
         local details = CludesUI.GetPowerColor(pToken)
-        if details then
-            return details.r, details.g, details.b
-        end
+        if details then return details.r, details.g, details.b end
     end
     local pType = UnitPowerType(unitToken) or 0
     local details = PowerBarColor[pType]
-    if details then
-        return details.r, details.g, details.b
-    end
+    if details then return details.r, details.g, details.b end
     return 0.5, 0.5, 0.5
 end
 
@@ -1375,15 +1239,18 @@ mod._RFPowerTypeEdge = function(skinData, unitToken, force)
     if cfg.powerBgPowerColored and skinData.powerBg then
         local frame = mod.CludesUI.GetPowerBgDarkenFactor()
         if force or skinData._pwBgTintType ~= pType or skinData._pwBgTintF ~= frame then
-            skinData.powerBg:SetColorTexture(pr * frame, pg * frame, pb * frame, (cfg.powerBgDarkness or 70) / 100)
+            skinData.powerBg:SetColorTexture(
+                pr * frame,
+                pg * frame,
+                pb * frame,
+                (cfg.powerBgDarkness or 70) / 100
+            )
             skinData._pwBgTintType = pType
             skinData._pwBgTintF = frame
         end
     end
     -- Power Text's colour is identity-class state too (its Power mode is this type's colour).
-    if skinData._pwtOn then
-        mod.RF_TextPowerColor(skinData, unitToken, cfg, pr, pg, pb)
-    end
+    if skinData._pwtOn then mod.RF_TextPowerColor(skinData, unitToken, cfg, pr, pg, pb) end
 end
 
 -------------------------------------------------------------------------------
@@ -1460,9 +1327,7 @@ end
 -- The level the previews show on every sample member: the player's own.
 mod._RFPreviewLevel = function()
     local lvl = UnitEffectiveLevel("player")
-    if issecretvalue(lvl) or not lvl or lvl <= 0 then
-        return 60
-    end
+    if issecretvalue(lvl) or not lvl or lvl <= 0 then return 60 end
     return lvl
 end
 

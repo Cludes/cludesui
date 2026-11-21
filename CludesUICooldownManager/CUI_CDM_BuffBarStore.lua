@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarStore.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local max = math.max
@@ -23,9 +19,7 @@ local TBB_DEFAULT_BAR = Inner.TBB_DEFAULT_BAR
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val)
-    ECME = val
-end
+Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val) ECME = val end
 
 -------------------------------------------------------------------------------
 --  Per-spec unlock-link views (anchor / width-match / height-match entries)
@@ -52,9 +46,7 @@ do
 
     local function LiveStores(create)
         local saved = CludesUIDB
-        if not saved then
-            return nil
-        end
+        if not saved then return nil end
         if create then
             saved.unlockAnchors = saved.unlockAnchors or {}
             saved.unlockWidthMatch = saved.unlockWidthMatch or {}
@@ -64,18 +56,12 @@ do
     end
 
     local function Bucket(profileName, specKey, create)
-        if not profileName or not specKey then
-            return nil
-        end
+        if not profileName or not specKey then return nil end
         local sp = mod.GetSpecProfilesForProfile and mod.GetSpecProfilesForProfile(profileName)
-        if not sp then
-            return nil
-        end
+        if not sp then return nil end
         local prof = sp[specKey]
         if not prof then
-            if not create then
-                return nil
-            end
+            if not create then return nil end
             prof = { barSpells = {} }
             sp[specKey] = prof
         end
@@ -88,15 +74,11 @@ do
     -- Copy a live store's TBB child entries into a bucket table (slot-keyed).
     local function CopyOne(storage, dest)
         wipe(dest)
-        if not storage then
-            return
-        end
+        if not storage then return end
         for key, val in pairs(storage) do
             if type(key) == "string" then
                 local slot = key:match("^TBB_(%d+)$")
-                if slot then
-                    dest[slot] = CopyEntry(val)
-                end
+                if slot then dest[slot] = CopyEntry(val) end
             end
         end
     end
@@ -110,9 +92,7 @@ do
         local storage = saved and saved[liveField]
         local dest = b[field]
         if not dest then
-            if not storage then
-                return
-            end
+            if not storage then return end
             local any
             for key in pairs(storage) do
                 if type(key) == "string" and key:find("^TBB_%d+$") then
@@ -120,9 +100,7 @@ do
                     break
                 end
             end
-            if not any then
-                return
-            end
+            if not any then return end
             dest = {}
             b[field] = dest
         end
@@ -139,14 +117,10 @@ do
                 and specKey
                 and mod.GetSpecProfilesForProfile
                 and mod.GetSpecProfilesForProfile(profileName)
-            if not (sp and sp[specKey]) then
-                return
-            end
+            if not (sp and sp[specKey]) then return end
         end
         local b = Bucket(profileName, specKey, true)
-        if not b then
-            return
-        end
+        if not b then return end
         local an, wm, hm = LiveStores(false)
         CopyOne(an, b.anchors)
         CopyOne(wm, b.wm)
@@ -182,9 +156,7 @@ do
         local saved = CludesUIDB
         local storage = saved[liveField]
         if not storage then
-            if not source or next(source) == nil then
-                return
-            end
+            if not source or next(source) == nil then return end
             storage = {}
             saved[liveField] = storage
         end
@@ -193,15 +165,11 @@ do
 
     local function SwapIn(profileName, specKey)
         local an, wm, hm = LiveStores(true)
-        if not an then
-            return
-        end
+        if not an then return end
         local b = Bucket(profileName, specKey, false)
         if not b then
             b = Bucket(profileName, specKey, true)
-            if not b then
-                return
-            end
+            if not b then return end
             -- First view for this spec: seed from live entries, keeping only slots that have a bar here.
             CopyOne(an, b.anchors)
             CopyOne(wm, b.wm)
@@ -231,9 +199,7 @@ do
                 local set = xsets[i]
                 if set then
                     for slot in pairs(set) do
-                        if not barList[tonumber(slot)] then
-                            set[slot] = nil
-                        end
+                        if not barList[tonumber(slot)] then set[slot] = nil end
                     end
                 end
             end
@@ -248,14 +214,10 @@ do
     end
 
     function mod.SyncTBBUnlockLinks(force)
-        if not CludesUIDB then
-            return
-        end
+        if not CludesUIDB then return end
         local profName = mod.GetActiveProfileName and mod.GetActiveProfileName()
         local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-        if not profName or not specKey then
-            return
-        end
+        if not profName or not specKey then return end
         local own = CludesUIDB._tbbLinkOwner
         local same = own and own.profile == profName and own.spec == specKey
         if force then
@@ -264,9 +226,7 @@ do
             Bank(profName, specKey)
             return
         else
-            if own then
-                Bank(own.profile, own.spec)
-            end
+            if own then Bank(own.profile, own.spec) end
             SwapIn(profName, specKey)
         end
         CludesUIDB._tbbLinkOwner = { profile = profName, spec = specKey }
@@ -286,15 +246,11 @@ do
     -- bucket (only while live belongs to it), so a profile restore before the next
     -- bar build cannot swap an older bucket over them.
     CludesUI._TBBBankUnlockLinks = function()
-        if not CludesUIDB then
-            return
-        end
+        if not CludesUIDB then return end
         local own = CludesUIDB._tbbLinkOwner
         local profName = mod.GetActiveProfileName and mod.GetActiveProfileName()
         local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-        if own and own.profile == profName and own.spec == specKey then
-            Bank(profName, specKey)
-        end
+        if own and own.profile == profName and own.spec == specKey then Bank(profName, specKey) end
     end
 end
 
@@ -318,18 +274,14 @@ local function AddTrackedBuffBarCore(tbb, targetGid)
     -- group's current look (style source bar), 3) a preset on any bar of this spec
     -- else any saved preset, 4) the last bar's look (legacy inherit), 5) defaults.
     local preset, styleSrc
-    if groupId ~= 0 and mod.ResolveTBBGroupPreset then
-        preset = mod.ResolveTBBGroupPreset(tbb, groupId)
-    end
+    if groupId ~= 0 and mod.ResolveTBBGroupPreset then preset = mod.ResolveTBBGroupPreset(tbb, groupId) end
     if not preset and groupId ~= 0 and mod.TBBGroupStyleSource then
         styleSrc = mod.TBBGroupStyleSource(groupId)
     end
     if not preset and not styleSrc and mod.ResolveTBBFallbackPreset then
         preset = mod.ResolveTBBFallbackPreset(tbb)
     end
-    if not preset and not styleSrc and #barList > 0 then
-        styleSrc = barList[#barList]
-    end
+    if not preset and not styleSrc and #barList > 0 then styleSrc = barList[#barList] end
 
     -- Base from pure defaults (spell identity, enable state and stack-threshold numbers
     -- start fresh), then dress it: the style key set is the authoritative visual copy.
@@ -359,9 +311,7 @@ local function AddTrackedBuffBarCore(tbb, targetGid)
     if groupId ~= 0 and newBar.verticalOrientation and mod.TBBGroupedCount(groupId) <= 1 then
         local g = tbb.groups and tbb.groups[tostring(groupId)]
         local hasStored = (g and g.grow) or (groupId == 1 and tbb.groupGrowDirection)
-        if not hasStored then
-            mod.TBBSetGroupGrow(groupId, "RIGHT")
-        end
+        if not hasStored then mod.TBBSetGroupGrow(groupId, "RIGHT") end
     end
 
     -- Auto-position adjacent to the previous bar; matters only for independent bars (grouped bars chain off their group anchor).
@@ -408,9 +358,7 @@ end
 
 function mod.RemoveTrackedBuffBar(position)
     local tbb = mod.GetTrackedBuffBars()
-    if position < 1 or position > #tbb.bars then
-        return
-    end
+    if position < 1 or position > #tbb.bars then return end
     local oldCount = #tbb.bars
     table.remove(tbb.bars, position)
     -- Positions are keyed by bar index: re-key so bars after the removed index keep their coordinates.
@@ -424,9 +372,7 @@ function mod.RemoveTrackedBuffBar(position)
     if CludesUI and CludesUI.ShiftIndexedAnchorKeys then
         CludesUI.ShiftIndexedAnchorKeys("TBB_", position, oldCount)
     end
-    if tbb.selectedBar > #tbb.bars then
-        tbb.selectedBar = max(1, #tbb.bars)
-    end
+    if tbb.selectedBar > #tbb.bars then tbb.selectedBar = max(1, #tbb.bars) end
     mod.BuildTrackedBuffBars()
 end
 
@@ -440,23 +386,17 @@ function mod.MoveTrackedBuffBarInGroup(position, place)
     local barList = tbb.bars
     local conf = barList[position]
     local groupId = mod.TBBBarGroupID(conf)
-    if groupId == 0 then
-        return position
-    end
+    if groupId == 0 then return position end
     local slots, members, from = {}, {}, nil
     for jdx, c in ipairs(barList) do
         if mod.TBBBarGroupID(c) == groupId then
             slots[#slots + 1] = jdx
             members[#members + 1] = c
-            if jdx == position then
-                from = #slots
-            end
+            if jdx == position then from = #slots end
         end
     end
     place = max(1, math.min(place, #slots))
-    if place == from then
-        return position
-    end
+    if place == from then return position end
     local oldAnchor = mod.TBBGroupAnchorIndex(groupId)
     table.remove(members, from)
     table.insert(members, place, conf)
@@ -483,12 +423,8 @@ end
 -- apart from a custom buff by having NO customDuration (custom-buff popup always sets
 -- one, CDM picker clears it). Freshly-added empty bars return nil.
 function mod.TBBBroadcastKey(conf)
-    if type(conf) ~= "table" then
-        return nil
-    end
-    if conf.popularKey and conf.popularKey ~= "" then
-        return "p:" .. conf.popularKey
-    end
+    if type(conf) ~= "table" then return nil end
+    if conf.popularKey and conf.popularKey ~= "" then return "p:" .. conf.popularKey end
     if
         conf.spellID
         and conf.spellID > 0
@@ -501,16 +437,12 @@ function mod.TBBBroadcastKey(conf)
 end
 
 -- Broadcastable only when TBBBroadcastKey yields an identity (preset or custom buff); Blizzard CDM spells and empty bars are excluded.
-function mod.IsTrackedBuffBarBroadcastable(conf)
-    return mod.TBBBroadcastKey(conf) ~= nil
-end
+function mod.IsTrackedBuffBarBroadcastable(conf) return mod.TBBBroadcastKey(conf) ~= nil end
 
 -- True when the bar's buff is marked broadcast to all specs (button reads "Remove Bar from All Specs"). Read from the persistent per-profile set.
 function mod.IsTrackedBuffBarBroadcast(conf)
     local key = mod.TBBBroadcastKey(conf)
-    if not key then
-        return false
-    end
+    if not key then return false end
     local set = mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
     return set ~= nil and set[key] == true
 end
@@ -521,35 +453,25 @@ end
 -- Returns the number of specs added to.
 function mod.AddBarToAllSpecs(srcIdx)
     local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
-    if not DeepCopy then
-        return 0
-    end
+    if not DeepCopy then return 0 end
     local activeKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not activeKey then
-        return 0
-    end
+    if not activeKey then return 0 end
 
     local srcTbb = mod.GetTrackedBuffBars()
     local srcBar = srcTbb and srcTbb.bars and srcTbb.bars[srcIdx]
-    if not mod.IsTrackedBuffBarBroadcastable(srcBar) then
-        return 0
-    end
+    if not mod.IsTrackedBuffBarBroadcastable(srcBar) then return 0 end
 
     local srcPos = mod.GetTBBPositions()[tostring(srcIdx)]
 
     local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfiles then
-        return 0
-    end
+    if not specProfiles then return 0 end
 
     local function HasSameBar(barList)
         for _, bar in ipairs(barList) do
             -- A cooldown-tracking bar is never the same bar as a buff bar for the same spell: track types must match first.
             if (bar.trackType or "buff") == (srcBar.trackType or "buff") then
                 if srcBar.popularKey and srcBar.popularKey ~= "" then
-                    if bar.popularKey == srcBar.popularKey then
-                        return true
-                    end
+                    if bar.popularKey == srcBar.popularKey then return true end
                 elseif
                     (not bar.popularKey or bar.popularKey == "")
                     and bar.spellID
@@ -571,13 +493,9 @@ function mod.AddBarToAllSpecs(srcIdx)
         if specID then
             local key = tostring(specID)
             if key ~= activeKey then
-                if not specProfiles[key] then
-                    specProfiles[key] = { barSpells = {} }
-                end
+                if not specProfiles[key] then specProfiles[key] = { barSpells = {} } end
                 local prof = specProfiles[key]
-                if not prof.trackedBuffBars then
-                    prof.trackedBuffBars = { selectedBar = 1, bars = {} }
-                end
+                if not prof.trackedBuffBars then prof.trackedBuffBars = { selectedBar = 1, bars = {} } end
                 local tbb = prof.trackedBuffBars
                 if not HasSameBar(tbb.bars) then
                     local newBar = DeepCopy(srcBar)
@@ -600,9 +518,7 @@ function mod.AddBarToAllSpecs(srcIdx)
                     local newIdx = #tbb.bars + 1
                     tbb.bars[newIdx] = newBar
                     if srcPos then
-                        if not prof.tbbPositions then
-                            prof.tbbPositions = {}
-                        end
+                        if not prof.tbbPositions then prof.tbbPositions = {} end
                         prof.tbbPositions[tostring(newIdx)] = DeepCopy(srcPos)
                     end
                     added = added + 1
@@ -616,9 +532,7 @@ function mod.AddBarToAllSpecs(srcIdx)
     local set = not CludesUI.IS_FOREVER and mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
     if set then
         local key = mod.TBBBroadcastKey(srcBar)
-        if key then
-            set[key] = true
-        end
+        if key then set[key] = true end
     end
 
     return added
@@ -628,27 +542,19 @@ end
 -- broadcast flag. The CURRENT spec's bar is left untouched. Returns specs removed from.
 function mod.RemoveBarFromAllSpecs(srcIdx)
     local activeKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not activeKey then
-        return 0
-    end
+    if not activeKey then return 0 end
 
     local srcTbb = mod.GetTrackedBuffBars()
     local srcBar = srcTbb and srcTbb.bars and srcTbb.bars[srcIdx]
     local broadcastKey = mod.TBBBroadcastKey(srcBar)
-    if not broadcastKey then
-        return 0
-    end
+    if not broadcastKey then return 0 end
 
     local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfiles then
-        return 0
-    end
+    if not specProfiles then return 0 end
 
     local function Matches(b)
         -- Track types must match: a broadcast buff bar for spell X must NEVER delete a cooldown-tracking bar for the same spell.
-        if (b.trackType or "buff") ~= (srcBar.trackType or "buff") then
-            return false
-        end
+        if (b.trackType or "buff") ~= (srcBar.trackType or "buff") then return false end
         if srcBar.popularKey and srcBar.popularKey ~= "" then
             return b.popularKey == srcBar.popularKey
         else
@@ -677,9 +583,7 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
                         else
                             newBars[#newBars + 1] = bar
                             local p = oldPos[tostring(jdx)]
-                            if p then
-                                newPos[tostring(#newBars)] = p
-                            end
+                            if p then newPos[tostring(#newBars)] = p end
                         end
                     end
                     if didRemove then
@@ -697,9 +601,7 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
 
     -- Clear the broadcast flag so the button flips back to "Add...".
     local set = mod.GetActiveTBBBroadcastSet and mod.GetActiveTBBBroadcastSet()
-    if set then
-        set[broadcastKey] = nil
-    end
+    if set then set[broadcastKey] = nil end
 
     return removed
 end

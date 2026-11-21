@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local addon, mod = ...
 if
     not (
@@ -42,17 +40,11 @@ local UnitIsUnit = UnitIsUnit
 -- preview's next build. A plate's parent is no pool host: a plain CreateFrame.
 local Pool = CludesUI._Pool
 
-local function GetFont()
-    return CludesUI.GetFontPath("nameplates")
-end
+local function GetFont() return CludesUI.GetFontPath("nameplates") end
 -- Slug-gated at the source (GetFontOutlineFlag); SetFSFont gates the
 -- explicit-flag path too, so aura literals are covered.
-local function GetNPOutline()
-    return CludesUI.GetFontOutlineFlag("nameplates")
-end
-local function GetNPUseShadow()
-    return CludesUI.GetFontUseShadow("nameplates")
-end
+local function GetNPOutline() return CludesUI.GetFontOutlineFlag("nameplates") end
+local function GetNPUseShadow() return CludesUI.GetFontUseShadow("nameplates") end
 -- Every plate text takes a font family (names, guilds, titles and cast targets can be
 -- other players' writing): the chosen font draws what it can, Blizzard's Cyrillic,
 -- Korean and Chinese faces the rest. Once a string has its family, every later font
@@ -981,37 +973,25 @@ end
 function mod.IsCustomBorderEnabled()
     -- Stock styles: the Blizzard background art, or the classic plate's plain
     -- 1px edge, stands in for the custom border.
-    if mod.NP_Blizz() then
-        return false
-    end
+    if mod.NP_Blizz() then return false end
     local val = p and p.customBorderEnabled
-    if val == nil then
-        return defaultSet.customBorderEnabled
-    end
+    if val == nil then return defaultSet.customBorderEnabled end
     return val
 end
 -- szOverride: optional size for the "Border Size" target effect (rebuilds at that size).
 function mod.ApplyCustomBorderStyle(backing, szOverride)
-    if not backing or not backing.health then
-        return
-    end
-    if not (CludesUI and CludesUI.ApplyBorderStyle) then
-        return
-    end
+    if not backing or not backing.health then return end
+    if not (CludesUI and CludesUI.ApplyBorderStyle) then return end
     local texture = (p and p.customBorderTexture) or defaultSet.customBorderTexture
     local sz = szOverride or (p and p.customBorderSize) or defaultSet.customBorderSize
     -- Exact pixel size (customBorderSizePx) counts only for the plate's own size; a
     -- target/hover effect size is a substitute and keeps the legacy path.
     local px
-    if not szOverride then
-        px = CludesUI.BorderPx(p and p.customBorderSizePx, sz, texture)
-    end
+    if not szOverride then px = CludesUI.BorderPx(p and p.customBorderSizePx, sz, texture) end
     local colour = (p and p.customBorderColor) or defaultSet.customBorderColor
     local a = (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
     local behind = p and p.customBorderBehind
-    if behind == nil then
-        behind = defaultSet.customBorderBehind
-    end
+    if behind == nil then behind = defaultSet.customBorderBehind end
     local bf = backing._customBorder
     if not bf then
         bf = CreateFrame("Frame", nil, backing.health)
@@ -1046,25 +1026,17 @@ function mod.ApplyCustomBorderStyle(backing, szOverride)
     )
     -- Solid strips need the scaleGuard the Basic border has, or Scale Target/Casting
     -- Nameplate leaves them sub-pixel and their sides vanish as the plate moves.
-    if Pix.GetBorders(bf) then
-        Pix.CreateBorder(bf, nil, nil, nil, nil, nil, nil, nil, true)
-    end
+    if Pix.GetBorders(bf) then Pix.CreateBorder(bf, nil, nil, nil, nil, nil, nil, nil, true) end
     -- The size it is drawn at (a target/hover effect size included): the cast bar
     -- wrap's lower piece and seam copy it (ns.NP_UpdateCustomBorderWrap).
     bf._cbTex, bf._cbSz, bf._cbPx = texture, sz, px
     -- A target/hover effect size redraws a rounded glow at that size (ApplyBorder
     -- rounds after its own call).
-    if szOverride and backing._npRounded then
-        mod.NP_ApplyRounding(backing, "health")
-    end
+    if szOverride and backing._npRounded then mod.NP_ApplyRounding(backing, "health") end
 end
 function mod.ApplyCustomBorderColor(backing)
-    if not backing or not backing._customBorder then
-        return
-    end
-    if not (CludesUI and CludesUI.SetBorderStyleColor) then
-        return
-    end
+    if not backing or not backing._customBorder then return end
+    if not (CludesUI and CludesUI.SetBorderStyleColor) then return end
     local colour = (p and p.customBorderColor) or defaultSet.customBorderColor
     local a = (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
     CludesUI.SetBorderStyleColor(backing._customBorder, colour.r, colour.g, colour.b, a)
@@ -1073,9 +1045,7 @@ function mod.HideCustomBorder(backing)
     local bf = backing and backing._customBorder
     if bf and CludesUI and CludesUI.ApplyBorderStyle then
         -- A border wrapping the cast bar gets its anchors back first.
-        if backing._cbWrapActive then
-            mod.NP_UnwrapCustomBorder(backing)
-        end
+        if backing._cbWrapActive then mod.NP_UnwrapCustomBorder(backing) end
         CludesUI.ApplyBorderStyle(bf, 0)
         bf:Hide()
     end
@@ -1106,9 +1076,7 @@ function mod.NP_UpdateCustomBorderWrap(backing)
             and mod.IsCustomBorderEnabled()
         )
     then
-        if backing._cbWrapActive then
-            mod.NP_UnwrapCustomBorder(backing)
-        end
+        if backing._cbWrapActive then mod.NP_UnwrapCustomBorder(backing) end
         return
     end
     local CUI = CludesUI
@@ -1126,7 +1094,8 @@ function mod.NP_UpdateCustomBorderWrap(backing)
     end
     if not red then
         local color = (p and p.customBorderColor) or defaultSet.customBorderColor
-        red, green, blue, a = color.r, color.g, color.b, (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
+        red, green, blue, a =
+            color.r, color.g, color.b, (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
     end
     if backing._castOverlayLifted then
         if backing._cbWrapMode == "single" then
@@ -1181,9 +1150,7 @@ function mod.NP_UpdateCustomBorderWrap(backing)
                 nil,
                 px
             )
-            if Pix.GetBorders(lower) then
-                Pix.CreateBorder(lower, nil, nil, nil, nil, nil, nil, nil, true)
-            end
+            if Pix.GetBorders(lower) then Pix.CreateBorder(lower, nil, nil, nil, nil, nil, nil, nil, true) end
             lower._sTex, lower._sSz, lower._sPx = texture, sz, px
             lower._sOX, lower._sOY, lower._sSX, lower._sSY = offX, offY, shX, shY
         else
@@ -1194,16 +1161,12 @@ function mod.NP_UpdateCustomBorderWrap(backing)
         local join = solid or nil
         if uc and uc._hideBottom ~= join then
             uc._hideBottom = join
-            if uc:IsShown() then
-                Pix.SetBorderSize(bf, px or sz)
-            end
+            if uc:IsShown() then Pix.SetBorderSize(bf, px or sz) end
         end
         local lc = Pix.GetBorders(lower)
         if lc and lc._hideTop ~= join then
             lc._hideTop = join
-            if lc:IsShown() then
-                Pix.SetBorderSize(lower, px or sz)
-            end
+            if lc:IsShown() then Pix.SetBorderSize(lower, px or sz) end
         end
         -- Textured: the same join from the backdrop pieces (off for solid).
         mod.NP_SetWrapJoin(backing, not solid, texture, red, green, blue, a)
@@ -1221,9 +1184,7 @@ function mod.NP_UpdateCustomBorderWrap(backing)
             backing.health
         )
     else
-        if backing._cbWrapMode == "split" then
-            mod.NP_DropCustomWrapLower(backing)
-        end
+        if backing._cbWrapMode == "split" then mod.NP_DropCustomWrapLower(backing) end
         if backing._cbWrapMode ~= "single" then
             bf:ClearAllPoints()
             bf:SetPoint("TOPLEFT", backing.health, "TOPLEFT", 0, 0)
@@ -1248,9 +1209,7 @@ function mod.NP_UpdateCustomBorderWrap(backing)
     backing._cbWrapActive = true
     -- The 1px icon separator would show inside the outline (NP_UnwrapCustomBorder
     -- gives it back).
-    if backing.castLeftBorder then
-        backing.castLeftBorder:Hide()
-    end
+    if backing.castLeftBorder then backing.castLeftBorder:Hide() end
     -- Tint the full-size cast icon's border like the wrapped bar (the Basic wrap's rule).
     local iconTex = backing.castIconFrame
     if iconTex and Pix.GetBorders(iconTex) then
@@ -1348,9 +1307,7 @@ function mod.NP_DropCustomWrapLower(backing)
     if lower then
         mod.NP_SetWrapSeam(lower, nil, false)
         local lc = Pix.GetBorders(lower)
-        if lc then
-            lc._hideTop = nil
-        end
+        if lc then lc._hideTop = nil end
         CludesUI.ApplyBorderStyle(lower, 0)
         lower:Hide()
         lower._sTex = nil
@@ -1359,9 +1316,7 @@ function mod.NP_DropCustomWrapLower(backing)
     local uc = bf and Pix.GetBorders(bf)
     if uc and uc._hideBottom then
         uc._hideBottom = nil
-        if uc:IsShown() then
-            Pix.SetBorderSize(bf, bf._cbPx or bf._cbSz or 1)
-        end
+        if uc:IsShown() then Pix.SetBorderSize(bf, bf._cbPx or bf._cbSz or 1) end
     end
 end
 function mod.NP_UnwrapCustomBorder(backing)
@@ -1378,18 +1333,14 @@ function mod.NP_UnwrapCustomBorder(backing)
         end
     end
     -- The icon separator comes back unless the Basic wrap (this same pass) owns it now.
-    if backing.castLeftBorder and not backing._wrapActive then
-        backing.castLeftBorder:Show()
-    end
+    if backing.castLeftBorder and not backing._wrapActive then backing.castLeftBorder:Show() end
     if backing.castIconFrame and Pix.GetBorders(backing.castIconFrame) then
         Pix.SetBorderColor(backing.castIconFrame, 0, 0, 0, 1)
     end
 end
 
 -- "Show Seam Line": only a border style with separator art draws one (the Pixels styles).
-function mod.NP_CanShowWrapSeam(texture)
-    return CludesUI.GetBorderCompanion(texture, "sepH") ~= nil
-end
+function mod.NP_CanShowWrapSeam(texture) return CludesUI.GetBorderCompanion(texture, "sepH") ~= nil end
 -- A divider along anchor's top edge (the cast bar's), spanning the health bar's
 -- width even when the cast bar reserves space for its icon. A lazy child of owner
 -- (a border frame we own) above its border art, tinted like the live border.
@@ -1422,15 +1373,11 @@ function mod.NP_SetWrapSeam(ownerFrame, anchor, show, texture, step, px, red, gr
 end
 function mod.NP_LayoutWrapSeam(owner)
     local t, anchor, health = owner._seam, owner._seamAnchor, owner._seamHealth
-    if not (t and anchor and health) then
-        return
-    end
+    if not (t and anchor and health) then return end
     local CUI = CludesUI
     local texture, step, px = owner._seamTex, owner._seamStep, owner._seamPx
     local es = owner:GetEffectiveScale()
-    if not (es and es > 0.01) then
-        es = UIParent:GetEffectiveScale()
-    end
+    if not (es and es > 0.01) then es = UIParent:GetEffectiveScale() end
     local filePath = CUI.GetBorderCompanion(texture, "sepH")
     local thick = filePath and CUI.BorderCompanionThickness(texture, step, px, es)
     if not thick or thick <= 0 then
@@ -1478,9 +1425,7 @@ CludesUI.NewInternals(mod, "_npInternals", {
     HP_BAR_SLOTS = HP_BAR_SLOTS,
     SetFSFont = SetFSFont,
     profileSetters = {
-        function(val)
-            p = val
-        end,
+        function(val) p = val end,
     },
     classPowerTypeSetters = {},
 }, { SetProfile = "profileSetters", SetClassPowerType = "classPowerTypeSetters" })

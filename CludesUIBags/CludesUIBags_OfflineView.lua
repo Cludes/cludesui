@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBags_OfflineView.lua
 --  offline bank views (data from CludesUIBags_Offline.lua):
@@ -22,15 +20,11 @@ local CUI = CludesUI
 local mod = select(2, ...)
 local Offline = mod.Offline
 local Inner = mod._bagsInternals
-if not (Offline and Inner) then
-    return
-end -- a bags file didn't load
+if not (Offline and Inner) then return end -- a bags file didn't load
 
 local GetItemInfo, GetItemInfoInstant = C_Item.GetItemInfo, C_Item.GetItemInfoInstant
 local _emptyP = {}
-local function BP()
-    return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
-end
+local function BP() return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP end
 
 -- the bags' slot size and spacing (their sliders; OnSlotMetrics below)
 local SLOT_SIZE, SPACING = Inner.SLOT_SIZE, Inner.SPACING
@@ -39,21 +33,15 @@ local ITEM_CLASS_WEAPON, ITEM_CLASS_ARMOR = Enum.ItemClass.Weapon, Enum.ItemClas
 local BANK_VIEW = -3
 mod.OFFLINE_BANK_VIEW = BANK_VIEW
 
-local function GetFont()
-    return CUI.GetFontPath("bags")
-end
+local function GetFont() return CUI.GetFontPath("bags") end
 local SetFont = mod.SetBagFont
 local Hex = Offline.ClassHex
 
 -- how old a save is, "3 days ago" style
 local function Age(t)
-    if type(t) ~= "number" then
-        return nil
-    end
+    if type(t) ~= "number" then return nil end
     local s = math.max(time() - t, 0)
-    if s < 60 then
-        return CludesUI.L("just now")
-    end
+    if s < 60 then return CludesUI.L("just now") end
     return CludesUI.Lf("%1$s ago", SecondsToTime(s, false, false, 1))
 end
 
@@ -68,12 +56,8 @@ local bagsView = {
     slots = {},
     heads = {},
     tabs = {},
-    plain = function()
-        return CludesUI.L("Inventory")
-    end,
-    word = function(name)
-        return CludesUI.Lf("%1$s's Inventory", name)
-    end,
+    plain = function() return CludesUI.L("Inventory") end,
+    word = function(name) return CludesUI.Lf("%1$s's Inventory", name) end,
 }
 local bankView = {
     win = _G.CUI_BankFrame,
@@ -81,12 +65,8 @@ local bankView = {
     slots = {},
     heads = {},
     tabs = {},
-    plain = function()
-        return CludesUI.L("Bank")
-    end,
-    word = function(name)
-        return CludesUI.Lf("%1$s's Bank", name)
-    end,
+    plain = function() return CludesUI.L("Bank") end,
+    word = function(name) return CludesUI.Lf("%1$s's Bank", name) end,
 }
 local views = { bagsView, bankView }
 local moneyN = 0
@@ -103,27 +83,21 @@ mod.OnSlotMetrics(function(m)
     end
 end)
 
-local function ShownKey(val)
-    return val.key or Offline.CurrentKey()
-end
+local function ShownKey(val) return val.key or Offline.CurrentKey() end
 
 -- v.viewTab: "bank" | "warband" (all tabs, by category), "onebank" |
 -- "onewarband" (all tabs, one block) or "bank:2" | "warband:1" (one tab)
 local function TabKind(val)
     local key = val.viewTab
     local one = key:sub(1, 3) == "one"
-    if one then
-        key = key:sub(4)
-    end
+    if one then key = key:sub(4) end
     local kind, i = key:match("^(%a+):?(%d*)$")
     return kind or "bank", tonumber(i), one
 end
 
 -- drop a pick that doesn't resolve anymore (option off, forgotten, source changed)
 local function AltKey(val)
-    if not val.key then
-        return nil
-    end
+    if not val.key then return nil end
     if not Offline.Enabled() or val.key == Offline.CurrentKey() or not Offline.Char(val.key) then
         val.key = nil
         return nil
@@ -132,33 +106,23 @@ local function AltKey(val)
 end
 
 -- the alt whose bags are showing (nil if it's this character)
-function mod.OfflineAlt()
-    return AltKey(bagsView)
-end
+function mod.OfflineAlt() return AltKey(bagsView) end
 
 -- the search the game has applied (both windows share it), lower-cased
-local function Query()
-    return (CUI_Bags._appliedSearch or ""):lower()
-end
+local function Query() return (CUI_Bags._appliedSearch or ""):lower() end
 
 local Paint, PaintSide, SyncBank -- forward
 
 local function Repaint(val)
-    if val.scroll then
-        val.scroll:SetVerticalScroll(0)
-    end
+    if val.scroll then val.scroll:SetVerticalScroll(0) end
     Paint(val, true)
 end
 
 -- rebuild the window around a new pick
 local function Rebuild(val)
-    if val.scroll then
-        val.scroll:SetVerticalScroll(0)
-    end
+    if val.scroll then val.scroll:SetVerticalScroll(0) end
     if val == bagsView then
-        if CUI_Bags:IsVisible() then
-            CUI_Bags:RefreshInventory()
-        end
+        if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
     else
         SyncBank()
     end
@@ -199,9 +163,7 @@ local function OpenPicker(val, ownerFrame)
         realms[char.realm] = true
     end
     local manyRealms = next(realms) ~= nil and next(realms, next(realms)) ~= nil
-    local function Off()
-        return true
-    end
+    local function Off() return true end
     local isShown = ShownKey(val)
     for _, char in ipairs(charList) do
         if manyRealms and char.realm ~= realm then
@@ -216,9 +178,7 @@ local function OpenPicker(val, ownerFrame)
                 val.key = not char.current and char.key or nil
                 Rebuild(val)
             end,
-            onRemove = not char.current and function()
-                AskForget(char)
-            end or nil,
+            onRemove = not char.current and function() AskForget(char) end or nil,
             removeTip = CludesUI.L("Delete saved data"),
         }
     end
@@ -260,27 +220,19 @@ local function CreatePickerButton(val, header)
         iconTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-person.png")
         iconTex:SetSize(14 * scale, 14 * scale)
     end
-    if forever then
-        iconTex:SetVertexColor(1, 0.86, 0.63)
-    end
+    if forever then iconTex:SetVertexColor(1, 0.86, 0.63) end
     iconTex:SetPoint("CENTER")
     iconTex:SetAlpha(0.8)
 
-    btnFrame:SetScript("OnClick", function(self)
-        OpenPicker(val, self)
-    end)
+    btnFrame:SetScript("OnClick", function(self) OpenPicker(val, self) end)
     btnFrame:SetScript("OnEnter", function(self)
         iconTex:SetAlpha(1)
-        if backdrop then
-            backdrop:SetColorTexture(1, 1, 1, 0.14)
-        end
+        if backdrop then backdrop:SetColorTexture(1, 1, 1, 0.14) end
         CUI.ShowWidgetTooltip(self, CludesUI.L("Choose an alt"))
     end)
     btnFrame:SetScript("OnLeave", function()
         iconTex:SetAlpha(0.8)
-        if backdrop then
-            backdrop:SetColorTexture(1, 1, 1, 0.06)
-        end
+        if backdrop then backdrop:SetColorTexture(1, 1, 1, 0.06) end
         CUI.HideWidgetTooltip()
     end)
     return btnFrame
@@ -288,17 +240,11 @@ end
 
 -- title: the window's title font string, count: the item count next to it
 local function SyncTitle(val, title, count)
-    if not (title and count) then
-        return
-    end
+    if not (title and count) then return end
     local enabled = Offline.Enabled()
-    if enabled and not val.pick then
-        val.pick = { btn = CreatePickerButton(val, title:GetParent()) }
-    end
+    if enabled and not val.pick then val.pick = { btn = CreatePickerButton(val, title:GetParent()) } end
     local p = val.pick
-    if p then
-        p.btn:SetShown(enabled)
-    end
+    if p then p.btn:SetShown(enabled) end
     if enabled then
         local char = Offline.Char(ShownKey(val))
         local name = (char and char.name) or UnitName("player") or ""
@@ -309,9 +255,7 @@ local function SyncTitle(val, title, count)
     end
     local heading = title:GetParent()
     if heading._foreverTitleY then
-        if enabled then
-            p.btn:SetPoint("LEFT", heading, "TOPLEFT", 55, heading._foreverControlsY)
-        end
+        if enabled then p.btn:SetPoint("LEFT", heading, "TOPLEFT", 55, heading._foreverControlsY) end
         title:SetPoint("LEFT", heading, "TOPLEFT", enabled and 83 or 55, heading._foreverTitleY)
         return
     end
@@ -319,9 +263,7 @@ local function SyncTitle(val, title, count)
     count:ClearAllPoints()
     -- the button takes the title's spot (bags shift it for the sidebar arrow), the title goes after
     local pt, relTo, relPt, posX, posY = title:GetPoint(1)
-    if p and relTo ~= p.btn then
-        p.base = { pt, relTo, relPt, posX, posY }
-    end
+    if p and relTo ~= p.btn then p.base = { pt, relTo, relPt, posX, posY } end
     if not enabled then
         if p and p.base then
             title:ClearAllPoints()
@@ -340,13 +282,9 @@ end
 local Place -- below
 -- closing a window goes back to this character
 CUI_Bags:HookScript("OnHide", function()
-    if CUI_Bags:IsShown() then
-        return
-    end
+    if CUI_Bags:IsShown() then return end
     bagsView.key = nil
-    if bagsView.mode then
-        Place(bagsView, nil)
-    end
+    if bagsView.mode then Place(bagsView, nil) end
 end)
 
 -------------------------------------------------------------------------------
@@ -370,14 +308,10 @@ local function TabButton(val, textValue, key)
         Repaint(val)
     end)
     widget:SetScript("OnEnter", function(self)
-        if val.viewTab ~= self.key then
-            self.text:SetTextColor(1, 1, 1)
-        end
+        if val.viewTab ~= self.key then self.text:SetTextColor(1, 1, 1) end
     end)
     widget:SetScript("OnLeave", function(self)
-        if val.viewTab ~= self.key then
-            self.text:SetTextColor(0.6, 0.6, 0.6)
-        end
+        if val.viewTab ~= self.key then self.text:SetTextColor(0.6, 0.6, 0.6) end
     end)
     return widget
 end
@@ -396,9 +330,7 @@ local function PaintTabs(val)
 end
 
 local function Build(val)
-    if val.panel then
-        return
-    end
+    if val.panel then return end
     local window = val.win
     -- above the window's item buttons so they never show through
     local panelFrame = CreateFrame("Frame", nil, window)
@@ -442,9 +374,7 @@ local function Build(val)
     for _, suffix in ipairs({ "GoldButton", "SilverButton", "CopperButton" }) do
         local button = _G[name .. suffix]
         local txt = button and button:GetFontString()
-        if txt then
-            SetFont(txt, 11)
-        end
+        if txt then SetFont(txt, 11) end
     end
     for _, char in pairs({ moneyFrame:GetChildren() }) do
         char:EnableMouse(false)
@@ -466,9 +396,7 @@ local function Build(val)
         end
         CUI.ShowWidgetTooltip(self, textValue)
     end)
-    moneyHitbox:SetScript("OnLeave", function()
-        CUI.HideWidgetTooltip()
-    end)
+    moneyHitbox:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
     val.info = barFrame:CreateFontString(nil, "OVERLAY")
     SetFont(val.info, 11)
@@ -497,9 +425,7 @@ local function Build(val)
     -- only a tooltip one of its slots opened
     panelFrame:SetScript("OnHide", function()
         local ownerFrame = GameTooltip:GetOwner()
-        if ownerFrame and ownerFrame:GetParent() == childFrame then
-            GameTooltip:Hide()
-        end
+        if ownerFrame and ownerFrame:GetParent() == childFrame then GameTooltip:Hide() end
     end)
 end
 
@@ -507,9 +433,7 @@ end
 --  item buttons (display only)
 -------------------------------------------------------------------------------
 local function SlotOnEnter(self)
-    if not self.str then
-        return
-    end
+    if not self.str then return end
     mod.SetInsetBorderColor(self, 1, 1, 1, 1)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetHyperlink(self.str)
@@ -521,21 +445,15 @@ local function SlotOnLeave(self)
 end
 local function SlotOnClick(self)
     local text = self.str
-    if not text then
-        return
-    end
+    if not text then return end
     -- items saved as strings get their full link back from the item cache
     local itemLink = text:find("|H", 1, true) and text or select(2, GetItemInfo(text))
-    if itemLink then
-        HandleModifiedItemClick(itemLink)
-    end
+    if itemLink then HandleModifiedItemClick(itemLink) end
 end
 
 local function Slot(val, i)
     local widget = val.slots[i]
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("Button", nil, val.child)
     mod.SizeSlot(widget)
     widget.icon = widget:CreateTexture(nil, "ARTWORK")
@@ -557,9 +475,7 @@ end
 
 local function Head(val, i)
     local frame = val.heads[i]
-    if frame then
-        return frame
-    end
+    if frame then return frame end
     frame = CreateFrame("Frame", nil, val.child)
     frame:SetHeight(20)
     frame.label = frame:CreateFontString(nil, "OVERLAY")
@@ -571,9 +487,7 @@ local function Head(val, i)
     frame.line:SetPoint("LEFT", frame.label, "RIGHT", 6, 0)
     frame.line:SetPoint("RIGHT", -SPACING, 0)
     frame.line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
-    if mod.BagsForever() then
-        mod.SetForeverBagSectionColors(frame.label, frame.line)
-    end
+    if mod.BagsForever() then mod.SetForeverBagSectionColors(frame.label, frame.line) end
     val.heads[i] = frame
     return frame
 end
@@ -591,12 +505,8 @@ local function Containers(val)
         list, saved = wid.tabs, wid.time
     else
         local char = Offline.Char(ShownKey(val))
-        if not char then
-            return nil
-        end
-        if val.mode == "bags" then
-            return char.bags, char.bagsTime, char.bags
-        end
+        if not char then return nil end
+        if val.mode == "bags" then return char.bags, char.bagsTime, char.bags end
         list, saved = char.bank, char.bankTime
     end
     -- one tab picked in the bank window's sidebar: the view keeps one wrapper so the memo holds
@@ -612,9 +522,7 @@ end
 -- the hooks go in with the first classify (nothing to keep up before that)
 local catGen = 0
 local catHooked = false
-local function BumpCat()
-    catGen = catGen + 1
-end
+local function BumpCat() catGen = catGen + 1 end
 local function WatchCategories()
     catHooked = true
     local CM = _G.CUI_CategoryManager
@@ -637,9 +545,7 @@ local function WatchCategories()
         "OnEquipmentSetsChanged",
         "OnVirtualAnswersChanged",
     }) do
-        if CM and type(CM[m]) == "function" then
-            hooksecurefunc(CM, m, BumpCat)
-        end
+        if CM and type(CM[m]) == "function" then hooksecurefunc(CM, m, BumpCat) end
     end
 end
 
@@ -682,15 +588,11 @@ end
 -- src: the saved list it came from (a one-tab view wraps one of its tabs)
 local passes = setmetatable({}, { __mode = "k" })
 local function Classified(list, bags, source)
-    if not catHooked then
-        WatchCategories()
-    end
+    if not catHooked then WatchCategories() end
     local rev, dis = Offline.ListRev(source or list), DisabledKey()
     -- a one-tab view reuses its wrapper for every tab, so it's keyed on the tab itself
     local key = list
-    if source and source ~= list then
-        key = list[1]
-    end
+    if source and source ~= list then key = list[1] end
     local pass = key and passes[key]
     if
         pass
@@ -708,12 +610,8 @@ local function Classified(list, bags, source)
     -- the catch-all and reagent bag once, not per item; disabled categories land in the catch-all
     local catchAll, reagent
     for i, category in ipairs(cats or {}) do
-        if category.isCatchAll then
-            catchAll = i
-        end
-        if category.isReagentBag then
-            reagent = i
-        end
+        if category.isCatchAll then catchAll = i end
+        if category.isReagentBag then reagent = i end
     end
     local disabled = BP().bagDisabledCategories or _emptyP
     for place, t in ipairs(type(list) == "table" and list or {}) do
@@ -775,9 +673,7 @@ end
 -- the classified items, cut down to the search and the filter's categories
 local function Collect(list, bags, query, filter, source)
     local all, used, sum = Classified(list, bags, source)
-    if query == "" and not filter then
-        return all, used, sum
-    end
+    if query == "" and not filter then return all, used, sum end
     local itemList = {}
     for _, item in ipairs(all) do
         if (query == "" or item.lower:find(query, 1, true)) and (not filter or filter[item.cat]) then
@@ -800,9 +696,7 @@ end
 
 -- the bags sidebar selection as a category filter (nil = everything)
 local function Filter(val)
-    if val.mode ~= "bags" then
-        return nil
-    end
+    if val.mode ~= "bags" then return nil end
     local sel, set = mod.GetSelection()
     local mgr = _G.CUI_CategoryManager
     if set and mgr then
@@ -812,9 +706,7 @@ local function Filter(val)
         end
         return frame
     end
-    if sel and sel > 0 then
-        return { [sel] = true }
-    end
+    if sel and sel > 0 then return { [sel] = true } end
 end
 
 -- groups in the bags' own category order
@@ -824,7 +716,11 @@ local function Group(itemList)
     for _, item in ipairs(itemList) do
         local g = by[item.cat]
         if not g then
-            g = { idx = item.cat, name = cats[item.cat] and cats[item.cat].name or CludesUI.L("Items"), items = {} }
+            g = {
+                idx = item.cat,
+                name = cats[item.cat] and cats[item.cat].name or CludesUI.L("Items"),
+                items = {},
+            }
             by[item.cat] = g
         end
         g.items[#g.items + 1] = item
@@ -833,17 +729,11 @@ local function Group(itemList)
     for _, g in pairs(by) do
         catGroups[#catGroups + 1] = g
     end
-    table.sort(catGroups, function(lhs, rhs)
-        return lhs.idx < rhs.idx
-    end)
+    table.sort(catGroups, function(lhs, rhs) return lhs.idx < rhs.idx end)
     for _, group in ipairs(catGroups) do
         table.sort(group.items, function(lhs, rhs)
-            if lhs.q ~= rhs.q then
-                return lhs.q > rhs.q
-            end
-            if lhs.name ~= rhs.name then
-                return lhs.name < rhs.name
-            end
+            if lhs.q ~= rhs.q then return lhs.q > rhs.q end
+            if lhs.name ~= rhs.name then return lhs.name < rhs.name end
             return lhs.str < rhs.str
         end)
     end
@@ -888,9 +778,7 @@ local function PaintGold(val, gold)
         -- whole gold with separators, as the bags footer shows it
         local goldBtn = _G[val.moneyName .. "GoldButton"]
         local txt = goldBtn and goldBtn:GetFontString()
-        if txt and gold >= 10000 then
-            txt:SetText(BreakUpLargeNumbers(math.floor(gold / 10000)))
-        end
+        if txt and gold >= 10000 then txt:SetText(BreakUpLargeNumbers(math.floor(gold / 10000))) end
         moneyFrame:Show()
     else
         moneyFrame:Hide()
@@ -906,13 +794,9 @@ end
 -- the gold for whoever's showing (the gold ledger keeps everyone's)
 local function Gold(val)
     local GL = CUI.GetGoldLedger()
-    if val.mode == "bank" and TabKind(val) == "warband" then
-        return GL.WarbandMoney()
-    end
+    if val.mode == "bank" and TabKind(val) == "warband" then return GL.WarbandMoney() end
     local key = ShownKey(val)
-    if key == Offline.CurrentKey() then
-        return GL.Money()
-    end
+    if key == Offline.CurrentKey() then return GL.Money() end
     -- The ledger keys by GUID; an entry from an older build by "Name-Realm".
     local char = Offline.Char(key)
     local charList = GL.Data().chars
@@ -971,9 +855,7 @@ end
 
 -- force: paint even if the signature didn't change (item data landed)
 Paint = function(val, force)
-    if not (val.panel and val.panel:IsShown()) then
-        return
-    end
+    if not (val.panel and val.panel:IsShown()) then return end
     local query = Query()
     local filter = Filter(val)
     local list, saved, source = Containers(val)
@@ -1069,9 +951,7 @@ Paint = function(val, force)
         textValue = CludesUI.Lf("%d / %d Slots", used, sum)
     end
     val.countText = textValue
-    if val.side then
-        PaintSide(val)
-    end
+    if val.side then PaintSide(val) end
     PaintCount(val)
 end
 
@@ -1081,44 +961,26 @@ local function RunSoon(val)
     val.repaint = false
     local frame = val.force
     val.force = nil
-    if not (val.panel and val.panel:IsVisible()) then
-        return
-    end
+    if not (val.panel and val.panel:IsVisible()) then return end
     -- an alt's sidebar counts come from these same items: just the sidebar, not a full refresh
-    if val == bagsView and AltKey(val) then
-        Inner.BuildSidebarButtons(mod.OfflineCounts())
-    end
+    if val == bagsView and AltKey(val) then Inner.BuildSidebarButtons(mod.OfflineCounts()) end
     Paint(val, frame)
 end
 local function Soon(val, force)
-    if force then
-        val.force = true
-    end
-    if val.repaint then
-        return
-    end
+    if force then val.force = true end
+    if val.repaint then return end
     val.repaint = true
-    if not val.soon then
-        val.soon = function()
-            RunSoon(val)
-        end
-    end
+    if not val.soon then val.soon = function() RunSoon(val) end end
     C_Timer.After(0.2, val.soon)
 end
 -- only the ids a view asked for repaint it
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, _, ident, success)
-    if not pending[ident] then
-        return
-    end
+    if not pending[ident] then return end
     pending[ident] = nil
-    if not success then
-        failed[ident] = true
-    end
+    if not success then failed[ident] = true end
     for _, val in ipairs(views) do
-        if val.panel and val.panel:IsVisible() then
-            Soon(val, true)
-        end
+        if val.panel and val.panel:IsVisible() then Soon(val, true) end
     end
 end)
 local function SyncEvents()
@@ -1133,21 +995,15 @@ end
 -- this character's own bags never show in a panel (they're live), so their
 -- saves don't repaint anything
 Offline.OnChange(function(what)
-    if what == "bags" then
-        return
-    end
+    if what == "bags" then return end
     for _, val in ipairs(views) do
-        if val.panel and val.panel:IsVisible() then
-            Soon(val)
-        end
+        if val.panel and val.panel:IsVisible() then Soon(val) end
     end
 end)
 
 -- the window's own content under the panel: faded out, never hidden or moved
 local function Cover(val, enabled)
-    if val.covered == enabled then
-        return
-    end
+    if val.covered == enabled then return end
     val.covered = enabled
     for _, frame in pairs(val.under and val.under() or {}) do
         frame:SetAlpha(enabled and 0 or 1)
@@ -1158,13 +1014,9 @@ end
 Place = function(val, mode, leftX, topY, bottom)
     val.mode = mode
     Cover(val, mode ~= nil)
-    if val.side then
-        val.side:SetShown(mode ~= nil)
-    end
+    if val.side then val.side:SetShown(mode ~= nil) end
     if not mode then
-        if val.panel then
-            val.panel:Hide()
-        end
+        if val.panel then val.panel:Hide() end
         val.sig = nil
         SyncEvents()
         return
@@ -1176,9 +1028,7 @@ Place = function(val, mode, leftX, topY, bottom)
     val.panel:SetPoint("TOPLEFT", window, "TOPLEFT", leftX, -topY)
     val.panel:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", rightInset, bottom)
     val.panel:SetFrameLevel(window:GetFrameLevel() + 40)
-    if not val.panel:IsShown() then
-        val.track.PadSync(CUI.PadInUse())
-    end
+    if not val.panel:IsShown() then val.track.PadSync(CUI.PadInUse()) end
     val.panel:Show()
     SyncEvents()
     Paint(val)
@@ -1187,21 +1037,15 @@ end
 -------------------------------------------------------------------------------
 --  bags: hooked into the bags refresh
 -------------------------------------------------------------------------------
-bagsView.count = function()
-    return CUI_Bags.Header and CUI_Bags.Header.itemCount
-end
+bagsView.count = function() return CUI_Bags.Header and CUI_Bags.Header.itemCount end
 -- the list display's column bar too, or its labels show through the panel's bar
 bagsView.under = function()
     return { CUI_Bags._scrollFrame, CUI_Bags._scrollTrack, mod.ListHeaderBar(CUI_Bags) }
 end
-bagsView.goldRef = function()
-    return CUI_Bags.Money
-end
+bagsView.goldRef = function() return CUI_Bags.Money end
 
 -- an alt or bank is up in the bags: no live items under it, so select modes stay off
-function mod.OfflineUp()
-    return bagsView.mode ~= nil
-end
+function mod.OfflineUp() return bagsView.mode ~= nil end
 
 -- runs after every bags refresh: covers the item area while bank is picked or
 -- an alt is showing, hidden otherwise. sidebarW is the sidebar's width.
@@ -1232,12 +1076,8 @@ end
 -------------------------------------------------------------------------------
 local CUI_Bank = bankView.win
 if CUI_Bank then
-    bankView.count = function()
-        return CUI_Bank._headerItemCount
-    end
-    bankView.goldRef = function()
-        return CUI_Bank._warbandGoldText
-    end
+    bankView.count = function() return CUI_Bank._headerItemCount end
+    bankView.goldRef = function() return CUI_Bank._warbandGoldText end
     bankView.under = function()
         return {
             CUI_Bank._scrollFrame,
@@ -1251,9 +1091,7 @@ if CUI_Bank then
     local ROW_H, ROW_PAD, ICON = 26, 2, 18
     local rowList = {}
     local function Row(i)
-        if rowList[i] then
-            return rowList[i]
-        end
+        if rowList[i] then return rowList[i] end
         local widget = CreateFrame("Button", nil, bankView.side)
         widget:SetHeight(ROW_H)
         local px = CUI.PP.mult
@@ -1282,17 +1120,13 @@ if CUI_Bank then
             Repaint(bankView)
         end)
         widget:SetScript("OnEnter", function(self)
-            if not self.on then
-                self.bg:SetColorTexture(1, 1, 1, 0.06)
-            end
+            if not self.on then self.bg:SetColorTexture(1, 1, 1, 0.06) end
             if BP().bankSidebarCollapsed then
                 CUI.ShowWidgetTooltip(self, self.name .. " (" .. self.n .. ")")
             end
         end)
         widget:SetScript("OnLeave", function(self)
-            if not self.on then
-                self.bg:SetColorTexture(1, 1, 1, 0)
-            end
+            if not self.on then self.bg:SetColorTexture(1, 1, 1, 0) end
             CUI.HideWidgetTooltip()
         end)
         rowList[i] = widget
@@ -1320,9 +1154,7 @@ if CUI_Bank then
             end
             local function All()
                 entries[#entries + 1] = { key = kind, name = all, icon = iconTex, n = sum }
-                if BP().bankHideTabsInSidebar and BP().bankCategorySidebar then
-                    return
-                end
+                if BP().bankHideTabsInSidebar and BP().bankCategorySidebar then return end
                 for i, tab in ipairs(tabs or {}) do
                     if type(tab) == "table" then
                         local bagID = Enum.BagIndex[bagKey .. i]
@@ -1348,9 +1180,7 @@ if CUI_Bank then
                 One()
             end
             -- the warbank's views sit apart from the bank's
-            if first > 1 then
-                entries[first].split = true
-            end
+            if first > 1 then entries[first].split = true end
         end
         Add(
             "bank",
@@ -1412,9 +1242,7 @@ if CUI_Bank then
             row.ind:SetColorTexture(red, green, blue, 1)
             row.ind:SetShown(row.on)
             row.bg:SetColorTexture(red, green, blue, row.on and 0.1 or 0)
-            if not row.on then
-                row.bg:SetColorTexture(1, 1, 1, 0)
-            end
+            if not row.on then row.bg:SetColorTexture(1, 1, 1, 0) end
             row:Show()
             posY = posY - ROW_H - ROW_PAD
         end
@@ -1424,9 +1252,7 @@ if CUI_Bank then
     end
 
     SyncBank = function()
-        if not CUI_Bank:IsShown() then
-            return
-        end
+        if not CUI_Bank:IsShown() then return end
         if not Offline.Enabled() then
             if bankView.pick or bankView.mode then
                 SyncTitle(bankView, CUI_Bank._headerTitle, CUI_Bank._headerItemCount)
@@ -1454,9 +1280,7 @@ if CUI_Bank then
         local barFrame = mod.ListHeaderBar(CUI_Bank)
         if barFrame and barFrame:IsShown() then
             local _, _, _, _, barTop = barFrame:GetPoint(1)
-            if barTop then
-                topY = barTop
-            end
+            if barTop then topY = barTop end
         end
         Place(bankView, AltKey(bankView) and "bank" or nil, leftX or 0, -(topY or -30), bottom or 30)
     end
@@ -1464,20 +1288,14 @@ if CUI_Bank then
     hooksecurefunc(CUI_Bank, "RefreshBank", SyncBank)
     CUI_Bank:HookScript("OnShow", SyncBank)
     CUI_Bank:HookScript("OnHide", function()
-        if CUI_Bank:IsShown() then
-            return
-        end
+        if CUI_Bank:IsShown() then return end
         bankView.key, bankView.viewTab = nil, "bank"
-        if bankView.mode then
-            Place(bankView, nil)
-        end
+        if bankView.mode then Place(bankView, nil) end
     end)
     -- the live bank keeps resetting the slot count while an alt's showing
     if CUI_Bank._headerItemCount then
         hooksecurefunc(CUI_Bank._headerItemCount, "SetText", function(fontStr)
-            if bankView.painting or bankView.mode ~= "bank" or not bankView.countText then
-                return
-            end
+            if bankView.painting or bankView.mode ~= "bank" or not bankView.countText then return end
             bankView.painting = true
             fontStr:SetText(bankView.countText)
             bankView.painting = false
@@ -1492,13 +1310,9 @@ end
 function Offline.SyncButton()
     if not Offline.Enabled() then
         bagsView.key, bankView.key = nil, nil
-        if mod.GetSelection() == BANK_VIEW then
-            Inner.SetSelectedCategoryIndex(0)
-        end
+        if mod.GetSelection() == BANK_VIEW then Inner.SetSelectedCategoryIndex(0) end
     end
-    if CUI_Bags:IsVisible() then
-        CUI_Bags:RefreshInventory()
-    end
+    if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
     if CUI_Bank and CUI_Bank:IsShown() then
         CUI_Bank:RefreshBank()
     else

@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_TownMap.lua  (WoW Forever only)
 --  Town Map: service NPCs on the world map for your faction (your class's
@@ -95,31 +91,19 @@ local function Data()
 end
 
 --- The service NPCs by map, for other features (Professions' gathering trainers).
-function module.TownNPCList()
-    return Data().npcs
-end
+function module.TownNPCList() return Data().npcs end
 
-local function SameMap(map)
-    return map and (Data().same[map] or map)
-end
-local function Faction()
-    return UnitFactionGroup("player") == "Horde" and "H" or "A"
-end
+local function SameMap(map) return map and (Data().same[map] or map) end
+local function Faction() return UnitFactionGroup("player") == "Horde" and "H" or "A" end
 
 -------------------------------------------------------------------------------
 --  Pin art
 -------------------------------------------------------------------------------
-local function IsFile(art)
-    return art:find("\\", 1, true) ~= nil
-end
+local function IsFile(art) return art:find("\\", 1, true) ~= nil end
 
 local function TryArt(iconTex, art)
-    if IsFile(art) then
-        return iconTex:SetTexture(art)
-    end
-    if not C_Texture.GetAtlasInfo(art) then
-        return false
-    end
+    if IsFile(art) then return iconTex:SetTexture(art) end
+    if not C_Texture.GetAtlasInfo(art) then return false end
     iconTex:SetAtlas(art)
     return true
 end
@@ -130,9 +114,7 @@ local function SetRound(pin, round)
         pin.roundMask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         pin.roundMask:SetAllPoints(pin.icon)
     end
-    if not pin.roundMask or (pin.isRound or false) == round then
-        return
-    end
+    if not pin.roundMask or (pin.isRound or false) == round then return end
     if round then
         pin.icon:AddMaskTexture(pin.roundMask)
     else
@@ -141,9 +123,7 @@ local function SetRound(pin, round)
     pin.isRound = round
 end
 
-local function ClassIcon(token)
-    return CLASS_ICON .. token:lower():gsub("^%l", string.upper)
-end
+local function ClassIcon(token) return CLASS_ICON .. token:lower():gsub("^%l", string.upper) end
 
 local function Paint(pin, npc)
     local iconTex, kind = pin.icon, npc[3]
@@ -171,15 +151,11 @@ end
 
 local function ShowTip(pin)
     local npc = pin.npc
-    if not npc then
-        return
-    end
+    if not npc then return end
     GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
     GameTooltip:SetText(npc[4], 1, 1, 1)
     local title = (npc[5] and npc[5] ~= "") and npc[5] or CATEGORIES[npc[3]][3]
-    if title ~= npc[4] then
-        GameTooltip:AddLine(title, CludesUI.Kit.Accent())
-    end
+    if title ~= npc[4] then GameTooltip:AddLine(title, CludesUI.Kit.Accent()) end
     GameTooltip:Show()
 end
 
@@ -194,9 +170,7 @@ local function NewPin(hostFrame)
     pin.icon = pin:CreateTexture(nil, "ARTWORK")
     pin.icon:SetAllPoints()
     pin:SetScript("OnEnter", ShowTip)
-    pin:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return pin
 end
 
@@ -216,27 +190,13 @@ end
 local function Wanted(npc, faction, class, shops)
     local kind = npc[3]
     local category = CATEGORIES[kind]
-    if not category or not Get(category[1]) then
-        return false
-    end
-    if not (npc[7] or ""):find(faction, 1, true) then
-        return false
-    end
-    if kind == "mail" or kind == "spirit" then
-        return true
-    end
-    if not (shops or EVERYWHERE[kind]) then
-        return false
-    end
-    if kind == "class" and npc[6] ~= class then
-        return false
-    end
-    if kind == "stable" and class ~= "HUNTER" then
-        return false
-    end
-    if kind == "flight" and FlightsElsewhere() then
-        return false
-    end
+    if not category or not Get(category[1]) then return false end
+    if not (npc[7] or ""):find(faction, 1, true) then return false end
+    if kind == "mail" or kind == "spirit" then return true end
+    if not (shops or EVERYWHERE[kind]) then return false end
+    if kind == "class" and npc[6] ~= class then return false end
+    if kind == "stable" and class ~= "HUNTER" then return false end
+    if kind == "flight" and FlightsElsewhere() then return false end
     return true
 end
 
@@ -280,22 +240,16 @@ end
 
 local function Draw()
     Clear()
-    if not Enabled() then
-        return
-    end
+    if not Enabled() then return end
     local mapID = SameMap(WorldMapFrame:GetMapID())
-    if not mapID then
-        return
-    end
+    if not mapID then return end
     local skinData = Data()
     local faction = Faction()
     local _, class = UnitClass("player")
     local shops = not Get("capitalsOnly") or skinData.capitals[mapID]
     for _, entries in ipairs({ skinData.npcs[mapID], skinData.mail[mapID], skinData.spirit[mapID] }) do
         for _, npc in ipairs(entries or EMPTY) do
-            if Wanted(npc, faction, class, shops) then
-                Place(npc)
-            end
+            if Wanted(npc, faction, class, shops) then Place(npc) end
         end
     end
 end
@@ -311,9 +265,7 @@ local function Build()
     provider.RefreshAllData = Draw
     provider.RemoveAllData = Clear
     provider.OnCanvasScaleChanged = Rescale
-    provider.OnGlobalAlphaChanged = function(self)
-        layer:SetAlpha(self:GetMap():GetGlobalAlpha())
-    end
+    provider.OnGlobalAlphaChanged = function(self) layer:SetAlpha(self:GetMap():GetGlobalAlpha()) end
 end
 
 local function MapApply()
@@ -322,9 +274,7 @@ local function MapApply()
             WorldMapFrame:RemoveDataProvider(provider)
             added = false
         end
-        if layer then
-            Clear()
-        end
+        if layer then Clear() end
         return
     end
     if not provider then
@@ -332,9 +282,7 @@ local function MapApply()
             if not waiter then
                 waiter = CreateFrame("Frame")
                 waiter:SetScript("OnEvent", function(self, _, name)
-                    if name ~= "Blizzard_WorldMap" then
-                        return
-                    end
+                    if name ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
                     MapApply()
                 end)
@@ -348,9 +296,7 @@ local function MapApply()
         WorldMapFrame:AddDataProvider(provider)
         added = true
     end
-    if WorldMapFrame:IsShown() then
-        Draw()
-    end
+    if WorldMapFrame:IsShown() then Draw() end
 end
 
 -------------------------------------------------------------------------------
@@ -383,30 +329,22 @@ local function MiniRefresh()
         local same = SameMap(map)
         if Get("minimapMail") and Get("mail") then
             for _, s in ipairs(skinData.mail[same] or EMPTY) do
-                if (s[7] or ""):find(faction, 1, true) then
-                    spots[#spots + 1] = s
-                end
+                if (s[7] or ""):find(faction, 1, true) then spots[#spots + 1] = s end
             end
         end
         if Get("minimapSpirit") and Get("spirit") then
             for _, s in ipairs(skinData.spirit[same] or EMPTY) do
-                if (s[7] or ""):find(faction, 1, true) then
-                    spots[#spots + 1] = s
-                end
+                if (s[7] or ""):find(faction, 1, true) then spots[#spots + 1] = s end
             end
         end
     end
-    if not mini and #spots == 0 then
-        return
-    end
+    if not mini and #spots == 0 then return end
     mini = mini
         or module.MinimapLayer({
             max = MINI_MAX,
             new = MiniNew,
             paint = MiniPaint,
-            xy = function(entries, index)
-                return entries[index][1] / 100, entries[index][2] / 100
-            end,
+            xy = function(entries, index) return entries[index][1] / 100, entries[index][2] / 100 end,
         })
     mini:Set(map, spots, #spots)
 end
@@ -426,9 +364,7 @@ local function MiniApply()
             miniEv:RegisterEvent(event)
         end
     end
-    if IsLoggedIn() then
-        MiniRefresh()
-    end
+    if IsLoggedIn() then MiniRefresh() end
 end
 
 local function Apply()

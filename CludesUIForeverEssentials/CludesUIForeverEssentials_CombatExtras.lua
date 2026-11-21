@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_CombatExtras.lua  (WoW Forever only)
 --  Three small combat helpers, each with its own switch:
@@ -17,9 +13,7 @@ end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local function Text(hostFrame, size)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
@@ -39,9 +33,7 @@ local T = module.Feature(
 local timerFrame, timerText, started, ticker
 
 local function TimerBuild()
-    if timerFrame then
-        return timerFrame
-    end
+    if timerFrame then return timerFrame end
     timerFrame = CreateFrame("Frame", "CludesUICombatTimer", UIParent)
     timerFrame:SetSize(80, 22)
     timerText = Text(timerFrame, 16)
@@ -55,9 +47,7 @@ local function Clock(s)
 end
 
 local function TimerTick()
-    if started then
-        timerText:SetText(Clock(GetTime() - started))
-    end
+    if started then timerText:SetText(Clock(GetTime() - started)) end
 end
 
 local timerEv = CreateFrame("Frame")
@@ -67,9 +57,7 @@ timerEv:SetScript("OnEvent", function(_, evt)
         timerText:SetTextColor(1, 1, 1)
         timerFrame:Show()
         TimerTick()
-        if ticker then
-            ticker:Cancel()
-        end
+        if ticker then ticker:Cancel() end
         ticker = C_Timer.NewTicker(0.25, TimerTick)
     elseif started then
         local length = GetTime() - started
@@ -84,9 +72,7 @@ timerEv:SetScript("OnEvent", function(_, evt)
             CludesUI.Print("|cff4cc9f0Combat:|r that fight took " .. Clock(length) .. ".")
         end
         C_Timer.After(T.Get("hold"), function()
-            if not started and not CludesUI._unlockActive then
-                timerFrame:Hide()
-            end
+            if not started and not CludesUI._unlockActive then timerFrame:Hide() end
         end)
     end
 end)
@@ -96,14 +82,10 @@ local function TimerApply()
         TimerBuild()
         timerEv:RegisterEvent("PLAYER_REGEN_DISABLED")
         timerEv:RegisterEvent("PLAYER_REGEN_ENABLED")
-        if not CludesUI._unlockActive then
-            T.Place(timerFrame)
-        end
+        if not CludesUI._unlockActive then T.Place(timerFrame) end
     else
         timerEv:UnregisterAllEvents()
-        if timerFrame then
-            timerFrame:Hide()
-        end
+        if timerFrame then timerFrame:Hide() end
     end
 end
 
@@ -119,9 +101,7 @@ T.Start(TimerApply, {
         end
         return timerFrame
     end,
-    size = function()
-        return 80, 22
-    end,
+    size = function() return 80, 22 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
@@ -137,9 +117,7 @@ local A = module.Feature(
 local alertFrame, alertText, fade
 
 local function AlertBuild()
-    if alertFrame then
-        return alertFrame
-    end
+    if alertFrame then return alertFrame end
     alertFrame = CreateFrame("Frame", "CludesUICombatAlert", UIParent)
     alertFrame:SetSize(200, 30)
     alertText = Text(alertFrame, 24)
@@ -154,9 +132,7 @@ local function AlertBuild()
     result:SetToAlpha(0)
     result:SetDuration(0.6)
     result:SetOrder(2)
-    fade:SetScript("OnFinished", function()
-        alertFrame:Hide()
-    end)
+    fade:SetScript("OnFinished", function() alertFrame:Hide() end)
     alertFrame:Hide()
     return alertFrame
 end
@@ -184,9 +160,7 @@ local function AlertApply()
         AlertBuild()
         alertEv:RegisterEvent("PLAYER_REGEN_DISABLED")
         alertEv:RegisterEvent("PLAYER_REGEN_ENABLED")
-        if not CludesUI._unlockActive then
-            A.Place(alertFrame)
-        end
+        if not CludesUI._unlockActive then A.Place(alertFrame) end
     else
         alertEv:UnregisterAllEvents()
     end
@@ -205,9 +179,7 @@ A.Start(AlertApply, {
         end
         return alertFrame
     end,
-    size = function()
-        return 200, 30
-    end,
+    size = function() return 200, 30 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
@@ -225,32 +197,22 @@ local _, class = UnitClass("player")
 local CAT_FORM = 1
 
 local function StealthWanted()
-    if not S.Enabled() then
-        return false
-    end
-    if CludesUI._unlockActive then
-        return true
-    end
+    if not S.Enabled() then return false end
+    if CludesUI._unlockActive then return true end
     if class == "DRUID" then
-        if not (GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM) then
-            return false
-        end
+        if not (GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM) then return false end
     elseif class ~= "ROGUE" then
         return false
     end
     if InCombatLockdown() or IsStealthed() or IsResting() or UnitIsDeadOrGhost("player") or IsMounted() then
         return false
     end
-    if S.Get("groupOnly") and not IsInGroup() then
-        return false
-    end
+    if S.Get("groupOnly") and not IsInGroup() then return false end
     return true
 end
 
 local function StealthBuild()
-    if stealthFrame then
-        return stealthFrame
-    end
+    if stealthFrame then return stealthFrame end
     stealthFrame = CreateFrame("Frame", "CludesUIStealthReminder", UIParent)
     stealthFrame:SetSize(180, 26)
     stealthText = Text(stealthFrame, 18)
@@ -261,9 +223,7 @@ local function StealthBuild()
 end
 
 local function StealthUpdate()
-    if stealthFrame then
-        stealthFrame:SetShown(StealthWanted())
-    end
+    if stealthFrame then stealthFrame:SetShown(StealthWanted()) end
 end
 
 local stealthEv = CreateFrame("Frame")
@@ -286,9 +246,7 @@ local function StealthApply()
         }) do
             stealthEv:RegisterEvent(event)
         end
-        if not CludesUI._unlockActive then
-            S.Place(stealthFrame)
-        end
+        if not CludesUI._unlockActive then S.Place(stealthFrame) end
     else
         stealthEv:UnregisterAllEvents()
     end
@@ -306,9 +264,7 @@ S.Start(StealthApply, {
         end
         return stealthFrame
     end,
-    size = function()
-        return 180, 26
-    end,
+    size = function() return 180, 26 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })

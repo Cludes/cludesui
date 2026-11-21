@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Secure.lua
 --
@@ -145,17 +143,13 @@ _secureHandler:SetAttribute(
 -- Register all buttons and bar frames as refs on the secure handler.
 -- Must be called AFTER SetupBar creates buttons (barButtons is populated).
 local _secureRefsReady = false
-Inner.secureRefsReadySetters[#Inner.secureRefsReadySetters + 1] = function(val)
-    _secureRefsReady = val
-end
+Inner.secureRefsReadySetters[#Inner.secureRefsReadySetters + 1] = function(val) _secureRefsReady = val end
 -- One pass over every button that exists. Lazily built bars add buttons after
 -- it has already run, so the reveal path in RefreshRuntimeVisibility clears
 -- _secureRefsReady and calls this again; indices are reassigned consistently in
 -- the same pass, and the only readers of btn._secureSlotIdx run after a full one.
 local function SecureSetupHandler_PrepareRefs()
-    if _secureRefsReady then
-        return
-    end
+    if _secureRefsReady then return end
     _secureRefsReady = true
 
     _secureHandler:SetFrameRef("uiParent", UIParent)
@@ -303,9 +297,7 @@ local function HideBlizzardBars()
     -- transition (ValidateActionBarTransition) works. MainMenuBarPageNumber is
     -- a legacy global absent on current clients; the live pager is
     -- MainActionBar's ActionBarPageNumber child, neutralised by KillPagerMouse.
-    if MainMenuBarPageNumber then
-        MainMenuBarPageNumber:Hide()
-    end
+    if MainMenuBarPageNumber then MainMenuBarPageNumber:Hide() end
 
     -- Replace ActionBar_PageUp/Down with versions that compute the target page
     -- and pass it to ChangeActionBarPage explicitly: stock versions derive it
@@ -347,12 +339,8 @@ local function HideBlizzardBars()
     -- and errors in the gamepad buttons, in combat). A global once written
     -- stays tainted, so this is decided here, once, as the bars are taken.
     if not CludesUI.PadGamepadUI() then
-        ActionBar_PageUp = function()
-            ChangeManualPage(1)
-        end
-        ActionBar_PageDown = function()
-            ChangeManualPage(-1)
-        end
+        ActionBar_PageUp = function() ChangeManualPage(1) end
+        ActionBar_PageDown = function() ChangeManualPage(-1) end
     end
 
     -- Hide status tracking bar manager (unless user wants Blizzard data bars).
@@ -441,9 +429,7 @@ end
 -- All usage is event-driven, so we resolve the reference lazily.
 local EABFlyout
 local function GetEABFlyout()
-    if not EABFlyout then
-        EABFlyout = mod.EABFlyout
-    end
+    if not EABFlyout then EABFlyout = mod.EABFlyout end
     return EABFlyout
 end
 
@@ -519,9 +505,7 @@ local function OnMixinStartFlash(button)
     button.flashing = 0
     mod.AB_SyncAttackState(button, button:GetAttribute("action"))
 end
-local function OnMixinStopFlash(button)
-    mod.AB_SyncAttackState(button, button:GetAttribute("action"), true)
-end
+local function OnMixinStopFlash(button) mod.AB_SyncAttackState(button, button:GetAttribute("action"), true) end
 
 -- Get or create an action button for a slot. Action bars (1-8) always create
 -- our own buttons, eliminating the taint surface: Blizzard's protected
@@ -531,9 +515,7 @@ end
 -- SetParent/Show (combat reload; the secure handler does those instead).
 local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
     if allButtons[slot] then
-        if not skipProtected then
-            allButtons[slot]:SetParent(hostFrame)
-        end
+        if not skipProtected then allButtons[slot]:SetParent(hostFrame) end
         return allButtons[slot]
     end
 
@@ -600,9 +582,7 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
                 fr[tail] = nil
             else
                 for key, frame in pairs(fr) do
-                    if frame == button then
-                        fr[key] = nil
-                    end
+                    if frame == button then fr[key] = nil end
                 end
             end
         end
@@ -617,9 +597,7 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
             EFD(button).cdDoneHooked = true
             button.cooldown:HookScript("OnCooldownDone", function(cd)
                 local widget = cd:GetParent()
-                if ABAR._RefreshCooldownVisuals then
-                    ABAR._RefreshCooldownVisuals(widget)
-                end
+                if ABAR._RefreshCooldownVisuals then ABAR._RefreshCooldownVisuals(widget) end
                 -- Recharge-numbers un-hide edge: a real main cooldown's END fires
                 -- no bar event, so an occluded charge countdown had no owning edge
                 -- to reappear on (it stranded hidden until the next unrelated
@@ -647,9 +625,7 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
         if not EFD(button).cdHoverHooked then
             EFD(button).cdHoverHooked = true
             button:HookScript("OnEnter", function(self)
-                if ABAR._RefreshCooldownVisuals then
-                    ABAR._RefreshCooldownVisuals(self)
-                end
+                if ABAR._RefreshCooldownVisuals then ABAR._RefreshCooldownVisuals(self) end
                 -- Same Blizzard hover repaint also resets HotKey's text color
                 -- to white (see ReapplyHotkeyColors above); OnEnter never fed
                 -- the event-driven reassert, so a custom color reverted on
@@ -679,16 +655,12 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
             local pressBindCmd = BINDING_MAP[details.key]
             pressBindCmd = pressBindCmd and (pressBindCmd .. index) or nil
             button:HookScript("PostClick", function(self, _, down)
-                if mod._EABPressPush then
-                    mod._EABPressPush(self)
-                end
+                if mod._EABPressPush then mod._EABPressPush(self) end
                 -- Publish for the CDM press mirror: click-routed keybinds never
                 -- fire the native binding commands. Global rather than ns (the
                 -- subscriber is a separate addon, like _CUAB_UpdateKeybinds).
                 local onPress = _G._CUI_OnActionButtonPress
-                if onPress then
-                    onPress(self, down, pressBindCmd)
-                end
+                if onPress then onPress(self, down, pressBindCmd) end
             end)
         end
         -- Cast Actions on Key Down is for keys. A mouse click acts on
@@ -776,39 +748,25 @@ do
     local V = EAB_VTABLE
     V.GetOverrideBarIndex = GetOverrideBarIndex
         or (C_ActionBar and C_ActionBar.GetOverrideBarIndex)
-        or function()
-            return 14
-        end
+        or function() return 14 end
     V.GetVehicleBarIndex = GetVehicleBarIndex
         or (C_ActionBar and C_ActionBar.GetVehicleBarIndex)
-        or function()
-            return 12
-        end
+        or function() return 12 end
     V.GetTempShapeshiftBarIndex = GetTempShapeshiftBarIndex
         or (C_ActionBar and C_ActionBar.GetTempShapeshiftBarIndex)
-        or function()
-            return 13
-        end
+        or function() return 13 end
     V.GetActionBarPage = GetActionBarPage
         or (C_ActionBar and C_ActionBar.GetActionBarPage)
-        or function()
-            return 1
-        end
+        or function() return 1 end
     V.HasVehicleActionBar = HasVehicleActionBar
         or (C_ActionBar and C_ActionBar.HasVehicleActionBar)
-        or function()
-            return false
-        end
+        or function() return false end
     V.HasOverrideActionBar = HasOverrideActionBar
         or (C_ActionBar and C_ActionBar.HasOverrideActionBar)
-        or function()
-            return false
-        end
+        or function() return false end
     V.HasTempShapeshiftActionBar = HasTempShapeshiftActionBar
         or (C_ActionBar and C_ActionBar.HasTempShapeshiftActionBar)
-        or function()
-            return false
-        end
+        or function() return false end
 end
 
 -- Entry points the files after this one re-import by name.

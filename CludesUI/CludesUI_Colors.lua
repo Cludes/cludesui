@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Colors.lua
 --  Class, power and resource colour defaults, the custom-colour cache and
@@ -63,12 +61,8 @@ CUI.DEFAULT_CLASS_RESOURCE_COLORS = {
 
 -- Get a class-resource color (custom override or default), keyed by resource.
 function CUI.GetClassResourceColor(key)
-    if not key then
-        return nil
-    end
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
+    if not key then return nil end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
     return CUI._colorCache.classResource[key]
 end
 
@@ -150,9 +144,7 @@ CUI._ccComposite = {}
 function CUI.ColorSectionApplyAll(section)
     local saved = CludesUIDB
     local own = saved and saved.colorsSectionApplyAll and saved.colorsSectionApplyAll[section]
-    if own ~= nil then
-        return own
-    end
+    if own ~= nil then return own end
     return not (saved and saved.colorsApplyToAllProfiles == false)
 end
 
@@ -162,9 +154,7 @@ end
 -- to the shared pointer, then the first profile, instead of the legacy table.
 function CUI.ColorSectionPullFrom(section)
     local saved = CludesUIDB
-    if not (saved and CUI.GetProfilesDB) then
-        return nil
-    end
+    if not (saved and CUI.GetProfilesDB) then return nil end
     local pdb = CUI.GetProfilesDB()
     local profiles = pdb.profiles
     local tbl = saved.colorsSectionPullFrom
@@ -182,17 +172,13 @@ function CUI.ColorSectionPullFrom(section)
 end
 
 function CUI.SetColorSectionApplyAll(section, enabled)
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     CludesUIDB.colorsSectionApplyAll = CludesUIDB.colorsSectionApplyAll or {}
     CludesUIDB.colorsSectionApplyAll[section] = enabled and true or false
 end
 
 function CUI.SetColorSectionPullFrom(section, name)
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     CludesUIDB.colorsSectionPullFrom = CludesUIDB.colorsSectionPullFrom or {}
     CludesUIDB.colorsSectionPullFrom[section] = name
 end
@@ -201,9 +187,7 @@ end
 -- then changes what renders).
 function CUI.AnyColorSectionPerProfile()
     for _, s in ipairs(CUI.COLOR_SECTIONS) do
-        if not CUI.ColorSectionApplyAll(s) then
-            return true
-        end
+        if not CUI.ColorSectionApplyAll(s) then return true end
     end
     return false
 end
@@ -212,9 +196,7 @@ end
 -- shows them): its own pointer when it has one, else the shared pointer it reads.
 -- Per-profile sections already read the active profile.
 function CUI.PointColorSectionsAt(name)
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     local tbl = CludesUIDB.colorsSectionPullFrom
     local sharedUsed = false
     for _, s in ipairs(CUI.COLOR_SECTIONS) do
@@ -226,17 +208,13 @@ function CUI.PointColorSectionsAt(name)
             end
         end
     end
-    if sharedUsed then
-        CludesUIDB.colorsPullFrom = name
-    end
+    if sharedUsed then CludesUIDB.colorsPullFrom = name end
 end
 
 -- A deleted profile drops out of every source pointer (nil = the default); returns
 -- true when one pointed at it. A renamed profile is followed (same palette tables).
 function CUI.ColorSourcesProfileRemoved(name)
-    if not CludesUIDB then
-        return false
-    end
+    if not CludesUIDB then return false end
     local hit = false
     if CludesUIDB.colorsPullFrom == name then
         CludesUIDB.colorsPullFrom = nil
@@ -254,27 +232,19 @@ function CUI.ColorSourcesProfileRemoved(name)
     return hit
 end
 function CUI.ColorSourcesProfileRenamed(oldName, newName)
-    if not CludesUIDB then
-        return
-    end
-    if CludesUIDB.colorsPullFrom == oldName then
-        CludesUIDB.colorsPullFrom = newName
-    end
+    if not CludesUIDB then return end
+    if CludesUIDB.colorsPullFrom == oldName then CludesUIDB.colorsPullFrom = newName end
     local tbl = CludesUIDB.colorsSectionPullFrom
     if tbl then
         for s, num in pairs(tbl) do
-            if num == oldName then
-                tbl[s] = newName
-            end
+            if num == oldName then tbl[s] = newName end
         end
     end
 end
 
 -- The profile whose customColors feed `section` (nil without profiles).
 function CUI._ColorSectionProfile(section)
-    if not CUI.GetProfilesDB then
-        return nil
-    end
+    if not CUI.GetProfilesDB then return nil end
     local pdb = CUI.GetProfilesDB()
     local name
     if CUI.ColorSectionApplyAll(section) then
@@ -286,12 +256,8 @@ function CUI._ColorSectionProfile(section)
 end
 
 function CUI.GetCustomColorsDB()
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
-    if not CludesUIDB.customColors then
-        CludesUIDB.customColors = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB.customColors then CludesUIDB.customColors = {} end
     local result = CUI._ccComposite
     for key, section in pairs(CUI._COLOR_SECTION_OF) do
         local prof = CUI._ColorSectionProfile(section)
@@ -317,12 +283,8 @@ end
 -- editable; global mode is editable on the source profile. No section = Class.
 function CUI.IsColorEditingLocked(section)
     section = section or "class"
-    if not (CludesUIDB and CUI.GetProfilesDB) then
-        return false
-    end
-    if not CUI.ColorSectionApplyAll(section) then
-        return false
-    end
+    if not (CludesUIDB and CUI.GetProfilesDB) then return false end
+    if not CUI.ColorSectionApplyAll(section) then return false end
     local pdb = CUI.GetProfilesDB()
     local source = CUI.ColorSectionPullFrom(section)
     return source ~= nil and source ~= (pdb.activeProfile or "Default")
@@ -365,9 +327,7 @@ function CUI.GetDarkModeDB()
             end
         end
     end
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.darkMode = CludesUIDB.darkMode or {}
     return CludesUIDB.darkMode
 end
@@ -388,8 +348,12 @@ function CUI._RebuildDarkModeCache()
     local darkDB = CUI.GetDarkModeDB()
     local def = CUI.DEFAULT_DARK_MODE
     c.fr, c.fg, c.fb, c.fa =
-        darkDB.fillR or def.fillR, darkDB.fillG or def.fillG, darkDB.fillB or def.fillB, darkDB.fillA or def.fillA
-    c.br, c.bg, c.bb, c.ba = darkDB.bgR or def.bgR, darkDB.bgG or def.bgG, darkDB.bgB or def.bgB, darkDB.bgA or def.bgA
+        darkDB.fillR or def.fillR,
+        darkDB.fillG or def.fillG,
+        darkDB.fillB or def.fillB,
+        darkDB.fillA or def.fillA
+    c.br, c.bg, c.bb, c.ba =
+        darkDB.bgR or def.bgR, darkDB.bgG or def.bgG, darkDB.bgB or def.bgB, darkDB.bgA or def.bgA
     c.gen = CUI._dmGen
 end
 
@@ -397,18 +361,14 @@ end
 -- Raid Frames; Resource Bars ignore the alpha and keep their own.
 function CUI.GetDarkModeFill()
     local c = CUI._dmCache
-    if c.gen ~= CUI._dmGen then
-        CUI._RebuildDarkModeCache()
-    end
+    if c.gen ~= CUI._dmGen then CUI._RebuildDarkModeCache() end
     return c.fr, c.fg, c.fb, c.fa
 end
 
 -- Dark Mode background colour (r, g, b, a). Same opacity rules as the fill.
 function CUI.GetDarkModeBg()
     local c = CUI._dmCache
-    if c.gen ~= CUI._dmGen then
-        CUI._RebuildDarkModeCache()
-    end
+    if c.gen ~= CUI._dmGen then CUI._RebuildDarkModeCache() end
     return c.br, c.bg, c.bb, c.ba
 end
 
@@ -444,9 +404,7 @@ function CUI._BuildColorPalette(result, defaultSet, custom, darkenPct)
     end
     if darkenPct and darkenPct > 0 then
         local f = 1 - darkenPct / 100
-        if f < 0 then
-            f = 0
-        end
+        if f < 0 then f = 0 end
         for _, col in pairs(result) do
             col.r = col.r * f
             col.g = col.g * f
@@ -461,12 +419,7 @@ function CUI._RebuildColorCache()
     local cache = CUI._colorCache
     CUI._BuildColorPalette(cache.class, CUI.CLASS_COLOR_MAP, cc and cc.class, dm and dm.classDarken)
     CUI._BuildColorPalette(cache.classRaw, CUI.CLASS_COLOR_MAP, cc and cc.class, 0)
-    CUI._BuildColorPalette(
-        cache.power,
-        CUI.DEFAULT_POWER_COLORS,
-        cc and cc.power,
-        dm and dm.powerDarken
-    )
+    CUI._BuildColorPalette(cache.power, CUI.DEFAULT_POWER_COLORS, cc and cc.power, dm and dm.powerDarken)
     CUI._BuildColorPalette(
         cache.classResource,
         CUI.DEFAULT_CLASS_RESOURCE_COLORS,
@@ -507,9 +460,7 @@ end
 -- Modules register a callback re-reading the dark palette and repainting their frames; RefreshDarkMode() runs them all and re-pushes class/power colours via ApplyColorsToOUF.
 CUI._darkModeRefreshers = CUI._darkModeRefreshers or {}
 function CUI.RegisterDarkModeRefresh(func)
-    if type(func) == "function" then
-        CUI._darkModeRefreshers[#CUI._darkModeRefreshers + 1] = func
-    end
+    if type(func) == "function" then CUI._darkModeRefreshers[#CUI._darkModeRefreshers + 1] = func end
 end
 function CUI.RefreshDarkMode()
     -- Darken amounts feed the colour cache; drop it so refreshers + the OUF push below resolve freshly darkened colours.
@@ -517,9 +468,7 @@ function CUI.RefreshDarkMode()
     for _, func in ipairs(CUI._darkModeRefreshers) do
         pcall(func)
     end
-    if CUI.ApplyColorsToOUF then
-        CUI.ApplyColorsToOUF()
-    end
+    if CUI.ApplyColorsToOUF then CUI.ApplyColorsToOUF() end
 end
 
 -- Global Dark Mode providers. Each module stores its own flag in its own DB shape (UF
@@ -545,9 +494,7 @@ function CUI.IsDarkModeAllOn(filter)
         if not filter or filter(p) then
             matched = true
             local success, enabled = pcall(p.isOn)
-            if not success or not enabled then
-                return false
-            end
+            if not success or not enabled then return false end
         end
     end
     return matched
@@ -557,43 +504,33 @@ end
 function CUI.SetDarkModeAll(enabled, filter)
     enabled = enabled and true or false
     for _, p in ipairs(CUI._darkModeToggles) do
-        if not filter or filter(p) then
-            pcall(p.setOn, enabled)
-        end
+        if not filter or filter(p) then pcall(p.setOn, enabled) end
     end
     CUI.RefreshDarkMode()
     -- Dark Mode feeds the conditional-override "darkmode" condition. Deliberately here, NOT in
     -- RefreshDarkMode: SetDarkModeAll is only called by the Colors page's Dark Mode dropdown
     -- (pure user action), while RefreshDarkMode is also reached from the profile-apply pipeline
     -- where an extra recheck could interleave with the conditions establish choreography (cheap no-op with no darkmode group; self-defers in combat).
-    if CUI.Conditions_Recheck then
-        CUI.Conditions_Recheck()
-    end
+    if CUI.Conditions_Recheck then CUI.Conditions_Recheck() end
 end
 
 -- Class color (custom or default) with Class Color Darken baked in by the cache, so every consumer gets the adjusted colour with no per-module logic. Unknown -> white.
 function CUI.GetClassColor(classToken)
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
     return CUI._colorCache.class[classToken] or CUI._COLOR_WHITE
 end
 
 -- Class color (custom or default) WITHOUT Class Color Darken, for accents and cursors
 -- rather than bars. Unknown -> nil.
 function CUI.GetRawClassColor(classToken)
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
     return CUI._colorCache.classRaw[classToken]
 end
 
 -- Class token from a localized class name (friend list entries carry only that).
 -- Male and female forms both map; built once on first use. Unknown or secret -> nil.
 function CUI.ClassTokenFromLocalized(name)
-    if type(name) ~= "string" or issecretvalue(name) then
-        return nil
-    end
+    if type(name) ~= "string" or issecretvalue(name) then return nil end
     local map = CUI._classByLocalName
     if not map then
         map = {}
@@ -664,42 +601,26 @@ end
 
 -- Created on the first restricted lookup, so a profile that never needs one never registers it.
 function CUI._EnsureRestrictedRosterWatcher()
-    if CUI._restrictedRosterWatcher then
-        return
-    end
+    if CUI._restrictedRosterWatcher then return end
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-    frame:SetScript("OnEvent", function()
-        CUI._restrictedCandidatesDirty = true
-    end)
+    frame:SetScript("OnEvent", function() CUI._restrictedCandidatesDirty = true end)
     CUI._restrictedRosterWatcher = frame
 end
 
 function CUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
-    if not next(CUI._colorCache.classCustomized) then
-        return false
-    end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
+    if not next(CUI._colorCache.classCustomized) then return false end
     local pick = C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean
-    if not (pick and C_ClassColor and C_ClassColor.GetClassColor) then
-        return false
-    end
+    if not (pick and C_ClassColor and C_ClassColor.GetClassColor) then return false end
     CUI._EnsureRestrictedRosterWatcher()
-    if CUI._restrictedCandidatesDirty then
-        CUI._RebuildRestrictedCandidates()
-    end
+    if CUI._restrictedCandidatesDirty then CUI._RebuildRestrictedCandidates() end
     local candidates = CUI._restrictedCandidates
     local total = #candidates
     -- Nobody around wears a customised colour: let the caller take Blizzard's shade unchanged.
-    if total == 0 then
-        return false
-    end
+    if total == 0 then return false end
     local base = C_ClassColor.GetClassColor(secretClassToken)
-    if not base then
-        return false
-    end
+    if not base then return false end
     local red, green, blue = base.r, base.g, base.b
     local canCompare = C_Secrets and C_Secrets.CanCompareUnitTokens
     for idx = 1, total, 2 do
@@ -723,36 +644,28 @@ end
 
 -- Get power color (cached, darken baked in). Returns nil for unknown keys.
 function CUI.GetPowerColor(powerKey)
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
     return CUI._colorCache.power[powerKey]
 end
 
 -- Multiplier (0-1) for power-COLORED bar backgrounds (Dark Mode "BG Power Color
 -- Darken"); stacks on the consumer's resolved power color. 1 = identity (slider at 0).
 function CUI.GetPowerBgDarkenFactor()
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
     return CUI._powerBgDarkenFactor
 end
 
 -- Get resource color (cached, darken baked in). Returns nil for unknown keys.
 -- Shares Resource Color Darken with GetClassResourceColor.
 function CUI.GetResourceColor(classToken)
-    if CUI._colorCacheDirty then
-        CUI._RebuildColorCache()
-    end
+    if CUI._colorCacheDirty then CUI._RebuildColorCache() end
     return CUI._colorCache.resource[classToken]
 end
 
 -- Reset a specific power color
 function CUI.ResetPowerColor(powerKey)
     local saved = CUI.GetCustomColorsDB()
-    if saved.power then
-        saved.power[powerKey] = nil
-    end
+    if saved.power then saved.power[powerKey] = nil end
     CUI.InvalidateColorCache()
 end
 
@@ -792,28 +705,20 @@ function CUI.ResolveUnitPowerColor(unitToken)
         if override ~= nil then
             local overrideKey = CUI.POWER_ENUM_TO_KEY[override]
             local overrideInfo = overrideKey and CUI.GetPowerColor(overrideKey)
-            if overrideInfo then
-                return overrideInfo.r, overrideInfo.g, overrideInfo.b
-            end
+            if overrideInfo then return overrideInfo.r, overrideInfo.g, overrideInfo.b end
         end
     end
     local pType, pToken, altR, altG, altB = UnitPowerType(unitToken)
     local details = CUI.GetPowerColor(pToken)
-    if details then
-        return details.r, details.g, details.b
-    end
+    if details then return details.r, details.g, details.b end
     if altR then
         -- UnitPowerType may hand back 0-255 or 0-1 ranges; normalize (per oUF).
-        if altR > 1 or altG > 1 or altB > 1 then
-            return altR / 255, altG / 255, altB / 255
-        end
+        if altR > 1 or altG > 1 or altB > 1 then return altR / 255, altG / 255, altB / 255 end
         return altR, altG, altB
     end
     local key = CUI.POWER_ENUM_TO_KEY[pType]
     details = key and CUI.GetPowerColor(key)
-    if details then
-        return details.r, details.g, details.b
-    end
+    if details then return details.r, details.g, details.b end
     return nil
 end
 
@@ -827,9 +732,7 @@ function CUI.SyncUFColors()
     CUI.InvalidateColorCache()
     -- NEVER modify _G.RAID_CLASS_COLORS: taint.
     local colors = CUI._UFColors
-    if not colors then
-        return
-    end
+    if not colors then return end
     if colors.class then
         for classToken, _ in pairs(CLASS_COLOR_MAP) do
             local classColor = CUI.GetClassColor(classToken)
@@ -860,69 +763,45 @@ function CUI.ApplyColorsToOUF()
     -- Pull Colors From, profile switches).
     -- 1. The unit-frame engine's shared color objects, then a repaint of its frames.
     CUI.SyncUFColors()
-    if CUI._UFColors and CUI._UFEngineForceAll then
-        CUI._UFEngineForceAll("ForceUpdate")
-    end
-    if CUI._UFRecolorAllTexts then
-        CUI._UFRecolorAllTexts()
-    end
+    if CUI._UFColors and CUI._UFEngineForceAll then CUI._UFEngineForceAll("ForceUpdate") end
+    if CUI._UFRecolorAllTexts then CUI._UFRecolorAllTexts() end
     -- 3. Refresh nameplates (enemy + friendly)
     local ns_NP = _G.CludesNameplates_NS
     if ns_NP then
         if ns_NP.plates then
             for _, backing in pairs(ns_NP.plates) do
-                if backing.UpdateHealthColor then
-                    backing:UpdateHealthColor()
-                end
+                if backing.UpdateHealthColor then backing:UpdateHealthColor() end
             end
         end
         -- Friendly full plates repaint through the module, which respects Class
         -- Colored Health Bar being off and repaints class-coloured names and
         -- guild lines too.
-        if ns_NP.RefreshFriendlyColors then
-            ns_NP.RefreshFriendlyColors(true)
-        end
+        if ns_NP.RefreshFriendlyColors then ns_NP.RefreshFriendlyColors(true) end
     end
     -- 4. Refresh raid frames
     local ERF = _G.CludesUIRaidFrames
-    if ERF and ERF.UpdateAllFrames then
-        ERF:UpdateAllFrames()
-    end
+    if ERF and ERF.UpdateAllFrames then ERF:UpdateAllFrames() end
     -- 5. Refresh action bar borders (class-colored borders read RAID_CLASS_COLORS)
-    local success, ABAR = pcall(function()
-        return CUI.Lite and CUI.Lite.GetAddon("CludesUIActionBars", true)
-    end)
+    local success, ABAR = pcall(
+        function() return CUI.Lite and CUI.Lite.GetAddon("CludesUIActionBars", true) end
+    )
     if success and ABAR and ABAR.ApplyBorders and not InCombatLockdown() then
         ABAR:ApplyBorders()
-        if ABAR.ApplyShapes then
-            ABAR:ApplyShapes()
-        end
+        if ABAR.ApplyShapes then ABAR:ApplyShapes() end
     end
     -- 6. Refresh damage meters (bars/text class colors)
-    if CUI._DM_RefreshColors then
-        CUI._DM_RefreshColors()
-    end
+    if CUI._DM_RefreshColors then CUI._DM_RefreshColors() end
     -- 7. A class-colored accent or cursor follows a class swatch edit; the accent
     -- re-applies only when it changed (that path redraws the options page).
     do
         local red, green, blue = CUI.ResolveActiveAccent()
         local cr, cg, cb = CUI.GetAccentColor()
-        if red ~= cr or green ~= cg or blue ~= cb then
-            CUI.RefreshAccent()
-        end
+        if red ~= cr or green ~= cg or blue ~= cb then CUI.RefreshAccent() end
     end
-    if _G._CUCL_Apply then
-        _G._CUCL_Apply()
-    end
-    if _G._CUCL_ApplyTrail then
-        _G._CUCL_ApplyTrail()
-    end
-    if _G._CUCL_ApplyGCDCircle then
-        _G._CUCL_ApplyGCDCircle()
-    end
-    if _G._CUCL_ApplyCastCircle then
-        _G._CUCL_ApplyCastCircle()
-    end
+    if _G._CUCL_Apply then _G._CUCL_Apply() end
+    if _G._CUCL_ApplyTrail then _G._CUCL_ApplyTrail() end
+    if _G._CUCL_ApplyGCDCircle then _G._CUCL_ApplyGCDCircle() end
+    if _G._CUCL_ApplyCastCircle then _G._CUCL_ApplyCastCircle() end
 end
 
 -------------------------------------------------------------------------------

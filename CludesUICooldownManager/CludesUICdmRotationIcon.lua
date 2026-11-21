@@ -1,10 +1,6 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
-if not mod.ECME then
-    return
-end
+if not mod.ECME then return end
 
 -- A display-only consumer of Blizzard's recommendation changes. No secure
 -- action button, Blizzard-frame writes, hooks, timers or polling.
@@ -47,9 +43,7 @@ mod.CDM_ROTATION_ICON_DEFAULT_POS = DEFAULT_POS
 -- Every recommendation comes from Blizzard's Assisted Highlight; WoW Forever
 -- has no assisted combat at all.
 function mod.RotationAssistAvailable()
-    if CludesUI.IS_FOREVER then
-        return false
-    end
+    if CludesUI.IS_FOREVER then return false end
     return GetCVarBool("assistedCombatHighlight") == true
 end
 
@@ -59,9 +53,7 @@ local function Settings()
 end
 
 local function SpellID(value)
-    if issecretvalue(value) or type(value) ~= "number" or value <= 0 then
-        return nil
-    end
+    if issecretvalue(value) or type(value) ~= "number" or value <= 0 then return nil end
     return value
 end
 
@@ -95,9 +87,7 @@ end
 -- SPELL_UPDATE_COOLDOWN rides the icon's show edge (Show GCD with a
 -- recommendation on screen) and is dropped again on its hide edge.
 local function ArmGCD(on)
-    if on == gcdArmed then
-        return
-    end
+    if on == gcdArmed then return end
     gcdArmed = on
     if not on then
         driver:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
@@ -126,16 +116,12 @@ local function HideIcon()
     widget:Hide()
 end
 
-local function Queue()
-    driver:Show()
-end
+local function Queue() driver:Show() end
 
 -- The show-edge sources: armed while the icon may show, dropped while Only
 -- in Combat hides it out of combat (the combat edges re-arm them).
 local function SetWatch(on)
-    if on == watching then
-        return
-    end
+    if on == watching then return end
     watching = on
     if on then
         for index = 1, #watchEvents do
@@ -157,9 +143,7 @@ end
 local function RunPass()
     -- A direct pass also consumes a queued one.
     driver:Hide()
-    if not live then
-        return
-    end
+    if not live then return end
     local conf = Settings()
     if not conf or not conf.enabled then
         HideIcon()
@@ -200,9 +184,7 @@ local function RunPass()
     end
     widget:Show()
     ArmGCD(conf.showGCD == true and spellId ~= nil)
-    if gcdArmed then
-        PaintGCD()
-    end
+    if gcdArmed then PaintGCD() end
 end
 
 local function OnEvent(self, evt)
@@ -223,9 +205,7 @@ local function OnEvent(self, evt)
 end
 
 local function PlaceIcon()
-    if not widget or CludesUI._unlockActive then
-        return
-    end
+    if not widget or CludesUI._unlockActive then return end
     local conf = Settings()
     local place = conf and conf.position or DEFAULT_POS
     widget:ClearAllPoints()
@@ -234,9 +214,7 @@ end
 
 local function OnUnlock(activeSession)
     preview = activeSession and true or false
-    if not activeSession then
-        PlaceIcon()
-    end
+    if not activeSession then PlaceIcon() end
     RunPass()
 end
 
@@ -259,12 +237,8 @@ local function RegisterMover()
             label = "Rotation Assist Icon",
             group = "Cooldown Manager",
             order = 601,
-            getFrame = function()
-                return widget
-            end,
-            getSize = function()
-                return widget:GetWidth(), widget:GetHeight()
-            end,
+            getFrame = function() return widget end,
+            getSize = function() return widget:GetWidth(), widget:GetHeight() end,
             noResize = true,
             noAnchorTo = true,
             noAnchorTarget = true,
@@ -282,9 +256,7 @@ local function RegisterMover()
             end,
             clearPos = function()
                 local conf = Settings()
-                if conf then
-                    conf.position = nil
-                end
+                if conf then conf.position = nil end
             end,
             applyPos = PlaceIcon,
         }),
@@ -296,9 +268,7 @@ end
 -- the highlight-state callback stays armed (no events, mover or listener).
 -- Going live arms the combat edges; the next Update arms the rest.
 local function SetLive(on)
-    if on == live then
-        return
-    end
+    if on == live then return end
     live = on
     if on then
         inCombat = (InCombatLockdown() or UnitAffectingCombat("player")) and true or false
@@ -353,22 +323,16 @@ end
 
 function mod.RefreshRotationAssistIcon()
     -- Kept defined on WoW Forever (called unguarded), where it does nothing.
-    if CludesUI.IS_FOREVER then
-        return
-    end
+    if CludesUI.IS_FOREVER then return end
     local conf = Settings()
     if not conf or not conf.enabled then
-        if not isActive then
-            return
-        end
+        if not isActive then return end
         isActive = false
         EventRegistry:UnregisterCallback(CB_STATE, driver)
         SetLive(false)
         return
     end
-    if not widget then
-        CreateIcon()
-    end
+    if not widget then CreateIcon() end
     local size = conf.iconSize or 48
     CludesUI.PP.Size(widget, size, size)
     mod.StyleCDMKeybind(keybind, conf, textOverlay, CludesUI.PP.mult, mod.GetCDMFont())

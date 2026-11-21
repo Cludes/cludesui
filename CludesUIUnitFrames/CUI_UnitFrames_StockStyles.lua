@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_StockStyles.lua
 --
@@ -19,9 +17,7 @@ local frameList, GetSettingsForUnit, UnsnapTex = Inner.frames, Inner.GetSettings
 local CastbarUnlockKey, CreatePowerBar, ApplyFramePosition =
     Inner.CastbarUnlockKey, Inner.CreatePowerBar, Inner.ApplyFramePosition
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 --  Stock styles (Global Settings > Style). A stock unit frame look on our own
@@ -448,9 +444,7 @@ end
 -- badge's. Built once, when the variant latches.
 function mod.UF_ForeverKit()
     local k = mod.UF_KITS.forever
-    if k then
-        return k
-    end
+    if k then return k end
     k = CopyTable(mod.UF_KITS.blizzard)
     local circle = "UI-HUD-UnitFrame-SmallCircle"
     local P, T, M = k.player, k.target, k.mini
@@ -519,34 +513,24 @@ function mod.UF_Style()
     local val = mod._ufStyle
     if val == nil then
         local profile = saved and saved.profile
-        if not profile then
-            return "cui"
-        end
+        if not profile then return "cui" end
         val = (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
         mod._ufStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
         -- flag set together with the Blizzard one.
         mod._ufForever = val == "blizzard" and CludesUI.IS_FOREVER == true and profile.useForeverStyle == true
-        if val == "classic" then
-            mod.UF_BLIZZ = mod.UF_KITS.classic
-        end
-        if mod._ufForever then
-            mod.UF_BLIZZ = mod.UF_ForeverKit()
-        end
+        if val == "classic" then mod.UF_BLIZZ = mod.UF_KITS.classic end
+        if mod._ufForever then mod.UF_BLIZZ = mod.UF_ForeverKit() end
     end
     return val
 end
 -- Stock-art mode: a kit dictates the geometry (true for both stock styles).
-function mod.UF_Blizz()
-    return mod.UF_Style() ~= "cui"
-end
+function mod.UF_Blizz() return mod.UF_Style() ~= "cui" end
 -- WoW Forever variant: UF_Style() still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces. False off Forever.
 function mod.UF_Forever()
-    if mod._ufStyle == nil then
-        mod.UF_Style()
-    end
+    if mod._ufStyle == nil then mod.UF_Style() end
     return mod._ufForever == true
 end
 -- The class resource style that builds. WoW Forever outside its own style
@@ -560,13 +544,9 @@ if CludesUI.IS_FOREVER == true then
     -- other on a shared profile. The key to write, or nil when the shared one
     -- applies.
     function mod.UF_RogueCPKey()
-        if mod.UF_Blizz() then
-            return nil
-        end
+        if mod.UF_Blizz() then return nil end
         local _, class = UnitClass("player")
-        if class ~= "ROGUE" then
-            return nil
-        end
+        if class ~= "ROGUE" then return nil end
         return "foreverRogueClassPowerStyle"
     end
     -- The player's built style: for a rogue it replaces the argument with the
@@ -577,9 +557,7 @@ if CludesUI.IS_FOREVER == true then
             local p = saved and saved.profile and saved.profile.player
             style = (p and p[rogueKey]) or "none"
         end
-        if style == "blizzard" and not mod.UF_Forever() then
-            return "modern"
-        end
+        if style == "blizzard" and not mod.UF_Forever() then return "modern" end
         return style
     end
 end
@@ -588,13 +566,9 @@ end
 -- CludesUI style. Read from the saved keys, like the options gate, so a
 -- saved true stands down under a stock style or a Solid border.
 function mod.UF_CustomBorderOn(cfg)
-    if mod.UF_Blizz() then
-        return false
-    end
+    if mod.UF_Blizz() then return false end
     local texture = cfg and cfg.borderTexture
-    if texture == nil or texture == "" or texture == "solid" then
-        return false
-    end
+    if texture == nil or texture == "" or texture == "solid" then return false end
     return (cfg.borderSize or 1) > 0
 end
 -- Blizzard Style's coloured type strip over the target-family name ("Blizz
@@ -608,13 +582,9 @@ end
 -- style): no power bar, the health bar taking the power track too. Unset, a
 -- saved Bar Position of None reads as hidden, as it drew no bar there before.
 function mod.UF_StockHidesPower(cfg)
-    if not cfg then
-        return false
-    end
+    if not cfg then return false end
     local val = cfg.blizzHidePower
-    if val == nil then
-        return cfg.powerPosition == "none"
-    end
+    if val == nil then return cfg.powerPosition == "none" end
     return val == true
 end
 -- The main frames (player, target, focus), known by their settings tables.
@@ -627,9 +597,7 @@ end
 -- its Bar Position says, or is not drawn while Hide Power Bar is on; every
 -- other frame, and every frame under the CludesUI look, reads its own.
 function mod.UF_PowerPos(cfg)
-    if not cfg then
-        return "below"
-    end
+    if not cfg then return "below" end
     if mod.UF_Blizz() and mod.UF_IsMainSettings(cfg) then
         return mod.UF_StockHidesPower(cfg) and "none" or "below"
     end
@@ -643,13 +611,9 @@ end
 -- end apart gives its own (G.mergedHealth: the retail target art).
 mod._ufMergedMemo = setmetatable({}, { __mode = "k" })
 function mod.UF_MergedHealth(Geom)
-    if Geom.mergedHealth then
-        return Geom.mergedHealth
-    end
+    if Geom.mergedHealth then return Geom.mergedHealth end
     local m = mod._ufMergedMemo[Geom]
-    if m then
-        return m
-    end
+    if m then return m end
     local H, P = Geom.health, Geom.power
     local k = (P.y + P.h - H.y) / H.h
     m = {}
@@ -657,9 +621,7 @@ function mod.UF_MergedHealth(Geom)
         m[key] = val
     end
     m.h = H.h * k
-    if H.my then
-        m.my = H.my * k
-    end
+    if H.my then m.my = H.my * k end
     if H.mh then
         m.mh = H.mh * k
     elseif H.mask then
@@ -701,9 +663,7 @@ end
 -- in a Forever-only slot (p._foreverStyleSlots): the other looks' values are
 -- banked on the way into the variant and come back on the way out.
 function mod.UF_SeedForever(profile)
-    if not (profile and profile.player) or profile.foreverClassPowerSeeded then
-        return
-    end
+    if not (profile and profile.player) or profile.foreverClassPowerSeeded then return end
     profile.foreverClassPowerSeeded = true
     profile.player.classPowerStyle = "blizzard"
     profile.player.showClassPowerBar = true
@@ -711,12 +671,8 @@ end
 -- `isForever`: the WoW Forever variant of Blizzard Style, which also runs
 -- its own seed (UF_SeedForever).
 function mod.UF_SeedStock(profile, styleKey, isForever)
-    if not profile then
-        return
-    end
-    if isForever then
-        mod.UF_SeedForever(profile)
-    end
+    if not profile then return end
+    if isForever then mod.UF_SeedForever(profile) end
     if not profile.stockCastTextureSeeded then
         profile.stockCastTextureSeeded = true
         profile.castBarTexture = "blizzard"
@@ -730,9 +686,7 @@ function mod.UF_SeedStock(profile, styleKey, isForever)
         local units = mod.UF_TEXTURE_UNITS
         for index = 1, #units do
             local cfg = profile[units[index]]
-            if type(cfg) == "table" then
-                cfg.healthBarTexture = nil
-            end
+            if type(cfg) == "table" then cfg.healthBarTexture = nil end
         end
     end
     local iconTex = mod.UF_STOCK_COMBAT[styleKey]
@@ -743,9 +697,7 @@ function mod.UF_SeedStock(profile, styleKey, isForever)
     end
 end
 function mod.UF_AtlasOK(name)
-    if not name then
-        return false
-    end
+    if not name then return false end
     local memo = mod._ufAtlasMemo
     local val = memo[name]
     if val == nil then
@@ -760,15 +712,11 @@ end
 -- instead of painting blank.
 function mod.UF_ArtOK(a)
     if type(a) == "table" then
-        if not a.file then
-            return false
-        end
+        if not a.file then return false end
         local success = a._ok
         if success == nil then
             success = true
-            if GetFileIDFromPath then
-                success = GetFileIDFromPath(a.file) and true or false
-            end
+            if GetFileIDFromPath then success = GetFileIDFromPath(a.file) and true or false end
             a._ok = success
         end
         return success
@@ -776,9 +724,7 @@ function mod.UF_ArtOK(a)
     return mod.UF_AtlasOK(a)
 end
 function mod.UF_ArtName(a)
-    if type(a) == "table" then
-        return a.key or a.file or ""
-    end
+    if type(a) == "table" then return a.key or a.file or "" end
     return a or ""
 end
 -- Kit atlas paints in place of tex:SetAtlas / C_Texture.GetAtlasInfo: the
@@ -788,24 +734,18 @@ end
 -- Forever look too).
 -- Plain textures only (never a mask or a StatusBar fill).
 function mod.UF_StockAtlas(texture, name, ...)
-    if mod.UF_Forever() then
-        return texture:SetAtlas(name, ...)
-    end
+    if mod.UF_Forever() then return texture:SetAtlas(name, ...) end
     return CludesUI.StockAtlas(texture, name, ...)
 end
 function mod.UF_StockAtlasInfo(name)
-    if mod.UF_Forever() then
-        return C_Texture.GetAtlasInfo(name)
-    end
+    if mod.UF_Forever() then return C_Texture.GetAtlasInfo(name) end
     return CludesUI.StockAtlasInfo(name)
 end
 -- Bar and portrait masks the same way: the stock looks take the retail
 -- masks on the Forever client (it redrew them under the retail names), the
 -- WoW Forever look the client's own.
 function mod.UF_StockMask(maskTex, name, useSize)
-    if mod.UF_Forever() then
-        return maskTex:SetAtlas(name, useSize)
-    end
+    if mod.UF_Forever() then return maskTex:SetAtlas(name, useSize) end
     return CludesUI.StockMask(maskTex, name, useSize)
 end
 -- A kit bar's mask on `bar`: the stock mask at its own size, or at the size
@@ -830,19 +770,13 @@ end
 -- Paints an art entry on a texture; useSize takes the entry's own size.
 function mod.UF_SetArt(texture, a, useSize)
     if type(a) == "table" then
-        if not mod.UF_ArtOK(a) then
-            return false
-        end
+        if not mod.UF_ArtOK(a) then return false end
         texture:SetTexture(a.file)
         texture:SetTexCoord(a.l or 0, a.r or 1, a.t or 0, a.b or 1)
-        if useSize and a.w and a.h then
-            texture:SetSize(a.w, a.h)
-        end
+        if useSize and a.w and a.h then texture:SetSize(a.w, a.h) end
         return true
     end
-    if not mod.UF_AtlasOK(a) then
-        return false
-    end
+    if not mod.UF_AtlasOK(a) then return false end
     mod.UF_StockAtlas(texture, a, useSize)
     return true
 end
@@ -854,9 +788,7 @@ end
 function mod.UF_SeatClassicCastFrame(texture, barFrame, hgt, pct)
     local CK = mod.UF_BLIZZ.cast
     local CF = CludesUI.ClassicFrame
-    if not (texture and barFrame and CK and CF) then
-        return
-    end
+    if not (texture and barFrame and CK and CF) then return end
     if not mod.UF_ArtOK(CK.frame) then
         texture:Hide()
         return
@@ -873,27 +805,17 @@ end
 -- First existing atlas of a candidate list (nil when none is available).
 function mod.UF_BlizzAtlas(entries)
     for index = 1, #entries do
-        if mod.UF_AtlasOK(entries[index]) then
-            return entries[index]
-        end
+        if mod.UF_AtlasOK(entries[index]) then return entries[index] end
     end
     return nil
 end
 -- Frame kind: the player art, the target/focus/boss art, the pet art where
 -- the kit has one, or the small target-of-target / focus-target art.
 function mod.UF_BlizzKind(unitToken)
-    if not unitToken then
-        return nil
-    end
-    if unitToken == "player" then
-        return "player"
-    end
-    if unitToken == "target" or unitToken == "focus" or unitToken:match("^boss%d$") then
-        return "target"
-    end
-    if unitToken == "pet" and mod.UF_BLIZZ.pet then
-        return "pet"
-    end
+    if not unitToken then return nil end
+    if unitToken == "player" then return "player" end
+    if unitToken == "target" or unitToken == "focus" or unitToken:match("^boss%d$") then return "target" end
+    if unitToken == "pet" and mod.UF_BLIZZ.pet then return "pet" end
     return "mini"
 end
 -- Portrait Side keeps working. Each art is drawn for one side (G.side). A
@@ -907,9 +829,7 @@ end
 function mod.UF_BlizzResolve(widget, unitToken)
     unitToken = unitToken or widget._cuiBaseUnit or widget._cuiUnit
     local kind = mod.UF_BlizzKind(unitToken)
-    if not kind then
-        return nil
-    end
+    if not kind then return nil end
     local native = mod.UF_BLIZZ[kind]
     local edgeSide = mod.UF_BlizzSide(GetSettingsForUnit(unitToken), native)
     local Geom, mirror = native, false
@@ -928,9 +848,7 @@ function mod.UF_BlizzResolve(widget, unitToken)
     return Geom, mirror
 end
 function mod.UF_BlizzGeom(widget)
-    if not widget then
-        return nil
-    end
+    if not widget then return nil end
     return widget._blizzGeom or mod.UF_BlizzResolve(widget)
 end
 -- Visible art edges under the style: the frame is the stock box, whose art is
@@ -940,17 +858,11 @@ end
 -- frame's units -- or nil while the style is off. A mirrored small frame
 -- swaps left and right with its art.
 function mod.UF_BlizzVis(widget)
-    if not widget or not mod.UF_Blizz() then
-        return nil
-    end
+    if not widget or not mod.UF_Blizz() then return nil end
     local Geom = mod.UF_BlizzGeom(widget)
     local val = Geom and Geom.vis
-    if not val then
-        return nil
-    end
-    if widget._blizzMirror then
-        return val.r, val.l, val.t, val.b
-    end
+    if not val then return nil end
+    if widget._blizzMirror then return val.r, val.l, val.t, val.b end
     return val.l, val.r, val.t, val.b
 end
 -- The aura block: an invisible frame spanning the stock box's width from the
@@ -985,9 +897,7 @@ function mod.UF_LayoutAspectOK()
                 and Enum.ForbiddenAspect
                 and Enum.ForbiddenAspect.UntrustedLayoutScriptExecution
             local maskTex = probe.GetForbiddenAspects and probe:GetForbiddenAspects()
-            if wanted and type(maskTex) == "number" and bit.band(maskTex, wanted) ~= 0 then
-                val = true
-            end
+            if wanted and type(maskTex) == "number" and bit.band(maskTex, wanted) ~= 0 then val = true end
             probe:Hide()
         end
         mod._ufLayoutAspectOK = val
@@ -1005,12 +915,8 @@ function mod.UF_CastbarAspectTemplate(unitToken)
 end
 function mod.UF_BlizzAuraBlock(widget)
     local blk = widget and widget._blizzAuraBlock
-    if blk then
-        return blk
-    end
-    if not mod.UF_BlizzVis(widget) then
-        return nil
-    end
+    if blk then return blk end
+    if not mod.UF_BlizzVis(widget) then return nil end
     if mod.UF_LayoutAspectOK() then
         blk = CreateFrame("Frame", nil, widget, mod.UF_LAYOUT_ASPECT_TEMPLATE)
     else
@@ -1028,9 +934,7 @@ end
 -- agrees with them keeps the rect from being over-constrained.
 function mod.UF_BlizzAuraBlockBottom(widget, rel, relPoint, posX)
     local blk = widget and widget._blizzAuraBlock
-    if not blk then
-        return
-    end
+    if not blk then return end
     local _, _, _, b = mod.UF_BlizzVis(widget)
     b = b or 0
     blk:ClearAllPoints()
@@ -1080,9 +984,7 @@ CludesUI._GetAnchorTargetExtent = function(targetKey, edgeSide)
         end
     end
     local previous = mod._ufPrevAnchorExtent
-    if previous then
-        return previous(targetKey, edgeSide)
-    end
+    if previous then return previous(targetKey, edgeSide) end
     return nil
 end
 -- Follow provider for the unlock anchor system: a unit's own cast bar linked
@@ -1104,14 +1006,10 @@ CludesUI._GetAnchorFollowFrame = function(childKey, targetKey, edgeSide)
         -- Only a holder created with the layout aspect may hang off the block.
         local frame = frameList[targetKey]
         local holderFrame = frame and frame.Castbar and frame.Castbar:GetParent()
-        if holderFrame and holderFrame._blizzAspect then
-            return mod.UF_BlizzAuraBlock(frame)
-        end
+        if holderFrame and holderFrame._blizzAspect then return mod.UF_BlizzAuraBlock(frame) end
     end
     local previous = mod._ufPrevAnchorFollow
-    if previous then
-        return previous(childKey, targetKey, edgeSide)
-    end
+    if previous then return previous(childKey, targetKey, edgeSide) end
     return nil
 end
 
@@ -1121,18 +1019,14 @@ end
 -- saved. Identity at scale 1, which is every frame outside the style.
 function mod.UF_ScaledOffsets(fr, posX, posY)
     local s = fr and fr:GetScale() or 1
-    if s ~= 1 and s > 0 and posX and posY then
-        return posX / s, posY / s
-    end
+    if s ~= 1 and s > 0 and posX and posY then return posX / s, posY / s end
     return posX, posY
 end
 
 -- Boss frames' Vertical Spacing: the top-to-top step between boss 2..5 and
 -- the one before. Stack Direction alone sets the sign, so a negative value
 -- saved while the slider allowed one stacks the same way as its positive.
-function mod.UF_BossSpacing()
-    return math.abs(saved.profile.bossSpacing or 80)
-end
+function mod.UF_BossSpacing() return math.abs(saved.profile.bossSpacing or 80) end
 
 mod._ufMirrorPoint = {
     TOPLEFT = "TOPRIGHT",
@@ -1162,17 +1056,13 @@ function mod.UF_BlizzSide(prefs, Geom)
     elseif edgeSide == "insideright" then
         edgeSide = "right"
     end
-    if edgeSide ~= "left" and edgeSide ~= "right" then
-        edgeSide = Geom.side
-    end
+    if edgeSide ~= "left" and edgeSide ~= "right" then edgeSide = Geom.side end
     return edgeSide
 end
 
 -- Re-seat a mask on a fill (AddMaskTexture is additive, so drop first).
 function mod.UF_SetMask(texture, maskTex)
-    if not texture or not maskTex then
-        return
-    end
+    if not texture or not maskTex then return end
     pcall(texture.RemoveMaskTexture, texture, maskTex)
     texture:AddMaskTexture(maskTex)
 end
@@ -1185,9 +1075,7 @@ end
 -- a re-apply can never leave a bar unmasked.
 function mod.UF_ApplyBlizzBarArt(widget)
     local Geom = mod.UF_BlizzGeom(widget)
-    if not Geom then
-        return
-    end
+    if not Geom then return end
     local mirror = widget._blizzMirror
     local healthBar = widget.Health
     if healthBar then
@@ -1215,12 +1103,8 @@ function mod.UF_ApplyBlizzBarArt(widget)
         if not mirror and mod.UF_AtlasOK(Geom.health.mask) then
             mod.UF_SeatBarMask(maskTex, healthBar, HB)
             mod.UF_SetMask(fillTex, maskTex)
-            if healthBar.bg then
-                mod.UF_SetMask(healthBar.bg, maskTex)
-            end
-            if healthBar._cuiBgTex then
-                mod.UF_SetMask(healthBar._cuiBgTex, maskTex)
-            end -- Textured Background layer
+            if healthBar.bg then mod.UF_SetMask(healthBar.bg, maskTex) end
+            if healthBar._cuiBgTex then mod.UF_SetMask(healthBar._cuiBgTex, maskTex) end -- Textured Background layer
             mod.UF_BlizzBarShadow(healthBar, maskTex, HB.h)
             -- Absorb fills ride the same rounded ends.
             for index = 1, 5 do
@@ -1229,38 +1113,28 @@ function mod.UF_ApplyBlizzBarArt(widget)
                     mod.UF_SetMask(scrollBar:GetStatusBarTexture(), maskTex)
                 end
             end
-            if hp then
-                hp._blizzMaskOn = true
-            end
+            if hp then hp._blizzMaskOn = true end
         else
             -- Mirrored small frame (or no mask art): plain fills.
             if maskTex then
-                if fillTex then
-                    pcall(fillTex.RemoveMaskTexture, fillTex, maskTex)
-                end
-                if healthBar.bg then
-                    pcall(healthBar.bg.RemoveMaskTexture, healthBar.bg, maskTex)
-                end
+                if fillTex then pcall(fillTex.RemoveMaskTexture, fillTex, maskTex) end
+                if healthBar.bg then pcall(healthBar.bg.RemoveMaskTexture, healthBar.bg, maskTex) end
                 if healthBar._cuiBgTex then
                     pcall(healthBar._cuiBgTex.RemoveMaskTexture, healthBar._cuiBgTex, maskTex)
                 end
                 for index = 1, #barList do
                     local scrollBar = barList[index]
-                    local tbl = scrollBar and scrollBar.GetStatusBarTexture and scrollBar:GetStatusBarTexture()
-                    if tbl then
-                        pcall(tbl.RemoveMaskTexture, tbl, maskTex)
-                    end
+                    local tbl = scrollBar
+                        and scrollBar.GetStatusBarTexture
+                        and scrollBar:GetStatusBarTexture()
+                    if tbl then pcall(tbl.RemoveMaskTexture, tbl, maskTex) end
                 end
             end
-            if hp then
-                hp._blizzMaskOn = nil
-            end
+            if hp then hp._blizzMaskOn = nil end
             mod.UF_BlizzBarShadow(healthBar, nil, HB.h)
         end
         -- Heal prediction segments take the shape too (Overheal 0 only).
-        if hp and hp._predMy then
-            mod.UF_HealPredMasks(hp)
-        end
+        if hp and hp._predMy then mod.UF_HealPredMasks(hp) end
     end
     local powerBar = widget.Power
     if powerBar then
@@ -1276,16 +1150,12 @@ function mod.UF_ApplyBlizzBarArt(widget)
                 end
                 mod.UF_SeatBarMask(pm, powerBar, Geom.power)
                 mod.UF_SetMask(pfill, pm)
-                if powerBar.bg then
-                    mod.UF_SetMask(powerBar.bg, pm)
-                end
+                if powerBar.bg then mod.UF_SetMask(powerBar.bg, pm) end
                 mod.UF_BlizzBarShadow(powerBar, pm, Geom.power.h)
             else
                 if pm then
                     pcall(pfill.RemoveMaskTexture, pfill, pm)
-                    if powerBar.bg then
-                        pcall(powerBar.bg.RemoveMaskTexture, powerBar.bg, pm)
-                    end
+                    if powerBar.bg then pcall(powerBar.bg.RemoveMaskTexture, powerBar.bg, pm) end
                 end
                 if powerBar._blizzMasked then
                     -- Mirrored small frame: in the track, unmasked.
@@ -1327,7 +1197,22 @@ local function PlaceArtPiece(texture, widget, file, leftX, topY, x0, x1, y0, y1,
     texture:SetSize(x1 - x0, y1 - y0)
     texture:Show()
 end
-function mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, left, right, top, bottom, wid, hgt, ax, ay, keepLeft)
+function mod.UF_PaintArtCut(
+    widget,
+    artTex,
+    pieces,
+    file,
+    cut,
+    left,
+    right,
+    top,
+    bottom,
+    wid,
+    hgt,
+    ax,
+    ay,
+    keepLeft
+)
     -- Art-local spans (y down from the art's top) and the art's top-left off
     -- the frame's centre.
     local y0 = (cut.t - top) / (bottom - top) * hgt
@@ -1340,9 +1225,7 @@ function mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, left, right, top,
     PlaceArtPiece(pieces[1], widget, file, leftX, topY, 0, wid, y1, hgt, left, right, cut.b, bottom)
     -- The sheet's columns past x lie right of xs, or left of it on an art
     -- sampled flipped (the classic player frame's).
-    if keepLeft == nil then
-        keepLeft = right < left
-    end
+    if keepLeft == nil then keepLeft = right < left end
     local kx0, kx1, cx0, cx1
     if keepLeft then
         kx0, kx1, cx0, cx1 = 0, xs, xs, wid
@@ -1414,7 +1297,8 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
             return
         end
         file = details.file or details.filename
-        left, right, top, bottom = details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
+        left, right, top, bottom =
+            details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
         wid, hgt = details.width, details.height
         anchorPoint, posX, posY = "CENTER", 0, 0
     end
@@ -1451,7 +1335,22 @@ function mod.UF_PaintBlizzArt(widget, atlasName)
             end
             artFrame._artCut = pieces
         end
-        mod.UF_PaintArtCut(widget, artTex, pieces, file, cut, left, right, top, bottom, wid, hgt, posX, posY, keepLeft)
+        mod.UF_PaintArtCut(
+            widget,
+            artTex,
+            pieces,
+            file,
+            cut,
+            left,
+            right,
+            top,
+            bottom,
+            wid,
+            hgt,
+            posX,
+            posY,
+            keepLeft
+        )
         return
     end
     if widget._blizzMirror then
@@ -1505,12 +1404,8 @@ function mod.UF_BlizzBarShadow(barFrame, maskTex, hgt)
     -- nil = unmasked strips (mirrored small frames): an earlier mask comes off.
     if sh._mask ~= maskTex then
         for index = 1, 4 do
-            if sh._mask then
-                pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask)
-            end
-            if maskTex then
-                sh[index]:AddMaskTexture(maskTex)
-            end
+            if sh._mask then pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask) end
+            if maskTex then sh[index]:AddMaskTexture(maskTex) end
         end
         sh._mask = maskTex
     end
@@ -1663,13 +1558,9 @@ end
 -- boss dragon, reputation strip tint. Every unit read is secrecy-guarded.
 function mod.UF_RefreshBlizzTargetArt(widget)
     local artFrame = widget and widget._blizzArtFrame
-    if not artFrame or not artFrame._rep then
-        return
-    end
+    if not artFrame or not artFrame._rep then return end
     local Geom = widget._blizzGeom
-    if not Geom then
-        return
-    end
+    if not Geom then return end
     local unitToken = widget._cuiUnit
     local extras = widget._blizzExtras and Geom.rep and unitToken and UnitExists(unitToken)
     local c
@@ -1681,14 +1572,10 @@ function mod.UF_RefreshBlizzTargetArt(widget)
             artFrame._rep:SetVertexColor(0.5, 0.5, 0.5)
         end
         c = UnitClassification(unitToken)
-        if issecretvalue(c) then
-            c = nil
-        end
+        if issecretvalue(c) then c = nil end
     end
     local boss = extras and UnitIsBossMob and UnitIsBossMob(unitToken)
-    if issecretvalue(boss) then
-        boss = false
-    end
+    if issecretvalue(boss) then boss = false end
     -- The one art paint for this family (see UF_ApplyBlizzFrameArt): the
     -- classification variant -- the stock kit's rare frame, or the classic
     -- kit's whole-frame elite / rare / rare-elite / boss arts (boss frames
@@ -1751,12 +1638,18 @@ end
 function mod.UF_ApplyBlizzPortrait(widget, Geom)
     local pt = widget.Portrait
     local edge = pt and pt.backdrop
-    if not edge then
-        return
-    end
+    if not edge then return end
     local mirror = widget._blizzMirror
     edge:ClearAllPoints()
-    mod.UF_BlizzPoint(edge, Geom.portrait.point, widget, Geom.portrait.point, Geom.portrait.x, Geom.portrait.y, mirror)
+    mod.UF_BlizzPoint(
+        edge,
+        Geom.portrait.point,
+        widget,
+        Geom.portrait.point,
+        Geom.portrait.x,
+        Geom.portrait.y,
+        mirror
+    )
     edge:SetSize(Geom.portrait.size, Geom.portrait.size)
     -- Under the art (which sits one level below the bar clip container; see
     -- UF_ApplyBlizzFrameArt), in the same strata.
@@ -1764,29 +1657,19 @@ function mod.UF_ApplyBlizzPortrait(widget, Geom)
     edge:SetFrameStrata((clip and clip:GetFrameStrata()) or widget:GetFrameStrata())
     edge:SetFrameLevel(math.max(0, ((clip and clip:GetFrameLevel()) or widget:GetFrameLevel()) - 2))
     edge:SetClipsChildren(false)
-    if edge._bg then
-        edge._bg:SetAlpha(0)
-    end
-    if edge._2d then
-        edge._2d:SetTexCoord(0, 1, 0, 1)
-    end
+    if edge._bg then edge._bg:SetAlpha(0) end
+    if edge._2d then edge._2d:SetTexCoord(0, 1, 0, 1) end
     local m = edge._blizzMask
     if not m and mod.UF_AtlasOK(Geom.portrait.mask) then
         m = edge:CreateMaskTexture()
         m:SetAllPoints(edge)
-        if edge._2d then
-            edge._2d:AddMaskTexture(m)
-        end
-        if edge._class then
-            edge._class:AddMaskTexture(m)
-        end
+        if edge._2d then edge._2d:AddMaskTexture(m) end
+        if edge._class then edge._class:AddMaskTexture(m) end
         edge._blizzMask = m
     end
     -- Re-set each pass: a side change swaps the player crop for the circle.
     -- (A mirrored small frame keeps its circle; masks cannot flip anyway.)
-    if m and mod.UF_AtlasOK(Geom.portrait.mask) then
-        mod.UF_StockMask(m, Geom.portrait.mask)
-    end
+    if m and mod.UF_AtlasOK(Geom.portrait.mask) then mod.UF_StockMask(m, Geom.portrait.mask) end
     -- SetPortraitTexture crops the art to a circle by itself (the stock
     -- target/pet frames keep that crop under their CircleMask); the player
     -- frame's mask is not a circle, so there the crop is switched off and the
@@ -1806,9 +1689,7 @@ function mod.UF_ApplyBlizzPortrait(widget, Geom)
         widget:EnableElement("Portrait")
         repaint = true
     end
-    if repaint and pt.ForceUpdate then
-        pt:ForceUpdate()
-    end
+    if repaint and pt.ForceUpdate then pt:ForceUpdate() end
 end
 
 -- Text zones: the left zone (the name by default) moves onto the stock name
@@ -1816,9 +1697,7 @@ end
 function mod.UF_BlizzTextPass(widget)
     local Geom = mod.UF_BlizzGeom(widget)
     local lt = widget and widget.LeftText
-    if not (Geom and lt and Geom.name) then
-        return
-    end
+    if not (Geom and lt and Geom.name) then return end
     -- The Left Text offsets still apply on top of the stock spot, in screen
     -- terms (+X right, +Y up) on the mirrored art too, so they are added
     -- after the mirror rather than through it.
@@ -1849,9 +1728,7 @@ mod.UF_BLIZZ_SKULL = "UI-HUD-UnitFrame-Target-HighLevelTarget_Icon"
 function mod.UF_BlizzLevelPass(widget)
     local Geom = mod.UF_BlizzGeom(widget)
     local L = Geom and Geom.level
-    if not L then
-        return
-    end
+    if not L then return end
     local clip = widget._barClip
     local owner = widget._blizzLevelHost
     if not owner then
@@ -1883,9 +1760,7 @@ function mod.UF_BlizzLevelPass(widget)
                 local byUnit = type(unitToken) == "string"
                 for index = 1, #entries do
                     local frame = entries[index]
-                    if not byUnit or frame._cuiUnit == unitToken then
-                        mod.UF_BlizzLevelRefresh(frame, evt)
-                    end
+                    if not byUnit or frame._cuiUnit == unitToken then mod.UF_BlizzLevelRefresh(frame, evt) end
                 end
             end)
             mod._ufBlizzLevelEvents = event
@@ -1909,9 +1784,7 @@ function mod.UF_BlizzLevelPass(widget)
         local source = (fo and CludesUI._fontFamilySet[fo] and fo:GetFontObjectForAlphabet("roman")) or lt
         local face, size, flags = source:GetFont()
         if face then
-            if fo then
-                fontStr:SetFontObject(fo)
-            end
+            if fo then fontStr:SetFontObject(fo) end
             fontStr:SetFont(face, (cfg and cfg.blizzLevelSize) or size, flags)
         end
     end
@@ -1979,9 +1852,7 @@ end
 -- `event`: the level event that asked (nil = the layout pass).
 function mod.UF_BlizzLevelRefresh(widget, evt)
     local fontStr = widget and widget._blizzLevel
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local skull = widget._blizzLevelSkull
     -- WoW Forever's level badge (nil on every other kit).
     local badge = widget._blizzLevelBadge
@@ -1989,17 +1860,13 @@ function mod.UF_BlizzLevelRefresh(widget, evt)
     -- WoW Forever's PvP badge, only where its unit can have changed.
     if widget._blizzPvP then
         local only = evt and mod.UF_PVP_EVENT_UNIT[evt]
-        if only == nil or only == unitToken then
-            mod.UF_ForeverPvPRefresh(widget, unitToken)
-        end
+        if only == nil or only == unitToken then mod.UF_ForeverPvPRefresh(widget, unitToken) end
     end
     local cfg = unitToken and GetSettingsForUnit(widget._cuiBaseUnit or unitToken)
     if not cfg or cfg.blizzShowLevel == false or not UnitExists(unitToken) then
         fontStr:Hide()
         skull:Hide()
-        if badge then
-            badge:Hide()
-        end
+        if badge then badge:Hide() end
         return
     end
     -- Every unit read is treated as possibly secret: a secret level still
@@ -2014,13 +1881,9 @@ function mod.UF_BlizzLevelRefresh(widget, evt)
         end
     else
         local corpse = UnitIsCorpse(unitToken)
-        if issecretvalue(corpse) then
-            corpse = false
-        end
+        if issecretvalue(corpse) then corpse = false end
         local pet = UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken)
-        if issecretvalue(pet) then
-            pet = false
-        end
+        if issecretvalue(pet) then pet = false end
         if corpse then
             levelText = 0
         elseif pet and badge then
@@ -2052,9 +1915,7 @@ function mod.UF_BlizzLevelRefresh(widget, evt)
             fontStr:SetTextColor(1, 0.82, 0)
         end
     end
-    if badge then
-        badge:Show()
-    end
+    if badge then badge:Show() end
     -- A level the client will not tell (corpse, or 0 and below): the stock skull.
     if issecretvalue(levelText) or (levelText and levelText > 0) then
         fontStr:SetText(levelText)
@@ -2093,37 +1954,25 @@ end
 -- Cast bar fill per cast kind ("cast" | "channel"); one field test when the
 -- style is off, memoized per bar.
 function mod.UF_SetBlizzCastFill(callback, kind)
-    if not callback or not callback._blizzCast then
-        return
-    end
+    if not callback or not callback._blizzCast then return end
     kind = kind or "cast"
-    if callback._blizzFillKind == kind then
-        return
-    end
+    if callback._blizzFillKind == kind then return end
     local atlasName = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ[kind] or mod.UF_CAST_BLIZZ.cast)
-    if not atlasName then
-        return
-    end
+    if not atlasName then return end
     callback._blizzFillKind = kind
     callback:GetStatusBarTexture():SetAtlas(atlasName)
 end
 -- Spell name into the text box under the bar (honouring its side + offsets).
 function mod.UF_BlizzCastText(callback)
     local box = callback and callback._blizzTextBox
-    if not box or not box:IsShown() or not callback.Text then
-        return
-    end
-    if callback._nameSide == "none" then
-        return
-    end
+    if not box or not box:IsShown() or not callback.Text then return end
+    if callback._nameSide == "none" then return end
     -- The box spans the bar (not the holder: an in-width icon takes part of
     -- the holder), so the name's width follows the bar.
     local wid = callback:GetWidth()
     -- Secret under aura restriction when the holder rides the aura block:
     -- keep the out-of-combat layout (the width is fixed in combat).
-    if issecretvalue(wid) then
-        return
-    end
+    if issecretvalue(wid) then return end
     wid = wid or 0
     callback.Text:ClearAllPoints()
     local edgeSide = callback._nameSide or "left"
@@ -2138,9 +1987,7 @@ function mod.UF_BlizzCastText(callback)
         callback.Text:SetJustifyH("LEFT")
         callback.Text:SetPoint("LEFT", box, "LEFT", 8 + ox, oy)
     end
-    if wid > 20 then
-        callback.Text:SetWidth(wid - 16)
-    end
+    if wid > 20 then callback.Text:SetWidth(wid - 16) end
     mod.ReflowFontString(callback.Text)
 end
 -- Cast icon under the style: a square spanning the bar and the stock text
@@ -2153,15 +2000,11 @@ end
 function mod.UF_BlizzCastIcon(callback)
     local ico = callback and callback._iconFrame
     local owner = callback and callback:GetParent()
-    if not ico or not owner then
-        return
-    end
+    if not ico or not owner then return end
     -- The configured height LayoutCastbarIcon stamped (the holder's own rect
     -- reads back secret while it rides the aura block).
     local hostH = callback._icoSide or owner:GetHeight()
-    if issecretvalue(hostH) or not hostH or hostH <= 0 then
-        return
-    end
+    if issecretvalue(hostH) or not hostH or hostH <= 0 then return end
     local box = callback._blizzTextBox
     local edgeSide = hostH + ((box and box:IsShown()) and 13 or 0)
     local inWidth, onRight = callback._icoInWidth, callback._icoOnRight
@@ -2193,13 +2036,9 @@ end
 -- Cast bar: stock background, fill art, frame and text box; the CUI tint
 -- layer stays off (the fill art is its own colour). Border and icon frame go.
 function mod.UF_ApplyBlizzCastbar(callback)
-    if not callback then
-        return
-    end
+    if not callback then return end
     -- The stock chrome owns the frame: a Custom Border Style host stays hidden.
-    if callback._cbBorder then
-        callback._cbBorder:Hide()
-    end
+    if callback._cbBorder then callback._cbBorder:Hide() end
     local owner = callback:GetParent()
     local CK = mod.UF_BLIZZ.cast
     if CK then
@@ -2230,21 +2069,15 @@ function mod.UF_ApplyBlizzCastbar(callback)
         local ico = callback._iconFrame
         if ico then
             Pix.HideBorder(ico)
-            if ico._bg then
-                ico._bg:Hide()
-            end
+            if ico._bg then ico._bg:Hide() end
             if callback.Icon then
                 callback.Icon:ClearAllPoints()
                 callback.Icon:SetAllPoints(ico)
             end
         end
-        if callback.Icon then
-            callback.Icon:SetTexCoord(0, 1, 0, 1)
-        end
+        if callback.Icon then callback.Icon:SetTexCoord(0, 1, 0, 1) end
         mod.UF_BlizzCastIcon(callback)
-        if callback._layoutTextZones then
-            callback:_layoutTextZones()
-        end
+        if callback._layoutTextZones then callback:_layoutTextZones() end
         return
     end
     callback._blizzCast = true
@@ -2265,9 +2098,7 @@ function mod.UF_ApplyBlizzCastbar(callback)
         -- A bar texture, not frame chrome: the retail background under
         -- Blizzard Style, WoW Forever included.
         local bgAtlas = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ.bg)
-        if bgAtlas then
-            CludesUI.StockAtlas(owner._bgTex, bgAtlas)
-        end
+        if bgAtlas then CludesUI.StockAtlas(owner._bgTex, bgAtlas) end
         owner._bgTex:ClearAllPoints()
         owner._bgTex:SetPoint("TOPLEFT", owner, "TOPLEFT", -1, 1)
         owner._bgTex:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", 1, -1)
@@ -2328,21 +2159,15 @@ function mod.UF_ApplyBlizzCastbar(callback)
     local ico = callback._iconFrame
     if ico then
         Pix.HideBorder(ico)
-        if ico._bg then
-            ico._bg:Hide()
-        end
+        if ico._bg then ico._bg:Hide() end
         if callback.Icon then
             callback.Icon:ClearAllPoints()
             callback.Icon:SetAllPoints(ico)
         end
     end
-    if callback.Icon then
-        callback.Icon:SetTexCoord(0, 1, 0, 1)
-    end
+    if callback.Icon then callback.Icon:SetTexCoord(0, 1, 0, 1) end
     mod.UF_BlizzCastIcon(callback)
-    if callback._layoutTextZones then
-        callback:_layoutTextZones()
-    end
+    if callback._layoutTextZones then callback:_layoutTextZones() end
 end
 
 -- Small-frame power bar (pet focus/energy/mana, target-of-target and
@@ -2354,9 +2179,7 @@ end
 -- StyleSimpleFrame instead), so the engine registers no power channel and the
 -- painter returns on the first field test, exactly as today.
 function mod.UF_BlizzMiniPower(widget, unitToken, prefs)
-    if not mod.UF_Blizz() or not widget.Health then
-        return nil
-    end
+    if not mod.UF_Blizz() or not widget.Health then return nil end
     local view = setmetatable(
         { powerPosition = "below", powerHeight = 7, powerWidth = 0 },
         { __index = prefs }
@@ -2366,18 +2189,12 @@ end
 
 -- The post-pass. Idempotent: geometry is re-asserted, regions exist once.
 function mod.UF_ApplyBlizzardLayout(widget, unitToken)
-    if not widget or not widget.Health then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not widget or not widget.Health then return end
+    if InCombatLockdown() then return end
     unitToken = unitToken or widget._cuiBaseUnit or widget._cuiUnit
     -- Layout by unit + Portrait Side (stamped on the frame for the helpers).
     local Geom, mirror = mod.UF_BlizzResolve(widget, unitToken)
-    if not Geom then
-        return
-    end
+    if not Geom then return end
     local prefs = GetSettingsForUnit(unitToken)
 
     -- Frame: stock size + hit rect.
@@ -2465,9 +2282,7 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         powerBar:ClearAllPoints()
         mod.UF_BlizzPoint(powerBar, "TOPLEFT", clip, "TOPLEFT", px, -Geom.power.y, mirror)
         powerBar:SetSize(pw, Geom.power.h)
-        if powerBar._pbBorder then
-            powerBar._pbBorder:Hide()
-        end
+        if powerBar._pbBorder then powerBar._pbBorder:Hide() end
         powerBar._blizzMasked = true
         powerBar:Show()
     elseif powerBar and ppPos ~= "none" then
@@ -2481,16 +2296,12 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         else
             powerBar._blizzMasked = nil
         end
-        if powerBar._pbBorder then
-            powerBar._pbBorder:Hide()
-        end
+        if powerBar._pbBorder then powerBar._pbBorder:Hide() end
     end
     -- Hide Power Bar: the bar stays down (the reload pass hides it for its
     -- "none" position; its text and Power element stand down with it there,
     -- through the power text and ns.UF_PowerElementSync).
-    if merged and powerBar then
-        powerBar:Hide()
-    end
+    if merged and powerBar then powerBar:Hide() end
 
     mod.UF_ApplyBlizzFrameArt(widget, Geom)
 
@@ -2508,21 +2319,15 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
         barList[1], barList[2], barList[3], barList[4], barList[5] = hp, hp._forward, hp._healAbsorb, nil, nil
         for index = 1, 3 do
             local scrollBar = barList[index]
-            if scrollBar and scrollBar.SetSize then
-                scrollBar:SetSize(hw, hh)
-            end
+            if scrollBar and scrollBar.SetSize then scrollBar:SetSize(hw, hh) end
         end
     end
 
     mod.UF_ApplyBlizzPortrait(widget, Geom)
 
     -- No CUI chrome: unified border and text bar step aside for the art.
-    if widget.unifiedBorder then
-        widget.unifiedBorder:Hide()
-    end
-    if widget.BottomTextBar then
-        widget.BottomTextBar:Hide()
-    end
+    if widget.unifiedBorder then widget.unifiedBorder:Hide() end
+    if widget.BottomTextBar then widget.BottomTextBar:Hide() end
 
     mod.UF_BlizzTextPass(widget)
     mod.UF_BlizzLevelPass(widget)
@@ -2537,7 +2342,5 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
             mod.UF_BlizzLevelPass(widget)
         end
     end
-    if widget.Castbar then
-        mod.UF_ApplyBlizzCastbar(widget.Castbar)
-    end
+    if widget.Castbar then mod.UF_ApplyBlizzCastbar(widget.Castbar) end
 end

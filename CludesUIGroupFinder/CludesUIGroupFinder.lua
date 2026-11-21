@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUIGroupFinder.lua: premade group filters, list tweaks and the M+
 -- applications bar. Nothing hooks in until it's enabled.
@@ -21,9 +19,7 @@ then
 end -- stale-parent guard: a partially updated install (old parent, new child) goes dormant via the line-1 failsafe instead of erroring (group titles, applicant names and notes take font families through SetFontFamily, and the settings preview names its samples from PREVIEW_ROSTER)
 -- Held back from this release (CludesUI.HELD_BACK_ADDONS): nothing runs,
 -- and with no namespace published the options page never registers.
-if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then
-    return
-end
+if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then return end
 CludesUI._ModuleNS[ADDON_NAME] = mod -- options file grabs the ns from here
 
 local GF = CludesUI.Lite.NewAddon(ADDON_NAME)
@@ -58,15 +54,11 @@ mod.APPS_DEFAULTS = APPS_DEFAULTS
 
 local saved
 
-local function Profile()
-    return saved and saved.profile
-end
+local function Profile() return saved and saved.profile end
 
 -- Account-wide bits live in CludesUIDB.<key>, outside profiles.
 local function Account(key)
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     local t = CludesUIDB[key]
     if type(t) ~= "table" then
         t = {}
@@ -81,15 +73,11 @@ function mod.Enabled()
     return type(tbl) == "table" and tbl.enabled == true or false
 end
 
-function mod.SetEnabled(val)
-    Account("groupFinder").enabled = val and true or false
-end
+function mod.SetEnabled(val) Account("groupFinder").enabled = val and true or false end
 
 -- True while another premade groups filter that hooks the same panel is loaded:
 -- Group Finder can't be turned on then (its page and the login announcement ask).
-function mod.Blocked()
-    return C_AddOns.IsAddOnLoaded("PremadeGroupsFilter") and true or false
-end
+function mod.Blocked() return C_AddOns.IsAddOnLoaded("PremadeGroupsFilter") and true or false end
 
 -- Read-only defaults until the profile's ready.
 local readOnly = {
@@ -129,9 +117,7 @@ for _, k in ipairs({
 end
 
 local charDB
-local function CharFilters()
-    return charDB and charDB.filters
-end
+local function CharFilters() return charDB and charDB.filters end
 
 local conf = setmetatable({}, {
     __index = function(_, key)
@@ -144,27 +130,19 @@ local conf = setmetatable({}, {
     __newindex = function(_, key, val)
         if FILTER_KEYS[key] then
             local frame = CharFilters()
-            if frame then
-                frame[key] = val
-            end
+            if frame then frame[key] = val end
             return
         end
         Search()[key] = val
     end,
 })
 
-function mod.Cfg()
-    return conf
-end
+function mod.Cfg() return conf end
 
 -- blizzard's dungeon picks for this character, nil until saved once
-function mod.CharBlizzFilter()
-    return charDB and charDB.blizz
-end
+function mod.CharBlizzFilter() return charDB and charDB.blizz end
 function mod.SetCharBlizzFilter(t)
-    if charDB then
-        charDB.blizz = t
-    end
+    if charDB then charDB.blizz = t end
 end
 
 -- the results and applicant lists' display settings, in the profile (read-only
@@ -172,9 +150,7 @@ end
 local ownListRO = setmetatable({}, { __newindex = function() end })
 function mod.OwnListDB()
     local profile = Profile()
-    if not profile then
-        return ownListRO
-    end
+    if not profile then return ownListRO end
     local t = profile.ownList
     if type(t) ~= "table" then
         t = {}
@@ -190,19 +166,13 @@ end
 
 function mod.AppCountsStore()
     local tbl = Account("groupFinderApps")
-    if type(tbl.dungeon) ~= "table" then
-        tbl.dungeon = {}
-    end
+    if type(tbl.dungeon) ~= "table" then tbl.dungeon = {} end
     return tbl.dungeon
 end
 
 function mod.ResetSettings()
-    if saved then
-        saved:ResetProfile()
-    end
-    if charDB then
-        wipe(charDB.filters)
-    end
+    if saved then saved:ResetProfile() end
+    if charDB then wipe(charDB.filters) end
 end
 
 function GF:OnInitialize()
@@ -210,9 +180,7 @@ function GF:OnInitialize()
         "CludesUIGroupFinderDB",
         { profile = { search = DEFAULTS, apps = APPS_DEFAULTS } }
     )
-    if type(CludesUIGroupFinderCharDB) ~= "table" then
-        CludesUIGroupFinderCharDB = {}
-    end
+    if type(CludesUIGroupFinderCharDB) ~= "table" then CludesUIGroupFinderCharDB = {} end
     charDB = CludesUIGroupFinderCharDB
     if type(charDB.filters) ~= "table" then
         -- a character's first login with filters of its own: it starts from a
@@ -222,9 +190,7 @@ function GF:OnInitialize()
         if cfg then
             for key in pairs(FILTER_KEYS) do
                 local val = cfg[key]
-                if type(val) == "table" then
-                    val = CopyTable(val)
-                end
+                if type(val) == "table" then val = CopyTable(val) end
                 filters[key] = val
             end
         end
@@ -233,9 +199,7 @@ function GF:OnInitialize()
 end
 
 function GF:OnEnable()
-    if not mod.Enabled() then
-        return
-    end
+    if not mod.Enabled() then return end
     -- PGF hooks the same panel, so we turn ourselves off while it's loaded.
     if mod.Blocked() then
         mod.SetEnabled(false)
@@ -247,13 +211,9 @@ function GF:OnEnable()
         return
     end
 
-    if mod.Apps_Enable then
-        mod.Apps_Enable()
-    end
+    if mod.Apps_Enable then mod.Apps_Enable() end
     local function Start()
-        if mod.Search_OnEnable then
-            mod.Search_OnEnable()
-        end
+        if mod.Search_OnEnable then mod.Search_OnEnable() end
     end
     if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") and PVEFrame then
         Start()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Unlock.lua
 --
@@ -11,9 +9,7 @@ local _, mod = ...
 local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor, abs = math.floor, math.abs
@@ -23,17 +19,11 @@ local LayoutIcons, ResizeAnchorCentered = Inner.LayoutIcons, Inner.ResizeAnchorC
 local CursorAttachActive = Inner.CursorAttachActive
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local iconAnchor
-Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val)
-    iconAnchor = val
-end
+Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val) iconAnchor = val end
 local cursorAnchor
-Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val)
-    cursorAnchor = val
-end
+Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val) cursorAnchor = val end
 
 -------------------------------------------------------------------------------
 --  Unlock Mode
@@ -44,14 +34,10 @@ function REMIND.NominalRowW(skinData)
 end
 
 local function ApplyUnlockPos()
-    if not iconAnchor or not saved then
-        return
-    end
+    if not iconAnchor or not saved then return end
     -- Skip for unlock-anchored elements (anchor system is authority)
     local anchored = CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EABR_Reminders")
-    if anchored and iconAnchor:GetLeft() then
-        return
-    end
+    if anchored and iconAnchor:GetLeft() then return end
     local place = saved.profile.unlockPos
     if place and place.point then
         local px, py = place.x or 0, place.y or 0
@@ -106,21 +92,13 @@ end
 -- (CENTER, LEFT or RIGHT of UIParent's CENTER) convert.
 function REMIND.UpdateUnlockPosForGrowDir(newGrowDir)
     local place = saved.profile.unlockPos
-    if not place or not place.point or (place.relPoint or place.point) ~= "CENTER" then
-        return
-    end
+    if not place or not place.point or (place.relPoint or place.point) ~= "CENTER" then return end
     local curPoint = place.point
-    if curPoint ~= "CENTER" and curPoint ~= "LEFT" and curPoint ~= "RIGHT" then
-        return
-    end
+    if curPoint ~= "CENTER" and curPoint ~= "LEFT" and curPoint ~= "RIGHT" then return end
     local targetPoint = (newGrowDir == "RIGHT" and "LEFT") or (newGrowDir == "LEFT" and "RIGHT") or "CENTER"
-    if curPoint == targetPoint then
-        return
-    end
+    if curPoint == targetPoint then return end
     local wid = iconAnchor and iconAnchor:GetWidth() or 0
-    if wid <= 1 then
-        wid = REMIND.NominalRowW(saved.profile.display)
-    end
+    if wid <= 1 then wid = REMIND.NominalRowW(saved.profile.display) end
     local cx = place.x or 0
     if curPoint == "LEFT" then
         cx = cx + (wid / 2)
@@ -144,9 +122,7 @@ function CludesUI.GetAuraBuffGrowDir()
 end
 
 function CludesUI.SetAuraBuffGrowDir(val)
-    if not saved or not saved.profile or not saved.profile.display then
-        return
-    end
+    if not saved or not saved.profile or not saved.profile.display then return end
     saved.profile.display.growDirection = val
     REMIND.UpdateUnlockPosForGrowDir(val)
     ApplyUnlockPos()
@@ -154,9 +130,7 @@ function CludesUI.SetAuraBuffGrowDir(val)
 end
 
 local function RegisterUnlockElements()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then
-        return
-    end
+    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
     local MK = CludesUI.MakeUnlockElement
     CludesUI:RegisterUnlockElements({
         MK({
@@ -167,9 +141,7 @@ local function RegisterUnlockElements()
             noAnchorTarget = true, -- icon count changes dynamically with auras
             -- Icon size is driven solely by the Scale slider. No drag-resize: row width is count-dependent, so restoring a stored width under a different count would corrupt the persisted scale (matches External Defensives).
             noResize = true,
-            getFrame = function()
-                return iconAnchor
-            end,
+            getFrame = function() return iconAnchor end,
             getSize = function()
                 local display = saved.profile.display
                 local baseScale = display.scale or 1.0
@@ -184,24 +156,16 @@ local function RegisterUnlockElements()
                 local beaconsOnCursor = CursorAttachActive(display) and cursorAnchor
                 if _B.icons and not beaconsOnCursor then
                     for _, ident in ipairs(_B.ALL or {}) do
-                        if _B.iconState and _B.iconState[ident] and _B.icons[ident] then
-                            total = total + 1
-                        end
+                        if _B.iconState and _B.iconState[ident] and _B.icons[ident] then total = total + 1 end
                     end
                 end
-                if total < 1 then
-                    total = 2
-                end
+                if total < 1 then total = 2 end
                 local wid = total * iconSz + (total - 1) * spacing
                 local textH = 0
-                if display.showText then
-                    textH = (display.textSize or 11) + abs(display.textYOffset or -2)
-                end
+                if display.showText then textH = (display.textSize or 11) + abs(display.textYOffset or -2) end
                 local hgt = iconH + textH
                 -- Resizes the anchor for the overlay
-                if iconAnchor then
-                    ResizeAnchorCentered(wid, hgt)
-                end
+                if iconAnchor then ResizeAnchorCentered(wid, hgt) end
                 return wid, hgt
             end,
             savePos = function(key, anchorPoint, relPoint, posX, posY)
@@ -220,9 +184,7 @@ local function RegisterUnlockElements()
                     end
                 end
                 saved.profile.unlockPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if not CludesUI._unlockActive then
-                    ApplyUnlockPos()
-                end
+                if not CludesUI._unlockActive then ApplyUnlockPos() end
             end,
             loadPos = function()
                 local place = saved.profile.unlockPos
@@ -245,23 +207,19 @@ local function RegisterUnlockElements()
             end,
             -- Spec-override unlock layers bank the stored table itself, so a Grow Right/Left edge survives a
             -- layer round trip at any icon count; one banked under another direction moves onto the current edge.
-            loadRawPos = function()
-                return saved.profile.unlockPos
-            end,
+            loadRawPos = function() return saved.profile.unlockPos end,
             saveRawPos = function(_, profile)
-                if not (profile and profile.point) then
-                    return
-                end
-                saved.profile.unlockPos =
-                    { point = profile.point, relPoint = profile.relPoint or profile.point, x = profile.x, y = profile.y }
+                if not (profile and profile.point) then return end
+                saved.profile.unlockPos = {
+                    point = profile.point,
+                    relPoint = profile.relPoint or profile.point,
+                    x = profile.x,
+                    y = profile.y,
+                }
                 REMIND.UpdateUnlockPosForGrowDir(saved.profile.display.growDirection)
             end,
-            clearPos = function()
-                saved.profile.unlockPos = nil
-            end,
-            applyPos = function()
-                ApplyUnlockPos()
-            end,
+            clearPos = function() saved.profile.unlockPos = nil end,
+            applyPos = function() ApplyUnlockPos() end,
         }),
     })
 end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Keybinds.lua
 --
@@ -72,9 +70,7 @@ local function UpdateKeybinds()
     -- stomps the housing hotkeys until the editor's next mode change. Rebuild
     -- resumes on editor close (housingCleared reset -> UpdateKeybinds;
     -- sigValid stays false while cleared, so that rebuild is never skipped).
-    if _bindState.housingCleared then
-        return false
-    end
+    if _bindState.housingCleared then return false end
     -- A hidden bar skipped at load must exist the moment a key lands on one of
     -- its commands (UPDATE_BINDINGS lands here): hidden bars keep live
     -- bindings, and a click-routed key has no button to route to otherwise.
@@ -84,13 +80,9 @@ local function UpdateKeybinds()
     -- Empower detection for one action slot, shared by the current-page
     -- and base-slot checks in pass 1.
     local function SlotIsPH(slot)
-        if not (slot and HasAction(slot)) then
-            return false
-        end
+        if not (slot and HasAction(slot)) then return false end
         local actionType, ident, subType = GetActionInfo(slot)
-        if actionType == "flyout" then
-            return true
-        end
+        if actionType == "flyout" then return true end
         if C_Spell and C_Spell.IsPressHoldReleaseSpell then
             local spellId
             if actionType == "spell" then
@@ -116,9 +108,7 @@ local function UpdateKeybinds()
     -- was received. Empowers have no popup to anchor, so they're unaffected
     -- and must stay on the native command (see routing comment below).
     local function SlotIsFlyout(slot)
-        if not (slot and HasAction(slot)) then
-            return false
-        end
+        if not (slot and HasAction(slot)) then return false end
         return GetActionInfo(slot) == "flyout"
     end
     -- Pass 1: compute per-button routing signature (k1, k2, useClick, isPH)
@@ -165,9 +155,7 @@ local function UpdateKeybinds()
             -- Read through the paging conditions' own rule, so the keys
             -- follow exactly the opt-outs the bar's page follows.
             local noForm, noSky = EAB_VTABLE.GetAutoPagingOptOuts(details.key)
-            if noForm or noSky then
-                barHasCustomPaging = true
-            end
+            if noForm or noSky then barHasCustomPaging = true end
             for index, button in ipairs(btns) do
                 if button then
                     local cmd = prefixText .. index
@@ -205,14 +193,10 @@ local function UpdateKeybinds()
                         local off = BAR_SLOT_OFFSETS[details.key]
                         if off then
                             local base = off + index
-                            if base ~= slot then
-                                isPH = SlotIsPH(base)
-                            end
+                            if base ~= slot then isPH = SlotIsPH(base) end
                         end
                     end
-                    if isPH then
-                        anyPH = true
-                    end
+                    if isPH then anyPH = true end
                     -- isPH (empower) deliberately NOT part of the routing
                     -- decision: empower keys must ride the native command.
                     -- isFlyout IS part of it: flyouts need self to be the
@@ -247,9 +231,7 @@ local function UpdateKeybinds()
     -- drives; their pressAndHoldAction is kept current by Blizzard's own
     -- SLOT_CHANGED and PLAYER_ENTERING_WORLD registrations, which the
     -- broadcaster quieting at the top of the file leaves untouched.
-    if not changed then
-        return false
-    end
+    if not changed then return false end
     _bindState.sigValid = true
     -- Pass 2: apply. Reads the routing decisions computed above.
     ClearOverrideBindings(_eabBindOwner)
@@ -264,20 +246,12 @@ local function UpdateKeybinds()
                     jdx = jdx + 4
                     if useClick then
                         local btnName = button:GetName()
-                        if k1 and btnName then
-                            SetOverrideBindingClick(_eabBindOwner, false, k1, btnName)
-                        end
-                        if k2 and btnName then
-                            SetOverrideBindingClick(_eabBindOwner, false, k2, btnName)
-                        end
+                        if k1 and btnName then SetOverrideBindingClick(_eabBindOwner, false, k1, btnName) end
+                        if k2 and btnName then SetOverrideBindingClick(_eabBindOwner, false, k2, btnName) end
                     else
                         local cmd = prefixText .. index
-                        if k1 then
-                            SetOverrideBinding(_eabBindOwner, false, k1, cmd)
-                        end
-                        if k2 then
-                            SetOverrideBinding(_eabBindOwner, false, k2, cmd)
-                        end
+                        if k1 then SetOverrideBinding(_eabBindOwner, false, k1, cmd) end
+                        if k2 then SetOverrideBinding(_eabBindOwner, false, k2, cmd) end
                     end
                 end
             end
@@ -301,9 +275,7 @@ local function UpdateKeybinds()
     -- bail at the top guarantees we only reach here out of combat.
     for _, details in ipairs(BAR_CONFIG) do
         local widget = barFrames[details.key]
-        if widget then
-            widget:SetAttribute("state-eabempower", GetTime())
-        end
+        if widget then widget:SetAttribute("state-eabempower", GetTime()) end
     end
     return true
 end
@@ -321,17 +293,11 @@ _G._CUAB_UpdateKeybinds = UpdateKeybinds
 -- never bindings -- so the native hold-to-cast path is untouched by
 -- construction.
 mod._EABReassertEmpowerAttrs = function()
-    if InCombatLockdown() then
-        return
-    end
-    if not _bindState.hasPH then
-        return
-    end
+    if InCombatLockdown() then return end
+    if not _bindState.hasPH then return end
     for _, details in ipairs(BAR_CONFIG) do
         local widget = barFrames[details.key]
-        if widget then
-            widget:SetAttribute("state-eabempower", GetTime())
-        end
+        if widget then widget:SetAttribute("state-eabempower", GetTime()) end
     end
 end
 

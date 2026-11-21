@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Currency.lua - Info Bar block: one currency the player picks.
 --
@@ -31,9 +29,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
     inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "CURRENCY_DISPLAY_UPDATE" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetAllPoints()
@@ -46,13 +42,9 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
     -- The picked currency's details, or nil (none picked, unknown, or not discovered yet).
     local function Details()
         local id = Settings().currencyId
-        if not (id and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
-            return nil
-        end
+        if not (id and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then return nil end
         local skinData = C_CurrencyInfo.GetCurrencyInfo(id)
-        if skinData and skinData.discovered ~= false then
-            return skinData
-        end
+        if skinData and skinData.discovered ~= false then return skinData end
     end
 
     local hovered = false
@@ -158,9 +150,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         local skinData = C_CurrencyInfo
             and C_CurrencyInfo.GetCurrencyInfo
             and C_CurrencyInfo.GetCurrencyInfo(cfg.currencyId)
-        if not skinData then
-            return
-        end
+        if not skinData then return end
         mod.Tip_Begin(button)
         local q = skinData.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[skinData.quality]
         mod.Tip_AddLine(skinData.name or "?", q and q.r or 1, q and q.g or 1, q and q.b or 1)
@@ -196,9 +186,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         PaintText()
     end)
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton ~= "LeftButton" then
-            return
-        end
+        if mouseButton ~= "LeftButton" then return end
         if not Settings().currencyId then
             -- Nothing picked: the game's panel cannot pick one, so open the block's settings.
             if InCombatLockdown() then
@@ -208,9 +196,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
             if not mod.OpenBlockSettings then
                 CludesUI:EnsureLoaded() -- the settings load on demand
             end
-            if mod.OpenBlockSettings then
-                mod.OpenBlockSettings(barCtx.id, blockCfg.id, "currency")
-            end
+            if mod.OpenBlockSettings then mod.OpenBlockSettings(barCtx.id, blockCfg.id, "currency") end
         elseif C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
             C_CurrencyInfo.OpenCurrencyPanel()
         elseif ToggleCharacter then
@@ -221,9 +207,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
     -- Only this block's currency (or an update of every currency, which names
     -- none) redraws it; the game sends this event for any currency that moves.
     inst.eventFrame = K.MakeEventFrame(inst, function(self, _, currencyId)
-        if currencyId and currencyId ~= Settings().currencyId then
-            return
-        end
+        if currencyId and currencyId ~= Settings().currencyId then return end
         self:Refresh()
     end)
 
@@ -238,9 +222,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 

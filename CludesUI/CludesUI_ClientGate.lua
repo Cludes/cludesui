@@ -20,9 +20,7 @@
 -- On 12.1+ this file is two comparisons and exits; no globals, no frames.
 
 local iface = select(4, GetBuildInfo())
-if type(iface) ~= "number" then
-    return
-end
+if type(iface) ~= "number" then return end
 
 -- WoW Forever (Blizzard game type "camelot"): the 12.1 engine with vanilla
 -- content, reporting a 1.60+ toc (16001). Classic Era reports 115xx and
@@ -33,9 +31,7 @@ if iface >= 16000 and iface < 20000 then
     CUI_CLIENT_FOREVER = true
     return
 end
-if iface >= 120100 then
-    return
-end
+if iface >= 120100 then return end
 
 CUI_CLIENT_BLOCKED = true
 
@@ -60,12 +56,8 @@ eventFrame:SetScript("OnEvent", function(self)
         tex:SetColorTexture(0.30, 0.79, 0.94, 0.9)
         tex:SetPoint(point1)
         tex:SetPoint(point2)
-        if wid then
-            tex:SetWidth(wid)
-        end
-        if hgt then
-            tex:SetHeight(hgt)
-        end
+        if wid then tex:SetWidth(wid) end
+        if hgt then tex:SetHeight(hgt) end
         return tex
     end
     Edge("TOPLEFT", "TOPRIGHT", nil, 1)
@@ -96,15 +88,9 @@ eventFrame:SetScript("OnEvent", function(self)
     bl:SetPoint("CENTER")
     bl:SetText("Okay")
     bl:SetTextColor(0, 0, 0)
-    button:SetScript("OnEnter", function()
-        bbg:SetColorTexture(0.30, 0.79, 0.94, 1)
-    end)
-    button:SetScript("OnLeave", function()
-        bbg:SetColorTexture(0.30, 0.79, 0.94, 0.85)
-    end)
-    button:SetScript("OnClick", function()
-        p:Hide()
-    end)
+    button:SetScript("OnEnter", function() bbg:SetColorTexture(0.30, 0.79, 0.94, 1) end)
+    button:SetScript("OnLeave", function() bbg:SetColorTexture(0.30, 0.79, 0.94, 0.85) end)
+    button:SetScript("OnClick", function() p:Hide() end)
 
     tinsert(UISpecialFrames, "CUIClientGatePopup")
 end)

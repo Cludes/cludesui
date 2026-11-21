@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_QuestLinks.lua - a "Wowhead Link" entry in quest menus.
 --
@@ -48,9 +46,7 @@ end
 
 -- The copy box; WoW Forever's own tracker menu uses it too (Custom.lua).
 function EQT.ShowWowheadLink(questID)
-    if not EQT.WowheadQuestOK(questID) then
-        return
-    end
+    if not EQT.WowheadQuestOK(questID) then return end
     local language = EQT.Cfg("wowheadQuestClientLanguage") and LANGUAGE_PATH[GetLocale()] or ""
     local anchor = EQT.Cfg("wowheadQuestComments") and "#comments" or ""
     local address = "https://www.wowhead.com/"
@@ -73,34 +69,24 @@ function EQT.ShowWowheadLink(questID)
 end
 
 local function AddEntry(questID, root)
-    if done[root] or not EQT.WowheadQuestOK(questID) then
-        return
-    end
+    if done[root] or not EQT.WowheadQuestOK(questID) then return end
     -- A menu hook also runs for the last menu built when it registers.
     done[root] = true
     root:CreateDivider()
-    root:CreateButton(CludesUI.L("Wowhead Link"), function()
-        EQT.ShowWowheadLink(questID)
-    end)
+    root:CreateButton(CludesUI.L("Wowhead Link"), function() EQT.ShowWowheadLink(questID) end)
 end
 
 -- Quest log rows and the details popup carry their quest (waypoints share
 -- the log's menu but have none).
-local function OwnQuestMenu(owner, root)
-    AddEntry(owner and owner.questID, root)
-end
+local function OwnQuestMenu(owner, root) AddEntry(owner and owner.questID, root) end
 
 -- The tracker's menu belongs to the tracker, not the quest. It opens from a
 -- click on a quest's header, which Blizzard announces when the cursor
 -- enters it, so the quest is that header's while the cursor is still there.
-local function HeaderEntered(_, block)
-    hoveredBlock = block
-end
+local function HeaderEntered(_, block) hoveredBlock = block end
 local function TrackerMenu(_, root)
     local header = hoveredBlock and hoveredBlock.HeaderButton
-    if header and header:IsMouseOver() then
-        AddEntry(hoveredBlock.id, root)
-    end
+    if header and header:IsMouseOver() then AddEntry(hoveredBlock.id, root) end
 end
 
 function EQT.ApplyQuestLinks()
@@ -113,9 +99,7 @@ function EQT.ApplyQuestLinks()
         end
         return
     end
-    if hooks then
-        return
-    end
+    if hooks then return end
     done = done or setmetatable({}, { __mode = "k" })
     hooks = {
         Menu.ModifyMenu("MENU_QUEST_MAP_LOG_TITLE", OwnQuestMenu),

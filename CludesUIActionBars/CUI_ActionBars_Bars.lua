@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Bars.lua
 --
@@ -45,9 +43,7 @@ local function CreateBarFrame(details)
     widget:SetFrameLevel(math.max(widget:GetFrameLevel(), 10))
     -- Bar frames never intercept clicks (only buttons do); motion is enabled
     -- later by the hover system for OnEnter/OnLeave.
-    if widget.SetMouseClickEnabled then
-        widget:SetMouseClickEnabled(false)
-    end
+    if widget.SetMouseClickEnabled then widget:SetMouseClickEnabled(false) end
     widget._barKey = key
     widget._barInfo = details
 
@@ -186,12 +182,8 @@ local function CreateBarFrame(details)
             -- proc glows re-scan (CUI_ActionBars_Range.lua / _Glows.lua): the
             -- page is applied by now, which ACTIONBAR_PAGE_CHANGED's own
             -- passes cannot rely on (it fires before the state driver runs)
-            if mod._eabRangePageEdge then
-                mod._eabRangePageEdge(frame._barKey)
-            end
-            if mod._eabQueueGlowRescan then
-                mod._eabQueueGlowRescan()
-            end
+            if mod._eabRangePageEdge then mod._eabRangePageEdge(frame._barKey) end
+            if mod._eabQueueGlowRescan then mod._eabQueueGlowRescan() end
         end
     end)
 
@@ -201,14 +193,10 @@ local function CreateBarFrame(details)
     -- time (handler no-ops until they do); FinishSetup's initial sync covers
     -- bars that START hidden (their OnHide never fires).
     widget:HookScript("OnShow", function(frame)
-        if mod.ApplyBarDormancy then
-            mod.ApplyBarDormancy(frame._barKey, false)
-        end
+        if mod.ApplyBarDormancy then mod.ApplyBarDormancy(frame._barKey, false) end
     end)
     widget:HookScript("OnHide", function(frame)
-        if mod.ApplyBarDormancy then
-            mod.ApplyBarDormancy(frame._barKey, true)
-        end
+        if mod.ApplyBarDormancy then mod.ApplyBarDormancy(frame._barKey, true) end
     end)
     return widget
 end
@@ -221,17 +209,11 @@ end
 -- on every full apply, and returns true for a rebuilt bar instead of running the
 -- keybind pass, which ApplyAll runs once for all of them. Must be called out of combat.
 function mod.RebuildBarPaging(barId, onlyIfChanged)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     local widget = barFrames[barId]
-    if not widget then
-        return
-    end
+    if not widget then return end
     local details = widget._barInfo
-    if not details then
-        return
-    end
+    if not details then return end
     local barSettings = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[barId]
     local customPaging = barSettings and barSettings.paging
 
@@ -242,9 +224,7 @@ function mod.RebuildBarPaging(barId, onlyIfChanged)
         else
             pagingConditions = GetClassPagingConditions()
         end
-        if onlyIfChanged and pagingConditions == widget._eabPagingConds then
-            return
-        end
+        if onlyIfChanged and pagingConditions == widget._eabPagingConds then return end
         widget._eabPagingConds = pagingConditions
         -- Force re-evaluation by unregistering first
         UnregisterStateDriver(widget, "page")
@@ -254,9 +234,7 @@ function mod.RebuildBarPaging(barId, onlyIfChanged)
         local hasCustom = EAB_VTABLE.HasCustomPaging(barSettings)
         local conditions = hasCustom and EAB_VTABLE.BuildPagingConditions(barId, customPaging, defaultPage)
             or false
-        if onlyIfChanged and conditions == widget._eabPagingConds then
-            return
-        end
+        if onlyIfChanged and conditions == widget._eabPagingConds then return end
         widget._eabPagingConds = conditions
         if hasCustom then
             -- Install handler if not already present
@@ -302,12 +280,8 @@ function mod.RebuildBarPaging(barId, onlyIfChanged)
     -- (waiting on UPDATE_BINDINGS could wait forever); the signature diff
     -- makes this a no-op when routing didn't change, and UpdateKeybinds
     -- re-arms itself out of combat, so calling it unconditionally is safe.
-    if onlyIfChanged then
-        return true
-    end
-    if _G._CUAB_UpdateKeybinds then
-        _G._CUAB_UpdateKeybinds()
-    end
+    if onlyIfChanged then return true end
+    if _G._CUAB_UpdateKeybinds then _G._CUAB_UpdateKeybinds() end
 end
 
 -------------------------------------------------------------------------------
@@ -326,16 +300,10 @@ mod.BuildBarButtons = function(details, widget, skipProtected)
     -- Out-of-combat only (SetHitRectInsets on a protected button is unsafe
     -- in combat), behind the same not-skipProtected guard as SetParent.
     local function ApplyShapeHitRects(button, shape)
-        if not button then
-            return
-        end
+        if not button then return end
         local wid, hgt = button:GetSize()
-        if not wid or wid == 0 then
-            wid = 45
-        end
-        if not hgt or hgt == 0 then
-            hgt = 45
-        end
+        if not wid or wid == 0 then wid = 45 end
+        if not hgt or hgt == 0 then hgt = 45 end
         local insetX, insetY = 0, 0
         if shape == "diamond" or shape == "circle" then
             insetX = math.floor(wid * 0.146)
@@ -389,16 +357,12 @@ mod.BuildBarButtons = function(details, widget, skipProtected)
                 -- Hook drag handlers so spellbook drops work even though
                 -- the original PetActionBar is hidden and unregistered.
                 button:HookScript("OnReceiveDrag", function(self)
-                    if InCombatLockdown() then
-                        return
-                    end
+                    if InCombatLockdown() then return end
                     -- Blizzard's mixin handler runs first; fall back to
                     -- PickupPetAction if it didn't fire. The resulting
                     -- PET_BAR_UPDATE triggers our full refresh automatically.
                     local cType = GetCursorInfo()
-                    if cType == "petaction" then
-                        PickupPetAction(self:GetID())
-                    end
+                    if cType == "petaction" then PickupPetAction(self:GetID()) end
                 end)
             end
         end
@@ -426,9 +390,7 @@ mod.BuildBarButtons = function(details, widget, skipProtected)
                     -- Explicit action attr: CalculateAction sees it non-zero
                     -- and returns it directly (path 2).
                     button:SetAttribute("action", action)
-                    if bindPrefix then
-                        button:SetAttributeNoHandler("binding", bindPrefix .. i)
-                    end
+                    if bindPrefix then button:SetAttributeNoHandler("binding", bindPrefix .. i) end
                     -- Force visual refresh; events are centrally dispatched
                     -- (per-button registration on 96 buttons caused mass
                     -- OnEvent->UpdateAction calls per tick -- screen blink).
@@ -438,20 +400,14 @@ mod.BuildBarButtons = function(details, widget, skipProtected)
                     mod.AB_SyncAttackState(button, action)
                     mod.AB_SyncEquippedBorder(button, action)
                 end
-                if bindPrefix then
-                    button.commandName = bindPrefix .. i
-                end
+                if bindPrefix then button.commandName = bindPrefix .. i end
                 -- Always register both so empower spells (hold-and-release)
                 -- receive the key-down event even when CVar is key-up mode.
                 -- useOnKeyDown controls which event fires normal spells.
                 button:RegisterForClicks("AnyDown", "AnyUp")
                 button:SetAttribute("useOnKeyDown", GetCVarBool("ActionButtonUseKeyDown"))
-                if button.EnableMouseWheel then
-                    button:EnableMouseWheel(true)
-                end
-                if not skipProtected then
-                    button:SetAttribute("showgrid", 1)
-                end
+                if button.EnableMouseWheel then button:EnableMouseWheel(true) end
+                if not skipProtected then button:SetAttribute("showgrid", 1) end
                 GetEABFlyout():RegisterButton(button)
                 -- Page child-update: rewrites the secure "action" attr on a page
                 -- change, then re-checks hold-release. Shared builder so SetupBar
@@ -550,9 +506,7 @@ local function CaptureBlizzardDefaults()
     -- not parked there (moved in Edit Mode, or a layout with no stack).
     local function StackSlot(barFrame)
         local pt, relTo, rpt, px, py = barFrame:GetPoint(1)
-        if pt ~= "TOPLEFT" or relTo ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then
-            return nil
-        end
+        if pt ~= "TOPLEFT" or relTo ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then return nil end
         local EU, EM = _G.EditModeUtil, _G.EditModeManagerFrame
         local success, entries
         if EU and EU.GetBottomActionBars then
@@ -560,13 +514,9 @@ local function CaptureBlizzardDefaults()
         elseif EM and EM.GetBottomActionBars then
             success, entries = pcall(EM.GetBottomActionBars, EM)
         end
-        if not success or type(entries) ~= "table" then
-            return nil
-        end
+        if not success or type(entries) ~= "table" then return nil end
         local function Anchor(frame)
-            if not (EM and EM.GetDefaultAnchor) then
-                return nil
-            end
+            if not (EM and EM.GetDefaultAnchor) then return nil end
             local okA, a = pcall(EM.GetDefaultAnchor, EM, frame)
             return okA and type(a) == "table" and a or nil
         end
@@ -584,20 +534,14 @@ local function CaptureBlizzardDefaults()
                 and (not frame.IsInDefaultPosition or frame:IsInDefaultPosition())
             then
                 local a = Anchor(frame)
-                if not (a and a.bottomBarExcludeFromStackIncrement) then
-                    below = frame
-                end
+                if not (a and a.bottomBarExcludeFromStackIncrement) then below = frame end
             end
         end
-        if not listed then
-            return nil
-        end
+        if not listed then return nil end
         below = below or _G.MainActionBar
         local l, t = below and below:GetLeft(), below and below:GetTop()
         local wid, hgt = barFrame:GetWidth(), barFrame:GetHeight()
-        if not (l and t and wid and hgt) then
-            return nil
-        end
+        if not (l and t and wid and hgt) then return nil end
         local kB = below:GetEffectiveScale() / uiScale
         local k = barFrame:GetEffectiveScale() / uiScale
         local aB, a = Anchor(below), Anchor(barFrame)
@@ -636,18 +580,14 @@ local function CaptureBlizzardDefaults()
                 if mab.numButtonsShowable and mab.numButtonsShowable > 0 then
                     payload.numIcons = mab.numButtonsShowable
                 end
-                if mab.numRows and mab.numRows > 0 then
-                    payload.numRows = mab.numRows
-                end
+                if mab.numRows and mab.numRows > 0 then payload.numRows = mab.numRows end
                 if mab.GetSettingValue then
                     local success, val = pcall(mab.GetSettingValue, mab, 0)
                     if success and val ~= nil then
                         payload.orientation = (val == 0) and "horizontal" or "vertical"
                     end
                     success, val = pcall(mab.GetSettingValue, mab, 3)
-                    if success and val ~= nil and val > 0 then
-                        payload.blizzIconScale = val / 100
-                    end
+                    if success and val ~= nil and val > 0 then payload.blizzIconScale = val / 100 end
                 end
             end
 
@@ -680,9 +620,7 @@ local function CaptureBlizzardDefaults()
             -- Number of visible buttons try Edit Mode setting 2 first
             if barFrame.GetSettingValue then
                 local success, val = pcall(barFrame.GetSettingValue, barFrame, 2)
-                if success and val and val >= 6 and val <= 12 then
-                    payload.numIcons = val
-                end
+                if success and val and val >= 6 and val <= 12 then payload.numIcons = val end
             end
             if not payload.numIcons and barFrame.numButtonsShowable and barFrame.numButtonsShowable > 0 then
                 payload.numIcons = barFrame.numButtonsShowable
@@ -691,9 +629,7 @@ local function CaptureBlizzardDefaults()
             -- Number of rows try Edit Mode setting 1 first
             if barFrame.GetSettingValue then
                 local success, val = pcall(barFrame.GetSettingValue, barFrame, 1)
-                if success and val and val >= 1 and val <= 4 then
-                    payload.numRows = val
-                end
+                if success and val and val >= 1 and val <= 4 then payload.numRows = val end
             end
             if not payload.numRows and barFrame.numRows and barFrame.numRows > 0 then
                 payload.numRows = barFrame.numRows
@@ -713,9 +649,7 @@ local function CaptureBlizzardDefaults()
             -- Icon size (Edit Mode setting 3).
             if barFrame.GetSettingValue then
                 local success, val = pcall(barFrame.GetSettingValue, barFrame, 3)
-                if success and val ~= nil and val > 0 then
-                    payload.blizzIconScale = val / 100
-                end
+                if success and val ~= nil and val > 0 then payload.blizzIconScale = val / 100 end
             end
 
             -- Always Show Buttons (setting 9): 0=off, 1=on
@@ -726,9 +660,7 @@ local function CaptureBlizzardDefaults()
                 and not details.isPetBar
             then
                 local success, val = pcall(barFrame.GetSettingValue, barFrame, 9)
-                if success and val ~= nil then
-                    payload.alwaysShowButtons = (val == 1)
-                end
+                if success and val ~= nil then payload.alwaysShowButtons = (val == 1) end
             end
 
             -- An empty bar with alwaysShowButtons off would vanish entirely once we take over, so force it on.
@@ -742,9 +674,7 @@ local function CaptureBlizzardDefaults()
                         break
                     end
                 end
-                if not hasAny then
-                    payload.alwaysShowButtons = true
-                end
+                if not hasAny then payload.alwaysShowButtons = true end
             end
 
             -- Visibility (setting 5, bars 2-8 only): 0=Always, 1=InCombat,
@@ -755,9 +685,7 @@ local function CaptureBlizzardDefaults()
                 payload.visibility = 3
             elseif barFrame.GetSettingValue and not details.isStance and not details.isPetBar then
                 local success, val = pcall(barFrame.GetSettingValue, barFrame, 5)
-                if success and val ~= nil then
-                    payload.visibility = val
-                end
+                if success and val ~= nil then payload.visibility = val end
             end
 
             captured[details.key] = payload
@@ -777,25 +705,17 @@ end
 function mod.AB_CaptureCapSpan(captured)
     local main = _G.MainActionBar
     local mc = captured and captured.MainBar
-    if not main or not mc or mc.orientation == "vertical" then
-        return nil, nil
-    end
+    if not main or not mc or mc.orientation == "vertical" then return nil, nil end
     local uiS = UIParent:GetEffectiveScale()
     local function Rect(frame)
-        if not (frame and frame.GetLeft) then
-            return nil
-        end
+        if not (frame and frame.GetLeft) then return nil end
         local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
-        if not (left and right and top and bottom) or right - left < 1 or top - bottom < 1 then
-            return nil
-        end
+        if not (left and right and top and bottom) or right - left < 1 or top - bottom < 1 then return nil end
         local k = frame:GetEffectiveScale() / uiS
         return { left * k, right * k, top * k, bottom * k }
     end
     local home = Rect(main)
-    if not home or home[2] - home[1] < 20 then
-        return nil, nil
-    end
+    if not home or home[2] - home[1] < 20 then return nil, nil end
     local cands = {}
     for _, details in ipairs(BAR_CONFIG) do
         local skinData = captured[details.key]
@@ -809,9 +729,7 @@ function mod.AB_CaptureCapSpan(captured)
             and (skinData.visibility == nil or skinData.visibility == 0)
         then
             local region = Rect(_G[details.blizzFrame])
-            if region then
-                cands[#cands + 1] = { key = details.key, r = region }
-            end
+            if region then cands[#cands + 1] = { key = details.key, r = region } end
         end
     end
     local mcf, mm = _G.MicroMenuContainer, _G.MicroMenu
@@ -824,16 +742,12 @@ function mod.AB_CaptureCapSpan(captured)
         and mm.isHorizontal ~= false
     then
         local region = Rect(mcf)
-        if region then
-            cands[#cands + 1] = { key = "MicroBar", r = region }
-        end
+        if region then cands[#cands + 1] = { key = "MicroBar", r = region } end
     end
     local bags = _G.BagsBar
     if bags and bags:IsShown() and bags.isHorizontal ~= false then
         local region = Rect(bags)
-        if region then
-            cands[#cands + 1] = { key = "BagBar", r = region }
-        end
+        if region then cands[#cands + 1] = { key = "BagBar", r = region } end
     end
     local function Walk(direction)
         local current, last, used = home, nil, {}
@@ -852,9 +766,7 @@ function mod.AB_CaptureCapSpan(captured)
                     end
                 end
             end
-            if not best then
-                return last
-            end
+            if not best then return last end
             used[best] = true
             last, current = best.key, best.r
         end

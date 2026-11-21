@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Builders.lua
 --
@@ -28,9 +26,7 @@ local CreateCastBar, SetupShowOnCastBar, CreateBottomTextBar =
 local ReparentBarsToClip, UpdateBordersForScale = Inner.ReparentBarsToClip, Inner.UpdateBordersForScale
 local SlotWidthMul, EstimateUFTextWidth = Inner.SlotWidthMul, Inner.EstimateUFTextWidth
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Boss frames have an independent Hover / Target border recolor (mirrors Raid Frames
 -- "Hover Borders"); both default OFF. Priority: hover (moused over) > target (current
@@ -38,13 +34,9 @@ end
 -- place. _hovered is maintained by OnEnter/OnLeave hooks; _isTarget by the boss target
 -- updater. On ns to avoid the Lua 200-local cap.
 mod.ApplyBossBorderState = function(self)
-    if not self.unifiedBorder then
-        return
-    end
+    if not self.unifiedBorder then return end
     local cfg = saved.profile.boss
-    if not cfg then
-        return
-    end
+    if not cfg then return end
     local red, green, blue, a
     if self._hovered and cfg.bossHoverBorderEnabled then
         local color = cfg.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
@@ -61,22 +53,14 @@ mod.ApplyBossBorderState = function(self)
     end
     CludesUI.SetBorderStyleColor(self.unifiedBorder, red, green, blue, a)
     local seam = self.Power and self.Power._pbSeam
-    if seam and seam:IsShown() then
-        seam._tex:SetVertexColor(red, green, blue, a)
-    end
+    if seam and seam:IsShown() then seam._tex:SetVertexColor(red, green, blue, a) end
     local portraitSeam = self._portraitSeparator
-    if portraitSeam and portraitSeam:IsShown() then
-        portraitSeam._tex:SetVertexColor(red, green, blue, a)
-    end
+    if portraitSeam and portraitSeam:IsShown() then portraitSeam._tex:SetVertexColor(red, green, blue, a) end
 end
 
 local function FrameBorderEnter(self)
-    if not self.unifiedBorder then
-        return
-    end
-    if self._blizzArtFrame then
-        return
-    end -- Blizzard Style: no CUI border to recolor
+    if not self.unifiedBorder then return end
+    if self._blizzArtFrame then return end -- Blizzard Style: no CUI border to recolor
     local unitToken = self._cuiUnit or "player"
     if unitToken:match("^boss%d$") then
         self._hovered = true
@@ -86,41 +70,27 @@ local function FrameBorderEnter(self)
     local isMini = (unitToken == "pet" or unitToken == "targettarget" or unitToken == "focustarget")
     local prefs = isMini and GetMiniDonorSettings(unitToken) or GetSettingsForUnit(unitToken)
     -- Highlight defaults ON (nil == enabled); only an explicit false disables it.
-    if prefs.highlightEnabled == false then
-        return
-    end
+    if prefs.highlightEnabled == false then return end
     -- Per-mini-frame opt-out: with "Show Highlight Border" off, a mini frame never
     -- recolors on hover even when the donor (main frame) highlight is enabled. (When the
     -- donor highlight is off we already returned above, so this has no effect then.)
-    if isMini and GetSettingsForUnit(unitToken).showHighlightBorder == false then
-        return
-    end
+    if isMini and GetSettingsForUnit(unitToken).showHighlightBorder == false then return end
     local hc = prefs.highlightColor or { r = 1, g = 1, b = 1 }
     local ha = prefs.highlightAlpha or 1
     CludesUI.SetBorderStyleColor(self.unifiedBorder, hc.r, hc.g, hc.b, ha)
     -- The portrait's Outer Ring wears the frame border tint (only once built).
     local pt = self.Portrait
     local ring = pt and pt.backdrop and pt.backdrop._outerRing
-    if ring and ring:IsShown() then
-        ring:SetVertexColor(hc.r, hc.g, hc.b, ha)
-    end
+    if ring and ring:IsShown() then ring:SetVertexColor(hc.r, hc.g, hc.b, ha) end
     -- So does the Power Bar Seam (only once built).
     local seam = self.Power and self.Power._pbSeam
-    if seam and seam:IsShown() then
-        seam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha)
-    end
+    if seam and seam:IsShown() then seam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha) end
     local portraitSeam = self._portraitSeparator
-    if portraitSeam and portraitSeam:IsShown() then
-        portraitSeam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha)
-    end
+    if portraitSeam and portraitSeam:IsShown() then portraitSeam._tex:SetVertexColor(hc.r, hc.g, hc.b, ha) end
 end
 local function FrameBorderLeave(self)
-    if not self.unifiedBorder then
-        return
-    end
-    if self._blizzArtFrame then
-        return
-    end -- Blizzard Style: no CUI border to recolor
+    if not self.unifiedBorder then return end
+    if self._blizzArtFrame then return end -- Blizzard Style: no CUI border to recolor
     local unitToken = self._cuiUnit or "player"
     if unitToken:match("^boss%d$") then
         self._hovered = false
@@ -134,17 +104,11 @@ local function FrameBorderLeave(self)
     CludesUI.SetBorderStyleColor(self.unifiedBorder, bc.r, bc.g, bc.b, ba)
     local pt = self.Portrait
     local ring = pt and pt.backdrop and pt.backdrop._outerRing
-    if ring and ring:IsShown() then
-        ring:SetVertexColor(bc.r, bc.g, bc.b, ba)
-    end
+    if ring and ring:IsShown() then ring:SetVertexColor(bc.r, bc.g, bc.b, ba) end
     local seam = self.Power and self.Power._pbSeam
-    if seam and seam:IsShown() then
-        seam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba)
-    end
+    if seam and seam:IsShown() then seam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba) end
     local portraitSeam = self._portraitSeparator
-    if portraitSeam and portraitSeam:IsShown() then
-        portraitSeam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba)
-    end
+    if portraitSeam and portraitSeam:IsShown() then portraitSeam._tex:SetVertexColor(bc.r, bc.g, bc.b, ba) end
 end
 -- The detached portrait's click overlay replays these on hover (Portrait.lua).
 Inner.FrameBorderEnter, Inner.FrameBorderLeave = FrameBorderEnter, FrameBorderLeave
@@ -184,9 +148,7 @@ local function CreateUnifiedBorder(widget, unitToken)
 
     widget.unifiedBorder = border
 
-    if size == 0 then
-        border:Hide()
-    end
+    if size == 0 then border:Hide() end
 
     widget:HookScript("OnEnter", FrameBorderEnter)
     widget:HookScript("OnLeave", FrameBorderLeave)
@@ -205,9 +167,7 @@ local AURA_ZOOM = 0.07
 -- zoom (optional) overrides the default AURA_ZOOM crop; per-unit/per-category
 -- Icon Zoom values flow in here, defaulting to AURA_ZOOM so unset = unchanged.
 local function SetAuraIconCrop(iconTex, cropped, wid, hgt, zoom)
-    if not iconTex then
-        return
-    end
+    if not iconTex then return end
     local z = zoom or AURA_ZOOM
     if cropped and wid and hgt and wid > 0 then
         local uSpan = 1 - 2 * z
@@ -222,9 +182,7 @@ end
 -- (rectangular height = 80% of width + aspect-preserving texcoord trim).
 mod.SetAuraIconCrop = SetAuraIconCrop
 function mod.GetAuraCropHeight(cropped, wid)
-    if cropped then
-        return math_floor(wid * AURA_CROP_HEIGHT + 0.5)
-    end
+    if cropped then return math_floor(wid * AURA_CROP_HEIGHT + 0.5) end
     return wid
 end
 
@@ -233,9 +191,7 @@ end
 -- the icon edge, center sits dead-center. User X/Y offset adds on top. On ns for the
 -- 200-local cap.
 function mod.ApplyStackAnchor(fontStr, hostFrame, place, offX, offY)
-    if not fontStr or not hostFrame then
-        return
-    end
+    if not fontStr or not hostFrame then return end
     local anchorPoint, baseX = "BOTTOMRIGHT", -1
     if place == "bottomleft" then
         anchorPoint, baseX = "BOTTOMLEFT", 1
@@ -255,9 +211,7 @@ end
 -- always-fresh settings access and build the unit's containers.
 local function CreateTargetAuras(widget, unitToken)
     mod.UF_GetSettings = GetSettingsForUnit
-    mod.UF_GetProfile = mod.UF_GetProfile or function()
-        return saved and saved.profile
-    end
+    mod.UF_GetProfile = mod.UF_GetProfile or function() return saved and saved.profile end
     return mod.UF_CreateAuraContainers(widget, unitToken or "target")
 end
 
@@ -267,13 +221,9 @@ end
 -- Overrides land. Same settings view and on/off test as the container runtime.
 function mod.UF_EnsurePetAuras(widget)
     widget = widget or (mod.frames and mod.frames.pet)
-    if not widget or mod.GetUnitFrameSource("pet") ~= "cui" then
-        return
-    end
+    if not widget or mod.GetUnitFrameSource("pet") ~= "cui" then return end
     local s = mod.UF_AuraSettings("pet")
-    if not s then
-        return
-    end
+    if not s then return end
     if mod.UF_AuraSideOn("pet", "HELPFUL", s) or mod.UF_AuraSideOn("pet", "HARMFUL", s) then
         CreateTargetAuras(widget, "pet")
     end
@@ -310,9 +260,7 @@ local function ApplyAbsorbGate(widget, unitToken, textOverlay, zone, fontStr, co
         g._cuiHealGate = isHeal
         g:ClearAllPoints()
         g:SetAllPoints(fontStr) -- gate spans the zone's text allocation (live)
-        if fontStr:GetParent() ~= clip then
-            fontStr:SetParent(clip)
-        end
+        if fontStr:GetParent() ~= clip then fontStr:SetParent(clip) end
         g:Show()
         clip:Show()
         local amt
@@ -324,13 +272,9 @@ local function ApplyAbsorbGate(widget, unitToken, textOverlay, zone, fontStr, co
         g:SetValue(amt)
     elseif g then
         local clip = widget._absClip[zone]
-        if fontStr:GetParent() == clip then
-            fontStr:SetParent(textOverlay)
-        end
+        if fontStr:GetParent() == clip then fontStr:SetParent(textOverlay) end
         g:Hide()
-        if clip then
-            clip:Hide()
-        end
+        if clip then clip:Hide() end
     end
 end
 
@@ -351,9 +295,7 @@ local function ApplyFrameTextTags(widget, unitToken, prefs, lc, rc, cc, ec)
     ApplyAbsorbGate(widget, unitToken, textOverlay, "left", widget.LeftText, lc)
     ApplyAbsorbGate(widget, unitToken, textOverlay, "right", widget.RightText, rc)
     ApplyAbsorbGate(widget, unitToken, textOverlay, "center", widget.CenterText, cc)
-    if extraText then
-        ApplyAbsorbGate(widget, unitToken, textOverlay, "extra", extraText, ec)
-    end
+    if extraText then ApplyAbsorbGate(widget, unitToken, textOverlay, "extra", extraText, ec) end
     mod.UF_PaintText(widget, widget._cuiUnit or unitToken)
 end
 
@@ -502,16 +444,12 @@ local function StyleFullFrame(widget, unitToken)
         local pSide = prefs.portraitSide or "left"
         -- For attached, "top" falls back to default side
         local effectiveSide = pSide
-        if isAttached and pSide == "top" then
-            effectiveSide = "left"
-        end
+        if isAttached and pSide == "top" then effectiveSide = "left" end
         -- Class power "above" adds height above health bar ("top" floats outside)
         local cpAboveH = 0
         if SpecHasClassPower() then
             local cpSt = prefs.classPowerStyle or "none"
-            if mod.UF_ForeverCPStyle then
-                cpSt = mod.UF_ForeverCPStyle(cpSt)
-            end
+            if mod.UF_ForeverCPStyle then cpSt = mod.UF_ForeverCPStyle(cpSt) end
             local cpPo = (cpSt == "modern") and (prefs.classPowerPosition or "top") or "none"
             if cpSt == "modern" and cpPo == "above" then
                 local cpSizeAdj = prefs.classPowerSize or 8
@@ -523,12 +461,8 @@ local function StyleFullFrame(widget, unitToken)
         -- Apply portrait size adjustment
         local pSizeAdj = prefs.portraitSize or 0
         local adjPortraitH = playerHeightWithCp + pSizeAdj
-        if adjPortraitH < 8 then
-            adjPortraitH = 8
-        end
-        if not isAttached then
-            pSizeAdj = pSizeAdj + 10
-        end
+        if adjPortraitH < 8 then adjPortraitH = 8 end
+        if not isAttached then pSizeAdj = pSizeAdj + 10 end
         if not showPortrait then
             totalWidth = prefs.frameWidth
             portraitHeight = 0
@@ -552,9 +486,7 @@ local function StyleFullFrame(widget, unitToken)
         -- Always create portrait; hide backdrop when disabled
         widget.Portrait = CreatePortrait(widget, pSide, playerHeightWithCp, unitToken)
         CludesUI._ufPortraitSide[widget] = pSide
-        if widget.Portrait and not showPortrait then
-            widget.Portrait.backdrop:Hide()
-        end
+        if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
         -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
         if widget.Portrait and widget.Portrait.backdrop and showPortrait and isAttached and widget.Health then
             local snappedPortW = widget.Portrait.backdrop:GetWidth()
@@ -581,17 +513,11 @@ local function StyleFullFrame(widget, unitToken)
         local pSide = prefs.portraitSide or "right"
         -- For attached, "top" falls back to default side
         local effectiveSide = pSide
-        if isAttached and pSide == "top" then
-            effectiveSide = "right"
-        end
+        if isAttached and pSide == "top" then effectiveSide = "right" end
         local pSizeAdj = prefs.portraitSize or 0
         local adjPortraitH = playerTargetHeight + pSizeAdj
-        if not isAttached then
-            pSizeAdj = pSizeAdj + 10
-        end
-        if adjPortraitH < 8 then
-            adjPortraitH = 8
-        end
+        if not isAttached then pSizeAdj = pSizeAdj + 10 end
+        if adjPortraitH < 8 then adjPortraitH = 8 end
         if not showPortrait then
             totalWidth = prefs.frameWidth
         elseif isAttached then
@@ -611,9 +537,7 @@ local function StyleFullFrame(widget, unitToken)
         SetupShowOnCastBar(widget, unitToken)
         widget.Portrait = CreatePortrait(widget, pSide, playerTargetHeight, unitToken)
         CludesUI._ufPortraitSide[widget] = pSide
-        if widget.Portrait and not showPortrait then
-            widget.Portrait.backdrop:Hide()
-        end
+        if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
         -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
         if widget.Portrait and widget.Portrait.backdrop and showPortrait and isAttached and widget.Health then
             local snappedPortW = widget.Portrait.backdrop:GetWidth()
@@ -711,9 +635,7 @@ local function StyleFullFrame(widget, unitToken)
     end
     SetTextTags(leftContent, rightContent, centerContent, extraContent)
     widget._applyTextTags = SetTextTags
-    local function ApplyTextPositions(s)
-        ApplyFrameTextPositions(widget, unitToken, s, "both", 181)
-    end
+    local function ApplyTextPositions(s) ApplyFrameTextPositions(widget, unitToken, s, "both", 181) end
     ApplyTextPositions(prefs)
     widget._applyTextPositions = ApplyTextPositions
 
@@ -727,17 +649,13 @@ local function StyleFullFrame(widget, unitToken)
         if btbIsAttached and showPortrait and isAttached then
             local pSide = prefs.portraitSide or (unitToken == "player" and "left" or "right")
             local eSide = pSide
-            if pSide == "top" then
-                eSide = (unitToken == "player") and "left" or "right"
-            end
+            if pSide == "top" then eSide = (unitToken == "player") and "left" or "right" end
             if eSide == "left" then
                 local ppPos2 = prefs.powerPosition or "below"
                 local ppIsAtt2 = (ppPos2 == "below" or ppPos2 == "above")
                 local barH = prefs.healthHeight + (ppIsAtt2 and (prefs.powerHeight or 6) or 0)
                 local adj = barH + (prefs.portraitSize or 0)
-                if adj < 8 then
-                    adj = 8
-                end
+                if adj < 8 then adj = 8 end
                 btbXOff = -adj
             end
         end
@@ -765,17 +683,11 @@ local function StyleFocusFrame(widget, unitToken)
     local pSide = prefs.portraitSide or "right"
     -- For attached, "top" falls back to default side
     local effectiveSide = pSide
-    if isAttached and pSide == "top" then
-        effectiveSide = "right"
-    end
+    if isAttached and pSide == "top" then effectiveSide = "right" end
     local pSizeAdj = prefs.portraitSize or 0
-    if not isAttached then
-        pSizeAdj = pSizeAdj + 10
-    end
+    if not isAttached then pSizeAdj = pSizeAdj + 10 end
     local adjPortraitH = focusBarHeight + pSizeAdj
-    if adjPortraitH < 8 then
-        adjPortraitH = 8
-    end
+    if adjPortraitH < 8 then adjPortraitH = 8 end
 
     if not showPortrait then
         totalWidth = prefs.frameWidth
@@ -796,9 +708,7 @@ local function StyleFocusFrame(widget, unitToken)
     -- Always create portrait; hide backdrop when disabled
     widget.Portrait = CreatePortrait(widget, pSide, focusBarHeight, unitToken)
     CludesUI._ufPortraitSide[widget] = pSide
-    if widget.Portrait and not showPortrait then
-        widget.Portrait.backdrop:Hide()
-    end
+    if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
     -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
     if widget.Portrait and widget.Portrait.backdrop and showPortrait and isAttached and widget.Health then
         local snappedPortW = widget.Portrait.backdrop:GetWidth()
@@ -898,9 +808,7 @@ local function StyleFocusFrame(widget, unitToken)
     end
     SetTextTags(leftContent, rightContent, centerContent, extraContent)
     widget._applyTextTags = SetTextTags
-    local function ApplyTextPositions(s)
-        ApplyFrameTextPositions(widget, unitToken, s, "perhp", 181)
-    end
+    local function ApplyTextPositions(s) ApplyFrameTextPositions(widget, unitToken, s, "perhp", 181) end
     ApplyTextPositions(prefs)
     widget._applyTextPositions = ApplyTextPositions
 
@@ -928,9 +836,7 @@ mod.UF_PetHasPower = (CludesUI.IS_FOREVER == true)
 local function StyleSimpleFrame(widget, unitToken)
     local prefs = GetSettingsForUnit(unitToken)
     local pStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
-    if pStyle == "detached" then
-        pStyle = "attached"
-    end
+    if pStyle == "detached" then pStyle = "attached" end
     local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
     local pSide = prefs.portraitSide or "left"
     -- WoW Forever pet power bar (Blizzard Style keeps its stock one instead): an
@@ -969,9 +875,7 @@ local function StyleSimpleFrame(widget, unitToken)
     bgTex:SetColorTexture(0, 0, 0, 0.5)
     health.bg = bgTex
 
-    if unitToken ~= "pet" then
-        health.colorClass = true
-    end
+    if unitToken ~= "pet" then health.colorClass = true end
     health.colorReaction = true
     health.colorTapped = true
     health.colorDisconnected = true
@@ -993,25 +897,19 @@ local function StyleSimpleFrame(widget, unitToken)
     -- is parked while it is hidden); ToT and FoT carry none.
     if petPower then
         widget.Power = CreatePowerBar(widget, unitToken, prefs)
-        if ppPos == "none" then
-            widget:DisableElement("Power")
-        end
+        if ppPos == "none" then widget:DisableElement("Power") end
     else
         widget.Power = mod.UF_BlizzMiniPower(widget, unitToken, prefs)
     end
     -- A pet is never an attackable NPC, so the melee-mob gray-out pass (a pcall
     -- per paint) can never act on a WoW Forever pet's bar, stock or not (the pet
     -- defaults to an attached bar there, so it would run): drop it.
-    if unitToken == "pet" and mod.UF_PetHasPower and widget.Power then
-        widget.Power.PostUpdate = nil
-    end
+    if unitToken == "pet" and mod.UF_PetHasPower and widget.Power then widget.Power.PostUpdate = nil end
 
     -- Always create portrait; hide backdrop when disabled.
     widget.Portrait = CreatePortrait(widget, pSide, barH, unitToken)
     CludesUI._ufPortraitSide[widget] = pSide
-    if widget.Portrait and not showPortrait then
-        widget.Portrait.backdrop:Hide()
-    end
+    if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
     if widget.Portrait and widget.Portrait.backdrop and showPortrait then
         local portW = math.max(barH, 1)
         health:ClearAllPoints()
@@ -1071,14 +969,10 @@ local function StyleSimpleFrame(widget, unitToken)
     end
     SetTextTags(leftContent, rightContent, centerContent)
     widget._applyTextTags = SetTextTags
-    local function ApplyTextPositions(s)
-        ApplyFrameTextPositions(widget, unitToken, s, "none", 100)
-    end
+    local function ApplyTextPositions(s) ApplyFrameTextPositions(widget, unitToken, s, "none", 100) end
     ApplyTextPositions(prefs)
     widget._applyTextPositions = ApplyTextPositions
-    if unitToken == "pet" then
-        mod.UF_EnsurePetAuras(widget)
-    end
+    if unitToken == "pet" then mod.UF_EnsurePetAuras(widget) end
     -- Pet cast bar: built only while on, so it costs nothing otherwise.
     if unitToken == "pet" and prefs.showCastbar == true then
         widget.Castbar = CreateCastBar(widget, unitToken, prefs)
@@ -1095,9 +989,7 @@ local function StyleBossFrame(widget, unitToken)
     local totalWidth = 0
     local portraitHeight = 0
     local pStyle = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
-    if pStyle == "detached" then
-        pStyle = "attached"
-    end
+    if pStyle == "detached" then pStyle = "attached" end
     local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
     if not showPortrait then
         totalWidth = prefs.frameWidth
@@ -1119,9 +1011,7 @@ local function StyleBossFrame(widget, unitToken)
     -- Always create portrait; hide backdrop when disabled
     widget.Portrait = CreatePortrait(widget, pSide, bossBarHeight, unitToken)
     CludesUI._ufPortraitSide[widget] = pSide
-    if widget.Portrait and not showPortrait then
-        widget.Portrait.backdrop:Hide()
-    end
+    if widget.Portrait and not showPortrait then widget.Portrait.backdrop:Hide() end
     -- Re-anchor health bar to portrait's actual snapped width (eliminates sub-pixel gap)
     if widget.Portrait and widget.Portrait.backdrop and showPortrait and widget.Health then
         local snappedPortW = widget.Portrait.backdrop:GetWidth()
@@ -1226,9 +1116,7 @@ local function StyleBossFrame(widget, unitToken)
     end
     SetTextTags(leftContent, rightContent, centerContent, extraContent)
     widget._applyTextTags = SetTextTags
-    local function ApplyTextPositions(s)
-        ApplyFrameTextPositions(widget, unitToken, s, "perhp", 100)
-    end
+    local function ApplyTextPositions(s) ApplyFrameTextPositions(widget, unitToken, s, "perhp", 100) end
     ApplyTextPositions(prefs)
     widget._applyTextPositions = ApplyTextPositions
 end

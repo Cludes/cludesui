@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Events.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -26,9 +22,7 @@ local frameCache, questMobCache = Inner.frameCache, Inner.questMobCache
 local RefreshThreatCache, NameplateFrame = Inner.RefreshThreatCache, Inner.NameplateFrame
 
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 -------------------------------------------------------------------------------
 --  Centralized cast event dispatcher: registers all 13 SPELLCAST events ONCE globally instead
@@ -60,13 +54,9 @@ do
     castDispatcher:RegisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
     castDispatcher:SetScript("OnEvent", function(_, evt, unitToken, ...)
         local backing = mod.plates[unitToken]
-        if not backing then
-            return
-        end
+        if not backing then return end
         local handler = backing[evt]
-        if handler then
-            handler(backing, unitToken, ...)
-        end
+        if handler then handler(backing, unitToken, ...) end
     end)
     mod._castDispatcher = castDispatcher
 end
@@ -101,9 +91,7 @@ local AcquirePendingWatcher, AcquireEnemyWatcher
 
 -- Watches a friendly/pending unit for becoming attackable (e.g. duel start)
 local function PendingWatcherOnEvent(self, evt, unit)
-    if not UnitCanAttack("player", unit) then
-        return
-    end
+    if not UnitCanAttack("player", unit) then return end
     -- Unit became attackable -> promote to enemy plate
     self:UnregisterAllEvents()
     pendingWatchers[unit] = nil
@@ -113,9 +101,7 @@ local function PendingWatcherOnEvent(self, evt, unit)
     -- overlay, not the friendlyPlates[] pool the calls below clean up.
     -- Tear it down here or the old friendly name text is left rendering
     -- on top of the new enemy plate/bar.
-    if mod.RemoveFriendlyNPCOverlayForUnit then
-        mod.RemoveFriendlyNPCOverlayForUnit(unit, currentPlate)
-    end
+    if mod.RemoveFriendlyNPCOverlayForUnit then mod.RemoveFriendlyNPCOverlayForUnit(unit, currentPlate) end
     -- Remove friendly plate WITHOUT restoring Blizzard UF (we'll suppress it as enemy)
     if mod.RemoveFriendlyPlateNoRestore then
         mod.RemoveFriendlyPlateNoRestore(unit)
@@ -137,24 +123,16 @@ end
 
 -- Watches a promoted-enemy unit for becoming friendly again (e.g. duel end)
 local function EnemyWatcherOnEvent(self, evt, unit)
-    if UnitCanAttack("player", unit) then
-        return
-    end
+    if UnitCanAttack("player", unit) then return end
     -- Unit became friendly again -> tear down enemy plate, restore to pending
     self:UnregisterAllEvents()
     enemyWatchers[unit] = nil
     local backing = mod.plates[unit]
     if backing then
-        if mod._ClearMouseoverPlate then
-            mod._ClearMouseoverPlate(backing)
-        end
+        if mod._ClearMouseoverPlate then mod._ClearMouseoverPlate(backing) end
         -- Same cached-ref release as NAME_PLATE_UNIT_REMOVED.
-        if mod._cachedTargetPlate == backing then
-            mod._cachedTargetPlate = nil
-        end
-        if mod._cachedFocusPlate == backing then
-            mod._cachedFocusPlate = nil
-        end
+        if mod._cachedTargetPlate == backing then mod._cachedTargetPlate = nil end
+        if mod._cachedFocusPlate == backing then mod._cachedFocusPlate = nil end
         backing:ClearUnit()
         frameCache:Release(backing)
         mod.plates[unit] = nil
@@ -169,9 +147,7 @@ local function EnemyWatcherOnEvent(self, evt, unit)
         mod.NP_ReclaimBlizzardFrame(currentPlate.UnitFrame)
         pendingUnits[unit] = currentPlate
         pendingWatchers[unit] = AcquirePendingWatcher(unit)
-        if mod.TryAddFriendlyPlate then
-            mod.TryAddFriendlyPlate(unit)
-        end
+        if mod.TryAddFriendlyPlate then mod.TryAddFriendlyPlate(unit) end
     end
 end
 
@@ -230,9 +206,7 @@ local function RefreshThreatContextAndPlateColors()
     -- stale quest-mob decisions that were made under a different context.
     wipe(questMobCache)
     wipe(mod._questObjText)
-    if mod._questObjectiveTypeEnabled then
-        mod.InvalidateQuestObjectiveTypeCache()
-    end
+    if mod._questObjectiveTypeEnabled then mod.InvalidateQuestObjectiveTypeCache() end
     for _, backing in pairs(mod.plates) do
         backing:UpdateHealthColor()
     end
@@ -253,9 +227,7 @@ factionFrame:SetScript("OnEvent", function(_, evt, unitToken)
     if evt == "PLAYER_SPECIALIZATION_CHANGED" then
         -- Never fall through: the dispatch below keys watchers by unit token,
         -- and this event's unit args are not faction-watcher units.
-        if unitToken == "player" then
-            RefreshThreatContextAndPlateColors()
-        end
+        if unitToken == "player" then RefreshThreatContextAndPlateColors() end
         return
     end
     if
@@ -293,17 +265,13 @@ factionFrame:SetScript("OnEvent", function(_, evt, unitToken)
     local backing = mod.plates[unitToken]
     if backing then
         backing:UpdateHealthColor()
-        if backing._fvLevelBox then
-            mod.NP_UpdateForeverLevel(backing)
-        end
+        if backing._fvLevelBox then mod.NP_UpdateForeverLevel(backing) end
     else
         -- A friendly full plate's faction badge: PvP flag and faction changes.
         local fp = mod.friendlyPlates[unitToken]
         if fp then
             mod.NP_FriendlyFactionRefresh(fp)
-            if fp._fvLevelBox then
-                mod.NP_UpdateForeverLevel(fp)
-            end
+            if fp._fvLevelBox then mod.NP_UpdateForeverLevel(fp) end
         elseif unitToken == "player" and mod._npFvLevelArmed then
             mod.NP_ForeverSweepLevels()
         end
@@ -314,9 +282,7 @@ end)
 -- exists) watches for the mouse leaving. A held mouse button transiently drops the mouseover
 -- unit, so in that case we wait for GLOBAL_MOUSE_UP (handled on `manager`) and re-check.
 function mod._EnsureMouseoverTicker()
-    if mod._mouseoverTicker then
-        return
-    end
+    if mod._mouseoverTicker then return end
     mod._mouseoverTicker = C_Timer.NewTicker(0.1, function()
         if not UnitExists("mouseover") then
             if mod._mouseoverTicker then
@@ -324,9 +290,7 @@ function mod._EnsureMouseoverTicker()
                 mod._mouseoverTicker = nil
             end
             mod._UpdateMouseover()
-            if IsMouseButtonDown() then
-                manager:RegisterEvent("GLOBAL_MOUSE_UP")
-            end
+            if IsMouseButtonDown() then manager:RegisterEvent("GLOBAL_MOUSE_UP") end
         end
     end)
 end
@@ -345,9 +309,7 @@ function mod._ClearMouseoverPlate(backing)
     -- hover-sized border is restored here before its flag is dropped.
     if backing._hoverBorderSized then
         backing._hoverBorderSized = nil
-        if backing.ApplyBorder then
-            backing:ApplyBorder()
-        end
+        if backing.ApplyBorder then backing:ApplyBorder() end
     end
     backing._hoverFxOn = nil
 end
@@ -359,9 +321,7 @@ function mod._UpdateMouseover()
         mod.ClearHoverExtras(current)
         mod._currentMouseoverPlate = nil
     end
-    if not UnitExists("mouseover") then
-        return
-    end
+    if not UnitExists("mouseover") then return end
     local found
     for _, backing in pairs(mod.plates) do
         if backing.unit and UnitIsUnit(backing.unit, "mouseover") then
@@ -416,23 +376,15 @@ end
 manager:SetScript("OnEvent", function(self, evt, unitToken)
     if evt == "NAME_PLATE_UNIT_ADDED" then
         local nameplate = C_NamePlate.GetNamePlateForUnit(unitToken)
-        if not nameplate then
-            return
-        end
+        if not nameplate then return end
         if not UnitCanAttack("player", unitToken) then
             pendingUnits[unitToken] = nameplate
             pendingWatchers[unitToken] = AcquirePendingWatcher(unitToken)
-            if mod.TryAddFriendlyPlate then
-                mod.TryAddFriendlyPlate(unitToken)
-            end
+            if mod.TryAddFriendlyPlate then mod.TryAddFriendlyPlate(unitToken) end
             -- Color NPC names green in name-only mode
-            if mod.TryColorFriendlyNPCName then
-                mod.TryColorFriendlyNPCName(unitToken, nameplate)
-            end
+            if mod.TryColorFriendlyNPCName then mod.TryColorFriendlyNPCName(unitToken, nameplate) end
             -- Hide NPC health bars in name-only mode (show name only)
-            if mod.TrySuppressNPCHealthBar then
-                mod.TrySuppressNPCHealthBar(unitToken, nameplate)
-            end
+            if mod.TrySuppressNPCHealthBar then mod.TrySuppressNPCHealthBar(unitToken, nameplate) end
             -- Ensure the Blizzard UF is visible for name-only friendly plates. UnitFrames are
             -- pooled; children an earlier enemy parked already came back in the
             -- OnNamePlateAdded hook (ns.NP_ReclaimBlizzardFrame).
@@ -441,13 +393,9 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
                 local uf = nameplate.UnitFrame
                 if uf then
                     -- Restore alpha in case the recycled UF was suppressed
-                    if uf:GetAlpha() < 0.01 then
-                        uf:SetAlpha(1)
-                    end
+                    if uf:GetAlpha() < 0.01 then uf:SetAlpha(1) end
                     -- Restore name FontString if it was moved offscreen
-                    if uf.name and uf.name:GetParent() ~= uf then
-                        uf.name:SetParent(uf)
-                    end
+                    if uf.name and uf.name:GetParent() ~= uf then uf.name:SetParent(uf) end
                     -- Ensure UF is parented to the nameplate (not hidden frame)
                     if uf:GetParent() ~= nameplate then
                         uf:SetParent(nameplate)
@@ -477,34 +425,22 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
         backing:SetUnit(unitToken, nameplate)
         -- If this plate is the current target, update the cached ref so class power pips
         -- track it immediately: no PLAYER_TARGET_CHANGED fires on recycle for the same target.
-        if UnitIsUnit(unitToken, "target") then
-            mod._cachedTargetPlate = backing
-        end
-        if UnitIsUnit(unitToken, "focus") then
-            mod._cachedFocusPlate = backing
-        end
+        if UnitIsUnit(unitToken, "target") then mod._cachedTargetPlate = backing end
+        if UnitIsUnit(unitToken, "focus") then mod._cachedFocusPlate = backing end
     elseif evt == "NAME_PLATE_UNIT_REMOVED" then
         questMobCache[unitToken] = nil
         mod._questObjText[unitToken] = nil
-        if mod._questObjectiveTypeEnabled then
-            mod._questObjType[unitToken] = nil
-        end
+        if mod._questObjectiveTypeEnabled then mod._questObjType[unitToken] = nil end
         -- The driver has already released this base's UnitFrame (base.UnitFrame is nil
         -- here); its parked pieces come back on the next acquire (ns.NP_ReclaimBlizzardFrame).
         local nameplate = C_NamePlate.GetNamePlateForUnit(unitToken)
         -- Restore NPC name color if we tinted it
-        if nameplate and mod.RestoreFriendlyNPCNameColor then
-            mod.RestoreFriendlyNPCNameColor(nameplate)
-        end
+        if nameplate and mod.RestoreFriendlyNPCNameColor then mod.RestoreFriendlyNPCNameColor(nameplate) end
         -- Restore NPC health bar if we suppressed it
-        if nameplate and mod.RestoreNPCHealthBar then
-            mod.RestoreNPCHealthBar(nameplate)
-        end
+        if nameplate and mod.RestoreNPCHealthBar then mod.RestoreNPCHealthBar(nameplate) end
         -- Drop the name-only Y-offset flag only: the pool release clears the UnitFrame's
         -- anchors and the next acquire re-anchors it (SetAllPoints).
-        if nameplate then
-            _npYOffsetState[nameplate] = nil
-        end
+        if nameplate then _npYOffsetState[nameplate] = nil end
         pendingUnits[unitToken] = nil
         if pendingWatchers[unitToken] then
             pendingWatchers[unitToken]:UnregisterAllEvents()
@@ -516,23 +452,15 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
         end
         local backing = mod.plates[unitToken]
         if backing then
-            if mod._ClearMouseoverPlate then
-                mod._ClearMouseoverPlate(backing)
-            end
+            if mod._ClearMouseoverPlate then mod._ClearMouseoverPlate(backing) end
             -- Clear cached refs before release
-            if mod._cachedTargetPlate == backing then
-                mod._cachedTargetPlate = nil
-            end
-            if mod._cachedFocusPlate == backing then
-                mod._cachedFocusPlate = nil
-            end
+            if mod._cachedTargetPlate == backing then mod._cachedTargetPlate = nil end
+            if mod._cachedFocusPlate == backing then mod._cachedFocusPlate = nil end
             backing:ClearUnit()
             frameCache:Release(backing)
             mod.plates[unitToken] = nil
         end
-        if mod.RemoveFriendlyPlate then
-            mod.RemoveFriendlyPlate(unitToken)
-        end
+        if mod.RemoveFriendlyPlate then mod.RemoveFriendlyPlate(unitToken) end
     elseif evt == "PLAYER_TARGET_CHANGED" then
         -- PERF: only update old + new target plates instead of iterating all
         local oldTarget = mod._cachedTargetPlate
@@ -554,9 +482,7 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
         end
         -- Non-Target and Out of Combat Opacity: gaining/losing a target flips every plate's
         -- fade state, so this is the one full-iteration site. Zero cost while off (compares).
-        if mod._ntAlpha < 1 or mod._oocAlpha < 1 then
-            mod.NT_ApplyAll()
-        end
+        if mod._ntAlpha < 1 or mod._oocAlpha < 1 then mod.NT_ApplyAll() end
     elseif evt == "PLAYER_FOCUS_CHANGED" then
         -- PERF: only update old + new focus plates instead of iterating all
         local oldFocus = mod._cachedFocusPlate
@@ -570,19 +496,13 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
             end
         end
         local function UpdateFocusPlate(backing)
-            if not backing or not backing.unit then
-                return
-            end
+            if not backing or not backing.unit then return end
             backing:UpdateHealthColor()
             -- Blizzard Style: the focus ring follows the focus, not just the target.
-            if mod.NP_Style() == "blizzard" then
-                mod.NP_ApplyBlizzSelection(backing)
-            end
+            if mod.NP_Style() == "blizzard" then mod.NP_ApplyBlizzSelection(backing) end
             if focusPct ~= 100 then
                 local castH = GetCastBarHeight()
-                if UnitIsUnit(backing.unit, "focus") then
-                    castH = math.floor(castH * focusPct / 100 + 0.5)
-                end
+                if UnitIsUnit(backing.unit, "focus") then castH = math.floor(castH * focusPct / 100 + 0.5) end
                 mod.LayoutCastBar(backing, mod.GetHealthBarWidth(), castH)
                 mod.LayoutCastIcon(backing, castH)
                 mod.NP_SetSparkHeight(backing, castH)
@@ -596,9 +516,7 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
         -- Non-Target and Out of Combat Opacity: only the old and new focus
         -- plates change fade state on a focus swap.
         if mod._ntAlpha < 1 or mod._oocAlpha < 1 then
-            if oldFocus then
-                mod.NT_Apply(oldFocus)
-            end
+            if oldFocus then mod.NT_Apply(oldFocus) end
             if mod._cachedFocusPlate and mod._cachedFocusPlate ~= oldFocus then
                 mod.NT_Apply(mod._cachedFocusPlate)
             end
@@ -611,9 +529,7 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
     elseif evt == "RAID_TARGET_UPDATE" then
         for _, backing in pairs(mod.plates) do
             backing:UpdateRaidIcon()
-            if p and p.nameRaidMarkerEnabled == true then
-                backing:RefreshNamePosition(true)
-            end
+            if p and p.nameRaidMarkerEnabled == true then backing:RefreshNamePosition(true) end
             -- A marker appearing/clearing in a side slot changes the side extents the target
             -- arrows sit outside of, so re-run arrow positioning (no-op without arrows).
             mod.PositionArrowsOutsideAuras(backing)
@@ -622,13 +538,9 @@ manager:SetScript("OnEvent", function(self, evt, unitToken)
         for _, backing in pairs(mod.plates) do
             backing:UpdateHealthColor()
         end
-        if mod._oocAlpha < 1 then
-            mod.NT_ApplyAll()
-        end
+        if mod._oocAlpha < 1 then mod.NT_ApplyAll() end
     elseif evt == "DISPLAY_SIZE_CHANGED" or evt == "UI_SCALE_CHANGED" then
-        if mod.ApplyNamePlateClickArea then
-            mod.ApplyNamePlateClickArea()
-        end
+        if mod.ApplyNamePlateClickArea then mod.ApplyNamePlateClickArea() end
     end
 end)
 

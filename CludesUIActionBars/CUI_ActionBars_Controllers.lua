@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Controllers.lua
 --
@@ -127,9 +125,7 @@ local BTN_ON_SHOW_HIDE = [[
 -- Showgrid monitor: when Blizzard changes ActionButton1's showgrid
 -- (e.g. during spell drag in combat), propagate to all our buttons.
 local function InitShowGridMonitor()
-    if not ActionButton1 then
-        return
-    end
+    if not ActionButton1 then return end
     ActionButtonController:WrapScript(
         ActionButton1,
         "OnAttributeChanged",
@@ -145,9 +141,7 @@ end
 
 -- Register a button with the controller (adds WrapScript handlers + secure table entry)
 local function RegisterButtonWithController(button)
-    if _controllerButtons[button] then
-        return
-    end
+    if _controllerButtons[button] then return end
 
     -- On /reload, Lua locals reset but frames survive: if the button already
     -- carries our secure snippets, skip WrapScript+Execute (re-wrapping in
@@ -294,9 +288,7 @@ local function SetShowGridInsecure(button, show, reason, force)
         mod._eabApplyDeferred = true
         return
     end
-    if type(reason) ~= "number" then
-        return
-    end
+    if type(reason) ~= "number" then return end
 
     local value = button:GetAttribute("showgrid") or 0
     local prevValue = value
@@ -307,9 +299,7 @@ local function SetShowGridInsecure(button, show, reason, force)
         value = bit.band(value, bit.bnot(reason))
     end
 
-    if (value ~= prevValue) or force then
-        button:SetAttribute("showgrid", value)
-    end
+    if (value ~= prevValue) or force then button:SetAttribute("showgrid", value) end
 end
 
 -------------------------------------------------------------------------------

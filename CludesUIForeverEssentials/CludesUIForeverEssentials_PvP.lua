@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PvP.lua  (WoW Forever only)
 --  PvP: enemy players around you, Kill on Sight, the last hour, statistics.
@@ -74,25 +70,13 @@ local PROWL = { [5215] = true, [6783] = true, [9913] = true }
 local WATCHED = { target = true, focus = true, mouseover = true }
 
 -- The CludesUI theme colour, read each time so a theme change follows.
-local function Accent()
-    return CludesUI.GetAccentColor()
-end
-local function AccentHex()
-    return CludesUI.HexColor(Accent())
-end
-local function Say(text)
-    CludesUI.Print(AccentHex() .. "PvP:|r " .. text)
-end
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
-end
+local function Accent() return CludesUI.GetAccentColor() end
+local function AccentHex() return CludesUI.HexColor(Accent()) end
+local function Say(text) CludesUI.Print(AccentHex() .. "PvP:|r " .. text) end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(v) return issecretvalue and issecretvalue(v) end
 local function R(v)
-    if v == nil or Secret(v) then
-        return nil
-    end
+    if v == nil or Secret(v) then return nil end
     return v
 end
 
@@ -122,46 +106,32 @@ local Refresh -- the window's repaint
 
 local function Zoned()
     local inside, kind = IsInInstance()
-    if inside and (kind == "party" or kind == "raid" or kind == "scenario") then
-        return false
-    end
-    if inside and (kind == "pvp" or kind == "arena") and not Get("battlegrounds") then
-        return false
-    end
+    if inside and (kind == "party" or kind == "raid" or kind == "scenario") then return false end
+    if inside and (kind == "pvp" or kind == "arena") and not Get("battlegrounds") then return false end
     local zoneType = C_PvP and C_PvP.GetZonePVPInfo and R(C_PvP.GetZonePVPInfo())
     return zoneType ~= "sanctuary"
 end
 
 local function OffZone()
     local list = Get("offZones")
-    if type(list) ~= "string" or list == "" then
-        return false
-    end
+    if type(list) ~= "string" or list == "" then return false end
     local zone, sub = (R(GetZoneText()) or ""):lower(), (R(GetSubZoneText()) or ""):lower()
     for name in list:gmatch("[^,]+") do
         name = name:match("^%s*(.-)%s*$"):lower()
-        if name ~= "" and (name == zone or name == sub) then
-            return true
-        end
+        if name ~= "" and (name == zone or name == sub) then return true end
     end
     return false
 end
 
-local function Live()
-    return Enabled() and Zoned() and not OffZone()
-end
+local function Live() return Enabled() and Zoned() and not OffZone() end
 
 local function PlayerName(unit)
-    if not R(UnitExists(unit)) or not R(UnitIsPlayer(unit)) then
-        return nil
-    end
+    if not R(UnitExists(unit)) or not R(UnitIsPlayer(unit)) then return nil end
     local name, realm = UnitName(unit)
     if Secret(name) or Secret(realm) or type(name) ~= "string" or name == "" or name == UNKNOWNOBJECT then
         return nil
     end
-    if type(realm) == "string" and realm ~= "" then
-        name = name .. "-" .. realm
-    end
+    if type(realm) == "string" and realm ~= "" then name = name .. "-" .. realm end
     return name
 end
 
@@ -174,9 +144,7 @@ local function Data(name, create)
     return p
 end
 
-local function Here()
-    return R(GetZoneText()) or "", R(GetSubZoneText()) or ""
-end
+local function Here() return R(GetZoneText()) or "", R(GetSubZoneText()) or "" end
 
 -------------------------------------------------------------------------------
 --  Alerts
@@ -201,9 +169,7 @@ local function Warn(text, red, green, blue, alarm)
         out:SetToAlpha(0)
         out:SetDuration(0.8)
         out:SetOrder(2)
-        anim:SetScript("OnFinished", function()
-            alertFrame:Hide()
-        end)
+        anim:SetScript("OnFinished", function() alertFrame:Hide() end)
         alertFrame.ag = anim
     end
     alertFrame.text:SetText(text)
@@ -212,9 +178,7 @@ local function Warn(text, red, green, blue, alarm)
     alertFrame:SetAlpha(1)
     alertFrame:Show()
     alertFrame.ag:Play()
-    if Get("sound") then
-        PlaySound(alarm and SOUNDKIT.RAID_WARNING or SOUNDKIT.IG_PLAYER_INVITE, "Master")
-    end
+    if Get("sound") then PlaySound(alarm and SOUNDKIT.RAID_WARNING or SOUNDKIT.IG_PLAYER_INVITE, "Master") end
 end
 
 local function ClassColour(class)
@@ -231,30 +195,22 @@ end
 --  Sharing (Spy's message format)
 -------------------------------------------------------------------------------
 local function Share(name)
-    if not Get("share") then
-        return
-    end
+    if not Get("share") then return end
     local p = Data(name)
-    if not p then
-        return
-    end
+    if not p then return end
     local zone, sub = Here()
     local level = (p.level and not p.guess) and p.level or ""
     local message = table.concat(
         { SPY_VERSION, name, p.class or "", level, p.race or "", zone, sub, "", "", p.guild or "", "" },
         "|"
     )
-    if #message >= 240 then
-        return
-    end
+    if #message >= 240 then return end
     if IsInRaid() then
         C_ChatInfo.SendAddonMessage(PREFIX, message, "RAID")
     elseif IsInGroup() then
         C_ChatInfo.SendAddonMessage(PREFIX, message, "PARTY")
     end
-    if IsInGuild() and not IsInInstance() then
-        C_ChatInfo.SendAddonMessage(PREFIX, message, "GUILD")
-    end
+    if IsInGuild() and not IsInInstance() then C_ChatInfo.SendAddonMessage(PREFIX, message, "GUILD") end
 end
 
 -------------------------------------------------------------------------------
@@ -264,16 +220,12 @@ local function Detected(name, acted, fromShare)
     local now = GetTime()
     local fresh = not nearby[name]
     nearby[name] = now
-    if acted then
-        active[name] = now
-    end
+    if acted then active[name] = now end
     lastHour[name] = time()
     local p = Data(name, true)
     p.last = time()
     p.zone, p.sub = Here()
-    if Store().ignore[name] then
-        return
-    end
+    if Store().ignore[name] then return end
     if fresh and (not warned[name] or now - warned[name] > Get("removeAfter")) then
         warned[name] = now
         local kos = Store().kos[name]
@@ -306,16 +258,10 @@ local function Detected(name, acted, fromShare)
             PlaySound(SOUNDKIT.IG_PLAYER_INVITE, "Master")
         end
         -- A sighting someone else sent is not sent on again (no echo between users).
-        if not fromShare then
-            Share(name)
-        end
-        if Get("autoShow") and module.ShowPvP then
-            module.ShowPvP(true)
-        end
+        if not fromShare then Share(name) end
+        if Get("autoShow") and module.ShowPvP then module.ShowPvP(true) end
     end
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end
 
 -------------------------------------------------------------------------------
@@ -327,14 +273,10 @@ end
 --  PvP feature tracks and the levels groupmates send it.
 -------------------------------------------------------------------------------
 local function NoteLevel(unit)
-    if not Get("knownLevels") then
-        return
-    end
+    if not Get("knownLevels") then return end
     local name = PlayerName(unit)
     local level = name and tonumber(R(UnitLevel(unit)))
-    if not (level and level > 0) then
-        return
-    end
+    if not (level and level > 0) then return end
     local cfg = F.Cfg()
     cfg.levels = cfg.levels or {} -- name -> { level, last seen (time()) }
     local seen = cfg.levels[name]
@@ -363,9 +305,7 @@ do
             if levels then
                 local cutoff = time() - PURGE_DAYS * 86400
                 for name, seen in pairs(levels) do
-                    if (seen[2] or 0) < cutoff then
-                        levels[name] = nil
-                    end
+                    if (seen[2] or 0) < cutoff then levels[name] = nil end
                 end
             end
         end
@@ -381,24 +321,14 @@ end
 -- nil when the shown level is not hidden, nothing is known, or the option is
 -- off.
 function CludesUI.KnownHiddenLevel(unit)
-    if not Get("knownLevels") then
-        return nil
-    end
+    if not Get("knownLevels") then return nil end
     local shown = tonumber(R(UnitEffectiveLevel(unit)))
-    if shown and shown > 0 then
-        return nil
-    end
+    if shown and shown > 0 then return nil end
     local real = tonumber(R(UnitLevel(unit)))
-    if real and real > 0 then
-        return real
-    end
-    if real ~= SKULL then
-        return nil
-    end
+    if real and real > 0 then return real end
+    if real ~= SKULL then return nil end
     local name = PlayerName(unit)
-    if not name then
-        return nil
-    end
+    if not name then return nil end
     local saved = F.Read()
     local p = saved.players and saved.players[name]
     local level = p and not p.guess and p.level
@@ -407,28 +337,18 @@ function CludesUI.KnownHiddenLevel(unit)
         level = seen[1]
     end
     local mine = tonumber(R(UnitLevel("player")))
-    if type(level) ~= "number" or not mine or level < mine + 10 then
-        return nil
-    end
+    if type(level) ~= "number" or not mine or level < mine + 10 then return nil end
     return level
 end
 
 local function ScanUnit(unit)
     local name = PlayerName(unit)
-    if not name then
-        return nil
-    end
+    if not name then return nil end
     local guid = R(UnitGUID(unit))
-    if type(guid) == "string" then
-        guidNames[guid] = name
-    end
+    if type(guid) == "string" then guidNames[guid] = name end
     local enemy = R(UnitIsEnemy("player", unit))
-    if enemy == false and module.PvPWatchSeen then
-        module.PvPWatchSeen(name, unit)
-    end
-    if not enemy then
-        return nil
-    end
+    if enemy == false and module.PvPWatchSeen then module.PvPWatchSeen(name, unit) end
+    if not enemy then return nil end
     local p = Data(name, true)
     p.class = R((select(2, UnitClass(unit)))) or p.class
     p.race = R((UnitRace(unit))) or p.race
@@ -442,9 +362,7 @@ local function ScanUnit(unit)
     elseif level then
         p.level, p.guess = level, false
     end
-    if Store().ignore[name] then
-        return nil
-    end
+    if Store().ignore[name] then return nil end
     Detected(name, false)
     return name
 end
@@ -455,43 +373,31 @@ end
 -- left and came back. C_NamePlate.GetNamePlates() does not answer in combat;
 -- the next zone change or switch-on reads them then.
 local function SeedPlates()
-    if InCombatLockdown() or not (C_NamePlate and C_NamePlate.GetNamePlates) then
-        return
-    end
+    if InCombatLockdown() or not (C_NamePlate and C_NamePlate.GetNamePlates) then return end
     for _, plate in ipairs(C_NamePlate.GetNamePlates() or {}) do
         local unit = plate.namePlateUnitToken
-        if unit then
-            plates[unit] = true
-        end
+        if unit then plates[unit] = true end
     end
 end
 
 local function NoteTargetingMe(unit, name)
     local ok, same = pcall(UnitIsUnit, unit .. "target", "player")
-    if ok and R(same) then
-        targetingMe[name] = GetTime()
-    end
+    if ok and R(same) then targetingMe[name] = GetTime() end
 end
 
 local function Tick()
-    if not Live() then
-        return
-    end
+    if not Live() then return end
     for unit in pairs(plates) do
         if R(UnitExists(unit)) then
             local name = ScanUnit(unit)
-            if name then
-                NoteTargetingMe(unit, name)
-            end
+            if name then NoteTargetingMe(unit, name) end
         else
             plates[unit] = nil
         end
     end
     for _, unit in ipairs({ "target", "focus" }) do
         local name = ScanUnit(unit)
-        if name then
-            NoteTargetingMe(unit, name)
-        end
+        if name then NoteTargetingMe(unit, name) end
     end
     local now = GetTime()
     local changed
@@ -502,14 +408,10 @@ local function Tick()
         end
     end
     for name, when in pairs(targetingMe) do
-        if now - when > 60 then
-            targetingMe[name] = nil
-        end
+        if now - when > 60 then targetingMe[name] = nil end
     end
     for key, when in pairs(recentCasts) do
-        if now - when > CAST_DEDUP then
-            recentCasts[key] = nil
-        end
+        if now - when > CAST_DEDUP then recentCasts[key] = nil end
     end
     local cutoff = time() - HOUR
     for name, when in pairs(lastHour) do
@@ -518,24 +420,16 @@ local function Tick()
             changed = true
         end
     end
-    if changed and Refresh then
-        Refresh()
-    end
+    if changed and Refresh then Refresh() end
 end
 
 local function OnCast(unit, spellID)
-    if not (type(unit) == "string" and (WATCHED[unit] or unit:find("^nameplate%d+$"))) then
-        return
-    end
+    if not (type(unit) == "string" and (WATCHED[unit] or unit:find("^nameplate%d+$"))) then return end
     local name = ScanUnit(unit)
     spellID = R(spellID)
-    if not name or type(spellID) ~= "number" then
-        return
-    end
+    if not name or type(spellID) ~= "number" then return end
     local key = name .. ":" .. spellID
-    if recentCasts[key] and GetTime() - recentCasts[key] < CAST_DEDUP then
-        return
-    end
+    if recentCasts[key] and GetTime() - recentCasts[key] < CAST_DEDUP then return end
     recentCasts[key] = GetTime()
     active[name] = GetTime()
     NoteTargetingMe(unit, name)
@@ -550,38 +444,24 @@ end
 
 local function NameFromGUID(guid)
     guid = R(guid)
-    if type(guid) ~= "string" or not guid:find("^Player%-") then
-        return nil
-    end
-    if guidNames[guid] then
-        return guidNames[guid]
-    end
+    if type(guid) ~= "string" or not guid:find("^Player%-") then return nil end
+    if guidNames[guid] then return guidNames[guid] end
     local ok, _, _, _, _, _, name, realm = pcall(GetPlayerInfoByGUID, guid)
-    if not ok or Secret(name) or Secret(realm) or type(name) ~= "string" or name == "" then
-        return nil
-    end
-    if type(realm) == "string" and realm ~= "" then
-        name = name .. "-" .. realm
-    end
+    if not ok or Secret(name) or Secret(realm) or type(name) ~= "string" or name == "" then return nil end
+    if type(realm) == "string" and realm ~= "" then name = name .. "-" .. realm end
     return Store().players[name] and name or nil
 end
 
-local function IsMine(guid)
-    return guid == R(UnitGUID("player")) or guid == R(UnitGUID("pet"))
-end
+local function IsMine(guid) return guid == R(UnitGUID("player")) or guid == R(UnitGUID("pet")) end
 
 local function OnPartyKill(attacker, victim)
     attacker = R(attacker)
-    if not attacker or not IsMine(attacker) then
-        return
-    end
+    if not attacker or not IsMine(attacker) then return end
     local name = NameFromGUID(victim)
     local p = name and Data(name)
     if p then
         p.wins = (p.wins or 0) + 1
-        if module.PvPRecordFight then
-            module.PvPRecordFight(name, "W")
-        end
+        if module.PvPRecordFight then module.PvPRecordFight(name, "W") end
         Say(
             ("you killed %s (%d win%s, %d loss%s)."):format(
                 Label(name),
@@ -591,34 +471,24 @@ local function OnPartyKill(attacker, victim)
                 (p.losses or 0) == 1 and "" or "es"
             )
         )
-        if Refresh then
-            Refresh()
-        end
+        if Refresh then Refresh() end
     end
 end
 
 local lastRecap
 local function KillerFromRecap()
-    if not (C_DeathRecap and C_DeathRecap.GetRecapEvents) then
-        return nil, true
-    end
+    if not (C_DeathRecap and C_DeathRecap.GetRecapEvents) then return nil, true end
     local okLink, link = pcall(C_DeathRecap.GetRecapLink)
     local id = okLink and R(link) and tonumber(tostring(link):match("death:(%d+)"))
-    if id and id == lastRecap then
-        return nil, true
-    end
+    if id and id == lastRecap then return nil, true end
     lastRecap = id
     local ok, events = pcall(C_DeathRecap.GetRecapEvents)
     if not ok or type(events) ~= "table" or (issecrettable and issecrettable(events)) then
         return nil, true
     end
     local e = events[1]
-    if type(e) ~= "table" or (issecrettable and issecrettable(e)) then
-        return nil, true
-    end
-    if R(e.hideCaster) then
-        return nil, true
-    end
+    if type(e) ~= "table" or (issecrettable and issecrettable(e)) then return nil, true end
+    if R(e.hideCaster) then return nil, true end
     local name = NameFromGUID(e.sourceGUID)
     return name, false
 end
@@ -628,21 +498,15 @@ local function OnDeath()
     local where = module.PvPPosition and module.PvPPosition()
     local suspects, now = {}, GetTime()
     for name, when in pairs(targetingMe) do
-        if now - when <= TARGETING_WINDOW then
-            suspects[#suspects + 1] = name
-        end
+        if now - when <= TARGETING_WINDOW then suspects[#suspects + 1] = name end
     end
     C_Timer.After(0.5, function()
         local killer, unknown = KillerFromRecap()
-        if not killer and unknown and #suspects == 1 then
-            killer = suspects[1]
-        end
+        if not killer and unknown and #suspects == 1 then killer = suspects[1] end
         local p = killer and Data(killer)
         if p then
             p.losses = (p.losses or 0) + 1
-            if module.PvPRecordFight then
-                module.PvPRecordFight(killer, "L", where)
-            end
+            if module.PvPRecordFight then module.PvPRecordFight(killer, "L", where) end
             Say(
                 ("%s killed you (%d win%s, %d loss%s)."):format(
                     Label(killer),
@@ -652,54 +516,30 @@ local function OnDeath()
                     p.losses == 1 and "" or "es"
                 )
             )
-            if Refresh then
-                Refresh()
-            end
+            if Refresh then Refresh() end
         end
     end)
 end
 
 local function OnShared(message, sender)
-    if not Get("useShared") or not Live() then
-        return
-    end
-    if type(message) ~= "string" or Secret(message) or Secret(sender) then
-        return
-    end
+    if not Get("useShared") or not Live() then return end
+    if type(message) ~= "string" or Secret(message) or Secret(sender) then return end
     local me = UnitName("player")
-    if Ambiguate(sender, "none") == me then
-        return
-    end
+    if Ambiguate(sender, "none") == me then return end
     local _, name, class, level, race, zone, _, _, _, guild = strsplit("|", message)
-    if not name or name == "" or #name > 40 then
-        return
-    end
-    if zone ~= (R(GetZoneText()) or "") then
-        return
-    end
-    if class ~= "" and not RAID_CLASS_COLORS[class] then
-        return
-    end
+    if not name or name == "" or #name > 40 then return end
+    if zone ~= (R(GetZoneText()) or "") then return end
+    if class ~= "" and not RAID_CLASS_COLORS[class] then return end
     level = tonumber(level)
-    if level and (level < 1 or level > MAX_LEVEL or level ~= math.floor(level)) then
-        level = nil
-    end
+    if level and (level < 1 or level > MAX_LEVEL or level ~= math.floor(level)) then level = nil end
     local p = Data(name, true)
-    if class ~= "" then
-        p.class = class
-    end
+    if class ~= "" then p.class = class end
     if level then
         p.level, p.guess = level, false
     end
-    if race and race ~= "" then
-        p.race = race
-    end
-    if guild and guild ~= "" then
-        p.guild = guild
-    end
-    if not Store().ignore[name] then
-        Detected(name, false, true)
-    end
+    if race and race ~= "" then p.race = race end
+    if guild and guild ~= "" then p.guild = guild end
+    if not Store().ignore[name] then Detected(name, false, true) end
 end
 
 -------------------------------------------------------------------------------
@@ -707,33 +547,25 @@ end
 -------------------------------------------------------------------------------
 function module.PvPToggleKoS(name, on)
     local cfg = Store()
-    if on == nil then
-        on = not cfg.kos[name]
-    end
+    if on == nil then on = not cfg.kos[name] end
     cfg.kos[name] = on and time() or nil
     if on then
         cfg.ignore[name] = nil
         Data(name, true)
     end
     Say(("%s %s Kill on Sight."):format(Label(name), on and "added to" or "removed from"))
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end
 
 function module.PvPToggleIgnore(name, on)
     local cfg = Store()
-    if on == nil then
-        on = not cfg.ignore[name]
-    end
+    if on == nil then on = not cfg.ignore[name] end
     cfg.ignore[name] = on and time() or nil
     if on then
         cfg.kos[name] = nil
         nearby[name] = nil
     end
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end
 
 local function Announce(name, channel)
@@ -747,9 +579,7 @@ local function Announce(name, channel)
         zone,
         sub ~= "" and (", " .. sub) or ""
     )
-    if channel == "SELF" then
-        return Say(text)
-    end
+    if channel == "SELF" then return Say(text) end
     if channel == "LOCALDEFENSE" then
         -- The game refuses an addon post in a public channel: the message goes in
         -- the chat box, and your Enter sends it.
@@ -763,13 +593,9 @@ local function Announce(name, channel)
                 break
             end
         end
-        if not id then
-            return Say("you are not in the Local Defense channel.")
-        end
+        if not id then return Say("you are not in the Local Defense channel.") end
         local open = (ChatFrameUtil and ChatFrameUtil.OpenChat) or ChatFrame_OpenChat
-        if open then
-            pcall(open, "/" .. id .. " " .. text)
-        end
+        if open then pcall(open, "/" .. id .. " " .. text) end
         return
     end
     SendChatMessage(text, channel)
@@ -796,9 +622,7 @@ local dirtyInCombat
 
 local function TargetMacro(name)
     local first, second = name:match("^([^%-]+)%-(.+)$")
-    if not first then
-        return "/targetexact " .. name
-    end
+    if not first then return "/targetexact " .. name end
     return table.concat({
         "/cleartarget",
         "/targetexact " .. first .. " " .. second,
@@ -812,12 +636,14 @@ local function RowMenu(owner, name)
     CludesUI.Kit.ContextMenu(owner, function(_, root)
         root:CreateTitle(name:gsub("%-", " "))
         local cfg = Store()
-        root:CreateButton(cfg.kos[name] and "Remove Kill on Sight" or "Kill on Sight", function()
-            module.PvPToggleKoS(name)
-        end)
-        root:CreateButton(cfg.ignore[name] and "Stop Ignoring" or "Ignore", function()
-            module.PvPToggleIgnore(name)
-        end)
+        root:CreateButton(
+            cfg.kos[name] and "Remove Kill on Sight" or "Kill on Sight",
+            function() module.PvPToggleKoS(name) end
+        )
+        root:CreateButton(
+            cfg.ignore[name] and "Stop Ignoring" or "Ignore",
+            function() module.PvPToggleIgnore(name) end
+        )
         if cfg.kos[name] then
             local reasons = root:CreateButton("Kill on Sight Reasons")
             for _, region in ipairs({
@@ -827,12 +653,14 @@ local function RowMenu(owner, name)
                 "Griefed a quest",
                 "Ninja looted",
             }) do
-                reasons:CreateCheckbox(region, function()
-                    return cfg.reasons[name] and cfg.reasons[name][region]
-                end, function()
-                    cfg.reasons[name] = cfg.reasons[name] or {}
-                    cfg.reasons[name][region] = not cfg.reasons[name][region] or nil
-                end)
+                reasons:CreateCheckbox(
+                    region,
+                    function() return cfg.reasons[name] and cfg.reasons[name][region] end,
+                    function()
+                        cfg.reasons[name] = cfg.reasons[name] or {}
+                        cfg.reasons[name][region] = not cfg.reasons[name][region] or nil
+                    end
+                )
             end
         end
         local ann = root:CreateButton("Announce")
@@ -844,24 +672,18 @@ local function RowMenu(owner, name)
             { "Local Defense", "LOCALDEFENSE" },
             { "Yourself", "SELF" },
         }) do
-            ann:CreateButton(c[1], function()
-                Announce(name, c[2])
-            end)
+            ann:CreateButton(c[1], function() Announce(name, c[2]) end)
         end
         root:CreateButton("Remove from List", function()
             nearby[name], lastHour[name] = nil, nil
-            if Refresh then
-                Refresh()
-            end
+            if Refresh then Refresh() end
         end)
     end)
 end
 
 local function Row(i)
     local region = rows[i]
-    if region then
-        return region
-    end
+    if region then return region end
     region = CreateFrame("Button", nil, win, "SecureActionButtonTemplate")
     region:SetSize(W - 12, ROW_H)
     region:RegisterForClicks("AnyUp")
@@ -878,9 +700,7 @@ local function Row(i)
     CludesUI.Kit.Font(region.right, 11, "essentials")
     region.right:SetPoint("RIGHT", -4, 0)
     region:SetScript("PostClick", function(self, button)
-        if not self.player then
-            return
-        end
+        if not self.player then return end
         if button == "RightButton" then
             RowMenu(self, self.player)
         elseif IsControlKeyDown() then
@@ -891,27 +711,15 @@ local function Row(i)
     end)
     region:SetScript("OnEnter", function(self)
         local p = self.player and Data(self.player)
-        if not p then
-            return
-        end
+        if not p then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(Label(self.player))
         local facts = {}
-        if p.level then
-            facts[#facts + 1] = "Level " .. (p.guess and "~" or "") .. p.level
-        end
-        if p.race then
-            facts[#facts + 1] = p.race
-        end
-        if p.class then
-            facts[#facts + 1] = LOCALIZED_CLASS_NAMES_MALE[p.class] or p.class
-        end
-        if #facts > 0 then
-            GameTooltip:AddLine(table.concat(facts, " "), 1, 1, 1)
-        end
-        if p.guild then
-            GameTooltip:AddLine("<" .. p.guild .. ">", 0.6, 0.8, 1)
-        end
+        if p.level then facts[#facts + 1] = "Level " .. (p.guess and "~" or "") .. p.level end
+        if p.race then facts[#facts + 1] = p.race end
+        if p.class then facts[#facts + 1] = LOCALIZED_CLASS_NAMES_MALE[p.class] or p.class end
+        if #facts > 0 then GameTooltip:AddLine(table.concat(facts, " "), 1, 1, 1) end
+        if p.guild then GameTooltip:AddLine("<" .. p.guild .. ">", 0.6, 0.8, 1) end
         if p.zone and p.zone ~= "" then
             GameTooltip:AddLine(
                 "Last seen: " .. p.zone .. (p.sub ~= "" and (", " .. p.sub) or ""),
@@ -937,9 +745,7 @@ local function Row(i)
         )
         GameTooltip:Show()
     end)
-    region:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    region:SetScript("OnLeave", function() GameTooltip:Hide() end)
     rows[i] = region
     return region
 end
@@ -958,12 +764,8 @@ local function Entries()
             end
         end
         table.sort(list, function(lhs, rhs)
-            if lhs.kos ~= rhs.kos then
-                return lhs.kos > rhs.kos
-            end
-            if lhs.act ~= rhs.act then
-                return lhs.act > rhs.act
-            end
+            if lhs.kos ~= rhs.kos then return lhs.kos > rhs.kos end
+            if lhs.act ~= rhs.act then return lhs.act > rhs.act end
             return lhs.at > rhs.at
         end)
     else
@@ -971,31 +773,21 @@ local function Entries()
         for name, at in pairs(src) do
             list[#list + 1] = { name = name, at = at }
         end
-        table.sort(list, function(lhs, rhs)
-            return lhs.at > rhs.at
-        end)
+        table.sort(list, function(lhs, rhs) return lhs.at > rhs.at end)
     end
     return list
 end
 
 local function Ago(seconds)
     seconds = math.max(0, math.floor(seconds))
-    if seconds < 60 then
-        return seconds .. "s"
-    end
-    if seconds < HOUR then
-        return math.floor(seconds / 60) .. "m"
-    end
-    if seconds < 86400 then
-        return math.floor(seconds / HOUR) .. "h"
-    end
+    if seconds < 60 then return seconds .. "s" end
+    if seconds < HOUR then return math.floor(seconds / 60) .. "m" end
+    if seconds < 86400 then return math.floor(seconds / HOUR) .. "h" end
     return math.floor(seconds / 86400) .. "d"
 end
 
 Refresh = function()
-    if not (win and win:IsShown()) then
-        return
-    end
+    if not (win and win:IsShown()) then return end
     if InCombatLockdown() then
         dirtyInCombat = true
         return
@@ -1037,9 +829,7 @@ Refresh = function()
 end
 
 local function Build()
-    if win then
-        return win
-    end
+    if win then return win end
     win = CreateFrame("Frame", "CludesUIPvP", UIParent)
     win:SetSize(W, 50)
     CludesUI.Kit.Panel(win, 0.9)
@@ -1078,9 +868,7 @@ local function Build()
         end)
     end
     Btn("x", -2, function()
-        if not InCombatLockdown() then
-            win:Hide()
-        end
+        if not InCombatLockdown() then win:Hide() end
     end, "Close (it opens again when an enemy is seen)")
     Btn(">", -22, function()
         tab = tab % #TABS + 1
@@ -1095,9 +883,7 @@ local function Build()
         wipe(active)
         Refresh()
     end, "Clear the Nearby list")
-    Btn("s", -82, function()
-        module.ShowPvPStats()
-    end, "Statistics")
+    Btn("s", -82, function() module.ShowPvPStats() end, "Statistics")
     win:Hide()
     F.Place(win)
     return win
@@ -1105,14 +891,10 @@ end
 
 --- Shows the window (on the Nearby list when auto is true). Not in combat.
 function module.ShowPvP(auto)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     Build()
     if auto then
-        if win:IsShown() and tab == 1 then
-            return
-        end
+        if win:IsShown() and tab == 1 then return end
         tab = 1
     end
     win:Show()
@@ -1124,9 +906,7 @@ end
 -------------------------------------------------------------------------------
 local stats, statRows, statScroll, statContent, statSearch = nil, {}, nil, nil, nil
 local function StatsRefresh()
-    if not (stats and stats:IsShown()) then
-        return
-    end
+    if not (stats and stats:IsShown()) then return end
     local filter = (statSearch:GetText() or ""):lower()
     local list, s = {}, Store()
     for name, p in pairs(s.players) do
@@ -1138,9 +918,7 @@ local function StatsRefresh()
             list[#list + 1] = { name = name, p = p }
         end
     end
-    table.sort(list, function(lhs, rhs)
-        return (lhs.p.last or 0) > (rhs.p.last or 0)
-    end)
+    table.sort(list, function(lhs, rhs) return (lhs.p.last or 0) > (rhs.p.last or 0) end)
     for i, entry in ipairs(list) do
         local region = statRows[i]
         if not region then
@@ -1193,9 +971,7 @@ function module.ShowPvPStats()
         stats.count = stats:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(stats.count, 11, "essentials")
         stats.count:SetPoint("LEFT", label, "RIGHT", 10, 0)
-        local close = CludesUI.Kit.Glyph(stats, "x", function()
-            stats:Hide()
-        end, nil, "essentials")
+        local close = CludesUI.Kit.Glyph(stats, "x", function() stats:Hide() end, nil, "essentials")
         close:SetPoint("TOPRIGHT", -5, -5)
         statSearch = CludesUI.Kit.Input(stats, 200, 20, "Search a name or guild", "essentials")
         statSearch:SetPoint("TOPLEFT", 10, -34)
@@ -1218,9 +994,7 @@ end
 -------------------------------------------------------------------------------
 local kosButton
 local function KoSButtonUpdate()
-    if not kosButton then
-        return
-    end
+    if not kosButton then return end
     local name = Get("kosButton") and Enabled() and PlayerName("target")
     if name and R(UnitIsEnemy("player", "target")) then
         kosButton.player = name
@@ -1231,9 +1005,7 @@ local function KoSButtonUpdate()
     end
 end
 local function BuildKoSButton()
-    if kosButton then
-        return
-    end
+    if kosButton then return end
     local parent = TargetFrame or UIParent
     kosButton = CreateFrame("Button", "CludesUIPvPKoSButton", parent)
     kosButton:SetSize(34, 16)
@@ -1243,9 +1015,7 @@ local function BuildKoSButton()
     kosButton.t:SetPoint("CENTER")
     kosButton:RegisterForClicks("AnyUp")
     kosButton:SetScript("OnClick", function(self, button)
-        if not self.player then
-            return
-        end
+        if not self.player then return end
         if button == "RightButton" then
             RowMenu(self, self.player)
         else
@@ -1261,14 +1031,10 @@ end
 -------------------------------------------------------------------------------
 local lastTip
 local function DecorateMinimapTip()
-    if not (Enabled() and Get("minimapTip")) or GameTooltip:GetOwner() ~= Minimap then
-        return
-    end
+    if not (Enabled() and Get("minimapTip")) or GameTooltip:GetOwner() ~= Minimap then return end
     local fontString = GameTooltipTextLeft1
     local text = fontString and fontString:GetText()
-    if not text or Secret(text) or text == lastTip then
-        return
-    end
+    if not text or Secret(text) or text == lastTip then return end
     local out, changed = {}, false
     for line in text:gmatch("[^\n]+") do
         local plain =
@@ -1306,9 +1072,7 @@ local function WatchRemember(entry, unit)
     if unit then
         entry.class = R((select(2, UnitClass(unit)))) or entry.class
         local level = tonumber(R(UnitLevel(unit)))
-        if level and level > 0 then
-            entry.level = level
-        end
+        if level and level > 0 then entry.level = level end
         entry.guild = R((GetGuildInfo(unit))) or entry.guild
     end
     entry.seen = time()
@@ -1318,9 +1082,7 @@ end
 
 local function WatchAlert(name, how)
     local e = Store().watch[name]
-    if not e then
-        return
-    end
+    if not e then return end
     local text = (how == "group" and "Watched player in your group: " or "Watched player nearby: ")
         .. (name:gsub("%-", " "))
         .. (e.reason and (" (" .. e.reason .. ")") or "")
@@ -1330,16 +1092,10 @@ end
 
 function module.PvPWatchSeen(name, unit)
     local e = Store().watch[name]
-    if not e then
-        return
-    end
+    if not e then return end
     WatchRemember(e, unit)
-    if not Get("watchWarn") then
-        return
-    end
-    if watchAlerted[name] and GetTime() - watchAlerted[name] < WATCH_COOLDOWN then
-        return
-    end
+    if not Get("watchWarn") then return end
+    if watchAlerted[name] and GetTime() - watchAlerted[name] < WATCH_COOLDOWN then return end
     watchAlerted[name] = GetTime()
     WatchAlert(name, "nearby")
 end
@@ -1352,18 +1108,14 @@ local function CheckWatchedGroup()
         for i = 1, raid and count or math.min(count, 4) do
             local unit = (raid and "raid" or "party") .. i
             local name = PlayerName(unit)
-            if name and Store().watch[name] then
-                present[name] = unit
-            end
+            if name and Store().watch[name] then present[name] = unit end
         end
     end
     for name, unit in pairs(present) do
         if not watchInGroup[name] then
             WatchRemember(Store().watch[name], unit)
             watchAlerted[name] = GetTime()
-            if Enabled() and Get("watchGroupWarn") then
-                WatchAlert(name, "group")
-            end
+            if Enabled() and Get("watchGroupWarn") then WatchAlert(name, "group") end
         end
     end
     watchInGroup = present
@@ -1389,26 +1141,18 @@ end
 -- Kill on Sight and Watch on the game's own player menus (target, party, raid, chat names).
 local menusAdded
 local function AddMenus()
-    if menusAdded or not (Menu and Menu.ModifyMenu) then
-        return
-    end
+    if menusAdded or not (Menu and Menu.ModifyMenu) then return end
     menusAdded = true
     local function Entries(_, root, ctx)
-        if not Enabled() or type(ctx) ~= "table" then
-            return
-        end
+        if not Enabled() or type(ctx) ~= "table" then return end
         local name, enemy
         local unit = R(ctx.unit)
         if type(unit) == "string" then
-            if R(UnitIsUnit(unit, "player")) then
-                return
-            end
+            if R(UnitIsUnit(unit, "player")) then return end
             name, enemy = PlayerName(unit), R(UnitIsEnemy("player", unit))
         else
             name = R(ctx.name)
-            if type(name) ~= "string" or name == "" or name == UnitName("player") then
-                return
-            end
+            if type(name) ~= "string" or name == "" or name == UnitName("player") then return end
             local server = R(ctx.server)
             if not name:find("-", 1, true) and type(server) == "string" and server ~= "" then
                 name = name .. "-" .. server
@@ -1416,19 +1160,19 @@ local function AddMenus()
             local p = Store().players[name]
             enemy = p and p.faction and p.faction ~= UnitFactionGroup("player")
         end
-        if not name then
-            return
-        end
+        if not name then return end
         root:CreateDivider()
         root:CreateTitle("CludesUI PvP")
         if enemy then
-            root:CreateButton(Store().kos[name] and "Remove Kill on Sight" or "Kill on Sight", function()
-                module.PvPToggleKoS(name)
-            end)
+            root:CreateButton(
+                Store().kos[name] and "Remove Kill on Sight" or "Kill on Sight",
+                function() module.PvPToggleKoS(name) end
+            )
         else
-            root:CreateButton(Store().watch[name] and "Stop Watching" or "Watch This Player", function()
-                module.PvPToggleWatch(name)
-            end)
+            root:CreateButton(
+                Store().watch[name] and "Stop Watching" or "Watch This Player",
+                function() module.PvPToggleWatch(name) end
+            )
         end
     end
     for _, which in ipairs({
@@ -1445,9 +1189,11 @@ local function AddMenus()
         "COMMUNITIES_WOW_MEMBER",
         "GUILD",
     }) do
-        pcall(Menu.ModifyMenu, "MENU_UNIT_" .. which, function(owner, root, ctx)
-            pcall(Entries, owner, root, ctx)
-        end)
+        pcall(
+            Menu.ModifyMenu,
+            "MENU_UNIT_" .. which,
+            function(owner, root, ctx) pcall(Entries, owner, root, ctx) end
+        )
     end
 end
 
@@ -1459,31 +1205,21 @@ local SKULL_TEX = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8"
 
 function module.PvPPosition()
     local mapID = R(C_Map.GetBestMapForUnit("player"))
-    if type(mapID) ~= "number" then
-        return nil
-    end
+    if type(mapID) ~= "number" then return nil end
     local position = C_Map.GetPlayerMapPosition(mapID, "player")
-    if not position or Secret(position) then
-        return nil
-    end
+    if not position or Secret(position) then return nil end
     local x, y = position:GetXY()
-    if not (R(x) and R(y)) then
-        return nil
-    end
+    if not (R(x) and R(y)) then return nil end
     return { map = mapID, x = x, y = y }
 end
 
 local mapLayer, mapProvider, mapPins, mapAdded = nil, nil, {}, false
 local function DrawFights()
-    if not mapLayer then
-        return
-    end
+    if not mapLayer then return end
     for _, pin in ipairs(mapPins) do
         pin:Hide()
     end
-    if not (Enabled() and Get("combatMap")) then
-        return
-    end
+    if not (Enabled() and Get("combatMap")) then return end
     local mapID = WorldMapFrame:GetMapID()
     local w, h = mapLayer:GetWidth(), mapLayer:GetHeight()
     local scale = 1 / math.max(WorldMapFrame:GetCanvasScale() or 1, 0.1)
@@ -1507,9 +1243,7 @@ local function DrawFights()
                     GameTooltip:AddLine(date("%d %b %Y %H:%M", fight.when), 0.7, 0.7, 0.7)
                     GameTooltip:Show()
                 end)
-                pin:SetScript("OnLeave", function()
-                    GameTooltip:Hide()
-                end)
+                pin:SetScript("OnLeave", function() GameTooltip:Hide() end)
                 mapPins[count] = pin
             end
             pin.fight = frame
@@ -1538,9 +1272,7 @@ local function MapApply()
         end
         return
     end
-    if not (WorldMapFrame and C_AddOns.IsAddOnLoaded("Blizzard_WorldMap")) then
-        return
-    end
+    if not (WorldMapFrame and C_AddOns.IsAddOnLoaded("Blizzard_WorldMap")) then return end
     if not mapProvider then
         mapLayer = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer.Child)
         mapLayer:SetAllPoints()
@@ -1565,9 +1297,7 @@ end
 
 function module.PvPRecordFight(name, result, where)
     where = where or module.PvPPosition()
-    if not where then
-        return
-    end
+    if not where then return end
     local list = Store().fights
     list[#list + 1] =
         { name = name, result = result, map = where.map, x = where.x, y = where.y, when = time() }
@@ -1583,21 +1313,13 @@ local eventFrame = CreateFrame("Frame")
 local ticker
 eventFrame:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
     if event == "CHAT_MSG_ADDON" then
-        if a1 == PREFIX then
-            OnShared(a2, a4)
-        end
+        if a1 == PREFIX then OnShared(a2, a4) end
         return
     end
-    if event == "PLAYER_TARGET_CHANGED" then
-        KoSButtonUpdate()
-    end
-    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
-        CheckWatchedGroup()
-    end
+    if event == "PLAYER_TARGET_CHANGED" then KoSButtonUpdate() end
+    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then CheckWatchedGroup() end
     if event == "ADDON_LOADED" then
-        if a1 == "Blizzard_WorldMap" then
-            MapApply()
-        end
+        if a1 == "Blizzard_WorldMap" then MapApply() end
         return
     end
     -- The plate roster is kept whether or not the list is live here (an off zone,
@@ -1610,9 +1332,7 @@ eventFrame:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         SeedPlates()
     end
     if not Live() then
-        if event == "PLAYER_REGEN_ENABLED" and dirtyInCombat then
-            Refresh()
-        end
+        if event == "PLAYER_REGEN_ENABLED" and dirtyInCombat then Refresh() end
         return
     end
     if event == "NAME_PLATE_UNIT_ADDED" then
@@ -1630,9 +1350,7 @@ eventFrame:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
     elseif event == "PLAYER_DEAD" then
         OnDeath()
     elseif event == "PLAYER_REGEN_ENABLED" then
-        if dirtyInCombat then
-            Refresh()
-        end
+        if dirtyInCombat then Refresh() end
     end
 end)
 
@@ -1679,9 +1397,7 @@ local function HoldPlateRange(on)
     if on then
         if (tonumber(current) or 0) < PLATE_RANGE then
             conf = F.Cfg()
-            if conf.plateRangeWas == nil then
-                conf.plateRangeWas = current
-            end
+            if conf.plateRangeWas == nil then conf.plateRangeWas = current end
             CludesUI.HoldCVar("nameplateMaxDistance", PLATE_RANGE, PLATE_OWNER)
         end
     elseif conf.plateRangeWas ~= nil then
@@ -1701,18 +1417,14 @@ local function Apply()
             pcall(eventFrame.RegisterEvent, eventFrame, event)
         end
         C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
-        if not ticker then
-            ticker = C_Timer.NewTicker(SCAN, Tick)
-        end
+        if not ticker then ticker = C_Timer.NewTicker(SCAN, Tick) end
         SeedPlates()
         BuildKoSButton()
         if not tipHooked then
             tipHooked = true
             GameTooltip:HookScript("OnShow", DecorateMinimapTip)
             GameTooltip:HookScript("OnUpdate", DecorateMinimapTip)
-            GameTooltip:HookScript("OnHide", function()
-                lastTip = nil
-            end)
+            GameTooltip:HookScript("OnHide", function() lastTip = nil end)
         end
         Purge()
         AddMenus()
@@ -1727,9 +1439,7 @@ local function Apply()
             ticker:Cancel()
             ticker = nil
         end
-        if win and not InCombatLockdown() then
-            win:Hide()
-        end
+        if win and not InCombatLockdown() then win:Hide() end
     end
     KoSButtonUpdate()
     MapApply()
@@ -1740,12 +1450,8 @@ CludesUI._PvP = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,
-    Show = function()
-        module.ShowPvP()
-    end,
-    Stats = function()
-        module.ShowPvPStats()
-    end,
+    Show = function() module.ShowPvP() end,
+    Stats = function() module.ShowPvPStats() end,
 }
 
 SLASH_CUIPVP1 = "/cpvp"
@@ -1762,13 +1468,9 @@ SlashCmdList.CUIPVP = function(message)
         local typed, reason = rest:match("^([^:]*):(.*)$")
         typed = (typed or rest):match("^%s*(.-)%s*$")
         reason = reason and reason:match("^%s*(.-)%s*$") or nil
-        if reason == "" then
-            reason = nil
-        end
+        if reason == "" then reason = nil end
         local name = typed ~= "" and (typed:gsub(" ", "-")) or PlayerName("target")
-        if not name then
-            return Say("target a player or type /cpvp watch First Last: reason")
-        end
+        if not name then return Say("target a player or type /cpvp watch First Last: reason") end
         module.PvPToggleWatch(name, reason)
     elseif cmd == "watchlist" then
         local count = 0
@@ -1778,19 +1480,17 @@ SlashCmdList.CUIPVP = function(message)
                 ("%s%s%s"):format(
                     name:gsub("%-", " "),
                     entry.reason and (" (" .. entry.reason .. ")") or "",
-                    entry.seen and (", last seen " .. Ago(time() - entry.seen) .. " ago in " .. (entry.zone or "?")) or ""
+                    entry.seen
+                            and (", last seen " .. Ago(time() - entry.seen) .. " ago in " .. (entry.zone or "?"))
+                        or ""
                 )
             )
         end
-        if count == 0 then
-            Say("your watch list is empty.")
-        end
+        if count == 0 then Say("your watch list is empty.") end
     elseif cmd == "clear" then
         wipe(nearby)
         wipe(active)
-        if Refresh then
-            Refresh()
-        end
+        if Refresh then Refresh() end
     else
         module.ShowPvP()
     end

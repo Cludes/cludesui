@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 
 -- Shared by live icons and the options preview. No events, hooks or polling.
@@ -34,12 +32,8 @@ local function StyleBadge(textValue, edge, scale)
     local enabled = edge and edge.showKeybind and (bgAlpha > 0 or (borderAlpha > 0 and borderSize > 0))
         or false
     if not badge then
-        if not enabled then
-            return nil
-        end
-        if not badges then
-            badges = setmetatable({}, { __mode = "k" })
-        end
+        if not enabled then return nil end
+        if not badges then badges = setmetatable({}, { __mode = "k" }) end
         -- Pooled with the options preview's text overlay (an options page pool
         -- host); the plain CreateFrame on a live icon.
         local frame = POOL.CreateFrame("Frame", nil, textValue:GetParent())
@@ -55,9 +49,7 @@ local function StyleBadge(textValue, edge, scale)
         return badge
     end
     local level = textValue:GetParent():GetFrameLevel() - 2
-    if level < 0 then
-        level = 0
-    end
+    if level < 0 then level = 0 end
     frame:SetFrameLevel(level)
     badge.rim:SetFrameLevel(level + 1)
     scale = scale or badge.scale or 1
@@ -103,18 +95,14 @@ end
 -- Style + visibility: settings edges and the options preview.
 local function RefreshBadge(textValue, edge, scale)
     local badge = StyleBadge(textValue, edge, scale)
-    if badge then
-        ShowBadge(textValue, badge)
-    end
+    if badge then ShowBadge(textValue, badge) end
 end
 mod.RefreshCDMKeybindBadge = RefreshBadge
 
 -- The options preview dresses a pooled label again for a new preview: its
 -- badge of the previous dress went with that dress, so it is built anew.
 function mod.CdmForgetKeybindBadge(textValue)
-    if badges then
-        badges[textValue] = nil
-    end
+    if badges then badges[textValue] = nil end
 end
 
 -- Visibility pass for the keybind apply paths (every CDM icon, the Rotation
@@ -127,9 +115,7 @@ function mod.ShowCDMKeybindBadge(textValue, edge)
             return
         end
         badge = StyleBadge(textValue, edge)
-        if not badge then
-            return
-        end
+        if not badge then return end
     elseif badge.bd ~= edge then
         StyleBadge(textValue, edge)
     end
@@ -140,16 +126,12 @@ function mod.StyleCDMKeybind(textValue, edge, anchor, scale, fontFile)
     if not edge.showKeybind then
         -- Existing badges can survive a bar/profile switch; no allocation.
         textValue:Hide()
-        if badges and badges[textValue] then
-            RefreshBadge(textValue, edge)
-        end
+        if badges and badges[textValue] then RefreshBadge(textValue, edge) end
         return
     end
     scale = scale or 1
     local font = edge.keybindFont
-    if font and font ~= "__global" then
-        fontFile = CludesUI.ResolveFontName(font)
-    end
+    if font and font ~= "__global" then fontFile = CludesUI.ResolveFontName(font) end
     local size = (edge.keybindSize or 10) * scale
     local outline = edge.keybindOutline
     if outline == "NONE" then

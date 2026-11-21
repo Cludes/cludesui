@@ -1,53 +1,36 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CUI_GroupFinder_Options.lua: Group Finder settings page
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIGroupFinder"
 local mod = CludesUI._ModuleNS[ADDON_NAME]
-if not mod then
-    return
-end -- module off: no page
+if not mod then return end -- module off: no page
 local CUI = CludesUI
 
 local PAGE_SEARCH = "Premade Search"
 local PAGE_APPS = "Mythic+ Tracker"
 
 CludesUI.AtLogin(function()
-
     local AddAppsSections, AddListSections
 
     -----------------------------------------------------------------------
     -- applications settings (greyed while the module's off)
     -----------------------------------------------------------------------
-    local function APCfg()
-        return mod.AppsCfg()
-    end
+    local function APCfg() return mod.AppsCfg() end
     local function APGet(key, default)
         local c = APCfg()
         local value = c and c[key]
-        if value == nil then
-            return default
-        end
+        if value == nil then return default end
         return value
     end
     local function APSet(key, val)
         local c = APCfg()
-        if c then
-            c[key] = val
-        end
+        if c then c[key] = val end
         mod.ApplyApplications()
     end
-    local function ModOff()
-        return not mod.Enabled()
-    end
-    local function APOff()
-        return ModOff() or APGet("enabled", false) ~= true
-    end
-    local function APOffTip()
-        return ModOff() and "Group Finder" or "Show Applications in Group Finder"
-    end
+    local function ModOff() return not mod.Enabled() end
+    local function APOff() return ModOff() or APGet("enabled", false) ~= true end
+    local function APOffTip() return ModOff() and "Group Finder" or "Show Applications in Group Finder" end
 
     local function BuildSearchPage(page, hostFrame, yOffset)
         local W = CUI.Widgets
@@ -64,32 +47,22 @@ CludesUI.AtLogin(function()
 
         -- the enable toggle reloads; the pgf warning takes the section's last row while it's loaded
         local PGFLoaded = mod.Blocked
-        local function BgOpacity()
-            return mod.OwnListGet("windowBgOpacity") or 100
-        end
-        local function QuickOn()
-            return CludesUIDB and CludesUIDB.quickSignup and true or false
-        end
+        local function BgOpacity() return mod.OwnListGet("windowBgOpacity") or 100 end
+        local function QuickOn() return CludesUIDB and CludesUIDB.quickSignup and true or false end
         _, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
         cursorY = cursorY - height
         local bgRow
         bgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Group Finder",
-            disabled = function()
-                return PGFLoaded() and not mod.Enabled()
-            end,
+            disabled = function() return PGFLoaded() and not mod.Enabled() end,
             disabledTooltip = "Premade Groups Filter",
             requireState = "disabled",
             tooltip = "Premade Groups search filters, group list and the M+ applications bar in the Dungeons & Raids window. Requires a reload.",
-            getValue = function()
-                return mod.Enabled()
-            end,
+            getValue = function() return mod.Enabled() end,
             setValue = function(value)
                 value = value and true or false
-                if value == mod.Enabled() then
-                    return
-                end
+                if value == mod.Enabled() then return end
                 -- only saved once the reload's confirmed
                 CUI:ShowConfirmPopup({
                     title = value and "Enable Group Finder" or "Disable Group Finder",
@@ -98,12 +71,8 @@ CludesUI.AtLogin(function()
                     confirmText = "Reload Now",
                     cancelText = "Cancel",
                     reload = true,
-                    onConfirm = function()
-                        mod.SetEnabled(value)
-                    end,
-                    onCancel = function()
-                        CUI:RefreshPage()
-                    end,
+                    onConfirm = function() mod.SetEnabled(value) end,
+                    onCancel = function() CUI:RefreshPage() end,
                 })
             end,
         }, {
@@ -118,9 +87,7 @@ CludesUI.AtLogin(function()
                 local was = BgOpacity() == 0
                 mod.SetWindowLook("windowBgOpacity", value)
                 -- the swatch greys out at 0
-                if was ~= (value == 0) then
-                    CUI:RefreshPage()
-                end
+                if was ~= (value == 0) then CUI:RefreshPage() end
             end,
         })
         cursorY = cursorY - height
@@ -129,15 +96,11 @@ CludesUI.AtLogin(function()
                 {
                     tooltip = "The tint over the background. Its opacity sets how strong the tint is.",
                     hasAlpha = true,
-                    disabled = function()
-                        return BgOpacity() == 0
-                    end,
+                    disabled = function() return BgOpacity() == 0 end,
                     disabledTooltip = "Background above 0",
                     getValue = function()
                         local color = mod.OwnListGet("windowBgColor")
-                        if color then
-                            return color.r, color.g, color.b, color.a or 0.62
-                        end
+                        if color then return color.r, color.g, color.b, color.a or 0.62 end
                         return 0, 0, 0, 0.62
                     end,
                     setValue = function(red, green, blue, a)
@@ -165,9 +128,7 @@ CludesUI.AtLogin(function()
                 },
                 order = { "disabled", "single", "double", "triple" },
                 getValue = function()
-                    if not QuickOn() then
-                        return "disabled"
-                    end
+                    if not QuickOn() then return "disabled" end
                     return mod.OwnListGet("signupClicks")
                 end,
                 setValue = function(value)
@@ -177,23 +138,17 @@ CludesUI.AtLogin(function()
                         CludesUIDB.quickSignup = true
                         mod.SetOwnListValue("signupClicks", value)
                     end
-                    if CUI._applyQuickSignup then
-                        CUI._applyQuickSignup()
-                    end
+                    if CUI._applyQuickSignup then CUI._applyQuickSignup() end
                 end,
             },
             {
                 type = "toggle",
                 text = "Persistent Signup Note",
                 tooltip = "Keeps a saved signup note you can copy into the Sign Up dialog with the Copy button.",
-                getValue = function()
-                    return CludesUIDB and CludesUIDB.persistSignupNote or false
-                end,
+                getValue = function() return CludesUIDB and CludesUIDB.persistSignupNote or false end,
                 setValue = function(value)
                     CludesUIDB.persistSignupNote = value
-                    if CUI._applyPersistSignupNote then
-                        CUI._applyPersistSignupNote()
-                    end
+                    if CUI._applyPersistSignupNote then CUI._applyPersistSignupNote() end
                     CUI:RefreshPage()
                 end,
             }
@@ -203,9 +158,7 @@ CludesUI.AtLogin(function()
             CUI.BuildInlineCog(noteRow._rightRegion, {
                 gap = 9,
                 tip = "Edit the saved signup note.",
-                disabled = function()
-                    return not (CludesUIDB and CludesUIDB.persistSignupNote)
-                end,
+                disabled = function() return not (CludesUIDB and CludesUIDB.persistSignupNote) end,
                 disabledTooltip = "Persistent Signup Note",
                 show = function()
                     CUI:ShowInputPopup({
@@ -219,9 +172,7 @@ CludesUI.AtLogin(function()
                         showCount = true,
                         allowEmpty = true,
                         confirmText = "Save",
-                        onConfirm = function(note)
-                            CUI.SetPersistentSignupNote(note or "")
-                        end,
+                        onConfirm = function(note) CUI.SetPersistentSignupNote(note or "") end,
                     })
                 end,
             })
@@ -230,12 +181,8 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Cancel Oldest Application",
             tooltip = "At the application limit, clicking a group cancels your oldest pending application so you can sign up.",
-            getValue = function()
-                return mod.Cfg().cancelOldest == true
-            end,
-            setValue = function(value)
-                mod.Cfg().cancelOldest = value and true or false
-            end,
+            getValue = function() return mod.Cfg().cancelOldest == true end,
+            setValue = function(value) mod.Cfg().cancelOldest = value and true or false end,
         }, CUI.BlankRowCfg())
         cursorY = cursorY - height
         if PGFLoaded() then
@@ -261,9 +208,7 @@ CludesUI.AtLogin(function()
         local W = CUI.Widgets
         local cursorY = yOffset
         local _, height
-        if CUI.ClearContentHeader then
-            CUI:ClearContentHeader()
-        end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
         cursorY = AddAppsSections(hostFrame, cursorY)
         _, height = W:Spacer(hostFrame, cursorY, 20)
@@ -285,12 +230,8 @@ CludesUI.AtLogin(function()
             max = 20,
             step = 1,
             tooltip = "The group's title, the first line.",
-            getValue = function()
-                return mod.OwnListSize("titleSize")
-            end,
-            setValue = function(value)
-                mod.SetOwnListSize("titleSize", value)
-            end,
+            getValue = function() return mod.OwnListSize("titleSize") end,
+            setValue = function(value) mod.SetOwnListSize("titleSize", value) end,
         }, {
             type = "slider",
             text = "Label Text Size",
@@ -298,12 +239,8 @@ CludesUI.AtLogin(function()
             max = 20,
             step = 1,
             tooltip = "The playstyle and region tag text size.",
-            getValue = function()
-                return mod.OwnListSize("lineSize")
-            end,
-            setValue = function(value)
-                mod.SetOwnListSize("lineSize", value)
-            end,
+            getValue = function() return mod.OwnListSize("lineSize") end,
+            setValue = function(value) mod.SetOwnListSize("lineSize", value) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -313,24 +250,16 @@ CludesUI.AtLogin(function()
             max = 20,
             step = 1,
             tooltip = "The dungeon or raid name text size.",
-            getValue = function()
-                return mod.OwnListSize("nameSize")
-            end,
-            setValue = function(value)
-                mod.SetOwnListSize("nameSize", value)
-            end,
+            getValue = function() return mod.OwnListSize("nameSize") end,
+            setValue = function(value) mod.SetOwnListSize("nameSize", value) end,
         }, {
             type = "toggle",
             text = "Colored Group Names",
             tooltip = "Green name when a group is new, Red name when you were declined or instance locked.",
-            getValue = function()
-                return mod.Cfg().nameColors == true
-            end,
+            getValue = function() return mod.Cfg().nameColors == true end,
             setValue = function(value)
                 mod.Cfg().nameColors = value and true or false
-                if mod.Redecorate then
-                    mod.Redecorate()
-                end
+                if mod.Redecorate then mod.Redecorate() end
             end,
         })
         cursorY = cursorY - height
@@ -341,22 +270,14 @@ CludesUI.AtLogin(function()
             max = 64,
             step = 1,
             tooltip = "How tall each row is. Lines that no longer fit drop off from the bottom: the playstyle line first, then the dungeon / raid name (its short name then sits ahead of the title) and the leader crown.",
-            getValue = function()
-                return mod.OwnListRowHeight()
-            end,
-            setValue = function(value)
-                mod.SetOwnListRowHeight(value)
-            end,
+            getValue = function() return mod.OwnListRowHeight() end,
+            setValue = function(value) mod.SetOwnListRowHeight(value) end,
         }, {
             type = "toggle",
             text = "Applied Groups on Top",
             tooltip = "Groups you apply to move to the top of the list.",
-            getValue = function()
-                return mod.OwnListGet("appsFirst") ~= false
-            end,
-            setValue = function(value)
-                mod.SetOwnListValue("appsFirst", value and true or false)
-            end,
+            getValue = function() return mod.OwnListGet("appsFirst") ~= false end,
+            setValue = function(value) mod.SetOwnListValue("appsFirst", value and true or false) end,
         })
         cursorY = cursorY - height
         -- status color: a checklist, one color each
@@ -381,9 +302,7 @@ CludesUI.AtLogin(function()
                 tooltip = "Marks the groups you applied to in their status color, with a line under the group or a tinted row.",
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
-                getValue = function()
-                    return "__placeholder"
-                end,
+                getValue = function() return "__placeholder" end,
                 setValue = function() end,
             },
             {
@@ -392,37 +311,25 @@ CludesUI.AtLogin(function()
                 tooltip = "Groups your filters leave out: hidden from the list, or shown dimmed.",
                 values = { dimmed = "Dimmed", hidden = "Hidden" },
                 order = { "dimmed", "hidden" },
-                getValue = function()
-                    return mod.OwnListGet("visibility")
-                end,
+                getValue = function() return mod.OwnListGet("visibility") end,
                 setValue = function(value)
-                    if value == mod.OwnListGet("visibility") then
-                        return
-                    end
+                    if value == mod.OwnListGet("visibility") then return end
                     mod.SetOwnListValue("visibility", value)
-                    if mod.DimFiltersChanged then
-                        mod.DimFiltersChanged()
-                    end
+                    if mod.DimFiltersChanged then mod.DimFiltersChanged() end
                 end,
             }
         )
         cursorY = cursorY - height
         if not CUI._prebuilding then
             local region = lineRow._leftRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local dropdown, ddRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 LINE_ITEMS,
-                function(key)
-                    return mod.OwnListGet(key) ~= false
-                end,
-                function(key, value)
-                    mod.SetOwnListValue(key, value and true or false)
-                end
+                function(key) return mod.OwnListGet(key) ~= false end,
+                function(key, value) mod.SetOwnListValue(key, value and true or false) end
             )
             CUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
             region._control = dropdown
@@ -437,9 +344,7 @@ CludesUI.AtLogin(function()
                     label = labelText,
                     get = function()
                         local color = mod.OwnListGet(line[5])
-                        if type(color) == "table" then
-                            return color.r, color.g, color.b
-                        end
+                        if type(color) == "table" then return color.r, color.g, color.b end
                         return line[2], line[3], line[4]
                     end,
                     set = function(red, green, blue)
@@ -458,9 +363,7 @@ CludesUI.AtLogin(function()
                         get = function()
                             return mod.OwnListGet("statusStyle") == "row" and "row" or "underline"
                         end,
-                        set = function(value)
-                            mod.SetOwnListValue("statusStyle", value)
-                        end,
+                        set = function(value) mod.SetOwnListValue("statusStyle", value) end,
                     },
                     Picker("lineDelisted", "Delisted Color"),
                     Picker("lineAccepted", "Accepted Color"),
@@ -474,29 +377,19 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Raider.IO Rating Colors",
             tooltip = "Color the leader's rating with Raider.IO's score colors. Otherwise, use the game's rating colors.",
-            disabled = function()
-                return not (RaiderIO and RaiderIO.GetScoreColor)
-            end,
+            disabled = function() return not (RaiderIO and RaiderIO.GetScoreColor) end,
             disabledTooltip = "Raider.IO",
-            getValue = function()
-                return mod.Cfg().rioRatingColors ~= false
-            end,
+            getValue = function() return mod.Cfg().rioRatingColors ~= false end,
             setValue = function(value)
                 mod.Cfg().rioRatingColors = value and true or false
-                if mod.Redecorate then
-                    mod.Redecorate()
-                end
+                if mod.Redecorate then mod.Redecorate() end
             end,
         }, {
             type = "toggle",
             text = "Members in Tooltip",
             tooltip = "Group tooltips add each member's name (dungeons and arenas, where Blizzard already lists the roles and classes), or a line per member with role, specialization, class and name (other groups).",
-            getValue = function()
-                return mod.Cfg().classTooltip ~= false
-            end,
-            setValue = function(value)
-                mod.Cfg().classTooltip = value and true or false
-            end,
+            getValue = function() return mod.Cfg().classTooltip ~= false end,
+            setValue = function(value) mod.Cfg().classTooltip = value and true or false end,
         })
         cursorY = cursorY - height
         if not CUI._prebuilding then
@@ -512,12 +405,8 @@ CludesUI.AtLogin(function()
                         max = 20,
                         step = 1,
                         tooltip = "The leader's Mythic+ rating beside the role icons.",
-                        get = function()
-                            return mod.OwnListSize("scoreSize")
-                        end,
-                        set = function(value)
-                            mod.SetOwnListSize("scoreSize", value)
-                        end,
+                        get = function() return mod.OwnListSize("scoreSize") end,
+                        set = function(value) mod.SetOwnListSize("scoreSize", value) end,
                     },
                 },
             })
@@ -525,18 +414,14 @@ CludesUI.AtLogin(function()
 
         _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
         cursorY = cursorY - height
-        local function Circle()
-            return mod.OwnListGet("iconShape") ~= "square"
-        end
+        local function Circle() return mod.OwnListGet("iconShape") ~= "square" end
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "segmented",
             text = "Icon Shape",
             tooltip = "The member and specialization icon shape.",
             values = { circle = "Circle", square = "Square" },
             order = { "circle", "square" },
-            getValue = function()
-                return mod.OwnListGet("iconShape")
-            end,
+            getValue = function() return mod.OwnListGet("iconShape") end,
             setValue = function(value)
                 mod.SetOwnListValue("iconShape", value)
                 CUI:RefreshPage(true)
@@ -548,14 +433,10 @@ CludesUI.AtLogin(function()
             max = 160,
             step = 5,
             tooltip = "Size of the role and specialization icons in the group list.",
-            getValue = function()
-                return tonumber(mod.Cfg().iconSize) or mod.DEFAULTS.iconSize
-            end,
+            getValue = function() return tonumber(mod.Cfg().iconSize) or mod.DEFAULTS.iconSize end,
             setValue = function(value)
                 mod.Cfg().iconSize = value
-                if mod.Redecorate then
-                    mod.Redecorate()
-                end
+                if mod.Redecorate then mod.Redecorate() end
             end,
         })
         cursorY = cursorY - height
@@ -569,9 +450,7 @@ CludesUI.AtLogin(function()
             order = texOrder,
             disabled = Circle,
             disabledTooltip = "Icon Shape: Square",
-            getValue = function()
-                return mod.OwnListGet("borderTexture")
-            end,
+            getValue = function() return mod.OwnListGet("borderTexture") end,
             setValue = function(value)
                 -- a new style starts on its own color
                 mod.SetOwnListValue("borderColor", nil)
@@ -585,12 +464,8 @@ CludesUI.AtLogin(function()
             max = 4,
             step = 1,
             tooltip = "In pixels. 0 for no border. Round icons get a ring.",
-            getValue = function()
-                return tonumber(mod.OwnListGet("borderSize")) or 0
-            end,
-            setValue = function(value)
-                mod.SetOwnListValue("borderSize", value)
-            end,
+            getValue = function() return tonumber(mod.OwnListGet("borderSize")) or 0 end,
+            setValue = function(value) mod.SetOwnListValue("borderSize", value) end,
         })
         cursorY = cursorY - height
         do
@@ -621,77 +496,51 @@ CludesUI.AtLogin(function()
             tooltip = "When there is a missing role, add an icon to show you which one.",
             values = { none = "None", blizzard = "Blizzard", cludes = "CludesUI" },
             order = { "none", "blizzard", "cludes" },
-            getValue = function()
-                return mod.OwnListGet("missingIcons")
-            end,
+            getValue = function() return mod.OwnListGet("missingIcons") end,
             setValue = function(value)
                 mod.SetOwnListValue("missingIcons", value)
-                if mod.Redecorate then
-                    mod.Redecorate()
-                end -- blizzard's list too
+                if mod.Redecorate then mod.Redecorate() end -- blizzard's list too
             end,
         }, {
             type = "toggle",
             text = "Row Art",
             tooltip = "The instance's art across the left half of each group, fading out to the right.",
-            getValue = function()
-                return mod.Cfg().extraRowArt == true
-            end,
+            getValue = function() return mod.Cfg().extraRowArt == true end,
             setValue = function(value)
                 mod.Cfg().extraRowArt = value and true or false
-                if mod.GFRetagRows then
-                    mod.GFRetagRows()
-                end
+                if mod.GFRetagRows then mod.GFRetagRows() end
             end,
         })
         cursorY = cursorY - height
         local function Shown(key, default)
             local value = mod.Cfg()[key]
-            if value == nil then
-                value = mod.DEFAULTS[key]
-            end
-            if value == nil then
-                value = default
-            end
+            if value == nil then value = mod.DEFAULTS[key] end
+            if value == nil then value = default end
             return value and true or false
         end
         local function SetShown(key, value)
             mod.Cfg()[key] = value and true or false
-            if mod.Redecorate then
-                mod.Redecorate()
-            end
+            if mod.Redecorate then mod.Redecorate() end
         end
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Specialization",
             tooltip = "Shows each member's specialization icon in place of the game's class and role icons. Off, the game's own icons stay.",
-            getValue = function()
-                return Shown("specIcons")
-            end,
-            setValue = function(value)
-                SetShown("specIcons", value)
-            end,
+            getValue = function() return Shown("specIcons") end,
+            setValue = function(value) SetShown("specIcons", value) end,
         }, {
             type = "toggle",
             text = "Show Group Leader",
             tooltip = "Puts a small crown above the group leader's icon.",
-            getValue = function()
-                return Shown("leaderCrown")
-            end,
-            setValue = function(value)
-                SetShown("leaderCrown", value)
-            end,
+            getValue = function() return Shown("leaderCrown") end,
+            setValue = function(value) SetShown("leaderCrown", value) end,
         })
         cursorY = cursorY - height
         -- the third line: playstyle and region tag (rows already drawn take them now)
         local function SetLine(key, value)
             mod.Cfg()[key] = value and true or false
-            if mod.Redecorate then
-                mod.Redecorate()
-            end
-            if mod.GFRetagRows then
-                mod.GFRetagRows()
-            end
+            if mod.Redecorate then mod.Redecorate() end
+            if mod.GFRetagRows then mod.GFRetagRows() end
         end
         local tagsCfg
         if mod.RegionList() then
@@ -701,46 +550,30 @@ CludesUI.AtLogin(function()
                 tooltip = mod.RegionIsLanguage()
                         and "Shows the leader's realm language (EN, DE, FR, ES, IT, PT, RU) after each group's playstyle."
                     or "Shows OCE, NA, MEX or BRA after each group's playstyle, from the leader's realm.",
-                getValue = function()
-                    return Shown("extraRegionTags", true)
-                end,
-                setValue = function(value)
-                    SetLine("extraRegionTags", value)
-                end,
+                getValue = function() return Shown("extraRegionTags", true) end,
+                setValue = function(value) SetLine("extraRegionTags", value) end,
             }
         end
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Leader Rating",
             tooltip = "Shows the group leader's Mythic+ rating next to the role icons.",
-            getValue = function()
-                return Shown("leaderRating")
-            end,
-            setValue = function(value)
-                SetShown("leaderRating", value)
-            end,
+            getValue = function() return Shown("leaderRating") end,
+            setValue = function(value) SetShown("leaderRating", value) end,
         }, {
             type = "toggle",
             text = "Show Playstyle",
             tooltip = "Each group's playstyle (Learning, Relaxed, Competitive, Carry Offered) on its third line.",
-            getValue = function()
-                return Shown("extraShowPlaystyle", true)
-            end,
-            setValue = function(value)
-                SetLine("extraShowPlaystyle", value)
-            end,
+            getValue = function() return Shown("extraShowPlaystyle", true) end,
+            setValue = function(value) SetLine("extraShowPlaystyle", value) end,
         })
         cursorY = cursorY - height
         local notesCfg = {
             type = "toggle",
             text = "Show Group Notes",
             tooltip = "Shows each group's note on a line under it; hover the group for the whole note.",
-            getValue = function()
-                return mod.OwnListGet("groupNotes") == true
-            end,
-            setValue = function(value)
-                mod.SetOwnListValue("groupNotes", value and true or false)
-            end,
+            getValue = function() return mod.OwnListGet("groupNotes") == true end,
+            setValue = function(value) mod.SetOwnListValue("groupNotes", value and true or false) end,
         }
         if tagsCfg then
             _, height = W:DualRow(hostFrame, cursorY, tagsCfg, notesCfg)
@@ -752,9 +585,7 @@ CludesUI.AtLogin(function()
         -- the filter's dungeon / raid squares
         local function SetSquares(key, value)
             mod.Cfg()[key] = value and true or false
-            if mod.Search_Layout then
-                mod.Search_Layout()
-            end
+            if mod.Search_Layout then mod.Search_Layout() end
         end
         _, height = W:SectionHeader(hostFrame, "DUNGEON / RAID ROW", cursorY)
         cursorY = cursorY - height
@@ -762,22 +593,14 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Dungeon Names",
             tooltip = "Each dungeon square shows the dungeon's short name (e.g. KR for Kings' Rest).",
-            getValue = function()
-                return mod.Cfg().dungeonAbbr == true
-            end,
-            setValue = function(value)
-                SetSquares("dungeonAbbr", value)
-            end,
+            getValue = function() return mod.Cfg().dungeonAbbr == true end,
+            setValue = function(value) SetSquares("dungeonAbbr", value) end,
         }, {
             type = "toggle",
             text = "Dungeon Keystone Level",
             tooltip = "Each dungeon square shows your best keystone level this season, colored by its score rarity.",
-            getValue = function()
-                return mod.Cfg().dungeonScore == true
-            end,
-            setValue = function(value)
-                SetSquares("dungeonScore", value)
-            end,
+            getValue = function() return mod.Cfg().dungeonScore == true end,
+            setValue = function(value) SetSquares("dungeonScore", value) end,
         })
         cursorY = cursorY - height
 
@@ -815,12 +638,8 @@ CludesUI.AtLogin(function()
                 max = 64,
                 step = 1,
                 tooltip = "How tall each applicant row is.",
-                getValue = function()
-                    return mod.OwnListGet("applicantRowHeight") or 36
-                end,
-                setValue = function(value)
-                    mod.SetOwnListValue("applicantRowHeight", value)
-                end,
+                getValue = function() return mod.OwnListGet("applicantRowHeight") or 36 end,
+                setValue = function(value) mod.SetOwnListValue("applicantRowHeight", value) end,
             },
             -- placeholder, the checklist replaces it
             {
@@ -829,29 +648,21 @@ CludesUI.AtLogin(function()
                 tooltip = "What to hide on your listed group's page.",
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
-                getValue = function()
-                    return "__placeholder"
-                end,
+                getValue = function() return "__placeholder" end,
                 setValue = function() end,
             }
         )
         cursorY = cursorY - height
         if not CUI._prebuilding then
             local region = applicantRow._rightRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local dropdown, ddRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 HIDE_INFO_ITEMS,
-                function(key)
-                    return mod.OwnListGet(key) == true
-                end,
-                function(key, value)
-                    mod.SetOwnListValue(key, value and true or false)
-                end
+                function(key) return mod.OwnListGet(key) == true end,
+                function(key, value) mod.SetOwnListValue(key, value and true or false) end
             )
             CUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
             region._control = dropdown
@@ -862,24 +673,16 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Class Colored Role Icons",
             tooltip = "Each applicant's role icons take their class color, in place of the role's blue, green or red.",
-            getValue = function()
-                return mod.OwnListGet("roleClassColors") == true
-            end,
-            setValue = function(value)
-                mod.SetOwnListValue("roleClassColors", value and true or false)
-            end,
+            getValue = function() return mod.OwnListGet("roleClassColors") == true end,
+            setValue = function(value) mod.SetOwnListValue("roleClassColors", value and true or false) end,
         }, CUI.BlankRowCfg())
         cursorY = cursorY - height
         return cursorY
     end
 
     local function ResetMessage(scope)
-        if scope == "session" then
-            return CludesUI.L("Reset the session application counts to zero?")
-        end
-        if scope == "account" then
-            return CludesUI.L("Reset the account application counts to zero?")
-        end
+        if scope == "session" then return CludesUI.L("Reset the session application counts to zero?") end
+        if scope == "account" then return CludesUI.L("Reset the account application counts to zero?") end
         return CludesUI.L("Reset the character application counts to zero?")
     end
 
@@ -897,9 +700,7 @@ CludesUI.AtLogin(function()
             tooltip = "A bar at the top of the Dungeons & Raids sidebar that counts your Mythic+ application results.",
             disabled = ModOff,
             disabledTooltip = "Group Finder",
-            getValue = function()
-                return APGet("enabled", false) == true
-            end,
+            getValue = function() return APGet("enabled", false) == true end,
             setValue = function(value)
                 APSet("enabled", value and true or false)
                 CUI:RefreshPage()
@@ -912,12 +713,8 @@ CludesUI.AtLogin(function()
             order = { "session", "character", "account" },
             disabled = APOff,
             disabledTooltip = APOffTip,
-            getValue = function()
-                return APGet("scope", "character")
-            end,
-            setValue = function(value)
-                APSet("scope", value)
-            end,
+            getValue = function() return APGet("scope", "character") end,
+            setValue = function(value) APSet("scope", value) end,
         })
         cursorY = cursorY - height
 
@@ -945,9 +742,7 @@ CludesUI.AtLogin(function()
                 local labelText = VIS_ITEMS[idx].label
                 words[#words + 1] = labelText
                 local loc = CludesUI.L(labelText)
-                if loc ~= labelText then
-                    words[#words + 1] = loc
-                end
+                if loc ~= labelText then words[#words + 1] = loc end
             end
             local labelLoc = CludesUI.L(VIS_LABEL)
             CludesUI._RegisterSearchEntry(
@@ -964,16 +759,12 @@ CludesUI.AtLogin(function()
         local texture, nameList, sequence = mod.BarTextureTables()
         local texValues, texOrder = {}, {}
         for _, key in ipairs(sequence) do
-            if key ~= "---" then
-                texValues[key] = nameList[key] or key
-            end
+            if key ~= "---" then texValues[key] = nameList[key] or key end
             texOrder[#texOrder + 1] = key
         end
         texValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return texture[key]
-            end,
+            background = function(key) return texture[key] end,
         }
         local visRow
         visRow, height = W:DualRow(
@@ -988,9 +779,7 @@ CludesUI.AtLogin(function()
                 disabledTooltip = APOffTip,
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
-                getValue = function()
-                    return "__placeholder"
-                end,
+                getValue = function() return "__placeholder" end,
                 setValue = function() end,
             },
             {
@@ -1000,32 +789,22 @@ CludesUI.AtLogin(function()
                 order = texOrder,
                 disabled = APOff,
                 disabledTooltip = APOffTip,
-                getValue = function()
-                    return APGet("texture", "none")
-                end,
-                setValue = function(value)
-                    APSet("texture", value)
-                end,
+                getValue = function() return APGet("texture", "none") end,
+                setValue = function(value) APSet("texture", value) end,
             }
         )
         cursorY = cursorY - height
 
         if not CUI._prebuilding then
             local region = visRow._leftRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local visDD, visDDRefresh = CUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 VIS_ITEMS,
-                function(key)
-                    return APGet(key, true) == true
-                end,
-                function(key, value)
-                    APSet(key, value and true or false)
-                end,
+                function(key) return APGet(key, true) == true end,
+                function(key, value) APSet(key, value and true or false) end,
                 nil,
                 nil,
                 nil,
@@ -1045,12 +824,8 @@ CludesUI.AtLogin(function()
             tooltip = 'The "M+ Applications" title above the bar.',
             disabled = APOff,
             disabledTooltip = APOffTip,
-            getValue = function()
-                return APGet("showTitle", true) ~= false
-            end,
-            setValue = function(value)
-                APSet("showTitle", value and true or false)
-            end,
+            getValue = function() return APGet("showTitle", true) ~= false end,
+            setValue = function(value) APSet("showTitle", value and true or false) end,
         }, CUI.BlankRowCfg())
         cursorY = cursorY - height
 
@@ -1063,9 +838,7 @@ CludesUI.AtLogin(function()
                     message = ResetMessage(scope),
                     confirmText = "Reset",
                     cancelText = "Cancel",
-                    onConfirm = function()
-                        mod.ResetApplications(scope)
-                    end,
+                    onConfirm = function() mod.ResetApplications(scope) end,
                 })
             end
         end
@@ -1100,16 +873,12 @@ CludesUI.AtLogin(function()
         description = "Premade Groups search filters, group list, applicant list and application tools in the Dungeons & Raids window.",
         pages = { PAGE_SEARCH, PAGE_APPS },
         buildPage = function(page, hostFrame, yOffset)
-            if page == PAGE_APPS then
-                return BuildAppsPage(hostFrame, yOffset)
-            end
+            if page == PAGE_APPS then return BuildAppsPage(hostFrame, yOffset) end
             return BuildSearchPage(page, hostFrame, yOffset)
         end,
         -- a cached page whose header was dropped builds it again
         getHeaderBuilder = function(page)
-            if page == PAGE_SEARCH then
-                return mod.OwnListPreviewBuild
-            end
+            if page == PAGE_SEARCH then return mod.OwnListPreviewBuild end
         end,
         onReset = function()
             mod.ResetSettings()
@@ -1119,15 +888,9 @@ CludesUI.AtLogin(function()
                 CludesUIDB.persistSignupNote = false
                 CludesUIDB.signupNote = nil
             end
-            if CUI._applyQuickSignup then
-                CUI._applyQuickSignup()
-            end
-            if CUI._applyPersistSignupNote then
-                CUI._applyPersistSignupNote()
-            end
-            if mod.ResetOwnList then
-                mod.ResetOwnList()
-            end
+            if CUI._applyQuickSignup then CUI._applyQuickSignup() end
+            if CUI._applyPersistSignupNote then CUI._applyPersistSignupNote() end
+            if mod.ResetOwnList then mod.ResetOwnList() end
             if mod.Enabled() then
                 mod.Search_Layout()
                 mod.ApplyApplications()

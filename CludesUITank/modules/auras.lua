@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 -- Core.lua is loaded before this file (see TOC), so ns.K is available.
 local K = mod.K
 
@@ -34,20 +32,14 @@ end
 
 -- True when a value came back from the engine as a secret. Tainted code may
 -- store and pass secrets, but comparing or doing arithmetic on one errors.
-function mod.IsSecret(value)
-    return type(issecretvalue) == "function" and issecretvalue(value)
-end
+function mod.IsSecret(value) return type(issecretvalue) == "function" and issecretvalue(value) end
 
 -- A table can be flagged inaccessible to tainted code, in which case even
 -- indexing it is an immediate Lua error. AuraData structs are fully secret
 -- under restrictions, so check before reading fields off one.
 function mod.CanRead(tbl)
-    if type(tbl) ~= "table" then
-        return false
-    end
-    if type(canaccesstable) == "function" then
-        return canaccesstable(tbl)
-    end
+    if type(tbl) ~= "table" then return false end
+    if type(canaccesstable) == "function" then return canaccesstable(tbl) end
     return true
 end
 
@@ -78,9 +70,7 @@ local buttonRegions = setmetatable({}, { __mode = "k" })
 
 local function StackPosition(posId)
     for _, p in ipairs(K.STACK_COUNT_POSITIONS) do
-        if p.id == posId then
-            return p
-        end
+        if p.id == posId then return p end
     end
     return K.STACK_COUNT_POSITIONS[1]
 end
@@ -93,12 +83,8 @@ function mod.CreateEdges(hostFrame, thickness)
         local tex = hostFrame:CreateTexture(nil, "OVERLAY")
         tex:SetPoint(point1)
         tex:SetPoint(point2)
-        if width then
-            tex:SetWidth(width)
-        end
-        if height then
-            tex:SetHeight(height)
-        end
+        if width then tex:SetWidth(width) end
+        if height then tex:SetHeight(height) end
         edges[#edges + 1] = tex
     end
     edge("TOPLEFT", "TOPRIGHT", nil, thickness)
@@ -140,9 +126,7 @@ end
 -- Icon edge length for each group. Defensives sit inside the health bar, so
 -- their size follows the configured frame height rather than the default one.
 function mod.AuraIconSize(kind)
-    if kind == "external" then
-        return mod.SettingNumber("extSize", mod.EXT and mod.EXT.DEFAULT_SIZE or 36)
-    end
+    if kind == "external" then return mod.SettingNumber("extSize", mod.EXT and mod.EXT.DEFAULT_SIZE or 36) end
     if kind == "defensive" then
         local height = mod.SettingNumber("frameHeight", K.DEFAULT_HEIGHT)
         return math.max(height - K.POWER_BAR_HEIGHT - 16, 8)
@@ -156,9 +140,7 @@ end
 -- and any call against them errors. Callers must check.
 local function ApplyButtonSettings(button)
     local regions = buttonRegions[button]
-    if not regions then
-        return
-    end
+    if not regions then return end
 
     -- Size is re-applied here rather than only at creation, so a frame height
     -- change resizes the defensive icons that already exist.
@@ -175,18 +157,14 @@ local function ApplyButtonSettings(button)
     local nudgeY = mod.SettingNumber("stackCountNudgeY", 0)
     local cdAbove = saved.cdAbove or false
 
-    if regions.cd.SetFontScale then
-        regions.cd:SetFontScale(math.max(scale, 0.05))
-    end
+    if regions.cd.SetFontScale then regions.cd:SetFontScale(math.max(scale, 0.05)) end
     regions.cd:SetHideCountdownNumbers(cdAbove or scale <= 0)
 
     -- Stack count (size 0 hides it). Attaching and detaching has to happen
     -- here too, not just resizing: the count may not have existed when the
     -- button was built, and may need removing now.
     if stackSize > 0 then
-        if not regions.count then
-            regions.count = button:CreateFontString(nil, "OVERLAY")
-        end
+        if not regions.count then regions.count = button:CreateFontString(nil, "OVERLAY") end
         local place = StackPosition(saved.stackCountPos)
         regions.count:SetFont(face, stackSize, flags)
         regions.count:SetTextColor(mod.FontColor("stackCountColor"))
@@ -274,9 +252,7 @@ local function ApplyButtonSettings(button)
     -- Above-icon timer. The engine formats and colours this, which is what
     -- replaces the old per-frame OnUpdate that read expirationTime.
     if cdAbove then
-        if not regions.timer then
-            regions.timer = button:CreateFontString(nil, "OVERLAY")
-        end
+        if not regions.timer then regions.timer = button:CreateFontString(nil, "OVERLAY") end
         regions.timer:SetFont(face, math.max(timerSize, 1), flags)
         regions.timer:SetTextColor(mod.FontColor("timerTextColor"))
         regions.timer:ClearAllPoints()
@@ -342,9 +318,7 @@ local function CreateContainer(hostFrame, iconSize, growHorizontal)
         success, boxHolder =
             pcall(CreateFrame, "AuraContainer", nil, hostFrame, "CustomAuraContainerTemplate")
     end
-    if not success or not boxHolder then
-        return nil
-    end
+    if not success or not boxHolder then return nil end
 
     boxHolder:SetSize(iconSize, iconSize)
     boxHolder:SetFlowLayoutAxis(AnchorUtil.FlowLayoutAxis.Horizontal)
@@ -363,20 +337,14 @@ local function GroupRejected(widget, key, err)
 end
 
 function mod.CreateDebuffAuraContainer(widget)
-    if InCombatLockdown() or widget.debuffContainer or widget.debuffRejected then
-        return
-    end
-    if not mod.HasAuraContainers() then
-        return
-    end
+    if InCombatLockdown() or widget.debuffContainer or widget.debuffRejected then return end
+    if not mod.HasAuraContainers() then return end
 
     local iconSize = mod.AuraIconSize("debuff")
     local spacing = mod.SettingNumber("debuffSpacing", K.DEBUFF_SPACING)
 
     local boxHolder = CreateContainer(widget, iconSize, AnchorUtil.FlowDirection.Left)
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
     boxHolder:SetPoint("TOPRIGHT", widget, "BOTTOMRIGHT", 0, 0)
 
     -- With the default "all debuffs" setting no candidate filter is passed at
@@ -387,9 +355,7 @@ function mod.CreateDebuffAuraContainer(widget)
         sortMethod = AuraContainerSortMethod.UnitFrameDebuff,
         sortDirection = AuraContainerSortDirection.Normal,
         candidateFilters = next(filters) and filters or nil,
-        initializeFrame = function(button)
-            StyleAuraButton(button, "debuff")
-        end,
+        initializeFrame = function(button) StyleAuraButton(button, "debuff") end,
         layout = {
             elementSpacing = spacing,
             lineSpacing = spacing,
@@ -408,20 +374,14 @@ function mod.CreateDebuffAuraContainer(widget)
 end
 
 function mod.CreateDefensiveAuraContainer(widget)
-    if InCombatLockdown() or widget.defensiveContainer or widget.defensiveRejected then
-        return
-    end
-    if not mod.HasAuraContainers() then
-        return
-    end
+    if InCombatLockdown() or widget.defensiveContainer or widget.defensiveRejected then return end
+    if not mod.HasAuraContainers() then return end
 
     local iconSize = mod.AuraIconSize("defensive")
     local spacing = K.DEBUFF_SPACING
 
     local boxHolder = CreateContainer(widget, iconSize, AnchorUtil.FlowDirection.Left)
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
     boxHolder:SetPoint("TOPRIGHT", widget.health, "RIGHT", -K.DEBUFF_SPACING, iconSize / 2 - 2)
 
     local addOk, addErr =
@@ -429,9 +389,7 @@ function mod.CreateDefensiveAuraContainer(widget)
             maxFrameCount = math.max(mod.SettingNumber("maxDefensives", K.BIG_DEFENSIVES_DEFAULT_COUNT), 0),
             sortMethod = AuraContainerSortMethod.BigDefensive,
             sortDirection = AuraContainerSortDirection.Normal,
-            initializeFrame = function(button)
-                StyleAuraButton(button, "defensive")
-            end,
+            initializeFrame = function(button) StyleAuraButton(button, "defensive") end,
             layout = {
                 elementSpacing = spacing,
                 lineSpacing = spacing,
@@ -459,23 +417,15 @@ end
 -- can be turned back on from the options panel by anyone who wants it.
 function mod.MigratePrivateAuraRow()
     local saved = mod.DB()
-    if saved.auraContainerMigrated then
-        return
-    end
-    if not (CoTankAuras and CoTankAuras.debuffContainer) then
-        return
-    end
+    if saved.auraContainerMigrated then return end
+    if not (CoTankAuras and CoTankAuras.debuffContainer) then return end
 
     saved.auraContainerMigrated = true
     local previous = mod.SettingNumber("maxPrivateAuras", K.PRIVATE_AURAS_DEFAULT_COUNT)
-    if previous <= 0 then
-        return
-    end
+    if previous <= 0 then return end
 
     saved.maxPrivateAuras = 0
-    if CoTankAuras.UpdateAndRefreshAuraLayout then
-        CoTankAuras:UpdateAndRefreshAuraLayout(0)
-    end
+    if CoTankAuras.UpdateAndRefreshAuraLayout then CoTankAuras:UpdateAndRefreshAuraLayout(0) end
     mod.Print(
         "Private auras now appear in the tank debuff row, so the separate "
             .. "private aura row has been turned off to stop icons showing twice. "
@@ -486,9 +436,7 @@ end
 -- ── Tank debuff toggle ────────────────────────────────────────────────────
 function mod.DebuffsEnabled()
     local saved = mod.DB()
-    if saved.debuffsEnabled == nil then
-        saved.debuffsEnabled = true
-    end
+    if saved.debuffsEnabled == nil then saved.debuffsEnabled = true end
     return saved.debuffsEnabled ~= false
 end
 
@@ -496,9 +444,7 @@ end
 -- A container is live only while it is both enabled and visible. Test mode
 -- takes the display over with mock icons, so the container stands down then.
 local function ApplyContainerState(boxHolder, groupKey, unitToken, maxCount, enabled)
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
 
     local live = enabled
         and maxCount > 0
@@ -506,21 +452,15 @@ local function ApplyContainerState(boxHolder, groupKey, unitToken, maxCount, ena
         and not mod.isTestMode
         and not mod.IsInEditMode()
 
-    if live then
-        boxHolder:SetUnit(unitToken)
-    end
+    if live then boxHolder:SetUnit(unitToken) end
     pcall(boxHolder.SetAuraGroupMaxFrameCount, boxHolder, groupKey, math.max(maxCount, 0))
     boxHolder:SetEnabled(live)
-    if not InCombatLockdown() then
-        boxHolder:SetShown(live)
-    end
+    if not InCombatLockdown() then boxHolder:SetShown(live) end
 end
 
 function mod.RefreshDebuffContainer(widget)
     widget = widget or CoTankAuras
-    if not widget or not widget.debuffContainer then
-        return
-    end
+    if not widget or not widget.debuffContainer then return end
     ApplyContainerState(
         widget.debuffContainer,
         "debuffs",
@@ -532,9 +472,7 @@ end
 
 function mod.RefreshDefensiveContainer(widget)
     widget = widget or CoTankAuras
-    if not widget or not widget.defensiveContainer then
-        return
-    end
+    if not widget or not widget.defensiveContainer then return end
     ApplyContainerState(
         widget.defensiveContainer,
         "defensives",
@@ -548,9 +486,7 @@ end
 -- container-level call, so it does not touch the (possibly forbidden) buttons.
 function mod.RefreshDebuffFilter(widget)
     widget = widget or CoTankAuras
-    if not widget or not widget.debuffContainer then
-        return
-    end
+    if not widget or not widget.debuffContainer then return end
     pcall(
         widget.debuffContainer.SetAuraGroupCandidateFilters,
         widget.debuffContainer,
@@ -577,15 +513,11 @@ function mod.SetDebuffsEnabled(enabled)
             end
         end
     end
-    if mod.Options and mod.Options.SyncTestButton then
-        mod.Options:SyncTestButton()
-    end
+    if mod.Options and mod.Options.SyncTestButton then mod.Options:SyncTestButton() end
     return mod.DebuffsEnabled()
 end
 
-function mod.ToggleDebuffs()
-    return mod.SetDebuffsEnabled(not mod.DebuffsEnabled())
-end
+function mod.ToggleDebuffs() return mod.SetDebuffsEnabled(not mod.DebuffsEnabled()) end
 
 -- ── Restyling after an options change ─────────────────────────────────────
 -- Buttons the engine has already created keep the size and regions they were
@@ -596,12 +528,8 @@ local pendingRestyle = false
 -- Replays a restyle that was blocked by secrecy. Called from the
 -- PLAYER_REGEN_ENABLED handler in Core.lua.
 function mod.FlushPendingRestyle()
-    if not pendingRestyle then
-        return
-    end
-    if mod.AurasAreSecret() then
-        return
-    end
+    if not pendingRestyle then return end
+    if mod.AurasAreSecret() then return end
     pendingRestyle = false
     mod.RestyleAuraButtons()
 end
@@ -626,9 +554,7 @@ end
 -- individual (possibly forbidden) buttons.
 function mod.RefreshAuraContainerLayout(widget)
     widget = widget or CoTankAuras
-    if not widget then
-        return
-    end
+    if not widget then return end
 
     if widget.debuffContainer then
         local spacing = mod.SettingNumber("debuffSpacing", K.DEBUFF_SPACING)

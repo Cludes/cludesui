@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Data.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local mod = select(2, ...)
 local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
@@ -41,12 +37,8 @@ local FOOTER_H = 28
 -- Runtime state (never persisted; always "All" on load)
 local selectedCategoryIndex = 0 -- 0 = All Items, -1 = OneBag, -2 = MultiBag, >0 = category index
 local selectedGroupName = nil -- set when a group header is clicked (overrides selectedCategoryIndex)
-Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
-    selectedCategoryIndex = val
-end
-Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val)
-    selectedGroupName = val
-end
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val) selectedCategoryIndex = val end
+Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val) selectedGroupName = val end
 
 -- Invalidate categories after the equipment-set list changes (event or the
 -- split-mode toggle). Re-resolves the selection by stable key: the rebuild
@@ -54,9 +46,7 @@ end
 -- category/group falls back to All Items.
 function CUI_Bags.InvalidateSetCategories()
     local mgr = _G.CUI_CategoryManager
-    if not mgr then
-        return
-    end
+    if not mgr then return end
     local selKey
     if selectedCategoryIndex > 0 then
         local category = mgr:GetCategories()[selectedCategoryIndex]
@@ -92,9 +82,7 @@ end
 local _trackRank = CUI._TRACK_RANK
 -- Gear category lookup: built lazily, maps catIdx -> true for gear categories
 local _gearCatSet
-Inner.gearCatSetSetters[#Inner.gearCatSetSetters + 1] = function(val)
-    _gearCatSet = val
-end
+Inner.gearCatSetSetters[#Inner.gearCatSetSetters + 1] = function(val) _gearCatSet = val end
 local function IsGearCategory(catIdx)
     if not _gearCatSet then
         _gearCatSet = {}
@@ -123,23 +111,17 @@ end
 -- only hands over the slot behind it (3 merged mails would mail 1), so duplicates stay unmerged while any panel is open. bagMergeDuplicates disables merging outright.
 local _openItemPanels = {}
 local _anyItemPanelOpen = false
-Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val)
-    _anyItemPanelOpen = val
-end
+Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val) _anyItemPanelOpen = val end
 -- Returns true when the aggregate state flipped and the bags' view merges, so
 -- the caller can refresh. A view that does not merge paints the same either
 -- way: its painted state just follows, so neither this nor OnShow repaints.
 local function SetItemPanelOpen(key, open)
     _openItemPanels[key] = open or nil
     local any = next(_openItemPanels) ~= nil
-    if any == _anyItemPanelOpen then
-        return false
-    end
+    if any == _anyItemPanelOpen then return false end
     SetAnyItemPanelOpen(any)
     local merges = BP().bagMergeDuplicates ~= false
-    if not merges then
-        SetPaintedPanelOpen(any)
-    end
+    if not merges then SetPaintedPanelOpen(any) end
     return merges
 end
 
@@ -194,10 +176,9 @@ do
                 skinData._sortIlvl = c.ilvl
                 skinData._sortType = c.itemType
                 skinData._sortTrackRank = c.rank
-                skinData._sortGear = skinData.categoryIndex and IsGearCategory(skinData.categoryIndex) or false
-                if c.complete then
-                    skinData._sortCached = true
-                end
+                skinData._sortGear = skinData.categoryIndex and IsGearCategory(skinData.categoryIndex)
+                    or false
+                if c.complete then skinData._sortCached = true end
             end
         end
     end
@@ -206,40 +187,24 @@ end
 local function VisualSortCompare(a, b)
     -- Gear sort: track (descending) > ilvl (descending) -- only for gear categories
     if a._sortGear and b._sortGear then
-        if a._sortTrackRank ~= b._sortTrackRank then
-            return a._sortTrackRank > b._sortTrackRank
-        end
+        if a._sortTrackRank ~= b._sortTrackRank then return a._sortTrackRank > b._sortTrackRank end
         if a._sortTrackRank > 0 and b._sortTrackRank > 0 then
-            if a._sortIlvl ~= b._sortIlvl then
-                return a._sortIlvl > b._sortIlvl
-            end
+            if a._sortIlvl ~= b._sortIlvl then return a._sortIlvl > b._sortIlvl end
         end
     end
     -- Category grouping; skipped for gear so track/ilvl win in merged gear groups
     local aCat = a.categoryIndex or 9999
     local bCat = b.categoryIndex or 9999
-    if aCat ~= bCat and not (a._sortGear and b._sortGear) then
-        return aCat < bCat
-    end
+    if aCat ~= bCat and not (a._sortGear and b._sortGear) then return aCat < bCat end
     -- Sub-type grouping within merged categories (e.g. Professions vs Recipes)
-    if a._sortType ~= b._sortType then
-        return a._sortType < b._sortType
-    end
+    if a._sortType ~= b._sortType then return a._sortType < b._sortType end
     -- Fallback: rarity > name > itemID > bag:slot
-    if a._sortQuality ~= b._sortQuality then
-        return a._sortQuality > b._sortQuality
-    end
-    if a._sortName ~= b._sortName then
-        return a._sortName < b._sortName
-    end
+    if a._sortQuality ~= b._sortQuality then return a._sortQuality > b._sortQuality end
+    if a._sortName ~= b._sortName then return a._sortName < b._sortName end
     local ai = (a.info and a.info.itemID) or 0
     local bi = (b.info and b.info.itemID) or 0
-    if ai ~= bi then
-        return ai < bi
-    end
-    if a.bag ~= b.bag then
-        return a.bag < b.bag
-    end
+    if ai ~= bi then return ai < bi end
+    if a.bag ~= b.bag then return a.bag < b.bag end
     return a.slot < b.slot
 end
 
@@ -251,13 +216,9 @@ local EXPANSION_ID_OVERRIDES = {
 }
 
 local function GetItemExpansionIDFromLink(itemLink)
-    if not itemLink then
-        return nil
-    end
+    if not itemLink then return nil end
     local itemId = tonumber(itemLink:match("item:(%d+)")) or tonumber(itemLink:match("keystone:(%d+)"))
-    if itemId and EXPANSION_ID_OVERRIDES[itemId] then
-        return EXPANSION_ID_OVERRIDES[itemId]
-    end
+    if itemId and EXPANSION_ID_OVERRIDES[itemId] then return EXPANSION_ID_OVERRIDES[itemId] end
     if C_Item and C_Item.GetItemInfo then
         local _, _, _, _, _, _, _, _, _, _, _, _, _, _, expID = C_Item.GetItemInfo(itemLink)
         return expID
@@ -269,25 +230,17 @@ end
 -- fallbacks cover an ID this client has no name for.
 local function ExpansionName(ident)
     local name = _G["EXPANSION_NAME" .. ident]
-    if name and name ~= "" then
-        return name
-    end
-    if ident == 11 then
-        return "Midnight"
-    end
+    if name and name ~= "" then return name end
+    if ident == 11 then return "Midnight" end
     return CludesUI.Lf("Expansion %1$d", ident)
 end
 
 -- sortKey: higher = newer expansion, shown first. Unknown / uncached last.
 local function GetExpansionBucketKeyAndLabel(itemLink)
     local expID = GetItemExpansionIDFromLink(itemLink)
-    if expID == nil then
-        return -999, (UNKNOWN or CludesUI.L("Unknown"))
-    end
+    if expID == nil then return -999, (UNKNOWN or CludesUI.L("Unknown")) end
     local ident = tonumber(expID)
-    if ident == nil then
-        return -999, (UNKNOWN or CludesUI.L("Unknown"))
-    end
+    if ident == nil then return -999, (UNKNOWN or CludesUI.L("Unknown")) end
     -- Classic-era sentinel from some clients / items
     if ident == 254 or ident == 255 then
         local name = _G["EXPANSION_NAME0"] or CludesUI.L("Classic")
@@ -320,9 +273,7 @@ local function BuildExpansionBuckets(itemList)
     for sk in pairs(byKey) do
         keyList[#keyList + 1] = sk
     end
-    table.sort(keyList, function(lhs, rhs)
-        return lhs > rhs
-    end)
+    table.sort(keyList, function(lhs, rhs) return lhs > rhs end)
     local result = {}
     for _, sk in ipairs(keyList) do
         result[#result + 1] = byKey[sk]
@@ -337,34 +288,20 @@ local IC_WEAPON = Enum.ItemClass.Weapon
 local IC_ARMOR = Enum.ItemClass.Armor
 
 local function IsArmoryGearCategory(category)
-    if not category then
-        return false
-    end
-    if category.isEquipSet then
-        return true
-    end
-    if category.isSetGear then
-        return true
-    end
+    if not category then return false end
+    if category.isEquipSet then return true end
+    if category.isSetGear then return true end
     return category._defaultName == "Weapons / Trinkets" or category._defaultName == "Armor"
 end
 
 local function IsGearOnlyGroup(groupName)
-    if not groupName or not CUI_CategoryManager then
-        return false
-    end
+    if not groupName or not CUI_CategoryManager then return false end
     local members = CUI_CategoryManager:GetGroupMembers(groupName)
-    if not members or #members == 0 then
-        return false
-    end
+    if not members or #members == 0 then return false end
     local cats = CUI_CategoryManager:GetCategories()
-    if not cats then
-        return false
-    end
+    if not cats then return false end
     for _, mi in ipairs(members) do
-        if not IsArmoryGearCategory(cats[mi]) then
-            return false
-        end
+        if not IsArmoryGearCategory(cats[mi]) then return false end
     end
     return true
 end
@@ -426,9 +363,7 @@ local function GetArmorySlotBucket(payload)
     end
 
     if classID == IC_WEAPON then
-        if subclassID == ARMORY_IDS.wand then
-            return 170, CludesUI.L("1H")
-        end
+        if subclassID == ARMORY_IDS.wand then return 170, CludesUI.L("1H") end
         if
             subclassID == ARMORY_IDS.bow
             or subclassID == ARMORY_IDS.gun
@@ -436,9 +371,7 @@ local function GetArmorySlotBucket(payload)
         then
             return 190, _G["INVTYPE_RANGED"] or CludesUI.L("Ranged")
         end
-        if equipSlot == "INVTYPE_2HWEAPON" then
-            return 160, CludesUI.L("2H")
-        end
+        if equipSlot == "INVTYPE_2HWEAPON" then return 160, CludesUI.L("2H") end
         if equipSlot == "INVTYPE_RANGED" or equipSlot == "INVTYPE_RANGEDRIGHT" then
             return 190, _G["INVTYPE_RANGED"] or CludesUI.L("Ranged")
         end
@@ -448,9 +381,7 @@ local function GetArmorySlotBucket(payload)
     end
 
     local record = ARMORY_ARMOR_SLOTS[equipSlot]
-    if record then
-        return record[1], _G[record[2]] or equipSlot
-    end
+    if record then return record[1], _G[record[2]] or equipSlot end
 
     return 999, CludesUI.L("Other")
 end
@@ -484,9 +415,7 @@ local function BuildSlotBuckets(itemList)
 end
 
 local function ArmorySlotGroupingEnabled()
-    if not BP().bagArmoryGroupBySlot then
-        return false
-    end
+    if not BP().bagArmoryGroupBySlot then return false end
     local dc = BP().bagDisabledCategories
     return not (dc and dc["Armor"])
 end
@@ -537,9 +466,7 @@ local function MergeDuplicates(items)
     -- Record what this paint was built with, so the bags OnShow can tell that
     -- the state changed while they were hidden and repaint (see OnShow).
     SetPaintedPanelOpen(_anyItemPanelOpen)
-    if _anyItemPanelOpen or BP().bagMergeDuplicates == false then
-        return items
-    end
+    if _anyItemPanelOpen or BP().bagMergeDuplicates == false then return items end
     -- Session-only unmerge marks (CUI_Bags._unmergedLinks: set by the split
     -- dialog, wiped when the bags close, never persisted): a marked item keeps
     -- its real stacks apart so a split's pieces are visible in these views.
@@ -584,9 +511,7 @@ end
 -- Saved visual order per category/group in BP().bagVisualOrder, keyed by category index
 -- (number) or group name (string): an ordered list of "bag:slot" strings; missing items append to the end.
 local function GetVisualOrder()
-    if not BP().bagVisualOrder then
-        BP().bagVisualOrder = {}
-    end
+    if not BP().bagVisualOrder then BP().bagVisualOrder = {} end
     return BP().bagVisualOrder
 end
 
@@ -612,16 +537,12 @@ end
 local function ApplySavedOrder(key, items)
     local sequence, k = OrderFor(key)
     local saved = sequence[k]
-    if not saved or #saved == 0 then
-        return
-    end
+    if not saved or #saved == 0 then return end
 
     -- Build position queues per itemID: each ID maps to its saved positions
     local posQueues = {}
     for i, ident in ipairs(saved) do
-        if not posQueues[ident] then
-            posQueues[ident] = {}
-        end
+        if not posQueues[ident] then posQueues[ident] = {} end
         local q = posQueues[ident]
         q[#q + 1] = i
     end
@@ -643,21 +564,15 @@ local function ApplySavedOrder(key, items)
     end
 
     table.sort(items, function(lhs, rhs)
-        if lhs._savedPos ~= rhs._savedPos then
-            return lhs._savedPos < rhs._savedPos
-        end
-        if lhs.bag ~= rhs.bag then
-            return lhs.bag < rhs.bag
-        end
+        if lhs._savedPos ~= rhs._savedPos then return lhs._savedPos < rhs._savedPos end
+        if lhs.bag ~= rhs.bag then return lhs.bag < rhs.bag end
         return lhs.slot < rhs.slot
     end)
 end
 
 -- Clear saved visual order for a group (called when ungrouping)
 local function ClearGroupOrder(groupName)
-    if not groupName then
-        return
-    end
+    if not groupName then return end
     local sequence = GetVisualOrder()
     sequence[groupName] = nil
 end
@@ -676,9 +591,7 @@ end
 
 -- Detect manual item swaps; with applySwap, also updates the saved visual order. Returns true if a swap was detected.
 local function DetectAndApplySwaps(tempItems, applySwap)
-    if not next(_bagSnapshot) then
-        return false
-    end
+    if not next(_bagSnapshot) then return false end
 
     local current = {}
     for _, skinData in ipairs(tempItems) do
@@ -690,9 +603,7 @@ local function DetectAndApplySwaps(tempItems, applySwap)
     local swapChanges = {}
     for key, oldID in pairs(_bagSnapshot) do
         local curID = current[key]
-        if curID and curID ~= oldID then
-            swapChanges[#swapChanges + 1] = { curID = curID, oldID = oldID }
-        end
+        if curID and curID ~= oldID then swapChanges[#swapChanges + 1] = { curID = curID, oldID = oldID } end
     end
 
     -- Swap pattern: exactly 2 item-to-item changes that cross-match
@@ -767,16 +678,12 @@ local function RetryPawnArrows()
     for button, expectedLink in pairs(pending) do
         local hostFrame = button:GetParent()
         local currentLink = hostFrame and C_Container.GetContainerItemLink(hostFrame:GetID(), button:GetID())
-        if button:IsShown() and currentLink == expectedLink then
-            UpdatePawnArrow(button, currentLink)
-        end
+        if button:IsShown() and currentLink == expectedLink then UpdatePawnArrow(button, currentLink) end
     end
 end
 
 UpdatePawnArrow = function(button, itemLink)
-    if not pawnRegistered or not button.UpgradeIcon then
-        return
-    end
+    if not pawnRegistered or not button.UpgradeIcon then return end
     if not pawnPositioned[button] then
         button.UpgradeIcon:ClearAllPoints()
         button.UpgradeIcon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
@@ -804,18 +711,12 @@ UpdatePawnArrow = function(button, itemLink)
 end
 
 local function RefreshPawnArrows()
-    if CUI_Bags:IsVisible() then
-        CUI_Bags:RefreshInventory()
-    end
-    if CUI_BagsReagent:IsVisible() then
-        CUI_BagsReagent:RefreshInventory()
-    end
+    if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
+    if CUI_BagsReagent:IsVisible() then CUI_BagsReagent:RefreshInventory() end
 end
 
 local function RegisterPawnIntegration()
-    if pawnRegistered or BP().enhancedBags == false then
-        return
-    end
+    if pawnRegistered or BP().enhancedBags == false then return end
     if
         type(PawnRegisterThirdPartyBag) ~= "function"
         or type(PawnShouldItemLinkHaveUpgradeArrow) ~= "function"

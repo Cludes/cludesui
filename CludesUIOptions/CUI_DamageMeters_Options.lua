@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Options.lua
 --  Options page for CludesUI Damage Meters.
@@ -8,20 +6,14 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Forever look's Border Style, latched with the look (reload popup).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIDamageMeters"] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 local EDM = mod.EDM
 -- Blizzard Style paints its own window colours and bar tracks, so those
 -- controls go inert under it; the Classic WoW UI box is tinted by the
 -- configured colours and its rows keep the plain track, so they stay live.
-local function MetersBlizzArt()
-    return CludesUI.BlizzStyle.Active("damagemeters") == "blizzard"
-end
+local function MetersBlizzArt() return CludesUI.BlizzStyle.Active("damagemeters") == "blizzard" end
 local function DMBlizzGate(rowConf, keepRow)
-    if MetersBlizzArt() then
-        return CludesUI.BlizzStyle.Gate("damagemeters", rowConf, keepRow)
-    end
+    if MetersBlizzArt() then return CludesUI.BlizzStyle.Gate("damagemeters", rowConf, keepRow) end
     return rowConf
 end
 
@@ -33,43 +25,27 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 local PoolIsIdle = CludesUI._Pool.IsIdle
 
 CludesUI.AtOptionsLogin(function()
-    if not EDM then
-        return
-    end
+    if not EDM then return end
     -- Do nothing if the module is disabled / coming soon
-    if not _G._CUDM_DB then
-        return
-    end
+    if not _G._CUDM_DB then return end
 
     local function DB()
         local db = _G._CUDM_DB
-        if db and db.profile and db.profile.dm then
-            return db.profile.dm
-        end
+        if db and db.profile and db.profile.dm then return db.profile.dm end
         return {}
     end
-    local function MeterGet(keyName)
-        return DB()[keyName]
-    end
+    local function MeterGet(keyName) return DB()[keyName] end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
     local function CfgOr(settingKey, default)
-        return function()
-            return MeterGet(settingKey) or default
-        end
+        return function() return MeterGet(settingKey) or default end
     end
     local function CfgIs(settingKey)
-        return function()
-            return MeterGet(settingKey) == true
-        end
+        return function() return MeterGet(settingKey) == true end
     end
-    local function MeterSet(keyName, val)
-        DB()[keyName] = val
-    end
+    local function MeterSet(keyName, val) DB()[keyName] = val end
     -- Row setters over Set: the key written with the row's value.
     local function SetRow(settingKey)
-        return function(value)
-            MeterSet(settingKey, value)
-        end
+        return function(value) MeterSet(settingKey, value) end
     end
 
     -- All settings are picked up on the next refresh cycle (0.3s combat,
@@ -84,14 +60,10 @@ CludesUI.AtOptionsLogin(function()
             h = 26,
             pp = CludesUI.PP,
             tooltip = tooltip,
-            get = function()
-                return MeterGet(dbKey)
-            end,
+            get = function() return MeterGet(dbKey) end,
             set = function(val)
                 MeterSet(dbKey, val)
-                if mod.ApplyDMKeybinds then
-                    mod.ApplyDMKeybinds()
-                end
+                if mod.ApplyDMKeybinds then mod.ApplyDMKeybinds() end
             end,
         })
         CludesUI.PP.Point(kbBtn, "RIGHT", region, "RIGHT", -10, 0)
@@ -113,16 +85,12 @@ CludesUI.AtOptionsLogin(function()
         local texOrder2 = _G._CUDM_BarTextureOrder or {}
         local texLookup = _G._CUDM_BarTextures or {}
         for _, settingKey in ipairs(texOrder2) do
-            if settingKey ~= "---" then
-                textureValues[settingKey] = texNames[settingKey] or settingKey
-            end
+            if settingKey ~= "---" then textureValues[settingKey] = texNames[settingKey] or settingKey end
             dmTexOrder[#dmTexOrder + 1] = settingKey
         end
         textureValues._menuOpts = {
             itemHeight = 28,
-            background = function(settingKey)
-                return texLookup[settingKey]
-            end,
+            background = function(settingKey) return texLookup[settingKey] end,
         }
     end
 
@@ -131,9 +99,7 @@ CludesUI.AtOptionsLogin(function()
     local matchTexOrder = { "match", "---" }
     for _, settingKey in ipairs(dmTexOrder) do
         matchTexOrder[#matchTexOrder + 1] = settingKey
-        if settingKey ~= "---" then
-            matchTexValues[settingKey] = textureValues[settingKey]
-        end
+        if settingKey ~= "---" then matchTexValues[settingKey] = textureValues[settingKey] end
     end
     matchTexValues._menuOpts = textureValues._menuOpts
 
@@ -143,35 +109,23 @@ CludesUI.AtOptionsLogin(function()
         local cursorY = yOffset
         local height, heading
 
-        if CludesUI.ClearContentHeader then
-            CludesUI:ClearContentHeader()
-        end
+        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         local function RefreshMeters()
-            if mod.RefreshMeter then
-                mod.RefreshMeter()
-            end
+            if mod.RefreshMeter then mod.RefreshMeter() end
         end
         local function ApplyHeaderBar()
-            if mod.ApplyHeader then
-                mod.ApplyHeader()
-            end
+            if mod.ApplyHeader then mod.ApplyHeader() end
         end
         local function ApplyBorderLook()
-            if mod.ApplyBorder then
-                mod.ApplyBorder()
-            end
+            if mod.ApplyBorder then mod.ApplyBorder() end
         end
         local function ApplyWindowBorderLook()
-            if mod.ApplyWindowBorder then
-                mod.ApplyWindowBorder()
-            end
+            if mod.ApplyWindowBorder then mod.ApplyWindowBorder() end
         end
         local function ApplyIconBorderLook()
-            if mod.ApplyIconBorder then
-                mod.ApplyIconBorder()
-            end
+            if mod.ApplyIconBorder then mod.ApplyIconBorder() end
         end
 
         -- ── DISPLAY ─────────────────────────────────────────────────────
@@ -183,9 +137,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "damagemeters")
 
         -- Visibility (one control)
-        local function VisApply()
-            CludesUI.RequestVisibilityUpdate()
-        end
+        local function VisApply() CludesUI.RequestVisibilityUpdate() end
         local visRow
         visRow, height = CludesUI.BuildVisibilityRow(
             W,
@@ -213,9 +165,7 @@ CludesUI.AtOptionsLogin(function()
                         step = 0.05,
                         getValue = CfgOr("refreshRate", 1),
                         setValue = SetRow("refreshRate"),
-                        fmt = function(val)
-                            return format("%.2fs", val)
-                        end,
+                        fmt = function(val) return format("%.2fs", val) end,
                     }
                 or {
                     type = "slider",
@@ -226,9 +176,7 @@ CludesUI.AtOptionsLogin(function()
                     step = 0.1,
                     getValue = CfgOr("refreshRate", 1),
                     setValue = SetRow("refreshRate"),
-                    fmt = function(val)
-                        return format("%.2fs", val)
-                    end,
+                    fmt = function(val) return format("%.2fs", val) end,
                 }
             )
         )
@@ -252,9 +200,7 @@ CludesUI.AtOptionsLogin(function()
                             if not val then
                                 local floor = mod._REFRESH_RATE_FLOOR or 0.5
                                 local r = MeterGet("refreshRate")
-                                if r and r < floor then
-                                    MeterSet("refreshRate", floor)
-                                end
+                                if r and r < floor then MeterSet("refreshRate", floor) end
                             end
                             if cogShowUnsafe and cogShowUnsafe._popupFrame then
                                 cogShowUnsafe._popupFrame:Hide()
@@ -289,13 +235,9 @@ CludesUI.AtOptionsLogin(function()
                     MeterSet("windowBorderColor", { r = color.r, g = color.g, b = color.b, a = 1 })
                     MeterSet("windowBorderBehind", behind)
                     local defaultSize = CludesUI.GetBorderDefaultSize("damagemeters", val)
-                    if defaultSize then
-                        MeterSet("windowBorderSize", defaultSize)
-                    end
+                    if defaultSize then MeterSet("windowBorderSize", defaultSize) end
                     -- A style pick returns the surface to its legacy step; clear a set exact size (false travels, nil would not).
-                    if MeterGet("windowBorderSizePx") then
-                        MeterSet("windowBorderSizePx", false)
-                    end
+                    if MeterGet("windowBorderSizePx") then MeterSet("windowBorderSizePx", false) end
                     -- force: the offset row below exists only for a textured style
                     ApplyWindowBorderLook()
                     CludesUI:RefreshPage(true)
@@ -305,21 +247,11 @@ CludesUI.AtOptionsLogin(function()
                 "damagemeters",
                 CludesUI.BorderPxSliderCfg({
                     text = "Border Size",
-                    getStep = function()
-                        return tonumber(MeterGet("windowBorderSize")) or 0
-                    end,
-                    setStep = function(step)
-                        MeterSet("windowBorderSize", step)
-                    end,
-                    getTex = function()
-                        return MeterGet("windowBorderTexture") or "solid"
-                    end,
-                    getPx = function()
-                        return MeterGet("windowBorderSizePx")
-                    end,
-                    setPx = function(val)
-                        MeterSet("windowBorderSizePx", val)
-                    end,
+                    getStep = function() return tonumber(MeterGet("windowBorderSize")) or 0 end,
+                    setStep = function(step) MeterSet("windowBorderSize", step) end,
+                    getTex = function() return MeterGet("windowBorderTexture") or "solid" end,
+                    getPx = function() return MeterGet("windowBorderSizePx") end,
+                    setPx = function(val) MeterSet("windowBorderSizePx", val) end,
                     apply = ApplyWindowBorderLook,
                 })
             )
@@ -332,9 +264,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Include Headerbar",
-                        get = function()
-                            return MeterGet("windowBorderIncludeHeader") ~= false
-                        end,
+                        get = function() return MeterGet("windowBorderIncludeHeader") ~= false end,
                         set = function(val)
                             MeterSet("windowBorderIncludeHeader", val)
                             ApplyWindowBorderLook()
@@ -353,9 +283,7 @@ CludesUI.AtOptionsLogin(function()
                 },
                 anchorTo = region._control,
             })
-            if directionBtn then
-                CludesUI.BlizzStyle.BlockInline("damagemeters", directionBtn, 0.15)
-            end
+            if directionBtn then CludesUI.BlizzStyle.BlockInline("damagemeters", directionBtn, 0.15) end
         end
         if not CludesUI._prebuilding then
             local region, control = windowBorderRow._rightRegion, windowBorderRow._rightRegion._control
@@ -389,30 +317,14 @@ CludesUI.AtOptionsLogin(function()
             if wTex ~= "" and wTex ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "damagemeters_window",
-                    getTex = function()
-                        return MeterGet("windowBorderTexture") or "solid"
-                    end,
-                    getStep = function()
-                        return tonumber(MeterGet("windowBorderSize")) or 0
-                    end,
-                    getSizeKey = function()
-                        return nil
-                    end,
-                    getPx = function()
-                        return MeterGet("windowBorderSizePx")
-                    end,
-                    getX = function()
-                        return MeterGet("windowBorderOffsetX")
-                    end,
-                    setX = function(val)
-                        MeterSet("windowBorderOffsetX", val)
-                    end,
-                    getY = function()
-                        return MeterGet("windowBorderOffsetY")
-                    end,
-                    setY = function(val)
-                        MeterSet("windowBorderOffsetY", val)
-                    end,
+                    getTex = function() return MeterGet("windowBorderTexture") or "solid" end,
+                    getStep = function() return tonumber(MeterGet("windowBorderSize")) or 0 end,
+                    getSizeKey = function() return nil end,
+                    getPx = function() return MeterGet("windowBorderSizePx") end,
+                    getX = function() return MeterGet("windowBorderOffsetX") end,
+                    setX = function(val) MeterSet("windowBorderOffsetX", val) end,
+                    getY = function() return MeterGet("windowBorderOffsetY") end,
+                    setY = function(val) MeterSet("windowBorderOffsetY", val) end,
                     apply = ApplyWindowBorderLook,
                 })
                 _, height = W:DualRow(
@@ -446,9 +358,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     MeterSet("foreverBorder", val)
-                    if CludesUI.ForeverBorderKind(val) == mod.DMFvKind() then
-                        return
-                    end
+                    if CludesUI.ForeverBorderKind(val) == mod.DMFvKind() then return end
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Border Style changed. A UI reload is needed to apply it.",
@@ -459,30 +369,29 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         local bgRow
-        bgRow, height = W:DualRow(hostFrame, cursorY, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
-            type = "dropdown",
-            text = "Background Texture",
-            values = textureValues,
-            order = dmTexOrder,
-            getValue = CfgOr("bgTexture", "none"),
-            setValue = function(val)
-                MeterSet("bgTexture", val)
-                mod.ApplyBackground()
-            end,
-        }), {
-            type = "slider",
-            text = "Background Opacity",
-            min = 0,
-            max = 1,
-            step = 0.01,
-            getValue = CfgOr("bgAlpha", 0.75),
-            setValue = function(val)
-                MeterSet("bgAlpha", val)
-                if mod.ApplyBackground then
+        bgRow, height =
+            W:DualRow(hostFrame, cursorY, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
+                type = "dropdown",
+                text = "Background Texture",
+                values = textureValues,
+                order = dmTexOrder,
+                getValue = CfgOr("bgTexture", "none"),
+                setValue = function(val)
+                    MeterSet("bgTexture", val)
                     mod.ApplyBackground()
-                end
-            end,
-        })
+                end,
+            }), {
+                type = "slider",
+                text = "Background Opacity",
+                min = 0,
+                max = 1,
+                step = 0.01,
+                getValue = CfgOr("bgAlpha", 0.75),
+                setValue = function(val)
+                    MeterSet("bgAlpha", val)
+                    if mod.ApplyBackground then mod.ApplyBackground() end
+                end,
+            })
         -- Inline color swatch on Background Opacity
         do
             local region = bgRow._rightRegion
@@ -490,27 +399,19 @@ CludesUI.AtOptionsLogin(function()
             local bgSwatch, bgSwatchRefresh = CludesUI.BuildColorSwatch(
                 region,
                 bgRow:GetFrameLevel() + 3,
-                function()
-                    return (MeterGet("bgR") or 0), (MeterGet("bgG") or 0), (MeterGet("bgB") or 0)
-                end,
+                function() return (MeterGet("bgR") or 0), (MeterGet("bgG") or 0), (MeterGet("bgB") or 0) end,
                 function(red, green, blue)
                     MeterSet("bgR", red)
                     MeterSet("bgG", green)
                     MeterSet("bgB", blue)
-                    if mod.ApplyBackground then
-                        mod.ApplyBackground()
-                    end
+                    if mod.ApplyBackground then mod.ApplyBackground() end
                 end,
                 false,
                 20
             )
             Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
-            CludesUI.RegisterWidgetRefresh(function()
-                bgSwatchRefresh()
-            end)
-            if MetersBlizzArt() then
-                CludesUI.BlizzStyle.BlockInline("damagemeters", bgSwatch)
-            end
+            CludesUI.RegisterWidgetRefresh(function() bgSwatchRefresh() end)
+            if MetersBlizzArt() then CludesUI.BlizzStyle.BlockInline("damagemeters", bgSwatch) end
         end
         cursorY = cursorY - height
 
@@ -520,9 +421,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Always Show Player",
             tooltip = "This will pin your bar to the window when it is not within the visible area",
-            getValue = function()
-                return MeterGet("showPinnedSelf") ~= false
-            end,
+            getValue = function() return MeterGet("showPinnedSelf") ~= false end,
             setValue = function(val)
                 MeterSet("showPinnedSelf", val)
                 RefreshMeters()
@@ -654,9 +553,7 @@ CludesUI.AtOptionsLogin(function()
                 20
             )
             Pix.Point(hdrSwatch, "RIGHT", control, "LEFT", -8, 0)
-            CludesUI.RegisterWidgetRefresh(function()
-                hdrSwatchRefresh()
-            end)
+            CludesUI.RegisterWidgetRefresh(function() hdrSwatchRefresh() end)
             CludesUI.BlizzStyle.BlockInline("damagemeters", hdrSwatch)
         end
         cursorY = cursorY - height
@@ -673,9 +570,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 0,
                 max = 4,
                 step = 1,
-                getValue = function()
-                    return tonumber(MeterGet("hdrBottomBorderSize")) or 0
-                end,
+                getValue = function() return tonumber(MeterGet("hdrBottomBorderSize")) or 0 end,
                 setValue = function(val)
                     MeterSet("hdrBottomBorderSize", tonumber(val) or 0)
                     ApplyHeaderBar()
@@ -694,7 +589,9 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         )
-        if not CludesUI._prebuilding and CludesUI.GetBorderCompanion(MeterGet("windowBorderTexture"), "sepH") then
+        if
+            not CludesUI._prebuilding and CludesUI.GetBorderCompanion(MeterGet("windowBorderTexture"), "sepH")
+        then
             CludesUI.BuildInlineCog(
                 hdrBorderRow._leftRegion,
                 CludesUI.BlizzStyle.Gate("damagemeters", {
@@ -771,17 +668,13 @@ CludesUI.AtOptionsLogin(function()
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
                     local color = MeterGet("iconColor")
-                    if color then
-                        return color.r or 1, color.g or 1, color.b or 1
-                    end
+                    if color then return color.r or 1, color.g or 1, color.b or 1 end
                     return 1, 1, 1
                 end,
                 function(red, green, blue)
                     MeterSet("iconColorUseAccent", false)
                     MeterSet("iconColor", { r = red, g = green, b = blue })
-                    if mod.ApplyIconColor then
-                        mod.ApplyIconColor()
-                    end
+                    if mod.ApplyIconColor then mod.ApplyIconColor() end
                     CludesUI:RefreshPage()
                 end,
                 false,
@@ -792,29 +685,21 @@ CludesUI.AtOptionsLogin(function()
             customColorSwatch:SetScript("OnClick", function(self, ...)
                 if MeterGet("iconColorUseAccent") then
                     MeterSet("iconColorUseAccent", false)
-                    if mod.ApplyIconColor then
-                        mod.ApplyIconColor()
-                    end
+                    if mod.ApplyIconColor then mod.ApplyIconColor() end
                     CludesUI:RefreshPage()
                     return
                 end
-                if origIconClick then
-                    origIconClick(self, ...)
-                end
+                if origIconClick then origIconClick(self, ...) end
             end)
             CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
             local accentColorSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
                 hdrBorderRow:GetFrameLevel() + 3,
-                function()
-                    return CludesUI.ResolveActiveAccent()
-                end,
+                function() return CludesUI.ResolveActiveAccent() end,
                 function()
                     MeterSet("iconColorUseAccent", true)
-                    if mod.ApplyIconColor then
-                        mod.ApplyIconColor()
-                    end
+                    if mod.ApplyIconColor then mod.ApplyIconColor() end
                     CludesUI:RefreshPage()
                 end,
                 false,
@@ -823,9 +708,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(accentColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
             accentColorSwatch:SetScript("OnClick", function()
                 MeterSet("iconColorUseAccent", true)
-                if mod.ApplyIconColor then
-                    mod.ApplyIconColor()
-                end
+                if mod.ApplyIconColor then mod.ApplyIconColor() end
                 CludesUI:RefreshPage()
             end)
             CludesUI.HoverTip(accentColorSwatch, "Accent Color")
@@ -913,9 +796,7 @@ CludesUI.AtOptionsLogin(function()
                 hdrRow2:GetFrameLevel() + 3,
                 function()
                     local color = MeterGet("hdrTextColor")
-                    if color then
-                        return color.r or 1, color.g or 1, color.b or 1
-                    end
+                    if color then return color.r or 1, color.g or 1, color.b or 1 end
                     return 1, 1, 1
                 end,
                 function(red, green, blue)
@@ -936,18 +817,14 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                     return
                 end
-                if origHdrTextClick then
-                    origHdrTextClick(self, ...)
-                end
+                if origHdrTextClick then origHdrTextClick(self, ...) end
             end)
             CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
             local accentColorSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
                 hdrRow2:GetFrameLevel() + 3,
-                function()
-                    return CludesUI.ResolveActiveAccent()
-                end,
+                function() return CludesUI.ResolveActiveAccent() end,
                 function()
                     MeterSet("hdrTextUseAccent", true)
                     ApplyHeaderBar()
@@ -994,9 +871,7 @@ CludesUI.AtOptionsLogin(function()
                 setValue = function(val)
                     MeterSet("barTexture", val)
                     RefreshMeters()
-                    if mod.ApplySpellHistory then
-                        mod.ApplySpellHistory()
-                    end
+                    if mod.ApplySpellHistory then mod.ApplySpellHistory() end
                 end,
             }),
             {
@@ -1023,10 +898,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Class Color",
                     hasAlpha = false,
                     getValue = function()
-                        local classColor = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                        if classColor then
-                            return classColor.r, classColor.g, classColor.b
-                        end
+                        local classColor = CludesUI._playerClass
+                            and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if classColor then return classColor.r, classColor.g, classColor.b end
                         return 0.96, 0.55, 0.73
                     end,
                     setValue = function() end,
@@ -1035,18 +909,14 @@ CludesUI.AtOptionsLogin(function()
                         RefreshMeters()
                         CludesUI:RefreshPage()
                     end,
-                    refreshAlpha = function()
-                        return MeterGet("showClassColor") ~= false and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return MeterGet("showClassColor") ~= false and 1 or 0.3 end,
                 },
                 {
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
                         local color = MeterGet("barColor")
-                        if color then
-                            return color.r or 0.35, color.g or 0.55, color.b or 0.8
-                        end
+                        if color then return color.r or 0.35, color.g or 0.55, color.b or 0.8 end
                         return 0.35, 0.55, 0.8
                     end,
                     setValue = function(red, green, blue)
@@ -1064,23 +934,17 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
-                        if MeterGet("showClassColor") ~= false then
-                            return 0.15
-                        end
+                        if MeterGet("showClassColor") ~= false then return 0.15 end
                         return MeterGet("barColorUseAccent") ~= false and 0.3 or 1
                     end,
                 },
                 {
                     tooltip = "Accent Color",
                     hasAlpha = false,
-                    getValue = function()
-                        return CludesUI.ResolveActiveAccent()
-                    end,
+                    getValue = function() return CludesUI.ResolveActiveAccent() end,
                     setValue = function() end,
                     onClick = function()
                         MeterSet("showClassColor", false)
@@ -1089,9 +953,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        if MeterGet("showClassColor") ~= false then
-                            return 0.15
-                        end
+                        if MeterGet("showClassColor") ~= false then return 0.15 end
                         return MeterGet("barColorUseAccent") ~= false and 1 or 0.3
                     end,
                 },
@@ -1167,9 +1029,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     label = "Separator",
                     tooltip = "Adds a divider between each icon and its bar.",
-                    disabled = function()
-                        return (MeterGet("borderSize") or 0) <= 0
-                    end,
+                    disabled = function() return (MeterGet("borderSize") or 0) <= 0 end,
                     disabledTooltip = "Border Size",
                     get = CfgIs("iconSeparator"),
                     set = function(val)
@@ -1182,9 +1042,7 @@ CludesUI.AtOptionsLogin(function()
                 title = "Icon Settings",
                 rows = rowList,
                 chain = false,
-                disabled = function()
-                    return MeterGet("iconStyle") == "none"
-                end,
+                disabled = function() return MeterGet("iconStyle") == "none" end,
                 disabledTooltip = "Icon Style",
             })
         end
@@ -1195,9 +1053,7 @@ CludesUI.AtOptionsLogin(function()
         local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
         texValues.shadow = nil
         for idx = #texOrder, 1, -1 do
-            if texOrder[idx] == "shadow" then
-                table.remove(texOrder, idx)
-            end
+            if texOrder[idx] == "shadow" then table.remove(texOrder, idx) end
         end
         local bsRow
         bsRow, height = W:DualRow(
@@ -1234,13 +1090,9 @@ CludesUI.AtOptionsLogin(function()
                         MeterSet("borderA", 1)
                     end
                     local defSz = CludesUI.GetBorderDefaultSize("damagemeters", val)
-                    if defSz then
-                        MeterSet("borderSize", defSz)
-                    end
+                    if defSz then MeterSet("borderSize", defSz) end
                     -- A style pick returns the surface to its legacy step; clear a set exact size (false travels, nil would not).
-                    if MeterGet("borderSizePx") then
-                        MeterSet("borderSizePx", false)
-                    end
+                    if MeterGet("borderSizePx") then MeterSet("borderSizePx", false) end
                     -- force: the offset row below exists only for a textured style
                     ApplyBorderLook()
                     CludesUI:RefreshPage(true)
@@ -1252,21 +1104,11 @@ CludesUI.AtOptionsLogin(function()
                 "damagemeters",
                 CludesUI.BorderPxSliderCfg({
                     text = "Border Size",
-                    getStep = function()
-                        return MeterGet("borderSize") or 0
-                    end,
-                    setStep = function(step)
-                        MeterSet("borderSize", step)
-                    end,
-                    getTex = function()
-                        return MeterGet("borderTexture") or "solid"
-                    end,
-                    getPx = function()
-                        return MeterGet("borderSizePx")
-                    end,
-                    setPx = function(val)
-                        MeterSet("borderSizePx", val)
-                    end,
+                    getStep = function() return MeterGet("borderSize") or 0 end,
+                    setStep = function(step) MeterSet("borderSize", step) end,
+                    getTex = function() return MeterGet("borderTexture") or "solid" end,
+                    getPx = function() return MeterGet("borderSizePx") end,
+                    setPx = function(val) MeterSet("borderSizePx", val) end,
                     apply = ApplyBorderLook,
                 })
             )
@@ -1280,30 +1122,14 @@ CludesUI.AtOptionsLogin(function()
             if bTex ~= "" and bTex ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "damagemeters",
-                    getTex = function()
-                        return MeterGet("borderTexture") or "solid"
-                    end,
-                    getStep = function()
-                        return MeterGet("borderSize") or 0
-                    end,
-                    getSizeKey = function()
-                        return MeterGet("borderSize") or 0
-                    end,
-                    getPx = function()
-                        return MeterGet("borderSizePx")
-                    end,
-                    getX = function()
-                        return MeterGet("borderTextureOffset")
-                    end,
-                    setX = function(val)
-                        MeterSet("borderTextureOffset", val)
-                    end,
-                    getY = function()
-                        return MeterGet("borderTextureOffsetY")
-                    end,
-                    setY = function(val)
-                        MeterSet("borderTextureOffsetY", val)
-                    end,
+                    getTex = function() return MeterGet("borderTexture") or "solid" end,
+                    getStep = function() return MeterGet("borderSize") or 0 end,
+                    getSizeKey = function() return MeterGet("borderSize") or 0 end,
+                    getPx = function() return MeterGet("borderSizePx") end,
+                    getX = function() return MeterGet("borderTextureOffset") end,
+                    setX = function(val) MeterSet("borderTextureOffset", val) end,
+                    getY = function() return MeterGet("borderTextureOffsetY") end,
+                    setY = function(val) MeterSet("borderTextureOffsetY", val) end,
                     apply = ApplyBorderLook,
                 })
                 _, height = W:DualRow(
@@ -1329,9 +1155,7 @@ CludesUI.AtOptionsLogin(function()
                         step = 1,
                         get = function()
                             local val = MeterGet("borderTextureShiftX")
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local texture = MeterGet("borderTexture") or "solid"
                             local sz = MeterGet("borderSize") or 1
                             local _, _, dsx = CludesUI.GetBorderDefaults("damagemeters", texture, sz)
@@ -1350,9 +1174,7 @@ CludesUI.AtOptionsLogin(function()
                         step = 1,
                         get = function()
                             local val = MeterGet("borderTextureShiftY")
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local texture = MeterGet("borderTexture") or "solid"
                             local sz = MeterGet("borderSize") or 1
                             local _, _, _, dsy = CludesUI.GetBorderDefaults("damagemeters", texture, sz)
@@ -1400,9 +1222,7 @@ CludesUI.AtOptionsLogin(function()
                         disabledTooltip = function()
                             return MeterGet("borderFollowFill") and "Border Follows Bar" or "Border Size"
                         end,
-                        requireState = function()
-                            return MeterGet("borderFollowFill") and "disabled" or nil
-                        end,
+                        requireState = function() return MeterGet("borderFollowFill") and "disabled" or nil end,
                         get = CfgIs("barSeparators"),
                         set = function(val)
                             MeterSet("barSeparators", val)
@@ -1413,9 +1233,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Include Icon in Bar Border",
                         tooltip = "Extends the follow-bar border to include the class icon.",
-                        disabled = function()
-                            return not MeterGet("borderFollowFill")
-                        end,
+                        disabled = function() return not MeterGet("borderFollowFill") end,
                         get = CfgOr("borderFollowFillIcon", false),
                         set = function(val)
                             MeterSet("borderFollowFillIcon", val)
@@ -1437,7 +1255,10 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 bsRow:GetFrameLevel() + 3,
                 function()
-                    return MeterGet("borderR") or 0, MeterGet("borderG") or 0, MeterGet("borderB") or 0, MeterGet("borderA") or 1
+                    return MeterGet("borderR") or 0,
+                        MeterGet("borderG") or 0,
+                        MeterGet("borderB") or 0,
+                        MeterGet("borderA") or 1
                 end,
                 function(red, green, blue, a)
                     MeterSet("borderR", red)
@@ -1450,9 +1271,7 @@ CludesUI.AtOptionsLogin(function()
                 20
             )
             Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
-            CludesUI.RegisterWidgetRefresh(function()
-                updateSwatch()
-            end)
+            CludesUI.RegisterWidgetRefresh(function() updateSwatch() end)
             CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
         end
 
@@ -1495,13 +1314,9 @@ CludesUI.AtOptionsLogin(function()
                             MeterSet("iconBorderA", 1)
                         end
                         local defSz = CludesUI.GetBorderDefaultSize("damagemeters_icon", val)
-                        if defSz then
-                            MeterSet("iconBorderSize", defSz)
-                        end
+                        if defSz then MeterSet("iconBorderSize", defSz) end
                         -- A style pick returns the surface to its legacy step; clear a set exact size (false travels, nil would not).
-                        if MeterGet("iconBorderSizePx") then
-                            MeterSet("iconBorderSizePx", false)
-                        end
+                        if MeterGet("iconBorderSizePx") then MeterSet("iconBorderSizePx", false) end
                         -- force: the offset row below exists only for a textured style
                         ApplyIconBorderLook()
                         CludesUI:RefreshPage(true)
@@ -1509,21 +1324,11 @@ CludesUI.AtOptionsLogin(function()
                 },
                 CludesUI.BorderPxSliderCfg({
                     text = "Icon Border Size",
-                    getStep = function()
-                        return MeterGet("iconBorderSize") or 0
-                    end,
-                    setStep = function(step)
-                        MeterSet("iconBorderSize", step)
-                    end,
-                    getTex = function()
-                        return MeterGet("iconBorderTexture") or "solid"
-                    end,
-                    getPx = function()
-                        return MeterGet("iconBorderSizePx")
-                    end,
-                    setPx = function(val)
-                        MeterSet("iconBorderSizePx", val)
-                    end,
+                    getStep = function() return MeterGet("iconBorderSize") or 0 end,
+                    setStep = function(step) MeterSet("iconBorderSize", step) end,
+                    getTex = function() return MeterGet("iconBorderTexture") or "solid" end,
+                    getPx = function() return MeterGet("iconBorderSizePx") end,
+                    setPx = function(val) MeterSet("iconBorderSizePx", val) end,
                     apply = ApplyIconBorderLook,
                 })
             )
@@ -1536,30 +1341,14 @@ CludesUI.AtOptionsLogin(function()
                 if iTex ~= "" and iTex ~= "solid" then
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "damagemeters_icon",
-                        getTex = function()
-                            return MeterGet("iconBorderTexture") or "solid"
-                        end,
-                        getStep = function()
-                            return MeterGet("iconBorderSize") or 0
-                        end,
-                        getSizeKey = function()
-                            return MeterGet("iconBorderSize") or 0
-                        end,
-                        getPx = function()
-                            return MeterGet("iconBorderSizePx")
-                        end,
-                        getX = function()
-                            return MeterGet("iconBorderTextureOffset")
-                        end,
-                        setX = function(val)
-                            MeterSet("iconBorderTextureOffset", val)
-                        end,
-                        getY = function()
-                            return MeterGet("iconBorderTextureOffsetY")
-                        end,
-                        setY = function(val)
-                            MeterSet("iconBorderTextureOffsetY", val)
-                        end,
+                        getTex = function() return MeterGet("iconBorderTexture") or "solid" end,
+                        getStep = function() return MeterGet("iconBorderSize") or 0 end,
+                        getSizeKey = function() return MeterGet("iconBorderSize") or 0 end,
+                        getPx = function() return MeterGet("iconBorderSizePx") end,
+                        getX = function() return MeterGet("iconBorderTextureOffset") end,
+                        setX = function(val) MeterSet("iconBorderTextureOffset", val) end,
+                        getY = function() return MeterGet("iconBorderTextureOffsetY") end,
+                        setY = function(val) MeterSet("iconBorderTextureOffsetY", val) end,
                         apply = ApplyIconBorderLook,
                     })
                     _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
@@ -1580,9 +1369,7 @@ CludesUI.AtOptionsLogin(function()
                             step = 1,
                             get = function()
                                 local val = MeterGet("iconBorderTextureShiftX")
-                                if val then
-                                    return val
-                                end
+                                if val then return val end
                                 local texture = MeterGet("iconBorderTexture") or "solid"
                                 local sz = MeterGet("iconBorderSize") or 1
                                 local _, _, dsx = CludesUI.GetBorderDefaults("damagemeters_icon", texture, sz)
@@ -1601,9 +1388,7 @@ CludesUI.AtOptionsLogin(function()
                             step = 1,
                             get = function()
                                 local val = MeterGet("iconBorderTextureShiftY")
-                                if val then
-                                    return val
-                                end
+                                if val then return val end
                                 local texture = MeterGet("iconBorderTexture") or "solid"
                                 local sz = MeterGet("iconBorderSize") or 1
                                 local _, _, _, dsy =
@@ -1653,9 +1438,7 @@ CludesUI.AtOptionsLogin(function()
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
-                CludesUI.RegisterWidgetRefresh(function()
-                    updateSwatch()
-                end)
+                CludesUI.RegisterWidgetRefresh(function() updateSwatch() end)
             end
         end -- if Cfg("customIconBorder")
 
@@ -1667,9 +1450,7 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Show Breakdown on Hover",
-                getValue = function()
-                    return MeterGet("showHoverTooltip") ~= false
-                end,
+                getValue = function() return MeterGet("showHoverTooltip") ~= false end,
                 setValue = SetRow("showHoverTooltip"),
             },
             DMBlizzGate({
@@ -1681,9 +1462,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("barBgAlpha", 0),
                 setValue = function(val)
                     MeterSet("barBgAlpha", val)
-                    if mod.ApplyBarBg then
-                        mod.ApplyBarBg()
-                    end
+                    if mod.ApplyBarBg then mod.ApplyBarBg() end
                 end,
             })
         )
@@ -1704,9 +1483,7 @@ CludesUI.AtOptionsLogin(function()
                     MeterSet("barBgR", red)
                     MeterSet("barBgG", green)
                     MeterSet("barBgB", blue)
-                    if mod.ApplyBarBg then
-                        mod.ApplyBarBg()
-                    end
+                    if mod.ApplyBarBg then mod.ApplyBarBg() end
                     CludesUI:RefreshPage()
                 end,
                 false,
@@ -1717,15 +1494,11 @@ CludesUI.AtOptionsLogin(function()
             barBgSwatch:SetScript("OnClick", function(self, ...)
                 if MeterGet("barBgUseClassColor") then
                     MeterSet("barBgUseClassColor", false)
-                    if mod.ApplyBarBg then
-                        mod.ApplyBarBg()
-                    end
+                    if mod.ApplyBarBg then mod.ApplyBarBg() end
                     CludesUI:RefreshPage()
                     return
                 end
-                if origClick then
-                    origClick(self, ...)
-                end
+                if origClick then origClick(self, ...) end
             end)
             CludesUI.HoverTip(barBgSwatch, "Custom Color")
 
@@ -1734,16 +1507,12 @@ CludesUI.AtOptionsLogin(function()
                 bdRow:GetFrameLevel() + 3,
                 function()
                     local clr = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                    if clr then
-                        return clr.r, clr.g, clr.b
-                    end
+                    if clr then return clr.r, clr.g, clr.b end
                     return 1, 1, 1
                 end,
                 function()
                     MeterSet("barBgUseClassColor", true)
-                    if mod.ApplyBarBg then
-                        mod.ApplyBarBg()
-                    end
+                    if mod.ApplyBarBg then mod.ApplyBarBg() end
                     CludesUI:RefreshPage()
                 end,
                 false,
@@ -1752,9 +1521,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(barBgClassSwatch, "RIGHT", barBgSwatch, "LEFT", -8, 0)
             barBgClassSwatch:SetScript("OnClick", function()
                 MeterSet("barBgUseClassColor", true)
-                if mod.ApplyBarBg then
-                    mod.ApplyBarBg()
-                end
+                if mod.ApplyBarBg then mod.ApplyBarBg() end
                 CludesUI:RefreshPage()
             end)
             CludesUI.HoverTip(barBgClassSwatch, "Class Color")
@@ -1801,9 +1568,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 80,
                         max = 150,
                         step = 1,
-                        get = function()
-                            return (MeterGet("hoverTooltipScale") or 100)
-                        end,
+                        get = function() return (MeterGet("hoverTooltipScale") or 100) end,
                         set = SetRow("hoverTooltipScale"),
                     },
                     {
@@ -1823,9 +1588,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Show More Spells",
                         tooltip = "Show top 15 entries instead of 8.",
-                        get = function()
-                            return MeterGet("showAllBreakdownSpells") ~= false
-                        end,
+                        get = function() return MeterGet("showAllBreakdownSpells") ~= false end,
                         set = SetRow("showAllBreakdownSpells"),
                     },
                 },
@@ -1898,9 +1661,7 @@ CludesUI.AtOptionsLogin(function()
             max = 18,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return MeterGet("leftFontSize") or MeterGet("fontSize") or 11
-            end,
+            getValue = function() return MeterGet("leftFontSize") or MeterGet("fontSize") or 11 end,
             setValue = function(val)
                 MeterSet("leftFontSize", val)
                 RefreshMeters()
@@ -1912,9 +1673,7 @@ CludesUI.AtOptionsLogin(function()
             max = 18,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return MeterGet("rightFontSize") or MeterGet("fontSize") or 11
-            end,
+            getValue = function() return MeterGet("rightFontSize") or MeterGet("fontSize") or 11 end,
             setValue = function(val)
                 MeterSet("rightFontSize", val)
                 RefreshMeters()
@@ -1938,9 +1697,7 @@ CludesUI.AtOptionsLogin(function()
                     get = CfgOr("leftTextOffsetX", 0),
                     set = function(val)
                         MeterSet("leftTextOffsetX", val)
-                        if mod.ApplyBarTextOffsets then
-                            mod.ApplyBarTextOffsets()
-                        end
+                        if mod.ApplyBarTextOffsets then mod.ApplyBarTextOffsets() end
                     end,
                 },
                 {
@@ -1952,18 +1709,17 @@ CludesUI.AtOptionsLogin(function()
                     get = CfgOr("leftTextOffsetY", 0),
                     set = function(val)
                         MeterSet("leftTextOffsetY", val)
-                        if mod.ApplyBarTextOffsets then
-                            mod.ApplyBarTextOffsets()
-                        end
+                        if mod.ApplyBarTextOffsets then mod.ApplyBarTextOffsets() end
                     end,
                 },
             }
-            local nameFormat = CludesUI.NameFormatCogRow(function()
-                return MeterGet("nameFormat")
-            end, function(val)
-                MeterSet("nameFormat", val)
-                mod.RefreshNames()
-            end)
+            local nameFormat = CludesUI.NameFormatCogRow(
+                function() return MeterGet("nameFormat") end,
+                function(val)
+                    MeterSet("nameFormat", val)
+                    mod.RefreshNames()
+                end
+            )
             nameFormat.tooltip = "Other players' names show in full during combat."
             table.insert(leftRows, 1, nameFormat)
             CludesUI.BuildInlineCog(region, {
@@ -1976,9 +1732,7 @@ CludesUI.AtOptionsLogin(function()
                 btRow:GetFrameLevel() + 3,
                 function()
                     local color = MeterGet("leftTextColor")
-                    if color then
-                        return color.r or 1, color.g or 1, color.b or 1
-                    end
+                    if color then return color.r or 1, color.g or 1, color.b or 1 end
                     return 1, 1, 1
                 end,
                 function(red, green, blue)
@@ -1999,9 +1753,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                     return
                 end
-                if origClick then
-                    origClick(self, ...)
-                end
+                if origClick then origClick(self, ...) end
             end)
             CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
@@ -2010,9 +1762,7 @@ CludesUI.AtOptionsLogin(function()
                 btRow:GetFrameLevel() + 3,
                 function()
                     local clr = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                    if clr then
-                        return clr.r, clr.g, clr.b
-                    end
+                    if clr then return clr.r, clr.g, clr.b end
                     return 1, 1, 1
                 end,
                 function()
@@ -2060,9 +1810,7 @@ CludesUI.AtOptionsLogin(function()
                         get = CfgOr("rightTextOffsetX", 0),
                         set = function(val)
                             MeterSet("rightTextOffsetX", val)
-                            if mod.ApplyBarTextOffsets then
-                                mod.ApplyBarTextOffsets()
-                            end
+                            if mod.ApplyBarTextOffsets then mod.ApplyBarTextOffsets() end
                         end,
                     },
                     {
@@ -2074,9 +1822,7 @@ CludesUI.AtOptionsLogin(function()
                         get = CfgOr("rightTextOffsetY", 0),
                         set = function(val)
                             MeterSet("rightTextOffsetY", val)
-                            if mod.ApplyBarTextOffsets then
-                                mod.ApplyBarTextOffsets()
-                            end
+                            if mod.ApplyBarTextOffsets then mod.ApplyBarTextOffsets() end
                         end,
                     },
                 },
@@ -2087,9 +1833,7 @@ CludesUI.AtOptionsLogin(function()
                 btRow:GetFrameLevel() + 3,
                 function()
                     local color = MeterGet("rightTextColor")
-                    if color then
-                        return color.r or 1, color.g or 1, color.b or 1
-                    end
+                    if color then return color.r or 1, color.g or 1, color.b or 1 end
                     return 1, 1, 1
                 end,
                 function(red, green, blue)
@@ -2112,9 +1856,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                     return
                 end
-                if origClick then
-                    origClick(self, ...)
-                end
+                if origClick then origClick(self, ...) end
             end)
             CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
@@ -2123,9 +1865,7 @@ CludesUI.AtOptionsLogin(function()
                 btRow:GetFrameLevel() + 3,
                 function()
                     local clr = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                    if clr then
-                        return clr.r, clr.g, clr.b
-                    end
+                    if clr then return clr.r, clr.g, clr.b end
                     return 1, 1, 1
                 end,
                 function()
@@ -2163,13 +1903,9 @@ CludesUI.AtOptionsLogin(function()
                 {
                     tooltip = "Colors each value on a green to red scale.",
                     gradient = { { 0, 1, 0 }, { 1, 1, 0 }, { 1, 0, 0 } },
-                    getValue = function()
-                        return 1, 1, 1
-                    end,
+                    getValue = function() return 1, 1, 1 end,
                     setValue = function() end,
-                    refreshAlpha = function()
-                        return MeterGet("rightTextUseThreatGradient") and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return MeterGet("rightTextUseThreatGradient") and 1 or 0.3 end,
                     onClick = function()
                         MeterSet("rightTextUseThreatGradient", not MeterGet("rightTextUseThreatGradient"))
                         RefreshMeters()
@@ -2193,9 +1929,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("forceEnglishUnits", false),
                 setValue = function(val)
                     MeterSet("forceEnglishUnits", val)
-                    if mod.RebuildNumberFormat then
-                        mod.RebuildNumberFormat()
-                    end
+                    if mod.RebuildNumberFormat then mod.RebuildNumberFormat() end
                     RefreshMeters()
                 end,
             }, { type = "spacer" })
@@ -2207,16 +1941,12 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "EDM_CombatTimer",
-            disabled = function()
-                return not MeterGet("standaloneTimer")
-            end,
+            disabled = function() return not MeterGet("standaloneTimer") end,
             disabledTooltip = "Standalone Combat Timer",
         })
 
         local function ApplyAttemptTimer()
-            if mod.ApplySATimer then
-                mod.ApplySATimer()
-            end
+            if mod.ApplySATimer then mod.ApplySATimer() end
         end
 
         -- Standalone Combat Timer (with inline cog) | Timer Text Color
@@ -2229,9 +1959,7 @@ CludesUI.AtOptionsLogin(function()
                 MeterSet("standaloneTimer", val)
                 ApplyAttemptTimer()
                 -- Timer unlock element rides this toggle: (un)register live
-                if mod.RegisterDMUnlock then
-                    mod.RegisterDMUnlock()
-                end
+                if mod.RegisterDMUnlock then mod.RegisterDMUnlock() end
                 if val and mod.ShowSATimerPreview then
                     mod.ShowSATimerPreview()
                 elseif not val and mod.HideSATimerPreview then
@@ -2241,9 +1969,7 @@ CludesUI.AtOptionsLogin(function()
         }, {
             type = "multiSwatch",
             text = "Timer Text Color",
-            disabled = function()
-                return not MeterGet("standaloneTimer")
-            end,
+            disabled = function() return not MeterGet("standaloneTimer") end,
             disabledTooltip = "Standalone Combat Timer",
             swatches = {
                 {
@@ -2251,9 +1977,7 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = false,
                     getValue = function()
                         local color = MeterGet("standaloneTimerColor")
-                        if color then
-                            return color.r or 1, color.g or 1, color.b or 1
-                        end
+                        if color then return color.r or 1, color.g or 1, color.b or 1 end
                         return 1, 1, 1
                     end,
                     setValue = function(red, green, blue)
@@ -2267,23 +1991,17 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
-                        if not MeterGet("standaloneTimer") then
-                            return 0.15
-                        end
+                        if not MeterGet("standaloneTimer") then return 0.15 end
                         return MeterGet("standaloneTimerUseAccent") and 0.3 or 1
                     end,
                 },
                 {
                     tooltip = "Accent Color",
                     hasAlpha = false,
-                    getValue = function()
-                        return CludesUI.ResolveActiveAccent()
-                    end,
+                    getValue = function() return CludesUI.ResolveActiveAccent() end,
                     setValue = function() end,
                     onClick = function()
                         MeterSet("standaloneTimerUseAccent", true)
@@ -2291,9 +2009,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        if not MeterGet("standaloneTimer") then
-                            return 0.15
-                        end
+                        if not MeterGet("standaloneTimer") then return 0.15 end
                         return MeterGet("standaloneTimerUseAccent") and 1 or 0.3
                     end,
                 },
@@ -2353,9 +2069,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "LEFT", "CENTER", "RIGHT" },
                         get = function()
                             local alignment = MeterGet("standaloneTimerTextAlign")
-                            if alignment then
-                                return alignment
-                            end
+                            if alignment then return alignment end
                             local anchor = MeterGet("standaloneTimerAnchor") or "free"
                             if anchor == "free" then
                                 return MeterGet("standaloneTimerAlignLeft") and "LEFT" or "RIGHT"
@@ -2405,11 +2119,15 @@ CludesUI.AtOptionsLogin(function()
                         label = "Background Color",
                         hasAlpha = true,
                         get = function()
-                            local color = MeterGet("standaloneTimerBackgroundColor") or { r = 0, g = 0, b = 0, a = 0 }
+                            local color = MeterGet("standaloneTimerBackgroundColor")
+                                or { r = 0, g = 0, b = 0, a = 0 }
                             return color.r, color.g, color.b, color.a
                         end,
                         set = function(red, green, blue, a)
-                            MeterSet("standaloneTimerBackgroundColor", { r = red, g = green, b = blue, a = a })
+                            MeterSet(
+                                "standaloneTimerBackgroundColor",
+                                { r = red, g = green, b = blue, a = a }
+                            )
                             ApplyAttemptTimer()
                         end,
                     },
@@ -2418,7 +2136,8 @@ CludesUI.AtOptionsLogin(function()
                         label = "Border Color",
                         hasAlpha = true,
                         get = function()
-                            local color = MeterGet("standaloneTimerBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
+                            local color = MeterGet("standaloneTimerBorderColor")
+                                or { r = 0, g = 0, b = 0, a = 1 }
                             return color.r, color.g, color.b, color.a
                         end,
                         set = function(red, green, blue, a)
@@ -2469,9 +2188,7 @@ CludesUI.AtOptionsLogin(function()
                     ApplyAttemptTimer()
                     -- Turning it OFF mid-session: resume the preview (it was
                     -- skipped at panel-open while Show OOC covered the display)
-                    if not val and mod.ShowSATimerPreview then
-                        mod.ShowSATimerPreview()
-                    end
+                    if not val and mod.ShowSATimerPreview then mod.ShowSATimerPreview() end
                 end,
             }, {
                 type = "dropdown",
@@ -2499,9 +2216,7 @@ CludesUI.AtOptionsLogin(function()
                         {
                             type = "toggle",
                             label = "Desaturate Out of Combat",
-                            disabled = function()
-                                return not MeterGet("standaloneTimerShowOOC")
-                            end,
+                            disabled = function() return not MeterGet("standaloneTimerShowOOC") end,
                             disabledTooltip = "Show Out of Combat",
                             get = CfgOr("standaloneTimerDesatOOC", false),
                             set = function(val)
@@ -2543,9 +2258,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Spell Tooltips on Hover",
             tooltip = "Show the game's spell tooltip when you hover a spell in a breakdown window.",
-            getValue = function()
-                return MeterGet("showSpellTooltips") ~= false
-            end,
+            getValue = function() return MeterGet("showSpellTooltips") ~= false end,
             setValue = SetRow("showSpellTooltips"),
         }, { type = "label", text = "Show/Hide Windows Keybind" })
 
@@ -2567,9 +2280,7 @@ CludesUI.AtOptionsLogin(function()
                         get = CfgIs("toggleIncludeTimer"),
                         set = function(val)
                             MeterSet("toggleIncludeTimer", val)
-                            if mod.ApplyDMToggleState then
-                                mod.ApplyDMToggleState()
-                            end
+                            if mod.ApplyDMToggleState then mod.ApplyDMToggleState() end
                         end,
                     },
                     {
@@ -2580,9 +2291,7 @@ CludesUI.AtOptionsLogin(function()
                             MeterSet("toggleIncludeSpellHistory", val)
                             -- Forced: turning the option off has to reach Spell History
                             -- too, and by then the flag no longer asks for it
-                            if mod.ApplyDMToggleState then
-                                mod.ApplyDMToggleState(true)
-                            end
+                            if mod.ApplyDMToggleState then mod.ApplyDMToggleState(true) end
                         end,
                     },
                 },
@@ -2601,9 +2310,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function SpellHistoryDB()
         local profile = DB()
-        if not profile.spellHistory then
-            profile.spellHistory = {}
-        end
+        if not profile.spellHistory then profile.spellHistory = {} end
         return profile.spellHistory
     end
 
@@ -2616,9 +2323,7 @@ CludesUI.AtOptionsLogin(function()
     local shGrowOrder = { "LEFT", "RIGHT", "UP", "DOWN" }
 
     local function RefreshSH()
-        if mod.ApplySpellHistory then
-            mod.ApplySpellHistory()
-        end
+        if mod.ApplySpellHistory then mod.ApplySpellHistory() end
     end
 
     local function BuildSpellHistoryPage(page, hostFrame, yOffset)
@@ -2629,12 +2334,8 @@ CludesUI.AtOptionsLogin(function()
 
         hostFrame._showRowDivider = true
 
-        local iconOff = function()
-            return not SpellHistoryDB().iconEnabled
-        end
-        local barOff = function()
-            return not SpellHistoryDB().barEnabled
-        end
+        local iconOff = function() return not SpellHistoryDB().iconEnabled end
+        local barOff = function() return not SpellHistoryDB().barEnabled end
 
         -- =====================================================================
         --  ICON HISTORY
@@ -2651,15 +2352,11 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Enable Icon History",
             tooltip = "Shows a movable strip of recent spell icons. Shift-drag to reposition.",
-            getValue = function()
-                return SpellHistoryDB().iconEnabled
-            end,
+            getValue = function() return SpellHistoryDB().iconEnabled end,
             setValue = function(val)
                 SpellHistoryDB().iconEnabled = val
                 RefreshSH()
-                if mod.RegisterDMUnlock then
-                    mod.RegisterDMUnlock()
-                end
+                if mod.RegisterDMUnlock then mod.RegisterDMUnlock() end
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Hold Shift+Click to Freely Move Icons" })
@@ -2690,9 +2387,7 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = "Icon History",
             values = shGrowValues,
             order = shGrowOrder,
-            getValue = function()
-                return SpellHistoryDB().growDirection or "LEFT"
-            end,
+            getValue = function() return SpellHistoryDB().growDirection or "LEFT" end,
             setValue = function(val)
                 SpellHistoryDB().growDirection = val
                 RefreshSH()
@@ -2704,25 +2399,19 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = "Icon History",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         })
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = iconVisRow._rightRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 SH_ICON_VIS_ITEMS,
-                function(keyName)
-                    return SpellHistoryDB()[keyName] or false
-                end,
+                function(keyName) return SpellHistoryDB()[keyName] or false end,
                 function(keyName, val)
                     SpellHistoryDB()[keyName] = val
                     RefreshSH()
@@ -2744,9 +2433,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             disabled = iconOff,
             disabledTooltip = "Icon History",
-            getValue = function()
-                return SpellHistoryDB().iconSize or 36
-            end,
+            getValue = function() return SpellHistoryDB().iconSize or 36 end,
             setValue = function(val)
                 SpellHistoryDB().iconSize = val
                 RefreshSH()
@@ -2760,9 +2447,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             disabled = iconOff,
             disabledTooltip = "Icon History",
-            getValue = function()
-                return SpellHistoryDB().iconCount or 5
-            end,
+            getValue = function() return SpellHistoryDB().iconCount or 5 end,
             setValue = function(val)
                 SpellHistoryDB().iconCount = val
                 RefreshSH()
@@ -2773,9 +2458,7 @@ CludesUI.AtOptionsLogin(function()
         -- bar window, so it stays usable whenever either display is on).
         if not CludesUI._prebuilding then
             local region = shSizeRow._leftRegion
-            local shZoomOff = function()
-                return iconOff() and barOff()
-            end
+            local shZoomOff = function() return iconOff() and barOff() end
             CludesUI.BuildInlineCog(region, {
                 title = "Icon Zoom",
                 rows = {
@@ -2785,9 +2468,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0,
                         max = 0.20,
                         step = 0.01,
-                        get = function()
-                            return SpellHistoryDB().iconZoom or 0.08
-                        end,
+                        get = function() return SpellHistoryDB().iconZoom or 0.08 end,
                         set = function(val)
                             SpellHistoryDB().iconZoom = val
                             RefreshSH()
@@ -2809,9 +2490,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             disabled = iconOff,
             disabledTooltip = "Icon History",
-            getValue = function()
-                return SpellHistoryDB().iconSpacing or 1
-            end,
+            getValue = function() return SpellHistoryDB().iconSpacing or 1 end,
             setValue = function(val)
                 SpellHistoryDB().iconSpacing = val
                 RefreshSH()
@@ -2824,9 +2503,7 @@ CludesUI.AtOptionsLogin(function()
             step = 0.01,
             disabled = iconOff,
             disabledTooltip = "Icon History",
-            getValue = function()
-                return SpellHistoryDB().iconOpacity or 1
-            end,
+            getValue = function() return SpellHistoryDB().iconOpacity or 1 end,
             setValue = function(val)
                 SpellHistoryDB().iconOpacity = val
                 RefreshSH()
@@ -2848,12 +2525,8 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = "Icon History",
             values = shAnimValues,
             order = shAnimOrder,
-            getValue = function()
-                return SpellHistoryDB().iconAnimation or "slide"
-            end,
-            setValue = function(val)
-                SpellHistoryDB().iconAnimation = val
-            end,
+            getValue = function() return SpellHistoryDB().iconAnimation or "slide" end,
+            setValue = function(val) SpellHistoryDB().iconAnimation = val end,
         }, {
             type = "slider",
             text = "Fade-Out Time",
@@ -2863,9 +2536,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             disabled = iconOff,
             disabledTooltip = "Icon History",
-            getValue = function()
-                return SpellHistoryDB().iconFadeTime or 0
-            end,
+            getValue = function() return SpellHistoryDB().iconFadeTime or 0 end,
             setValue = function(val)
                 SpellHistoryDB().iconFadeTime = val
                 RefreshSH()
@@ -2890,9 +2561,7 @@ CludesUI.AtOptionsLogin(function()
         -- No delves on WoW Forever: the list drops its Delves entry there.
         if CludesUI.IS_FOREVER then
             for idx = #SH_BAR_VIS_ITEMS, 1, -1 do
-                if SH_BAR_VIS_ITEMS[idx].key == "barHideInDelve" then
-                    table.remove(SH_BAR_VIS_ITEMS, idx)
-                end
+                if SH_BAR_VIS_ITEMS[idx].key == "barHideInDelve" then table.remove(SH_BAR_VIS_ITEMS, idx) end
             end
         end
         local barVisRow
@@ -2900,9 +2569,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Enable Bar History",
             tooltip = "Shows a standalone window with spell cast history as bars. Matches your Damage Meters styling.",
-            getValue = function()
-                return SpellHistoryDB().barEnabled
-            end,
+            getValue = function() return SpellHistoryDB().barEnabled end,
             setValue = function(val)
                 SpellHistoryDB().barEnabled = val
                 RefreshSH()
@@ -2915,25 +2582,19 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = "Bar History",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         })
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = barVisRow._rightRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 SH_BAR_VIS_ITEMS,
-                function(keyName)
-                    return SpellHistoryDB()[keyName] or false
-                end,
+                function(keyName) return SpellHistoryDB()[keyName] or false end,
                 function(keyName, val)
                     SpellHistoryDB()[keyName] = val
                     RefreshSH()
@@ -2955,9 +2616,7 @@ CludesUI.AtOptionsLogin(function()
             step = 0.01,
             disabled = barOff,
             disabledTooltip = "Bar History",
-            getValue = function()
-                return SpellHistoryDB().bgAlpha or 0.25
-            end,
+            getValue = function() return SpellHistoryDB().bgAlpha or 0.25 end,
             setValue = function(val)
                 SpellHistoryDB().bgAlpha = val
                 RefreshSH()
@@ -2967,9 +2626,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Hide Top Bar",
             disabled = barOff,
             disabledTooltip = "Bar History",
-            getValue = function()
-                return SpellHistoryDB().hideTopBar
-            end,
+            getValue = function() return SpellHistoryDB().hideTopBar end,
             setValue = function(val)
                 SpellHistoryDB().hideTopBar = val
                 RefreshSH()
@@ -2985,7 +2642,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 bgRow:GetFrameLevel() + 3,
                 function()
-                    return (SpellHistoryDB().bgR or 0), (SpellHistoryDB().bgG or 0), (SpellHistoryDB().bgB or 0)
+                    return (SpellHistoryDB().bgR or 0),
+                        (SpellHistoryDB().bgG or 0),
+                        (SpellHistoryDB().bgB or 0)
                 end,
                 function(red, green, blue)
                     SpellHistoryDB().bgR = red
@@ -2999,16 +2658,13 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Blizzard Style paints the stock window art (colour unused); the
             -- classic box is tinted by this colour.
-            if MetersBlizzArt() then
-                CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
-            end
+            if MetersBlizzArt() then CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch) end
             local block = CludesUI.NewSwatchBlocker(colorSwatch)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
-            end)
-            block:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            block:SetScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History")) end
+            )
+            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             CludesUI.RegisterWidgetRefresh(function()
                 local off = barOff()
                 colorSwatch:SetAlpha(off and 0.3 or 1)
@@ -3037,9 +2693,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             disabled = barOff,
             disabledTooltip = "Bar History",
-            getValue = function()
-                return SpellHistoryDB().shBarHeight or 18
-            end,
+            getValue = function() return SpellHistoryDB().shBarHeight or 18 end,
             setValue = function(val)
                 SpellHistoryDB().shBarHeight = val
                 RefreshSH()
@@ -3053,9 +2707,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             disabled = barOff,
             disabledTooltip = "Bar History",
-            getValue = function()
-                return SpellHistoryDB().maxBars or 5
-            end,
+            getValue = function() return SpellHistoryDB().maxBars or 5 end,
             setValue = function(val)
                 SpellHistoryDB().maxBars = val
                 RefreshSH()
@@ -3075,9 +2727,7 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Bar History",
                 values = matchTexValues,
                 order = matchTexOrder,
-                getValue = function()
-                    return SpellHistoryDB().spellHistoryBarTexture or "match"
-                end,
+                getValue = function() return SpellHistoryDB().spellHistoryBarTexture or "match" end,
                 setValue = function(val)
                     SpellHistoryDB().spellHistoryBarTexture = val
                     RefreshSH()
@@ -3091,9 +2741,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 disabled = barOff,
                 disabledTooltip = "Bar History",
-                getValue = function()
-                    return SpellHistoryDB().textSize or 11
-                end,
+                getValue = function() return SpellHistoryDB().textSize or 11 end,
                 setValue = function(val)
                     SpellHistoryDB().textSize = val
                     RefreshSH()
@@ -3113,10 +2761,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Class Color",
                     hasAlpha = false,
                     getValue = function()
-                        local classColor = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                        if classColor then
-                            return classColor.r, classColor.g, classColor.b
-                        end
+                        local classColor = CludesUI._playerClass
+                            and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if classColor then return classColor.r, classColor.g, classColor.b end
                         return 0.96, 0.55, 0.73
                     end,
                     setValue = function() end,
@@ -3126,18 +2773,14 @@ CludesUI.AtOptionsLogin(function()
                         RefreshSH()
                         CludesUI:RefreshPage()
                     end,
-                    refreshAlpha = function()
-                        return SpellHistoryDB().barColorUseClass and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return SpellHistoryDB().barColorUseClass and 1 or 0.3 end,
                 },
                 {
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
                         local color = SpellHistoryDB().barColor
-                        if color then
-                            return color.r or 0.298, color.g or 0.565, color.b or 0.494
-                        end
+                        if color then return color.r or 0.298, color.g or 0.565, color.b or 0.494 end
                         return 0.298, 0.565, 0.494
                     end,
                     setValue = function(red, green, blue)
@@ -3155,23 +2798,17 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
-                        if SpellHistoryDB().barColorUseClass then
-                            return 0.15
-                        end
+                        if SpellHistoryDB().barColorUseClass then return 0.15 end
                         return SpellHistoryDB().barColorUseAccent and 0.3 or 1
                     end,
                 },
                 {
                     tooltip = "Accent Color",
                     hasAlpha = false,
-                    getValue = function()
-                        return CludesUI.ResolveActiveAccent()
-                    end,
+                    getValue = function() return CludesUI.ResolveActiveAccent() end,
                     setValue = function() end,
                     onClick = function()
                         SpellHistoryDB().barColorUseClass = false
@@ -3180,9 +2817,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        if SpellHistoryDB().barColorUseClass then
-                            return 0.15
-                        end
+                        if SpellHistoryDB().barColorUseClass then return 0.15 end
                         return SpellHistoryDB().barColorUseAccent and 1 or 0.3
                     end,
                 },
@@ -3195,9 +2830,7 @@ CludesUI.AtOptionsLogin(function()
             step = 0.01,
             disabled = barOff,
             disabledTooltip = "Bar History",
-            getValue = function()
-                return SpellHistoryDB().barOpacity or 1
-            end,
+            getValue = function() return SpellHistoryDB().barOpacity or 1 end,
             setValue = function(val)
                 SpellHistoryDB().barOpacity = val
                 RefreshSH()
@@ -3214,9 +2847,7 @@ CludesUI.AtOptionsLogin(function()
                 textRow:GetFrameLevel() + 3,
                 function()
                     local color = SpellHistoryDB().textColor
-                    if color then
-                        return color.r or 1, color.g or 1, color.b or 1
-                    end
+                    if color then return color.r or 1, color.g or 1, color.b or 1 end
                     return 1, 1, 1
                 end,
                 function(red, green, blue)
@@ -3237,18 +2868,14 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                     return
                 end
-                if origClick then
-                    origClick(self, ...)
-                end
+                if origClick then origClick(self, ...) end
             end)
             CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
             local accentColorSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
                 textRow:GetFrameLevel() + 3,
-                function()
-                    return CludesUI.ResolveActiveAccent()
-                end,
+                function() return CludesUI.ResolveActiveAccent() end,
                 function()
                     SpellHistoryDB().textColorUseAccent = true
                     RefreshSH()
@@ -3267,12 +2894,13 @@ CludesUI.AtOptionsLogin(function()
 
             local function MakeSwatchBlock(colorSwatch)
                 local block = CludesUI.NewSwatchBlocker(colorSwatch)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
-                end)
-                block:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                block:SetScript(
+                    "OnEnter",
+                    function()
+                        CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Bar History"))
+                    end
+                )
+                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 return block
             end
             local customBlock = MakeSwatchBlock(customColorSwatch)
@@ -3315,12 +2943,8 @@ CludesUI.AtOptionsLogin(function()
             -- normally during the hidden pass.
             if not CludesUI._prebuilding then
                 mod._optionsOpen = true
-                if mod.ShowSATimerPreview and MeterGet("standaloneTimer") then
-                    mod.ShowSATimerPreview()
-                end
-                if mod.ApplySpellHistory then
-                    mod.ApplySpellHistory()
-                end
+                if mod.ShowSATimerPreview and MeterGet("standaloneTimer") then mod.ShowSATimerPreview() end
+                if mod.ApplySpellHistory then mod.ApplySpellHistory() end
                 for _, wid in ipairs(mod._windows or {}) do
                     if wid.frame then
                         wid.frame:SetAlpha(1)
@@ -3329,19 +2953,13 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end
             end
-            if page == PAGE_SH then
-                return BuildSpellHistoryPage(page, p, yOffset)
-            end
+            if page == PAGE_SH then return BuildSpellHistoryPage(page, p, yOffset) end
             return BuildPage(page, p, yOffset)
         end,
         onPageCacheRestore = function()
             mod._optionsOpen = true
-            if mod.ShowSATimerPreview and MeterGet("standaloneTimer") then
-                mod.ShowSATimerPreview()
-            end
-            if mod.ApplySpellHistory then
-                mod.ApplySpellHistory()
-            end
+            if mod.ShowSATimerPreview and MeterGet("standaloneTimer") then mod.ShowSATimerPreview() end
+            if mod.ApplySpellHistory then mod.ApplySpellHistory() end
             for _, wid in ipairs(mod._windows or {}) do
                 if wid.frame then
                     wid.frame:SetAlpha(1)
@@ -3352,34 +2970,24 @@ CludesUI.AtOptionsLogin(function()
         end,
         onReset = function()
             local db = _G._CUDM_DB
-            if db and db.ResetProfile then
-                db:ResetProfile()
-            end
+            if db and db.ResetProfile then db:ResetProfile() end
         end,
         -- Mirrors RegisterOnHide below: SA Timer Preview + forced-visible
         -- meter windows, on module switch instead of just window close.
         onModuleLeave = function()
-            if mod.HideSATimerPreview then
-                mod.HideSATimerPreview()
-            end
+            if mod.HideSATimerPreview then mod.HideSATimerPreview() end
             mod._optionsOpen = false
             for _, wid in ipairs(mod._windows or {}) do
-                if wid.UpdateVisibility then
-                    wid.UpdateVisibility()
-                end
+                if wid.UpdateVisibility then wid.UpdateVisibility() end
             end
-            if mod.ApplySpellHistory then
-                mod.ApplySpellHistory()
-            end
+            if mod.ApplySpellHistory then mod.ApplySpellHistory() end
         end,
     })
 
     -- Show preview when panel opens on DM page, hide when panel closes
     CludesUI:RegisterOnShow(function()
         if CludesUI:GetActiveModule() == "CludesUIDamageMeters" then
-            if mod.ShowSATimerPreview and MeterGet("standaloneTimer") then
-                mod.ShowSATimerPreview()
-            end
+            if mod.ShowSATimerPreview and MeterGet("standaloneTimer") then mod.ShowSATimerPreview() end
             mod._optionsOpen = true
             for _, wid in ipairs(mod._windows or {}) do
                 if wid.frame then
@@ -3388,23 +2996,15 @@ CludesUI.AtOptionsLogin(function()
                     wid.frame:Show()
                 end
             end
-            if mod.ApplySpellHistory then
-                mod.ApplySpellHistory()
-            end
+            if mod.ApplySpellHistory then mod.ApplySpellHistory() end
         end
     end)
     CludesUI:RegisterOnHide(function()
-        if mod.HideSATimerPreview then
-            mod.HideSATimerPreview()
-        end
+        if mod.HideSATimerPreview then mod.HideSATimerPreview() end
         mod._optionsOpen = false
         for _, wid in ipairs(mod._windows or {}) do
-            if wid.UpdateVisibility then
-                wid.UpdateVisibility()
-            end
+            if wid.UpdateVisibility then wid.UpdateVisibility() end
         end
-        if mod.ApplySpellHistory then
-            mod.ApplySpellHistory()
-        end
+        if mod.ApplySpellHistory then mod.ApplySpellHistory() end
     end)
 end)

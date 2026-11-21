@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverExtras.lua
 --
@@ -16,9 +14,7 @@ local issecretvalue = issecretvalue
 local Inner = mod._internals
 local frameList = Inner.frames
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Pet happiness (WoW Forever): the stock pet frame's mood icon, carried
 -- beside our pet frame under Blizzard's own rule -- shown only for a hunter
@@ -50,19 +46,13 @@ function mod.UF_PetHappinessOnEnter(self)
     -- client withholds (secret, or no value at all when it refuses alpha
     -- access) shows it, as on a visible icon.
     local a = self:GetEffectiveAlpha()
-    if type(a) == "number" and not issecretvalue(a) and a < 0.05 then
-        return
-    end
+    if type(a) == "number" and not issecretvalue(a) and a < 0.05 then return end
     local happiness, dmg, loyalty = C_PetInfo.GetPetHappiness()
     local textValue = (happiness == 1 and PET_HAPPINESS1)
         or (happiness == 2 and PET_HAPPINESS2)
         or (happiness == 3 and PET_HAPPINESS3)
-    if not textValue then
-        return
-    end
-    if dmg then
-        textValue = textValue .. "\n" .. PET_DAMAGE_PERCENTAGE:format(dmg)
-    end
+    if not textValue then return end
+    if dmg then textValue = textValue .. "\n" .. PET_DAMAGE_PERCENTAGE:format(dmg) end
     if loyalty and loyalty < 0 then
         textValue = textValue .. "\n" .. LOSING_LOYALTY
     elseif loyalty and loyalty > 0 then
@@ -75,18 +65,14 @@ function mod.UF_PetHappinessOnEnter(self)
     CludesUI.ShowWidgetTooltip(self, textValue)
 end
 
-function mod.UF_PetHappinessOnLeave()
-    CludesUI.HideWidgetTooltip()
-end
+function mod.UF_PetHappinessOnLeave() CludesUI.HideWidgetTooltip() end
 
 -- Settings apply: builds the icon on first use, re-seats size, side and
 -- offsets, and arms or drops its events. Every reload pass runs it (the
 -- options setters reach it through ReloadAndUpdate) and it is safe to call
 -- directly; it returns at once off WoW Forever.
 function mod.UF_ApplyPetHappiness()
-    if CludesUI.IS_FOREVER ~= true then
-        return
-    end
+    if CludesUI.IS_FOREVER ~= true then return end
     local popFrame = frameList.pet
     local cfg = saved.profile.pet
     local hgt = popFrame and popFrame._petHappy
@@ -128,9 +114,7 @@ function mod.UF_ApplyPetHappiness()
         hgt:SetPoint("LEFT", popFrame, "RIGHT", posX, posY)
     end
     -- Above the border and the name/health text (the strata pass re-stacks).
-    if popFrame._textOverlay then
-        hgt:SetFrameLevel(popFrame._textOverlay:GetFrameLevel() + 5)
-    end
+    if popFrame._textOverlay then hgt:SetFrameLevel(popFrame._textOverlay:GetFrameLevel() + 5) end
     hgt:RegisterUnitEvent("UNIT_HAPPINESS", "pet")
     hgt:RegisterUnitEvent("UNIT_PET", "player")
     -- The pet's state may not read yet at login: the zone-in edge repaints.
@@ -193,9 +177,7 @@ function mod.UF_BuildComboArc(owner)
     for key = 1, 9 do
         local pip = CreateFrame("Frame", nil, arc)
         pip:SetSize(12, 12)
-        if key >= 7 then
-            pip:SetAlpha(0.6)
-        end
+        if key >= 7 then pip:SetAlpha(0.6) end
         local base = pip:CreateTexture(nil, "BACKGROUND")
         base:SetTexture(file)
         base:SetTexCoord(0, 0.375, 0, 1)
@@ -261,9 +243,7 @@ if CludesUI.IS_FOREVER == true then
     mod._ufComboEv = CreateFrame("Frame")
     mod._ufComboEv:SetScript("OnEvent", function(_, ...)
         local arc = mod._ufComboArc
-        if arc then
-            mod.UF_ComboArcRefresh(arc, ...)
-        end
+        if arc then mod.UF_ComboArcRefresh(arc, ...) end
     end)
 end
 -- The classes the arc draws for (combo points on WoW Forever).
@@ -276,9 +256,7 @@ end
 function mod.UF_ComboLocation()
     local cfg = saved and saved.profile and saved.profile.player
     local val = cfg and cfg.foreverComboLocation
-    if val == "player" or val == "never" then
-        return val
-    end
+    if val == "player" or val == "never" then return val end
     return "target"
 end
 -- The slots ring the stock target portrait (58 wide at TOPRIGHT -26,-19, its
@@ -287,9 +265,7 @@ end
 -- centres, in the slots' own frame before the mirror; 0,0 on the target kit.
 function mod.UF_ComboRingShift(G)
     local P = G and G.portrait
-    if not (P and P.size) then
-        return 0, 0
-    end
+    if not (P and P.size) then return 0, 0 end
     local region = P.size / 2
     local cx = (P.point == "TOPLEFT") and -(P.x + region) or (P.x - region)
     return cx + 55, P.y - region + 48
@@ -300,18 +276,12 @@ end
 function mod.UF_ComboArcLayout(arc)
     local mx = UnitPowerMax("player", Enum.PowerType.ComboPoints)
     if issecretvalue(mx) then
-        if arc._max then
-            return
-        end
+        if arc._max then return end
         mx = 5
     end
-    if not mx or mx <= 0 then
-        mx = 5
-    end
+    if not mx or mx <= 0 then mx = 5 end
     local callback = C_CVar.GetCVarBool("colorblindMode") and true or false
-    if arc._max == mx and arc._cb == callback then
-        return
-    end
+    if arc._max == mx and arc._cb == callback then return end
     -- A cap of 6 or 9 starts on the first slot with six in the arc; any other
     -- starts one slot in with five. Points past those show only while filled.
     local start, extra = 2, 6
@@ -329,9 +299,7 @@ function mod.UF_ComboArcLayout(arc)
             -- extra points; every point in colourblind mode).
             local wanted = (callback or index >= extra) and pip._mask or arc._mask
             if pip._baseMask ~= wanted then
-                if pip._baseMask then
-                    pip._base:RemoveMaskTexture(pip._baseMask)
-                end
+                if pip._baseMask then pip._base:RemoveMaskTexture(pip._baseMask) end
                 pip._base:AddMaskTexture(wanted)
                 pip._baseMask = wanted
             end
@@ -342,9 +310,7 @@ function mod.UF_ComboArcLayout(arc)
     end
 end
 function mod.UF_ComboArcRefresh(arc, evt, _, powerType)
-    if evt == "UNIT_POWER_UPDATE" and powerType ~= "COMBO_POINTS" then
-        return
-    end
+    if evt == "UNIT_POWER_UPDATE" and powerType ~= "COMBO_POINTS" then return end
     if arc._cb == nil or evt == "UNIT_MAXPOWER" or evt == "PLAYER_ENTERING_WORLD" then
         mod.UF_ComboArcLayout(arc)
     end
@@ -383,9 +349,7 @@ function mod.UF_ComboArcRefresh(arc, evt, _, powerType)
     local start = arc._start
     for index = 1, arc._max do
         local pip = pips[start + index - 1]
-        if not pip then
-            break
-        end
+        if not pip then break end
         if index > num then
             pip._anim:Stop()
             pip._hl:SetAlpha(0)
@@ -407,9 +371,7 @@ end
 -- pass, the class resource toggle and the Combo Points setter run it; it
 -- returns at once off WoW Forever.
 function mod.UF_ApplyForeverComboArc()
-    if CludesUI.IS_FOREVER ~= true then
-        return
-    end
+    if CludesUI.IS_FOREVER ~= true then return end
     local arc, ev = mod._ufComboArc, mod._ufComboEv
     local owner
     if mod.UF_Forever() and saved.profile.player.classPowerStyle == "blizzard" and mod.UF_ComboClass() then
@@ -420,9 +382,7 @@ function mod.UF_ApplyForeverComboArc()
         if loc == "target" then
             owner = frameList.target
         else
-            if loc == "player" then
-                owner = frameList.player
-            end
+            if loc == "player" then owner = frameList.player end
             -- Blizzard's own goes to the hidden parent out of combat and
             -- outside Edit Mode (a skipped pass retries on the next one). The
             -- hidden parent is pinned for the session: only a reload brings
@@ -439,9 +399,7 @@ function mod.UF_ApplyForeverComboArc()
     end
     if not owner then
         ev:UnregisterAllEvents()
-        if arc then
-            arc:Hide()
-        end
+        if arc then arc:Hide() end
         return
     end
     arc = arc or mod.UF_BuildComboArc(owner)
@@ -451,9 +409,7 @@ function mod.UF_ApplyForeverComboArc()
     local mirror = (G and G.side == "left") or nil
     if arc._host ~= owner or arc._kit ~= G or arc._mirror ~= mirror then
         arc._host, arc._kit, arc._mirror = owner, G, mirror
-        if arc:GetParent() ~= owner then
-            arc:SetParent(owner)
-        end
+        if arc:GetParent() ~= owner then arc:SetParent(owner) end
         local dx, dy = mod.UF_ComboRingShift(G)
         arc:ClearAllPoints()
         mod.UF_BlizzPoint(arc, "TOPRIGHT", owner, "TOPRIGHT", 4 + dx, dy, mirror)

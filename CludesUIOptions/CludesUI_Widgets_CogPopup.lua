@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_CogPopup.lua
 --  BuildCogPopup, the shared cog settings popup. Reads BuildColorSwatch, so
@@ -41,9 +39,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     local panelPopups = setmetatable({}, { __mode = "k" }) -- popup -> order made
     local panelPopupN, panelHooked = 0, false
     local hideList = {}
-    local function PopupOrder(a, b)
-        return panelPopups[a] < panelPopups[b]
-    end
+    local function PopupOrder(a, b) return panelPopups[a] < panelPopups[b] end
     local function HidePanelPopups()
         local num = 0
         for popFrame in pairs(panelPopups) do
@@ -52,15 +48,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 hideList[num] = popFrame
             end
         end
-        if num > 1 then
-            table.sort(hideList, PopupOrder)
-        end
+        if num > 1 then table.sort(hideList, PopupOrder) end
         for idx = 1, num do
             local popFrame = hideList[idx]
             hideList[idx] = nil
-            if popFrame:IsShown() then
-                popFrame:Hide()
-            end
+            if popFrame:IsShown() then popFrame:Hide() end
         end
     end
 
@@ -174,9 +166,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end
         local variants = dynamic and {} or nil
         local function HiddenSig()
-            if not dynamic then
-                return ""
-            end
+            if not dynamic then return "" end
             local sig = ""
             if options.sections then
                 for si, sec in ipairs(options.sections) do
@@ -184,18 +174,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         sig = sig .. "s" .. si .. ","
                     else
                         for ri, row in ipairs(sec.rows) do
-                            if row.hidden and row.hidden() then
-                                sig = sig .. si .. "." .. ri .. ","
-                            end
+                            if row.hidden and row.hidden() then sig = sig .. si .. "." .. ri .. "," end
                         end
                     end
                 end
                 return sig
             end
             for idx, row in ipairs(options.rows) do
-                if row.hidden and row.hidden() then
-                    sig = sig .. idx .. ","
-                end
+                if row.hidden and row.hidden() then sig = sig .. idx .. "," end
             end
             return sig
         end
@@ -208,13 +194,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         -- Made by the first CreatePopup (most cogs a page builds are never opened).
         local popupRows, popupRowsMade
         local function PopupRows()
-            if popupRowsMade then
-                return popupRows
-            end
+            if popupRowsMade then return popupRows end
             popupRowsMade = true
-            if not allRows then
-                return nil
-            end
+            if not allRows then return nil end
             for _, row in ipairs(allRows) do
                 if row.set then
                     local _s = row.set
@@ -270,14 +252,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     -- One column: stackLast sections after the others.
                     local sequence = {}
                     for _, sec in ipairs(isShown) do
-                        if not sec.stackLast then
-                            sequence[#sequence + 1] = sec
-                        end
+                        if not sec.stackLast then sequence[#sequence + 1] = sec end
                     end
                     for _, sec in ipairs(isShown) do
-                        if sec.stackLast then
-                            sequence[#sequence + 1] = sec
-                        end
+                        if sec.stackLast then sequence[#sequence + 1] = sec end
                     end
                     isShown = sequence
                     cols[1] = { measure = {} }
@@ -324,9 +302,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     if row.type == "slider" or row.type == "input" then
                         tmpFS:SetText(CUI.L(row.label))
                         local wid = tmpFS:GetStringWidth()
-                        if wid > maxLblW then
-                            maxLblW = wid
-                        end
+                        if wid > maxLblW then maxLblW = wid end
                     elseif
                         row.type == "dropdown"
                         or row.type == "segmented"
@@ -338,9 +314,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 ((row.type == "dropdown" or row.type == "reordercheck") and row.ddWidth)
                                 or COG_DD_W
                             )
-                        if wid > maxDDNeed then
-                            maxDDNeed = wid
-                        end
+                        if wid > maxDDNeed then maxDDNeed = wid end
                     elseif
                         row.type == "toggle"
                         or row.type == "colorpicker"
@@ -358,14 +332,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             control = 16
                         end
                         local wid = tmpFS:GetStringWidth() + control
-                        if wid > maxDDNeed then
-                            maxDDNeed = wid
-                        end
+                        if wid > maxDDNeed then maxDDNeed = wid end
                     end
                 end
-                if maxLblW < 10 then
-                    maxLblW = 60
-                end
+                if maxLblW < 10 then maxLblW = 60 end
 
                 local SLIDER_LEFT = SIDE_PAD + maxLblW + LABEL_SLIDER_GAP
                 local TARGET_W = options.minWidth or 260
@@ -376,12 +346,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 )
                 -- Widen for dropdown rows (label + gap + dropdown + padding)
                 local ddNeeded = SIDE_PAD + maxDDNeed + LABEL_SLIDER_GAP + SIDE_PAD
-                if ddNeeded > POPUP_W then
-                    POPUP_W = ddNeeded
-                end
-                if options.minWidth and options.minWidth > POPUP_W then
-                    POPUP_W = options.minWidth
-                end
+                if ddNeeded > POPUP_W then POPUP_W = ddNeeded end
+                if options.minWidth and options.minWidth > POPUP_W then POPUP_W = options.minWidth end
                 -- Stretch the track to fill a widened popup so no gap opens between the slider and its value box. Gated on minWidth so un-widened cog popups keep their original slider width.
                 if options.minWidth then
                     SLIDER_W =
@@ -392,9 +358,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     if col.title then
                         tmpFS:SetText(CUI.L(col.title))
                         local tw = SIDE_PAD + tmpFS:GetStringWidth() + SIDE_PAD
-                        if tw > POPUP_W then
-                            POPUP_W = tw
-                        end
+                        if tw > POPUP_W then POPUP_W = tw end
                     end
                     POPUP_W = math.ceil(POPUP_W)
                 end
@@ -420,9 +384,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             if not multi then
                 cols[1].y = -totalH
                 for idx, row in ipairs(rowList) do
-                    if idx > 1 then
-                        totalH = totalH + GAP
-                    end
+                    if idx > 1 then totalH = totalH + GAP end
                     totalH = totalH + RowH(row)
                 end
             else
@@ -435,15 +397,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 for ci, col in ipairs(cols) do
                     local height = col.title and (HDR_H + HDR_GAP) or 0
                     for idx = col.first, col.last do
-                        if idx > col.first then
-                            height = height + GAP
-                        end
+                        if idx > col.first then height = height + GAP end
                         height = height + RowH(rowList[idx])
                     end
                     if (ci - 1) % perBand == 0 then
-                        if band then
-                            totalH = totalH + band.h + BAND_GAP
-                        end
+                        if band then totalH = totalH + band.h + BAND_GAP end
                         band = { y = -totalH, h = 0 }
                         posX = 0
                     else
@@ -451,12 +409,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     end
                     col.x, col.y, col.band = posX, band.y, band
                     posX = posX + col.w
-                    if posX > POPUP_W then
-                        POPUP_W = posX
-                    end
-                    if height > band.h then
-                        band.h = height
-                    end
+                    if posX > POPUP_W then POPUP_W = posX end
+                    if height > band.h then band.h = height end
                 end
                 totalH = totalH + band.h
                 contentBottom = -totalH
@@ -470,8 +424,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 totalH = totalH + FOOTER_H
             end
 
-            local popFrame, isNew =
-                PoolKept(anchorBtn, "cog:" .. (sig or ""), "Frame", CUI.OverlayParent())
+            local popFrame, isNew = PoolKept(anchorBtn, "cog:" .. (sig or ""), "Frame", CUI.OverlayParent())
             popFrame:SetSize(POPUP_W, totalH)
             popFrame:SetFrameStrata(options.frameStrata or "DIALOG")
             popFrame:SetFrameLevel(options.frameLevel or 200)
@@ -491,24 +444,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
             local backdrop = SolidTex(popFrame, "BACKGROUND", 0.062, 0.070, 0.082, options.bgAlpha or 0.95)
             backdrop:SetAllPoints()
-            CUI.MakeRoundedBorder(
-                popFrame,
-                BORDER_COLOR.r,
-                BORDER_COLOR.g,
-                BORDER_COLOR.b,
-                0.15,
-                backdrop
-            )
+            CUI.MakeRoundedBorder(popFrame, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, backdrop)
 
             -- House look: an accent cap along the top, the title on the left in capitals.
-            local cap = SolidTex(
-                popFrame,
-                "ARTWORK",
-                CUI.CLUDES_GREEN.r,
-                CUI.CLUDES_GREEN.g,
-                CUI.CLUDES_GREEN.b,
-                0.9
-            )
+            local cap =
+                SolidTex(popFrame, "ARTWORK", CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b, 0.9)
             cap:SetPoint("TOPLEFT")
             cap:SetPoint("TOPRIGHT")
             cap:SetHeight(2)
@@ -518,9 +458,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             titleFS:SetText(CUI.L(options.title or ""):upper())
 
             -- A sections popup can be wide: it stays on screen.
-            if options.sections then
-                popFrame:SetClampedToScreen(true)
-            end
+            if options.sections then popFrame:SetClampedToScreen(true) end
             -- The frame each column's rows anchor to: the popup itself for one
             -- column; per column, a frame whose top-left sits at the column's
             -- origin on the popup's top edge, with the dividers between columns
@@ -556,9 +494,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             -- A dropdown-height row's disabled overlay (row.disabled set): dims the row,
             -- blocks it and explains the lock; the refresh shows it while disabled.
             local function RowDisabledOverlay(row, cursorY)
-                if not row.disabled then
-                    return nil
-                end
+                if not row.disabled then return nil end
                 local dis = CreateFrame("Frame", nil, popFrame)
                 dis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, cursorY)
                 dis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, cursorY)
@@ -569,13 +505,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 disTex:SetAllPoints()
                 dis:SetScript("OnEnter", function(self)
                     local tipText = ResolveDisabledTip(row)
-                    if tipText and CUI.ShowWidgetTooltip then
-                        CUI.ShowWidgetTooltip(self, tipText)
-                    end
+                    if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                 end)
-                dis:SetScript("OnLeave", function()
-                    CUI.HideWidgetTooltip()
-                end)
+                dis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 return dis
             end
             -- A row's dimmed caption, centred in a row rowH tall at the current
@@ -591,12 +523,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     hit:SetPoint("BOTTOMRIGHT", caption, "BOTTOMRIGHT", 2, -2)
                     hit:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                     hit:EnableMouse(true)
-                    hit:SetScript("OnEnter", function()
-                        CUI.ShowWidgetTooltip(caption, row.tooltip)
-                    end)
-                    hit:SetScript("OnLeave", function()
-                        CUI.HideWidgetTooltip()
-                    end)
+                    hit:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(caption, row.tooltip) end)
+                    hit:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 end
                 return caption
             end
@@ -614,9 +542,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         CUI.RegAccent({
                             type = "callback",
                             obj = heading,
-                            fn = function(red, green, blue)
-                                heading:SetTextColor(red, green, blue)
-                            end,
+                            fn = function(red, green, blue) heading:SetTextColor(red, green, blue) end,
                         })
                         curY = curY - HDR_H - HDR_GAP
                     end
@@ -660,13 +586,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         sliderDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CUI.ShowWidgetTooltip then
-                                CUI.ShowWidgetTooltip(self, tipText)
-                            end
+                            if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                         end)
-                        sliderDis:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        sliderDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
 
                     rowWidgets[#rowWidgets + 1] = {
@@ -684,24 +606,18 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         popFrame,
                         popFrame:GetFrameLevel() + 2,
                         row.get,
-                        function(val)
-                            row.set(val)
-                        end,
+                        function(val) row.set(val) end,
                         { sizeRatio = 0.8, noAnim = true }
                     )
                     cogToggle:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - TOGGLE_ROW_H / 2)
 
-                    local function UpdateToggleVisual()
-                        cogSnap()
-                    end
+                    local function UpdateToggleVisual() cogSnap() end
                     UpdateToggleVisual()
                     cogToggle:SetScript("OnClick", function()
                         local current = row.get()
                         row.set(not current)
                         UpdateToggleVisual()
-                        if popFrame._refresh then
-                            popFrame._refresh()
-                        end
+                        if popFrame._refresh then popFrame._refresh() end
                     end)
 
                     local toggleDis
@@ -716,13 +632,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         toggleDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CUI.ShowWidgetTooltip then
-                                CUI.ShowWidgetTooltip(self, tipText)
-                            end
+                            if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                         end)
-                        toggleDis:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        toggleDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
 
                     rowWidgets[#rowWidgets + 1] = {
@@ -749,9 +661,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         row.get,
                         function(val)
                             row.set(val)
-                            if popFrame._refresh then
-                                popFrame._refresh()
-                            end
+                            if popFrame._refresh then popFrame._refresh() end
                         end,
                         row.itemDisabled
                     )
@@ -812,9 +722,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         row.get,
                         function(keyName, val, sequence)
                             row.set(keyName, val, sequence)
-                            if popFrame._refresh then
-                                popFrame._refresh()
-                            end
+                            if popFrame._refresh then popFrame._refresh() end
                         end,
                         {
                             hint = row.hint,
@@ -823,15 +731,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             openOrder = row.openOrder,
                             tail = row.tail,
                             onTail = function(keyName)
-                                if row.onTail then
-                                    row.onTail(keyName, dropdownBtn)
-                                end
+                                if row.onTail then row.onTail(keyName, dropdownBtn) end
                             end,
                             tailSelected = row.tailSelected,
                             setOrder = function(keyList)
-                                if row.setOrder then
-                                    row.setOrder(keyList)
-                                end
+                                if row.setOrder then row.setOrder(keyList) end
                             end,
                         }
                     )
@@ -874,14 +778,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         autoWidth = true,
                         square = true,
                         height = 22,
-                        getChecked = function(key)
-                            return row.get() == key
-                        end,
+                        getChecked = function(key) return row.get() == key end,
                         onToggle = function(key)
                             row.set(key)
-                            if popFrame._refresh then
-                                popFrame._refresh()
-                            end
+                            if popFrame._refresh then popFrame._refresh() end
                         end,
                     })
                     seg:ClearAllPoints()
@@ -899,13 +799,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         segDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CUI.ShowWidgetTooltip then
-                                CUI.ShowWidgetTooltip(self, tipText)
-                            end
+                            if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                         end)
-                        segDis:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        segDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
 
                     rowWidgets[#rowWidgets + 1] = {
@@ -922,14 +818,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     local cpSwatch, cpUpdate = BuildColorSwatch(
                         popFrame,
                         popFrame:GetFrameLevel() + 2,
-                        function()
-                            return row.get()
-                        end,
+                        function() return row.get() end,
                         function(red, green, blue, a)
                             row.set(red, green, blue, a)
-                            if popFrame._refresh then
-                                popFrame._refresh()
-                            end
+                            if popFrame._refresh then popFrame._refresh() end
                         end,
                         row.hasAlpha,
                         20
@@ -950,9 +842,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 CUI.ShowWidgetTooltip(cpSwatch, tipText)
                             end
                         end)
-                        cpSwBlock:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        cpSwBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
                         cpLblBlock = CreateFrame("Frame", nil, popFrame)
                         cpLblBlock:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
@@ -965,9 +855,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 CUI.ShowWidgetTooltip(labelFS, tipText)
                             end
                         end)
-                        cpLblBlock:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        cpLblBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
 
                     rowWidgets[#rowWidgets + 1] = {
@@ -1023,13 +911,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             function(red, green, blue, a)
                                 local f = popupOwner or options.captureRegion
                                 local snap = CUI._SOAttribution(f)
-                                if sc.setValue then
-                                    sc.setValue(red, green, blue, a)
-                                end
+                                if sc.setValue then sc.setValue(red, green, blue, a) end
                                 CUI._NotifySettingWrite(f, snap)
-                                if popFrame._refresh then
-                                    popFrame._refresh()
-                                end
+                                if popFrame._refresh then popFrame._refresh() end
                             end,
                             sc.hasAlpha,
                             20
@@ -1044,18 +928,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 local snap = CUI._SOAttribution(f)
                                 sc.onClick(self, ...)
                                 CUI._NotifySettingWrite(f, snap)
-                                if popFrame._refresh then
-                                    popFrame._refresh()
-                                end
+                                if popFrame._refresh then popFrame._refresh() end
                             end)
                         end
                         if sc.tooltip then
-                            colorSwatch:HookScript("OnEnter", function()
-                                CUI.ShowWidgetTooltip(colorSwatch, sc.tooltip)
-                            end)
-                            colorSwatch:HookScript("OnLeave", function()
-                                CUI.HideWidgetTooltip()
-                            end)
+                            colorSwatch:HookScript(
+                                "OnEnter",
+                                function() CUI.ShowWidgetTooltip(colorSwatch, sc.tooltip) end
+                            )
+                            colorSwatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                         end
                         mswUpdates[#mswUpdates + 1] = updateSwatch
                         if sc.refreshAlpha then
@@ -1077,13 +958,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         mswDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CUI.ShowWidgetTooltip then
-                                CUI.ShowWidgetTooltip(self, tipText)
-                            end
+                            if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                         end)
-                        mswDis:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        mswDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                         local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
                         if initDis then
                             mswDis:Show()
@@ -1149,40 +1026,28 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
                     boxFrame:SetTextColor(1, 1, 1, POPUP_INPUT_A)
                     boxFrame:SetJustifyH(row.inputJustify or "CENTER")
-                    if row.inputJustify == "LEFT" then
-                        boxFrame:SetTextInsets(6, 6, 0, 0)
-                    end
+                    if row.inputJustify == "LEFT" then boxFrame:SetTextInsets(6, 6, 0, 0) end
                     local boxBg = SolidTex(boxFrame, "BACKGROUND", 0.12, 0.12, 0.12, 0.8)
                     boxBg:SetAllPoints()
                     CUI.RoundBody(boxFrame, boxBg)
                     boxFrame:SetText(row.get and row.get() or "")
                     -- Left-aligned text that overflows shows its start, not its end.
-                    if row.inputJustify == "LEFT" then
-                        boxFrame:SetCursorPosition(0)
-                    end
+                    if row.inputJustify == "LEFT" then boxFrame:SetCursorPosition(0) end
 
                     local _committing = false -- guard ClearFocus -> OnEditFocusLost reentry
                     local function ApplyInput()
-                        if _committing then
-                            return
-                        end
+                        if _committing then return end
                         _committing = true
                         boxFrame:ClearFocus()
-                        if row.set then
-                            row.set(boxFrame:GetText())
-                        end
-                        if popFrame._refresh then
-                            popFrame._refresh()
-                        end
+                        if row.set then row.set(boxFrame:GetText()) end
+                        if popFrame._refresh then popFrame._refresh() end
                         -- Brief white flash on the save button as confirmation
                         if saveBg then
                             saveBg:SetColorTexture(1, 1, 1, 0.9)
                             saveLbl:SetText(CUI.L("Saved"))
                             local g = PoolGen(saveBg)
                             C_Timer.After(0.4, function()
-                                if PoolGen(saveBg) ~= g or PoolIsIdle(saveBg) then
-                                    return
-                                end
+                                if PoolGen(saveBg) ~= g or PoolIsIdle(saveBg) then return end
                                 saveBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85)
                                 saveLbl:SetText(CUI.L("Save"))
                             end)
@@ -1190,27 +1055,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         _committing = false
                     end
 
-                    boxFrame:SetScript("OnEnterPressed", function(self)
-                        ApplyInput()
-                    end)
+                    boxFrame:SetScript("OnEnterPressed", function(self) ApplyInput() end)
                     boxFrame:SetScript("OnEscapePressed", function(self)
                         -- Cancel: guard + restore BEFORE ClearFocus -- in commitOnBlur mode ClearFocus fires OnEditFocusLost, which would otherwise SAVE the discarded text.
                         _committing = true
                         self:SetText(row.get and row.get() or "")
-                        if row.inputJustify == "LEFT" then
-                            self:SetCursorPosition(0)
-                        end
+                        if row.inputJustify == "LEFT" then self:SetCursorPosition(0) end
                         self:ClearFocus()
                         _committing = false
                     end)
                     if commitOnBlur then
-                        boxFrame:SetScript("OnEditFocusLost", function()
-                            ApplyInput()
-                        end)
+                        boxFrame:SetScript("OnEditFocusLost", function() ApplyInput() end)
                     else
-                        saveBtn:SetScript("OnClick", function()
-                            ApplyInput()
-                        end)
+                        saveBtn:SetScript("OnClick", function() ApplyInput() end)
                     end
 
                     local inputDis
@@ -1225,13 +1082,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         inputDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CUI.ShowWidgetTooltip then
-                                CUI.ShowWidgetTooltip(self, tipText)
-                            end
+                            if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                         end)
-                        inputDis:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        inputDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
 
                     rowWidgets[#rowWidgets + 1] = {
@@ -1265,12 +1118,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         btnLbl:SetAlpha(0.7)
                     end)
                     button:SetScript("OnClick", function()
-                        if row.action then
-                            row.action()
-                        end
-                        if popFrame._refresh then
-                            popFrame._refresh()
-                        end
+                        if row.action then row.action() end
+                        if popFrame._refresh then popFrame._refresh() end
                     end)
                     rowWidgets[#rowWidgets + 1] = { type = "button" }
                     curY = curY - BTN_ROW_H
@@ -1301,22 +1150,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     local rArrow = MakeDropdownArrow(dropdownBtn, 12, Pix)
                     rLbl:SetPoint("RIGHT", rArrow, "LEFT", -5, 0)
                     dropdownBtn:SetScript("OnEnter", function()
-                        rBg:SetColorTexture(
-                            CUI.DD_BG_R,
-                            CUI.DD_BG_G,
-                            CUI.DD_BG_B,
-                            CUI.DD_BG_HA
-                        )
+                        rBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_HA)
                         rBrd:SetColor(1, 1, 1, CUI.DD_BRD_HA)
                         rLbl:SetAlpha(CUI.DD_TXT_HA)
                     end)
                     dropdownBtn:SetScript("OnLeave", function()
-                        rBg:SetColorTexture(
-                            CUI.DD_BG_R,
-                            CUI.DD_BG_G,
-                            CUI.DD_BG_B,
-                            CUI.DD_BG_A
-                        )
+                        rBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_A)
                         rBrd:SetColor(1, 1, 1, CUI.DD_BRD_A)
                         rLbl:SetAlpha(CUI.DD_TXT_A)
                     end)
@@ -1332,17 +1171,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     dropMenu:SetWidth(RR_W)
                     dropMenu:Hide()
                     -- Controller cursor: Cancel clicks the button (it toggles the list closed).
-                    if CUI.PadCP() then
-                        dropMenu.CloseButton = dropdownBtn
-                    end
-                    local mBg2 = SolidTex(
-                        dropMenu,
-                        "BACKGROUND",
-                        CUI.DD_BG_R,
-                        CUI.DD_BG_G,
-                        CUI.DD_BG_B,
-                        0.98
-                    )
+                    if CUI.PadCP() then dropMenu.CloseButton = dropdownBtn end
+                    local mBg2 = SolidTex(dropMenu, "BACKGROUND", CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, 0.98)
                     mBg2:SetAllPoints()
                     CUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CUI.DD_BRD_A, mBg2, nil, true)
                     dropMenu:SetPoint("TOPLEFT", dropdownBtn, "BOTTOMLEFT", 0, -2)
@@ -1354,9 +1184,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     dropMenu:SetScript("OnShow", function(self)
                         self:SetScale(dropdownBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
                         self:SetScript("OnUpdate", function(frame)
-                            if isDragging then
-                                return
-                            end -- never dismiss mid-drag
+                            if isDragging then return end -- never dismiss mid-drag
                             if not dropdownBtn:IsMouseOver() and not frame:IsMouseOver() then
                                 if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
                                     frame:Hide()
@@ -1367,9 +1195,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     dropMenu:SetScript("OnHide", function(self)
                         self:SetScript("OnUpdate", nil)
                         -- Controller cursor: back onto the button (a no-op once the popup hid it too).
-                        if CUI.PadCursorShown() then
-                            CUI.PadFocus(dropdownBtn)
-                        end
+                        if CUI.PadCursorShown() then CUI.PadFocus(dropdownBtn) end
                     end)
 
                     local mY = -2
@@ -1394,9 +1220,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     local maxScroll = 0
                     dropMenu:EnableMouseWheel(true)
                     dropMenu:SetScript("OnMouseWheel", function(_, delta)
-                        if maxScroll <= 0 then
-                            return
-                        end
+                        if maxScroll <= 0 then return end
                         local nv = (scroller:GetVerticalScroll() or 0) - delta * MH * 2
                         if nv < 0 then
                             nv = 0
@@ -1419,28 +1243,20 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         for _, rf in ipairs(rowFrames) do
                             keyList[#keyList + 1] = rf._key
                         end
-                        if row.set then
-                            row.set(keyList)
-                        end
+                        if row.set then row.set(keyList) end
                     end
 
                     -- Runs on the pressed row only, from mouse down to mouse up.
                     local function DragUpdate(self)
-                        if not dsY then
-                            return
-                        end
+                        if not dsY then return end
                         local _, curY = GetCursorPosition()
                         if not isDragging then
-                            if math.abs(curY - dsY) < 3 then
-                                return
-                            end
+                            if math.abs(curY - dsY) < 3 then return end
                             isDragging = true
                             self:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
                             self:SetAlpha(0.8)
                             for _, r2 in ipairs(rowFrames) do
-                                if r2._lbl then
-                                    r2._lbl:SetTextColor(0.75, 0.75, 0.75, 1)
-                                end
+                                if r2._lbl then r2._lbl:SetTextColor(0.75, 0.75, 0.75, 1) end
                             end
                         end
                         local sc = dropMenu:GetEffectiveScale()
@@ -1491,24 +1307,18 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         rHL:SetColorTexture(1, 1, 1, 0)
 
                         rf:SetScript("OnEnter", function()
-                            if isDragging then
-                                return
-                            end
+                            if isDragging then return end
                             rl:SetTextColor(1, 1, 1, 1)
                             rHL:SetColorTexture(1, 1, 1, 0.04)
                         end)
                         rf:SetScript("OnLeave", function()
-                            if isDragging then
-                                return
-                            end
+                            if isDragging then return end
                             rl:SetTextColor(0.75, 0.75, 0.75, 1)
                             rHL:SetColorTexture(1, 1, 1, 0)
                         end)
 
                         rf:SetScript("OnMouseDown", function(self, b)
-                            if b ~= "LeftButton" then
-                                return
-                            end
+                            if b ~= "LeftButton" then return end
                             local _, curY = GetCursorPosition()
                             dsY = curY
                             dragRow = self
@@ -1516,15 +1326,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         end)
 
                         rf:SetScript("OnMouseUp", function(self, b)
-                            if b ~= "LeftButton" or dragRow ~= self then
-                                return
-                            end
+                            if b ~= "LeftButton" or dragRow ~= self then return end
                             self:SetScript("OnUpdate", nil)
                             dsY = nil
                             dragRow = nil
-                            if not isDragging then
-                                return
-                            end
+                            if not isDragging then return end
                             isDragging = false
                             insLine:Hide()
                             self:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
@@ -1546,9 +1352,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 end
                             end
                             iI = math.max(1, math.min(iI, #rowFrames + 1))
-                            if from < iI then
-                                iI = iI - 1
-                            end
+                            if from < iI then iI = iI - 1 end
                             local to = math.max(1, math.min(iI, #rowFrames))
                             if from ~= to then
                                 local mv = table.remove(rowFrames, from)
@@ -1578,9 +1382,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         for _, it in ipairs(itemList) do
                             sig = sig .. tostring(it.key) .. "\n" .. tostring(it.label) .. "\n"
                         end
-                        if sig == itemSig then
-                            return
-                        end
+                        if sig == itemSig then return end
                         itemSig = sig
                         wipe(rowFrames)
                         for ci, it in ipairs(itemList) do
@@ -1620,9 +1422,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             dropMenu:Show()
                         end
                         -- Controller cursor: into the opened list.
-                        if CUI.PadCursorShown() and dropMenu:IsShown() then
-                            CUI.PadFocus(dropMenu)
-                        end
+                        if CUI.PadCursorShown() and dropMenu:IsShown() then CUI.PadFocus(dropMenu) end
                     end)
 
                     -- Disabled overlay: dim + block + hide menu
@@ -1638,13 +1438,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         reorderDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CUI.ShowWidgetTooltip then
-                                CUI.ShowWidgetTooltip(self, tipText)
-                            end
+                            if tipText and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, tipText) end
                         end)
-                        reorderDis:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        reorderDis:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                         local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
                         if initDis then
                             reorderDis:Show()
@@ -1664,9 +1460,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 end
             end
             -- Columns: the footer goes under the last band.
-            if multi then
-                curY = contentBottom
-            end
+            if multi then curY = contentBottom end
 
             if options.footer and options.footer.unlockKey then
                 local footerY = curY - 10
@@ -1715,9 +1509,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 rw.disOverlay:Hide()
                             end
                         end
-                        if rw.updateVisual and rw.get then
-                            rw.updateVisual(rw.get())
-                        end
+                        if rw.updateVisual and rw.get then rw.updateVisual(rw.get()) end
                     elseif rw.type == "toggle" then
                         if rw.disOverlay and rw.disCheck then
                             local dis
@@ -1732,9 +1524,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 rw.disOverlay:Hide()
                             end
                         end
-                        if rw.updateVisual then
-                            rw.updateVisual()
-                        end
+                        if rw.updateVisual then rw.updateVisual() end
                     elseif rw.type == "colorpicker" then
                         if rw.disCheck then
                             local dis
@@ -1743,12 +1533,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             else
                                 dis = rw.disCheck
                             end
-                            if rw.swatch then
-                                rw.swatch:SetAlpha(dis and 0.3 or 1)
-                            end
-                            if rw.lbl then
-                                rw.lbl:SetAlpha(dis and 0.2 or 0.6)
-                            end
+                            if rw.swatch then rw.swatch:SetAlpha(dis and 0.3 or 1) end
+                            if rw.lbl then rw.lbl:SetAlpha(dis and 0.2 or 0.6) end
                             if rw.swBlock then
                                 if dis then
                                     rw.swBlock:Show()
@@ -1764,9 +1550,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 end
                             end
                         end
-                        if rw.updateSwatch then
-                            rw.updateSwatch()
-                        end
+                        if rw.updateSwatch then rw.updateSwatch() end
                     elseif rw.type == "dropdown" then
                         if rw.disOverlay and rw.disCheck then
                             local dis
@@ -1783,9 +1567,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         end
                         if rw.lbl and rw.get and rw.values then
                             rw.lbl:SetText(CUI.L(DDText(rw.values[rw.get()]) or tostring(rw.get())))
-                            if rw.refresh then
-                                rw.refresh()
-                            end
+                            if rw.refresh then rw.refresh() end
                         end
                     elseif rw.type == "input" then
                         if rw.disOverlay and rw.disCheck then
@@ -1803,9 +1585,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         end
                         if rw.box and rw.get and not rw.box:HasFocus() then
                             rw.box:SetText(rw.get())
-                            if rw.leftJustify then
-                                rw.box:SetCursorPosition(0)
-                            end
+                            if rw.leftJustify then rw.box:SetCursorPosition(0) end
                         end
                         -- Re-apply save button colour for the current theme
                         if rw.saveBg then
@@ -1825,9 +1605,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 rw.disOverlay:Hide()
                             end
                         end
-                        if rw.refresh then
-                            rw.refresh()
-                        end
+                        if rw.refresh then rw.refresh() end
                     elseif rw.type == "multiswatch" then
                         if rw.disOverlay and rw.disCheck then
                             local dis
@@ -1863,9 +1641,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             end
                             if dis then
                                 rw.disOverlay:Show()
-                                if rw.menu then
-                                    rw.menu:Hide()
-                                end
+                                if rw.menu then rw.menu:Hide() end
                             else
                                 rw.disOverlay:Hide()
                             end
@@ -1873,23 +1649,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     elseif rw.type == "reordercheck" then
                         if rw.disOverlay then
                             local dis = rw.disCheck
-                            if type(dis) == "function" then
-                                dis = dis()
-                            end
+                            if type(dis) == "function" then dis = dis() end
                             rw.disOverlay:SetShown(dis and true or false)
-                            if dis and rw.btn._ddMenu then
-                                rw.btn._ddMenu:Hide()
-                            end
+                            if dis and rw.btn._ddMenu then rw.btn._ddMenu:Hide() end
                         end
-                        if rw.refresh then
-                            rw.refresh()
-                        end
+                        if rw.refresh then rw.refresh() end
                     end
                 end
                 -- A change made inside flipped a row.hidden: the matching frame takes over.
-                if dynamic and popFrame:IsShown() and HiddenSig() ~= popFrame._sig then
-                    SwapVariant()
-                end
+                if dynamic and popFrame:IsShown() and HiddenSig() ~= popFrame._sig then SwapVariant() end
             end
 
             -- True while a dropdown menu opened from inside this popup is shown and moused over. Exposed so external close-logic (e.g. a parent menu driving this popup as a flyout with its own _clickOutside disabled) stays open when a clicked dropdown list extends below the popup's own rect.
@@ -1952,9 +1720,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             local sfBot = scrollFrame:GetBottom()
                             local btnBot = popupOwner:GetBottom()
                             if sfTop and sfBot and btnBot then
-                                if btnBot < sfBot or btnBot > sfTop then
-                                    self:Hide()
-                                end
+                                if btnBot < sfBot or btnBot > sfTop then self:Hide() end
                             end
                         end
                     end
@@ -1999,9 +1765,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             CUI.TrackOverlay(popFrame)
             popupFrame = popFrame
             popFrame._sig = sig
-            if variants then
-                variants[sig] = popFrame
-            end
+            if variants then variants[sig] = popFrame end
             return popFrame
         end
 
@@ -2014,9 +1778,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     local wanted = variants[HiddenSig()] or CreatePopup(HiddenSig(), anchorBtn)
                     popupFrame = current
                     if popupFrame ~= wanted then
-                        if popupFrame and popupFrame:IsShown() then
-                            popupFrame:Hide()
-                        end
+                        if popupFrame and popupFrame:IsShown() then popupFrame:Hide() end
                         popupFrame = wanted
                     end
                     self._popupFrame = popupFrame
@@ -2060,22 +1822,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     self:SetAlpha(t)
                     self:ClearAllPoints()
                     self:SetPoint("TOP", anchorBtn, "BOTTOM", 0, -5 + (8 * (1 - t)))
-                    if t >= 1 then
-                        self:SetScript("OnUpdate", self._clickOutside)
-                    end
+                    if t >= 1 then self:SetScript("OnUpdate", self._clickOutside) end
                 end)
-                if anchorBtn._cuiCogState then
-                    anchorBtn._cuiCogState()
-                end
+                if anchorBtn._cuiCogState then anchorBtn._cuiCogState() end
                 -- Controller cursor: Cancel clicks the anchor again (a second click on the same
                 -- anchor closes the popup), and the cursor moves into the popup. Not for the
                 -- hover-opened popups (noOwnerDim: the anchor is a menu row, not a cog), where
                 -- the cursor must stay free to walk past the row.
                 if CUI.PadCP() and not options.noOwnerDim then
                     popupFrame.CloseButton = anchorBtn.Click and anchorBtn or nil
-                    if CUI.PadCursorShown() then
-                        CUI.PadFocus(popupFrame)
-                    end
+                    if CUI.PadCursorShown() then CUI.PadFocus(popupFrame) end
                 end
             end,
         })
@@ -2084,18 +1840,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         -- set of rows takes the same anchor, without the open animation.
         SwapVariant = function()
             local ownerFrame = popupOwner
-            if not (dynamic and ownerFrame) then
-                return
-            end
+            if not (dynamic and ownerFrame) then return end
             local old = popupFrame
             local wanted = variants[HiddenSig()] or CreatePopup(HiddenSig(), ownerFrame)
             popupFrame = old
-            if wanted == old then
-                return
-            end
-            if old then
-                old:Hide()
-            end -- its OnHide lets go of the owner
+            if wanted == old then return end
+            if old then old:Hide() end -- its OnHide lets go of the owner
             popupFrame = wanted
             showFn._popupFrame = wanted
             popupOwner = ownerFrame
@@ -2106,14 +1856,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             wanted:SetAlpha(1)
             wanted:Show()
             wanted:SetScript("OnUpdate", wanted._clickOutside)
-            if ownerFrame._cuiCogState then
-                ownerFrame._cuiCogState()
-            end
+            if ownerFrame._cuiCogState then ownerFrame._cuiCogState() end
             if CUI.PadCP() and not options.noOwnerDim then
                 wanted.CloseButton = ownerFrame.Click and ownerFrame or nil
-                if CUI.PadCursorShown() then
-                    CUI.PadFocus(wanted)
-                end
+                if CUI.PadCursorShown() then CUI.PadFocus(wanted) end
             end
         end
 

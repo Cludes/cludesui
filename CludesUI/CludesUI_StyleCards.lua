@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_StyleCards.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  fourth pick card, WoW Forever. Builds frames only when called.
 -------------------------------------------------------------------------------
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it, the
 -- options addon fills it in place): each builder below takes CreateFrame from
@@ -340,9 +336,7 @@ local function DrawClassicMock(stage, Pix, _mb, _eg, font)
         local tex = cap:CreateTexture(nil, "ARTWORK")
         tex:SetAllPoints()
         tex:SetTexture(CLASSIC_CAP)
-        if side == 2 then
-            tex:SetTexCoord(1, 0, 0, 1)
-        end
+        if side == 2 then tex:SetTexCoord(1, 0, 0, 1) end
     end
 end
 
@@ -372,17 +366,11 @@ function CUI.BuildStyleCards(hostFrame, topY, options)
     local CreateFrame = POOL.CreateFrame
     local Pix = CUI.PanelPP
     local MakeBorder = CUI.MakeBorder
-    if not (Pix and MakeBorder) then
-        return nil
-    end
-    local L = CUI.L or function(s)
-        return s
-    end
+    if not (Pix and MakeBorder) then return nil end
+    local L = CUI.L or function(s) return s end
     -- The options font once it has loaded, else the locale-aware core font
     -- (the picker runs before the options addon loads).
-    local FONT = CUI._font
-        or CUI.EXPRESSWAY
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+    local FONT = CUI._font or CUI.EXPRESSWAY or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     options = options or {}
 
     local DEFS = {
@@ -500,9 +488,7 @@ function CUI.BuildStyleCards(hostFrame, topY, options)
         cap:SetWordWrap(true)
         -- Three lines fit between the stage and the button; a longer wrap
         -- (wider fallback font) is cut rather than run into the button.
-        if cap.SetMaxLines then
-            cap:SetMaxLines(3)
-        end
+        if cap.SetMaxLines then cap:SetMaxLines(3) end
         Pix.Point(cap, "TOP", stage, "BOTTOM", 0, -10)
         cap:SetText(L(def.caption))
 
@@ -567,9 +553,7 @@ function CUI.BuildStyleCards(hostFrame, topY, options)
                 PaintCard()
             end
             local function Pick()
-                if pickable and options.onPick then
-                    options.onPick(def.key)
-                end
+                if pickable and options.onPick then options.onPick(def.key) end
             end
             cardFrame:SetScript("OnEnter", Enter)
             cardFrame:SetScript("OnLeave", Leave)

@@ -1,10 +1,6 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local mod = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not mod then
-    return
-end
+if not mod then return end
 
 local MOVE_KEYS = {
     "X",
@@ -24,9 +20,7 @@ local MOVE_KEYS = {
 
 -- False for content a slot keeps to itself: "none", and "custom", whose format
 -- is stored per slot, so several slots may use it and none is picked for them.
-function mod.UF_IsUniqueContent(val)
-    return val ~= "none" and val ~= "custom"
-end
+function mod.UF_IsUniqueContent(val) return val ~= "none" and val ~= "custom" end
 
 -- Custom text popup for any text slot. prefix names the slot's keys
 -- (<prefix>CustomFormat, ClassColor, ColorR/G/B); db is the unit's settings;
@@ -69,12 +63,8 @@ function mod.UFO_EditCustomText(prefixText, db, unitToken, onSave)
         color = color,
         onSave = onSave,
         tagNotes = { hp = CludesUI.L("shows DEAD or OFFLINE") },
-        get = function()
-            return db[key]
-        end,
-        set = function(txt)
-            db[key] = txt
-        end,
+        get = function() return db[key] end,
+        set = function(txt) db[key] = txt end,
     })
 end
 
@@ -84,9 +74,7 @@ end
 -- to rebuild it (page rebuild or _invalidateMenu).
 function mod.UFO_CustomTextValues(values, getValue, edit)
     return CludesUI.TextTags.MenuValues(values, edit, {
-        selected = function()
-            return getValue() == "custom"
-        end,
+        selected = function() return getValue() == "custom" end,
     })
 end
 
@@ -99,9 +87,7 @@ function mod.UFO_RefreshMenus(...)
     C_Timer.After(0, function()
         for idx = 1, num do
             local dropdown = rgns[idx] and rgns[idx]._control
-            if dropdown and dropdown._invalidateMenu then
-                dropdown._invalidateMenu()
-            end
+            if dropdown and dropdown._invalidateMenu then dropdown._invalidateMenu() end
         end
         local refreshList = CludesUI._widgetRefreshList
         if refreshList then
@@ -121,13 +107,9 @@ function mod.UFO_PowerTextCog(get, set, pctOff, setShowPct)
         {
             type = "toggle",
             label = "Show %",
-            disabled = function()
-                return get("powerTextFormat", "perpp") == "custom"
-            end,
+            disabled = function() return get("powerTextFormat", "perpp") == "custom" end,
             disabledTooltip = PCT_TIP,
-            get = function()
-                return get("powerShowPercent", true) ~= false
-            end,
+            get = function() return get("powerShowPercent", true) ~= false end,
             set = setShowPct,
         },
     }, "powerTextFormat")
@@ -136,9 +118,7 @@ function mod.UFO_PowerTextCog(get, set, pctOff, setShowPct)
         rows = rowList,
         disabled = function()
             local fmt = get("powerTextFormat", "perpp")
-            if fmt == "custom" then
-                return not mod.UF_ContentShowsName(fmt, get("powerTextCustomFormat"))
-            end
+            if fmt == "custom" then return not mod.UF_ContentShowsName(fmt, get("powerTextCustomFormat")) end
             return pctOff[fmt] == true
         end,
         disabledTooltip = function()
@@ -154,12 +134,8 @@ end
 -- on a Custom slot, or one holding a format an override may switch back to.
 function mod.UFO_AddCustomFormatAccessor(region, labelText, prefixText, contentFrame, getDB, apply)
     local fk = prefixText .. "CustomFormat"
-    if contentFrame ~= "custom" and type(getDB()[fk]) ~= "string" then
-        return
-    end
-    CludesUI.TextTags.AddFormatAccessor(region, labelText, function()
-        return getDB()[fk]
-    end, function(val)
+    if contentFrame ~= "custom" and type(getDB()[fk]) ~= "string" then return end
+    CludesUI.TextTags.AddFormatAccessor(region, labelText, function() return getDB()[fk] end, function(val)
         getDB()[fk] = val
         apply()
     end)
@@ -175,16 +151,12 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, set, rowList)
         or contentFrame == "levelname"
         or contentFrame == "namelevel"
         or (parsed and parsed.has.level)
-    if not hasLevel then
-        return rowList
-    end
+    if not hasLevel then return rowList end
     rowList[#rowList + 1] = {
         type = "toggle",
         label = "Level Text: Difficulty Color",
         tooltip = "Colors level text by difficulty, from grey (trivial) through green, yellow and orange to red (5+ levels above you).",
-        get = function()
-            return get("levelDifficultyColor", false) == true
-        end,
+        get = function() return get("levelDifficultyColor", false) == true end,
         set = function(val)
             set("levelDifficultyColor", val)
             mod._UFO_OptEnv.UpdatePreview()
@@ -194,13 +166,9 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, set, rowList)
         type = "toggle",
         label = "Level Text: Include Friendly",
         tooltip = "Friendly units get their level's color too, instead of gold.",
-        disabled = function()
-            return get("levelDifficultyColor", false) ~= true
-        end,
+        disabled = function() return get("levelDifficultyColor", false) ~= true end,
         disabledTooltip = "Level Text: Difficulty Color",
-        get = function()
-            return get("levelDifficultyColorFriendly", false) == true
-        end,
+        get = function() return get("levelDifficultyColorFriendly", false) == true end,
         set = function(val)
             set("levelDifficultyColorFriendly", val)
             mod._UFO_OptEnv.UpdatePreview()
@@ -222,26 +190,16 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     textValues.none = "Remove"
     textValues._menuOpts = {
         icon = function(key)
-            if key == "none" then
-                return "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
-            end
+            if key == "none" then return "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png" end
         end,
-        iconSize = function()
-            return 12
-        end,
+        iconSize = function() return 12 end,
         iconClearScroll = true,
-        iconColor = function()
-            return 1, 0.35, 0.35, 0.75
-        end,
+        iconColor = function() return 1, 0.35, 0.35, 0.75 end,
         labelColor = function(key)
-            if key == "none" then
-                return 1, 0.35, 0.35, 0.8
-            end
+            if key == "none" then return 1, 0.35, 0.35, 0.8 end
         end,
     }
-    local function Notify(key)
-        mod._ufTextNotify = { unit = options.unit, key = key }
-    end
+    local function Notify(key) mod._ufTextNotify = { unit = options.unit, key = key } end
     for idx = 1, #slots do
         local cfg = slots[idx]
         sequence[idx], values[cfg.key], byKey[cfg.key] = cfg.key, cfg.position, cfg
@@ -257,9 +215,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         else
             cfg.cfg.values = textValues
         end
-        if cfg.cfg.getValue() ~= "none" then
-            cells[#cells + 1] = cfg
-        end
+        if cfg.cfg.getValue() ~= "none" then cells[#cells + 1] = cfg end
     end
     local function Assigned(key)
         local cfg = byKey[key]
@@ -267,9 +223,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
     end
     local function Full()
         for idx = 1, #slots do
-            if not Assigned(slots[idx].key) then
-                return false
-            end
+            if not Assigned(slots[idx].key) then return false end
         end
         return true
     end
@@ -284,9 +238,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
                         break
                     end
                 end
-                if not used then
-                    return val
-                end
+                if not used then return val end
             end
         end
     end
@@ -300,9 +252,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         byKey[key].cfg.setValue(val)
     end
     local function Move(source, dest)
-        if source == dest then
-            return
-        end
+        if source == dest then return end
         if not Assigned(source) or not byKey[dest] or Assigned(dest) then
             CludesUI:RefreshPage(true)
             return
@@ -315,9 +265,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
             -- The format moves only with Custom; otherwise the destination keeps its own.
             if suffix ~= "CustomFormat" or contentFrame == "custom" then
                 local val = db[source .. suffix]
-                if type(val) == "table" then
-                    val = CopyTable(val)
-                end
+                if type(val) == "table" then val = CopyTable(val) end
                 db[dest .. suffix] = val
             end
         end
@@ -339,27 +287,19 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         text = "+ Add Text Slot",
         width = 220,
         onClick = function()
-            if addOpen then
-                addOpen()
-            end
+            if addOpen then addOpen() end
         end,
-        disabled = function()
-            return Full() or Candidate() == nil
-        end,
+        disabled = function() return Full() or Candidate() == nil end,
         disabledTooltip = "Every text position is full.",
     }
     cells[#cells + 1] = addCfg
     local function Config(cfg)
-        if not cfg then
-            return CludesUI.BlankRowCfg()
-        end
+        if not cfg then return CludesUI.BlankRowCfg() end
         return cfg.cfg or cfg
     end
     local firstRow
     local function Finish(row, side, cell)
-        if not cell then
-            return
-        end
+        if not cell then return end
         firstRow = firstRow or row
         local region = row[side]
         if cell == addCfg then
@@ -369,36 +309,22 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
                     order = sequence,
                     values = values,
                     setValue = Add,
-                    itemDisabled = function(val)
-                        return Assigned(val) or Candidate() == nil
-                    end,
+                    itemDisabled = function(val) return Assigned(val) or Candidate() == nil end,
                 })
             end
             return
         end
-        if not cell.key then
-            return
-        end
+        if not cell.key then return end
         targets[cell.key] = { row = row, side = side }
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         CludesUI.BuildRowLabelMenu(region, {
             order = sequence,
             values = values,
-            getValue = function()
-                return cell.key
-            end,
-            setValue = function(val)
-                Move(cell.key, val)
-            end,
+            getValue = function() return cell.key end,
+            setValue = function(val) Move(cell.key, val) end,
             itemDisabled = function(val)
-                if not Assigned(cell.key) then
-                    return true
-                end
-                if val ~= cell.key and Assigned(val) then
-                    return true
-                end
+                if not Assigned(cell.key) then return true end
+                if val ~= cell.key and Assigned(val) then return true end
             end,
             tooltip = "Choose this text's slot position.",
         })
@@ -438,9 +364,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         mod._ufTextChecks[options.page] = function()
             local db = options.liveDB()
             for idx = 1, #slots do
-                if (db[slots[idx].key .. "Content"] or slots[idx].default) ~= saved[idx] then
-                    return true
-                end
+                if (db[slots[idx].key .. "Content"] or slots[idx].default) ~= saved[idx] then return true end
             end
             return false
         end

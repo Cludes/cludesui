@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBags_DB.lua
 --  Bags profile database + login-time seeding. Lives in the resident module
@@ -100,9 +98,7 @@ initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
 
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     local profile = saved.profile
 
     -- The bank grouping dropdowns were replaced by two toggles. Convert the
@@ -120,9 +116,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- Default disabled categories: Housing and Quest Items off by default
     if CludesUIDB.bagDisabledCategoriesSeeded == nil then
         CludesUIDB.bagDisabledCategoriesSeeded = true
-        if not profile.bagDisabledCategories then
-            profile.bagDisabledCategories = {}
-        end
+        if not profile.bagDisabledCategories then profile.bagDisabledCategories = {} end
         profile.bagDisabledCategories["Housing"] = true
         profile.bagDisabledCategories["Quest Items"] = true
     end
@@ -155,9 +149,7 @@ initFrame:SetScript("OnEvent", function(self)
                 "Housing",
             }
             -- Re-init categories with the new state
-            if _G.CUI_CategoryManager then
-                _G.CUI_CategoryManager:InitCategories()
-            end
+            if _G.CUI_CategoryManager then _G.CUI_CategoryManager:InitCategories() end
         end
     end
     -- Migrate old numeric-keyed disabled categories to name-keyed
@@ -168,16 +160,12 @@ initFrame:SetScript("OnEvent", function(self)
         local changed = false
         for key, val in pairs(dc) do
             if type(key) == "number" then
-                if cats[key] then
-                    migrated[cats[key]._defaultName] = val
-                end
+                if cats[key] then migrated[cats[key]._defaultName] = val end
                 changed = true
             else
                 migrated[key] = val
             end
         end
-        if changed then
-            profile.bagDisabledCategories = migrated
-        end
+        if changed then profile.bagDisabledCategories = migrated end
     end
 end)

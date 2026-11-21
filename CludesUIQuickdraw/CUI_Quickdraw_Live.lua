@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Live.lua - the palette the player actually opens.
 --
@@ -15,9 +13,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- An earlier Quickdraw file failed to load: stay out of the way.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true -- cleared at the end, once this file has fully loaded
 
 local GetCursorPosition, InCombatLockdown, GetTime = GetCursorPosition, InCombatLockdown, GetTime
@@ -29,15 +25,9 @@ local secureButtons = Inner.secureButtons
 
 -- Frames other files own, kept current through their setter lists.
 local liveView, scrollCatcher, cancelButton
-table.insert(Inner.liveViewSetters, function(v)
-    liveView = v
-end)
-table.insert(Inner.scrollCatcherSetters, function(v)
-    scrollCatcher = v
-end)
-table.insert(Inner.cancelButtonSetters, function(v)
-    cancelButton = v
-end)
+table.insert(Inner.liveViewSetters, function(v) liveView = v end)
+table.insert(Inner.scrollCatcherSetters, function(v) scrollCatcher = v end)
+table.insert(Inner.cancelButtonSetters, function(v) cancelButton = v end)
 
 local secureHeader
 local openedAt = 0 -- GetTime() of the current open
@@ -139,9 +129,7 @@ local WHEEL_SNIPPET = [==[
 ]==]
 
 local function EnsureScrollCatcher()
-    if scrollCatcher then
-        return scrollCatcher
-    end
+    if scrollCatcher then return scrollCatcher end
     local catcher = CreateFrame("Frame", "CUIQuickdrawScrollCatcher", UIParent, "SecureHandlerBaseTemplate")
     catcher:SetAllPoints(UIParent)
     catcher:SetFrameStrata(LIVE_STRATA)
@@ -166,16 +154,10 @@ end
 local FLICK_DELAY, FLICK_FADE = 0, 0
 
 local function FlickAlpha()
-    if liveView:IsFan() then
-        return 1
-    end
+    if liveView:IsFan() then return 1 end
     local t = GetTime() - openedAt
-    if t <= FLICK_DELAY then
-        return 0
-    end
-    if FLICK_FADE <= 0 or t >= FLICK_DELAY + FLICK_FADE then
-        return 1
-    end
+    if t <= FLICK_DELAY then return 0 end
+    if FLICK_FADE <= 0 or t >= FLICK_DELAY + FLICK_FADE then return 1 end
     return (t - FLICK_DELAY) / FLICK_FADE
 end
 
@@ -200,9 +182,7 @@ end
 local function TimedOut(now)
     local button = secureButtons[liveView:GetPaletteIndex()]
     local latched = button and button:GetAttribute("eqdLatched")
-    if latched and InCombatLockdown() then
-        return false
-    end
+    if latched and InCombatLockdown() then return false end
     return now - openedAt > (latched and LATCH_TIMEOUT or OPEN_TIMEOUT)
 end
 
@@ -246,9 +226,7 @@ local function WatchMounts(on)
     if on and not mountWatch then
         mountWatch = CreateFrame("Frame")
         mountWatch:SetScript("OnEvent", function()
-            if liveView and liveView:GetFrame():IsShown() then
-                liveView:RefreshMountTints()
-            end
+            if liveView and liveView:GetFrame():IsShown() then liveView:RefreshMountTints() end
         end)
     end
     if mountWatch then
@@ -272,9 +250,7 @@ local function Place(forceFixed)
     frame:ClearAllPoints()
     if forceFixed or p.centerMode == "SCREEN" then
         local s = p.scale or 1
-        if s == 0 then
-            s = 1
-        end
+        if s == 0 then s = 1 end
         frame:SetPoint("CENTER", UIParent, "CENTER", (p.posX or 0) / s, (p.posY or 0) / s)
     else
         local scale = frame:GetEffectiveScale()
@@ -316,9 +292,7 @@ end
 
 function mod.Open(paletteIndex)
     local profile = P()
-    if not profile or not profile.enabled then
-        return
-    end
+    if not profile or not profile.enabled then return end
     CreateLiveView()
     liveView:Layout(paletteIndex)
     Place()
@@ -343,9 +317,7 @@ end
 -- change), open or not. Protected in combat, so PLAYER_REGEN_ENABLED tries
 -- again: an ESCAPE left bound to a closed palette is a dead key.
 local function ReleaseEscape()
-    if cancelButton and not InCombatLockdown() then
-        ClearOverrideBindings(cancelButton)
-    end
+    if cancelButton and not InCombatLockdown() then ClearOverrideBindings(cancelButton) end
 end
 
 -- Puts away the rest a release would (the scroll catcher, the ownership
@@ -354,9 +326,7 @@ end
 local ReleaseSecureState
 
 function mod.Close()
-    if not liveView then
-        return
-    end
+    if not liveView then return end
     local frame = liveView:GetFrame()
     if not frame:IsShown() then
         ReleaseEscape()
@@ -376,7 +346,5 @@ end
 
 Inner.CreateLiveView, Inner.EnsureScrollCatcher = CreateLiveView, EnsureScrollCatcher
 Inner.EnsureSecureHeader, Inner.ReleaseEscape = EnsureSecureHeader, ReleaseEscape
-Inner.SetReleaseSecureState = function(frame)
-    ReleaseSecureState = frame
-end
+Inner.SetReleaseSecureState = function(frame) ReleaseSecureState = frame end
 Inner.broken = false

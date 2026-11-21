@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_ApplyToAll.lua
 --  Apply to All / Apply to Multiple: the sync flashes, the multi-apply
@@ -29,14 +27,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- target of the options page pool, so it stays on it through the target's
     -- resets (hidden, its fade stopped) and the next flash of that frame, whatever
     -- the frame shows then, plays it again.
-    local function StopGlow(glow)
-        glow:SetScript("OnUpdate", nil)
-    end
+    local function StopGlow(glow) glow:SetScript("OnUpdate", nil) end
 
     local function PlaySyncFlash(targetFrame)
-        if not targetFrame then
-            return
-        end
+        if not targetFrame then return end
         local glow = _syncGlowPool[targetFrame]
         if not glow then
             glow = _G.CreateFrame("Frame", nil, targetFrame)
@@ -71,9 +65,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local accR, accG, accB = CUI.GetAccentColor()
         for i = 0, (glow._edgeN or 0) - 1 do
             local e = glow["_c_" .. i]
-            if e then
-                e:SetColorTexture(accR, accG, accB, 1)
-            end
+            if e then e:SetColorTexture(accR, accG, accB, 1) end
         end
         glow:SetAllPoints(targetFrame)
         glow:SetFrameLevel(targetFrame:GetFrameLevel() + 5)
@@ -98,25 +90,17 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     --  Reuses the same glow pool as PlaySyncFlash, just recolors edges white.
     --------------------------------------------------------------------------------
     local function PlayWhiteFlash(targetFrame)
-        if not targetFrame then
-            return
-        end
+        if not targetFrame then return end
         -- Ensure the glow frame exists (creates it if needed via PlaySyncFlash)
-        if not _syncGlowPool[targetFrame] then
-            PlaySyncFlash(targetFrame)
-        end
+        if not _syncGlowPool[targetFrame] then PlaySyncFlash(targetFrame) end
         local glow = _syncGlowPool[targetFrame]
-        if not glow then
-            return
-        end
+        if not glow then return end
         -- Stop any running animation (hover pulse or previous flash)
         glow:SetScript("OnUpdate", nil)
         -- Recolor edges white
         for i = 0, (glow._edgeN or 0) - 1 do
             local e = glow["_c_" .. i]
-            if e then
-                e:SetColorTexture(1, 1, 1, 1)
-            end
+            if e then e:SetColorTexture(1, 1, 1, 1) end
         end
         glow:SetAllPoints(targetFrame)
         glow:SetFrameLevel(targetFrame:GetFrameLevel() + 5)
@@ -263,9 +247,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     ApplyHover(progress)
                 end
                 applyRow:SetScript("OnEnter", function(self)
-                    if not applyRow:IsEnabled() then
-                        return
-                    end
+                    if not applyRow:IsEnabled() then return end
                     target = 1
                     self:SetScript("OnUpdate", OnUpdate)
                 end)
@@ -293,17 +275,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             blocker:SetFrameLevel(199)
             blocker:SetAllPoints(UIParent)
             blocker:Hide()
-            blocker:SetScript("OnClick", function()
-                menu:Hide()
-            end)
+            blocker:SetScript("OnClick", function() menu:Hide() end)
 
             menu:HookScript("OnHide", function()
                 blocker:Hide()
                 _activeMultiApplyDropdown = nil
                 -- Controller cursor: back onto the sync link that opened it (a no-op once that is hidden).
-                if ma.padCP and CUI.PadCursorShown() then
-                    CUI.PadFocus(ma.anchor)
-                end
+                if ma.padCP and CUI.PadCursorShown() then CUI.PadFocus(ma.anchor) end
             end)
 
             -- Controller cursor: the popup and its catcher block what they cover without
@@ -342,9 +320,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local function CountChecked()
             local count = 0
             for _, key in ipairs(keys) do
-                if key ~= currentKey and checked[key] then
-                    count = count + 1
-                end
+                if key ~= currentKey and checked[key] then count = count + 1 end
             end
             return count
         end
@@ -440,19 +416,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         applyRow:SetScript("OnClick", function()
             local result = {}
             for _, key in ipairs(keys) do
-                if checked[key] and key ~= currentKey then
-                    result[#result + 1] = key
-                end
+                if checked[key] and key ~= currentKey then result[#result + 1] = key end
             end
-            if #result > 0 and opts.onApply then
-                opts.onApply(result)
-            end
+            if #result > 0 and opts.onApply then opts.onApply(result) end
             -- White flash on targets
             if flashTargets then
                 local targets = flashTargets
-                if type(targets) == "function" then
-                    targets = targets()
-                end
+                if type(targets) == "function" then targets = targets() end
                 for _, f in ipairs(targets) do
                     PlayWhiteFlash(f)
                 end
@@ -465,9 +435,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         _activeMultiApplyDropdown = menu
         menu:Show()
-        if padCP and CUI.PadCursorShown() then
-            CUI.PadFocus(menu)
-        end
+        if padCP and CUI.PadCursorShown() then CUI.PadFocus(menu) end
         return menu
     end
 
@@ -510,13 +478,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- standard or checkbox dropdown's, or the Apply to Multiple menu).
     local function OpenList()
         local m = CUI._openDropdownMenu
-        if m and m:IsShown() then
-            return m
-        end
+        if m and m:IsShown() then return m end
         m = _activeMultiApplyDropdown
-        if m and m:IsShown() then
-            return m
-        end
+        if m and m:IsShown() then return m end
     end
 
     -- Links held shown by a dropdown list opened from their slot after the cursor
@@ -534,9 +498,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 release()
             end
         end
-        if not any then
-            self:Hide()
-        end
+        if not any then self:Hide() end
     end
     local function HoldUntilClosed(release, list)
         held[release] = list
@@ -567,32 +529,22 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end
         local set = linger.set
         linger.region, linger.label, linger.set = nil, nil, nil
-        if set then
-            set(false)
-        end
+        if set then set(false) end
     end
     -- frame: the picked dropdown's button (its slot is found up to two parents up).
     function CUI._SyncPickNotice(frame)
         local set
         for _ = 1, 3 do
-            if type(frame) ~= "table" then
-                return
-            end
+            if type(frame) ~= "table" then return end
             set = frame._cuiSyncLinger
-            if set or not frame.GetParent then
-                break
-            end
+            if set or not frame.GetParent then break end
             frame = frame:GetParent()
         end
-        if not set then
-            return
-        end
+        if not set then return end
         local prev, caption = linger.set, frame._label
         linger.region, linger.label, linger.set = frame, caption and caption:GetText(), set
         linger.untilT = GetTime() + LINGER_SECONDS
-        if prev and prev ~= set then
-            prev(false)
-        end
+        if prev and prev ~= set then prev(false) end
         set(true)
         if not linger.pending then
             linger.pending = true
@@ -603,12 +555,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     local function BuildSyncIcon(opts)
         local region = opts.region
         local label = region and region._label
-        if not region or not label then
-            return nil
-        end
-        if not opts.isSynced then
-            return nil
-        end
+        if not region or not label then return nil end
+        if not opts.isSynced then return nil end
 
         local accR, accG, accB = CUI.GetAccentColor()
 
@@ -637,16 +585,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         allBtn:SetScript("OnEnter", function()
             local red, green, blue = CUI.GetAccentColor()
             allText:SetTextColor(red, green, blue, 1)
-            if opts.tooltip then
-                ShowWidgetTooltip(allBtn, opts.tooltip, opts.tooltipOpts)
-            end
+            if opts.tooltip then ShowWidgetTooltip(allBtn, opts.tooltip, opts.tooltipOpts) end
         end)
         allBtn:SetScript("OnLeave", function()
             local red, green, blue = CUI.GetAccentColor()
             allText:SetTextColor(red, green, blue, 0.65)
-            if opts.tooltip then
-                HideWidgetTooltip()
-            end
+            if opts.tooltip then HideWidgetTooltip() end
         end)
 
         -- " | Multiple" link (only when multiApply opts are provided)
@@ -683,20 +627,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local function FitButton()
             local pw = prefixText:GetStringWidth()
             local ph = prefixText:GetStringHeight()
-            if pw and pw > 0 then
-                applyBtn:SetSize(pw + 4, ph + 4)
-            end
+            if pw and pw > 0 then applyBtn:SetSize(pw + 4, ph + 4) end
             local aw = allText:GetStringWidth()
             local ah = allText:GetStringHeight()
-            if aw and aw > 0 then
-                allBtn:SetSize(aw + 4, ah + 4)
-            end
+            if aw and aw > 0 then allBtn:SetSize(aw + 4, ah + 4) end
             if multiBtn and multiText then
                 local mw = multiText:GetStringWidth()
                 local mh = multiText:GetStringHeight()
-                if mw and mw > 0 then
-                    multiBtn:SetSize(mw + 4, mh + 4)
-                end
+                if mw and mw > 0 then multiBtn:SetSize(mw + 4, mh + 4) end
             end
         end
         -- Anchor subtext below label's left edge
@@ -718,9 +656,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             s = s * hoverState
             -- Force hidden when the parent widget is disabled
             local parentCfg = region._widgetCfg
-            if parentCfg and parentCfg.disabled and parentCfg.disabled() then
-                s = 0
-            end
+            if parentCfg and parentCfg.disabled and parentCfg.disabled() then s = 0 end
             -- s: 0 = synced (label centered, subtext hidden), 1 = desynced (label up, subtext visible)
             local labelY = LABEL_Y_NORMAL + s * (LABEL_Y_SHIFTED - LABEL_Y_NORMAL)
             label:ClearAllPoints()
@@ -742,9 +678,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     multiBtn:Show()
                 end
             end
-            if sepText then
-                sepText:SetAlpha(s)
-            end
+            if sepText then sepText:SetAlpha(s) end
         end
 
         -- Apply immediately on load (no animation)
@@ -780,15 +714,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         --  Button scripts
         -- ----------------------------------------------------------------
         allBtn:SetScript("OnClick", function()
-            if opts.onClick then
-                opts.onClick()
-            end
+            if opts.onClick then opts.onClick() end
             -- White border flash on all targets
             local targets = opts.flashTargets
             if targets then
-                if type(targets) == "function" then
-                    targets = targets()
-                end
+                if type(targets) == "function" then targets = targets() end
                 for _, f in ipairs(targets) do
                     PlayWhiteFlash(f)
                 end
@@ -799,17 +729,16 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         --  "Apply to Multiple" button scripts
         -- ----------------------------------------------------------------
         if multiBtn then
-            multiBtn:SetScript("OnClick", function()
-                BuildMultiApplyDropdown(multiBtn, opts.multiApply, opts.flashTargets)
-            end)
+            multiBtn:SetScript(
+                "OnClick",
+                function() BuildMultiApplyDropdown(multiBtn, opts.multiApply, opts.flashTargets) end
+            )
             -- The menu hangs from this link and applies this row's setting: when the link
             -- goes (a page pass dresses it again or drops it, the values synced, the panel
             -- closed or folded), the menu it opened closes with it.
             multiBtn:SetScript("OnHide", function()
                 local menu = ma.menu
-                if menu and ma.anchor == multiBtn and menu:IsShown() then
-                    menu:Hide()
-                end
+                if menu and ma.anchor == multiBtn and menu:IsShown() then menu:Hide() end
             end)
         end
 
@@ -819,9 +748,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         --  The hook and its deferred checks act only while this link's frames are still in the dress they made
         --  (options page pool: a rebuild in between resets them and may dress them for another row).
         -- ----------------------------------------------------------------
-        local function Redressed()
-            return PoolGen(applyBtn) ~= dressGen or PoolIsIdle(applyBtn)
-        end
+        local function Redressed() return PoolGen(applyBtn) ~= dressGen or PoolIsIdle(applyBtn) end
 
         -- ----------------------------------------------------------------
         --  Hover gate: on top of the sync state, which still decides whether the
@@ -845,9 +772,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
             local function FadeHoverTo(t)
                 hoverTarget = t
-                if hoverState ~= t then
-                    hoverFrame:SetScript("OnUpdate", HoverStep)
-                end
+                if hoverState ~= t then hoverFrame:SetScript("OnUpdate", HoverStep) end
             end
 
             local hit = CreateFrame("Frame", nil, region)
@@ -861,29 +786,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local hovered, foreign, holding, lingering = false, nil, false, false
             local function Release()
                 holding = false
-                if Redressed() or hovered or lingering then
-                    return
-                end
+                if Redressed() or hovered or lingering then return end
                 -- Closing a list under the cursor: the slot's enter is on its way.
-                if hit:IsMouseOver() then
-                    return
-                end
+                if hit:IsMouseOver() then return end
                 FadeHoverTo(0)
             end
             hit:SetScript("OnEnter", function()
-                if Redressed() then
-                    return
-                end
+                if Redressed() then return end
                 hovered = true
-                if not holding then
-                    foreign = OpenList()
-                end
+                if not holding then foreign = OpenList() end
                 FadeHoverTo(1)
             end)
             hit:SetScript("OnLeave", function()
-                if Redressed() then
-                    return
-                end
+                if Redressed() then return end
                 hovered = false
                 local list = OpenList()
                 if list and list ~= foreign then
@@ -891,17 +806,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     HoldUntilClosed(Release, list)
                     return
                 end
-                if lingering then
-                    return
-                end
+                if lingering then return end
                 FadeHoverTo(0)
             end)
             hit:SetPropagateMouseClicks(true)
             hit:SetPropagateMouseMotion(true)
             local function SetLinger(on)
-                if Redressed() then
-                    return
-                end
+                if Redressed() then return end
                 lingering = on
                 if on then
                     FadeHoverTo(1)
@@ -920,16 +831,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end
         CUI.RegisterWidgetRefresh(function()
-            if Redressed() then
-                return
-            end
+            if Redressed() then return end
             -- Re-color accent in case it changed
             local red, green, blue = CUI.GetAccentColor()
             prefixText:SetTextColor(1, 1, 1, 0.65)
             allText:SetTextColor(red, green, blue, 0.65)
-            if multiText then
-                multiText:SetTextColor(red, green, blue, 0.65)
-            end
+            if multiText then multiText:SetTextColor(red, green, blue, 0.65) end
             FitButton()
 
             local synced = opts.isSynced()
@@ -942,19 +849,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     FadeTo(1)
                 else
                     -- Values re-converged mid-drag: don't hide yet, defer to drag end
-                    if not CUI._deferredDriftChecks then
-                        CUI._deferredDriftChecks = {}
-                    end
+                    if not CUI._deferredDriftChecks then CUI._deferredDriftChecks = {} end
                     CUI._deferredDriftChecks[function()
-                        if Redressed() then
-                            return
-                        end
+                        if Redressed() then return end
                         local r2, g2, b2 = CUI.GetAccentColor()
                         prefixText:SetTextColor(1, 1, 1, 0.65)
                         allText:SetTextColor(r2, g2, b2, 0.65)
-                        if multiText then
-                            multiText:SetTextColor(r2, g2, b2, 0.65)
-                        end
+                        if multiText then multiText:SetTextColor(r2, g2, b2, 0.65) end
                         FitButton()
                         FadeTo(opts.isSynced() and 0 or 1)
                     end] =
@@ -965,19 +866,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
             -- Color picker open: defer all changes until it closes
             if CUI._colorPickerOpen then
-                if not CUI._deferredDriftChecks then
-                    CUI._deferredDriftChecks = {}
-                end
+                if not CUI._deferredDriftChecks then CUI._deferredDriftChecks = {} end
                 CUI._deferredDriftChecks[function()
-                    if Redressed() then
-                        return
-                    end
+                    if Redressed() then return end
                     local r2, g2, b2 = CUI.GetAccentColor()
                     prefixText:SetTextColor(1, 1, 1, 0.65)
                     allText:SetTextColor(r2, g2, b2, 0.65)
-                    if multiText then
-                        multiText:SetTextColor(r2, g2, b2, 0.65)
-                    end
+                    if multiText then multiText:SetTextColor(r2, g2, b2, 0.65) end
                     FitButton()
                     FadeTo(opts.isSynced() and 0 or 1)
                 end] =

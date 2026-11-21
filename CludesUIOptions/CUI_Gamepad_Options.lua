@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_Gamepad_Options.lua - Global Settings > Gamepad.
 --
@@ -26,9 +24,7 @@ local IS_FOREVER = CludesUI.IS_FOREVER == true
 -- controller, WoW Forever about its gamepad interface. Both are full strings
 -- so each keeps its own locale entry.
 local function Wording(retail, forever)
-    if IS_FOREVER then
-        return forever
-    end
+    if IS_FOREVER then return forever end
     return retail
 end
 
@@ -37,15 +33,11 @@ end
 --------------------------------------------------------------------------------
 local function ActionBars()
     local mod = CludesUI.ModuleNS("CludesUIActionBars")
-    if mod and mod.EAB and mod.EAB.db then
-        return mod
-    end
+    if mod and mod.EAB and mod.EAB.db then return mod end
     return nil
 end
 
-local function UnitFrames()
-    return CludesUI.ModuleNS("CludesUIUnitFrames")
-end
+local function UnitFrames() return CludesUI.ModuleNS("CludesUIUnitFrames") end
 
 local function PlayerFrameSettings()
     local mod = UnitFrames()
@@ -53,9 +45,7 @@ local function PlayerFrameSettings()
 end
 
 local function CastBarSettings()
-    if not CludesUI.ModuleNS("CludesUIResourceBars") then
-        return nil
-    end
+    if not CludesUI.ModuleNS("CludesUIResourceBars") then return nil end
     local db = _G._CURB_AceDB
     return db and db.profile.castBar
 end
@@ -87,9 +77,7 @@ end
 
 local function SetBarHidden(key, hide)
     local bar = BarSettings(key)
-    if not bar then
-        return
-    end
+    if not bar then return end
     bar.gamepadHideBar = hide and true or false
     local EAB = ActionBars().EAB
     -- The controller verdict goes first: the Never map and the drivers read it.
@@ -109,15 +97,11 @@ local CAST_BARS = {
         ),
         settings = PlayerFrameSettings,
         key = "castbarGamepadHide",
-        apply = function()
-            UnitFrames().UF_ApplyGamepadCastbar()
-        end,
+        apply = function() UnitFrames().UF_ApplyGamepadCastbar() end,
         -- Only the CludesUI player frame has our cast bar; a Blizzard or
         -- hidden frame source has nothing to hide.
         disabled = function(player)
-            if not (player and player.showPlayerCastbar) then
-                return true
-            end
+            if not (player and player.showPlayerCastbar) then return true end
             return UnitFrames().GetUnitFrameSource("player") ~= "cui"
         end,
         moduleName = "Unit Frames",
@@ -131,12 +115,8 @@ local CAST_BARS = {
         ),
         settings = CastBarSettings,
         key = "gamepadHide",
-        apply = function()
-            CludesUI.ModuleNS("CludesUIResourceBars").RB_ApplyGamepadCastbar()
-        end,
-        disabled = function(castBar)
-            return not (castBar and castBar.enabled)
-        end,
+        apply = function() CludesUI.ModuleNS("CludesUIResourceBars").RB_ApplyGamepadCastbar() end,
+        disabled = function(castBar) return not (castBar and castBar.enabled) end,
         moduleName = "Resource & Cast Bars",
         needs = "This option requires the cast bar in Resource & Cast Bars to be enabled",
     },
@@ -154,21 +134,15 @@ local function CastBarToggle(entry)
         end,
         setValue = function(on)
             local saved = entry.settings()
-            if not saved then
-                return
-            end
+            if not saved then return end
             saved[entry.key] = on and true or false
             entry.apply()
         end,
-        disabled = function()
-            return entry.disabled(entry.settings())
-        end,
+        disabled = function() return entry.disabled(entry.settings()) end,
         -- While the module is not loaded the tooltip names it; once it is,
         -- it says what has to be turned on first.
         disabledTooltip = function()
-            if not entry.settings() then
-                return entry.moduleName
-            end
+            if not entry.settings() then return entry.moduleName end
             return entry.needs
         end,
     }
@@ -195,9 +169,7 @@ local NOTE_ROW_H = 34
 -- with CludesUI._prebuilding set) skips it but still steps past its space.
 -- A sized host with one TOPLEFT point, as the search geometry expects.
 local function BuildIntro(hostFrame, cursorY)
-    if CludesUI._prebuilding then
-        return
-    end
+    if CludesUI._prebuilding then return end
     local PP = CludesUI.PanelPP
     local pad = CludesUI.CONTENT_PAD
     local host = CreateFrame("Frame", nil, hostFrame)
@@ -215,9 +187,7 @@ end
 -- note under it. Returns the new y.
 local function BuildBarChecklist(hostFrame, row, cursorY, mod)
     local region = row._leftRegion
-    if region._control then
-        region._control:Hide()
-    end
+    if region._control then region._control:Hide() end
     local list, refresh = CludesUI.BuildVisOptsCBDropdown(
         region,
         210,
@@ -231,7 +201,11 @@ local function BuildBarChecklist(hostFrame, row, cursorY, mod)
     region._lastInline = nil
     CludesUI.RegisterWidgetRefresh(refresh)
     -- Chrome only (no search entry).
-    return CludesUI.BuildNoteRow(hostFrame, cursorY, "Hidden bars still show in Quick Keybind mode so you can bind them.")
+    return CludesUI.BuildNoteRow(
+        hostFrame,
+        cursorY,
+        "Hidden bars still show in Quick Keybind mode so you can bind them."
+    )
 end
 
 -- Builds the page into hostFrame from yOffset down; returns its height.
@@ -262,13 +236,9 @@ function _G._CUI_BuildGamepadPage(page, hostFrame, yOffset)
         ),
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
-        disabled = function()
-            return not ActionBars()
-        end,
+        disabled = function() return not ActionBars() end,
         disabledTooltip = "Action Bars",
     }, CludesUI.BlankRowCfg())
     cursorY = cursorY - height

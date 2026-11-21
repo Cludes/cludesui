@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_Visibility.lua - when Blizzard's tracker shows, and
 --  our background behind it.
@@ -22,15 +20,11 @@ local TrackerNS = mod.EQT
 local suppressed = false -- another module hides the tracker (_CUQT_SetSuppressed)
 local background -- our frame behind the tracker (made in InitVisibility)
 
-local function Tracker()
-    return _G.ObjectiveTrackerFrame
-end
+local function Tracker() return _G.ObjectiveTrackerFrame end
 
 -- Blizzard's quest icons stick out 13px left of the tracker: the background
 -- covers them, keeping its 6px of room where they are off.
-local function BackgroundLeft()
-    return TrackerNS.Cfg("showQuestIcons") and -19 or -6
-end
+local function BackgroundLeft() return TrackerNS.Cfg("showQuestIcons") and -19 or -6 end
 
 -- Where the background's top edge goes. With "Hide All Objectives" on, the
 -- tracker's header is faded out but Blizzard still keeps its room above the
@@ -39,14 +33,10 @@ end
 -- frame and "TOP" or "BOTTOM" (the caller adds LEFT or RIGHT).
 local function BackgroundTop()
     local otf = Tracker()
-    if not otf then
-        return nil, "TOP"
-    end
+    if not otf then return nil, "TOP" end
     if TrackerNS.ShouldHideMasterHeader and TrackerNS.ShouldHideMasterHeader() then
         local header = otf.HeaderMenu or otf.Header
-        if header then
-            return header, "BOTTOM"
-        end
+        if header then return header, "BOTTOM" end
     end
     return otf, "TOP"
 end
@@ -61,12 +51,8 @@ local inEncounter = false
 local instanceType = select(2, GetInstanceInfo()) or "none"
 
 local function HiddenByPlace()
-    if instanceType == "arena" then
-        return true
-    end
-    if instanceType ~= "raid" then
-        return false
-    end
+    if instanceType == "arena" then return true end
+    if instanceType ~= "raid" then return false end
     local mode = TrackerNS.DB() and TrackerNS.DB().hideInRaidMode
     if mode == "always" then
         return true
@@ -93,22 +79,16 @@ TrackerNS.TrackerIsVisible = TrackerIsVisible
 -- or in the login set-up, before the first visibility pass.
 local eventsStopped = false
 local function StopEvents()
-    if eventsStopped then
-        return
-    end
+    if eventsStopped then return end
     eventsStopped = true
     for _, frame in ipairs(TrackerNS._eventFrames or {}) do
         frame:UnregisterAllEvents()
     end
 end
 local function ResumeEvents()
-    if not eventsStopped then
-        return
-    end
+    if not eventsStopped then return end
     eventsStopped = false
-    if not (TrackerNS._eventFrames and TrackerNS._eventRegistrations) then
-        return
-    end
+    if not (TrackerNS._eventFrames and TrackerNS._eventRegistrations) then return end
     for i, frame in ipairs(TrackerNS._eventFrames) do
         local events = TrackerNS._eventRegistrations[i]
         if events then
@@ -118,9 +98,7 @@ local function ResumeEvents()
                 catchUp = catchUp or event == "PLAYER_ENTERING_WORLD"
             end
             local onEvent = catchUp and frame:GetScript("OnEvent")
-            if onEvent then
-                onEvent(frame, "PLAYER_ENTERING_WORLD")
-            end
+            if onEvent then onEvent(frame, "PLAYER_ENTERING_WORLD") end
         end
     end
 end
@@ -129,9 +107,7 @@ end
 -- with the player's own visibility settings.
 function TrackerNS.ApplySuppression(on)
     suppressed = on and true or false
-    if TrackerNS.UpdateVisibility then
-        TrackerNS.UpdateVisibility()
-    end
+    if TrackerNS.UpdateVisibility then TrackerNS.UpdateVisibility() end
 end
 
 -- Show and Hide on this Edit Mode frame go through protected functions, so
@@ -142,9 +118,7 @@ end
 local function HardHide(otf)
     if InCombatLockdown() then
         otf:SetAlpha(0)
-        if TrackerNS.ApplyTrackerMouse then
-            TrackerNS.ApplyTrackerMouse(false)
-        end
+        if TrackerNS.ApplyTrackerMouse then TrackerNS.ApplyTrackerMouse(false) end
     else
         otf:SetAlpha(1) -- undo a combat fade before hiding
         otf:Hide()
@@ -153,39 +127,25 @@ end
 
 local hooksSet = false
 local function HookShow()
-    if hooksSet then
-        return
-    end
+    if hooksSet then return end
     local otf = Tracker()
-    if not otf then
-        return
-    end
+    if not otf then return end
     hooksSet = true
     -- Hidden by place: hidden again whenever Blizzard shows it. Runs before
     -- other Show hooks (they stack); the M+ Timer has a similar one for keys.
     hooksecurefunc(otf, "Show", function(self)
-        if not suppressed and HiddenByPlace() then
-            HardHide(self)
-        end
+        if not suppressed and HiddenByPlace() then HardHide(self) end
     end)
     -- The background follows the tracker, whoever hides it (us, the M+ Timer,
     -- Blizzard). OnShow can come after the M+ Timer's hook already hid it
     -- again, so the resize checks visibility itself.
     otf:HookScript("OnHide", function()
-        if background then
-            background:Hide()
-        end
+        if background then background:Hide() end
     end)
     otf:HookScript("OnShow", function()
-        if suppressed then
-            return
-        end
-        if TrackerNS.ResizeBGToContent then
-            TrackerNS.ResizeBGToContent()
-        end
-        if TrackerNS.QueueResize then
-            TrackerNS.QueueResize()
-        end
+        if suppressed then return end
+        if TrackerNS.ResizeBGToContent then TrackerNS.ResizeBGToContent() end
+        if TrackerNS.QueueResize then TrackerNS.QueueResize() end
     end)
 end
 
@@ -198,50 +158,34 @@ local function SyncTrackerShown()
         ResumeEvents()
     end
     local otf = Tracker()
-    if not otf then
-        return
-    end
+    if not otf then return end
     -- Hidden by place: a real Hide, and the Show hook keeps it hidden.
     if byPlace then
         HardHide(otf)
-        if background then
-            background:Hide()
-        end
+        if background then background:Hide() end
         return
     end
     -- Show is protected in combat like Hide; the end-of-combat pass shows it.
-    if not otf:IsShown() and not InCombatLockdown() then
-        otf:Show()
-    end
+    if not otf:IsShown() and not InCombatLockdown() then otf:Show() end
 
     -- The player's settings: enabled, the visibility mode and the hide
     -- options, as true / false / "mouseover" (the hover check raises it).
     local vis = true
-    if CludesUI and CludesUI.EvalVisibility then
-        vis = CludesUI.EvalVisibility(TrackerNS.DB())
-    end
+    if CludesUI and CludesUI.EvalVisibility then vis = CludesUI.EvalVisibility(TrackerNS.DB()) end
     local alpha = (suppressed or vis == false or vis == "mouseover") and 0 or 1
     otf:SetAlpha(alpha)
-    if background then
-        background:SetAlpha(alpha)
-    end
+    if background then background:SetAlpha(alpha) end
     -- Alpha does not stop clicks: an invisible tracker's blocks would take
     -- clicks meant for the world.
-    if TrackerNS.ApplyTrackerMouse then
-        TrackerNS.ApplyTrackerMouse(alpha > 0)
-    end
+    if TrackerNS.ApplyTrackerMouse then TrackerNS.ApplyTrackerMouse(alpha > 0) end
     -- The resize decides whether the background shows (by real content);
     -- showing it here would bring back an empty one.
-    if TrackerNS.ResizeBGToContent then
-        TrackerNS.ResizeBGToContent()
-    end
+    if TrackerNS.ResizeBGToContent then TrackerNS.ResizeBGToContent() end
 end
 TrackerNS.UpdateVisibility = SyncTrackerShown
 
 -- The options once rebuilt a state driver through this; it stays for them.
-function TrackerNS.RefreshStateDriver()
-    SyncTrackerShown()
-end
+function TrackerNS.RefreshStateDriver() SyncTrackerShown() end
 
 -------------------------------------------------------------------------------
 --  The background: our own frame under UIParent, on the tracker's bounds.
@@ -255,17 +199,11 @@ local function PinTop(frame, anchor, side)
 end
 
 local function MakeBackground()
-    if background then
-        return background
-    end
+    if background then return background end
     -- The stock styles keep Blizzard's own panel: no background of ours.
-    if TrackerNS.Blizz() then
-        return nil
-    end
+    if TrackerNS.Blizz() then return nil end
     local otf = Tracker()
-    if not otf then
-        return nil
-    end
+    if not otf then return nil end
     background = CreateFrame("Frame", "CludesUIQTBackground", UIParent)
     background:SetFrameStrata(otf:GetFrameStrata() or "MEDIUM")
     background:SetFrameLevel(math.max(0, otf:GetFrameLevel() - 1))
@@ -287,18 +225,14 @@ end
 -- The top line: one physical pixel tall, in the accent colour.
 local function PaintTopLine()
     local line = background and background._divider
-    if not line then
-        return
-    end
+    if not line then return end
     if TrackerNS.Cfg("showTopLine") == false then
         line:Hide()
         return
     end
     local core = CludesUI and CludesUI.PP
     local panel = CludesUI and CludesUI.PanelPP
-    if panel and panel.DisablePixelSnap then
-        panel.DisablePixelSnap(line)
-    end
+    if panel and panel.DisablePixelSnap then panel.DisablePixelSnap(line) end
     local perfect = (core and core.perfect) or (panel and panel.mult) or 1
     local otf = Tracker()
     local scale = (otf and otf.GetEffectiveScale and otf:GetEffectiveScale()) or 1
@@ -321,9 +255,7 @@ end
 local function LowestModule()
     local otf = Tracker()
     local modules = otf and (otf.modules or otf.MODULES)
-    if not modules then
-        return nil
-    end
+    if not modules then return nil end
     local widgets = _G.UIWidgetObjectiveTracker
     local lowest
     for _, module in ipairs(modules) do
@@ -357,30 +289,22 @@ end
 local resizeQueued = false
 local function QueueResize()
     -- No background (not made yet, or a stock style): nothing to resize.
-    if resizeQueued or not background then
-        return
-    end
+    if resizeQueued or not background then return end
     resizeQueued = true
     C_Timer.After(0.05, function()
         resizeQueued = false
-        if TrackerNS.ResizeBGToContent then
-            TrackerNS.ResizeBGToContent()
-        end
+        if TrackerNS.ResizeBGToContent then TrackerNS.ResizeBGToContent() end
     end)
 end
 TrackerNS.QueueResize = QueueResize
 
 local function HideBackground()
-    if background:IsShown() then
-        background:Hide()
-    end
+    if background:IsShown() then background:Hide() end
 end
 
 local function ResizeBGToContent()
     local otf = Tracker()
-    if not background or not otf then
-        return
-    end
+    if not background or not otf then return end
     -- The tracker is hidden (by place, by Blizzard, faded in combat).
     if not TrackerIsVisible(otf) then
         HideBackground()
@@ -408,17 +332,13 @@ local function ResizeBGToContent()
             background._hideCheck = true
             C_Timer.After(0.2, function()
                 background._hideCheck = nil
-                if TrackerNS.ResizeBGToContent then
-                    TrackerNS.ResizeBGToContent()
-                end
+                if TrackerNS.ResizeBGToContent then TrackerNS.ResizeBGToContent() end
             end)
         end
         return
     end
     background._hideCheck = nil
-    if not background:IsShown() then
-        background:Show()
-    end
+    if not background:IsShown() then background:Show() end
     local anchor, side = BackgroundTop()
     anchor = anchor or otf
     if background._divider then
@@ -429,9 +349,7 @@ local function ResizeBGToContent()
     -- that far below the last block: adding it back keeps the 15px margin
     -- without reading a coordinate.
     local spacing = lowest.bottomSpacing
-    if (issecretvalue and issecretvalue(spacing)) or type(spacing) ~= "number" then
-        spacing = 0
-    end
+    if (issecretvalue and issecretvalue(spacing)) or type(spacing) ~= "number" then spacing = 0 end
     background:ClearAllPoints()
     PinTop(background, anchor, side)
     background:SetPoint("BOTTOM", lowest, "BOTTOM", 0, spacing - 15)
@@ -440,9 +358,7 @@ end
 TrackerNS.ResizeBGToContent = ResizeBGToContent
 
 function TrackerNS.ApplyBackground()
-    if not MakeBackground() then
-        return
-    end
+    if not MakeBackground() then return end
     local conf = TrackerNS.DB()
     background._tex:SetColorTexture(conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.5)
     ResizeBGToContent()
@@ -463,37 +379,23 @@ end
 -- hovering either fades both in.
 local function MouseoverTarget(otf)
     local function Mouse(on)
-        if TrackerNS.ApplyTrackerMouse then
-            TrackerNS.ApplyTrackerMouse(on)
-        end
+        if TrackerNS.ApplyTrackerMouse then TrackerNS.ApplyTrackerMouse(on) end
     end
     return {
-        IsShown = function()
-            return TrackerIsVisible(otf)
-        end,
+        IsShown = function() return TrackerIsVisible(otf) end,
         IsMouseOver = function()
             return (otf and otf:IsMouseOver())
                 or (background and background:IsShown() and background:IsMouseOver())
                 or false
         end,
         GetRect = function()
-            if background and background:IsShown() then
-                return background:GetRect()
-            end
-            if otf then
-                return otf:GetRect()
-            end
+            if background and background:IsShown() then return background:GetRect() end
+            if otf then return otf:GetRect() end
         end,
-        GetEffectiveScale = function()
-            return otf and otf:GetEffectiveScale() or 1
-        end,
+        GetEffectiveScale = function() return otf and otf:GetEffectiveScale() or 1 end,
         SetAlpha = function(_, a)
-            if otf then
-                otf:SetAlpha(a)
-            end
-            if background then
-                background:SetAlpha(a)
-            end
+            if otf then otf:SetAlpha(a) end
+            if background then background:SetAlpha(a) end
             Mouse((a or 0) > 0)
         end,
         -- The check reveals with SetAlpha(1) and Show(). A resize may have
@@ -501,18 +403,12 @@ local function MouseoverTarget(otf)
         -- visible, as a combat fade does), so Show brings it back. Hide stays
         -- alpha only; the next resize hides the frame properly.
         Show = function()
-            if background then
-                background:Show()
-            end
+            if background then background:Show() end
             Mouse(true)
         end,
         Hide = function()
-            if otf then
-                otf:SetAlpha(0)
-            end
-            if background then
-                background:SetAlpha(0)
-            end
+            if otf then otf:SetAlpha(0) end
+            if background then background:SetAlpha(0) end
             Mouse(false)
         end,
         EnableMouse = function() end,
@@ -521,9 +417,7 @@ end
 
 function TrackerNS.InitVisibility()
     local otf = Tracker()
-    if not otf then
-        return
-    end
+    if not otf then return end
     MakeBackground()
     TrackerNS.ApplyBackground()
     TrackerNS.ApplyForceOnScreen()
@@ -538,9 +432,7 @@ function TrackerNS.InitVisibility()
     -- A /reload inside a key or a raid can find the tracker already hidden,
     -- with no OnHide to come: match the background to it now and twice more.
     local function MatchBackground()
-        if background then
-            background:SetShown(TrackerIsVisible(otf))
-        end
+        if background then background:SetShown(TrackerIsVisible(otf)) end
     end
     MatchBackground()
     C_Timer.After(0.1, MatchBackground)
@@ -556,9 +448,7 @@ function TrackerNS.InitVisibility()
             inEncounter = true
         else
             -- ENCOUNTER_END, or a new world (which also clears an ending missed).
-            if event ~= "ZONE_CHANGED_NEW_AREA" then
-                inEncounter = false
-            end
+            if event ~= "ZONE_CHANGED_NEW_AREA" then inEncounter = false end
         end
         instanceType = select(2, GetInstanceInfo()) or "none"
         SyncTrackerShown()
@@ -567,16 +457,12 @@ function TrackerNS.InitVisibility()
 
     -- The shared visibility pass (combat, mounted and the other modes).
     CludesUI.RegisterVisibilityUpdater(function()
-        if not suppressed then
-            SyncTrackerShown()
-        end
+        if not suppressed then SyncTrackerShown() end
     end)
 
     if CludesUI.RegisterMouseoverTarget then
         CludesUI.RegisterMouseoverTarget(MouseoverTarget(otf), function()
-            if HiddenByPlace() or suppressed then
-                return false
-            end
+            if HiddenByPlace() or suppressed then return false end
             -- Hover-gated sets reveal only while their conditions pass; a
             -- plain "mouseover" behaves as it always did.
             return CludesUI.VisWantsMouseover(TrackerNS.DB(), "visibility")

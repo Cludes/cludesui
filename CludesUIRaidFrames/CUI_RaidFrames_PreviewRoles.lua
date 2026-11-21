@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewRoles.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs = ipairs
@@ -29,9 +25,7 @@ local previewClassTokens = Inner.previewClassTokens
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local saved
-RF.dbSetters[#RF.dbSetters + 1] = function(val)
-    saved = val
-end
+RF.dbSetters[#RF.dbSetters + 1] = function(val) saved = val end
 
 -- Preview role assignments: 2 tanks, 4 healers, 14 DPS.
 -- Player (slot 1) uses their real role and counts toward the total.
@@ -46,9 +40,7 @@ local function BuildPreviewRoles()
 
     -- Effective role: the player's spec wins over a stale assigned role
     local playerRole = CludesUI.UnitEffectiveRole("player")
-    if playerRole ~= "TANK" and playerRole ~= "HEALER" then
-        playerRole = "DAMAGER"
-    end
+    if playerRole ~= "TANK" and playerRole ~= "HEALER" then playerRole = "DAMAGER" end
     previewRoles[1] = playerRole
     local _, pct = UnitClass("player")
     previewClassTokens[1] = pct or "WARRIOR"
@@ -64,9 +56,7 @@ local function BuildPreviewRoles()
     if not previewRoles._hpalPick then
         local hpals = {}
         for ri = 1, #mod._PV_ROSTER do
-            if mod._PV_ROSTER[ri].hpal then
-                hpals[#hpals + 1] = ri
-            end
+            if mod._PV_ROSTER[ri].hpal then hpals[#hpals + 1] = ri end
         end
         for i = #hpals, 2, -1 do
             local jdx = math.random(i)
@@ -76,9 +66,7 @@ local function BuildPreviewRoles()
         for key = 3, #hpals do
             local pool = {}
             for _, c in ipairs(mod._PV_DPS_CLASSES) do
-                if c ~= "PALADIN" then
-                    pool[#pool + 1] = c
-                end
+                if c ~= "PALADIN" then pool[#pool + 1] = c end
             end
             pick[hpals[key]] = pool[math.random(#pool)]
         end
@@ -144,19 +132,13 @@ local function BuildPreviewRoles()
                 table.sort(set, function(lhs, rhs)
                     if sortByRole then
                         local ra, rb = rolePri[lhs.role] or 99, rolePri[rhs.role] or 99
-                        if ra ~= rb then
-                            return ra < rb
-                        end
+                        if ra ~= rb then return ra < rb end
                     end
                     local ca, callback = classPri[lhs.classToken] or 99, classPri[rhs.classToken] or 99
-                    if ca ~= callback then
-                        return ca < callback
-                    end
+                    if ca ~= callback then return ca < callback end
                     -- Slot 1 (the player) carries no preview name.
                     local na, nb = lhs.name or pName, rhs.name or pName
-                    if na ~= nb then
-                        return na < nb
-                    end
+                    if na ~= nb then return na < nb end
                     return lhs.idx < rhs.idx
                 end)
             elseif sortMode == "ROLE" then
@@ -169,16 +151,12 @@ local function BuildPreviewRoles()
                 local tmpGroup = {}
                 for pri, role in ipairs(roleOrder) do
                     for _, record in ipairs(set) do
-                        if record.role == role then
-                            tmpGroup[#tmpGroup + 1] = record
-                        end
+                        if record.role == role then tmpGroup[#tmpGroup + 1] = record end
                     end
                 end
                 -- Any roles not in roleOrder (shouldn't happen, but safe)
                 for _, record in ipairs(set) do
-                    if not rolePriority[record.role] then
-                        tmpGroup[#tmpGroup + 1] = record
-                    end
+                    if not rolePriority[record.role] then tmpGroup[#tmpGroup + 1] = record end
                 end
                 set = tmpGroup
             end
@@ -207,12 +185,8 @@ local function BuildPreviewRoles()
                 local position = base + u
                 previewRoles[position] = set[u].role
                 previewClassTokens[position] = set[u].classToken
-                if mod._pvNames then
-                    mod._pvNames[position] = set[u].name
-                end
-                if set[u].isPlayer then
-                    previewRoles._playerSlot = position
-                end
+                if mod._pvNames then mod._pvNames[position] = set[u].name end
+                if set[u].isPlayer then previewRoles._playerSlot = position end
             end
         end
     end
@@ -225,9 +199,7 @@ local function BuildPreviewRoles()
         -- Pick a random tank for the aggro indicator
         local tanks = {}
         for i = 1, 20 do
-            if previewRoles[i] == "TANK" then
-                tanks[#tanks + 1] = i
-            end
+            if previewRoles[i] == "TANK" then tanks[#tanks + 1] = i end
         end
         previewRoles._threatIndex = tanks[math.random(#tanks)] or 1
 
@@ -256,12 +228,8 @@ local function BuildPreviewRoles()
         end
         -- Clear readycheck/summon on marker slots so they don't overlap
         local ms1, ms2 = previewRoles._markerSlot1, previewRoles._markerSlot2
-        if ms1 then
-            rcStatuses[ms1] = nil
-        end
-        if ms2 then
-            rcStatuses[ms2] = nil
-        end
+        if ms1 then rcStatuses[ms1] = nil end
+        if ms2 then rcStatuses[ms2] = nil end
         previewRoles._readyCheck = rcStatuses
 
         -- Dispel types: one of each in group 1 (slots 1-5)
@@ -287,12 +255,8 @@ local function BuildPreviewRoles()
         previewRoles._offlineSlot = statePool[2]
         previewRoles._rezSlot = statePool[3] -- corpse with an incoming-rez icon
         -- Plain dead + offline bodies carry no readycheck/summon icon (looks wrong there).
-        if rcStatuses[statePool[1]] then
-            rcStatuses[statePool[1]] = nil
-        end
-        if rcStatuses[statePool[2]] then
-            rcStatuses[statePool[2]] = nil
-        end
+        if rcStatuses[statePool[1]] then rcStatuses[statePool[1]] = nil end
+        if rcStatuses[statePool[2]] then rcStatuses[statePool[2]] = nil end
         -- The rez corpse gets the incoming-rez icon. But markers win the shared icon
         -- slot (same as the readycheck de-confliction above): if the rez slot landed
         -- on a marker slot, skip the icon (the frame is still shown as a dead body).

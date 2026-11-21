@@ -1,4 +1,4 @@
-﻿if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_RaidFrames_DebuffManager.lua
 -- 12.1 Debuff Manager runtime: base-grid record union plus user-added tiles.
 --
@@ -44,18 +44,24 @@ local AKWorker = CUI.AuraKit.NewBuildWorker()
 local TYPED_DEBUFFS = { Magic = true, Curse = true, Disease = true, Poison = true, Bleed = true }
 
 local CORNERS = {
-    topleft = "TOPLEFT", top = "TOP", topright = "TOPRIGHT",
-    left = "LEFT", center = "CENTER", right = "RIGHT",
-    bottomleft = "BOTTOMLEFT", bottom = "BOTTOM", bottomright = "BOTTOMRIGHT",
+    topleft = "TOPLEFT",
+    top = "TOP",
+    topright = "TOPRIGHT",
+    left = "LEFT",
+    center = "CENTER",
+    right = "RIGHT",
+    bottomleft = "BOTTOMLEFT",
+    bottom = "BOTTOM",
+    bottomright = "BOTTOMRIGHT",
 }
 
 -- Duration-bar frame levels relative to the unit button (BM bar Frame Level modes 1:1).
 local BAR_FRAMELVL = {
-    behindBorders = 7,   -- below the main border (+8)
-    behindText    = 11,  -- below the name/health text carrier (+12)
-    medium        = 13,  -- the aura band
-    high          = 14,
-    highest       = 15,
+    behindBorders = 7, -- below the main border (+8)
+    behindText = 11, -- below the name/health text carrier (+12)
+    medium = 13, -- the aura band
+    high = 14,
+    highest = 15,
 }
 
 local function FlowDir(token)
@@ -109,8 +115,14 @@ local function EnsureFilterLanes(dmCfg)
                 dmCfg[category] = nil
             end
         end
-        NegateCategory("boss"); NegateCategory("role"); NegateCategory("priority"); NegateCategory("cc")
-        NegateCategory("raid"); NegateCategory("raidcombat"); NegateCategory("dispel"); NegateCategory("nonplayer")
+        NegateCategory("boss")
+        NegateCategory("role")
+        NegateCategory("priority")
+        NegateCategory("cc")
+        NegateCategory("raid")
+        NegateCategory("raidcombat")
+        NegateCategory("dispel")
+        NegateCategory("nonplayer")
         if negated then dmCfg.neg = negated end
     end
 end
@@ -147,17 +159,21 @@ local function MigrateOnce()
         local size = profile.dispellableDebuffSize
         if not size or size <= 0 then size = profile.debuffSize or 18 end
         dmCfg.dispelMode = "typed"
-        dmCfg.tiles = { {
-            id = 1, enabled = true, type = "icons",
-            claim = { dispel = true },
-            position = profile.dispellableDebuffLocation,
-            growDirection = profile.dispellableDebuffGrowDirection or "CENTER",
-            offsetX = profile.dispellableDebuffOffsetX or 0,
-            offsetY = profile.dispellableDebuffOffsetY or 0,
-            size = size,
-            spacing = profile.debuffSpacing or 1,
-            cap = profile.debuffCap or 3,
-        } }
+        dmCfg.tiles = {
+            {
+                id = 1,
+                enabled = true,
+                type = "icons",
+                claim = { dispel = true },
+                position = profile.dispellableDebuffLocation,
+                growDirection = profile.dispellableDebuffGrowDirection or "CENTER",
+                offsetX = profile.dispellableDebuffOffsetX or 0,
+                offsetY = profile.dispellableDebuffOffsetY or 0,
+                size = size,
+                spacing = profile.debuffSpacing or 1,
+                cap = profile.debuffCap or 3,
+            },
+        }
         dmCfg.nextTileId = 2
     end
     profile.dmDebuff = dmCfg
@@ -196,9 +212,7 @@ local function EffectiveIconSizeForClass(rawSize, classToken)
         scale = mod._partyIndicatorScale or 1
     else
         scale = mod._indicatorScale or 1
-        if classToken == "extra" then
-            scale = scale * (mod._xfExtraRatio or 1)
-        end
+        if classToken == "extra" then scale = scale * (mod._xfExtraRatio or 1) end
     end
     return mod.RFC_SnapSize((tonumber(rawSize) or 18) * scale)
 end
@@ -207,26 +221,42 @@ local function EffectiveIconSize(skinData, rawSize)
     return EffectiveIconSizeForClass(rawSize, ClassToken(skinData))
 end
 
-local function StyleKeyFor(skinData)
-    return "rf:debuff:" .. ClassToken(skinData)
-end
+local function StyleKeyFor(skinData) return "rf:debuff:" .. ClassToken(skinData) end
 
 -- The category vocabulary. token = filter-string routing (negatable); cand = candidate-boolean routing (exact in
 -- both directions, a false value negates; never identity-gated -- the engine gates only spell-ID candidates).
-local CATS = { "boss", "role", "priority", "cc", "raid", "raidcombat", "dispel", "nonplayer",
+local CATS = {
+    "boss",
+    "role",
+    "priority",
+    "cc",
+    "raid",
+    "raidcombat",
+    "dispel",
+    "nonplayer",
     -- Less common filters: the PLAYER token, one include map per dispel type, and
     -- the canApplyAura boolean. "From Any Player" is a FLAVOR of nonplayer
     -- (dm.nonplayerMode == "any"), never a category of its own: both sides share
     -- one engine field, so the dropdown keeps them mutually exclusive like the
     -- two dispel flavors.
-    "castbyme", "magic", "curse", "poison", "disease", "bleed", "canapply" }
+    "castbyme",
+    "magic",
+    "curse",
+    "poison",
+    "disease",
+    "bleed",
+    "canapply",
+}
 local LESS_CATS = { "castbyme", "magic", "curse", "poison", "disease", "bleed", "canapply" }
 -- Per-type dispel categories: engine dispel name + a static single-type include
 -- map per category (never mutated; type folds copy on write).
 local TYPE_ORDER = { "magic", "curse", "poison", "disease", "bleed" }
-local TYPE_CATS = { magic = "Magic", curse = "Curse", poison = "Poison", disease = "Disease", bleed = "Bleed" }
+local TYPE_CATS =
+    { magic = "Magic", curse = "Curse", poison = "Poison", disease = "Disease", bleed = "Bleed" }
 local TYPE_INCLUDE = {}
-for category, T in pairs(TYPE_CATS) do TYPE_INCLUDE[category] = { [T] = true } end
+for category, T in pairs(TYPE_CATS) do
+    TYPE_INCLUDE[category] = { [T] = true }
+end
 
 -------------------------------------------------------------------------------
 -- MATCH ALL (base show lane, dm.match == "all"): every show pick ANDs into ONE
@@ -236,8 +266,10 @@ for category, T in pairs(TYPE_CATS) do TYPE_INCLUDE[category] = { [T] = true } e
 -- empty = bool }: MatchApply ANDs one category (pos) or its complement, and a
 -- contradiction marks the spec empty (it can never match, so nothing builds).
 -------------------------------------------------------------------------------
-local MATCH_TOKEN = { cc = "CROWD_CONTROL", raid = "RAID", raidcombat = "RAID_IN_COMBAT", castbyme = "PLAYER" }
-local MATCH_BOOL = { boss = "isBossAura", role = "isRoleAura", priority = "isPriorityAura", canapply = "canApplyAura" }
+local MATCH_TOKEN =
+    { cc = "CROWD_CONTROL", raid = "RAID", raidcombat = "RAID_IN_COMBAT", castbyme = "PLAYER" }
+local MATCH_BOOL =
+    { boss = "isBossAura", role = "isRoleAura", priority = "isPriorityAura", canapply = "canApplyAura" }
 local MATCH_TOK_ORDER = { "CROWD_CONTROL", "RAID_PLAYER_DISPELLABLE", "RAID", "RAID_IN_COMBAT", "PLAYER" }
 
 local function MatchOn(baseView)
@@ -254,10 +286,24 @@ end
 
 local function MatchCopy(match)
     local copy = { tok = {}, cf = {}, empty = match.empty }
-    for key, val in pairs(match.tok) do copy.tok[key] = val end
-    for key, val in pairs(match.cf) do copy.cf[key] = val end
-    if match.inc then copy.inc = {}; for T in pairs(match.inc) do copy.inc[T] = true end end
-    if match.exc then copy.exc = {}; for T in pairs(match.exc) do copy.exc[T] = true end end
+    for key, val in pairs(match.tok) do
+        copy.tok[key] = val
+    end
+    for key, val in pairs(match.cf) do
+        copy.cf[key] = val
+    end
+    if match.inc then
+        copy.inc = {}
+        for T in pairs(match.inc) do
+            copy.inc[T] = true
+        end
+    end
+    if match.exc then
+        copy.exc = {}
+        for T in pairs(match.exc) do
+            copy.exc[T] = true
+        end
+    end
     return copy
 end
 
@@ -272,14 +318,18 @@ end
 local function MatchTypes(match, set, place)
     if not place then
         match.exc = match.exc or {}
-        for T in pairs(set) do match.exc[T] = true end
+        for T in pairs(set) do
+            match.exc[T] = true
+        end
     elseif match.inc then
         for T in pairs(match.inc) do
             if not set[T] then match.inc[T] = nil end
         end
     else
         match.inc = {}
-        for T in pairs(set) do match.inc[T] = true end
+        for T in pairs(set) do
+            match.inc[T] = true
+        end
     end
 end
 
@@ -287,9 +337,15 @@ end
 -- Non-Player flavors come from the profile table. False = unknown category.
 local function MatchApply(match, category, place, dmCfg)
     local tok = MATCH_TOKEN[category]
-    if tok then MatchSet(match, match.tok, tok, place) return true end
+    if tok then
+        MatchSet(match, match.tok, tok, place)
+        return true
+    end
     local field = MATCH_BOOL[category]
-    if field then MatchSet(match, match.cf, field, place) return true end
+    if field then
+        MatchSet(match, match.cf, field, place)
+        return true
+    end
     if category == "nonplayer" then
         -- Flavor value when shown (false = Non-Player Auras, true = From Any Player), its complement when not.
         MatchSet(match, match.cf, "isFromPlayerOrPlayerPet", place == (dmCfg.nonplayerMode == "any"))
@@ -303,7 +359,10 @@ local function MatchApply(match, category, place, dmCfg)
         end
         return true
     end
-    if TYPE_INCLUDE[category] then MatchTypes(match, TYPE_INCLUDE[category], place) return true end
+    if TYPE_INCLUDE[category] then
+        MatchTypes(match, TYPE_INCLUDE[category], place)
+        return true
+    end
     return false
 end
 
@@ -351,7 +410,9 @@ local function MatchFinish(match)
     if br == true and match.cf.isBossAura == false and match.cf.isRoleAura == false then return nil end
     if br == false and (match.cf.isBossAura == true or match.cf.isRoleAura == true) then return nil end
     local castFrame = {}
-    for key, val in pairs(match.cf) do castFrame[key] = val end
+    for key, val in pairs(match.cf) do
+        castFrame[key] = val
+    end
     if match.inc then
         local included
         for T in pairs(match.inc) do
@@ -364,7 +425,9 @@ local function MatchFinish(match)
         castFrame.includeDispelTypes = included
     elseif match.exc and next(match.exc) then
         local exc = {}
-        for T in pairs(match.exc) do exc[T] = true end
+        for T in pairs(match.exc) do
+            exc[T] = true
+        end
         castFrame.excludeDispelTypes = exc
     end
     local tokenList = { "HARMFUL" }
@@ -472,7 +535,9 @@ end
 -- the dispel-type sets ride along untouched). Nil for a token outside the Match
 -- vocabulary, which the hand-off then leaves alone.
 local MATCH_TOK_KNOWN = {}
-for i = 1, #MATCH_TOK_ORDER do MATCH_TOK_KNOWN[MATCH_TOK_ORDER[i]] = true end
+for i = 1, #MATCH_TOK_ORDER do
+    MATCH_TOK_KNOWN[MATCH_TOK_ORDER[i]] = true
+end
 local function RecSpec(region)
     local match = { tok = {}, cf = {} }
     local tokenList = region.tokens
@@ -488,10 +553,14 @@ local function RecSpec(region)
     for key, val in pairs(region.cand) do
         if key == "includeDispelTypes" then
             match.inc = {}
-            for T in pairs(val) do match.inc[T] = true end
+            for T in pairs(val) do
+                match.inc[T] = true
+            end
         elseif key == "excludeDispelTypes" then
             match.exc = {}
-            for T in pairs(val) do match.exc[T] = true end
+            for T in pairs(val) do
+                match.exc[T] = true
+            end
         else
             match.cf[key] = val
         end
@@ -511,7 +580,9 @@ local function Carve(region, atoms, dmCfg)
     for i = 1, #atoms do
         -- What is left of r shares nothing with the rest of the set: it stays whole.
         local rest = MatchCopy(current)
-        for jdx = i, #atoms do MatchAtom(rest, atoms[jdx], true, dmCfg) end
+        for jdx = i, #atoms do
+            MatchAtom(rest, atoms[jdx], true, dmCfg)
+        end
         if not MatchFinish(rest) then
             if not parts then return nil end
             parts[#parts + 1] = current
@@ -534,17 +605,26 @@ end
 -- effective values. Declared ABOVE the config fingerprint, which must flip when overrides change (EnsureTileStyle only runs behind it).
 local TILE_STYLE_KEYS = {
     iconZoom = "debuffIconZoom",
-    borderSize = "debuffBorderSize", borderColor = "debuffBorderColor",
-    borderTexture = "debuffBorderTexture", borderSizePx = "debuffBorderSizePx",
-    borderTextureOffset = "debuffBorderTextureOffset", borderTextureOffsetY = "debuffBorderTextureOffsetY",
-    borderTextureShiftX = "debuffBorderTextureShiftX", borderTextureShiftY = "debuffBorderTextureShiftY",
+    borderSize = "debuffBorderSize",
+    borderColor = "debuffBorderColor",
+    borderTexture = "debuffBorderTexture",
+    borderSizePx = "debuffBorderSizePx",
+    borderTextureOffset = "debuffBorderTextureOffset",
+    borderTextureOffsetY = "debuffBorderTextureOffsetY",
+    borderTextureShiftX = "debuffBorderTextureShiftX",
+    borderTextureShiftY = "debuffBorderTextureShiftY",
     borderDispelTextured = "debuffBorderDispelTextured",
-    showSwipe = "debuffShowSwipe", showDurText = "debuffShowDurText",
-    durTextColor = "debuffDurTextColor", durTextSize = "debuffDurTextSize",
-    durTextOffsetX = "debuffDurTextOffsetX", durTextOffsetY = "debuffDurTextOffsetY",
-    showStacks = "debuffShowStacks", stacksTextColor = "debuffStacksTextColor",
+    showSwipe = "debuffShowSwipe",
+    showDurText = "debuffShowDurText",
+    durTextColor = "debuffDurTextColor",
+    durTextSize = "debuffDurTextSize",
+    durTextOffsetX = "debuffDurTextOffsetX",
+    durTextOffsetY = "debuffDurTextOffsetY",
+    showStacks = "debuffShowStacks",
+    stacksTextColor = "debuffStacksTextColor",
     stacksTextSize = "debuffStacksTextSize",
-    stacksOffsetX = "debuffStacksOffsetX", stacksOffsetY = "debuffStacksOffsetY",
+    stacksOffsetX = "debuffStacksOffsetX",
+    stacksOffsetY = "debuffStacksOffsetY",
     hideTooltips = "debuffHideTooltips",
 }
 local function TileStyleView(s, tileDef)
@@ -571,8 +651,9 @@ local function TileStyleFP(tileDef)
         local tv = tileDef[tk]
         if tv ~= nil then
             if type(tv) == "table" then
-                copy[#copy + 1] = tk .. "=" .. string.format("%.2f,%.2f,%.2f,%.2f",
-                    tv.r or 0, tv.g or 0, tv.b or 0, tv.a or 1)
+                copy[#copy + 1] = tk
+                    .. "="
+                    .. string.format("%.2f,%.2f,%.2f,%.2f", tv.r or 0, tv.g or 0, tv.b or 0, tv.a or 1)
             else
                 copy[#copy + 1] = tk .. "=" .. tostring(tv)
             end
@@ -589,9 +670,13 @@ end
 -- ACTIVE = filters checked and at least one payload; FIRST matching block
 -- wins per button category. Declared ABOVE the config fingerprint (its caller).
 local function FxEntryActive(entry)
-    return entry.filters ~= nil and next(entry.filters) ~= nil
-        and (((entry.glowType or 0) > 0) or ((entry.borderSize or 0) > 0)
-            or ((tonumber(entry.size) or 0) > 0))
+    return entry.filters ~= nil
+        and next(entry.filters) ~= nil
+        and (
+            ((entry.glowType or 0) > 0)
+            or ((entry.borderSize or 0) > 0)
+            or ((tonumber(entry.size) or 0) > 0)
+        )
 end
 local function FxListView(entries)
     if not entries then return nil end
@@ -611,18 +696,29 @@ local function FxListFP(entries)
         local entry = entries[i]
         local keyList = {}
         if entry.filters then
-            for key, on in pairs(entry.filters) do if on then keyList[#keyList + 1] = key end end
+            for key, on in pairs(entry.filters) do
+                if on then keyList[#keyList + 1] = key end
+            end
             table.sort(keyList)
         end
         local bc = entry.borderColor or {}
         parts[#parts + 1] = table.concat({
             table.concat(keyList, "+"),
-            tostring(entry.glowType or 0), entry.glowClassColor and "cc" or "-",
+            tostring(entry.glowType or 0),
+            entry.glowClassColor and "cc" or "-",
             mod.RF_GlowClassFP(entry.glowColorMode, entry.glowClassColor),
             string.format("%.2f,%.2f,%.2f", entry.glowR or 1, entry.glowG or 0.776, entry.glowB or 0.376),
-            tostring(entry.glowColorMode), tostring(entry.glowLines), tostring(entry.glowThickness),
-            tostring(entry.glowSpeed), tostring(entry.glowBackground),
-            string.format("%.2f,%.2f,%.2f", entry.glowBackgroundR or 0, entry.glowBackgroundG or 0, entry.glowBackgroundB or 0),
+            tostring(entry.glowColorMode),
+            tostring(entry.glowLines),
+            tostring(entry.glowThickness),
+            tostring(entry.glowSpeed),
+            tostring(entry.glowBackground),
+            string.format(
+                "%.2f,%.2f,%.2f",
+                entry.glowBackgroundR or 0,
+                entry.glowBackgroundG or 0,
+                entry.glowBackgroundB or 0
+            ),
             tostring(entry.borderSize or 0),
             string.format("%.2f,%.2f,%.2f", bc.r or 0, bc.g or 0, bc.b or 0),
             tostring(entry.size or 0),
@@ -637,8 +733,11 @@ local function FxHeal(ownerFrame)
         ownerFrame.fxList = ownerFrame.fxList or {}
         ownerFrame.fxList[#ownerFrame.fxList + 1] = {
             filters = fg.filters or {},
-            glowType = fg.type, glowClassColor = fg.classColor,
-            glowR = fg.r, glowG = fg.g, glowB = fg.b,
+            glowType = fg.type,
+            glowClassColor = fg.classColor,
+            glowR = fg.r,
+            glowG = fg.g,
+            glowB = fg.b,
         }
         ownerFrame.fxGlow = nil
     end
@@ -656,10 +755,15 @@ local function FxSizeFor(entries, category)
         local entry = entries[i]
         if FxEntryActive(entry) then
             local frame = entry.filters
-            local hit = frame and not multi and (frame[category] or (category == "bossrole" and (frame.boss or frame.role)))
+            local hit = frame
+                and not multi
+                and (frame[category] or (category == "bossrole" and (frame.boss or frame.role)))
             if frame and multi then
                 for jdx = 1, #category do
-                    if frame[category[jdx]] then hit = true; break end
+                    if frame[category[jdx]] then
+                        hit = true
+                        break
+                    end
                 end
             end
             if hit then
@@ -762,9 +866,7 @@ local tipModKeyApplied = false
 
 -- Feature wanted at all: a key is set AND some debuff display is in the
 -- "modifier" mode. The apply pass gates every footprint/ensure write on this.
-function mod.DM_TipModWanted()
-    return mod.DM_TipMod() ~= "none" and TipModeInUse()
-end
+function mod.DM_TipModWanted() return mod.DM_TipMod() ~= "none" and TipModeInUse() end
 
 function mod.DM_TipModSync(skinData)
     local key = mod.DM_TipMod()
@@ -833,7 +935,11 @@ end
 -- own placement. Returns the seat's Y offset on the kit host (X is the base
 -- row's), or nil off the kit.
 function mod.DM_KitTileY(tileDef, s, skinData)
-    if not (skinData and skinData.kit and tileDef and (tileDef.type == "icons" or tileDef.type == "square")) then return nil end
+    if
+        not (skinData and skinData.kit and tileDef and (tileDef.type == "icons" or tileDef.type == "square"))
+    then
+        return nil
+    end
     local tipGeo = skinData.dmTipGeo
     local gt = tipGeo and tipGeo.tiles and tipGeo.tiles[tileDef.id]
     return gt and gt.kitY
@@ -887,8 +993,16 @@ local tipPass = 0
 -- 1 = right / top edge, 0.5 = the middle.
 local function PointShare(profile)
     local sx, sy = 0.5, 0.5
-    if profile:find("LEFT", 1, true) then sx = 0 elseif profile:find("RIGHT", 1, true) then sx = 1 end
-    if profile:find("BOTTOM", 1, true) then sy = 0 elseif profile:find("TOP", 1, true) then sy = 1 end
+    if profile:find("LEFT", 1, true) then
+        sx = 0
+    elseif profile:find("RIGHT", 1, true) then
+        sx = 1
+    end
+    if profile:find("BOTTOM", 1, true) then
+        sy = 0
+    elseif profile:find("TOP", 1, true) then
+        sy = 1
+    end
     return sx, sy
 end
 
@@ -909,8 +1023,7 @@ local function EaterRect(owner, pinHost, anchorPoint, corner, offX, offY, wid, h
     local x0, y0 = Round2(offX - px * wid), Round2(offY - py * hgt)
     local pl, pb = pinHost:GetLeft(), pinHost:GetBottom()
     local highlight, hb, hr, ht = owner:GetLeft(), owner:GetBottom(), owner:GetRight(), owner:GetTop()
-    if not (pl and pb and highlight and hb and hr and ht)
-        or CUI.IsSecret(pl) or CUI.IsSecret(highlight) then
+    if not (pl and pb and highlight and hb and hr and ht) or CUI.IsSecret(pl) or CUI.IsSecret(highlight) then
         return x0, y0, wid, hgt
     end
     local pw, ph = pinHost:GetSize()
@@ -927,12 +1040,28 @@ local function EaterRect(owner, pinHost, anchorPoint, corner, offX, offY, wid, h
     return x0 - highlight, y0 - hb, x1 - x0, y1 - y0, true
 end
 
-local function EnsureEater(skinData, slot, owner, boxHolder, isActive, pinHost, anchorPoint, corner, offX, offY, wid, hgt)
+local function EnsureEater(
+    skinData,
+    slot,
+    owner,
+    boxHolder,
+    isActive,
+    pinHost,
+    anchorPoint,
+    corner,
+    offX,
+    offY,
+    wid,
+    hgt
+)
     local map = skinData.tipModEaters
     local entry = map and map[slot]
     if not isActive or not pinHost then
         if entry and entry._cuiActive then
-            if InCombatLockdown() then skinData.rfcBmPending = true; return end
+            if InCombatLockdown() then
+                skinData.rfcBmPending = true
+                return
+            end
             ParkEater(entry)
         end
         return
@@ -955,22 +1084,33 @@ local function EnsureEater(skinData, slot, owner, boxHolder, isActive, pinHost, 
     if not ex then
         -- No part of the footprint lies on the unit: nothing to gate here.
         if entry and entry._cuiActive then
-            if InCombatLockdown() then skinData.rfcBmPending = true; return end
+            if InCombatLockdown() then
+                skinData.rfcBmPending = true
+                return
+            end
             ParkEater(entry)
         end
         return
     end
     local lvl = (boxHolder:GetFrameLevel() or 1) + 30
-    local geoChanged = not entry or entry._cuiRel ~= hostRel or entry._cuiCorner ~= corner
-        or entry._cuiOX ~= ex or entry._cuiOY ~= ey or entry._cuiHost ~= pinHost
-        or entry._cuiW ~= ew or entry._cuiH ~= eh
+    local geoChanged = not entry
+        or entry._cuiRel ~= hostRel
+        or entry._cuiCorner ~= corner
+        or entry._cuiOX ~= ex
+        or entry._cuiOY ~= ey
+        or entry._cuiHost ~= pinHost
+        or entry._cuiW ~= ew
+        or entry._cuiH ~= eh
     local lvlChanged = not entry or entry._cuiLvl ~= lvl
     local armChanged = not entry or not entry._cuiActive
     if not (geoChanged or lvlChanged or armChanged) then
         entry._cuiContainer = boxHolder
         return
     end
-    if InCombatLockdown() then skinData.rfcBmPending = true; return end
+    if InCombatLockdown() then
+        skinData.rfcBmPending = true
+        return
+    end
     if not entry then
         -- Named: click-cast's frame keybinds route by frame name. Unit from
         -- the parent (useparent-unit) for the action path; the header's enter
@@ -991,7 +1131,10 @@ local function EnsureEater(skinData, slot, owner, boxHolder, isActive, pinHost, 
         entry:HookScript("OnEnter", ForwardEnter)
         entry:HookScript("OnLeave", ForwardLeave)
         entry._cuiD = skinData
-        if not map then map = {}; skinData.tipModEaters = map end
+        if not map then
+            map = {}
+            skinData.tipModEaters = map
+        end
         map[slot] = entry
         tipModEaters[entry] = true
         if mod.CC_RegisterTipEater then mod.CC_RegisterTipEater(entry) end
@@ -1040,11 +1183,28 @@ function mod.DM_TipModEnsure(btnFrame, skinData, cfg)
             local size, spacing, per, vertical
             anchorPoint, corner, offX, offY, size, spacing, per, vertical = mod.RFC_DebuffPin(cfg)
             local g = tipGeo and tipGeo.base
-            wid, hgt = TipFootprint((g and g.n) or (cfg.debuffCap or 3), (g and g.cell) or size,
-                spacing, per, vertical)
+            wid, hgt = TipFootprint(
+                (g and g.n) or (cfg.debuffCap or 3),
+                (g and g.cell) or size,
+                spacing,
+                per,
+                vertical
+            )
         end
-        EnsureEater(skinData, "base", btnFrame, skinData.rfcDebuffs, isActive and anchorPoint ~= nil,
-            pinHost, anchorPoint, corner, offX, offY, wid, hgt)
+        EnsureEater(
+            skinData,
+            "base",
+            btnFrame,
+            skinData.rfcDebuffs,
+            isActive and anchorPoint ~= nil,
+            pinHost,
+            anchorPoint,
+            corner,
+            offX,
+            offY,
+            wid,
+            hgt
+        )
     end
     tipPass = tipPass + 1
     local hosts = skinData.dmTiles
@@ -1054,7 +1214,11 @@ function mod.DM_TipModEnsure(btnFrame, skinData, cfg)
             for i = 1, #entries do
                 local tileDef = entries[i]
                 local c = hosts[tileDef.id]
-                if c and (tileDef.type == "icons" or tileDef.type == "square") and c._dmType == tileDef.type then
+                if
+                    c
+                    and (tileDef.type == "icons" or tileDef.type == "square")
+                    and c._dmType == tileDef.type
+                then
                     local eff = tileDef.hideTooltips
                     if eff == nil then eff = baseMode end
                     -- IsShown: the apply hides a grid tile with no records, so nothing renders under the eater.
@@ -1062,14 +1226,31 @@ function mod.DM_TipModEnsure(btnFrame, skinData, cfg)
                     local anchorPoint, corner, offX, offY, wid, hgt
                     if isActive and pinHost then
                         anchorPoint, corner, offX, offY = TilePin(tileDef, cfg, skinData)
-                        local grow = mod.DM_KitTileY(tileDef, cfg, skinData) and "RIGHT" or (tileDef.growDirection or "CENTER")
+                        local grow = mod.DM_KitTileY(tileDef, cfg, skinData) and "RIGHT"
+                            or (tileDef.growDirection or "CENTER")
                         local g = tipGeo and tipGeo.tiles and tipGeo.tiles[tileDef.id]
-                        wid, hgt = TipFootprint((g and g.n) or (tileDef.cap or cfg.debuffCap or 3),
-                            (g and g.cell) or EffectiveIconSize(skinData, tileDef.size or 18), tileDef.spacing or 1,
-                            tonumber(tileDef.iconsPerRow) or 0, (grow == "UP" or grow == "DOWN"))
+                        wid, hgt = TipFootprint(
+                            (g and g.n) or (tileDef.cap or cfg.debuffCap or 3),
+                            (g and g.cell) or EffectiveIconSize(skinData, tileDef.size or 18),
+                            tileDef.spacing or 1,
+                            tonumber(tileDef.iconsPerRow) or 0,
+                            (grow == "UP" or grow == "DOWN")
+                        )
                     end
-                    EnsureEater(skinData, tileDef.id, btnFrame, c, isActive and anchorPoint ~= nil,
-                        pinHost, anchorPoint, corner, offX, offY, wid, hgt)
+                    EnsureEater(
+                        skinData,
+                        tileDef.id,
+                        btnFrame,
+                        c,
+                        isActive and anchorPoint ~= nil,
+                        pinHost,
+                        anchorPoint,
+                        corner,
+                        offX,
+                        offY,
+                        wid,
+                        hgt
+                    )
                     local entry = skinData.tipModEaters and skinData.tipModEaters[tileDef.id]
                     if entry then entry._cuiPass = tipPass end
                 end
@@ -1081,7 +1262,11 @@ function mod.DM_TipModEnsure(btnFrame, skinData, cfg)
     if map then
         for slot, entry in pairs(map) do
             if slot ~= "base" and entry._cuiActive and entry._cuiPass ~= tipPass then
-                if InCombatLockdown() then skinData.rfcBmPending = true else ParkEater(entry) end
+                if InCombatLockdown() then
+                    skinData.rfcBmPending = true
+                else
+                    ParkEater(entry)
+                end
             end
         end
     end
@@ -1108,17 +1293,28 @@ function mod.DM_CfgFP()
     local negated = baseView.neg
     local parts = {
         "on",
-        baseView.all ~= false and 1 or 0, baseView.hasDuration == true and 1 or 0,
-        baseView.boss and 1 or 0, baseView.role and 1 or 0,
-        baseView.priority and 1 or 0, baseView.cc == true and 1 or 0, baseView.raid and 1 or 0,
-        baseView.raidcombat and 1 or 0, baseView.dispel and 1 or 0,
+        baseView.all ~= false and 1 or 0,
+        baseView.hasDuration == true and 1 or 0,
+        baseView.boss and 1 or 0,
+        baseView.role and 1 or 0,
+        baseView.priority and 1 or 0,
+        baseView.cc == true and 1 or 0,
+        baseView.raid and 1 or 0,
+        baseView.raidcombat and 1 or 0,
+        baseView.dispel and 1 or 0,
         baseView.nonplayer and 1 or 0,
         -- Hide lane (dm.neg): subtracts in both modes, so every entry is a
         -- record-shape input.
         negated and table.concat({
-            negated.boss and 1 or 0, negated.role and 1 or 0, negated.priority and 1 or 0,
-            negated.cc and 1 or 0, negated.raid and 1 or 0, negated.raidcombat and 1 or 0,
-            negated.dispel and 1 or 0, negated.nonplayer and 1 or 0 }, "") or "-",
+            negated.boss and 1 or 0,
+            negated.role and 1 or 0,
+            negated.priority and 1 or 0,
+            negated.cc and 1 or 0,
+            negated.raid and 1 or 0,
+            negated.raidcombat and 1 or 0,
+            negated.dispel and 1 or 0,
+            negated.nonplayer and 1 or 0,
+        }, "") or "-",
         (dmCfg.dispelMode == "typed") and "typed" or "you",
         FxListFP(baseView.fxList), -- base effects force records
         -- Exclude set varies only with the lust-debuff opt-out (hardcoded lists are load-constant).
@@ -1135,10 +1331,19 @@ function mod.DM_CfgFP()
         local lc
         for i = 1, #LESS_CATS do
             local c = LESS_CATS[i]
-            if baseView[c] == true then lc = lc or {}; lc[#lc + 1] = c end
-            if negated and negated[c] == true then lc = lc or {}; lc[#lc + 1] = "-" .. c end
+            if baseView[c] == true then
+                lc = lc or {}
+                lc[#lc + 1] = c
+            end
+            if negated and negated[c] == true then
+                lc = lc or {}
+                lc[#lc + 1] = "-" .. c
+            end
         end
-        if dmCfg.nonplayerMode == "any" then lc = lc or {}; lc[#lc + 1] = "npany" end
+        if dmCfg.nonplayerMode == "any" then
+            lc = lc or {}
+            lc[#lc + 1] = "npany"
+        end
         if lc then parts[#parts + 1] = table.concat(lc, "+") end
     end
     -- Fingerprint the ACTIVE union: spec swaps, bucket edits and per-spec
@@ -1149,37 +1354,78 @@ function mod.DM_CfgFP()
         for i = 1, #tiles do
             local tileDef = tiles[i]
             parts[#parts + 1] = table.concat({
-                "t", tostring(tileDef.id), tileDef.enabled and 1 or 0, tostring(tileDef.type),
-                tostring(tileDef.cat), tostring(tileDef.position), tostring(tileDef.growDirection),
-                tostring(tileDef.offsetX), tostring(tileDef.offsetY), tostring(tileDef.size),
-                tostring(tileDef.spacing), tostring(tileDef.cap), tostring(tileDef.iconsPerRow),
-                tostring(tileDef.width), tostring(tileDef.height),
-                tileDef.color and string.format("%.2f,%.2f,%.2f,%.2f",
-                    tileDef.color.r or 1, tileDef.color.g or 1, tileDef.color.b or 1, tileDef.color.a or 1) or "-",
-                tostring(tileDef.glowType), tostring(tileDef.glowLines), tostring(tileDef.glowThickness),
-                tostring(tileDef.glowSpeed), tostring(tileDef.glowColorMode), tostring(tileDef.opacity),
+                "t",
+                tostring(tileDef.id),
+                tileDef.enabled and 1 or 0,
+                tostring(tileDef.type),
+                tostring(tileDef.cat),
+                tostring(tileDef.position),
+                tostring(tileDef.growDirection),
+                tostring(tileDef.offsetX),
+                tostring(tileDef.offsetY),
+                tostring(tileDef.size),
+                tostring(tileDef.spacing),
+                tostring(tileDef.cap),
+                tostring(tileDef.iconsPerRow),
+                tostring(tileDef.width),
+                tostring(tileDef.height),
+                tileDef.color and string.format(
+                    "%.2f,%.2f,%.2f,%.2f",
+                    tileDef.color.r or 1,
+                    tileDef.color.g or 1,
+                    tileDef.color.b or 1,
+                    tileDef.color.a or 1
+                ) or "-",
+                tostring(tileDef.glowType),
+                tostring(tileDef.glowLines),
+                tostring(tileDef.glowThickness),
+                tostring(tileDef.glowSpeed),
+                tostring(tileDef.glowColorMode),
+                tostring(tileDef.opacity),
                 mod.RF_GlowClassFP(tileDef.glowColorMode),
-                tostring(tileDef.glowBackground), tileDef.glowBackgroundColor and string.format("%.2f,%.2f,%.2f",
-                    tileDef.glowBackgroundColor.r or 0, tileDef.glowBackgroundColor.g or 0, tileDef.glowBackgroundColor.b or 0) or "-",
-                tostring(tileDef.orientation), tostring(tileDef.reverseFill),
-                tostring(tileDef.barFullWidth), tostring(tileDef.barFullHeight),
-                tostring(tileDef.barColorOpacity), tostring(tileDef.barBgOpacity),
+                tostring(tileDef.glowBackground),
+                tileDef.glowBackgroundColor and string.format(
+                    "%.2f,%.2f,%.2f",
+                    tileDef.glowBackgroundColor.r or 0,
+                    tileDef.glowBackgroundColor.g or 0,
+                    tileDef.glowBackgroundColor.b or 0
+                ) or "-",
+                tostring(tileDef.orientation),
+                tostring(tileDef.reverseFill),
+                tostring(tileDef.barFullWidth),
+                tostring(tileDef.barFullHeight),
+                tostring(tileDef.barColorOpacity),
+                tostring(tileDef.barBgOpacity),
                 tostring(tileDef.frameLevel),
-                tileDef.barBgColor and string.format("%.2f,%.2f,%.2f",
-                    tileDef.barBgColor.r or 0, tileDef.barBgColor.g or 0, tileDef.barBgColor.b or 0) or "-",
+                tileDef.barBgColor and string.format(
+                    "%.2f,%.2f,%.2f",
+                    tileDef.barBgColor.r or 0,
+                    tileDef.barBgColor.g or 0,
+                    tileDef.barBgColor.b or 0
+                ) or "-",
                 tileDef.claim and table.concat({
-                    tileDef.claim.boss and 1 or 0, tileDef.claim.role and 1 or 0,
-                    tileDef.claim.priority and 1 or 0, tileDef.claim.cc and 1 or 0,
-                    tileDef.claim.raid and 1 or 0, tileDef.claim.raidcombat and 1 or 0,
+                    tileDef.claim.boss and 1 or 0,
+                    tileDef.claim.role and 1 or 0,
+                    tileDef.claim.priority and 1 or 0,
+                    tileDef.claim.cc and 1 or 0,
+                    tileDef.claim.raid and 1 or 0,
+                    tileDef.claim.raidcombat and 1 or 0,
                     tileDef.claim.dispel and 1 or 0,
-                    tileDef.claim.nonplayer and 1 or 0 }, "") or "-",
+                    tileDef.claim.nonplayer and 1 or 0,
+                }, "") or "-",
                 -- Tile hide lane + catch-all + duration modifier: all record-shape inputs.
                 tileDef.neg and table.concat({
-                    tileDef.neg.boss and 1 or 0, tileDef.neg.role and 1 or 0,
-                    tileDef.neg.priority and 1 or 0, tileDef.neg.cc and 1 or 0,
-                    tileDef.neg.raid and 1 or 0, tileDef.neg.raidcombat and 1 or 0,
-                    tileDef.neg.dispel and 1 or 0, tileDef.neg.nonplayer and 1 or 0 }, "") or "-",
-                tileDef.all == true and 1 or 0, tileDef.hasDuration == true and 1 or 0,
+                    tileDef.neg.boss and 1 or 0,
+                    tileDef.neg.role and 1 or 0,
+                    tileDef.neg.priority and 1 or 0,
+                    tileDef.neg.cc and 1 or 0,
+                    tileDef.neg.raid and 1 or 0,
+                    tileDef.neg.raidcombat and 1 or 0,
+                    tileDef.neg.dispel and 1 or 0,
+                    tileDef.neg.nonplayer and 1 or 0,
+                }, "") or "-",
+                tileDef.all == true and 1 or 0,
+                tileDef.hasDuration == true and 1 or 0,
                 TileStyleFP(tileDef),
                 FxListFP(tileDef.fxList),
             }, ",")
@@ -1221,7 +1467,9 @@ local function ClaimMap(tiles)
                 elseif tileDef.claim then
                     for c = 1, #CATS do
                         local category = CATS[c]
-                        if tileDef.claim[category] and not claimMap[category] then claimMap[category] = tileDef end
+                        if tileDef.claim[category] and not claimMap[category] then
+                            claimMap[category] = tileDef
+                        end
                     end
                 end
             end
@@ -1249,18 +1497,32 @@ local function EffectiveState(dmCfg, matchOn)
     if dmCfg.all ~= false or matchOn then
         eff = { cc = false }
     else
-        eff = { boss = dmCfg.boss, role = dmCfg.role, priority = dmCfg.priority,
-            cc = dmCfg.cc == true, raid = dmCfg.raid, raidcombat = dmCfg.raidcombat, dispel = dmCfg.dispel,
+        eff = {
+            boss = dmCfg.boss,
+            role = dmCfg.role,
+            priority = dmCfg.priority,
+            cc = dmCfg.cc == true,
+            raid = dmCfg.raid,
+            raidcombat = dmCfg.raidcombat,
+            dispel = dmCfg.dispel,
             nonplayer = dmCfg.nonplayer,
-            castbyme = dmCfg.castbyme, magic = dmCfg.magic, curse = dmCfg.curse, poison = dmCfg.poison,
-            disease = dmCfg.disease, bleed = dmCfg.bleed, canapply = dmCfg.canapply }
+            castbyme = dmCfg.castbyme,
+            magic = dmCfg.magic,
+            curse = dmCfg.curse,
+            poison = dmCfg.poison,
+            disease = dmCfg.disease,
+            bleed = dmCfg.bleed,
+            canapply = dmCfg.canapply,
+        }
     end
     -- The ACTIVE union (all-specs + group buckets + own spec, per-spec
     -- disables applied): claims follow whatever the current spec renders.
     -- claimsAll hosts a tile catch-all record, with the tile's hide lane and
     -- duration modifier folded in by BuildRecords.
     local claimMap, claimsAll, matchTiles = ClaimMap(mod.DM_ActiveTiles())
-    for category in pairs(claimMap) do eff[category] = true end
+    for category in pairs(claimMap) do
+        eff[category] = true
+    end
     return eff, claimMap, claimsAll, matchTiles
 end
 
@@ -1273,10 +1535,33 @@ end
 -- and the category list its buttons stamp).
 local BOOL_OWN = {
     priority = { rank = 1, cats = { "priority" }, npKey = "prinp", npCats = { "nonplayer", "priority" } },
-    boss = { rank = 2, field = "isBossAura", cats = { "boss" }, npKey = "bossnp", npCats = { "nonplayer", "boss" } },
-    bossrole = { rank = 2, cats = { "boss", "role" }, npKey = "bossrolenp", npCats = { "nonplayer", "boss", "role" } },
-    role = { rank = 3, field = "isRoleAura", cats = { "role" }, npKey = "rolenp", npCats = { "nonplayer", "role" } },
-    canapply = { rank = 4, field = "canApplyAura", cats = { "canapply" }, npKey = "canapplynp", npCats = { "nonplayer", "canapply" } },
+    boss = {
+        rank = 2,
+        field = "isBossAura",
+        cats = { "boss" },
+        npKey = "bossnp",
+        npCats = { "nonplayer", "boss" },
+    },
+    bossrole = {
+        rank = 2,
+        cats = { "boss", "role" },
+        npKey = "bossrolenp",
+        npCats = { "nonplayer", "boss", "role" },
+    },
+    role = {
+        rank = 3,
+        field = "isRoleAura",
+        cats = { "role" },
+        npKey = "rolenp",
+        npCats = { "nonplayer", "role" },
+    },
+    canapply = {
+        rank = 4,
+        field = "canApplyAura",
+        cats = { "canapply" },
+        npKey = "canapplynp",
+        npCats = { "nonplayer", "canapply" },
+    },
     nonplayer = { rank = 5, field = "isFromPlayerOrPlayerPet" },
     all = { rank = 6 },
 }
@@ -1325,11 +1610,21 @@ local function BuildRecords(s, dmCfg)
     -- catch-all record joins when Show All is on, or when Has Duration is
     -- checked with no show-lane picks (checked alone = every timed debuff).
     local durOn = baseView.hasDuration == true
-    local anyShow = baseView.boss == true or baseView.role == true or baseView.priority == true
-        or baseView.cc == true or baseView.raid == true or baseView.raidcombat == true
-        or baseView.dispel == true or baseView.nonplayer == true
-        or baseView.castbyme == true or baseView.magic == true or baseView.curse == true or baseView.poison == true
-        or baseView.disease == true or baseView.bleed == true or baseView.canapply == true
+    local anyShow = baseView.boss == true
+        or baseView.role == true
+        or baseView.priority == true
+        or baseView.cc == true
+        or baseView.raid == true
+        or baseView.raidcombat == true
+        or baseView.dispel == true
+        or baseView.nonplayer == true
+        or baseView.castbyme == true
+        or baseView.magic == true
+        or baseView.curse == true
+        or baseView.poison == true
+        or baseView.disease == true
+        or baseView.bleed == true
+        or baseView.canapply == true
     local durAlone = durOn and not allOn and not anyShow
     -- HIDE lane (dm.neg): subtracts in BOTH modes. Token categories negate off
     -- every lower-ranked record (ownership rank cc > dispel > raid > raidcombat
@@ -1339,12 +1634,18 @@ local function BuildRecords(s, dmCfg)
     -- (nonplayer via the complementary TRUE).
     local negated = baseView.neg
     local function IsNegated(category) return negated ~= nil and negated[category] == true end
-    local sub = allOn and {
-        boss = IsNegated("boss"), role = IsNegated("role"),
-        priority = IsNegated("priority"), raid = IsNegated("raid"),
-        raidcombat = IsNegated("raidcombat"), dispel = IsNegated("dispel"),
-        nonplayer = IsNegated("nonplayer"), canapply = IsNegated("canapply"),
-    } or nil
+    local sub = allOn
+            and {
+                boss = IsNegated("boss"),
+                role = IsNegated("role"),
+                priority = IsNegated("priority"),
+                raid = IsNegated("raid"),
+                raidcombat = IsNegated("raidcombat"),
+                dispel = IsNegated("dispel"),
+                nonplayer = IsNegated("nonplayer"),
+                canapply = IsNegated("canapply"),
+            }
+        or nil
     -- Non-cc records always exclude CROWD_CONTROL under Show All (cc group
     -- renders CC while on, and a subtracted cc -- parked by the apply pass --
     -- must stay hidden everywhere), when cc is effectively on, and when the
@@ -1366,7 +1667,10 @@ local function BuildRecords(s, dmCfg)
     local typeEx
     for i = 1, #TYPE_ORDER do
         local category = TYPE_ORDER[i]
-        if (eff[category] and (claimMap[category] or effectCats[category] or not allOn)) or IsNegated(category) then
+        if
+            (eff[category] and (claimMap[category] or effectCats[category] or not allOn))
+            or IsNegated(category)
+        then
             typeEx = typeEx or {}
             typeEx[TYPE_CATS[category]] = true
         end
@@ -1381,7 +1685,9 @@ local function BuildRecords(s, dmCfg)
         if included then
             if (included == TYPED_DEBUFFS or typedCopies[included]) and included[T] then
                 local match = {}
-                for key, val in pairs(included) do match[key] = val end
+                for key, val in pairs(included) do
+                    match[key] = val
+                end
                 match[T] = nil
                 typedCopies[match] = true
                 castFrame.includeDispelTypes = match
@@ -1391,7 +1697,11 @@ local function BuildRecords(s, dmCfg)
         local exm = castFrame.excludeDispelTypes
         if exm == TYPED_DEBUFFS or (exm and exm[T]) then return end
         local match = {}
-        if exm then for k, val in pairs(exm) do match[k] = val end end
+        if exm then
+            for k, val in pairs(exm) do
+                match[k] = val
+            end
+        end
         match[T] = true
         castFrame.excludeDispelTypes = match
     end
@@ -1406,7 +1716,8 @@ local function BuildRecords(s, dmCfg)
     local dispelToken = (dispelActive and dispelMode == "you") and "RAID_PLAYER_DISPELLABLE" or nil
     -- Typed exclude applies only while the typed dispel record is really BUILT (claimed, or base without Show All)
     -- or the category is hidden, else Show All excludes debuffs nothing re-adds.
-    local typedMap = dispelActive and dispelMode == "typed"
+    local typedMap = dispelActive
+        and dispelMode == "typed"
         and ((claimMap.dispel or effectCats.dispel or not allOn or IsNegated("dispel")) and true or false)
 
     -- Internal exclude set: hardcoded sated list (honoring Show Lust Debuff
@@ -1415,23 +1726,27 @@ local function BuildRecords(s, dmCfg)
     -- secret-flagged entry is accepted but inert (engine drops it silently).
     local ex = {}
     if mod.RFC_AlwaysHideDebuffs then
-        for ident in pairs(mod.RFC_AlwaysHideDebuffs) do ex[ident] = true end
+        for ident in pairs(mod.RFC_AlwaysHideDebuffs) do
+            ex[ident] = true
+        end
     end
     local prof = mod.db and mod.db.profile
     if (not prof or prof.hideLustDebuff ~= false) and mod.RFC_SatedDebuffs then
-        for ident in pairs(mod.RFC_SatedDebuffs) do ex[ident] = true end
+        for ident in pairs(mod.RFC_SatedDebuffs) do
+            ex[ident] = true
+        end
     end
 
     local function Cand(important, extra)
         local castFrame = extra or {}
         castFrame.excludeSpellIDs = ex
-        if typedMap and not castFrame.includeDispelTypes then
-            castFrame.excludeDispelTypes = TYPED_DEBUFFS
-        end
+        if typedMap and not castFrame.includeDispelTypes then castFrame.excludeDispelTypes = TYPED_DEBUFFS end
         -- Per-type ownership folds (see typeEx); a per-type record's own include
         -- map is left alone inside ExcludeType.
         if typeEx then
-            for T in pairs(typeEx) do ExcludeType(castFrame, T) end
+            for T in pairs(typeEx) do
+                ExcludeType(castFrame, T)
+            end
         end
         -- Add-mode hide lane, boolean categories: false-valued candidate booleans
         -- ride every positive record (never overriding a record's own positive
@@ -1439,10 +1754,16 @@ local function BuildRecords(s, dmCfg)
         -- Show All the all-record's explicit sub block owns this instead, so
         -- legacy record shapes stay byte-identical.
         if negated and not allOn then
-            if negated.boss and castFrame.isBossAura == nil and castFrame.isBossOrRoleAura == nil then castFrame.isBossAura = false end
-            if negated.role and castFrame.isRoleAura == nil and castFrame.isBossOrRoleAura == nil then castFrame.isRoleAura = false end
+            if negated.boss and castFrame.isBossAura == nil and castFrame.isBossOrRoleAura == nil then
+                castFrame.isBossAura = false
+            end
+            if negated.role and castFrame.isRoleAura == nil and castFrame.isBossOrRoleAura == nil then
+                castFrame.isRoleAura = false
+            end
             if negated.priority and castFrame.isPriorityAura == nil then castFrame.isPriorityAura = false end
-            if negated.nonplayer and castFrame.isFromPlayerOrPlayerPet == nil then castFrame.isFromPlayerOrPlayerPet = npHideVal end
+            if negated.nonplayer and castFrame.isFromPlayerOrPlayerPet == nil then
+                castFrame.isFromPlayerOrPlayerPet = npHideVal
+            end
             if negated.canapply and castFrame.canApplyAura == nil then castFrame.canApplyAura = false end
         end
         return castFrame
@@ -1468,10 +1789,21 @@ local function BuildRecords(s, dmCfg)
     -- sub nil.
     if allOn or durAlone then
         local tokenList = { "HARMFUL" }
-        Neg(tokenList, true,
-            ((sub and sub.dispel) or claimMap.dispel or effectCats.dispel or IsNegated("dispel")) and true or false,
-            ((sub and sub.raid) or claimMap.raid or effectCats.raid or IsNegated("raid")) and true or false)
-        if (sub and sub.raidcombat) or claimMap.raidcombat or effectCats.raidcombat or IsNegated("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
+        Neg(
+            tokenList,
+            true,
+            ((sub and sub.dispel) or claimMap.dispel or effectCats.dispel or IsNegated("dispel")) and true
+                or false,
+            ((sub and sub.raid) or claimMap.raid or effectCats.raid or IsNegated("raid")) and true or false
+        )
+        if
+            (sub and sub.raidcombat)
+            or claimMap.raidcombat
+            or effectCats.raidcombat
+            or IsNegated("raidcombat")
+        then
+            tokenList[#tokenList + 1] = "!RAID_IN_COMBAT"
+        end
         if castActive then tokenList[#tokenList + 1] = "!PLAYER" end
         local castFrame = Cand(false)
         -- Subtracted boolean categories (see `sub`); fx-routed keeps its forced base record (effect wins over
@@ -1489,15 +1821,22 @@ local function BuildRecords(s, dmCfg)
     -- Claimed crowd control: base normally rides the legacy cc group, but a claiming tile hosts cc as a normal
     -- record (fresh candidate table, NEVER the typed exclude -- see ccCand; tile style, CC glow stays base-only).
     if eff.cc and claimMap.cc then
-        records[#records + 1] = { key = "cc", tokens = { "HARMFUL", "CROWD_CONTROL" },
-            cand = { excludeSpellIDs = ex }, tile = claimMap.cc }
+        records[#records + 1] = {
+            key = "cc",
+            tokens = { "HARMFUL", "CROWD_CONTROL" },
+            cand = { excludeSpellIDs = ex },
+            tile = claimMap.cc,
+        }
     end
 
     -- Sized base crowd control: Icon Effects Size cannot resize the legacy "cc" group (group->style binding fixed
     -- at declare), so cc becomes a base record variant carrying the CC-glow style; apply pass parks the legacy group while this record exists.
     if eff.cc and not claimMap.cc and FxSizeFor(baseView.fxList, "cc") then
-        records[#records + 1] = { key = "cc", tokens = { "HARMFUL", "CROWD_CONTROL" },
-            cand = { excludeSpellIDs = ex } }
+        records[#records + 1] = {
+            key = "cc",
+            tokens = { "HARMFUL", "CROWD_CONTROL" },
+            cand = { excludeSpellIDs = ex },
+        }
     end
 
     -- Match All indicators in hand-off precedence: more AND terms first (the
@@ -1521,7 +1860,9 @@ local function BuildRecords(s, dmCfg)
             local tileDef = matchTiles[i]
             local atoms = MatchAtoms(tileDef.claim, ccOn and tileDef.claim.cc ~= true)
             local match = { tok = {}, cf = {} }
-            for jdx = 1, #atoms do MatchAtom(match, atoms[jdx], true, dmCfg) end
+            for jdx = 1, #atoms do
+                MatchAtom(match, atoms[jdx], true, dmCfg)
+            end
             if MatchFinish(match) then
                 matchSets = matchSets or {}
                 matchSets[#matchSets + 1] = { tile = tileDef, atoms = atoms }
@@ -1534,13 +1875,18 @@ local function BuildRecords(s, dmCfg)
     -- legacy "cc" group's filter is declaration-fixed): the record the sized path
     -- builds, bound to the row's own CC-glow style and leading the row (ccLead).
     if matchSets and not claimMap.cc and not (eff.cc and FxSizeFor(baseView.fxList, "cc")) then
-        local ccRow = (allOn and not IsNegated("cc")) or (not allOn and baseView.cc == true and not matchOn)
+        local ccRow = (allOn and not IsNegated("cc"))
+            or (not allOn and baseView.cc == true and not matchOn)
             or effectCats.cc == true
         if ccRow then
             for i = 1, #matchSets do
                 if matchSets[i].tile.claim.cc == true then
-                    records[#records + 1] = { key = "cc", tokens = { "HARMFUL", "CROWD_CONTROL" },
-                        cand = { excludeSpellIDs = ex }, ccLead = true }
+                    records[#records + 1] = {
+                        key = "cc",
+                        tokens = { "HARMFUL", "CROWD_CONTROL" },
+                        cand = { excludeSpellIDs = ex },
+                        ccLead = true,
+                    }
                     break
                 end
             end
@@ -1558,17 +1904,25 @@ local function BuildRecords(s, dmCfg)
         else
             castFrame = Cand(false)
         end
-        records[#records + 1] = { key = "dispel", tokens = tokenList, cand = castFrame, tile = claimMap.dispel }
+        records[#records + 1] =
+            { key = "dispel", tokens = tokenList, cand = castFrame, tile = claimMap.dispel }
     end
     if eff.raid and (claimMap.raid or effectCats.raid or not allOn) then
-        records[#records + 1] = { key = "raid",
+        records[#records + 1] = {
+            key = "raid",
             tokens = Neg({ "HARMFUL", "RAID" }, true, true, false),
-            cand = Cand(false), tile = claimMap.raid }
+            cand = Cand(false),
+            tile = claimMap.raid,
+        }
     end
     if eff.raidcombat and (claimMap.raidcombat or effectCats.raidcombat or not allOn) then
         local tokenList = Neg({ "HARMFUL", "RAID_IN_COMBAT" }, true, true, true)
-        records[#records + 1] = { key = "raidcombat", tokens = tokenList,
-            cand = Cand(false), tile = claimMap.raidcombat }
+        records[#records + 1] = {
+            key = "raidcombat",
+            tokens = tokenList,
+            cand = Cand(false),
+            tile = claimMap.raidcombat,
+        }
     end
 
     local function BoolTokens()
@@ -1582,7 +1936,8 @@ local function BuildRecords(s, dmCfg)
     if eff.castbyme and (claimMap.castbyme or effectCats.castbyme or not allOn) then
         local tokenList = Neg({ "HARMFUL", "PLAYER" }, true, true, true)
         if eff.raidcombat or IsNegated("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
-        records[#records + 1] = { key = "castbyme", tokens = tokenList, cand = Cand(false), tile = claimMap.castbyme }
+        records[#records + 1] =
+            { key = "castbyme", tokens = tokenList, cand = Cand(false), tile = claimMap.castbyme }
     end
     -- Per-type dispels: one include-map record per shown type. Only crowd
     -- control is negated (cc owns every overlap); every other record excludes
@@ -1590,8 +1945,12 @@ local function BuildRecords(s, dmCfg)
     for i = 1, #TYPE_ORDER do
         local category = TYPE_ORDER[i]
         if eff[category] and (claimMap[category] or effectCats[category] or not allOn) then
-            records[#records + 1] = { key = category, tokens = Neg({ "HARMFUL" }, true, false, false),
-                cand = Cand(false, { includeDispelTypes = TYPE_INCLUDE[category] }), tile = claimMap[category] }
+            records[#records + 1] = {
+                key = category,
+                tokens = Neg({ "HARMFUL" }, true, false, false),
+                cand = Cand(false, { includeDispelTypes = TYPE_INCLUDE[category] }),
+                tile = claimMap[category],
+            }
         end
     end
     -- Boss/role merge into one record only when they route to the SAME place; split claims build separate records.
@@ -1599,27 +1958,47 @@ local function BuildRecords(s, dmCfg)
     local bossOn = eff.boss and (bossTile or effectCats.boss or not allOn)
     local roleOn = eff.role and (roleTile or effectCats.role or not allOn)
     if bossOn and roleOn and bossTile == roleTile then
-        records[#records + 1] = { key = "bossrole", tokens = BoolTokens(),
-            cand = Cand(true, { isBossOrRoleAura = true }), tile = bossTile }
+        records[#records + 1] = {
+            key = "bossrole",
+            tokens = BoolTokens(),
+            cand = Cand(true, { isBossOrRoleAura = true }),
+            tile = bossTile,
+        }
     else
         if bossOn then
-            records[#records + 1] = { key = "boss", tokens = BoolTokens(),
-                cand = Cand(true, { isBossAura = true }), tile = bossTile }
+            records[#records + 1] = {
+                key = "boss",
+                tokens = BoolTokens(),
+                cand = Cand(true, { isBossAura = true }),
+                tile = bossTile,
+            }
         end
         if roleOn then
-            records[#records + 1] = { key = "role", tokens = BoolTokens(),
-                cand = Cand(true, { isRoleAura = true }), tile = roleTile }
+            records[#records + 1] = {
+                key = "role",
+                tokens = BoolTokens(),
+                cand = Cand(true, { isRoleAura = true }),
+                tile = roleTile,
+            }
         end
     end
     if eff.priority and (claimMap.priority or effectCats.priority or not allOn) then
-        records[#records + 1] = { key = "priority", tokens = BoolTokens(),
-            cand = Cand(true, { isPriorityAura = true }), tile = claimMap.priority }
+        records[#records + 1] = {
+            key = "priority",
+            tokens = BoolTokens(),
+            cand = Cand(true, { isPriorityAura = true }),
+            tile = claimMap.priority,
+        }
     end
     -- Can Apply Aura: boolean record (debuffs the player's own class can apply),
     -- same shape and overlap doctrine as the other boolean categories.
     if eff.canapply and (claimMap.canapply or effectCats.canapply or not allOn) then
-        records[#records + 1] = { key = "canapply", tokens = BoolTokens(),
-            cand = Cand(true, { canApplyAura = true }), tile = claimMap.canapply }
+        records[#records + 1] = {
+            key = "canapply",
+            tokens = BoolTokens(),
+            cand = Cand(true, { canApplyAura = true }),
+            tile = claimMap.canapply,
+        }
     end
 
     -- Non-Player Auras: boolean record (isFromPlayerOrPlayerPet = false -- debuffs not caused by ANY player or
@@ -1629,8 +2008,12 @@ local function BuildRecords(s, dmCfg)
     -- under Show All, so the base skips it there; a claiming tile or a per-filter effect still forces it (same
     -- routing as the other boolean categories).
     if eff.nonplayer and (claimMap.nonplayer or effectCats.nonplayer or not allOn) then
-        records[#records + 1] = { key = "nonplayer", tokens = BoolTokens(),
-            cand = Cand(false, { isFromPlayerOrPlayerPet = npAny }), tile = claimMap.nonplayer }
+        records[#records + 1] = {
+            key = "nonplayer",
+            tokens = BoolTokens(),
+            cand = Cand(false, { isFromPlayerOrPlayerPet = npAny }),
+            tile = claimMap.nonplayer,
+        }
     end
 
     -- MATCH ALL: ONE conjunction record per Match All set, hosted by `tile` (nil =
@@ -1648,7 +2031,9 @@ local function BuildRecords(s, dmCfg)
         local restT, restC = MatchFinish(rest)
         if restT and fl then
             local inSet, split = {}, {}
-            for i = 1, #catList do inSet[catList[i]] = true end
+            for i = 1, #catList do
+                inSet[catList[i]] = true
+            end
             for i = 1, #fl do
                 local entry = fl[i]
                 if FxEntryActive(entry) then
@@ -1670,11 +2055,19 @@ local function BuildRecords(s, dmCfg)
                                 local pT, pC = MatchFinish(place)
                                 if pT then
                                     local pcats = { Other }
-                                    for c = 1, #catList do pcats[#pcats + 1] = catList[c] end
+                                    for c = 1, #catList do
+                                        pcats[#pcats + 1] = catList[c]
+                                    end
                                     table.sort(pcats)
                                     pC.excludeSpellIDs = ex
-                                    records[#records + 1] = { key = "match:" .. table.concat(pcats, "+"),
-                                        tokens = pT, cand = pC, cats = pcats, tile = tile, match = true }
+                                    records[#records + 1] = {
+                                        key = "match:" .. table.concat(pcats, "+"),
+                                        tokens = pT,
+                                        cand = pC,
+                                        cats = pcats,
+                                        tile = tile,
+                                        match = true,
+                                    }
                                     local negm = MatchCopy(rest)
                                     MatchApply(negm, Other, false, dmCfg)
                                     rest = negm
@@ -1689,8 +2082,14 @@ local function BuildRecords(s, dmCfg)
         end
         if restT then
             restC.excludeSpellIDs = ex
-            records[#records + 1] = { key = "match:" .. table.concat(catList, "+"),
-                tokens = restT, cand = restC, cats = catList, tile = tile, match = true }
+            records[#records + 1] = {
+                key = "match:" .. table.concat(catList, "+"),
+                tokens = restT,
+                cand = restC,
+                cats = catList,
+                tile = tile,
+                match = true,
+            }
         end
     end
     if matchOn then
@@ -1716,9 +2115,13 @@ local function BuildRecords(s, dmCfg)
             if negated and tileDef.claim.cc ~= true then
                 for c = 1, #CATS do
                     local category = CATS[c]
-                    if negated[category] == true and category ~= "cc" and tileDef.claim[category] ~= true
+                    if
+                        negated[category] == true
+                        and category ~= "cc"
+                        and tileDef.claim[category] ~= true
                         and not (allOn and (MATCH_BOOL[category] or category == "nonplayer"))
-                        and not TokHideOwned(tileDef.claim, category) then
+                        and not TokHideOwned(tileDef.claim, category)
+                    then
                         local try = MatchCopy(match)
                         MatchApply(try, category, false, dmCfg)
                         if MatchFinish(try) then match = try end
@@ -1748,8 +2151,7 @@ local function BuildRecords(s, dmCfg)
             if sub.nonplayer then castFrame.isFromPlayerOrPlayerPet = npHideVal end
             if sub.canapply then castFrame.canApplyAura = false end
         end
-        records[#records + 1] = { key = "all", tokens = BoolTokens(),
-            cand = castFrame, tile = claimsAll }
+        records[#records + 1] = { key = "all", tokens = BoolTokens(), cand = castFrame, tile = claimsAll }
     end
 
     -- Dead-corpse catch-all: ONE indicator showing Non-Player Auras drops ALL its
@@ -1768,18 +2170,33 @@ local function BuildRecords(s, dmCfg)
         if dtiles then
             for i = 1, #dtiles do
                 local tileDef = dtiles[i]
-                if tileDef.enabled and (tileDef.type == "icons" or tileDef.type == "square") and tileDef.all == true then
+                if
+                    tileDef.enabled
+                    and (tileDef.type == "icons" or tileDef.type == "square")
+                    and tileDef.all == true
+                then
                     deadBlocked = true
                 end
-                if not deadTile and tileDef.enabled and tileDef.type == "icons" and tileDef.claim and tileDef.claim.nonplayer then
+                if
+                    not deadTile
+                    and tileDef.enabled
+                    and tileDef.type == "icons"
+                    and tileDef.claim
+                    and tileDef.claim.nonplayer
+                then
                     deadTile = tileDef
                 end
             end
         end
         -- The From Any Player flavor is not "Non-Player Auras": no corpse swap.
         if not deadBlocked and not npAny and (deadTile or baseView.nonplayer == true) then
-            records[#records + 1] = { key = "npdead", tokens = { "HARMFUL" },
-                cand = { excludeSpellIDs = ex }, deadOnly = true, tile = deadTile }
+            records[#records + 1] = {
+                key = "npdead",
+                tokens = { "HARMFUL" },
+                cand = { excludeSpellIDs = ex },
+                deadOnly = true,
+                tile = deadTile,
+            }
         end
     end
 
@@ -1804,12 +2221,26 @@ local function BuildRecords(s, dmCfg)
         for i = 1, #records do
             local record = records[i]
             local k = record.key
-            if k == "priority" then hasPri = true; byCat.priority = record
-            elseif k == "boss" then hasBoss = true; byCat.boss = record
-            elseif k == "role" then hasRole = true; byCat.role = record
-            elseif k == "bossrole" then hasBoss = true; hasRole = true; byCat.boss = record; byCat.role = record
-            elseif k == "canapply" then hasCan = true; byCat.canapply = record
-            elseif k == "nonplayer" then hasNp = true end
+            if k == "priority" then
+                hasPri = true
+                byCat.priority = record
+            elseif k == "boss" then
+                hasBoss = true
+                byCat.boss = record
+            elseif k == "role" then
+                hasRole = true
+                byCat.role = record
+            elseif k == "bossrole" then
+                hasBoss = true
+                hasRole = true
+                byCat.boss = record
+                byCat.role = record
+            elseif k == "canapply" then
+                hasCan = true
+                byCat.canapply = record
+            elseif k == "nonplayer" then
+                hasNp = true
+            end
         end
         -- True when record h already keeps category c out: the base add-mode
         -- hide lane Cand folded in, or its indicator's hide lane (applied below).
@@ -1835,10 +2266,18 @@ local function BuildRecords(s, dmCfg)
                 local own = BOOL_OWN[record.key]
                 if own then
                     local castFrame, rank, k = record.cand, own.rank, record.key
-                    if rank > 1 and castFrame.isPriorityAura == nil and Owns(byCat.priority, k) then castFrame.isPriorityAura = false end
-                    if rank > 2 and castFrame.isBossAura == nil and Owns(byCat.boss, k) then castFrame.isBossAura = false end
-                    if rank > 3 and castFrame.isRoleAura == nil and Owns(byCat.role, k) then castFrame.isRoleAura = false end
-                    if rank > 4 and castFrame.canApplyAura == nil and Owns(byCat.canapply, k) then castFrame.canApplyAura = false end
+                    if rank > 1 and castFrame.isPriorityAura == nil and Owns(byCat.priority, k) then
+                        castFrame.isPriorityAura = false
+                    end
+                    if rank > 2 and castFrame.isBossAura == nil and Owns(byCat.boss, k) then
+                        castFrame.isBossAura = false
+                    end
+                    if rank > 3 and castFrame.isRoleAura == nil and Owns(byCat.role, k) then
+                        castFrame.isRoleAura = false
+                    end
+                    if rank > 4 and castFrame.canApplyAura == nil and Owns(byCat.canapply, k) then
+                        castFrame.canApplyAura = false
+                    end
                     if rank > 5 and hasNp and castFrame.isFromPlayerOrPlayerPet == nil then
                         castFrame.isFromPlayerOrPlayerPet = npHideVal
                     end
@@ -1862,7 +2301,11 @@ local function BuildRecords(s, dmCfg)
             local own = BOOL_OWN[record.key]
             local fl
             if own and own.cats then
-                if record.tile then fl = record.tile.fxList else fl = baseView.fxList end
+                if record.tile then
+                    fl = record.tile.fxList
+                else
+                    fl = baseView.fxList
+                end
             end
             if fl then
                 local castFrame, tn, done = record.cand, record.tile and record.tile.neg, {}
@@ -1886,12 +2329,23 @@ local function BuildRecords(s, dmCfg)
                         for posX = 1, #xs do
                             local Other = xs[posX]
                             local xo = BOOL_OWN[Other]
-                            if xo and xo.field and xo.rank > own.rank and has[Other] and not done[Other]
-                                and castFrame[xo.field] == nil and not (tn and tn[Other] == true) then
+                            if
+                                xo
+                                and xo.field
+                                and xo.rank > own.rank
+                                and has[Other]
+                                and not done[Other]
+                                and castFrame[xo.field] == nil
+                                and not (tn and tn[Other] == true)
+                            then
                                 done[Other] = true
                                 local castCopy, tokenCopy = {}, {}
-                                for kk, val in pairs(castFrame) do castCopy[kk] = val end
-                                for kk = 1, #record.tokens do tokenCopy[kk] = record.tokens[kk] end
+                                for kk, val in pairs(castFrame) do
+                                    castCopy[kk] = val
+                                end
+                                for kk = 1, #record.tokens do
+                                    tokenCopy[kk] = record.tokens[kk]
+                                end
                                 local key, pcats = own.npKey, own.npCats
                                 if Other == "nonplayer" then
                                     castCopy[xo.field], castFrame[xo.field] = npAny, npHideVal
@@ -1902,10 +2356,17 @@ local function BuildRecords(s, dmCfg)
                                     if merged and (Other == "boss" or Other == "role") then
                                         pcats[2] = (Other == "boss") and "role" or "boss"
                                     end
-                                    for c = 1, #own.cats do pcats[#pcats + 1] = own.cats[c] end
+                                    for c = 1, #own.cats do
+                                        pcats[#pcats + 1] = own.cats[c]
+                                    end
                                 end
-                                records[#records + 1] = { key = key, tokens = tokenCopy, cand = castCopy,
-                                    tile = record.tile, cats = pcats }
+                                records[#records + 1] = {
+                                    key = key,
+                                    tokens = tokenCopy,
+                                    cand = castCopy,
+                                    tile = record.tile,
+                                    cats = pcats,
+                                }
                             end
                         end
                     end
@@ -1924,7 +2385,9 @@ local function BuildRecords(s, dmCfg)
     -- base hide lane never touches cc content either -- cc owns its overlaps,
     -- and a magic stun must never vanish from both cc and dispel).
     local function HasTok(tokenList, tok)
-        for i = 1, #tokenList do if tokenList[i] == tok then return true end end
+        for i = 1, #tokenList do
+            if tokenList[i] == tok then return true end
+        end
         return false
     end
     for i = 1, #records do
@@ -1950,9 +2413,15 @@ local function BuildRecords(s, dmCfg)
             if tn.raidcombat == true and key ~= "raidcombat" and not HasTok(tokenList, "!RAID_IN_COMBAT") then
                 tokenList[#tokenList + 1] = "!RAID_IN_COMBAT"
             end
-            if tn.boss == true and castFrame.isBossAura == nil and castFrame.isBossOrRoleAura == nil then castFrame.isBossAura = false end
-            if tn.role == true and castFrame.isRoleAura == nil and castFrame.isBossOrRoleAura == nil then castFrame.isRoleAura = false end
-            if tn.priority == true and castFrame.isPriorityAura == nil then castFrame.isPriorityAura = false end
+            if tn.boss == true and castFrame.isBossAura == nil and castFrame.isBossOrRoleAura == nil then
+                castFrame.isBossAura = false
+            end
+            if tn.role == true and castFrame.isRoleAura == nil and castFrame.isBossOrRoleAura == nil then
+                castFrame.isRoleAura = false
+            end
+            if tn.priority == true and castFrame.isPriorityAura == nil then
+                castFrame.isPriorityAura = false
+            end
             if tn.nonplayer == true and key ~= "nonplayer" and castFrame.isFromPlayerOrPlayerPet == nil then
                 castFrame.isFromPlayerOrPlayerPet = npHideVal
             end
@@ -1984,10 +2453,9 @@ local function BuildRecords(s, dmCfg)
         -- implies Has Duration (a capped aura is a timed aura). nil = Unlimited
         -- = no field on the candidate table at all.
         local cap = ownerFrame.maxDurSec or (ownerFrame.hasDuration == true and math.huge) or nil
-        if cap and record.key ~= "cc" and record.key ~= "npdead" then
-            record.cand.maxDuration = cap
-        end
-        record.fxSize = FxSizeFor(record.tile and record.tile.fxList or baseView.fxList, record.cats or record.key)
+        if cap and record.key ~= "cc" and record.key ~= "npdead" then record.cand.maxDuration = cap end
+        record.fxSize =
+            FxSizeFor(record.tile and record.tile.fxList or baseView.fxList, record.cats or record.key)
     end
 
     -- HAND-OFF: each Match All set (matchSets, in precedence order) is taken out
@@ -2014,8 +2482,16 @@ local function BuildRecords(s, dmCfg)
                     for profile = 1, #parts do
                         local tokenList, castFrame = MatchFinish(parts[profile])
                         if tokenList then
-                            result[#result + 1] = { key = record.key, tokens = tokenList, cand = castFrame, tile = record.tile,
-                                cats = record.cats, fxSize = record.fxSize, match = record.match, ccLead = record.ccLead }
+                            result[#result + 1] = {
+                                key = record.key,
+                                tokens = tokenList,
+                                cand = castFrame,
+                                tile = record.tile,
+                                cats = record.cats,
+                                fxSize = record.fxSize,
+                                match = record.match,
+                                ccLead = record.ccLead,
+                            }
                         end
                     end
                 else
@@ -2041,9 +2517,7 @@ end
 
 -- Indicator Match All (options: the Filters summary join, the sidebar
 -- subtitle and the "can never match" warning).
-function mod.DM_TileMatchOn(tileDef)
-    return tileDef ~= nil and TileMatchOn(tileDef)
-end
+function mod.DM_TileMatchOn(tileDef) return tileDef ~= nil and TileMatchOn(tileDef) end
 
 function mod.DM_TileMatchEmpty(tileDef)
     local dmCfg = DM()
@@ -2057,7 +2531,9 @@ end
 local function CandFP(castFrame)
     if not castFrame then return "-" end
     local keyList = {}
-    for key in pairs(castFrame) do keyList[#keyList + 1] = key end
+    for key in pairs(castFrame) do
+        keyList[#keyList + 1] = key
+    end
     table.sort(keyList)
     local parts = {}
     for i = 1, #keyList do
@@ -2074,7 +2550,9 @@ local function CandFP(castFrame)
                 parts[#parts + 1] = k .. "=" .. num .. ":" .. sum
             else
                 local nameList = {}
-                for name in pairs(val) do nameList[#nameList + 1] = tostring(name) end
+                for name in pairs(val) do
+                    nameList[#nameList + 1] = tostring(name)
+                end
                 table.sort(nameList)
                 parts[#parts + 1] = k .. "=" .. table.concat(nameList, "+")
             end
@@ -2094,8 +2572,14 @@ local function GroupKey(AKL, region)
     -- variant); size VALUE excluded on purpose since the sized style key is stable per category and its content
     -- rebuilds on edits, so a slider drag restyles buttons instead of minting an engine batch per step.
     -- "|lead" marks the CC row's record form (its own style and flow slot, see BuildRecords).
-    return "dm_" .. region.key .. "|" .. AKL.Filter(unpack(region.tokens))
-        .. (region.fxSize and "|sz" or "") .. (region.ccLead and "|lead" or "") .. "|" .. CandFP(region.cand)
+    return "dm_"
+        .. region.key
+        .. "|"
+        .. AKL.Filter(unpack(region.tokens))
+        .. (region.fxSize and "|sz" or "")
+        .. (region.ccLead and "|lead" or "")
+        .. "|"
+        .. CandFP(region.cand)
 end
 
 -- Effect-tile category resolution: one live-settable slot per tile.
@@ -2105,15 +2589,15 @@ local function EffectFilterFor(dmCfg, category)
     if category == "raidcombat" then return { "HARMFUL", "RAID_IN_COMBAT" }, nil end
     if category == "dispel" then
         -- Follows the base dispel flavor: by-you token or typed include map.
-        if dmCfg.dispelMode == "typed" then
-            return { "HARMFUL" }, { includeDispelTypes = TYPED_DEBUFFS }
-        end
+        if dmCfg.dispelMode == "typed" then return { "HARMFUL" }, { includeDispelTypes = TYPED_DEBUFFS } end
         return { "HARMFUL", "RAID_PLAYER_DISPELLABLE" }, nil
     end
     if category == "boss" then return { "HARMFUL" }, { isBossAura = true } end
     if category == "role" then return { "HARMFUL" }, { isRoleAura = true } end
     -- Follows the base Non-Player flavor (false = Non-Player Auras, true = From Any Player).
-    if category == "nonplayer" then return { "HARMFUL" }, { isFromPlayerOrPlayerPet = dmCfg.nonplayerMode == "any" } end
+    if category == "nonplayer" then
+        return { "HARMFUL" }, { isFromPlayerOrPlayerPet = dmCfg.nonplayerMode == "any" }
+    end
     if category == "castbyme" then return { "HARMFUL", "PLAYER" }, nil end
     if TYPE_CATS[category] then return { "HARMFUL" }, { includeDispelTypes = TYPE_INCLUDE[category] } end
     if category == "canapply" then return { "HARMFUL" }, { canApplyAura = true } end
@@ -2157,7 +2641,9 @@ local function EffectFilterForTile(dmCfg, tileDef, category)
             end
         end
         if tn.raid == true and category ~= "raid" then tokenList[#tokenList + 1] = "!RAID" end
-        if tn.raidcombat == true and category ~= "raidcombat" then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
+        if tn.raidcombat == true and category ~= "raidcombat" then
+            tokenList[#tokenList + 1] = "!RAID_IN_COMBAT"
+        end
         if tn.boss == true and category ~= "boss" then
             castFrame = castFrame or {}
             if castFrame.isBossAura == nil then castFrame.isBossAura = false end
@@ -2172,7 +2658,9 @@ local function EffectFilterForTile(dmCfg, tileDef, category)
         end
         if tn.nonplayer == true and category ~= "nonplayer" then
             castFrame = castFrame or {}
-            if castFrame.isFromPlayerOrPlayerPet == nil then castFrame.isFromPlayerOrPlayerPet = (dmCfg.nonplayerMode ~= "any") end
+            if castFrame.isFromPlayerOrPlayerPet == nil then
+                castFrame.isFromPlayerOrPlayerPet = (dmCfg.nonplayerMode ~= "any")
+            end
         end
         if tn.castbyme == true and category ~= "castbyme" then tokenList[#tokenList + 1] = "!PLAYER" end
         if tn.canapply == true and category ~= "canapply" then
@@ -2190,14 +2678,18 @@ local function EffectFilterForTile(dmCfg, tileDef, category)
                 if included then
                     if included[T] then
                         local match = {}
-                        for key, val in pairs(included) do match[key] = val end
+                        for key, val in pairs(included) do
+                            match[key] = val
+                        end
                         match[T] = nil
                         castFrame.includeDispelTypes = match
                     end
                 elseif castFrame.excludeDispelTypes ~= TYPED_DEBUFFS then
                     local match = {}
                     if castFrame.excludeDispelTypes then
-                        for key, val in pairs(castFrame.excludeDispelTypes) do match[key] = val end
+                        for key, val in pairs(castFrame.excludeDispelTypes) do
+                            match[key] = val
+                        end
                     end
                     match[T] = true
                     castFrame.excludeDispelTypes = match
@@ -2336,9 +2828,12 @@ local function FxApplyInner(btnFrame, dropdown, refs, effect)
         local specInfo = FX_GLOW_SPEC
         specInfo.style = effect.glowType or 1
         specInfo.excludes = Glows.RECT_EXCLUDES
-        specInfo.r, specInfo.g, specInfo.b = Glows.ResolveColor(effect.glowMode or "default", effect.r, effect.g, effect.b, 1, 0.78, 0.38)
-        specInfo.lines, specInfo.thickness, specInfo.speed = effect.glowLines, effect.glowThickness, effect.glowSpeed
-        specInfo.bg, specInfo.bgR, specInfo.bgG, specInfo.bgB = effect.glowBg, effect.glowBgR, effect.glowBgG, effect.glowBgB
+        specInfo.r, specInfo.g, specInfo.b =
+            Glows.ResolveColor(effect.glowMode or "default", effect.r, effect.g, effect.b, 1, 0.78, 0.38)
+        specInfo.lines, specInfo.thickness, specInfo.speed =
+            effect.glowLines, effect.glowThickness, effect.glowSpeed
+        specInfo.bg, specInfo.bgR, specInfo.bgG, specInfo.bgB =
+            effect.glowBg, effect.glowBgR, effect.glowBgG, effect.glowBgB
         -- Size from the unit frame's REAL rect (refs.host is ours, outside the forbidden subtree, so the read is legal here).
         local rect = (refs.health and refs.health._cuiKitRef) or refs.host
         local gw = rect:GetWidth() or 0
@@ -2347,7 +2842,6 @@ local function FxApplyInner(btnFrame, dropdown, refs, effect)
         if gh < 1 then gh = gw end
         -- Engine host: C-side styles only (driver-ticked glows freeze on the forbidden slot subtree).
         Glows.StartSpecGlow(owner, specInfo, gw, gh, "engine")
-
     elseif effect.kind == "healthcolor" then
         local frame = dropdown.dmFxHcFrame
         local texture = dropdown.dmFxHc
@@ -2355,32 +2849,55 @@ local function FxApplyInner(btnFrame, dropdown, refs, effect)
         -- Level tie set at creation; NO re-check here -- subtree reads (ours included) are denied outside the creation window and would kill this branch.
         -- The bar itself is OURS and outside that subtree, so the tint can read its
         -- fill texture here and keep the health bar's shading instead of flattening it.
-        mod.RF_TintOverBarFill(texture, refs.health, effect.r or 1, effect.g or 0.2, effect.b or 0.2, effect.a or 0.5)
+        mod.RF_TintOverBarFill(
+            texture,
+            refs.health,
+            effect.r or 1,
+            effect.g or 0.2,
+            effect.b or 0.2,
+            effect.a or 0.5
+        )
         -- Re-anchored to the bar's current fill direction on every restyle as well: a
         -- container back from the stale sweep missed the registry's re-anchor.
-        mod.RF_AnchorCurHealth(frame, refs.health,
-            refs.health.GetStatusBarTexture and refs.health:GetStatusBarTexture())
+        mod.RF_AnchorCurHealth(
+            frame,
+            refs.health,
+            refs.health.GetStatusBarTexture and refs.health:GetStatusBarTexture()
+        )
         frame:Show()
-
     elseif effect.kind == "square" then
         local geoFrame = dropdown.dmFxGeoF
         if not geoFrame then return end -- created in extraInit
         local wid = effect.w or 10
         local hgt = effect.h or 10
-        local sig = table.concat({ tostring(wid), tostring(hgt), tostring(effect.corner),
-            tostring(effect.offX), tostring(effect.offY) }, ",")
+        local sig = table.concat(
+            {
+                tostring(wid),
+                tostring(hgt),
+                tostring(effect.corner),
+                tostring(effect.offX),
+                tostring(effect.offY),
+            },
+            ","
+        )
         if dropdown.dmFxGeo ~= sig then
             -- Geometry rides OUR frame (always-legal calls); the sig cache keeps repeat applies cheap.
             geoFrame:SetSize(wid, hgt)
             geoFrame:ClearAllPoints()
-            geoFrame:SetPoint(effect.corner or "CENTER", refs.health, effect.corner or "CENTER",
-                effect.offX or 0, effect.offY or 0)
+            geoFrame:SetPoint(
+                effect.corner or "CENTER",
+                refs.health,
+                effect.corner or "CENTER",
+                effect.offX or 0,
+                effect.offY or 0
+            )
             dropdown.dmFxGeo = sig
         end
         local texture = dropdown.dmFxSq
-        if texture then texture:SetColorTexture(effect.r or 1, effect.g or 1, effect.b or 1, effect.a or 1) end
+        if texture then
+            texture:SetColorTexture(effect.r or 1, effect.g or 1, effect.b or 1, effect.a or 1)
+        end
         geoFrame:Show()
-
     elseif effect.kind == "bar" then
         local geoFrame = dropdown.dmFxGeoF
         if not geoFrame then return end -- created in extraInit
@@ -2389,9 +2906,20 @@ local function FxApplyInner(btnFrame, dropdown, refs, effect)
         local wid = effect.w or 30
         local hgt = effect.h or 4
         local isVert = effect.orient == "VERTICAL"
-        local sig = table.concat({ tostring(wid), tostring(hgt), tostring(effect.corner),
-            tostring(effect.offX), tostring(effect.offY), tostring(effect.orient),
-            tostring(effect.fullW), tostring(effect.fullH), tostring(effect.lvl) }, ",")
+        local sig = table.concat(
+            {
+                tostring(wid),
+                tostring(hgt),
+                tostring(effect.corner),
+                tostring(effect.offX),
+                tostring(effect.offY),
+                tostring(effect.orient),
+                tostring(effect.fullW),
+                tostring(effect.fullH),
+                tostring(effect.lvl),
+            },
+            ","
+        )
         if dropdown.dmFxGeo ~= sig then
             local health = refs.health
             geoFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
@@ -2408,20 +2936,26 @@ local function FxApplyInner(btnFrame, dropdown, refs, effect)
                 geoFrame:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
             elseif fullW then
                 local vEdge = (place:find("BOTTOM", 1, true) and "BOTTOM")
-                    or (place:find("TOP", 1, true) and "TOP") or ""
+                    or (place:find("TOP", 1, true) and "TOP")
+                    or ""
                 local oy = effect.offY or 0
                 geoFrame:SetPoint(vEdge .. "LEFT", health, vEdge .. "LEFT", 0, oy)
                 geoFrame:SetPoint(vEdge .. "RIGHT", health, vEdge .. "RIGHT", 0, oy)
                 geoFrame:SetHeight(isVert and wid or hgt)
             elseif fullH then
                 local hEdge = (place:find("RIGHT", 1, true) and "RIGHT")
-                    or (place:find("LEFT", 1, true) and "LEFT") or ""
+                    or (place:find("LEFT", 1, true) and "LEFT")
+                    or ""
                 local ox = effect.offX or 0
                 geoFrame:SetPoint("TOP" .. hEdge, health, "TOP" .. hEdge, ox, 0)
                 geoFrame:SetPoint("BOTTOM" .. hEdge, health, "BOTTOM" .. hEdge, ox, 0)
                 geoFrame:SetWidth(isVert and hgt or wid)
             else
-                if isVert then geoFrame:SetSize(hgt, wid) else geoFrame:SetSize(wid, hgt) end
+                if isVert then
+                    geoFrame:SetSize(hgt, wid)
+                else
+                    geoFrame:SetSize(wid, hgt)
+                end
                 geoFrame:SetPoint(place, health, place, effect.offX or 0, effect.offY or 0)
             end
             -- Frame Level band relative to the unit button (our frame; the read is legal in the creation window).
@@ -2429,11 +2963,19 @@ local function FxApplyInner(btnFrame, dropdown, refs, effect)
             dropdown.dmFxGeo = sig
         end
         geoFrame:SetReverseFill(effect.reverseFill or false)
-        geoFrame:SetStatusBarColor(effect.r or 0.25, effect.g or 0.8, effect.b or 0.45,
-            (effect.colorOp or 100) / 100)
+        geoFrame:SetStatusBarColor(
+            effect.r or 0.25,
+            effect.g or 0.8,
+            effect.b or 0.45,
+            (effect.colorOp or 100) / 100
+        )
         if dropdown.dmFxBarBg then
-            dropdown.dmFxBarBg:SetColorTexture(effect.bgR or 0, effect.bgG or 0, effect.bgB or 0,
-                (effect.bgOp or 50) / 100)
+            dropdown.dmFxBarBg:SetColorTexture(
+                effect.bgR or 0,
+                effect.bgG or 0,
+                effect.bgB or 0,
+                (effect.bgOp or 50) / 100
+            )
         end
         geoFrame:Show()
     end
@@ -2453,9 +2995,15 @@ local function FxApply(btnFrame, dropdown, style)
     -- pseudo-slot renders (fx.matchOn / fx.matchLive, resolved at style build).
     -- Both paths stay pcall-wrapped: this runs inside the engine's CreateFrameBatch,
     -- where an uncaught error aborts the whole batch and the slot never appears.
-    if dropdown and effect.filters and ((dropdown.dmCat == "match" and effect.matchLive)
-        or (not effect.matchOn and effect.filters[dropdown.dmCat])
-        or (dropdown.dmCat == "all" and effect.tile and TileCatchAllOn(effect.tile))) then
+    if
+        dropdown
+        and effect.filters
+        and (
+            (dropdown.dmCat == "match" and effect.matchLive)
+            or (not effect.matchOn and effect.filters[dropdown.dmCat])
+            or (dropdown.dmCat == "all" and effect.tile and TileCatchAllOn(effect.tile))
+        )
+    then
         pcall(FxApplyInner, btnFrame, dropdown, refs, effect)
     else
         pcall(FxHideAll, dropdown)
@@ -2503,8 +3051,10 @@ local function AnchorTileContainer(boxHolder, health, s, tileDef, skinData)
             else
                 gV = wrapUp and "UP" or "DOWN"
             end
-            AK.SetContainerAnchor(boxHolder,
-                ((gV == "UP") and "BOTTOM" or "TOP") .. ((gH == "LEFT") and "RIGHT" or "LEFT"))
+            AK.SetContainerAnchor(
+                boxHolder,
+                ((gV == "UP") and "BOTTOM" or "TOP") .. ((gH == "LEFT") and "RIGHT" or "LEFT")
+            )
         else
             AK.SetContainerAnchor(boxHolder, corner)
         end
@@ -2534,12 +3084,21 @@ local dmTileFP = {}
 local function RefreshTileGridStyle(key, tileStyle, s, tileDef, renderSize, font)
     local savedVars = TileStyleView(s, tileDef)
     local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(savedVars, font)) or "")
-        .. "|" .. tostring(renderSize)
-        .. "|" .. FxListFP(tileDef.fxList)
+        .. "|"
+        .. tostring(renderSize)
+        .. "|"
+        .. FxListFP(tileDef.fxList)
     if tileDef.type == "square" then
         local color = tileDef.color or {}
-        val = val .. "|sq" .. string.format("%.2f,%.2f,%.2f,%.2f",
-            color.r or 1, color.g or 0.35, color.b or 0.35, color.a or 1)
+        val = val
+            .. "|sq"
+            .. string.format(
+                "%.2f,%.2f,%.2f,%.2f",
+                color.r or 1,
+                color.g or 0.35,
+                color.b or 0.35,
+                color.a or 1
+            )
     end
     if tileStyle.style ~= val and mod.RFC_BuildDebuffStyle then
         tileStyle.style = val
@@ -2566,44 +3125,77 @@ local function EnsureTileStyle(skinData, s, tileDef, szOv, szCat)
         key = "rf:dmfx:" .. cls .. ":" .. tostring(tileDef.id)
     end
     local tileStyle = dmTileFP[key]
-    if not tileStyle then tileStyle = {}; dmTileFP[key] = tileStyle end
+    if not tileStyle then
+        tileStyle = {}
+        dmTileFP[key] = tileStyle
+    end
 
     local font = (CUI.GetFontPath("raidFrames")) or ""
     local val
     if isGrid then
         -- Rebuild handles for DM_RefreshSizedStyles (base-style edits re-derive this key without an apply pass).
         tileStyle.cls, tileStyle.tid, tileStyle.szOv, tileStyle.grid = cls, tileDef.id, szOv, true
-        RefreshTileGridStyle(key, tileStyle, s, tileDef,
-            EffectiveIconSizeForClass(szOv or tileDef.size or 18, cls), font)
+        RefreshTileGridStyle(
+            key,
+            tileStyle,
+            s,
+            tileDef,
+            EffectiveIconSizeForClass(szOv or tileDef.size or 18, cls),
+            font
+        )
     else
         local color = tileDef.color or {}
         local bgc = tileDef.barBgColor or {}
         local cl = {}
         if tileDef.claim then
-            for k2, on in pairs(tileDef.claim) do if on then cl[#cl + 1] = k2 end end
+            for k2, on in pairs(tileDef.claim) do
+                if on then cl[#cl + 1] = k2 end
+            end
             table.sort(cl)
         end
         -- Match All gate inputs (FxApply): on, and whether the set can match at all
         -- (reads the tile's lanes and the shared dispel / Non-Player flavors).
         local mOn = TileMatchOn(tileDef)
         local mLive = mOn and not TileMatchEmpty(tileDef, DM() or {})
-        val = table.concat({ tostring(tileDef.type), tostring(tileDef.glowType), tostring(tileDef.glowLines),
-            tostring(tileDef.glowThickness), tostring(tileDef.glowSpeed), tostring(tileDef.glowColorMode),
-            mod.RF_GlowClassFP(tileDef.glowColorMode),
-            tostring(tileDef.glowBackground), tileDef.glowBackgroundColor and string.format("%.2f,%.2f,%.2f",
-                tileDef.glowBackgroundColor.r or 0, tileDef.glowBackgroundColor.g or 0, tileDef.glowBackgroundColor.b or 0) or "-",
-            tostring(tileDef.opacity), tostring(tileDef.size),
-            tostring(tileDef.width), tostring(tileDef.height), tostring(tileDef.position),
-            tostring(tileDef.offsetX), tostring(tileDef.offsetY),
-            tostring(tileDef.orientation), tostring(tileDef.reverseFill),
-            tostring(tileDef.barFullWidth), tostring(tileDef.barFullHeight),
-            tostring(tileDef.barColorOpacity), tostring(tileDef.barBgOpacity),
-            tostring(tileDef.frameLevel),
-            string.format("%.2f,%.2f,%.2f,%.2f", color.r or 1, color.g or 1, color.b or 1, color.a or 1),
-            string.format("%.2f,%.2f,%.2f", bgc.r or 0, bgc.g or 0, bgc.b or 0),
-            table.concat(cl, "+"), tostring(tileDef.all), tostring(tileDef.hasDuration),
-            mOn and (mLive and "mA" or "mE") or "-",
-        }, "|")
+        val = table.concat(
+            {
+                tostring(tileDef.type),
+                tostring(tileDef.glowType),
+                tostring(tileDef.glowLines),
+                tostring(tileDef.glowThickness),
+                tostring(tileDef.glowSpeed),
+                tostring(tileDef.glowColorMode),
+                mod.RF_GlowClassFP(tileDef.glowColorMode),
+                tostring(tileDef.glowBackground),
+                tileDef.glowBackgroundColor and string.format(
+                    "%.2f,%.2f,%.2f",
+                    tileDef.glowBackgroundColor.r or 0,
+                    tileDef.glowBackgroundColor.g or 0,
+                    tileDef.glowBackgroundColor.b or 0
+                ) or "-",
+                tostring(tileDef.opacity),
+                tostring(tileDef.size),
+                tostring(tileDef.width),
+                tostring(tileDef.height),
+                tostring(tileDef.position),
+                tostring(tileDef.offsetX),
+                tostring(tileDef.offsetY),
+                tostring(tileDef.orientation),
+                tostring(tileDef.reverseFill),
+                tostring(tileDef.barFullWidth),
+                tostring(tileDef.barFullHeight),
+                tostring(tileDef.barColorOpacity),
+                tostring(tileDef.barBgOpacity),
+                tostring(tileDef.frameLevel),
+                string.format("%.2f,%.2f,%.2f,%.2f", color.r or 1, color.g or 1, color.b or 1, color.a or 1),
+                string.format("%.2f,%.2f,%.2f", bgc.r or 0, bgc.g or 0, bgc.b or 0),
+                table.concat(cl, "+"),
+                tostring(tileDef.all),
+                tostring(tileDef.hasDuration),
+                mOn and (mLive and "mA" or "mE") or "-",
+            },
+            "|"
+        )
         if tileStyle.style ~= val then
             tileStyle.style = val
             AK.styles[key] = {
@@ -2611,31 +3203,42 @@ local function EnsureTileStyle(skinData, s, tileDef, szOv, szCat)
                 applyExtra = FxApply,
                 fx = {
                     kind = tileDef.type,
-                    matchOn = mOn, matchLive = mLive,
+                    matchOn = mOn,
+                    matchLive = mLive,
                     -- Checked-filter set: the applier's per-slot gate (live table reference; the FP above rebuilds on changes).
                     filters = tileDef.claim or {},
                     -- Live tile reference: the catch-all pseudo-slot's gate (see FxApply).
                     tile = tileDef,
-                    glowType = tileDef.glowType or 1, glowLines = tileDef.glowLines,
-                    glowThickness = tileDef.glowThickness, glowSpeed = tileDef.glowSpeed,
+                    glowType = tileDef.glowType or 1,
+                    glowLines = tileDef.glowLines,
+                    glowThickness = tileDef.glowThickness,
+                    glowSpeed = tileDef.glowSpeed,
                     glowMode = tileDef.glowColorMode,
                     glowBg = tileDef.glowBackground == true or nil,
                     glowBgR = tileDef.glowBackgroundColor and tileDef.glowBackgroundColor.r,
                     glowBgG = tileDef.glowBackgroundColor and tileDef.glowBackgroundColor.g,
                     glowBgB = tileDef.glowBackgroundColor and tileDef.glowBackgroundColor.b,
                     size = tileDef.size,
-                    w = tileDef.width or 10, h = tileDef.height or 10,
+                    w = tileDef.width or 10,
+                    h = tileDef.height or 10,
                     corner = CORNERS[tileDef.position or "center"] or "CENTER",
-                    offX = tileDef.offsetX, offY = tileDef.offsetY,
-                    orient = tileDef.orientation, reverseFill = tileDef.reverseFill,
-                    fullW = tileDef.barFullWidth, fullH = tileDef.barFullHeight,
-                    colorOp = tileDef.barColorOpacity, bgOp = tileDef.barBgOpacity,
-                    bgR = bgc.r, bgG = bgc.g, bgB = bgc.b,
+                    offX = tileDef.offsetX,
+                    offY = tileDef.offsetY,
+                    orient = tileDef.orientation,
+                    reverseFill = tileDef.reverseFill,
+                    fullW = tileDef.barFullWidth,
+                    fullH = tileDef.barFullHeight,
+                    colorOp = tileDef.barColorOpacity,
+                    bgOp = tileDef.barBgOpacity,
+                    bgR = bgc.r,
+                    bgG = bgc.g,
+                    bgB = bgc.b,
                     lvl = BAR_FRAMELVL[tileDef.frameLevel or "behindBorders"],
-                    r = color.r, g = color.g, b = color.b,
+                    r = color.r,
+                    g = color.g,
+                    b = color.b,
                     -- Health color rides a dedicated Opacity setting (the swatch has no alpha strip there, matching BM).
-                    a = (tileDef.type == "healthcolor")
-                        and ((tileDef.opacity or 45) / 100) or color.a,
+                    a = (tileDef.type == "healthcolor") and ((tileDef.opacity or 45) / 100) or color.a,
                 },
             }
             AK.RestyleSoon(key)
@@ -2653,12 +3256,14 @@ local function EnsureBaseSizeStyle(skinData, s, category, size)
     local cls = ClassToken(skinData)
     local key = "rf:dmsz:" .. cls .. ":" .. tostring(category)
     local tileStyle = dmSizeFP[key]
-    if not tileStyle then tileStyle = { cls = cls, cat = category }; dmSizeFP[key] = tileStyle end
+    if not tileStyle then
+        tileStyle = { cls = cls, cat = category }
+        dmSizeFP[key] = tileStyle
+    end
     tileStyle.rawSize = size
     size = EffectiveIconSizeForClass(size, cls)
     local font = (CUI.GetFontPath("raidFrames")) or ""
-    local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(s, font)) or "")
-        .. "|" .. tostring(size)
+    local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(s, font)) or "") .. "|" .. tostring(size)
     if tileStyle.style ~= val and mod.RFC_BuildDebuffStyle then
         tileStyle.style = val
         local sty
@@ -2685,7 +3290,8 @@ function mod.DM_RefreshSizedStyles(baseStyleKey, s)
         if tileStyle.cls == cls and tileStyle.style and tileStyle.rawSize then
             local size = EffectiveIconSizeForClass(tileStyle.rawSize, cls)
             local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(s, font)) or "")
-                .. "|" .. tostring(size)
+                .. "|"
+                .. tostring(size)
             if tileStyle.style ~= val and mod.RFC_BuildDebuffStyle then
                 tileStyle.style = val
                 local sty
@@ -2703,7 +3309,9 @@ function mod.DM_RefreshSizedStyles(baseStyleKey, s)
     local activeTiles = mod.DM_ActiveTiles and mod.DM_ActiveTiles()
     if activeTiles then
         local byId = {}
-        for i = 1, #activeTiles do byId[activeTiles[i].id] = activeTiles[i] end
+        for i = 1, #activeTiles do
+            byId[activeTiles[i].id] = activeTiles[i]
+        end
         for key, tileStyle in pairs(dmTileFP) do
             if tileStyle.grid and tileStyle.cls == cls then
                 local tileDef = byId[tileStyle.tid]
@@ -2748,7 +3356,9 @@ local function UnparkTileContainer(c)
     c._dmParked = nil
     c:SetEnabled(true)
     if c._dmDecl and c.SetAuraSlotEnabled and c._dmType ~= "icons" and c._dmType ~= "square" then
-        for key in pairs(c._dmDecl) do c:SetAuraSlotEnabled(key, true) end
+        for key in pairs(c._dmDecl) do
+            c:SetAuraSlotEnabled(key, true)
+        end
     end
 end
 
@@ -2759,15 +3369,24 @@ end
 -- hidden (dmTilesParked[id][type]) and a parked container of the right type is restored before anything is built.
 local function EnsureTileContainer(skinData, tileDef)
     local tiles = skinData.dmTiles
-    if not tiles then tiles = {}; skinData.dmTiles = tiles end
+    if not tiles then
+        tiles = {}
+        skinData.dmTiles = tiles
+    end
     local c = tiles[tileDef.id]
     if c then
         if c._dmType == tileDef.type then return c end
         ParkTileContainer(c)
         local parked = skinData.dmTilesParked
-        if not parked then parked = {}; skinData.dmTilesParked = parked end
+        if not parked then
+            parked = {}
+            skinData.dmTilesParked = parked
+        end
         local byType = parked[tileDef.id]
-        if not byType then byType = {}; parked[tileDef.id] = byType end
+        if not byType then
+            byType = {}
+            parked[tileDef.id] = byType
+        end
         byType[c._dmType] = c
         tiles[tileDef.id] = nil
         -- Its bar tints stay registered: parked containers are bounded (one per id and type) and come back as they were.
@@ -2782,7 +3401,10 @@ local function EnsureTileContainer(skinData, tileDef)
         return back
     end
     local pend = skinData.dmTilePend
-    if not pend then pend = {}; skinData.dmTilePend = pend end
+    if not pend then
+        pend = {}
+        skinData.dmTilePend = pend
+    end
     if pend[tileDef.id] then return nil end
     pend[tileDef.id] = true
     local tileId = tileDef.id
@@ -2800,7 +3422,10 @@ local function EnsureTileContainer(skinData, tileDef)
         local liveTile
         if activeTiles then
             for i = 1, #activeTiles do
-                if activeTiles[i].id == tileId then liveTile = activeTiles[i] break end
+                if activeTiles[i].id == tileId then
+                    liveTile = activeTiles[i]
+                    break
+                end
             end
         end
         if not liveTile then return end
@@ -2813,7 +3438,9 @@ local function EnsureTileContainer(skinData, tileDef)
             parkedT[liveTile.type] = nil
             skinData.dmTiles[tileId] = back
             if back._dmType == "healthcolor" then back._dmRestyle = true end
-            if skinData.rfcDebuffs then mod.DM_ApplyDebuffConfig(skinData.rfcDebuffs, skinData, frameCfg, StyleKeyFor(skinData)) end
+            if skinData.rfcDebuffs then
+                mod.DM_ApplyDebuffConfig(skinData.rfcDebuffs, skinData, frameCfg, StyleKeyFor(skinData))
+            end
             return
         end
         -- EffectFilterFor below reads dm (dispelMode); the active-union
@@ -2869,9 +3496,7 @@ local function EnsureTileContainer(skinData, tileDef)
         skinData.dmTiles[tileId] = boxHolder
         -- Re-drive this button's config so the fresh container gets its groups/counts/anchor (per-button, cheap).
         local debuffBox = skinData.rfcDebuffs
-        if debuffBox then
-            mod.DM_ApplyDebuffConfig(debuffBox, skinData, frameCfg, StyleKeyFor(skinData))
-        end
+        if debuffBox then mod.DM_ApplyDebuffConfig(debuffBox, skinData, frameCfg, StyleKeyFor(skinData)) end
     end, "rf:dm-tile")
     return nil
 end
@@ -2889,8 +3514,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     local cap = cfg.debuffCap or 3
     local size = mod.RFC_DebuffSize(cfg)
     local layout = {
-        elementWidth = size, elementHeight = size,
-        elementSpacing = cfg.debuffSpacing or 1, lineSpacing = cfg.debuffSpacing or 1,
+        elementWidth = size,
+        elementHeight = size,
+        elementSpacing = cfg.debuffSpacing or 1,
+        lineSpacing = cfg.debuffSpacing or 1,
     }
     -- Tooltip-modifier eaters: every footprint sum, stash and ensure below
     -- is gated on the feature being wanted, so the plain apply pays nothing.
@@ -2916,7 +3543,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
         if record.tile then
             local ident = record.tile.id
             local entries = tileRecs[ident]
-            if not entries then entries = {}; tileRecs[ident] = entries end
+            if not entries then
+                entries = {}
+                tileRecs[ident] = entries
+            end
             entries[#entries + 1] = record
         else
             if record.key == "cc" then baseSizedCC = true end
@@ -2927,9 +3557,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
 
     -- Park everything the base does not want (legacy preset groups, stale record variants); setters are dirty marks, runs only on an FP change.
     for key in pairs(declared) do
-        if key ~= "cc" and not wantedBase[key] then
-            CUI.AuraKit.SetGroupCap(boxHolder, key, 0)
-        end
+        if key ~= "cc" and not wantedBase[key] then CUI.AuraKit.SetGroupCap(boxHolder, key, 0) end
     end
 
     -- Crowd Control rides the existing cc group (CC glow intact) while enabled and UNCLAIMED; a claiming tile
@@ -2944,8 +3572,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
         local allOn = baseView.all ~= false
         local ccHidden = baseView.neg ~= nil and baseView.neg.cc == true
         local ccPicked = (allOn and not ccHidden) or (not allOn and baseView.cc == true and not matchOn)
-        local ccBase = (ccPicked or (effectCats and effectCats.cc)) and not claimMap.cc
-            and not baseSizedCC
+        local ccBase = (ccPicked or (effectCats and effectCats.cc)) and not claimMap.cc and not baseSizedCC
         ccParkCount = ccBase and cap or 0
         CUI.AuraKit.SetGroupCap(boxHolder, "cc", ccParkCount)
         boxHolder:SetAuraGroupCandidateFilters("cc", ccCand)
@@ -2984,18 +3611,22 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                 -- Sized record: keep the stable per-category style fresh (size edits restyle existing buttons) + same size in the flow math.
                 EnsureBaseSizeStyle(skinData, cfg, region.key, region.fxSize)
                 boxHolder:SetAuraGroupLayout(groupKey, {
-                    elementWidth = recordSize, elementHeight = recordSize,
+                    elementWidth = recordSize,
+                    elementHeight = recordSize,
                     elementSpacing = cfg.debuffSpacing or 1,
                     lineSpacing = cfg.debuffSpacing or 1,
                 })
             elseif region.ccLead then
                 -- The CC row's record form keeps the row's lead (flow order 0 sorts
                 -- before every registered group).
-                leadLayout = leadLayout or {
-                    elementWidth = size, elementHeight = size,
-                    elementSpacing = cfg.debuffSpacing or 1, lineSpacing = cfg.debuffSpacing or 1,
-                    layoutIndex = 0,
-                }
+                leadLayout = leadLayout
+                    or {
+                        elementWidth = size,
+                        elementHeight = size,
+                        elementSpacing = cfg.debuffSpacing or 1,
+                        lineSpacing = cfg.debuffSpacing or 1,
+                        layoutIndex = 0,
+                    }
                 boxHolder:SetAuraGroupLayout(groupKey, leadLayout)
             else
                 boxHolder:SetAuraGroupLayout(groupKey, layout)
@@ -3004,9 +3635,15 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     end
     if geoOn then
         local tipGeo = skinData.dmTipGeo
-        if not tipGeo then tipGeo = { tiles = {} }; skinData.dmTipGeo = tipGeo end
+        if not tipGeo then
+            tipGeo = { tiles = {} }
+            skinData.dmTipGeo = tipGeo
+        end
         local gb = tipGeo.base
-        if not gb then gb = {}; tipGeo.base = gb end
+        if not gb then
+            gb = {}
+            tipGeo.base = gb
+        end
         gb.n, gb.cell = tipN, tipCell
         -- Tiles re-stash below as they render (a tile that stopped
         -- rendering must not keep reserving room).
@@ -3026,9 +3663,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     if deadRec and not deadRec.tile and declared[deadRec.gkey] then
         local park = {}
         for groupKey, region in pairs(wantedBase) do
-            if declared[groupKey] and not region.deadOnly then
-                park[groupKey] = cap
-            end
+            if declared[groupKey] and not region.deadOnly then park[groupKey] = cap end
         end
         if declared.cc then park.cc = ccParkCount end
         skinData.dmDeadSwap = { show = deadRec.gkey, cap = cap, park = park }
@@ -3060,11 +3695,11 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                         -- the CC row's record form binds the row's own CC-glow style (the containers
                         -- file builds it beside the base debuff style) and leads the row.
                         local sk = region.fxSize
-                            and EnsureBaseSizeStyle(skinData, frameCfg, region.key, region.fxSize)
+                                and EnsureBaseSizeStyle(skinData, frameCfg, region.key, region.fxSize)
                             or (region.ccLead and ("rf:debuffcc:" .. ClassToken(skinData)))
                             or StyleKeyFor(skinData)
-                        local groupSize = region.fxSize
-                            and EffectiveIconSize(skinData, region.fxSize) or mod.RFC_DebuffSize(frameCfg)
+                        local groupSize = region.fxSize and EffectiveIconSize(skinData, region.fxSize)
+                            or mod.RFC_DebuffSize(frameCfg)
                         local groupSpacing = frameCfg.debuffSpacing or 1
                         AK.AddGroupToContainer(debuffBox, {
                             key = groupKey,
@@ -3073,8 +3708,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                             maxFrameCount = 0,
                             style = sk,
                             layout = {
-                                elementWidth = groupSize, elementHeight = groupSize,
-                                elementSpacing = groupSpacing, lineSpacing = groupSpacing,
+                                elementWidth = groupSize,
+                                elementHeight = groupSize,
+                                elementSpacing = groupSpacing,
+                                lineSpacing = groupSpacing,
                                 layoutIndex = (region.ccLead and not region.fxSize) and 0 or nil,
                             },
                             extraInit = function(btn2, slotData, style)
@@ -3149,7 +3786,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                         if missingCats then
                             local pendKey = "fx" .. tostring(tileDef.id)
                             local pend = skinData.dmTilePend
-                            if not pend then pend = {}; skinData.dmTilePend = pend end
+                            if not pend then
+                                pend = {}
+                                skinData.dmTilePend = pend
+                            end
                             if not pend[pendKey] then
                                 pend[pendKey] = true
                                 local tileId = tileDef.id
@@ -3168,14 +3808,19 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                     local liveTile
                                     if activeTiles then
                                         for ti2 = 1, #activeTiles do
-                                            if activeTiles[ti2].id == tileId then liveTile = activeTiles[ti2] break end
+                                            if activeTiles[ti2].id == tileId then
+                                                liveTile = activeTiles[ti2]
+                                                break
+                                            end
                                         end
                                     end
                                     local owner = skinData.dmHost
                                     local hp = skinData.rfcHealth
                                     -- Effect slots only ever go on an effect container of the tile's current type; a flip
                                     -- to a grid tile (its icons container restored meanwhile) was configured by that apply.
-                                    if not (liveTile and owner and hp and tc2._dmType == liveTile.type) then return end
+                                    if not (liveTile and owner and hp and tc2._dmType == liveTile.type) then
+                                        return
+                                    end
                                     if liveTile.type == "icons" or liveTile.type == "square" then return end
                                     local styleKey2 = EnsureTileStyle(skinData, frameCfg, liveTile)
                                     local tileKind = liveTile.type
@@ -3184,7 +3829,8 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                         local skey = "fx_" .. category
                                         if not decl2[skey] then
                                             local catKey = category
-                                            local filter, candidates = EffectFilterForTile(liveCfg, liveTile, catKey)
+                                            local filter, candidates =
+                                                EffectFilterForTile(liveCfg, liveTile, catKey)
                                             AK.AddSlotToContainer(tc2, {
                                                 key = skey,
                                                 filter = filter,
@@ -3195,7 +3841,14 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                                     fxRefs[slotButton] = { host = owner, health = hp }
                                                     slotButton:SetPoint("CENTER", hp, "CENTER")
                                                     slotButton:SetMouseMotionEnabled(false)
-                                                    FxCreateVisuals(slotButton, slotData, tileKind, owner, hp, tc2)
+                                                    FxCreateVisuals(
+                                                        slotButton,
+                                                        slotData,
+                                                        tileKind,
+                                                        owner,
+                                                        hp,
+                                                        tc2
+                                                    )
                                                     if style then FxApply(slotButton, slotData, style) end
                                                 end,
                                             })
@@ -3203,7 +3856,14 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                         end
                                     end
                                     local debuffBox = skinData.rfcDebuffs
-                                    if debuffBox then mod.DM_ApplyDebuffConfig(debuffBox, skinData, frameCfg, StyleKeyFor(skinData)) end
+                                    if debuffBox then
+                                        mod.DM_ApplyDebuffConfig(
+                                            debuffBox,
+                                            skinData,
+                                            frameCfg,
+                                            StyleKeyFor(skinData)
+                                        )
+                                    end
                                 end, "rf:dm-fx-slots")
                             end
                         end
@@ -3217,21 +3877,22 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                             if not tDecl[region.gkey] then tMissing = true end
                         end
                         for key in pairs(tDecl) do
-                            if tWanted[key] == nil then
-                                CUI.AuraKit.SetGroupCap(tileHost, key, 0)
-                            end
+                            if tWanted[key] == nil then CUI.AuraKit.SetGroupCap(tileHost, key, 0) end
                         end
                         local tCap = tileDef.cap or cap
                         local tSize = EffectiveIconSize(skinData, tileDef.size or 18)
                         local tLayout = {
-                            elementWidth = tSize, elementHeight = tSize,
-                            elementSpacing = tileDef.spacing or 1, lineSpacing = tileDef.spacing or 1,
+                            elementWidth = tSize,
+                            elementHeight = tSize,
+                            elementSpacing = tileDef.spacing or 1,
+                            lineSpacing = tileDef.spacing or 1,
                         }
                         -- Tooltip-eater footprint inputs for this tile (see the base site).
                         local tN, tCell = 0, tSize
                         for groupKey, region in pairs(tWanted) do
                             if tDecl[groupKey] then
-                                local recordSize = region.fxSize and EffectiveIconSize(skinData, region.fxSize)
+                                local recordSize = region.fxSize
+                                    and EffectiveIconSize(skinData, region.fxSize)
                                 if geoOn then
                                     tN = tN + tCap
                                     if recordSize and recordSize > tCell then tCell = recordSize end
@@ -3244,7 +3905,8 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                     -- Sized record: per-category tile style variant fresh + matching flow math.
                                     EnsureTileStyle(skinData, cfg, tileDef, region.fxSize, region.key)
                                     tileHost:SetAuraGroupLayout(groupKey, {
-                                        elementWidth = recordSize, elementHeight = recordSize,
+                                        elementWidth = recordSize,
+                                        elementHeight = recordSize,
                                         elementSpacing = tileDef.spacing or 1,
                                         lineSpacing = tileDef.spacing or 1,
                                     })
@@ -3255,16 +3917,27 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                         end
                         if geoOn then
                             local tipGeo = skinData.dmTipGeo
-                            if not tipGeo then tipGeo = { tiles = {} }; skinData.dmTipGeo = tipGeo end
+                            if not tipGeo then
+                                tipGeo = { tiles = {} }
+                                skinData.dmTipGeo = tipGeo
+                            end
                             local gt = tipGeo.tiles[tileDef.id]
-                            if not gt then gt = {}; tipGeo.tiles[tileDef.id] = gt end
+                            if not gt then
+                                gt = {}
+                                tipGeo.tiles[tileDef.id] = gt
+                            end
                             gt.n, gt.cell = tN, tCell
                             -- Party Frames kit: this tile's seat, then the next
                             -- one's below it (one block per tile, flowing right).
                             gt.kitY = tipGeo.kitY
                             if tipGeo.kitY then
-                                local _, th = TipFootprint(tN, tCell, tileDef.spacing or 1,
-                                    tonumber(tileDef.iconsPerRow) or 0, false)
+                                local _, th = TipFootprint(
+                                    tN,
+                                    tCell,
+                                    tileDef.spacing or 1,
+                                    tonumber(tileDef.iconsPerRow) or 0,
+                                    false
+                                )
                                 if th > 0 then tipGeo.kitY = tipGeo.kitY - th - (tileDef.spacing or 1) end
                             end
                         end
@@ -3272,7 +3945,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                             -- Combat-legal group adds on the existing tile container; keyed ensure per tile.
                             local pendKey = "g" .. tostring(tileDef.id)
                             local pend = skinData.dmTilePend
-                            if not pend then pend = {}; skinData.dmTilePend = pend end
+                            if not pend then
+                                pend = {}
+                                skinData.dmTilePend = pend
+                            end
                             if not pend[pendKey] then
                                 pend[pendKey] = true
                                 local tileId = tileDef.id
@@ -3287,12 +3963,18 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                     local recs2 = BuildRecords(frameCfg, liveCfg)
                                     for ri = 1, #recs2 do
                                         local region = recs2[ri]
-                                        if region.tile and region.tile.id == tileId and region.tile.type == tc2._dmType then
+                                        if
+                                            region.tile
+                                            and region.tile.id == tileId
+                                            and region.tile.type == tc2._dmType
+                                        then
                                             local groupKey = GroupKey(AK, region)
                                             if not decl2[groupKey] then
                                                 local catKey = region.cats or region.key
-                                                local groupSize = EffectiveIconSize(skinData,
-                                                    region.fxSize or region.tile.size or 18)
+                                                local groupSize = EffectiveIconSize(
+                                                    skinData,
+                                                    region.fxSize or region.tile.size or 18
+                                                )
                                                 local groupSpacing = region.tile.spacing or 1
                                                 AK.AddGroupToContainer(tc2, {
                                                     key = groupKey,
@@ -3301,11 +3983,19 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                                     maxFrameCount = 0,
                                                     -- Sized records bind the per-category sized tile-style variant.
                                                     style = region.fxSize
-                                                        and EnsureTileStyle(skinData, frameCfg, region.tile, region.fxSize, region.key)
+                                                            and EnsureTileStyle(
+                                                                skinData,
+                                                                frameCfg,
+                                                                region.tile,
+                                                                region.fxSize,
+                                                                region.key
+                                                            )
                                                         or EnsureTileStyle(skinData, frameCfg, region.tile),
                                                     layout = {
-                                                        elementWidth = groupSize, elementHeight = groupSize,
-                                                        elementSpacing = groupSpacing, lineSpacing = groupSpacing,
+                                                        elementWidth = groupSize,
+                                                        elementHeight = groupSize,
+                                                        elementSpacing = groupSpacing,
+                                                        lineSpacing = groupSpacing,
                                                     },
                                                     extraInit = function(btn2, slotData, style)
                                                         if slotData then slotData.dmCat = catKey end
@@ -3320,7 +4010,14 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                         end
                                     end
                                     local debuffBox = skinData.rfcDebuffs
-                                    if debuffBox then mod.DM_ApplyDebuffConfig(debuffBox, skinData, frameCfg, StyleKeyFor(skinData)) end
+                                    if debuffBox then
+                                        mod.DM_ApplyDebuffConfig(
+                                            debuffBox,
+                                            skinData,
+                                            frameCfg,
+                                            StyleKeyFor(skinData)
+                                        )
+                                    end
                                 end, "rf:dm-tile-groups")
                             end
                         end
@@ -3328,11 +4025,10 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                         if deadRec and deadRec.tile == tileDef and tDecl[deadRec.gkey] then
                             local park = {}
                             for groupKey, region in pairs(tWanted) do
-                                if tDecl[groupKey] and not region.deadOnly then
-                                    park[groupKey] = tCap
-                                end
+                                if tDecl[groupKey] and not region.deadOnly then park[groupKey] = tCap end
                             end
-                            skinData.dmDeadSwap = { show = deadRec.gkey, cap = tCap, park = park, tileId = tileDef.id }
+                            skinData.dmDeadSwap =
+                                { show = deadRec.gkey, cap = tCap, park = park, tileId = tileDef.id }
                         end
                         AnchorTileContainer(tileHost, skinData.rfcHealth, cfg, tileDef, skinData)
                     end
@@ -3355,7 +4051,9 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     if live then
         local present = {}
         if dmTiles then
-            for i = 1, #dmTiles do present[dmTiles[i].id] = true end
+            for i = 1, #dmTiles do
+                present[dmTiles[i].id] = true
+            end
         end
         for ident, c in pairs(live) do
             if not present[ident] then
@@ -3395,7 +4093,9 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     -- Tooltip-modifier eaters: footprint inputs above are fresh, and tile
     -- containers built on the deferred lanes re-enter through this apply.
     -- Off: nothing runs here (the containers reload's ensure parks on a flip).
-    if tipOn and mod.DM_TipModEnsure and skinData.dmHost then mod.DM_TipModEnsure(skinData.dmHost, skinData, cfg) end
+    if tipOn and mod.DM_TipModEnsure and skinData.dmHost then
+        mod.DM_TipModEnsure(skinData.dmHost, skinData, cfg)
+    end
 end
 
 -- Death-edge hook (from the UNIT_HEALTH repaint path, unit assignment, and the
@@ -3411,13 +4111,21 @@ function mod.DM_DeadEdge(skinData, unitToken)
     skinData.dmDead = dead
     -- A tile swap never falls back to the base container: its keys are tile group keys.
     local c
-    if swap.tileId then c = skinData.dmTiles and skinData.dmTiles[swap.tileId] else c = skinData.rfcDebuffs end
+    if swap.tileId then
+        c = skinData.dmTiles and skinData.dmTiles[swap.tileId]
+    else
+        c = skinData.rfcDebuffs
+    end
     if not c then return end
     if dead then
-        for key in pairs(swap.park) do CUI.AuraKit.SetGroupCap(c, key, 0) end
+        for key in pairs(swap.park) do
+            CUI.AuraKit.SetGroupCap(c, key, 0)
+        end
         CUI.AuraKit.SetGroupCap(c, swap.show, swap.cap)
     else
-        for key, num in pairs(swap.park) do CUI.AuraKit.SetGroupCap(c, key, num) end
+        for key, num in pairs(swap.park) do
+            CUI.AuraKit.SetGroupCap(c, key, num)
+        end
         CUI.AuraKit.SetGroupCap(c, swap.show, 0)
     end
 end
@@ -3426,12 +4134,12 @@ end
 -- just-disabled manager's record variants and tile containers would otherwise keep rendering.
 function mod.DM_ParkGroups(boxHolder, declared, skinData)
     for key in pairs(declared) do
-        if key:sub(1, 3) == "dm_" then
-            CUI.AuraKit.SetGroupCap(boxHolder, key, 0)
-        end
+        if key:sub(1, 3) == "dm_" then CUI.AuraKit.SetGroupCap(boxHolder, key, 0) end
     end
     if skinData and skinData.dmTiles then
-        for _, c in pairs(skinData.dmTiles) do ParkTileContainer(c) end
+        for _, c in pairs(skinData.dmTiles) do
+            ParkTileContainer(c)
+        end
     end
 end
 
@@ -3470,7 +4178,10 @@ local function HealTiles(arr)
         local tileDef = arr[i]
         if tileDef.type == "square" and not tileDef.claim then
             tileDef.claim = {}
-            if tileDef.cat then tileDef.claim[tileDef.cat] = true; tileDef.cat = nil end
+            if tileDef.cat then
+                tileDef.claim[tileDef.cat] = true
+                tileDef.cat = nil
+            end
             local sz = tileDef.width or tileDef.height
             if sz and sz > 0 then tileDef.size = sz end
             tileDef.width, tileDef.height = nil, nil
@@ -3479,10 +4190,15 @@ local function HealTiles(arr)
             tileDef.cap = tileDef.cap or 3
         end
         -- Effect tiles moved from a single t.cat to the filter set; expand once.
-        if (tileDef.type == "glow" or tileDef.type == "healthcolor" or tileDef.type == "bar")
-            and not tileDef.claim then
+        if
+            (tileDef.type == "glow" or tileDef.type == "healthcolor" or tileDef.type == "bar")
+            and not tileDef.claim
+        then
             tileDef.claim = {}
-            if tileDef.cat then tileDef.claim[tileDef.cat] = true; tileDef.cat = nil end
+            if tileDef.cat then
+                tileDef.claim[tileDef.cat] = true
+                tileDef.cat = nil
+            end
         end
         -- Effects single-config -> block list (one-time).
         FxHeal(tileDef)
@@ -3516,7 +4232,8 @@ local function SpecBucket(dmCfg, key, create)
     local tileStyle = dmCfg.specTiles
     if not tileStyle then
         if not create then return nil end
-        tileStyle = {}; dmCfg.specTiles = tileStyle
+        tileStyle = {}
+        dmCfg.specTiles = tileStyle
     end
     local b = tileStyle[key]
     if not b then
@@ -3556,10 +4273,7 @@ end
 function mod.DM_ForeverSpecID(token)
     if not CUI._SO_DmForkSeeded then CUI._SO_SeedForkSpec(true) end
     local fk = CUI.SpecOverrides_DmForkSpecID
-    if fk and not CUI._dmSessionGid
-       and (token == nil or token == CUI.SpecClassOf(fk)) then
-        return fk
-    end
+    if fk and not CUI._dmSessionGid and (token == nil or token == CUI.SpecClassOf(fk)) then return fk end
     local dmCfg = DM()
     return CUI.ForeverClassSpec(token, mod.DM_BucketHasData, dmCfg and dmCfg.specTiles)
 end
@@ -3695,7 +4409,9 @@ function mod.DM_ViewTiles(view)
     local function Add(entries)
         if not entries then return end
         HealTiles(entries)
-        for i = 1, #entries do result[#result + 1] = entries[i] end
+        for i = 1, #entries do
+            result[#result + 1] = entries[i]
+        end
     end
     Add(dmCfg.tiles)
     local tileStyle = dmCfg.specTiles
@@ -3714,7 +4430,9 @@ function mod.DM_ClaimOwners(view)
     local claimMap, claimsAll = ClaimMap(tiles)
     local place = {}
     if tiles then
-        for i = 1, #tiles do place[tiles[i]] = i end
+        for i = 1, #tiles do
+            place[tiles[i]] = i
+        end
     end
     return claimMap, claimsAll, place
 end
@@ -3723,7 +4441,10 @@ function mod.DM_AddTile(tileType, bucketKey)
     local profile = mod.db and mod.db.profile
     if not profile then return nil end
     local dmCfg = profile.dmDebuff
-    if not dmCfg then dmCfg = {}; profile.dmDebuff = dmCfg end
+    if not dmCfg then
+        dmCfg = {}
+        profile.dmDebuff = dmCfg
+    end
     if not dmCfg.tiles then dmCfg.tiles = {} end
     local ident = (dmCfg.nextTileId or 1)
     -- Counter heal: ids must stay GLOBALLY unique across every bucket
@@ -3758,14 +4479,14 @@ function mod.DM_AddTile(tileType, bucketKey)
         tileDef.size = 18
         tileDef.spacing = 1
         tileDef.cap = 3
-        if tileDef.type == "square" then
-            tileDef.color = { r = 1, g = 0.35, b = 0.35, a = 1 }
-        end
+        if tileDef.type == "square" then tileDef.color = { r = 1, g = 0.35, b = 0.35, a = 1 } end
     else
         -- Effect tiles: filters come from the checkbox dropdown or the Add New popup's picks; none checked = nothing.
         tileDef.claim = {}
         if tileDef.type == "bar" then
-            tileDef.position = "bottom"; tileDef.width = 60; tileDef.height = 5
+            tileDef.position = "bottom"
+            tileDef.width = 60
+            tileDef.height = 5
             tileDef.orientation = "HORIZONTAL"
             tileDef.color = { r = 0.25, g = 0.8, b = 0.45 }
             tileDef.barColorOpacity = 100
@@ -3783,9 +4504,7 @@ function mod.DM_AddTile(tileType, bucketKey)
     -- The edited bucket owns the new tile; ids come from the ONE shared
     -- counter above regardless of bucket.
     local target = dmCfg.tiles
-    if bucketKey and bucketKey ~= "allspecs" then
-        target = SpecBucket(dmCfg, bucketKey, true).tiles
-    end
+    if bucketKey and bucketKey ~= "allspecs" then target = SpecBucket(dmCfg, bucketKey, true).tiles end
     target[#target + 1] = tileDef
     return tileDef
 end
@@ -3799,8 +4518,12 @@ function mod.DM_CopyTile(source, bucketKey)
     local tileDef = mod.DM_AddTile(source.type, bucketKey)
     if not tileDef then return nil end
     local keep = tileDef.id
-    for key in pairs(tileDef) do tileDef[key] = nil end
-    for key, val in pairs(CopyTable(source)) do tileDef[key] = val end
+    for key in pairs(tileDef) do
+        tileDef[key] = nil
+    end
+    for key, val in pairs(CopyTable(source)) do
+        tileDef[key] = val
+    end
     tileDef.id = keep
     return tileDef
 end
@@ -3829,9 +4552,6 @@ function mod.DM_DeleteTile(ident)
     end
 end
 
-
-
-
 -------------------------------------------------------------------------------
 -- Override-layer bridge (SpecOverrides DM layers): a fork is a wholesale deep copy of the profile's dmDebuff table.
 -- Both hooks run EnsureMigrated first, so the one-shot preset mapping always precedes any fork traffic.
@@ -3855,12 +4575,15 @@ function _G._CURF_DMApplyLayer(dmCfg, noPageRefresh)
     if not profile then return false end
     MigrateOnce()
     local live = profile.dmDebuff
-    if type(live) ~= "table" then live = {}; profile.dmDebuff = live end
-    wipe(live)
-    for key, val in pairs(CopyTable(dmCfg)) do live[key] = val end
-    if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
-    if not noPageRefresh and mod._dmRoot and CUI and CUI.RefreshPage then
-        CUI:RefreshPage(true)
+    if type(live) ~= "table" then
+        live = {}
+        profile.dmDebuff = live
     end
+    wipe(live)
+    for key, val in pairs(CopyTable(dmCfg)) do
+        live[key] = val
+    end
+    if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
+    if not noPageRefresh and mod._dmRoot and CUI and CUI.RefreshPage then CUI:RefreshPage(true) end
     return true
 end

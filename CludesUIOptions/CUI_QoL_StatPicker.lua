@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CUI_QoL_StatPicker.lua
 --  WoW Forever: the Choose Stats window of the Secondary Stats cog. One
@@ -13,9 +9,7 @@ end
 --  click outside it, on Escape and with the options panel.
 -------------------------------------------------------------------------------
 local qns = CludesUI._ModuleNS["CludesUIQoL"]
-if not qns then
-    return
-end -- module disabled: no options page
+if not qns then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua). The window is built once on the overlay layer,
@@ -64,12 +58,8 @@ local function Link(textValue, onClick)
     fontStr:SetText(textValue)
     fontStr:SetPoint("CENTER")
     widget:SetSize(fontStr:GetStringWidth() + 6, 16)
-    widget:SetScript("OnEnter", function()
-        fontStr:SetTextColor(1, 1, 1, 0.9)
-    end)
-    widget:SetScript("OnLeave", function()
-        fontStr:SetTextColor(1, 1, 1, 0.5)
-    end)
+    widget:SetScript("OnEnter", function() fontStr:SetTextColor(1, 1, 1, 0.9) end)
+    widget:SetScript("OnLeave", function() fontStr:SetTextColor(1, 1, 1, 0.5) end)
     widget:SetScript("OnClick", function()
         onClick()
         RefreshAll()
@@ -120,16 +110,12 @@ local function Build()
             all[#all + 1] = s
         end
     end
-    local checkAll = Link(CludesUI.L("Check All"), function()
-        SetShown(all, true)
-    end)
+    local checkAll = Link(CludesUI.L("Check All"), function() SetShown(all, true) end)
     checkAll:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, -62)
     local sep = CludesUI.SolidTex(panelFrame, "OVERLAY", 1, 1, 1, 0.18)
     sep:SetSize(1, 12)
     sep:SetPoint("LEFT", checkAll, "RIGHT", 10, 0)
-    local uncheckAll = Link(CludesUI.L("Uncheck All"), function()
-        SetShown(all, false)
-    end)
+    local uncheckAll = Link(CludesUI.L("Uncheck All"), function() SetShown(all, false) end)
     uncheckAll:SetPoint("LEFT", checkAll, "RIGHT", 20, 0)
 
     for gi, group in ipairs(groups) do
@@ -139,13 +125,9 @@ local function Build()
         local heading = CludesUI.MakeFont(panelFrame, 13, "", ACC.r, ACC.g, ACC.b)
         heading:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY)
         heading:SetText(CludesUI.L(group.title))
-        local none = Link(CludesUI.L("None"), function()
-            SetShown(group.stats, false)
-        end)
+        local none = Link(CludesUI.L("None"), function() SetShown(group.stats, false) end)
         none:SetPoint("TOPRIGHT", panelFrame, "TOPLEFT", colX + COL_W, grpY - 2)
-        local allLink = Link(CludesUI.L("All"), function()
-            SetShown(group.stats, true)
-        end)
+        local allLink = Link(CludesUI.L("All"), function() SetShown(group.stats, true) end)
         allLink:SetPoint("RIGHT", none, "LEFT", -8, 0)
         local underline = CludesUI.SolidTex(panelFrame, "ARTWORK", ACC.r, ACC.g, ACC.b, 0.35)
         underline:SetSize(COL_W, 1)
@@ -161,9 +143,7 @@ local function Build()
             local labelFS = CludesUI.MakeFont(row, 12, "", 0.85, 0.85, 0.85)
             labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
             labelFS:SetText(CludesUI.L(s.label))
-            local function Apply()
-                applyVisual(IsShown(s.key), row:IsMouseOver())
-            end
+            local function Apply() applyVisual(IsShown(s.key), row:IsMouseOver()) end
             checks[#checks + 1] = Apply
             local one = { s }
             row:SetScript("OnClick", function()
@@ -191,41 +171,27 @@ local function Build()
         { w = 200 }
     )
     done:SetPoint("BOTTOM", panelFrame, "BOTTOM", 0, 16)
-    done:SetScript("OnClick", function()
-        panelFrame:Hide()
-    end)
+    done:SetScript("OnClick", function() panelFrame:Hide() end)
 
     -- Closes on a click anywhere else: a global mouse-down listener held only
     -- while shown. Clicks fire on mouse up, so the press that opened it has
     -- already passed.
-    panelFrame:SetScript("OnShow", function(self)
-        self:RegisterEvent("GLOBAL_MOUSE_DOWN")
-    end)
-    panelFrame:SetScript("OnHide", function(self)
-        self:UnregisterEvent("GLOBAL_MOUSE_DOWN")
-    end)
+    panelFrame:SetScript("OnShow", function(self) self:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
+    panelFrame:SetScript("OnHide", function(self) self:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
     panelFrame:SetScript("OnEvent", function(self)
-        if not self:IsMouseOver() then
-            self:Hide()
-        end
+        if not self:IsMouseOver() then self:Hide() end
     end)
     panelFrame:EnableKeyboard(true)
     panelFrame:SetScript("OnKeyDown", function(self, key)
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" then
-            self:Hide()
-        end
+        if key == "ESCAPE" then self:Hide() end
     end)
-    CludesUI._mainFrame:HookScript("OnHide", function()
-        panelFrame:Hide()
-    end)
+    CludesUI._mainFrame:HookScript("OnHide", function() panelFrame:Hide() end)
     CludesUI.TrackOverlay(panelFrame)
 end
 
 function CludesUI._ShowStatPicker(anchor)
-    if not panelFrame then
-        Build()
-    end
+    if not panelFrame then Build() end
     panelFrame:ClearAllPoints()
     panelFrame:SetPoint("TOP", anchor, "BOTTOM", 0, -5)
     RefreshAll()

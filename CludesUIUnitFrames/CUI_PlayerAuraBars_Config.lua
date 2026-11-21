@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Config.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local PAB, PAB_FxListView, PAB_FxSafeToForce = Inner.PAB, Inner.PAB_FxListView, Inner.PAB_FxSafeToForce
@@ -51,9 +47,7 @@ local function MaxIconSizeFor(isBuff, conf)
         if entries then
             for index = 1, #entries do
                 local sz = tonumber(entries[index].size)
-                if sz and sz > size then
-                    size = sz
-                end
+                if sz and sz > size then size = sz end
             end
         end
     end
@@ -92,9 +86,7 @@ local function ComputeGrid(isBuff, conf)
     -- cells can never spill out of it. This is not a budget: an inactive slot
     -- reserves nothing, only a cell that actually shows costs one (BuffAuraMax).
     local enchSlots = 0
-    if isBuff and mod.PAB_EnchantsOn(conf) then
-        enchSlots = math.min(ENCH_SLOT_COUNT, effectiveMax)
-    end
+    if isBuff and mod.PAB_EnchantsOn(conf) then enchSlots = math.min(ENCH_SLOT_COUNT, effectiveMax) end
     -- `lineExtent` is the icons' own extent on the line axis (iconsPerRow
     -- icons of iconSize + gaps); `crossExtent` is the other axis (lines actually used).
     -- Horizontal growth: a "line" is a row, so lineExtent -> width. Vertical growth
@@ -167,9 +159,7 @@ mod.PAB_DefaultDebuffsCfg = DefaultDebuffsCfg
 -- Enchants" Filters row only existed while they had to be drawn by hand --
 -- and custom buff bars never carry them.
 function mod.PAB_EnchantsOn(conf)
-    if not conf or (conf.showAllBuffs == false and conf.hasDuration ~= true) then
-        return false
-    end
+    if not conf or (conf.showAllBuffs == false and conf.hasDuration ~= true) then return false end
     local pabCfg = PAB()
     return pabCfg ~= nil and pabCfg.defaultBuffs == conf
 end
@@ -178,9 +168,7 @@ end
 -- stores element labels untranslated (CUI_UnlockMode.lua's GetBarLabel hands
 -- back elem.label verbatim), and the options page wraps the result in L()
 -- itself. One definition for both callers.
-function mod.PAB_DefaultBuffsName(conf)
-    return "Buffs"
-end
+function mod.PAB_DefaultBuffsName(conf) return "Buffs" end
 
 -- One-time seed of the default Buffs/Debuffs bars' position/size/grid from Blizzard's
 -- EditMode Buff/Debuff frame setup, so a first-time PAB user doesn't lose an
@@ -211,9 +199,7 @@ end
 -- (ApplyBarPosition) while Blizzard's anchor can chain to an arbitrary frame (observed:
 -- Buffs relativeTo="DebuffFrame"); absolute screen coordinates sidestep that chain.
 local function SeedBarFromEditMode(widget, conf, posKey, cfg, isBuff)
-    if not (widget and widget.AuraContainer) then
-        return
-    end
+    if not (widget and widget.AuraContainer) then return end
     local ac = widget.AuraContainer
 
     local uiLeft, uiTop = UIParent:GetLeft(), UIParent:GetTop()
@@ -222,12 +208,8 @@ local function SeedBarFromEditMode(widget, conf, posKey, cfg, isBuff)
         cfg[posKey] = { point = "TOPLEFT", relPoint = "TOPLEFT", x = leftX - uiLeft, y = topY - uiTop }
     end
 
-    if ac.iconPadding then
-        conf.padding = ac.iconPadding
-    end
-    if ac.iconScale then
-        conf.iconSize = math.floor(32 * ac.iconScale + 0.5)
-    end
+    if ac.iconPadding then conf.padding = ac.iconPadding end
+    if ac.iconScale then conf.iconSize = math.floor(32 * ac.iconScale + 0.5) end
     if ac.iconStride then
         conf.iconsPerRow = ac.iconStride
         -- Keep the full icon cap reachable when the migrated row width is narrower
@@ -266,56 +248,28 @@ end
 -- PAB has its own per-bar iconZoom.
 local function MigratePlayerAuraStyle(buffCfg, debuffCfg)
     local old = mod.db and mod.db.profile and mod.db.profile.playerAuras
-    if not (old and old.enabled) then
-        return
-    end
+    if not (old and old.enabled) then return end
 
     for _, conf in ipairs({ buffCfg, debuffCfg }) do
-        if old.borderSize then
-            conf.borderSize = old.borderSize
-        end
-        if old.borderR then
-            conf.borderR = old.borderR
-        end
-        if old.borderG then
-            conf.borderG = old.borderG
-        end
-        if old.borderB then
-            conf.borderB = old.borderB
-        end
-        if old.borderA then
-            conf.borderA = old.borderA
-        end
-        if old.borderTexture then
-            conf.borderTexture = old.borderTexture
-        end
-        if old.borderTextureOffset ~= nil then
-            conf.borderTextureOffset = old.borderTextureOffset
-        end
-        if old.borderTextureOffsetY ~= nil then
-            conf.borderTextureOffsetY = old.borderTextureOffsetY
-        end
-        if old.borderTextureShiftX ~= nil then
-            conf.borderTextureShiftX = old.borderTextureShiftX
-        end
-        if old.borderTextureShiftY ~= nil then
-            conf.borderTextureShiftY = old.borderTextureShiftY
-        end
-        if old.borderBehind ~= nil then
-            conf.borderBehind = old.borderBehind
-        end
-        if old.showText ~= nil then
-            conf.durationShow = old.showText
-        end
+        if old.borderSize then conf.borderSize = old.borderSize end
+        if old.borderR then conf.borderR = old.borderR end
+        if old.borderG then conf.borderG = old.borderG end
+        if old.borderB then conf.borderB = old.borderB end
+        if old.borderA then conf.borderA = old.borderA end
+        if old.borderTexture then conf.borderTexture = old.borderTexture end
+        if old.borderTextureOffset ~= nil then conf.borderTextureOffset = old.borderTextureOffset end
+        if old.borderTextureOffsetY ~= nil then conf.borderTextureOffsetY = old.borderTextureOffsetY end
+        if old.borderTextureShiftX ~= nil then conf.borderTextureShiftX = old.borderTextureShiftX end
+        if old.borderTextureShiftY ~= nil then conf.borderTextureShiftY = old.borderTextureShiftY end
+        if old.borderBehind ~= nil then conf.borderBehind = old.borderBehind end
+        if old.showText ~= nil then conf.durationShow = old.showText end
         if old.textSize then
             conf.durationTextSize = old.textSize
             conf.stackTextSize = old.textSize
         end
     end
 
-    if old.noBorderDebuffs then
-        debuffCfg.borderSize = 0
-    end
+    if old.noBorderDebuffs then debuffCfg.borderSize = 0 end
 end
 
 -- One-shot filter-model upgrade (v2, per profile): debuff bars moved to the unified
@@ -323,20 +277,14 @@ end
 -- Stale add-mode selections that Show All used to bypass would suddenly subtract
 -- content -- clear them once on every Show All debuff bar; add-mode bars keep theirs.
 local function EnsureDebuffFilterV2(s)
-    if s.pabDebuffFiltersV2 then
-        return
-    end
+    if s.pabDebuffFiltersV2 then return end
     s.pabDebuffFiltersV2 = true
     local skinData = s.defaultDebuffs
-    if skinData and skinData.showAllDebuffs ~= false then
-        skinData.classFilters = nil
-    end
+    if skinData and skinData.showAllDebuffs ~= false then skinData.classFilters = nil end
     if s.customDebuffBars then
         for index = 1, #s.customDebuffBars do
             local barFrame = s.customDebuffBars[index]
-            if barFrame.showAllDebuffs ~= false then
-                barFrame.classFilters = nil
-            end
+            if barFrame.showAllDebuffs ~= false then barFrame.classFilters = nil end
         end
     end
 end
@@ -347,23 +295,21 @@ end
 -- subtracting -- move them to the hide lane so rendering is bit-identical; add-mode
 -- selections already mean SHOW and stay put. Runs after EnsureDebuffFilterV2.
 local function EnsureFilterLanes(s)
-    if s.pabFilterLanesV1 then
-        return
-    end
+    if s.pabFilterLanesV1 then return end
     s.pabFilterLanesV1 = true
     local function SplitBuff(barFrame)
-        if not barFrame then
-            return
-        end
-        if (barFrame.showAllBuffs ~= false or barFrame.hasDuration == true) and barFrame.filters and next(barFrame.filters) then
+        if not barFrame then return end
+        if
+            (barFrame.showAllBuffs ~= false or barFrame.hasDuration == true)
+            and barFrame.filters
+            and next(barFrame.filters)
+        then
             barFrame.negFilters = barFrame.filters
             barFrame.filters = nil
         end
     end
     local function SplitDebuff(barFrame)
-        if not barFrame then
-            return
-        end
+        if not barFrame then return end
         if barFrame.showAllDebuffs ~= false and barFrame.classFilters and next(barFrame.classFilters) then
             barFrame.negClassFilters = barFrame.classFilters
             barFrame.classFilters = nil
@@ -390,15 +336,9 @@ mod.PAB_EnsureFilterLanes = EnsureFilterLanes
 -- broad modes (ns.PAB_EnchantsOn) rather than counting as one. Shared by the
 -- enable migration below and the options dropdowns' guards.
 local function BuffBarHasContent(barFrame, isDefault)
-    if barFrame.showAllBuffs ~= false or barFrame.hasDuration == true then
-        return true
-    end
-    if barFrame.filters and next(barFrame.filters) then
-        return true
-    end
-    if barFrame.spells and #barFrame.spells > 0 then
-        return true
-    end
+    if barFrame.showAllBuffs ~= false or barFrame.hasDuration == true then return true end
+    if barFrame.filters and next(barFrame.filters) then return true end
+    if barFrame.spells and #barFrame.spells > 0 then return true end
     return false
 end
 -- Debuff content besides the All Debuffs mode: Show-lane classes, or an Icon
@@ -406,14 +346,10 @@ end
 -- the chain builders' fx wrapper renders those categories even in add mode, so
 -- an fx-only bar is NOT empty).
 local function DebuffBarOtherContent(barFrame)
-    if barFrame.classFilters and next(barFrame.classFilters) then
-        return true
-    end
+    if barFrame.classFilters and next(barFrame.classFilters) then return true end
     if barFrame.fxList then
         local function AnyForced(entries)
-            if not entries then
-                return false
-            end
+            if not entries then return false end
             for index = 1, #entries do
                 local class = entries[index]
                 if PAB_FxSafeToForce(class) and PAB_FxWantsCategory(barFrame.fxList, class.key) then
@@ -422,16 +358,12 @@ local function DebuffBarOtherContent(barFrame)
             end
             return false
         end
-        if AnyForced(VisibleTokenClasses()) or AnyForced(VisibleCandidateClasses()) then
-            return true
-        end
+        if AnyForced(VisibleTokenClasses()) or AnyForced(VisibleCandidateClasses()) then return true end
     end
     return false
 end
 local function DebuffBarHasContent(barFrame)
-    if barFrame.showAllDebuffs ~= false or barFrame.hasDuration == true then
-        return true
-    end
+    if barFrame.showAllDebuffs ~= false or barFrame.hasDuration == true then return true end
     return DebuffBarOtherContent(barFrame)
 end
 mod.PAB_BuffBarHasContent = BuffBarHasContent
@@ -460,30 +392,25 @@ local function EnsureBarEnable(s)
         if skinData then
             local saved = skinData.enchGridSaved
             if saved then
-                skinData.iconsPerRow, skinData.maxRows, skinData.maxTotal = saved.iconsPerRow, saved.maxRows, saved.maxTotal
+                skinData.iconsPerRow, skinData.maxRows, skinData.maxTotal =
+                    saved.iconsPerRow, saved.maxRows, saved.maxTotal
                 skinData.enchGridSaved = nil
                 skinData.showAllBuffs = nil
             end
             skinData.showWeaponEnchants = nil
         end
     end
-    if s.pabBarEnableV1 then
-        return
-    end
+    if s.pabBarEnableV1 then return end
     s.pabBarEnableV1 = true
     local function MapBuff(barFrame, isDefault)
-        if not barFrame then
-            return
-        end
+        if not barFrame then return end
         if barFrame.enabled ~= false and not BuffBarHasContent(barFrame, isDefault) then
             barFrame.showAllBuffs = nil -- All Buffs back on (nil = on)
             barFrame.enabled = false
         end
     end
     local function MapDebuff(barFrame)
-        if not barFrame then
-            return
-        end
+        if not barFrame then return end
         if barFrame.enabled ~= false and not DebuffBarHasContent(barFrame) then
             barFrame.showAllDebuffs = nil
             barFrame.enabled = false
@@ -505,9 +432,7 @@ end
 mod.PAB_EnsureBarEnable = EnsureBarEnable
 
 local function SeedDefaultBuffsDebuffsFromLegacySources(cfg)
-    if cfg.pabEditModeSeeded then
-        return
-    end
+    if cfg.pabEditModeSeeded then return end
     cfg.pabEditModeSeeded = true -- set first: never retry even if a read below errors/fails partway
     local buffCfg, debuffCfg = DefaultBuffsCfg(cfg), DefaultDebuffsCfg(cfg)
     SeedBarFromEditMode(BuffFrame, buffCfg, "buffsPos", cfg, true)
@@ -526,9 +451,7 @@ end
 -- retired position slots (s.extDefPos / the legacy module's unlockPos) become the
 -- bar's own pos.
 local function EnsureExtDefCustomBar(s)
-    if s.pabExtDefSeeded == 2 then
-        return
-    end
+    if s.pabExtDefSeeded == 2 then return end
     local extId
     do
         local entries = mod.PAB_Filters and mod.PAB_Filters()
@@ -579,15 +502,9 @@ local function EnsureExtDefCustomBar(s)
     }
     s.nextBarId = s.nextBarId + 1
     if from then
-        if from.enabled ~= nil then
-            barFrame.enabled = from.enabled == true
-        end
-        if from.iconSize then
-            barFrame.iconSize = from.iconSize
-        end
-        if from.growDirection then
-            barFrame.growDirection = string.upper(from.growDirection)
-        end
+        if from.enabled ~= nil then barFrame.enabled = from.enabled == true end
+        if from.iconSize then barFrame.iconSize = from.iconSize end
+        if from.growDirection then barFrame.growDirection = string.upper(from.growDirection) end
         if from.durationShow ~= nil then
             barFrame.durationShow = from.durationShow
         elseif from.showText ~= nil then
@@ -598,100 +515,49 @@ local function EnsureExtDefCustomBar(s)
         elseif from.textSize then
             barFrame.stackTextSize = from.textSize
         end
-        if from.durationPosition then
-            barFrame.durationPosition = from.durationPosition
-        end
-        if from.durationTextSize then
-            barFrame.durationTextSize = from.durationTextSize
-        end
-        if from.durationOffsetX then
-            barFrame.durationOffsetX = from.durationOffsetX
-        end
-        if from.durationOffsetY then
-            barFrame.durationOffsetY = from.durationOffsetY
-        end
+        if from.durationPosition then barFrame.durationPosition = from.durationPosition end
+        if from.durationTextSize then barFrame.durationTextSize = from.durationTextSize end
+        if from.durationOffsetX then barFrame.durationOffsetX = from.durationOffsetX end
+        if from.durationOffsetY then barFrame.durationOffsetY = from.durationOffsetY end
         if from.durationColorR then
             barFrame.durationColorR, barFrame.durationColorG, barFrame.durationColorB =
                 from.durationColorR, from.durationColorG, from.durationColorB
         end
-        if from.stackShow ~= nil then
-            barFrame.stackShow = from.stackShow
-        end
-        if from.stackPosition then
-            barFrame.stackPosition = from.stackPosition
-        end
-        if from.stackOffsetX then
-            barFrame.stackOffsetX = from.stackOffsetX
-        end
-        if from.stackOffsetY then
-            barFrame.stackOffsetY = from.stackOffsetY
-        end
+        if from.stackShow ~= nil then barFrame.stackShow = from.stackShow end
+        if from.stackPosition then barFrame.stackPosition = from.stackPosition end
+        if from.stackOffsetX then barFrame.stackOffsetX = from.stackOffsetX end
+        if from.stackOffsetY then barFrame.stackOffsetY = from.stackOffsetY end
         if from.stackColorR then
             barFrame.stackColorR, barFrame.stackColorG, barFrame.stackColorB =
                 from.stackColorR, from.stackColorG, from.stackColorB
         end
-        if from.iconsPerRow then
-            barFrame.iconsPerRow = from.iconsPerRow
-        end
-        if from.maxRows then
-            barFrame.maxRows = from.maxRows
-        end
-        if from.maxTotal then
-            barFrame.maxTotal = from.maxTotal
-        end
-        if from.padding then
-            barFrame.padding = from.padding
-        end
-        if from.rowSpacing then
-            barFrame.rowSpacing = from.rowSpacing
-        end
-        if from.iconZoom then
-            barFrame.iconZoom = from.iconZoom
-        end
-        if from.showSwipe ~= nil then
-            barFrame.showSwipe = from.showSwipe
-        end
-        if from.reverseSwipe ~= nil then
-            barFrame.reverseSwipe = from.reverseSwipe
-        end
-        if from.fontOutline then
-            barFrame.fontOutline = from.fontOutline
-        end
-        if from.sortMethod then
-            barFrame.sortMethod = from.sortMethod
-        end
-        if from.sortDirection then
-            barFrame.sortDirection = from.sortDirection
-        end
-        if from.borderSize then
-            barFrame.borderSize = from.borderSize
-        end
+        if from.iconsPerRow then barFrame.iconsPerRow = from.iconsPerRow end
+        if from.maxRows then barFrame.maxRows = from.maxRows end
+        if from.maxTotal then barFrame.maxTotal = from.maxTotal end
+        if from.padding then barFrame.padding = from.padding end
+        if from.rowSpacing then barFrame.rowSpacing = from.rowSpacing end
+        if from.iconZoom then barFrame.iconZoom = from.iconZoom end
+        if from.showSwipe ~= nil then barFrame.showSwipe = from.showSwipe end
+        if from.reverseSwipe ~= nil then barFrame.reverseSwipe = from.reverseSwipe end
+        if from.fontOutline then barFrame.fontOutline = from.fontOutline end
+        if from.sortMethod then barFrame.sortMethod = from.sortMethod end
+        if from.sortDirection then barFrame.sortDirection = from.sortDirection end
+        if from.borderSize then barFrame.borderSize = from.borderSize end
         if from.borderR then
             barFrame.borderR, barFrame.borderG, barFrame.borderB, barFrame.borderA =
                 from.borderR, from.borderG, from.borderB, from.borderA
         end
-        if from.borderTexture then
-            barFrame.borderTexture = from.borderTexture
-        end
-        if from.borderTextureOffset ~= nil then
-            barFrame.borderTextureOffset = from.borderTextureOffset
-        end
-        if from.borderTextureOffsetY ~= nil then
-            barFrame.borderTextureOffsetY = from.borderTextureOffsetY
-        end
-        if from.borderTextureShiftX ~= nil then
-            barFrame.borderTextureShiftX = from.borderTextureShiftX
-        end
-        if from.borderTextureShiftY ~= nil then
-            barFrame.borderTextureShiftY = from.borderTextureShiftY
-        end
-        if from.borderBehind ~= nil then
-            barFrame.borderBehind = from.borderBehind
-        end
+        if from.borderTexture then barFrame.borderTexture = from.borderTexture end
+        if from.borderTextureOffset ~= nil then barFrame.borderTextureOffset = from.borderTextureOffset end
+        if from.borderTextureOffsetY ~= nil then barFrame.borderTextureOffsetY = from.borderTextureOffsetY end
+        if from.borderTextureShiftX ~= nil then barFrame.borderTextureShiftX = from.borderTextureShiftX end
+        if from.borderTextureShiftY ~= nil then barFrame.borderTextureShiftY = from.borderTextureShiftY end
+        if from.borderBehind ~= nil then barFrame.borderBehind = from.borderBehind end
     end
     local place = s.extDefPos or (legacy and legacy.unlockPos)
     if place and place.point then
-        barFrame.pos = { point = place.point, relPoint = place.relPoint or place.point, x = place.x, y = place.y }
+        barFrame.pos =
+            { point = place.point, relPoint = place.relPoint or place.point, x = place.x, y = place.y }
     end
     s.customBuffBars = s.customBuffBars or {}
     s.customBuffBars[#s.customBuffBars + 1] = barFrame

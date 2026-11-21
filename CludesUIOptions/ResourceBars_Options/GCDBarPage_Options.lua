@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\GCDBarPage_Options.lua
 --  Resource Bars options: GCD Bar page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
@@ -32,9 +28,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     CludesUI:SetContentHeader(environ._gcdPreviewBuilder)
 
     -- Clear this page's own click mapping (shared table; never from a hidden pre-build)
-    if not CludesUI._prebuilding then
-        _clickMappings.gcdBar = nil
-    end
+    if not CludesUI._prebuilding then _clickMappings.gcdBar = nil end
 
     -- Re-append SharedMedia textures (catches lazy-registered SM packs)
     CludesUI.AppendSharedMediaTextures(
@@ -50,16 +44,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         local texOrder2 = _G._CURB_BarTextureOrder or {}
         local texLookup = _G._CURB_BarTextures or {}
         for _, key in ipairs(texOrder2) do
-            if key ~= "---" then
-                texValues[key] = texNames[key] or key
-            end
+            if key ~= "---" then texValues[key] = texNames[key] or key end
             texOrder[#texOrder + 1] = key
         end
         texValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return texLookup[key]
-            end,
+            background = function(key) return texLookup[key] end,
         }
     end
 
@@ -69,12 +59,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     end
 
     local function ApplyGcdBar()
-        if _G._CURB_Apply then
-            _G._CURB_Apply()
-        end
-        if CludesUI.NotifyElementResized then
-            CludesUI.NotifyElementResized("ERB_GCDBar")
-        end
+        if _G._CURB_Apply then _G._CURB_Apply() end
+        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_GCDBar") end
         UpdateGCDPreview()
     end
     -- A setting row's getter for one GCD bar key: its value, or default when
@@ -82,9 +68,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     local function Getter(key, default)
         return function()
             local profile = DB()
-            if default == nil then
-                return profile and profile.gcdBar[key]
-            end
+            if default == nil then return profile and profile.gcdBar[key] end
             return profile and profile.gcdBar[key] or default
         end
     end
@@ -93,14 +77,10 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     local function Setter(key, alsoPage)
         return function(val)
             local profile = DB()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.gcdBar[key] = val
             ApplyGcdBar()
-            if alsoPage then
-                CludesUI:RefreshPage()
-            end
+            if alsoPage then CludesUI:RefreshPage() end
         end
     end
 
@@ -156,20 +136,14 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     step = 1,
                     get = function()
                         local profile = DB()
-                        if not profile then
-                            return 0
-                        end
+                        if not profile then return 0 end
                         local gcdCfg = profile.gcdBar
-                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
-                            return gcdCfg.unlockPos.x or 0
-                        end
+                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then return gcdCfg.unlockPos.x or 0 end
                         return gcdCfg.anchorX or 0
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local gcdCfg = profile.gcdBar
                         if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
                             gcdCfg.unlockPos.x = val
@@ -187,20 +161,14 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     step = 1,
                     get = function()
                         local profile = DB()
-                        if not profile then
-                            return 0
-                        end
+                        if not profile then return 0 end
                         local gcdCfg = profile.gcdBar
-                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
-                            return gcdCfg.unlockPos.y or 0
-                        end
+                        if gcdCfg.unlockPos and gcdCfg.unlockPos.point then return gcdCfg.unlockPos.y or 0 end
                         return gcdCfg.anchorY or -78
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local gcdCfg = profile.gcdBar
                         if gcdCfg.unlockPos and gcdCfg.unlockPos.point then
                             gcdCfg.unlockPos.y = val
@@ -309,9 +277,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         if val then
                             profile.gcdBar.idleShowFill = true
                         else
@@ -347,9 +313,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 getValue = Getter("borderTexture", "solid"),
                 setValue = function(val)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.gcdBar.borderTexture = val
                     profile.gcdBar.borderTextureOffset = nil
                     profile.gcdBar.borderTextureOffsetY = nil
@@ -362,12 +326,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     profile.gcdBar.borderA = 1
                     profile.gcdBar.borderBehind = _bbehind
                     local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
-                    if defSz then
-                        profile.gcdBar.borderSize = defSz
-                    end
-                    if profile.gcdBar.borderSizePx then
-                        profile.gcdBar.borderSizePx = false
-                    end
+                    if defSz then profile.gcdBar.borderSize = defSz end
+                    if profile.gcdBar.borderSizePx then profile.gcdBar.borderSizePx = false end
                     ApplyGcdBar()
                     CludesUI:RefreshPage(true)
                 end,
@@ -382,9 +342,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end,
                 setStep = function(val)
                     local profile = DB()
-                    if profile then
-                        profile.gcdBar.borderSize = val
-                    end
+                    if profile then profile.gcdBar.borderSize = val end
                 end,
                 getTex = function()
                     local profile = DB()
@@ -396,9 +354,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end,
                 setPx = function(val)
                     local profile = DB()
-                    if profile then
-                        profile.gcdBar.borderSizePx = val
-                    end
+                    if profile then profile.gcdBar.borderSizePx = val end
                 end,
                 apply = function()
                     ApplyGcdBar()
@@ -436,9 +392,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end,
                     setX = function(val)
                         local profile = DB()
-                        if profile then
-                            profile.gcdBar.borderTextureOffset = val
-                        end
+                        if profile then profile.gcdBar.borderTextureOffset = val end
                     end,
                     getY = function()
                         local profile = DB()
@@ -446,9 +400,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end,
                     setY = function(val)
                         local profile = DB()
-                        if profile then
-                            profile.gcdBar.borderTextureOffsetY = val
-                        end
+                        if profile then profile.gcdBar.borderTextureOffsetY = val end
                     end,
                     apply = function()
                         ApplyGcdBar()
@@ -476,10 +428,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end,
                 function(red, green, blue, a)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
-                    profile.gcdBar.borderR, profile.gcdBar.borderG, profile.gcdBar.borderB, profile.gcdBar.borderA = red, green, blue, a
+                    if not profile then return end
+                    profile.gcdBar.borderR, profile.gcdBar.borderG, profile.gcdBar.borderB, profile.gcdBar.borderA =
+                        red, green, blue, a
                     ApplyGcdBar()
                     CludesUI:RefreshPage()
                 end,
@@ -488,15 +439,16 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             )
             Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             local block = CludesUI.NewSwatchBlocker(colorSwatch)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(
-                    colorSwatch,
-                    CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
-                )
-            end)
-            block:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            block:SetScript(
+                "OnEnter",
+                function()
+                    CludesUI.ShowWidgetTooltip(
+                        colorSwatch,
+                        CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
+                    )
+                end
+            )
+            block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             local function UpdateSwatchState()
                 local profile = DB()
                 local noBorder = not profile or (profile.gcdBar.borderSize or 0) == 0
@@ -529,13 +481,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         step = 1,
                         get = function()
                             local profile = DB()
-                            if not profile then
-                                return 0
-                            end
+                            if not profile then return 0 end
                             local val = profile.gcdBar.borderTextureShiftX
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local _, _, dsx = CludesUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.gcdBar.borderTexture or "solid",
@@ -545,9 +493,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         end,
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             profile.gcdBar.borderTextureShiftX = val == 0 and nil or val
                             ApplyGcdBar()
                             CludesUI:RefreshPage()
@@ -561,13 +507,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         step = 1,
                         get = function()
                             local profile = DB()
-                            if not profile then
-                                return 0
-                            end
+                            if not profile then return 0 end
                             local val = profile.gcdBar.borderTextureShiftY
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.gcdBar.borderTexture or "solid",
@@ -577,9 +519,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         end,
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             profile.gcdBar.borderTextureShiftY = val == 0 and nil or val
                             ApplyGcdBar()
                             CludesUI:RefreshPage()
@@ -591,9 +531,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         get = Getter("borderBehind", false),
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             profile.gcdBar.borderBehind = val == false and nil or val
                             ApplyGcdBar()
                             CludesUI:RefreshPage()
@@ -660,16 +598,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabledTooltip = "GCD Bar",
                         get = function()
                             local profile = DB()
-                            if not (profile and profile.gcdBar.edgeSep) then
-                                return "none"
-                            end
+                            if not (profile and profile.gcdBar.edgeSep) then return "none" end
                             return profile.gcdBar.edgeSepArt or "match"
                         end,
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             if val == "none" then
                                 profile.gcdBar.edgeSep = false
                             else
@@ -690,9 +624,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             local profile = DB()
                             return gcdOff() or not (profile and profile.gcdBar.edgeSep)
                         end,
-                        disabledTooltip = function()
-                            return gcdOff() and "GCD Bar" or "Bottom Separator"
-                        end,
+                        disabledTooltip = function() return gcdOff() and "GCD Bar" or "Bottom Separator" end,
                         get = Getter("edgeSepY", 0),
                         set = Setter("edgeSepY", true),
                     },
@@ -725,16 +657,15 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 hasAlpha = true,
                 getValue = function()
                     local profile = DB()
-                    if not profile then
-                        return 0.20, 0.20, 0.80, 1
-                    end
-                    return profile.gcdBar.gradientR, profile.gcdBar.gradientG, profile.gcdBar.gradientB, profile.gcdBar.gradientA
+                    if not profile then return 0.20, 0.20, 0.80, 1 end
+                    return profile.gcdBar.gradientR,
+                        profile.gcdBar.gradientG,
+                        profile.gcdBar.gradientB,
+                        profile.gcdBar.gradientA
                 end,
                 setValue = function(red, green, blue, a)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.gcdBar.gradientR, profile.gcdBar.gradientG, profile.gcdBar.gradientB, profile.gcdBar.gradientA =
                         red, green, blue, a
                     ApplyGcdBar()
@@ -748,36 +679,35 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     if not profile then
                         local _, castFrame = UnitClass("player")
                         local classColor = CLASS_COLORS[castFrame]
-                        return classColor and classColor[1] or 1, classColor and classColor[2] or 0.70, classColor and classColor[3] or 0, 1
+                        return classColor and classColor[1] or 1,
+                            classColor and classColor[2] or 0.70,
+                            classColor and classColor[3] or 0,
+                            1
                     end
-                    return profile.gcdBar.fillR, profile.gcdBar.fillG, profile.gcdBar.fillB, profile.gcdBar.fillA
+                    return profile.gcdBar.fillR,
+                        profile.gcdBar.fillG,
+                        profile.gcdBar.fillB,
+                        profile.gcdBar.fillA
                 end,
                 setValue = function(red, green, blue, a)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
-                    profile.gcdBar.fillR, profile.gcdBar.fillG, profile.gcdBar.fillB, profile.gcdBar.fillA = red, green, blue, a
-                    if profile.gcdBar.classColored then
-                        profile.gcdBar.classColored = false
-                    end
+                    if not profile then return end
+                    profile.gcdBar.fillR, profile.gcdBar.fillG, profile.gcdBar.fillB, profile.gcdBar.fillA =
+                        red, green, blue, a
+                    if profile.gcdBar.classColored then profile.gcdBar.classColored = false end
                     ApplyGcdBar()
                     CludesUI:RefreshPage()
                 end,
                 onClick = function(self)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     if profile.gcdBar.classColored then
                         profile.gcdBar.classColored = false
                         ApplyGcdBar()
                         CludesUI:RefreshPage()
                         return
                     end
-                    if self._eabOrigClick then
-                        self._eabOrigClick(self)
-                    end
+                    if self._eabOrigClick then self._eabOrigClick(self) end
                 end,
                 refreshAlpha = function()
                     local profile = DB()
@@ -789,17 +719,13 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 getValue = function()
                     local _, class = UnitClass("player")
                     local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                    if classColor then
-                        return classColor.r, classColor.g, classColor.b, 1
-                    end
+                    if classColor then return classColor.r, classColor.g, classColor.b, 1 end
                     return 1, 0.70, 0, 1
                 end,
                 setValue = function() end,
                 onClick = function()
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.gcdBar.classColored = true
                     ApplyGcdBar()
                     CludesUI:RefreshPage()
@@ -824,9 +750,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             local profile = DB()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.gcdBar.bgA = val / 100
             ApplyGcdBar()
         end,
@@ -891,13 +815,13 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             colorRow:GetFrameLevel() + 3,
             function()
                 local profile = DB()
-                return (profile and profile.gcdBar.bgR or 0), (profile and profile.gcdBar.bgG or 0), (profile and profile.gcdBar.bgB or 0)
+                return (profile and profile.gcdBar.bgR or 0),
+                    (profile and profile.gcdBar.bgG or 0),
+                    (profile and profile.gcdBar.bgB or 0)
             end,
             function(red, green, blue)
                 local profile = DB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile.gcdBar.bgR, profile.gcdBar.bgG, profile.gcdBar.bgB = red, green, blue
                 ApplyGcdBar()
             end,

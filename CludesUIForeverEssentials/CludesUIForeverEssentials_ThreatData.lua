@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ThreatData.lua  (WoW Forever only)
 --  Threat data for the threat meter (drawn by the ThreatMeter file after this
@@ -18,9 +14,7 @@ module.ThreatMeter = module.ThreatMeter or {}
 local ns = module.ThreatMeter
 
 -- The secret test comes first: comparing a secret, even to nil, is an error.
-local function Readable(v)
-    return not issecretvalue(v) and v ~= nil
-end
+local function Readable(v) return not issecretvalue(v) and v ~= nil end
 
 -- Every group token the meter reads, built once: Collect walks the lists and
 -- the threat-situation filter looks tokens up in the sets. PET_OWNER maps a pet
@@ -43,13 +37,9 @@ local TARGET_OF = { target = "targettarget", focus = "focustarget" }
 -- The mob whose threat table is shown: the tracked unit when you can attack it,
 -- otherwise what it is fighting (a healer targeting the tank).
 function ns.ResolveSource(unit)
-    if UnitExists(unit) and UnitCanAttack("player", unit) then
-        return unit
-    end
+    if UnitExists(unit) and UnitCanAttack("player", unit) then return unit end
     local mob = TARGET_OF[unit]
-    if mob and UnitExists(mob) and UnitCanAttack("player", mob) then
-        return mob
-    end
+    if mob and UnitExists(mob) and UnitCanAttack("player", mob) then return mob end
 end
 
 -------------------------------------------------------------------------------
@@ -67,9 +57,7 @@ function ns.RosterChanged()
 end
 
 local function SelfToken(inRaid)
-    if not inRaid then
-        return "player"
-    end
+    if not inRaid then return "player" end
     if selfGen ~= ns.rosterGen then
         selfToken = nil
         for i = 1, GetNumGroupMembers() do
@@ -80,9 +68,7 @@ local function SelfToken(inRaid)
             end
         end
         -- Only a found token is kept: an early roster read retries next pass.
-        if selfToken then
-            selfGen = ns.rosterGen
-        end
+        if selfToken then selfGen = ns.rosterGen end
     end
     return selfToken
 end
@@ -90,9 +76,7 @@ end
 -- Class file of a unit token; a pet token answers with its owner's class.
 function ns.ClassOf(unit)
     local class = classMemo[unit]
-    if class then
-        return class
-    end
+    if class then return class end
     local _, file = UnitClass(PET_OWNER[unit] or unit)
     if not issecretvalue(file) and file then
         classMemo[unit] = file
@@ -115,13 +99,9 @@ function ns.NewCollector()
     local c = { list = list }
 
     local function Add(unit, mob, isPet)
-        if not UnitExists(unit) then
-            return
-        end
+        if not UnitExists(unit) then return end
         local tanking, _, scaled, rawPct, raw = UnitDetailedThreatSituation(unit, mob)
-        if not (Readable(raw) and Readable(scaled) and Readable(tanking)) or raw <= 0 then
-            return
-        end
+        if not (Readable(raw) and Readable(scaled) and Readable(tanking)) or raw <= 0 then return end
         count = count + 1
         local entry = entries[count]
         if not entry then
@@ -145,20 +125,14 @@ function ns.NewCollector()
         if inRaid then
             for i = 1, GetNumGroupMembers() do
                 Add(RAID_UNITS[i], mob, false)
-                if pets then
-                    Add(RAID_PETS[i], mob, true)
-                end
+                if pets then Add(RAID_PETS[i], mob, true) end
             end
         else
             Add("player", mob, false)
-            if pets then
-                Add("pet", mob, true)
-            end
+            if pets then Add("pet", mob, true) end
             for i = 1, GetNumSubgroupMembers() do
                 Add(PARTY_UNITS[i], mob, false)
-                if pets then
-                    Add(PARTY_PETS[i], mob, true)
-                end
+                if pets then Add(PARTY_PETS[i], mob, true) end
             end
         end
         local own = SelfToken(inRaid)
@@ -169,22 +143,16 @@ function ns.NewCollector()
                 e.own = true
                 me = e
             end
-            if e.tanking then
-                tankRaw = e.raw
-            end
+            if e.tanking then tankRaw = e.raw end
         end
         return me, tankRaw
     end
 
     function c.AddPullEntry(me, tankRaw)
-        if ns.FillPullEntry(pullEntry, me, tankRaw) then
-            list[#list + 1] = pullEntry
-        end
+        if ns.FillPullEntry(pullEntry, me, tankRaw) then list[#list + 1] = pullEntry end
     end
 
-    function c.Sort()
-        table.sort(list, ns.ByThreat)
-    end
+    function c.Sort() table.sort(list, ns.ByThreat) end
 
     return c
 end
@@ -194,9 +162,7 @@ end
 -- the API's melee/ranged distance rule without guessing it. Nothing while you
 -- tank. rawPct is the line as a percent of the tank's threat.
 function ns.FillPullEntry(e, me, tankRaw)
-    if not (me and not me.tanking and me.scaled > 0) then
-        return nil
-    end
+    if not (me and not me.tanking and me.scaled > 0) then return nil end
     local raw = me.raw * 100 / me.scaled
     e.key, e.unit, e.pull, e.raw, e.scaled = "pull", nil, true, raw, 100
     e.rawPct = (tankRaw and tankRaw > 0) and raw * 100 / tankRaw or nil
@@ -206,9 +172,7 @@ end
 
 -- Highest raw threat first, the pull line sorted in with everyone.
 function ns.ByThreat(a, b)
-    if a.raw ~= b.raw then
-        return a.raw > b.raw
-    end
+    if a.raw ~= b.raw then return a.raw > b.raw end
     return a.order < b.order
 end
 

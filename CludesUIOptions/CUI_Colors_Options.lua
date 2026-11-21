@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Colors_Options.lua -- Global Settings > Colors. It registers nothing:
 --  the Global Settings module (CUI__General_Options.lua) dispatches its builder.
@@ -81,9 +79,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     -- Helper to save a color entry
     local function SaveColorEntry(category, key, payload)
         local saved = GetCustomColorsDB()
-        if not saved[category] then
-            saved[category] = {}
-        end
+        if not saved[category] then saved[category] = {} end
         saved[category][key] = payload
         CludesUI.ApplyColorsToOUF()
     end
@@ -127,9 +123,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             for col = 0, GRID_COLS - 1 do
                 local position = row * GRID_COLS + col + 1
                 local entry = itemList[position]
-                if not entry then
-                    break
-                end
+                if not entry then break end
 
                 local cell = CreateFrame("Frame", nil, rowFrame)
                 cell:SetSize(colW, GRID_ROW_H)
@@ -236,9 +230,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         }
         local function DMProvider(ident)
             for _, p in ipairs(CludesUI._darkModeToggles) do
-                if p.id == ident then
-                    return p
-                end
+                if p.id == ident then return p end
             end
         end
         local function CondEditLocked()
@@ -268,9 +260,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             tooltip = "Turns Dark Mode on or off for each module.",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
+            getValue = function() return "_placeholder" end,
             setValue = function() end,
         }, {
             type = "dropdown",
@@ -278,9 +268,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             tooltip = "Darkens class, resource and power colors.",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
+            getValue = function() return "_placeholder" end,
             setValue = function() end,
         })
         cursorY = cursorY - height
@@ -330,9 +318,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
 
         if not CludesUI._prebuilding then
             local region = dmRow._leftRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
@@ -340,16 +326,12 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 dmItems,
                 function(ident)
                     local p = DMProvider(ident)
-                    if not p then
-                        return false
-                    end
+                    if not p then return false end
                     local success, enabled = pcall(p.isOn)
                     return (success and enabled) and true or false
                 end,
                 function(ident, val)
-                    CludesUI.SetDarkModeAll(val, function(profile)
-                        return profile.id == ident
-                    end)
+                    CludesUI.SetDarkModeAll(val, function(profile) return profile.id == ident end)
                     CludesUI:RefreshPage()
                 end
             )
@@ -366,9 +348,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     min = 0,
                     max = 100,
                     step = 5,
-                    get = function()
-                        return CludesUI.GetDarkModeDB()[key] or 0
-                    end,
+                    get = function() return CludesUI.GetDarkModeDB()[key] or 0 end,
                     set = function(val)
                         CludesUI.GetDarkModeDB()[key] = val
                         CludesUI.RefreshDarkMode()
@@ -376,9 +356,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 }
             end
             local drgn = dmRow._rightRegion
-            if drgn._control then
-                drgn._control:Hide()
-            end
+            if drgn._control then drgn._control:Hide() end
             local sDD, sDDRefresh = CludesUI.BuildSliderDropdown(drgn, 210, drgn:GetFrameLevel() + 2, {
                 Darken("classDarken", "Class", "Darkens every class color."),
                 Darken("resourceDarken", "Resource", "Darkens every class resource color."),
@@ -395,7 +373,10 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     tooltip = "Fill Color",
                     getValue = function()
                         local darkDB = CludesUI.GetDarkModeDB()
-                        return darkDB.fillR or DM_DEF.fillR, darkDB.fillG or DM_DEF.fillG, darkDB.fillB or DM_DEF.fillB, 1
+                        return darkDB.fillR or DM_DEF.fillR,
+                            darkDB.fillG or DM_DEF.fillG,
+                            darkDB.fillB or DM_DEF.fillB,
+                            1
                     end,
                     setValue = function(red, green, blue)
                         local darkDB = CludesUI.GetDarkModeDB()
@@ -443,9 +424,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Apply to All Profiles",
             tooltip = "Share this section's colors across profiles.",
-            getValue = function()
-                return CludesUI.ColorSectionApplyAll(section)
-            end,
+            getValue = function() return CludesUI.ColorSectionApplyAll(section) end,
             setValue = function(val)
                 CludesUI.SetColorSectionApplyAll(section, val)
                 CludesUI.ApplyColorsToOUF()
@@ -458,13 +437,9 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             tooltip = "Copies this section's colours from another profile.",
             values = pullValues,
             order = profileOrder,
-            disabled = function()
-                return not CludesUI.ColorSectionApplyAll(section)
-            end,
+            disabled = function() return not CludesUI.ColorSectionApplyAll(section) end,
             disabledTooltip = "Apply to All Profiles",
-            getValue = function()
-                return CludesUI.ColorSectionPullFrom(section)
-            end,
+            getValue = function() return CludesUI.ColorSectionPullFrom(section) end,
             setValue = function(val)
                 CludesUI.SetColorSectionPullFrom(section, val)
                 CludesUI.ApplyColorsToOUF()
@@ -493,19 +468,13 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             classToken = token,
             getColor = function()
                 local saved = GetCustomColorsDB()
-                if saved.class and saved.class[token] then
-                    return saved.class[token]
-                end
+                if saved.class and saved.class[token] then return saved.class[token] end
                 return { r = def.r, g = def.g, b = def.b }
             end,
-            setColor = function(c)
-                SaveColorEntry("class", token, c)
-            end,
+            setColor = function(c) SaveColorEntry("class", token, c) end,
             resetFn = function()
                 local saved = GetCustomColorsDB()
-                if saved.class then
-                    saved.class[token] = nil
-                end
+                if saved.class then saved.class[token] = nil end
             end,
         }
     end
@@ -546,17 +515,11 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             classToken = nil,
             getColor = function()
                 local saved = GetCustomColorsDB()
-                if saved.power and saved.power[pk] then
-                    return saved.power[pk]
-                end
+                if saved.power and saved.power[pk] then return saved.power[pk] end
                 return { r = def.r, g = def.g, b = def.b }
             end,
-            setColor = function(c)
-                SaveColorEntry("power", pk, c)
-            end,
-            resetFn = function()
-                CludesUI.ResetPowerColor(pk)
-            end,
+            setColor = function(c) SaveColorEntry("power", pk, c) end,
+            resetFn = function() CludesUI.ResetPowerColor(pk) end,
         }
     end
 
@@ -597,17 +560,11 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             local key = it.key
             resourceItems[#resourceItems + 1] = {
                 label = CludesUI.L(it.label),
-                getColor = function()
-                    return CludesUI.GetClassResourceColor(key) or { r = 1, g = 1, b = 1 }
-                end,
-                setColor = function(c)
-                    SaveColorEntry("classResource", key, c)
-                end,
+                getColor = function() return CludesUI.GetClassResourceColor(key) or { r = 1, g = 1, b = 1 } end,
+                setColor = function(c) SaveColorEntry("classResource", key, c) end,
                 resetFn = function()
                     local cdb = GetCustomColorsDB()
-                    if cdb.classResource then
-                        cdb.classResource[key] = nil
-                    end
+                    if cdb.classResource then cdb.classResource[key] = nil end
                 end,
             }
         end
@@ -626,9 +583,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         local gates = {}
         local CPAD = CludesUI.CONTENT_PAD or 20 -- side inset so the overlay matches the grid content width
         local function MakeColorGate(section, topY, botY)
-            if not topY or not botY then
-                return
-            end
+            if not topY or not botY then return end
             local shade = CreateFrame("Frame", nil, hostFrame)
             shade:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CPAD, topY)
             shade:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -CPAD, topY)

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarTick.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local GetTime = GetTime
@@ -41,35 +37,21 @@ local _UpdateCooldownBar, SetAssignDirty = Inner._UpdateCooldownBar, Inner.SetAs
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._buffBarInternals, which hands the value to every copy.
 local ECME
-Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val)
-    ECME = val
-end
+Inner.ecmeSetters[#Inner.ecmeSetters + 1] = function(val) ECME = val end
 -- Feature-gating flags (rebuilt in BuildTrackedBuffBars, read in tick)
 local _anyPandemic = false
-Inner.anyPandemicSetters[#Inner.anyPandemicSetters + 1] = function(val)
-    _anyPandemic = val
-end
+Inner.anyPandemicSetters[#Inner.anyPandemicSetters + 1] = function(val) _anyPandemic = val end
 local _anyThreshold = false
-Inner.anyThresholdSetters[#Inner.anyThresholdSetters + 1] = function(val)
-    _anyThreshold = val
-end
+Inner.anyThresholdSetters[#Inner.anyThresholdSetters + 1] = function(val) _anyThreshold = val end
 local _anyStacks = false
-Inner.anyStacksSetters[#Inner.anyStacksSetters + 1] = function(val)
-    _anyStacks = val
-end
+Inner.anyStacksSetters[#Inner.anyStacksSetters + 1] = function(val) _anyStacks = val end
 local _anyVisCond = false
-Inner.anyVisCondSetters[#Inner.anyVisCondSetters + 1] = function(val)
-    _anyVisCond = val
-end
+Inner.anyVisCondSetters[#Inner.anyVisCondSetters + 1] = function(val) _anyVisCond = val end
 local tbbTickFrame
-Inner.tickFrameSetters[#Inner.tickFrameSetters + 1] = function(val)
-    tbbTickFrame = val
-end
+Inner.tickFrameSetters[#Inner.tickFrameSetters + 1] = function(val) tbbTickFrame = val end
 -- Group reflow gate: see _MarkTBBReflowDirty in CUI_CDM_BuffBarGroups.lua.
 local _tbbReflowDirty = true
-Inner.reflowDirtySetters[#Inner.reflowDirtySetters + 1] = function(val)
-    _tbbReflowDirty = val
-end
+Inner.reflowDirtySetters[#Inner.reflowDirtySetters + 1] = function(val) _tbbReflowDirty = val end
 -- Smooth-fill switch memo for the tick: GetTBBSmoothSettings walks the profile store,
 -- and its result can only change with the active profile name or the live spec-profile bucket, both re-read per tick without a call.
 local _tickSm, _tickSmProf, _tickSmSp
@@ -82,9 +64,7 @@ local _tickSm, _tickSmProf, _tickSmSp
 --  the shared read yet.
 -------------------------------------------------------------------------------
 local function TBBInCombat()
-    if mod.CDMInCombat then
-        return mod.CDMInCombat()
-    end
+    if mod.CDMInCombat then return mod.CDMInCombat() end
     return InCombatLockdown() and true or false
 end
 
@@ -93,15 +73,9 @@ end
 local function HideTBBBarForCombat(barFrame)
     -- Already parked: nothing to tear down, and clearing _nameSet here would make the
     -- deferred name-fill pass re-resolve the spell every frame for the whole time out of combat.
-    if not barFrame:IsShown() then
-        return
-    end
-    if barFrame._pandemicGlowActive then
-        ClearPandemic(barFrame)
-    end
-    if barFrame._stacksText then
-        barFrame._stacksText:Hide()
-    end
+    if not barFrame:IsShown() then return end
+    if barFrame._pandemicGlowActive then ClearPandemic(barFrame) end
+    if barFrame._stacksText then barFrame._stacksText:Hide() end
     barFrame._stackCount = 0
     barFrame._cachedBlizzFillTex = nil
     barFrame._cachedOurFillTex = nil
@@ -130,34 +104,18 @@ local function TBBFillVisState()
 end
 
 local function TBBVisibilityHides(conf)
-    if CludesUI.CheckVisibilityOptions(conf) then
-        return true
-    end
+    if CludesUI.CheckVisibilityOptions(conf) then return true end
 
     local vis = conf.barVisibility or "always"
     local visExt =
         CludesUI.EvalVisibilityExtended(conf, "barVisibility", _tbbVisState, CludesUI.VIS_CAPS_DEFAULT)
-    if visExt ~= nil then
-        return not visExt
-    end
-    if vis == "never" then
-        return true
-    end
-    if vis == "in_combat" then
-        return not _tbbVisState.inCombat
-    end
-    if vis == "out_of_combat" then
-        return _tbbVisState.inCombat
-    end
-    if vis == "in_raid" then
-        return not _tbbVisState.inRaid
-    end
-    if vis == "in_party" then
-        return not _tbbVisState.inParty
-    end
-    if vis == "solo" then
-        return _tbbVisState.inRaid or _tbbVisState.inParty
-    end
+    if visExt ~= nil then return not visExt end
+    if vis == "never" then return true end
+    if vis == "in_combat" then return not _tbbVisState.inCombat end
+    if vis == "out_of_combat" then return _tbbVisState.inCombat end
+    if vis == "in_raid" then return not _tbbVisState.inRaid end
+    if vis == "in_party" then return not _tbbVisState.inParty end
+    if vis == "solo" then return _tbbVisState.inRaid or _tbbVisState.inParty end
     return false
 end
 
@@ -165,23 +123,15 @@ end
 -- minus hideWhenInactive/onlyInCombat, which flip on the aura and combat edges the sleeper
 -- already wakes on. Option keys come from the shared list so a new one is covered here too.
 local function TBBUsesVisCondition(conf)
-    if not conf then
-        return false
-    end
+    if not conf then return false end
     local vis = conf.barVisibility
-    if vis and vis ~= "always" then
-        return true
-    end
+    if vis and vis ~= "always" then return true end
     local vm = conf.visibilityModes
-    if type(vm) == "table" and next(vm) then
-        return true
-    end
+    if type(vm) == "table" and next(vm) then return true end
     local keyList = CludesUI.VIS_OPT_KEYS
     if keyList then
         for index = 1, #keyList do
-            if conf[keyList[index]] then
-                return true
-            end
+            if conf[keyList[index]] then return true end
         end
     end
     return false
@@ -230,14 +180,10 @@ end
 --  min/max/value from Blizzard's Bar, zero duration computation.
 -------------------------------------------------------------------------------
 function mod.UpdateTrackedBuffBarTimers()
-    if not ECME or not ECME.db then
-        return
-    end
+    if not ECME or not ECME.db then return end
     local tbb = mod.GetTrackedBuffBars()
     local barList = tbb.bars
-    if not barList then
-        return
-    end
+    if not barList then return end
 
     -- Liveness for the idle sleeper: set by any branch below that is actually animating or tracking something this tick.
     local tickLive = false
@@ -272,9 +218,7 @@ function mod.UpdateTrackedBuffBarTimers()
         local ap = CludesUI:GetActivePage()
         if am ~= "CludesUICooldownManager" or ap ~= "Tracking Bars" then
             mod._tbbPlaceholderMode = false
-            if mod.HideTBBPlaceholders then
-                mod.HideTBBPlaceholders()
-            end
+            if mod.HideTBBPlaceholders then mod.HideTBBPlaceholders() end
             -- Auras may have moved while the preview was up: re-pair on the first real mirror tick.
             SetAssignDirty(true)
             -- The preview may have written the self-timed bars' timer text and
@@ -295,9 +239,7 @@ function mod.UpdateTrackedBuffBarTimers()
     local assignment = AssignFramesToConfigs(barList)
 
     -- Visibility gate inputs, once per pass, only when some bar has a condition.
-    if _anyVisCond then
-        TBBFillVisState()
-    end
+    if _anyVisCond then TBBFillVisState() end
 
     -- Audio on Buff Loss for the self-timed presets: a latch the gain armed
     -- fires at the window's end ahead of every visibility gate below, so a bar
@@ -309,9 +251,7 @@ function mod.UpdateTrackedBuffBarTimers()
         for pk, at in pairs(lossLatch) do
             if nowTime >= at then
                 lossLatch[pk] = nil
-                if nowTime - at < 1 then
-                    mod.TBBPresetSoundEdge(pk, false)
-                end
+                if nowTime - at < 1 then mod.TBBPresetSoundEdge(pk, false) end
             else
                 tickLive = true
             end
@@ -324,9 +264,7 @@ function mod.UpdateTrackedBuffBarTimers()
             -- skip
         elseif mod._tbbPlaceholderMode then
             tickLive = true
-            if not barFrame:IsShown() then
-                barFrame:Show()
-            end
+            if not barFrame:IsShown() then barFrame:Show() end
         elseif conf.enabled == false then
             barFrame:Hide()
         elseif barFrame._tbbVisCond and TBBVisibilityHides(conf) then
@@ -336,14 +274,10 @@ function mod.UpdateTrackedBuffBarTimers()
             HideTBBBarForCombat(barFrame)
         elseif conf.popularKey == "bloodlust" then
             -- Self-driven 40s lust bar; no Blizzard frame to mirror.
-            if UpdateLustBar(barFrame, conf) then
-                tickLive = true
-            end
+            if UpdateLustBar(barFrame, conf) then tickLive = true end
         elseif conf.popularKey == "timespiral" then
             -- Self-driven 10s Time Spiral "Free Move" bar; glow-armed, no frame.
-            if _UpdateSelfTimedBar(barFrame, conf, _ts.expiry, TIME_SPIRAL_DURATION) then
-                tickLive = true
-            end
+            if _UpdateSelfTimedBar(barFrame, conf, _ts.expiry, TIME_SPIRAL_DURATION) then tickLive = true end
         elseif conf.popularKey and _potionDur[conf.popularKey] then
             -- Self-cast potion preset: hardcoded window off the spell-cast edge; no aura tracking, no Blizzard frame to mirror.
             if
@@ -361,14 +295,10 @@ function mod.UpdateTrackedBuffBarTimers()
             _UpdateCooldownBar(barFrame, conf)
             -- Live while an engine handle drives the fill OR the bar is on screen: covers the
             -- secret-timing mirror drain and always-shown bars, both needing per-tick updates.
-            if barFrame._cdDurObj or barFrame:IsShown() then
-                tickLive = true
-            end
+            if barFrame._cdDurObj or barFrame:IsShown() then tickLive = true end
         else
             local blzChild = assignment[conf]
-            if blzChild then
-                mod.HookPandemicState(blzChild)
-            end
+            if blzChild then mod.HookPandemicState(blzChild) end
 
             -- Active state MUST come from the CooldownViewer item's IsActive() (real
             -- aura state: expirationTime > now, or infinite auras), NEVER IsShown(): a
@@ -406,8 +336,13 @@ function mod.UpdateTrackedBuffBarTimers()
                 -- counts player aura events in _fbPGen; target aura events and target
                 -- changes in _fbTGen), not on every tick: a refresh or an expiry is
                 -- such an event, so the kept aura data stays current.
-                if barFrame._fbCfg ~= conf or barFrame._fbSpell ~= conf.spellID or barFrame._fbBase ~= conf.baseSpellID then
-                    barFrame._fbCfg, barFrame._fbSpell, barFrame._fbBase = conf, conf.spellID, conf.baseSpellID
+                if
+                    barFrame._fbCfg ~= conf
+                    or barFrame._fbSpell ~= conf.spellID
+                    or barFrame._fbBase ~= conf.baseSpellID
+                then
+                    barFrame._fbCfg, barFrame._fbSpell, barFrame._fbBase =
+                        conf, conf.spellID, conf.baseSpellID
                     barFrame._fbPGen, barFrame._fbTGen = nil, nil
                 end
                 if barFrame._fbPGen ~= _tbbWake._fbPGen then
@@ -435,30 +370,22 @@ function mod.UpdateTrackedBuffBarTimers()
                 -- Blizzard's late-bind can land WITHOUT a fresh player aura event. Keep
                 -- the memo dirty while any fallback is live so the next tick re-pairs
                 -- the moment the frame appears (restoring stacks/pandemic from mirror).
-                if fbAura then
-                    SetAssignDirty(true)
-                end
+                if fbAura then SetAssignDirty(true) end
             end
-            if isActive or fbAura then
-                tickLive = true
-            end
+            if isActive or fbAura then tickLive = true end
 
             -- Read Blizzard's StatusBar (the data source for fill/timer)
             local blizzBar = blzChild and blzChild.Bar
 
             if isActive then
                 local wasShown = barFrame:IsShown()
-                if not wasShown then
-                    barFrame:Show()
-                end
+                if not wasShown then barFrame:Show() end
                 local scrollBar = barFrame._bar
                 -- Name, icon, auto fill colour and stacks: on edges only (TBBContentDue).
                 local contentFrame = TBBContentDue(barFrame, blzChild, conf, wasShown, nowTime)
 
                 -- Stacks (gated)
-                if _anyStacks and contentFrame then
-                    UpdateStacks(barFrame, blzChild, conf)
-                end
+                if _anyStacks and contentFrame then UpdateStacks(barFrame, blzChild, conf) end
 
                 if blizzBar then
                     -- Mirror Blizzard's bar onto ours. Secret values pass natively to widget
@@ -494,9 +421,7 @@ function mod.UpdateTrackedBuffBarTimers()
                         scrollBar:SetMinMaxValues(blizzBar:GetMinMaxValues())
                         scrollBar:SetValue(blizzBar:GetValue())
                     end
-                    if conf.showSpark and barFrame._spark then
-                        barFrame._spark:Show()
-                    end
+                    if conf.showSpark and barFrame._spark then barFrame._spark:Show() end
 
                     -- Auto fill color from Blizzard's bar texture
                     if contentFrame and (conf.fillColorMode or "auto") == "auto" then
@@ -603,9 +528,7 @@ function mod.UpdateTrackedBuffBarTimers()
                                             barFrame._labelGateOk =
                                                 TbbCfgFamilyMatch(conf, TbbNameFamily(txt), true)
                                         end
-                                        if barFrame._labelGateOk then
-                                            nameStr = txt
-                                        end
+                                        if barFrame._labelGateOk then nameStr = txt end
                                     end
                                 end
                             end
@@ -647,9 +570,7 @@ function mod.UpdateTrackedBuffBarTimers()
                                             mine = ok3 and m
                                         end
                                     end
-                                    if mine then
-                                        nameStr = ad.name
-                                    end
+                                    if mine then nameStr = ad.name end
                                 end
                             end
                         end
@@ -663,9 +584,7 @@ function mod.UpdateTrackedBuffBarTimers()
                         end
                         if not nameStr and conf.baseSpellID and conf.baseSpellID > 0 then
                             local spInfo = C_Spell.GetSpellInfo(conf.baseSpellID)
-                            if spInfo then
-                                nameStr = spInfo.name
-                            end
+                            if spInfo then nameStr = spInfo.name end
                         end
                         if nameStr then
                             barFrame._nameText:SetText(nameStr)
@@ -757,12 +676,8 @@ function mod.UpdateTrackedBuffBarTimers()
                         -- TBBs always show OUR glow (Blizzard Default included): the native
                         -- PandemicIcon lives on the hidden blzChild frame, not our visible TBB bar.
                         if inPandemic then
-                            if not barFrame._pandemicGlowActive then
-                                UpdatePandemic(barFrame, conf)
-                            end
-                            if barFrame._pandemicGlowTarget then
-                                barFrame._pandemicGlowTarget:SetAlpha(1)
-                            end
+                            if not barFrame._pandemicGlowActive then UpdatePandemic(barFrame, conf) end
+                            if barFrame._pandemicGlowTarget then barFrame._pandemicGlowTarget:SetAlpha(1) end
                         elseif barFrame._pandemicGlowActive then
                             ClearPandemic(barFrame)
                         end
@@ -773,21 +688,13 @@ function mod.UpdateTrackedBuffBarTimers()
                     -- Active aura but no Blizzard bar data: show full bar
                     scrollBar:SetMinMaxValues(0, 1)
                     scrollBar:SetValue(1)
-                    if barFrame._timerText then
-                        barFrame._timerText:Hide()
-                    end
-                    if barFrame._spark then
-                        barFrame._spark:Hide()
-                    end
-                    if barFrame._pandemicGlowActive then
-                        ClearPandemic(barFrame)
-                    end
+                    if barFrame._timerText then barFrame._timerText:Hide() end
+                    if barFrame._spark then barFrame._spark:Hide() end
+                    if barFrame._pandemicGlowActive then ClearPandemic(barFrame) end
                 end
 
                 -- Threshold feed (gated)
-                if _anyThreshold and conf.stackThresholdEnabled then
-                    FeedTBBThresholdOverlay(barFrame)
-                end
+                if _anyThreshold and conf.stackThresholdEnabled then FeedTBBThresholdOverlay(barFrame) end
 
                 -- Deferred tick marks
                 if barFrame._ticksDirty and scrollBar then
@@ -808,9 +715,7 @@ function mod.UpdateTrackedBuffBarTimers()
                 -- Blizzard's frame catches up; isActive then resumes the normal mirror path seamlessly.
                 barFrame._cChild = nil
                 local wasShown = barFrame:IsShown()
-                if not wasShown then
-                    barFrame:Show()
-                end
+                if not wasShown then barFrame:Show() end
                 local scrollBar = barFrame._bar
                 local dur = fbAura.duration
                 local exp = fbAura.expirationTime
@@ -824,9 +729,7 @@ function mod.UpdateTrackedBuffBarTimers()
                 if scrollBar and fbStackFill then
                     local apps = fbAura.applications
                     -- The aura is up, so a readable count floors at 1 even when applications reads 0/nil (non-stacking aura).
-                    if not apps or (not (isSec and isSec(apps)) and apps < 1) then
-                        apps = 1
-                    end
+                    if not apps or (not (isSec and isSec(apps)) and apps < 1) then apps = 1 end
                     scrollBar:SetMinMaxValues(0, conf.stackThresholdMax or 10)
                     local smooth = _tbbWake._smoothBuffs
                         and wasShown
@@ -849,9 +752,7 @@ function mod.UpdateTrackedBuffBarTimers()
                     if clean and dur > 0 then
                         if conf.showTimer and barFrame._timerText then
                             local remaining = exp - GetTime()
-                            if remaining < 0 then
-                                remaining = 0
-                            end
+                            if remaining < 0 then remaining = 0 end
                             if not MirrorEngineTimer(barFrame, conf) then
                                 barFrame._timerText:SetText(FormatTime(remaining))
                             end
@@ -862,15 +763,11 @@ function mod.UpdateTrackedBuffBarTimers()
                     elseif barFrame._timerText then
                         barFrame._timerText:SetShown(MirrorEngineTimer(barFrame, conf))
                     end
-                    if conf.showSpark and barFrame._spark then
-                        barFrame._spark:Show()
-                    end
+                    if conf.showSpark and barFrame._spark then barFrame._spark:Show() end
                 elseif scrollBar then
                     if clean and dur > 0 then
                         local remaining = exp - GetTime()
-                        if remaining < 0 then
-                            remaining = 0
-                        end
+                        if remaining < 0 then remaining = 0 end
                         scrollBar:SetMinMaxValues(0, dur)
                         local smooth = _tbbWake._smoothBuffs
                             and wasShown
@@ -901,9 +798,7 @@ function mod.UpdateTrackedBuffBarTimers()
                             barFrame._timerText:SetShown(MirrorEngineTimer(barFrame, conf))
                         end
                     end
-                    if conf.showSpark and barFrame._spark then
-                        barFrame._spark:Show()
-                    end
+                    if conf.showSpark and barFrame._spark then barFrame._spark:Show() end
                 end
                 -- Icon/name from the aura data itself: fires when the frame mirror is
                 -- unavailable, and for override/variant spells the build-time saved-form
@@ -928,14 +823,10 @@ function mod.UpdateTrackedBuffBarTimers()
                 end
                 -- Extras stay quiet in fallback mode: no Blizzard child to read stacks/pandemic from. Skipped when the stack fill drove them.
                 if not (scrollBar and fbStackFill) then
-                    if barFrame._stacksText then
-                        barFrame._stacksText:Hide()
-                    end
+                    if barFrame._stacksText then barFrame._stacksText:Hide() end
                     barFrame._stackCount = 0
                 end
-                if barFrame._pandemicGlowActive then
-                    ClearPandemic(barFrame)
-                end
+                if barFrame._pandemicGlowActive then ClearPandemic(barFrame) end
             else
                 -- Inactive: clear transient state
                 barFrame._cChild = nil
@@ -944,29 +835,19 @@ function mod.UpdateTrackedBuffBarTimers()
                 barFrame._cachedBlizzIconTex = nil
                 barFrame._cachedBlizzIconOwner = nil
                 barFrame._lastIconSID = nil
-                if _anyPandemic and barFrame._pandemicGlowActive then
-                    ClearPandemic(barFrame)
-                end
-                if barFrame._stacksText then
-                    barFrame._stacksText:Hide()
-                end
+                if _anyPandemic and barFrame._pandemicGlowActive then ClearPandemic(barFrame) end
+                if barFrame._stacksText then barFrame._stacksText:Hide() end
                 barFrame._stackCount = 0
                 if conf.hideWhenInactive == false then
                     -- "Hide When Inactive" off: keep the bar on screen as an empty idle bar (name visible, no fill/timer/spark).
-                    if not barFrame:IsShown() then
-                        barFrame:Show()
-                    end
+                    if not barFrame:IsShown() then barFrame:Show() end
                     local scrollBar = barFrame._bar
                     if scrollBar then
                         scrollBar:SetMinMaxValues(0, 1)
                         scrollBar:SetValue(0)
                     end
-                    if barFrame._timerText then
-                        barFrame._timerText:Hide()
-                    end
-                    if barFrame._spark then
-                        barFrame._spark:Hide()
-                    end
+                    if barFrame._timerText then barFrame._timerText:Hide() end
+                    if barFrame._spark then barFrame._spark:Hide() end
                 elseif barFrame:IsShown() then
                     -- Clear the name latch on the hide EDGE only: clearing it every hidden
                     -- tick would make the deferred name fill call C_Spell.GetSpellInfo every tick for every hidden bar.
@@ -978,9 +859,7 @@ function mod.UpdateTrackedBuffBarTimers()
     end
 
     -- Re-pack visible grouped Tracking Bars after the active/inactive pass so hidden buffs do not reserve a slot in the group.
-    if _tbbReflowDirty then
-        ReflowVisibleGroupedTBBars(tbb, barList)
-    end
+    if _tbbReflowDirty then ReflowVisibleGroupedTBBars(tbb, barList) end
 
     -- Deferred name fill: retry each tick when BuildTrackedBuffBars could not resolve the spell name (spell data not loaded yet).
     for index, conf in ipairs(barList) do
@@ -1005,7 +884,13 @@ function mod.UpdateTrackedBuffBarTimers()
     for _, barFrame in ipairs(tbbFrames) do
         -- bar:IsShown() gate: a child spark's own shown flag stays latched true after its
         -- parent bar Hides, so without this the loop would keep anchoring sparks of hidden bars every tick forever.
-        if barFrame and barFrame:IsShown() and barFrame._spark and barFrame._spark:IsShown() and barFrame._bar then
+        if
+            barFrame
+            and barFrame:IsShown()
+            and barFrame._spark
+            and barFrame._spark:IsShown()
+            and barFrame._bar
+        then
             if not barFrame._chargeHashFillActive then
                 local anchor = (barFrame._gradientActive and barFrame._gradClip) or barFrame._cachedOurFillTex
                 if not anchor then
@@ -1013,7 +898,13 @@ function mod.UpdateTrackedBuffBarTimers()
                     barFrame._cachedOurFillTex = anchor
                 end
                 if anchor then
-                    AnchorTBBSparkState(barFrame, anchor, barFrame._lastVertical, barFrame._lastReverse, false)
+                    AnchorTBBSparkState(
+                        barFrame,
+                        anchor,
+                        barFrame._lastVertical,
+                        barFrame._lastReverse,
+                        false
+                    )
                 end
             end
         end
@@ -1042,9 +933,7 @@ function mod.UpdateTrackedBuffBarTimers()
     elseif tbbTickFrame and tbbTickFrame:IsShown() then
         local num = _tbbWake._idleTicks + 1
         _tbbWake._idleTicks = num
-        if num >= 30 then
-            _tbbWake.Sleep()
-        end
+        if num >= 30 then _tbbWake.Sleep() end
     end
 end
 

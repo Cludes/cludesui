@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Gold.lua - Info Bar block: gold, the session and every character.
 --
@@ -68,9 +66,7 @@ local function OnMoney(_, money)
             session.spent = session.spent - change
         end
     end
-    if money then
-        session.lastMoney = money
-    end
+    if money then session.lastMoney = money end
     UpdateAll()
 end
 
@@ -79,12 +75,8 @@ local function OnEvent(_, event)
         local price = C_WowTokenPublic
             and C_WowTokenPublic.GetCurrentMarketPrice
             and C_WowTokenPublic.GetCurrentMarketPrice()
-        if issecretvalue and issecretvalue(price) then
-            price = nil
-        end
-        if C_WowTokenPublic and C_WowTokenPublic.GetCurrentMarketPrice then
-            session.tokenPrice = price
-        end
+        if issecretvalue and issecretvalue(price) then price = nil end
+        if C_WowTokenPublic and C_WowTokenPublic.GetCurrentMarketPrice then session.tokenPrice = price end
         return
     end
     UpdateAll() -- BAG_UPDATE
@@ -100,9 +92,7 @@ local function Listen()
         listener:RegisterEvent("TOKEN_MARKET_PRICE_UPDATED")
         Ledger.Register("databars-gold", OnMoney)
     else
-        if listener then
-            listener:UnregisterAllEvents()
-        end
+        if listener then listener:UnregisterAllEvents() end
         Ledger.Unregister("databars-gold")
     end
 end
@@ -113,9 +103,7 @@ local function FreeSlots()
     local free = 0
     for bag = 0, 4 do
         local n, family = C_Container.GetContainerNumFreeSlots(bag)
-        if n and (not family or family == 0) then
-            free = free + n
-        end
+        if n and (not family or family == 0) then free = free + n end
     end
     return free
 end
@@ -157,9 +145,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
         blockCfg.useAccentColor = nil
     end
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetSize(120, 20)
@@ -325,32 +311,24 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
         local red, green, blue = TextColour()
         label:SetTextColor(red, green, blue, 1)
         slots:SetTextColor(red, green, blue, 1)
-        if iconTex:IsShown() then
-            PaintIcon()
-        end
+        if iconTex:IsShown() then PaintIcon() end
     end
 
     -- Several changes in one frame are one update, and one that changes
     -- nothing shown draws nothing.
     function inst:QueueRefresh()
-        if self._refreshQueued then
-            return
-        end
+        if self._refreshQueued then return end
         self._refreshQueued = true
         C_Timer.After(0, function()
             inst._refreshQueued = false
-            if blocks[inst] and State() ~= drawn then
-                inst:Refresh()
-            end
+            if blocks[inst] and State() ~= drawn then inst:Refresh() end
         end)
     end
 
     local function ShowTooltip()
         local cfg = Settings()
         local small, icons = cfg.showSmall == true, cfg.coinIcons == true
-        local function Money(copper)
-            return mod.FormatMoney(copper, true, small, icons)
-        end
+        local function Money(copper) return mod.FormatMoney(copper, true, small, icons) end
         -- Characters and the warbank need account tracking (Bags options);
         -- the session needs nothing.
         local tracking = Ledger.IsTracking()
@@ -391,9 +369,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                     sum = sum + copper
                 end
             end
-            table.sort(keys, function(lhs, rhs)
-                return (chars[lhs].money or 0) > (chars[rhs].money or 0)
-            end)
+            table.sort(keys, function(lhs, rhs) return (chars[lhs].money or 0) > (chars[rhs].money or 0) end)
             listed = #keys
             local realmCount = 0
             if listed > 0 then
@@ -414,9 +390,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                         -- which is saved again on every money change.
                         local coins = mod.MoneyTokens(entry.money, small, icons, true)
                         mod.Tip_AddClickableColumns(entry.name or "?", coins, function(mouseButton)
-                            if key == me or mouseButton ~= "LeftButton" then
-                                return
-                            end
+                            if key == me or mouseButton ~= "LeftButton" then return end
                             if IsControlKeyDown() and IsAltKeyDown() then
                                 Forget(key)
                                 mod.Tip_Hide(button)
@@ -435,9 +409,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             local warband = Ledger.Data().warband
             local bank = warband and warband.money
             if bank and bank > 0 then
-                if realmCount > 1 then
-                    mod.Tip_AddLine(" ")
-                end
+                if realmCount > 1 then mod.Tip_AddLine(" ") end
                 mod.Tip_AddColumns(
                     CludesUI.L("Warbank"),
                     mod.MoneyTokens(bank, small, icons, true),
@@ -498,9 +470,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             session.earned, session.spent = 0, 0
             inst:Refresh()
             -- The tooltip stays up and shows the session at zero.
-            if hovered then
-                ShowTooltip()
-            end
+            if hovered then ShowTooltip() end
         elseif mouseButton == "RightButton" then
             if C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
                 C_CurrencyInfo.OpenCurrencyPanel()

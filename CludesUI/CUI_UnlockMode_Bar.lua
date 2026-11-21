@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Bar.lua
 --  Layout Mode's toolbar, CludesUI's own: a strip across the top of the
@@ -45,9 +43,7 @@ CUI_NS.unlockParts.Bar = function(LM)
 
     -- The bar's accent: gold while a spec-override layout is being edited.
     local function Accent()
-        if CludesUI._specialUnlockGroup then
-            return 1, 0.82, 0.30
-        end
+        if CludesUI._specialUnlockGroup then return 1, 0.82, 0.30 end
         local color = CludesUI.CLUDES_GREEN
         return color.r, color.g, color.b
     end
@@ -57,40 +53,28 @@ CUI_NS.unlockParts.Bar = function(LM)
     --  shows beside the name. click(): flips the setting and applies it.
     -------------------------------------------------------------------------------
     local function OnOff(get)
-        return function()
-            return get() and 1 or 0
-        end, function()
-            return get() and "Enabled" or "Disabled"
-        end
+        return function() return get() and 1 or 0 end, function() return get() and "Enabled" or "Disabled" end
     end
 
     local TOGGLES = {}
     do
-        local function Add(t)
-            TOGGLES[#TOGGLES + 1] = t
-        end
+        local function Add(t) TOGGLES[#TOGGLES + 1] = t end
 
         Add({
             icon = "grid.png",
             caption = "Grid",
             name = "Grid Lines",
             tip = "Shows a grid to line elements up. Click to switch between dimmed, bright and off.",
-            level = function()
-                return LM.gridMode == "bright" and 1 or (LM.gridMode == "dimmed" and 0.5 or 0)
-            end,
+            level = function() return LM.gridMode == "bright" and 1 or (LM.gridMode == "dimmed" and 0.5 or 0) end,
             state = function()
                 return LM.gridMode == "bright" and "Bright"
                     or (LM.gridMode == "dimmed" and "Dimmed" or "Disabled")
             end,
             click = function()
                 LM.CycleGridMode()
-                if CludesUIDB then
-                    CludesUIDB.unlockGridMode = LM.gridMode
-                end
+                if CludesUIDB then CludesUIDB.unlockGridMode = LM.gridMode end
                 local grid = LM.gridFrame
-                if not grid then
-                    return
-                end
+                if not grid then return end
                 if LM.gridMode == "disabled" then
                     grid:Hide()
                 else
@@ -100,9 +84,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             end,
         })
 
-        local level, status = OnOff(function()
-            return LM.snapEnabled
-        end)
+        local level, status = OnOff(function() return LM.snapEnabled end)
         Add({
             icon = "magnet.png",
             caption = "Snap",
@@ -112,20 +94,14 @@ CUI_NS.unlockParts.Bar = function(LM)
             tip = "Dragged elements snap to the edges and centers of the closest element.",
             click = function()
                 LM.snapEnabled = not LM.snapEnabled
-                if CludesUIDB then
-                    CludesUIDB.unlockSnapEnabled = LM.snapEnabled
-                end
+                if CludesUIDB then CludesUIDB.unlockSnapEnabled = LM.snapEnabled end
                 for _, m in pairs(movers) do
-                    if m._refreshSnapDD then
-                        m._refreshSnapDD()
-                    end
+                    if m._refreshSnapDD then m._refreshSnapDD() end
                 end
             end,
         })
 
-        level, status = OnOff(function()
-            return LM.darkOverlaysEnabled
-        end)
+        level, status = OnOff(function() return LM.darkOverlaysEnabled end)
         Add({
             icon = "dark-overlay.png",
             caption = "Overlays",
@@ -139,9 +115,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             end,
         })
 
-        level, status = OnOff(function()
-            return LM.flashlightEnabled
-        end)
+        level, status = OnOff(function() return LM.flashlightEnabled end)
         Add({
             icon = "flashlight.png",
             caption = "Cursor Light",
@@ -149,14 +123,10 @@ CUI_NS.unlockParts.Bar = function(LM)
             level = level,
             state = status,
             tip = "Lights up the grid lines around the cursor. Needs the grid lines to be on.",
-            click = function()
-                LM.flashlightEnabled = not LM.flashlightEnabled
-            end,
+            click = function() LM.flashlightEnabled = not LM.flashlightEnabled end,
         })
 
-        level, status = OnOff(function()
-            return LM.coordsEnabled
-        end)
+        level, status = OnOff(function() return LM.coordsEnabled end)
         Add({
             icon = "coordinates.png",
             caption = "Coordinates",
@@ -169,9 +139,7 @@ CUI_NS.unlockParts.Bar = function(LM)
                 for _, m in pairs(movers) do
                     if m._coordFS then
                         if LM.coordsEnabled then
-                            if m.UpdateCoordText then
-                                m:UpdateCoordText()
-                            end
+                            if m.UpdateCoordText then m:UpdateCoordText() end
                         elseif not m._selected then
                             m._coordFS:Hide() -- the selected element keeps its own
                         end
@@ -180,9 +148,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             end,
         })
 
-        level, status = OnOff(function()
-            return autoHide
-        end)
+        level, status = OnOff(function() return autoHide end)
         Add({
             icon = "hover.png",
             caption = "Auto Hide",
@@ -190,18 +156,14 @@ CUI_NS.unlockParts.Bar = function(LM)
             level = level,
             state = status,
             tip = "Hides this bar until the cursor reaches it at the top of the screen, except over an element. Hold Shift to hide it any time.",
-            click = function()
-                autoHide = not autoHide
-            end,
+            click = function() autoHide = not autoHide end,
         })
     end
 
     -- The controls the help chip lists, keys in the accent colour.
     local function HelpText()
         local hex = CludesUI.HexColor(Accent())
-        local function Line(key, what)
-            return hex .. L(key) .. "|r: " .. L(what)
-        end
+        local function Line(key, what) return hex .. L(key) .. "|r: " .. L(what) end
         local lines = {
             Line("Shift + Drag", "Move it on one axis only."),
             Line("Arrow Keys", "Move the selected element 1px."),
@@ -213,9 +175,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         -- The Overlap Cycling key, by the setting's own label; none while it is disabled.
         local method = CludesUI.GetUnlockOverlapMethod()
         local overlap = method ~= "disabled" and CludesUI.UNLOCK_OVERLAP_LABELS[method]
-        if overlap then
-            lines[#lines + 1] = Line(overlap, "Cycle through overlapping elements.")
-        end
+        if overlap then lines[#lines + 1] = Line(overlap, "Cycle through overlapping elements.") end
         return table.concat(lines, "\n")
     end
 
@@ -224,9 +184,7 @@ CUI_NS.unlockParts.Bar = function(LM)
     --  above the screen for the open animation to drop it in).
     -------------------------------------------------------------------------------
     function LM.CreateBar(hostFrame)
-        if LM.hudFrame then
-            return LM.hudFrame
-        end
+        if LM.hudFrame then return LM.hudFrame end
 
         -- Saved choices. Grid defaults to dimmed, snapping to on.
         local saved = CludesUIDB
@@ -235,9 +193,7 @@ CUI_NS.unlockParts.Bar = function(LM)
 
         -- One bar unit is one physical pixel at size 100%; a very low UI scale gets a little more.
         local base = GetScreenWidth() / (GetPhysicalScreenSize())
-        if UIParent:GetEffectiveScale() < 0.6 then
-            base = base * 1.08
-        end
+        if UIParent:GetEffectiveScale() < 0.6 then base = base * 1.08 end
         local size = math.max(SIZE_MIN, math.min(SIZE_MAX, saved and saved.unlockBannerScale or SIZE_MIN))
 
         local bar = CreateFrame("Frame", nil, hostFrame)
@@ -252,9 +208,7 @@ CUI_NS.unlockParts.Bar = function(LM)
 
         local outlines = {} -- pixel-seated outlines, re-seated when the bar lands or changes size
         function bar._refitOutlines()
-            if not bar:IsVisible() then
-                return
-            end
+            if not bar:IsVisible() then return end
             for idx = 1, #outlines do
                 outlines[idx]:Fit()
             end
@@ -266,9 +220,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         -- unless that would run off the right of the screen. Not while the
         -- first-open tip covers that spot.
         local function Tip(ownerFrame, textValue, justify)
-            if LM.unlockTipFrame and LM.unlockTipFrame:IsShown() then
-                return
-            end
+            if LM.unlockTipFrame and LM.unlockTipFrame:IsShown() then return end
             local toUI = ownerFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
             local side = (ownerFrame:GetLeft() * toUI + 250 > UIParent:GetRight()) and "RIGHT" or "LEFT"
             CludesUI.ShowWidgetTooltip(ownerFrame, textValue, {
@@ -410,9 +362,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             button:SetScript("OnClick", function()
                 def.click()
                 Paint()
-                if hover then
-                    ShowTip()
-                end -- the state word changed
+                if hover then ShowTip() end -- the state word changed
             end)
             repaint[#repaint + 1] = Paint
             return button
@@ -444,12 +394,8 @@ CUI_NS.unlockParts.Bar = function(LM)
                 end
                 brd:SetColor(1, 1, 1, (hover and not button._off) and 0.35 or 0.12)
             end
-            button:SetScript("OnEnter", function()
-                button.Paint(true)
-            end)
-            button:SetScript("OnLeave", function()
-                button.Paint(false)
-            end)
+            button:SetScript("OnEnter", function() button.Paint(true) end)
+            button:SetScript("OnLeave", function() button.Paint(false) end)
             button.Paint(false)
             return button
         end
@@ -504,9 +450,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         title:SetText(L("LAYOUT MODE"))
         brand:SetSize(LOGO_SZ + 8 + math.ceil(title:GetStringWidth() or 90), CHIP)
         bar._badgeLogo = logo
-        repaint[#repaint + 1] = function(red, green, blue)
-            logo:SetVertexColor(red, green, blue, 1)
-        end
+        repaint[#repaint + 1] = function(red, green, blue) logo:SetVertexColor(red, green, blue, 1) end
 
         local leftX = { brand, "|" }
         for idx = 1, #TOGGLES do
@@ -545,12 +489,8 @@ CUI_NS.unlockParts.Bar = function(LM)
         cross:SetPoint("CENTER")
         cross:SetText("x")
         cross:SetTextColor(1, 1, 1, 0.45)
-        clear:SetScript("OnEnter", function()
-            cross:SetTextColor(1, 1, 1, 1)
-        end)
-        clear:SetScript("OnLeave", function()
-            cross:SetTextColor(1, 1, 1, 0.45)
-        end)
+        clear:SetScript("OnEnter", function() cross:SetTextColor(1, 1, 1, 1) end)
+        clear:SetScript("OnLeave", function() cross:SetTextColor(1, 1, 1, 0.45) end)
         clear:SetScript("OnClick", function()
             edit:SetText("")
             edit:ClearFocus()
@@ -581,16 +521,12 @@ CUI_NS.unlockParts.Bar = function(LM)
             PaintFilter()
             CludesUI.HideWidgetTooltip()
         end)
-        funnel:SetScript("OnClick", function()
-            edit:SetFocus()
-        end)
+        funnel:SetScript("OnClick", function() edit:SetFocus() end)
         edit:SetScript("OnEscapePressed", function(self)
             self:SetText("")
             self:ClearFocus()
         end)
-        edit:SetScript("OnEnterPressed", function(self)
-            self:ClearFocus()
-        end)
+        edit:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
         -- A click anywhere else gives the keyboard back (the arrow keys nudge again).
         edit:SetScript("OnEditFocusGained", function(self)
             self:RegisterEvent("GLOBAL_MOUSE_DOWN")
@@ -625,12 +561,8 @@ CUI_NS.unlockParts.Bar = function(LM)
             self.Paint(false)
             CludesUI.HideWidgetTooltip()
         end)
-        local exit = MakeTextButton("Exit", 60, false, function()
-            mod.RequestClose(false)
-        end)
-        local save = MakeTextButton("Save & Exit", 92, true, function()
-            mod.RequestClose(true)
-        end)
+        local exit = MakeTextButton("Exit", 60, false, function() mod.RequestClose(false) end)
+        local save = MakeTextButton("Save & Exit", 92, true, function() mod.RequestClose(true) end)
         local smaller = MakeChip(SIZE_CHIP, SIZE_CHIP, nil, "-")
         local bigger = MakeChip(SIZE_CHIP, SIZE_CHIP, nil, "+")
         -- Right group, listed from the bar's right end inward.
@@ -690,9 +622,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             bar:SetScale(base * s)
             bar:ClearAllPoints()
             bar:SetPoint("TOP", UIParent, "TOP", 0, 0)
-            if zone then
-                zone:SetHeight((BAR_H + 2) * base * s)
-            end
+            if zone then zone:SetHeight((BAR_H + 2) * base * s) end
             smaller._off = s <= SIZE_MIN + 0.001
             bigger._off = s >= SIZE_MAX - 0.001 or s + SIZE_STEP > fitMax + 0.001
             smaller.Paint(false)
@@ -702,20 +632,14 @@ CUI_NS.unlockParts.Bar = function(LM)
         local function Step(dir)
             local s = math.max(SIZE_MIN, math.min(SIZE_MAX, Shown() + dir * SIZE_STEP))
             size = s
-            if CludesUIDB then
-                CludesUIDB.unlockBannerScale = s
-            end
+            if CludesUIDB then CludesUIDB.unlockBannerScale = s end
             ApplySize()
         end
         smaller:SetScript("OnClick", function(self)
-            if not self._off then
-                Step(-1)
-            end
+            if not self._off then Step(-1) end
         end)
         bigger:SetScript("OnClick", function(self)
-            if not self._off then
-                Step(1)
-            end
+            if not self._off then Step(1) end
         end)
         -- The fit only changes with the screen, so it runs each time the bar shows.
         local function Fit()
@@ -740,9 +664,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         end
         CludesUI.RegAccent({
             type = "callback",
-            fn = function()
-                LM.PaintBanner()
-            end,
+            fn = function() LM.PaintBanner() end,
         })
         LM.PaintBanner()
 
@@ -764,18 +686,14 @@ CUI_NS.unlockParts.Bar = function(LM)
 
         local alpha, cut = 1, false
         local function CutMouse(enabled)
-            if enabled == cut then
-                return
-            end
+            if enabled == cut then return end
             cut = enabled
             for idx = 1, #controls do
                 local c = controls[idx]
                 if enabled then
                     -- Disabling the mouse fires no OnLeave: clear the hover look by hand.
                     local leave = c:GetScript("OnLeave")
-                    if leave then
-                        leave(c)
-                    end
+                    if leave then leave(c) end
                 end
                 c:EnableMouse(not enabled)
             end
@@ -785,15 +703,11 @@ CUI_NS.unlockParts.Bar = function(LM)
         -- Read again only when the cursor moved or the mouse cut changed.
         local seenX, seenY, seenCut, seenHit
         local function OverElement(posX, posY)
-            if posX == seenX and posY == seenY and cut == seenCut then
-                return seenHit
-            end
+            if posX == seenX and posY == seenY and cut == seenCut then return seenHit end
             seenX, seenY, seenCut, seenHit = posX, posY, cut, false
             local frame = GetMouseFoci()[1]
             while frame do
-                if frame.IsForbidden and frame:IsForbidden() then
-                    return false
-                end
+                if frame.IsForbidden and frame:IsForbidden() then return false end
                 local up = frame:GetParent()
                 if up == LM.unlockFrame then
                     seenHit = frame ~= bar and not frame._umCatcher
@@ -812,9 +726,7 @@ CUI_NS.unlockParts.Bar = function(LM)
                 -- Always written: opening Layout Mode sets the frame's alpha to 1 behind our back.
                 alpha = math.max(0, alpha - elapsed / SHIFT_FADE)
                 self:SetAlpha(alpha)
-                if not autoHide then
-                    zone:Hide()
-                end
+                if not autoHide then zone:Hide() end
                 return
             end
             if not autoHide then
@@ -868,7 +780,5 @@ CUI_NS.unlockParts.Bar = function(LM)
     end
 
     -- Stable anchor for other addons that stack controls under the bar.
-    function CludesUI:GetUnlockModeTopBarAnchor()
-        return LM.hudFrame and LM.hudFrame._hoverZone
-    end
+    function CludesUI:GetUnlockModeTopBarAnchor() return LM.hudFrame and LM.hudFrame._hoverZone end
 end

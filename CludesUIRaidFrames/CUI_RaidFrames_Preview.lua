@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Preview.lua
 --
@@ -14,9 +12,7 @@ local _, mod = ...
 
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or one of the CUI_RaidFrames_*.lua files failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 
 -------------------------------------------------------------------------------
 --  Options preview (fake raid members when options panel is open)
@@ -111,7 +107,5 @@ CludesUI.NewInternals(mod, "_previewInternals", {
 -- preview file that fails to load must not leave them a nil call.
 do
     local entries = mod._previewInternals.previewActiveSetters
-    entries[#entries + 1] = function(val)
-        mod._raidPvActive = val
-    end
+    entries[#entries + 1] = function(val) mod._raidPvActive = val end
 end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_GlowOptions.lua -- shared glow option controls. Each glow setting
 --  is a SITE descriptor: host ("icon"/"bar"/"engine"), view or toShared/
@@ -31,37 +29,23 @@ local CreateFrame, PoolGen = CludesUI._Pool.CreateFrame, CludesUI._Pool.Gen
 --  Style value mapping
 -------------------------------------------------------------------------------
 local function NoneOf(desc)
-    if desc.noneValue ~= nil then
-        return desc.noneValue
-    end
+    if desc.noneValue ~= nil then return desc.noneValue end
     return 0
 end
 
 -- Saved value -> shared index, or nil for None and the extras.
 function GlowOpts.ToShared(desc, val)
-    if val == nil or val == NoneOf(desc) then
-        return nil
-    end
-    if desc.toShared then
-        return desc.toShared(val)
-    end
-    if desc.view then
-        return desc.view.toShared[val]
-    end
-    if type(val) == "number" and val >= 1 and val <= #G.STYLES then
-        return val
-    end
+    if val == nil or val == NoneOf(desc) then return nil end
+    if desc.toShared then return desc.toShared(val) end
+    if desc.view then return desc.view.toShared[val] end
+    if type(val) == "number" and val >= 1 and val <= #G.STYLES then return val end
     return nil
 end
 
 -- Shared index -> saved value.
 function GlowOpts.FromShared(desc, position)
-    if desc.fromShared then
-        return desc.fromShared(position)
-    end
-    if desc.view then
-        return desc.view.fromShared[position]
-    end
+    if desc.fromShared then return desc.fromShared(position) end
+    if desc.view then return desc.view.fromShared[position] end
     return position
 end
 
@@ -92,21 +76,15 @@ local function OrderedStyleValues(desc)
     if desc.order then
         for _, val in ipairs(desc.order) do
             local position = GlowOpts.ToShared(desc, val)
-            if position and StyleOffered(desc, position) then
-                result[#result + 1] = val
-            end
+            if position and StyleOffered(desc, position) then result[#result + 1] = val end
         end
     elseif desc.view then
         for _, i in ipairs(desc.view.ordered) do
-            if StyleOffered(desc, desc.view.toShared[i]) then
-                result[#result + 1] = i
-            end
+            if StyleOffered(desc, desc.view.toShared[i]) then result[#result + 1] = i end
         end
     else
         for i = 1, #G.STYLES do
-            if StyleOffered(desc, i) then
-                result[#result + 1] = i
-            end
+            if StyleOffered(desc, i) then result[#result + 1] = i end
         end
     end
     return result
@@ -138,18 +116,12 @@ end
 -- host cannot render, the style that actually renders.
 local function DisplayValue(desc, values)
     local val = desc.get("style")
-    if val == nil then
-        return NoneOf(desc)
-    end
-    if values[val] ~= nil then
-        return val
-    end
+    if val == nil then return NoneOf(desc) end
+    if values[val] ~= nil then return val end
     local position = GlowOpts.ToShared(desc, val)
     if position then
         local rv = GlowOpts.FromShared(desc, (GlowOpts.Resolve(desc, position)))
-        if rv ~= nil and values[rv] ~= nil then
-            return rv
-        end
+        if rv ~= nil and values[rv] ~= nil then return rv end
     end
     return NoneOf(desc)
 end
@@ -158,9 +130,7 @@ end
 --  State
 -------------------------------------------------------------------------------
 function GlowOpts.IsOff(desc)
-    if desc.isOff and desc.isOff() then
-        return true
-    end
+    if desc.isOff and desc.isOff() then return true end
     local val = desc.get("style")
     return val == nil or val == NoneOf(desc)
 end
@@ -168,9 +138,7 @@ end
 -- The site's own lock (desc.disabled: every control), or a style-only lock
 -- (desc.styleDisabled: the style dropdown alone). Either keeps the template out.
 function GlowOpts.StyleLocked(desc)
-    if desc.disabled and desc.disabled() then
-        return true
-    end
+    if desc.disabled and desc.disabled() then return true end
     return (desc.styleDisabled and desc.styleDisabled()) and true or false
 end
 
@@ -178,25 +146,17 @@ end
 -- paramsOnly sites (Pixel Glow parameters without a style of their own, e.g. a
 -- CDM bar's pixelGlow* keys) always count as one.
 function GlowOpts.IsCustomGlow(desc)
-    if desc.paramsOnly then
-        return true
-    end
-    if GlowOpts.IsOff(desc) then
-        return false
-    end
+    if desc.paramsOnly then return true end
+    if GlowOpts.IsOff(desc) then return false end
     return GlowOpts.ToShared(desc, desc.get("style")) ~= nil
 end
 
 -- The extra entry for the site's current value, if that value is one.
 local function CurrentExtra(desc)
-    if not desc.extras then
-        return nil
-    end
+    if not desc.extras then return nil end
     local val = desc.get("style")
     for _, posX in ipairs(desc.extras) do
-        if posX.value == val then
-            return posX
-        end
+        if posX.value == val then return posX end
     end
     return nil
 end
@@ -204,12 +164,8 @@ end
 -- Something is drawn that takes a color: a custom glow, or a rendered extra
 -- (x.style, e.g. Blizzard Border). Rendered extras are never template targets.
 function GlowOpts.Renders(desc)
-    if GlowOpts.IsCustomGlow(desc) then
-        return true
-    end
-    if GlowOpts.IsOff(desc) then
-        return false
-    end
+    if GlowOpts.IsCustomGlow(desc) then return true end
+    if GlowOpts.IsOff(desc) then return false end
     local posX = CurrentExtra(desc)
     return posX ~= nil and posX.style ~= nil
 end
@@ -222,9 +178,7 @@ local function NoColor(desc)
 end
 
 function GlowOpts.IsPixel(desc)
-    if desc.paramsOnly then
-        return true
-    end
+    if desc.paramsOnly then return true end
     return GlowOpts.IsCustomGlow(desc) and GlowOpts.ToShared(desc, desc.get("style")) == 1
 end
 
@@ -245,7 +199,8 @@ function GlowOpts.Spec(desc)
     color.r, color.g, color.b = G.ResolveColor(mode, cr, cg, checkBtn, dc and dc.r, dc and dc.g, dc and dc.b)
     local caps = desc.caps or {}
     if caps.params then
-        color.lines, color.thickness, color.speed = desc.get("lines"), desc.get("thickness"), desc.get("speed")
+        color.lines, color.thickness, color.speed =
+            desc.get("lines"), desc.get("thickness"), desc.get("speed")
     else
         color.lines, color.thickness, color.speed = nil, nil, nil
     end
@@ -261,13 +216,9 @@ end
 -- Refresh the module, then this site's current preview (skipped once that
 -- preview's page is gone: descriptors outlive page rebuilds).
 function GlowOpts.Changed(desc)
-    if desc.onChange then
-        desc.onChange()
-    end
+    if desc.onChange then desc.onChange() end
     local popFrame = desc._previewFrame
-    if desc._preview and popFrame and popFrame:IsVisible() then
-        desc._preview()
-    end
+    if desc._preview and popFrame and popFrame:IsVisible() then desc._preview() end
 end
 
 -------------------------------------------------------------------------------
@@ -282,9 +233,7 @@ local NO_COLOR_TIP = "This option requires a Glow Style that can be colored"
 -- The style control's getter: None while off, else the displayed value.
 local function StyleGetter(desc, values)
     return function()
-        if desc.isOff and desc.isOff() then
-            return NoneOf(desc)
-        end
+        if desc.isOff and desc.isOff() then return NoneOf(desc) end
         return DisplayValue(desc, values)
     end
 end
@@ -293,31 +242,17 @@ end
 -- widened by styleDisabled when the site has one (its sentence shows as is
 -- while only the style is locked).
 local function StyleLock(desc)
-    if not desc.styleDisabled then
-        return desc.disabled, desc.disabledTooltip, desc.rawTooltip
-    end
-    local function siteOff()
-        return desc.disabled and desc.disabled()
-    end
-    return function()
-        return GlowOpts.StyleLocked(desc)
-    end, function()
-        if not siteOff() then
-            return desc.styleDisabledTooltip
-        end
+    if not desc.styleDisabled then return desc.disabled, desc.disabledTooltip, desc.rawTooltip end
+    local function siteOff() return desc.disabled and desc.disabled() end
+    return function() return GlowOpts.StyleLocked(desc) end, function()
+        if not siteOff() then return desc.styleDisabledTooltip end
         local tt = desc.disabledTooltip
-        if type(tt) == "function" then
-            tt = tt()
-        end
+        if type(tt) == "function" then tt = tt() end
         return tt
     end, function()
-        if not siteOff() then
-            return true
-        end
+        if not siteOff() then return true end
         local raw = desc.rawTooltip
-        if type(raw) == "function" then
-            raw = raw()
-        end
+        if type(raw) == "function" then raw = raw() end
         return raw
     end
 end
@@ -340,9 +275,7 @@ function GlowOpts.DropdownSpec(desc, textValue, tooltip)
             local function commit()
                 desc.set("style", val)
                 GlowOpts.Changed(desc)
-                C_Timer.After(0, function()
-                    CludesUI:RefreshPage()
-                end)
+                C_Timer.After(0, function() CludesUI:RefreshPage() end)
             end
             if desc.confirm then
                 desc.confirm(val, commit)
@@ -354,9 +287,7 @@ function GlowOpts.DropdownSpec(desc, textValue, tooltip)
 end
 
 local function NotPixel(desc)
-    return function()
-        return not GlowOpts.IsPixel(desc)
-    end
+    return function() return not GlowOpts.IsPixel(desc) end
 end
 
 -- Cog edits refresh the page's widgets (status rows follow them) once per
@@ -364,9 +295,7 @@ end
 local _cogRefreshQueued = false
 local function CogChanged(desc)
     GlowOpts.Changed(desc)
-    if _cogRefreshQueued then
-        return
-    end
+    if _cogRefreshQueued then return end
     _cogRefreshQueued = true
     C_Timer.After(0, function()
         _cogRefreshQueued = false
@@ -387,9 +316,7 @@ local function CogRows(desc)
             min = 2,
             max = 16,
             step = 1,
-            get = function()
-                return desc.get("lines") or 8
-            end,
+            get = function() return desc.get("lines") or 8 end,
             set = function(val)
                 desc.set("lines", val)
                 CogChanged(desc)
@@ -404,9 +331,7 @@ local function CogRows(desc)
             min = 1,
             max = desc.thicknessMax or 4,
             step = 1,
-            get = function()
-                return desc.get("thickness") or 2
-            end,
+            get = function() return desc.get("thickness") or 2 end,
             set = function(val)
                 desc.set("thickness", val)
                 CogChanged(desc)
@@ -421,9 +346,7 @@ local function CogRows(desc)
             min = 1,
             max = 8,
             step = 1,
-            get = function()
-                return G.SpeedToUI(desc.get("speed"))
-            end,
+            get = function() return G.SpeedToUI(desc.get("speed")) end,
             set = function(val)
                 desc.set("speed", G.SpeedFromUI(val))
                 CogChanged(desc)
@@ -437,9 +360,7 @@ local function CogRows(desc)
         rowList[#rowList + 1] = {
             type = "toggle",
             label = "Background",
-            get = function()
-                return desc.get("bg") == true
-            end,
+            get = function() return desc.get("bg") == true end,
             set = function(val)
                 desc.set("bg", val and true or nil)
                 CogChanged(desc)
@@ -459,9 +380,7 @@ local function CogRows(desc)
                 desc.set("bgColor", red, green, blue)
                 CogChanged(desc)
             end,
-            disabled = function()
-                return notPixel() or desc.get("bg") ~= true
-            end,
+            disabled = function() return notPixel() or desc.get("bg") ~= true end,
             disabledTooltip = "Pixel Glow Background",
             pixelRow = true,
         }
@@ -480,9 +399,7 @@ GlowOpts.CogRows = CogRows
 -- row is locked).
 local function ColorRow(desc, off)
     local function modeAlpha(m)
-        return function()
-            return (desc.get("mode") == m) and 1 or 0.3
-        end
+        return function() return (desc.get("mode") == m) and 1 or 0.3 end
     end
     local function pick(m)
         return function()
@@ -496,9 +413,7 @@ local function ColorRow(desc, off)
         type = "multiswatch",
         label = "Glow Color",
         disabled = off,
-        disabledTooltip = function()
-            return NoColor(desc) and NO_COLOR_TIP or "a Glow Style"
-        end,
+        disabledTooltip = function() return NoColor(desc) and NO_COLOR_TIP or "a Glow Style" end,
         swatches = {
             {
                 tooltip = "Default",
@@ -551,9 +466,7 @@ end
 function GlowOpts.PopupRows(desc, styleLabel, hidePixel)
     local values, sequence = GlowOpts.StyleValues(desc)
     local rowList = {}
-    local off = function()
-        return not GlowOpts.Renders(desc)
-    end
+    local off = function() return not GlowOpts.Renders(desc) end
     local lockFn, lockTip, lockRaw = StyleLock(desc)
     rowList[#rowList + 1] = {
         type = "dropdown",
@@ -579,16 +492,10 @@ function GlowOpts.PopupRows(desc, styleLabel, hidePixel)
         end,
     }
     local caps = desc.caps or {}
-    if caps.mode then
-        rowList[#rowList + 1] = ColorRow(desc, function()
-            return off() or NoColor(desc)
-        end)
-    end
+    if caps.mode then rowList[#rowList + 1] = ColorRow(desc, function() return off() or NoColor(desc) end) end
     local notPixel = hidePixel and NotPixel(desc) or nil
     for _, r in ipairs(CogRows(desc)) do
-        if notPixel and r.pixelRow then
-            r.hidden = notPixel
-        end
+        if notPixel and r.pixelRow then r.hidden = notPixel end
         rowList[#rowList + 1] = r
     end
     return rowList
@@ -599,51 +506,33 @@ end
 -- optional free half-region (a "Glow Color" label) that takes the swatches.
 -- A style-only lock (desc.styleDisabled) leaves both live.
 function GlowOpts.AttachInline(region, desc, colorRgn)
-    if CludesUI._prebuilding or not region then
-        return
-    end
+    if CludesUI._prebuilding or not region then return end
     local Pix = CludesUI.PanelPP
     local caps = desc.caps or {}
-    local function siteOff()
-        return desc.disabled and desc.disabled()
-    end
+    local function siteOff() return desc.disabled and desc.disabled() end
     local function off()
-        if siteOff() then
-            return true
-        end
+        if siteOff() then return true end
         return not GlowOpts.Renders(desc)
     end
     -- colorDisabled: the site's color comes from elsewhere (NP Color by Type).
     -- A colored extra (Solid Border) draws nothing to style but takes the color;
     -- a noColor extra (Blizzard Pandemic Border) draws but never takes one.
     local function colorOff()
-        if siteOff() then
-            return true
-        end
+        if siteOff() then return true end
         if not GlowOpts.Renders(desc) then
             local posX = CurrentExtra(desc)
-            if not (posX and posX.colored) then
-                return true
-            end
+            if not (posX and posX.colored) then return true end
         end
-        if NoColor(desc) then
-            return true
-        end
+        if NoColor(desc) then return true end
         return (desc.colorDisabled and desc.colorDisabled()) or false
     end
     -- Why the swatches are locked, as the sentence shown: the site's own
     -- requirement (resolved like its dropdown's), no glow to color, a style
     -- that takes no color, or a color that comes from elsewhere.
     local function colorLockTip()
-        if siteOff() then
-            return CludesUI.ResolveDisabledTip(desc)
-        end
-        if not GlowOpts.Renders(desc) then
-            return CludesUI.DisabledTooltip(NO_STYLE_TIP)
-        end
-        if NoColor(desc) then
-            return CludesUI.DisabledTooltip(NO_COLOR_TIP)
-        end
+        if siteOff() then return CludesUI.ResolveDisabledTip(desc) end
+        if not GlowOpts.Renders(desc) then return CludesUI.DisabledTooltip(NO_STYLE_TIP) end
+        if NoColor(desc) then return CludesUI.DisabledTooltip(NO_COLOR_TIP) end
         if desc.colorDisabledTooltip then
             return CludesUI.DisabledTooltip(desc.colorDisabledTooltip, "disabled")
         end
@@ -659,13 +548,9 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
         block:EnableMouse(true)
         block:SetScript("OnEnter", function(self)
             local tipText = colorLockTip()
-            if tipText then
-                CludesUI.ShowWidgetTooltip(self, tipText)
-            end
+            if tipText then CludesUI.ShowWidgetTooltip(self, tipText) end
         end)
-        block:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         return block
     end
 
@@ -674,9 +559,7 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
 
     local cog
     local rowList = CogRows(desc)
-    if colorInCog then
-        table.insert(rowList, 1, ColorRow(desc, colorOff))
-    end
+    if colorInCog then table.insert(rowList, 1, ColorRow(desc, colorOff)) end
     if #rowList > 0 then
         local hasExtra = (desc.cogRows and #desc.cogRows > 0) or colorInCog
         cog = CludesUI.BuildInlineCog(region, {
@@ -684,20 +567,14 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
             rows = rowList,
             captureRegion = region,
             disabled = function()
-                if off() then
-                    return true
-                end
+                if off() then return true end
                 return not hasExtra and not GlowOpts.IsPixel(desc)
             end,
             -- Whichever lock holds, as the sentence shown: the site's own
             -- requirement, else a glow to set (rows beyond Pixel's), else Pixel Glow.
             disabledTooltip = function()
-                if siteOff() then
-                    return CludesUI.ResolveDisabledTip(desc)
-                end
-                if hasExtra then
-                    return CludesUI.DisabledTooltip(NO_STYLE_TIP)
-                end
+                if siteOff() then return CludesUI.ResolveDisabledTip(desc) end
+                if hasExtra then return CludesUI.DisabledTooltip(NO_STYLE_TIP) end
                 return CludesUI.DisabledTooltip("Pixel Glow")
             end,
             rawTooltip = true,
@@ -709,20 +586,14 @@ function GlowOpts.AttachInline(region, desc, colorRgn)
     elseif caps.mode then
         local srgn = colorRgn or region
         local customSw, defaultSw, classSw = CludesUI.BuildTrioColorSwatch(srgn, level, {
-            getMode = function()
-                return desc.get("mode") or "custom"
-            end,
-            setMode = function(m)
-                desc.set("mode", m)
-            end,
+            getMode = function() return desc.get("mode") or "custom" end,
+            setMode = function(m) desc.set("mode", m) end,
             getCustomRGB = function()
                 local red, green, b = desc.get("color")
                 local dc = desc.defaultColor
                 return red or (dc and dc.r) or 1, green or (dc and dc.g) or 1, b or (dc and dc.b) or 1
             end,
-            setCustomRGB = function(red, green, blue)
-                desc.set("color", red, green, blue)
-            end,
+            setCustomRGB = function(red, green, blue) desc.set("color", red, green, blue) end,
             -- Mode clicks: the trio's highlight and page status refresh via widget refresh.
             onChange = function()
                 GlowOpts.Changed(desc)
@@ -765,15 +636,11 @@ end
 local PREVIEW_ICON = 136197
 
 function GlowOpts.BuildPreview(hostFrame, desc, options)
-    if CludesUI._prebuilding or not hostFrame then
-        return
-    end
+    if CludesUI._prebuilding or not hostFrame then return end
     options = options or {}
     local Pix = CludesUI.PanelPP
     local isBar = options.bar
-    if isBar == nil then
-        isBar = desc.host == "bar"
-    end
+    if isBar == nil then isBar = desc.host == "bar" end
     local wid = options.width or (isBar and 110 or 36)
     local height = options.height or (isBar and 16 or 36)
 
@@ -815,12 +682,8 @@ function GlowOpts.BuildPreview(hostFrame, desc, options)
         -- Hidden: stays stopped until OnShow (a page refresh with the panel
         -- closed must not put it back into the glow driver). Dressed again
         -- by a later build: those frames are no longer this preview.
-        if PoolGen(frame) ~= dressGen or not frame:IsVisible() then
-            return
-        end
-        if iconFn and not isBar then
-            texture:SetTexture(iconFn() or PREVIEW_ICON)
-        end
+        if PoolGen(frame) ~= dressGen or not frame:IsVisible() then return end
+        if iconFn and not isBar then texture:SetTexture(iconFn() or PREVIEW_ICON) end
         if not GlowOpts.Renders(desc) then
             G.StopGlow(shade)
             frame:SetAlpha(0.3)
@@ -832,9 +695,7 @@ function GlowOpts.BuildPreview(hostFrame, desc, options)
     -- A hidden preview (options closed, page left or rebuilt) stops its glow,
     -- so it leaves the glow driver and a closed panel costs nothing; shown
     -- again (a cached page coming back), it restarts from the current values.
-    frame:SetScript("OnHide", function()
-        G.StopGlow(shade)
-    end)
+    frame:SetScript("OnHide", function() G.StopGlow(shade) end)
     frame:SetScript("OnShow", Refresh)
     -- Latest build only: descriptors outlive page rebuilds, a list would grow.
     desc._preview, desc._previewFrame = Refresh, frame
@@ -851,26 +712,16 @@ end
 --  The key names come from the glow engine's CludesUI.Glows.FlatKeys.
 -------------------------------------------------------------------------------
 local FLAT_FIELDS = { color = true, lines = true, thickness = true, speed = true, bg = true, bgColor = true }
-local function FlatKey(p, f)
-    return FLAT_FIELDS[f] and G.FlatKeys(p)[f] or nil
-end
+local function FlatKey(p, f) return FLAT_FIELDS[f] and G.FlatKeys(p)[f] or nil end
 
 function GlowOpts.FlatGet(tbl, p, f, defs)
     local key = FlatKey(p, f)
-    if not (key and tbl) then
-        return nil
-    end
+    if not (key and tbl) then return nil end
     local val = tbl[key]
-    if val == nil and defs then
-        val = defs[key]
-    end
-    if f == "bg" then
-        return val == true
-    end
+    if val == nil and defs then val = defs[key] end
+    if f == "bg" then return val == true end
     if f == "color" or f == "bgColor" then
-        if type(val) == "table" then
-            return val.r, val.g, val.b
-        end
+        if type(val) == "table" then return val.r, val.g, val.b end
         return nil
     end
     return val
@@ -878,9 +729,7 @@ end
 
 function GlowOpts.FlatSet(tbl, p, f, a, b, c)
     local key = FlatKey(p, f)
-    if not (key and tbl) then
-        return
-    end
+    if not (key and tbl) then return end
     if f == "color" or f == "bgColor" then
         tbl[key] = { r = a, g = b, b = c }
     else
@@ -903,9 +752,7 @@ function GlowOpts.PrefixSite(getT, p, host, onChange, defColor)
     }
     function desc.get(f)
         local tbl = getT()
-        if not tbl then
-            return nil
-        end
+        if not tbl then return nil end
         if f == "style" then
             return tbl[key.type] or 0
         elseif f == "mode" then
@@ -926,9 +773,7 @@ function GlowOpts.PrefixSite(getT, p, host, onChange, defColor)
     end
     function desc.set(f, a, b, c)
         local tbl = getT()
-        if not tbl then
-            return
-        end
+        if not tbl then return end
         if f == "style" then
             tbl[key.type] = a
         elseif f == "mode" then
@@ -981,9 +826,7 @@ end
 -- per-icon glows read, which the template never changes) or a style the site
 -- cannot map.
 function GlowOpts.TemplateValue(desc, tbl)
-    if desc.paramsOnly then
-        return nil, false
-    end
+    if desc.paramsOnly then return nil, false end
     local position, converted = GlowOpts.Resolve(desc, tbl.style or 1)
     return GlowOpts.FromShared(desc, position), converted, position
 end
@@ -995,25 +838,15 @@ end
 -- Writes directly: a caller acting for the user routes the style through the
 -- site's own confirm first (see desc.confirm). Returns applied, converted.
 function GlowOpts.ApplyTemplate(desc, color, anyState)
-    if not anyState and not GlowOpts.IsCustomGlow(desc) then
-        return false, false
-    end
-    if GlowOpts.StyleLocked(desc) then
-        return false, false
-    end
+    if not anyState and not GlowOpts.IsCustomGlow(desc) then return false, false end
+    if GlowOpts.StyleLocked(desc) then return false, false end
     local val, converted, position = GlowOpts.TemplateValue(desc, color)
-    if val == nil then
-        return false, false
-    end
+    if val == nil then return false, false end
     local caps = desc.caps or {}
     desc.set("style", val)
     local tm = color.mode or "custom"
-    if caps.mode then
-        desc.set("mode", tm)
-    end
-    if tm == "custom" and color.r then
-        desc.set("color", color.r, color.g, color.b)
-    end
+    if caps.mode then desc.set("mode", tm) end
+    if tm == "custom" and color.r then desc.set("color", color.r, color.g, color.b) end
     -- Pixel parameters only go where the result is a Pixel Glow: for any other
     -- template style they are hidden in the template and would reset the site's.
     if caps.params and position == 1 then
@@ -1023,9 +856,7 @@ function GlowOpts.ApplyTemplate(desc, color, anyState)
     end
     if caps.bg and position == 1 then
         desc.set("bg", color.bg and true or nil)
-        if color.bg then
-            desc.set("bgColor", color.bgR or 0, color.bgG or 0, color.bgB or 0)
-        end
+        if color.bg then desc.set("bgColor", color.bgR or 0, color.bgG or 0, color.bgB or 0) end
     end
     return true, converted
 end
@@ -1033,43 +864,31 @@ end
 -- Does the site already show what ApplyTemplate would write? An off glow or
 -- an extra never does, nor a paramsOnly site (never a template target).
 function GlowOpts.MatchesTemplate(desc, color)
-    if desc.paramsOnly or not GlowOpts.IsCustomGlow(desc) then
-        return false
-    end
+    if desc.paramsOnly or not GlowOpts.IsCustomGlow(desc) then return false end
     local caps = desc.caps or {}
     local position = GlowOpts.Resolve(desc, color.style or 1)
-    if GlowOpts.ToShared(desc, desc.get("style")) ~= position then
-        return false
-    end
+    if GlowOpts.ToShared(desc, desc.get("style")) ~= position then return false end
     local mode = caps.mode and desc.get("mode") or "custom"
-    if mode ~= (color.mode or "custom") then
-        return false
-    end
+    if mode ~= (color.mode or "custom") then return false end
     if mode == "custom" and color.r then
         local red, green, blue = desc.get("color")
-        if red ~= color.r or green ~= color.g or blue ~= color.b then
-            return false
-        end
+        if red ~= color.r or green ~= color.g or blue ~= color.b then return false end
     end
     if caps.params and position == 1 then
-        if (desc.get("lines") or 8) ~= (color.lines or 8) then
-            return false
-        end
-        if (desc.get("thickness") or 2) ~= (color.thickness or 2) then
-            return false
-        end
-        if (desc.get("speed") or 4) ~= (color.speed or 4) then
-            return false
-        end
+        if (desc.get("lines") or 8) ~= (color.lines or 8) then return false end
+        if (desc.get("thickness") or 2) ~= (color.thickness or 2) then return false end
+        if (desc.get("speed") or 4) ~= (color.speed or 4) then return false end
     end
     if caps.bg and position == 1 then
-        if (desc.get("bg") == true) ~= (color.bg == true) then
-            return false
-        end
+        if (desc.get("bg") == true) ~= (color.bg == true) then return false end
         -- ApplyTemplate writes the background color too.
         if color.bg then
             local br, bgg, bb = desc.get("bgColor")
-            if (br or 0) ~= (color.bgR or 0) or (bgg or 0) ~= (color.bgG or 0) or (bb or 0) ~= (color.bgB or 0) then
+            if
+                (br or 0) ~= (color.bgR or 0)
+                or (bgg or 0) ~= (color.bgG or 0)
+                or (bb or 0) ~= (color.bgB or 0)
+            then
                 return false
             end
         end
@@ -1091,9 +910,7 @@ end
 function CludesUI.BuildIconEffects(widget, sy, opts)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PP or CludesUI.PanelPP
-    if not (W and Pix) then
-        return sy
-    end
+    if not (W and Pix) then return sy end
     local hh
     local MEDIA_MP = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
@@ -1104,9 +921,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
     -- One "ICON EFFECTS" section block per list entry.
     for bi = 1, #entries do
         local entry = entries[bi]
-        if not entry.filters then
-            entry.filters = {}
-        end
+        if not entry.filters then entry.filters = {} end
 
         local hdrRgn
         hdrRgn, hh = W:SectionHeader(widget, "ICON EFFECTS", sy)
@@ -1146,9 +961,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         end
 
         -- Row 1: Filters | Icon Glow (shared glow controls)
-        local glowDesc = GlowOpts.PrefixSite(function()
-            return entry
-        end, "glow", "engine", opts.apply)
+        local glowDesc = GlowOpts.PrefixSite(function() return entry end, "glow", "engine", opts.apply)
         -- The half next to Filters is too narrow for the color swatches.
         glowDesc.colorInCog = true
         local row
@@ -1157,9 +970,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             text = "Filters",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         }, GlowOpts.DropdownSpec(glowDesc, "Icon Glow"))
         sy = sy - hh
@@ -1176,9 +987,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             max = 4,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return entry.borderSize or 0
-            end,
+            getValue = function() return entry.borderSize or 0 end,
             setValue = function(val)
                 entry.borderSize = val
                 opts.apply()
@@ -1190,9 +999,7 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             max = opts.sizeMax or 80,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return entry.size or 0
-            end,
+            getValue = function() return entry.size or 0 end,
             setValue = function(val)
                 entry.size = (val and val > 0) and val or nil
                 opts.apply()
@@ -1231,12 +1038,8 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         labelFS:SetTextColor(ar, ag, ab)
         labelFS:SetAlpha(0.9)
         addBtn:SetWidth(labelFS:GetStringWidth() + 8)
-        addBtn:SetScript("OnEnter", function()
-            labelFS:SetAlpha(1)
-        end)
-        addBtn:SetScript("OnLeave", function()
-            labelFS:SetAlpha(0.9)
-        end)
+        addBtn:SetScript("OnEnter", function() labelFS:SetAlpha(1) end)
+        addBtn:SetScript("OnLeave", function() labelFS:SetAlpha(0.9) end)
         addBtn:SetScript("OnClick", function()
             opts.addEntry()
             CludesUI:RefreshPage(true)
@@ -1295,13 +1098,9 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
             accent:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
         end
         frow:SetScript("OnEnter", function()
-            if not isSel then
-                rbg:SetColorTexture(1, 1, 1, 0.04)
-            end
+            if not isSel then rbg:SetColorTexture(1, 1, 1, 0.04) end
         end)
-        frow:SetScript("OnLeave", function()
-            rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
-        end)
+        frow:SetScript("OnLeave", function() rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0) end)
         frow:SetScript("OnClick", function()
             opts.onPick(f.id)
             opts.rebuild()
@@ -1386,9 +1185,7 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
             cancelText = CludesUI.L("Cancel"),
             onConfirm = function(textValue)
                 local f = opts.add((textValue and textValue ~= "" and textValue) or CludesUI.L("New Filter"))
-                if f then
-                    opts.onAdded(f.id)
-                end
+                if f then opts.onAdded(f.id) end
                 opts.rebuild()
             end,
         })
@@ -1451,12 +1248,8 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
         closeIcon:SetAlpha(0.40)
         closeIcon:SetSnapToPixelGrid(false)
         closeIcon:SetTexelSnappingBias(0)
-        close:SetScript("OnEnter", function()
-            closeIcon:SetAlpha(0.50)
-        end)
-        close:SetScript("OnLeave", function()
-            closeIcon:SetAlpha(0.40)
-        end)
+        close:SetScript("OnEnter", function() closeIcon:SetAlpha(0.50) end)
+        close:SetScript("OnLeave", function() closeIcon:SetAlpha(0.40) end)
         close:SetScript("OnClick", function()
             shade:Hide()
             owner[slot] = nil
@@ -1476,9 +1269,7 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
         keyList:EnableKeyboard(true)
         keyList:SetPropagateKeyboardInput(true)
         keyList:SetScript("OnKeyDown", function(self, key)
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             self:SetPropagateKeyboardInput(key ~= "ESCAPE")
             if key == "ESCAPE" then
                 shade:Hide()
@@ -1529,12 +1320,8 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
             cross:SetTexelSnappingBias(0)
         end
         cross:SetTexture(MEDIA_FE .. "cui-close.png")
-        del:SetScript("OnEnter", function(self)
-            self:SetAlpha(0.9)
-        end)
-        del:SetScript("OnLeave", function(self)
-            self:SetAlpha(0.5)
-        end)
+        del:SetScript("OnEnter", function(self) self:SetAlpha(0.9) end)
+        del:SetScript("OnLeave", function(self) self:SetAlpha(0.5) end)
         del:SetScript("OnClick", function()
             opts.set(id, nil)
             opts.rebuild()
@@ -1566,9 +1353,7 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
         icon:SetSize(22, 22)
         icon:SetPoint("LEFT", boxFrame, "RIGHT", 6, 0)
         local art = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id)
-        if art then
-            icon:SetTexture(art)
-        end
+        if art then icon:SetTexture(art) end
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         local canRemove = opts.removable(id)
         local label =
@@ -1599,19 +1384,13 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
             icon:SetDesaturated(not on)
         end
         Paint()
-        row:SetScript("OnEnter", function()
-            wash:SetColorTexture(1, 1, 1, 0.04)
-        end)
-        row:SetScript("OnLeave", function()
-            wash:SetColorTexture(1, 1, 1, 0)
-        end)
+        row:SetScript("OnEnter", function() wash:SetColorTexture(1, 1, 1, 0.04) end)
+        row:SetScript("OnLeave", function() wash:SetColorTexture(1, 1, 1, 0) end)
         row:SetScript("OnClick", function()
             opts.set(id, not on)
             Paint()
         end)
-        if canRemove then
-            RemoveButton(row, id)
-        end
+        if canRemove then RemoveButton(row, id) end
         y = y - 29
     end
 
@@ -1687,12 +1466,8 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
         text:SetAlpha(0.9)
         text:SetPoint("LEFT")
         text:SetText(L("Rename"))
-        link:SetScript("OnEnter", function()
-            text:SetAlpha(1)
-        end)
-        link:SetScript("OnLeave", function()
-            text:SetAlpha(0.9)
-        end)
+        link:SetScript("OnEnter", function() text:SetAlpha(1) end)
+        link:SetScript("OnLeave", function() text:SetAlpha(0.9) end)
         link:SetScript("OnClick", function()
             opts.input({
                 title = L("Rename Filter"),
@@ -1720,9 +1495,10 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
                 icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id),
             }
         end
-        table.sort(items, function(lhs, rhs)
-            return tostring(lhs.label or lhs.key) < tostring(rhs.label or rhs.key)
-        end)
+        table.sort(
+            items,
+            function(lhs, rhs) return tostring(lhs.label or lhs.key) < tostring(rhs.label or rhs.key) end
+        )
         return items
     end
     local search = CludesUI.BuildVisOptsCBDropdown(
@@ -1730,13 +1506,9 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
         170,
         pane:GetFrameLevel() + 5,
         SearchItems,
-        function()
-            return false
-        end,
+        function() return false end,
         function(id, picked)
-            if picked then
-                Added(opts.addPicked(id))
-            end
+            if picked then Added(opts.addPicked(id)) end
         end,
         nil,
         10,
@@ -1761,9 +1533,7 @@ function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
             cancelText = L("Cancel"),
             onConfirm = function(textValue)
                 local id = tonumber(textValue or "")
-                if id then
-                    Added(opts.addTyped(id))
-                end
+                if id then Added(opts.addTyped(id)) end
             end,
         })
     end)

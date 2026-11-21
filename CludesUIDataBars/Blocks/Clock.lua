@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Clock.lua - Info Bar block: the clock.
 --
@@ -27,20 +25,14 @@ local format, floor, max, min = string.format, math.floor, math.max, math.min
 
 -- Like the minimap clock: 24 hour padded (01:04), 12 hour not (1:04 PM).
 local function ClockText(hour, minute, use24)
-    if use24 then
-        return format("%02d:%02d", hour, minute)
-    end
+    if use24 then return format("%02d:%02d", hour, minute) end
     local suffix = hour >= 12 and "PM" or "AM"
     hour = hour % 12
-    if hour == 0 then
-        hour = 12
-    end
+    if hour == 0 then hour = 12 end
     return format("%d:%02d %s", hour, minute, suffix)
 end
 
-local function RestSize()
-    return floor(K.CONTENT_BASE * 0.5 + 0.5)
-end
+local function RestSize() return floor(K.CONTENT_BASE * 0.5 + 0.5) end
 
 mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
@@ -53,44 +45,30 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
     }
     local tickKey = "clock:" .. inst.key
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     -- A fixed size off CONTENT_BASE; the bar's height never scales the text.
-    local function FontSize()
-        return Settings().fontSizeClock or max(12, floor(K.CONTENT_BASE * 0.7333 + 0.5))
-    end
+    local function FontSize() return Settings().fontSizeClock or max(12, floor(K.CONTENT_BASE * 0.7333 + 0.5)) end
 
     -- Unset toggles follow the game's clock settings, so this clock and the
     -- minimap's agree.
     local function Modes()
         local cfg = Settings()
         local useLocal, use24 = cfg.localTime, cfg.twentyFour
-        if useLocal == nil then
-            useLocal = GetCVar("timeMgrUseLocalTime") == "1"
-        end
-        if use24 == nil then
-            use24 = GetCVar("timeMgrUseMilitaryTime") == "1"
-        end
+        if useLocal == nil then useLocal = GetCVar("timeMgrUseLocalTime") == "1" end
+        if use24 == nil then use24 = GetCVar("timeMgrUseMilitaryTime") == "1" end
         return useLocal, use24
     end
 
     local function Now()
         local useLocal, use24 = Modes()
-        if useLocal then
-            return ClockText(tonumber(date("%H")), tonumber(date("%M")), use24)
-        end
+        if useLocal then return ClockText(tonumber(date("%H")), tonumber(date("%M")), use24) end
         local hour, minute = GetGameTime()
         return ClockText(floor(hour), floor(minute), use24)
     end
 
-    local function ShowsRest()
-        return Settings().showResting ~= false and IsResting()
-    end
-    local function ShowsMail()
-        return Settings().showMail ~= false and HasNewMail()
-    end
+    local function ShowsRest() return Settings().showResting ~= false and IsResting() end
+    local function ShowsMail() return Settings().showMail ~= false and HasNewMail() end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetSize(100, 20)
@@ -187,12 +165,8 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
             local height = max(8 + mod.SnapToPixelGrid(label:GetStringHeight()), barH + 8)
             contentFrame:SetHeight(height)
             button:SetHeight(height)
-            if rest:IsShown() then
-                rest:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", -2, -2)
-            end
-            if mailArt:IsShown() then
-                mailArt:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 2, -2)
-            end
+            if rest:IsShown() then rest:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", -2, -2) end
+            if mailArt:IsShown() then mailArt:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 2, -2) end
         else
             -- Mail, time, rest in a row, as wide as they need (up to the budget).
             local budget = K.HBudget(inst, 120)
@@ -217,18 +191,14 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
                     rest:SetPoint("BOTTOMLEFT", label, "BOTTOMRIGHT", 2, 12)
                 end
             end
-            if mailArt:IsShown() then
-                mailArt:SetPoint("RIGHT", label, "LEFT", -8, 0)
-            end
+            if mailArt:IsShown() then mailArt:SetPoint("RIGHT", label, "LEFT", -8, 0) end
         end
         K.MaybeRelayout(inst)
     end
 
     -- Every second: a draw only when the minute on screen changes.
     local function Tick()
-        if Now() ~= drawnTime then
-            inst:Refresh()
-        end
+        if Now() ~= drawnTime then inst:Refresh() end
     end
 
     -- Resting and mail: a draw only when what they show changes (the mailbox
@@ -236,9 +206,7 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
     -- combat draws only if something changed during it.
     inst.eventFrame = K.MakeEventFrame(inst, function(self, event)
         if event == "PLAYER_REGEN_ENABLED" then
-            if owesLayout then
-                self:Refresh()
-            end
+            if owesLayout then self:Refresh() end
         elseif owesLayout or InCombatLockdown() or State(Now()) ~= drawnState then
             self:Refresh()
         end
@@ -325,9 +293,7 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
                 CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
             end
         elseif mouseButton == "LeftButton" then
-            if ToggleCalendar then
-                ToggleCalendar()
-            end
+            if ToggleCalendar then ToggleCalendar() end
         elseif mouseButton == "RightButton" then
             if ToggleTimeManager then
                 ToggleTimeManager()
@@ -358,12 +324,8 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
             return max(8 + textH + 8, barCtx.GetThickness(), 60)
         end
         local width = button:GetWidth() or 80
-        if Settings().showResting ~= false then
-            width = width + RestSize() + 4
-        end
-        if ShowsMail() then
-            width = width + RestSize() + 8 + 8
-        end
+        if Settings().showResting ~= false then width = width + RestSize() + 4 end
+        if ShowsMail() then width = width + RestSize() + 8 + 8 end
         return max(width, 60)
     end
 

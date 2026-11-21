@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ActionBars_Options\LivePreview_Options.lua
 --  Action Bars options: the live preview in the Bar Display content header
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  ns._ABO_OptEnv (filled by CUI_ActionBars_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIActionBars"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): the
 -- preview is built on the header's kept root, so its frames are reset and
 -- dressed again by the next build instead of made anew; on any other parent
@@ -49,12 +45,8 @@ local function BuildLivePreview(hostFrame, yOff)
     local btn1 = FirstBarButton(barId)
     local realBtnW = math.floor((btn1 and btn1:GetWidth() or 0) + 0.5)
     local realBtnH = math.floor((btn1 and btn1:GetHeight() or 0) + 0.5)
-    if realBtnW < 1 then
-        realBtnW = 36
-    end
-    if realBtnH < 1 then
-        realBtnH = 36
-    end
+    if realBtnW < 1 then realBtnW = 36 end
+    if realBtnH < 1 then realBtnH = 36 end
 
     -- No Blizzard Edit Mode scale: our bar scale applies directly to the frame.
     local blizzEditScale = 1
@@ -102,9 +94,7 @@ local function BuildLivePreview(hostFrame, yOff)
     popFrame._PREVIEW_MAX_H = PREVIEW_MAX_H
     popFrame._updatePVThumb = UpdatePVThumb
 
-    local function Snap(val)
-        return CludesUI.PP.SnapForES(val, popFrame:GetEffectiveScale())
-    end
+    local function Snap(val) return CludesUI.PP.SnapForES(val, popFrame:GetEffectiveScale()) end
 
     -- Snap to whole physical pixels at the preview's effective scale (same
     -- approach as the border system).
@@ -197,12 +187,8 @@ local function BuildLivePreview(hostFrame, yOff)
         bB:Hide()
         bL:Hide()
         bR:Hide()
-        if record._bdPreview then
-            record._bdPreview:Hide()
-        end
-        if record.shapeBorderTex then
-            record.shapeBorderTex:Hide()
-        end
+        if record._bdPreview then record._bdPreview:Hide() end
+        if record.shapeBorderTex then record.shapeBorderTex:Hide() end
         if record.shapeMask and record._prevMasked then
             pcall(icon.RemoveMaskTexture, icon, record.shapeMask)
             record.shapeMask:Hide()
@@ -212,12 +198,8 @@ local function BuildLivePreview(hostFrame, yOff)
         icon:SetAllPoints(bf)
         local wid, height = bf:GetSize()
         if classic then
-            if record.blizzMask then
-                record.blizzMask:Hide()
-            end
-            if record.blizzRing then
-                record.blizzRing:Hide()
-            end
+            if record.blizzMask then record.blizzMask:Hide() end
+            if record.blizzRing then record.blizzRing:Hide() end
             local cring = record.classicRing
             if not cring then
                 cring = bf:CreateTexture(nil, "ARTWORK", nil, 2)
@@ -233,9 +215,7 @@ local function BuildLivePreview(hostFrame, yOff)
             cring:Show()
             return
         end
-        if record.classicRing then
-            record.classicRing:Hide()
-        end
+        if record.classicRing then record.classicRing:Hide() end
         local mask = record.blizzMask
         if not mask then
             mask = bf:CreateMaskTexture()
@@ -286,9 +266,7 @@ local function BuildLivePreview(hostFrame, yOff)
     -- The Update method reads current DB + Blizzard state, applies it --
     popFrame.Update = function(self)
         local prefs = SB()
-        if not prefs then
-            return
-        end
+        if not prefs then return end
 
         local details = self._barInfo
         local bar = self._barFrame
@@ -296,33 +274,23 @@ local function BuildLivePreview(hostFrame, yOff)
         local btnH = self._baseBtnH
 
         -- Override with user-set button size from DB
-        if prefs.buttonWidth and prefs.buttonWidth > 0 then
-            btnW = prefs.buttonWidth
-        end
-        if prefs.buttonHeight and prefs.buttonHeight > 0 then
-            btnH = prefs.buttonHeight
-        end
+        if prefs.buttonWidth and prefs.buttonWidth > 0 then btnW = prefs.buttonWidth end
+        if prefs.buttonHeight and prefs.buttonHeight > 0 then btnH = prefs.buttonHeight end
 
         -- How many buttons are visible (from our DB settings)
         local numVisible = prefs.overrideNumIcons or prefs.numIcons or details.count
-        if numVisible < 1 then
-            numVisible = details.count
-        end
+        if numVisible < 1 then numVisible = details.count end
 
         -- Stance bar: ignore icon count setting, use actual shapeshift form count
         if details.isStance then
             numVisible = GetNumShapeshiftForms() or details.count
-            if numVisible < 1 then
-                numVisible = details.count
-            end
+            if numVisible < 1 then numVisible = details.count end
         end
 
         -- Multi-row layout: show all rows matching the real bar
         local numRows = prefs.numRows or 1
         local ovRows = prefs.overrideNumRows
-        if ovRows and ovRows > 0 then
-            numRows = ovRows
-        end
+        if ovRows and ovRows > 0 then numRows = ovRows end
         local stride = math.ceil(numVisible / numRows)
         numRows = math.ceil(numVisible / stride)
         local previewCount = numVisible
@@ -367,9 +335,7 @@ local function BuildLivePreview(hostFrame, yOff)
             shapeBrdColor.r, shapeBrdColor.g, shapeBrdColor.b, (shapeBrdColor.a or 1) * shapeBrdOpacity
         -- Unified class color
         local useClassColor = brdClassColor
-        if useClassColor == nil then
-            useClassColor = prefs.shapeBorderClassColor
-        end
+        if useClassColor == nil then useClassColor = prefs.shapeBorderClassColor end
         if useClassColor then
             local _, classTok = UnitClass("player")
             if classTok then
@@ -389,9 +355,7 @@ local function BuildLivePreview(hostFrame, yOff)
             scaledBtnH = scaledBtnH + shapeExp
         end
         -- Shrink button height for "cropped" mode (10% top + 10% bottom)
-        if not blizzAB and btnShape == "cropped" then
-            scaledBtnH = SnapS(scaledBtnH * 0.80)
-        end
+        if not blizzAB and btnShape == "cropped" then scaledBtnH = SnapS(scaledBtnH * 0.80) end
 
         local scaledPad = SnapS(spacing * (self._blizzEditScale or 1))
 
@@ -491,13 +455,9 @@ local function BuildLivePreview(hostFrame, yOff)
         else
             self._wrapper:SetHeight(parentH)
             -- Reset scroll when content fits without scrolling
-            if self._scrollFrame then
-                self._scrollFrame:SetVerticalScroll(0)
-            end
+            if self._scrollFrame then self._scrollFrame:SetVerticalScroll(0) end
         end
-        if self._updatePVThumb then
-            self._updatePVThumb()
-        end
+        if self._updatePVThumb then self._updatePVThumb() end
 
         -- Store grid bounds for background anchoring
         self._gridStartX = gridStartX
@@ -535,19 +495,11 @@ local function BuildLivePreview(hostFrame, yOff)
                 -- column so vertical-centering math below still measures the right buttons.
                 local dispCol, dispRow = col, row
                 if isVertical then
-                    if colFlip then
-                        dispCol = gridCols - 1 - dispCol
-                    end
-                    if rowFlip then
-                        dispRow = stride - 1 - dispRow
-                    end
+                    if colFlip then dispCol = gridCols - 1 - dispCol end
+                    if rowFlip then dispRow = stride - 1 - dispRow end
                 else
-                    if colFlip then
-                        dispCol = stride - 1 - dispCol
-                    end
-                    if rowFlip then
-                        dispRow = numRows - 1 - dispRow
-                    end
+                    if colFlip then dispCol = stride - 1 - dispCol end
+                    if rowFlip then dispRow = numRows - 1 - dispRow end
                 end
 
                 local xOff, yOff
@@ -612,15 +564,9 @@ local function BuildLivePreview(hostFrame, yOff)
                     else
                         -- The styles' rings and mask step aside on the CUI look (the
                         -- flag is a live read: a profile switch can flip it mid-page).
-                        if record.blizzRing then
-                            record.blizzRing:Hide()
-                        end
-                        if record.blizzMask then
-                            record.blizzMask:Hide()
-                        end
-                        if record.classicRing then
-                            record.classicRing:Hide()
-                        end
+                        if record.blizzRing then record.blizzRing:Hide() end
+                        if record.blizzMask then record.blizzMask:Hide() end
+                        if record.classicRing then record.classicRing:Hide() end
                         local bT, bB, bL, bR =
                             record.borders[1], record.borders[2], record.borders[3], record.borders[4]
                         local brdTexKey = prefs.borderTexture or "solid"
@@ -675,9 +621,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             Pix.Point(bR, "BOTTOMRIGHT", bB, "TOPRIGHT", 0, 0)
                             bR:Show()
 
-                            if record._bdPreview then
-                                record._bdPreview:Hide()
-                            end
+                            if record._bdPreview then record._bdPreview:Hide() end
                         elseif brdOn and not brdIsSolid then
                             -- Textured: BackdropTemplate on preview button
                             bT:Hide()
@@ -748,7 +692,8 @@ local function BuildLivePreview(hostFrame, yOff)
                                     edgeSize = edgeSize,
                                     insets = { left = 0, right = 0, top = 0, bottom = 0 },
                                 })
-                                local cr, cg, checkBtn, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
+                                local cr, cg, checkBtn, ca =
+                                    brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
                                 if useClassColor then
                                     local _, ct2 = UnitClass("player")
                                     if ct2 then
@@ -766,9 +711,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             bB:Hide()
                             bL:Hide()
                             bR:Hide()
-                            if record._bdPreview then
-                                record._bdPreview:Hide()
-                            end
+                            if record._bdPreview then record._bdPreview:Hide() end
                         end
 
                         -- Button Shape mask + border
@@ -810,9 +753,7 @@ local function BuildLivePreview(hostFrame, yOff)
                                 mod.SHAPE_ZOOM_DEFAULTS and mod.SHAPE_ZOOM_DEFAULTS[btnShape] or 6.0
                             ) / 100
                             local iconExp = mod.SHAPE_ICON_EXPAND + shapeOffset + (zoom - shapeDefault) * 200
-                            if iconExp < 0 then
-                                iconExp = 0
-                            end
+                            if iconExp < 0 then iconExp = 0 end
                             local halfIE = iconExp / 2
                             icon:ClearAllPoints()
                             Pix.Point(icon, "TOPLEFT", bf, "TOPLEFT", -halfIE, halfIE)
@@ -865,9 +806,7 @@ local function BuildLivePreview(hostFrame, yOff)
                                 record.shapeMask:Hide()
                                 record._prevMasked = false
                             end
-                            if record.shapeBorderTex then
-                                record.shapeBorderTex:Hide()
-                            end
+                            if record.shapeBorderTex then record.shapeBorderTex:Hide() end
                             icon:ClearAllPoints()
                             icon:SetAllPoints(bf)
                             -- Texcoords: cropped trims top/bottom, none uses zoom only
@@ -892,9 +831,7 @@ local function BuildLivePreview(hostFrame, yOff)
                         local hkText = ""
                         if realBtn and realBtn.HotKey then
                             hkText = realBtn.HotKey:GetText() or ""
-                            if hkText == RANGE_INDICATOR or hkText == "\226\128\162" then
-                                hkText = ""
-                            end
+                            if hkText == RANGE_INDICATOR or hkText == "\226\128\162" then hkText = "" end
                         end
                         keybindFS:SetText(hkText)
                     end
@@ -917,9 +854,7 @@ local function BuildLivePreview(hostFrame, yOff)
                     local countFS = record.count
                     do
                         local ctText = ""
-                        if realBtn and realBtn.Count then
-                            ctText = realBtn.Count:GetText() or ""
-                        end
+                        if realBtn and realBtn.Count then ctText = realBtn.Count:GetText() or "" end
                         countFS:SetText(ctText)
                         -- Charge Numbers: while the bar hides a kind of count, the
                         -- sample takes the live count's alpha, which the runtime
@@ -956,9 +891,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             macroFS:SetText("")
                         else
                             local mcText = ""
-                            if realBtn and realBtn.Name then
-                                mcText = realBtn.Name:GetText() or ""
-                            end
+                            if realBtn and realBtn.Name then mcText = realBtn.Name:GetText() or "" end
                             macroFS:SetText(mcText)
                         end
                         CludesUI.PrimeFontShadow(macroFS, false)
@@ -1152,9 +1085,7 @@ local function BuildLivePreview(hostFrame, yOff)
         -- Refresh text overlay sizes (font/text may have changed)
         if self._textOverlays then
             for _, shade in ipairs(self._textOverlays) do
-                if shade._resizeToText then
-                    shade._resizeToText()
-                end
+                if shade._resizeToText then shade._resizeToText() end
             end
         end
     end

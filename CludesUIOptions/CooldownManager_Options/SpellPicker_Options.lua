@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\SpellPicker_Options.lua
 --  Cooldown Manager options: the per-bar spell picker (ShowSpellPicker).
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CUI_CooldownManager_Options.lua), the other pickers from Pickers_Options.lua.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
 -- host (a kept menu) is handed out again reset to fresh; anywhere else this is
@@ -44,9 +40,7 @@ end
 -- Hangs a speaker button on a sound row (none for silence) that plays the
 -- row's sound without picking it, as the sound dropdowns' preview does.
 local function AddSoundPreviewButton(subItem, entry)
-    if not entry.val or entry.val == "none" then
-        return
-    end
+    if not entry.val or entry.val == "none" then return end
     local play = CreateFrame("Button", nil, subItem)
     play:SetSize(16, 16)
     play:SetPoint("RIGHT", subItem, "RIGHT", -8, 0)
@@ -56,18 +50,14 @@ local function AddSoundPreviewButton(subItem, entry)
     play:SetScript("OnClick", function()
         local paths = mod.FOCUSKICK_SOUND_PATHS
         local filePath = paths and paths[entry.val]
-        if filePath then
-            PlaySoundFile(filePath, "Master")
-        end
+        if filePath then PlaySoundFile(filePath, "Master") end
     end)
     CludesUI.HoverTip(play, "Preview Sound")
 end
 
 local function GlowStyleItems(inheritLabel, noneVal)
     local items = { { val = nil, label = inheritLabel } }
-    if noneVal then
-        items[2] = { val = noneVal, label = "None" }
-    end
+    if noneVal then items[2] = { val = noneVal, label = "None" } end
     for _, style in ipairs({
         { 1, "Pixel Glow" },
         { 3, "Action Button Glow" },
@@ -83,9 +73,7 @@ local function GlowStyleItems(inheritLabel, noneVal)
 end
 
 local function ShowWrongBarTypePopup(spellName, isSpellBuff)
-    if not CludesUI or not CludesUI.ShowConfirmPopup then
-        return
-    end
+    if not CludesUI or not CludesUI.ShowConfirmPopup then return end
     local correctBar = isSpellBuff and "a Buff bar" or "a Cooldown or Utility bar"
     CludesUI:ShowConfirmPopup({
         title = "Wrong Bar Type",
@@ -98,12 +86,8 @@ local function ShowWrongBarTypePopup(spellName, isSpellBuff)
         confirmText = "Open Blizzard CDM",
         cancelText = "Close",
         onConfirm = function()
-            if CooldownViewerSettings and CooldownViewerSettings.Show then
-                CooldownViewerSettings:Show()
-            end
-            if CludesUI._mainFrame then
-                CludesUI._mainFrame:Hide()
-            end
+            if CooldownViewerSettings and CooldownViewerSettings.Show then CooldownViewerSettings:Show() end
+            if CludesUI._mainFrame then CludesUI._mainFrame:Hide() end
         end,
     })
 end
@@ -113,16 +97,12 @@ end
 -- run it on every open and after every pick, so the lock and its reason
 -- follow the settings they depend on: each call stores the current reason.
 local function FlyoutItemNoOp() end
-local function FlyoutItemLockedEnter(self)
-    CludesUI.ShowWidgetTooltip(self, self._lockTip)
-end
+local function FlyoutItemLockedEnter(self) CludesUI.ShowWidgetTooltip(self, self._lockTip) end
 -- The item's own OnLeave also runs: an item locked under the cursor (by a pick
 -- made on it) drops the hover look it had.
 local function FlyoutItemLockedLeave(self)
     local saved = self._lockSaved
-    if saved and saved[3] then
-        saved[3](self)
-    end
+    if saved and saved[3] then saved[3](self) end
     CludesUI.HideWidgetTooltip()
 end
 local function SetFlyoutItemLocked(subItem, locked, tipText)
@@ -130,7 +110,8 @@ local function SetFlyoutItemLocked(subItem, locked, tipText)
     if locked then
         subItem._lockTip = tipText
         if not saved then
-            subItem._lockSaved = { subItem:GetScript("OnClick"), subItem:GetScript("OnEnter"), subItem:GetScript("OnLeave") }
+            subItem._lockSaved =
+                { subItem:GetScript("OnClick"), subItem:GetScript("OnEnter"), subItem:GetScript("OnLeave") }
             subItem:SetScript("OnClick", FlyoutItemNoOp)
             subItem:SetScript("OnEnter", FlyoutItemLockedEnter)
             subItem:SetScript("OnLeave", FlyoutItemLockedLeave)
@@ -148,18 +129,14 @@ end
 -- True when keys hold a colour (some xR, xG and xB together): an apply then
 -- carries that colour, which the item's own value does not describe.
 local function HasColourTriple(keys)
-    if not keys then
-        return false
-    end
+    if not keys then return false end
     local held = {}
     for _, keyName in ipairs(keys) do
         held[keyName] = true
     end
     for keyName in pairs(held) do
         local baseCaption = keyName:match("^(.+)R$")
-        if baseCaption and held[baseCaption .. "G"] and held[baseCaption .. "B"] then
-            return true
-        end
+        if baseCaption and held[baseCaption .. "G"] and held[baseCaption .. "B"] then return true end
     end
     return false
 end
@@ -175,12 +152,8 @@ local CHARGE_GATES = {
 }
 local function ArmChargeGate(mod, key)
     local gate = CHARGE_GATES[key]
-    if gate == nil then
-        gate = "_cdmAnyChargeStyle"
-    end
-    if gate then
-        mod[gate] = true
-    end
+    if gate == nil then gate = "_cdmAnyChargeStyle" end
+    if gate then mod[gate] = true end
 end
 
 -- A plain menu row at y on inner (made at menu level + 2): its label in the dim
@@ -217,16 +190,12 @@ local function PlainMenuRow(menu, inner, y, height, text, font, dim, hlA, onClic
         if not (opts and opts.keepSub) and menu._openSub and menu._openSub:IsShown() then
             menu._openSub:Hide()
         end
-        if tip then
-            CludesUI.ShowWidgetTooltip(menuRow, tip)
-        end
+        if tip then CludesUI.ShowWidgetTooltip(menuRow, tip) end
     end)
     menuRow:SetScript("OnLeave", function()
         caption:SetTextColor(dim[1], dim[2], dim[3], dim[4])
         highlight:SetAlpha(0)
-        if tip then
-            CludesUI.HideWidgetTooltip()
-        end
+        if tip then CludesUI.HideWidgetTooltip() end
     end)
     menuRow:SetScript("OnClick", onClick)
     return menuRow
@@ -264,12 +233,11 @@ local function PresetMenuRow(menu, inner, y, height, text, texture, onBar, font,
     highlight:SetAlpha(0)
     if onBar then
         caption:SetTextColor(dim[1], dim[2], dim[3], dim[4] * 0.4)
-        menuRow:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(menuRow, CludesUI.Lf("Already on %s", CludesUI.L(onBar)))
-        end)
-        menuRow:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        menuRow:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(menuRow, CludesUI.Lf("Already on %s", CludesUI.L(onBar))) end
+        )
+        menuRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         return menuRow
     end
     caption:SetTextColor(dim[1], dim[2], dim[3], dim[4])
@@ -310,9 +278,7 @@ local function IconMenuRow(
     menuRow:SetPoint("TOPLEFT", parent, "TOPLEFT", 1, -y)
     menuRow:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -1, -y)
     menuRow:SetFrameLevel(owner:GetFrameLevel() + 2)
-    if anyUp then
-        menuRow:RegisterForClicks("AnyUp")
-    end
+    if anyUp then menuRow:RegisterForClicks("AnyUp") end
     local icon = menuRow:CreateTexture(nil, "ARTWORK")
     icon:SetSize(height - 2, height - 2)
     icon:SetPoint("RIGHT", menuRow, "RIGHT", -6, 0)
@@ -335,12 +301,13 @@ local function IconMenuRow(
         icon:SetDesaturated(true)
         icon:SetAlpha(0.4)
         if tipBar then
-            menuRow:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(menuRow, CludesUI.Lf("Already on %s", CludesUI.L(tipBar)))
-            end)
-            menuRow:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            menuRow:SetScript(
+                "OnEnter",
+                function()
+                    CludesUI.ShowWidgetTooltip(menuRow, CludesUI.Lf("Already on %s", CludesUI.L(tipBar)))
+                end
+            )
+            menuRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         end
         return menuRow, caption, icon, highlight
     end
@@ -381,9 +348,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         return
     end
     -- Close existing
-    if optionState._spellPickerMenu then
-        optionState._spellPickerMenu:Hide()
-    end
+    if optionState._spellPickerMenu then optionState._spellPickerMenu:Hide() end
 
     local edge = SelectedCDMBar()
     local isCustomBuff = edge and edge.barType == "custom_buff"
@@ -398,9 +363,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     -- (RefreshCDMIconAppearance), so writer/reader agree. Custom/injected buffs' own positive id as _previewSpellID works too.
     local function ResolveBuffSettingsKey(af)
         local spellRef = af and af._previewSpellID
-        if not spellRef then
-            return nil
-        end
+        if not spellRef then return nil end
         -- Same-spellID collision (Diabolist Demonic Art vs Diabolic Ritual): when two
         -- viewer slots share this displayed id, key THIS slot by its own cooldownID so each is configured independently; non-collided buffs keep the stable spellID key (survives talent swaps).
         local cdID = af and (af._previewCdID or af.cooldownID)
@@ -409,18 +372,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             -- Read-your-writes: once a per-cooldownID entry exists, keep editing it even
             -- if the collision later ends (re-talent), so the menu never splits from what the runtime resolver reads (which prefers an existing c-entry whenever present).
             local bstore = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore("buffs")
-            if bstore and bstore[ckey] then
-                return ckey
-            end
-            if mod.IsCollidedBuffSid and mod.IsCollidedBuffSid(spellRef) then
-                return ckey
-            end
+            if bstore and bstore[ckey] then return ckey end
+            if mod.IsCollidedBuffSid and mod.IsCollidedBuffSid(spellRef) then return ckey end
             -- A slot this bar claims by cooldownID (tracked trinket row) keys the
             -- same way whether or not its spell resolves, as on CD/utility bars.
             local claims = mod.CollectCdClaimSet(mod.GetBarSpellData(barId))
-            if claims and claims[cdID] then
-                return ckey
-            end
+            if claims and claims[cdID] then return ckey end
         end
         return spellRef
     end
@@ -432,9 +389,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     -- Displayed). The list sections below already render nothing for an empty set,
     -- and the "Missing Spells?" footer is the right prompt in that state.
     local allSpells = {}
-    if not removeOnly and not isCustomBuff then
-        allSpells = mod.GetCDMSpellsForBar(barId) or {}
-    end
+    if not removeOnly and not isCustomBuff then allSpells = mod.GetCDMSpellsForBar(barId) or {} end
 
     -- Standard CludesUI dropdown colors
     local mBgR = CludesUI.DD_BG_R or 0.075
@@ -506,9 +461,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
     for _, sp in ipairs(allSpells) do
         if sp.isExtra then
-            if not isBuffBar then
-                itemsExtra[#itemsExtra + 1] = sp
-            end
+            if not isBuffBar then itemsExtra[#itemsExtra + 1] = sp end
         elseif isCDorUtil then
             if sp.cdmCat == primaryCat then
                 if sp.onCUIBar then
@@ -595,15 +548,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     if rmSpellID then
                         mod.RemoveSpellFromBar(barId, rmSpellID)
                         local sdR = mod.GetBarSpellData(barId)
-                        if sdR and sdR.spellDurations then
-                            sdR.spellDurations[rmSpellID] = nil
-                        end
-                        if mod.RebuildSpellRouteMap then
-                            mod.RebuildSpellRouteMap()
-                        end
-                        if mod.QueueReanchor then
-                            mod.QueueReanchor()
-                        end
+                        if sdR and sdR.spellDurations then sdR.spellDurations[rmSpellID] = nil end
+                        if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+                        if mod.QueueReanchor then mod.QueueReanchor() end
                     end
                 else
                     -- A legacy-duplicate buff slot covers >1 assignedSpells entry
@@ -616,9 +563,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         for _, value in ipairs(grp) do
                             sequence[#sequence + 1] = value
                         end
-                        table.sort(sequence, function(lhs, rhs)
-                            return lhs > rhs
-                        end)
+                        table.sort(sequence, function(lhs, rhs) return lhs > rhs end)
                         for _, gi in ipairs(sequence) do
                             mod.RemoveTrackedSpell(barId, gi)
                         end
@@ -646,9 +591,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             hlA,
             function()
                 dropMenu:Hide()
-                if mod.OpenBlizzardCDMTab then
-                    mod.OpenBlizzardCDMTab(true)
-                end
+                if mod.OpenBlizzardCDMTab then mod.OpenBlizzardCDMTab(true) end
             end
         )
         menuH = menuH + ITEM_H
@@ -673,9 +616,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 mod.ShowCDMTalentConditionsPopup(spellId, tcConds, function(newConds)
                     ensureSettings()
                     spellSettings.talentConditions = newConds
-                    if newConds then
-                        mod._cdmAnyTalentCond = true
-                    end
+                    if newConds then mod._cdmAnyTalentCond = true end
                     RefreshCDPreview()
                 end)
             end,
@@ -704,9 +645,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Unresolved cd-claim slot (tracked trinket row with its buff down):
                 -- key it the way the runtime reads cd-claimed slots.
                 local cdClaimB = type(spellId) == "number" and mod.CdClaimMarkerToCdID(spellId)
-                if cdClaimB then
-                    spellId = "c" .. cdClaimB
-                end
+                if cdClaimB then spellId = "c" .. cdClaimB end
             else
                 spellId = spellData and spellData.assignedSpells and spellData.assignedSpells[slotIndex]
                 if (not spellId or spellId == 0) and anchor and anchor._previewSpellID then
@@ -729,9 +668,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local storage = mod.GetSpellSettingsStore(barId, true)
                     if storage then
                         local spellSettings = storage[spellId] or {}
-                        AddTalentConditionsRow(spellId, spellSettings, function()
-                            storage[spellId] = spellSettings
-                        end)
+                        AddTalentConditionsRow(
+                            spellId,
+                            spellSettings,
+                            function() storage[spellId] = spellSettings end
+                        )
                     end
                 end
             elseif spellId and spellId ~= 0 then
@@ -767,9 +708,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- one the icon renders with: show and edit that one.
                 if not spellSettings and storage then
                     spellSettings = mod.ResolveVariantValue(storage, spellId)
-                    if type(spellSettings) ~= "table" then
-                        spellSettings = nil
-                    end
+                    if type(spellSettings) ~= "table" then spellSettings = nil end
                 end
                 if not spellSettings then
                     -- A cooldownID-keyed slot with no entry yet renders its spell's entry
@@ -782,7 +721,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         and storage[anchor._previewSpellID]
                     spellSettings = type(source) == "table" and CopyTable(source) or {}
                 end
-                mod.ChainSettings(spellSettings, (not isHostedBuff) and mod.GetBarTierSettings(spellData, barId) or nil)
+                mod.ChainSettings(
+                    spellSettings,
+                    (not isHostedBuff) and mod.GetBarTierSettings(spellData, barId) or nil
+                )
                 local function EnsureStored()
                     -- An entry found under another form of the spell is stored already.
                     if
@@ -809,9 +751,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- store explicit false instead (render-equivalent to nil, but blocks inheritance).
                 local function SetOwnSetting(key, value)
                     spellSettings[key] = value
-                    if value == nil and spellSettings[key] ~= nil then
-                        spellSettings[key] = false
-                    end
+                    if value == nil and spellSettings[key] ~= nil then spellSettings[key] = false end
                 end
 
                 -----------------------------------------------------------
@@ -851,9 +791,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     )
                     swatchBtn:SetPoint("RIGHT", subItem, "RIGHT", -8, 0)
                     subItem._refreshSwatch = refreshSwatch
-                    if onFirstClick then
-                        swatchBtn:HookScript("PreClick", onFirstClick)
-                    end
+                    if onFirstClick then swatchBtn:HookScript("PreClick", onFirstClick) end
                 end
                 ApplyBar.NewMenuRow = function(caption)
                     local menuRow = CreateFrame("Button", nil, inner)
@@ -876,19 +814,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 ApplyBar.CustomColorSwatch = function(key, g, b)
                     local rKey, gKey, bKey = key .. "R", key .. "G", key .. "B"
                     return function(subItem, entry, subMenu)
-                        if entry.val ~= "custom" then
-                            return
-                        end
+                        if entry.val ~= "custom" then return end
                         ApplyBar.ItemSwatch(
                             subItem,
                             function()
-                                return spellSettings[rKey] or 1, spellSettings[gKey] or g, spellSettings[bKey] or b, 1
+                                return spellSettings[rKey] or 1,
+                                    spellSettings[gKey] or g,
+                                    spellSettings[bKey] or b,
+                                    1
                             end,
                             function(nr, ng, nb)
                                 spellSettings[rKey], spellSettings[gKey], spellSettings[bKey] = nr, ng, nb
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
                             false,
                             function()
@@ -897,9 +834,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 if not spellSettings[rKey] then
                                     spellSettings[rKey], spellSettings[gKey], spellSettings[bKey] = 1, g, b
                                 end
-                                if subMenu._refreshSelection then
-                                    subMenu._refreshSelection()
-                                end
+                                if subMenu._refreshSelection then subMenu._refreshSelection() end
                             end
                         )
                     end
@@ -912,7 +847,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             write = function(tbl, value)
                                 tbl[key] = value
                                 if value == "custom" then
-                                    tbl[rKey], tbl[gKey], tbl[bKey] = spellSettings[rKey] or 1, spellSettings[gKey] or g, spellSettings[bKey] or b
+                                    tbl[rKey], tbl[gKey], tbl[bKey] =
+                                        spellSettings[rKey] or 1,
+                                        spellSettings[gKey] or g,
+                                        spellSettings[bKey] or b
                                 else
                                     tbl[rKey], tbl[gKey], tbl[bKey] = nil, nil, nil
                                 end
@@ -928,9 +866,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- nothing. A glow reads as its menu value, a button* name moved
                 -- into cdStateGlow included. Every other key reads as stored.
                 ApplyBar.ScopeVal = function(tbl, keyName, raw)
-                    if not tbl then
-                        return nil
-                    end
+                    if not tbl then return nil end
                     local value
                     if raw then
                         value = rawget(tbl, keyName)
@@ -940,9 +876,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     if keyName == "cdStateEffect" and value and mod.CD_STATE_GLOWS[value] then
                         local mt = getmetatable(tbl)
                         local p = mt and mt.__index
-                        if type(p) == "table" and mod.CdStateHideOf(p) ~= nil then
-                            return false
-                        end
+                        if type(p) == "table" and mod.CdStateHideOf(p) ~= nil then return false end
                         return nil
                     elseif keyName == "cdStateGlow" then
                         if value == nil then
@@ -951,9 +885,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             else
                                 value = tbl.cdStateEffect
                             end
-                            if not (value and mod.CD_STATE_GLOWS[value]) then
-                                return nil
-                            end
+                            if not (value and mod.CD_STATE_GLOWS[value]) then return nil end
                         end
                         return (value and mod.CD_STATE_GLOWS[value]) or value
                     end
@@ -963,13 +895,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- apply moves a single-value glow into cdStateGlow on every table it
                 -- stamps or clears first (ns.CdStateSplitLegacy).
                 ApplyBar.TouchesCdState = function(keyList)
-                    if not keyList then
-                        return false
-                    end
+                    if not keyList then return false end
                     for _, keyName in ipairs(keyList) do
-                        if keyName == "cdStateEffect" or keyName == "cdStateGlow" then
-                            return true
-                        end
+                        if keyName == "cdStateEffect" or keyName == "cdStateGlow" then return true end
                     end
                     return false
                 end
@@ -977,9 +905,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- given spec profile. The DEFAULT buffs bar owns every buff-store entry not claimed by another buff bar (Blizzard-tracked buffs aren't in assignedSpells).
                 ApplyBar.ForEachMemberEntry = function(profileTbl, barSpellData, func)
                     local familyStore = profileTbl and profileTbl[famKey]
-                    if not familyStore then
-                        return
-                    end
+                    if not familyStore then return end
                     if barId == "buffs" then
                         local claimed = {}
                         local bsAll = profileTbl.barSpells
@@ -999,22 +925,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         -- bar's entry reads as unclaimed and gets wiped.
                                         local cdID2 = mod.CdClaimMarkerToCdID
                                             and mod.CdClaimMarkerToCdID(memberId)
-                                        if cdID2 then
-                                            claimed["c" .. cdID2] = true
-                                        end
+                                        if cdID2 then claimed["c" .. cdID2] = true end
                                     end
                                 end
                                 -- Also exclude HOSTED buffs (on cd/util bars): removed from Apply-to-Bar,
                                 -- so a default-buffs-bar apply must not treat their buff-store entry as unclaimed and wipe it.
-                                ApplyBar.ForEachHostedKey(b2, function(hkey)
-                                    claimed[hkey] = true
-                                end)
+                                ApplyBar.ForEachHostedKey(b2, function(hkey) claimed[hkey] = true end)
                             end
                         end
                         for memberId, entry in pairs(familyStore) do
-                            if type(entry) == "table" and not claimed[memberId] then
-                                func(memberId, entry)
-                            end
+                            if type(entry) == "table" and not claimed[memberId] then func(memberId, entry) end
                         end
                     elseif barSpellData and type(barSpellData.assignedSpells) == "table" then
                         -- Hosted buffs are excluded from Apply-to-Bar: never treat one as a
@@ -1023,9 +943,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         for _, memberId in ipairs(barSpellData.assignedSpells) do
                             if not (hosted and hosted[memberId]) then
                                 local entry = familyStore[memberId]
-                                if type(entry) == "table" then
-                                    func(memberId, entry)
-                                end
+                                if type(entry) == "table" then func(memberId, entry) end
                             end
                         end
                     end
@@ -1034,42 +952,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Zero-cost feature gates: a bar-tier write can enable features
                 -- the per-spell setters normally arm -- flip the same flags.
                 ApplyBar.FlipSessionGates = function(tbl)
-                    if not tbl then
-                        return
-                    end
-                    if tbl.reverseSwipe then
-                        mod._cdmAnyReverseSwipe = true
-                    end
-                    if tbl.hideCDSwipe then
-                        mod._cdmAnyHideCDSwipe = true
-                    end
-                    if (tonumber(tbl.thresholdSeconds) or 0) > 0 then
-                        mod._cdmAnyThresholdText = true
-                    end
-                    if tbl.maxStacksGlow and tbl.maxStacksGlow > 0 then
-                        mod._cdmAnyMaxStacksGlow = true
-                    end
-                    if tbl.desatNotActive then
-                        mod._cdmAnyDesatNotActive = true
-                    end
-                    if tbl.noDesatOnCD then
-                        mod._cdmAnyNoDesatOnCD = true
-                    end
-                    if tbl.noResourceTint then
-                        mod._cdmAnyNoResourceTint = true
-                    end
-                    if tbl.chargeHideCdText then
-                        mod._cdmAnyChargeHideCdText = true
-                    end
-                    if tbl.hideChargeText then
-                        mod._cdmAnyHideChargeText = true
-                    end
-                    if tbl.suppressGCD then
-                        mod._cdmAnySuppressGcd = true
-                    end
-                    if tbl.chargeHideSwipe or tbl.hideRechargeEdge then
-                        mod._cdmAnyChargeStyle = true
-                    end
+                    if not tbl then return end
+                    if tbl.reverseSwipe then mod._cdmAnyReverseSwipe = true end
+                    if tbl.hideCDSwipe then mod._cdmAnyHideCDSwipe = true end
+                    if (tonumber(tbl.thresholdSeconds) or 0) > 0 then mod._cdmAnyThresholdText = true end
+                    if tbl.maxStacksGlow and tbl.maxStacksGlow > 0 then mod._cdmAnyMaxStacksGlow = true end
+                    if tbl.desatNotActive then mod._cdmAnyDesatNotActive = true end
+                    if tbl.noDesatOnCD then mod._cdmAnyNoDesatOnCD = true end
+                    if tbl.noResourceTint then mod._cdmAnyNoResourceTint = true end
+                    if tbl.chargeHideCdText then mod._cdmAnyChargeHideCdText = true end
+                    if tbl.hideChargeText then mod._cdmAnyHideChargeText = true end
+                    if tbl.suppressGCD then mod._cdmAnySuppressGcd = true end
+                    if tbl.chargeHideSwipe or tbl.hideRechargeEdge then mod._cdmAnyChargeStyle = true end
                     if tbl.cdReadySoundKey and tbl.cdReadySoundKey ~= "none" then
                         mod._cdmAnyCdReadySound = true
                     end
@@ -1091,9 +985,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local familyStore = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore(barId)
                     if familyStore then
                         for _, entry in pairs(familyStore) do
-                            if type(entry) == "table" and hit(entry) then
-                                return true
-                            end
+                            if type(entry) == "table" and hit(entry) then return true end
                         end
                     end
                     local checkBtn = mod.ECME
@@ -1103,13 +995,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local barsList = checkBtn and checkBtn.bars
                     if barsList then
                         for _, b2 in ipairs(barsList) do
-                            if hit(b2.barSpellSettings) then
-                                return true
-                            end
+                            if hit(b2.barSpellSettings) then return true end
                             local bsd = mod.GetBarSpellData and mod.GetBarSpellData(b2.key)
-                            if bsd and hit(bsd.barSettings) then
-                                return true
-                            end
+                            if bsd and hit(bsd.barSettings) then return true end
                         end
                     end
                     return false
@@ -1162,13 +1050,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Hosted buffs keep their entries in the BUFF family store whatever family the host bar belongs to.
                 ApplyBar.hostedFamKey = mod.SettingsFamilyKey("buffs")
                 ApplyBar.TouchesHosted = function(keyList)
-                    if not keyList or #keyList == 0 then
-                        return false
-                    end
+                    if not keyList or #keyList == 0 then return false end
                     for _, keyName in ipairs(keyList) do
-                        if not ApplyBar.HOSTED_KEYS[keyName] then
-                            return false
-                        end
+                        if not ApplyBar.HOSTED_KEYS[keyName] then return false end
                     end
                     return true
                 end
@@ -1186,9 +1070,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local injected = (type(sid) == "number" and sid < 0)
                         or (mod._myRacialsSet and mod._myRacialsSet[sid])
                         or (barSpellData.customSpellIDs and barSpellData.customSpellIDs[sid])
-                    if not injected then
-                        return false
-                    end
+                    if not injected then return false end
                     return not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid))
                 end
                 ApplyBar.ForEachHostedKey = function(barSpellData, func)
@@ -1201,9 +1083,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     if type(barSpellData.assignedSpells) == "table" and mod.CdClaimMarkerToCdID then
                         for _, memberId in ipairs(barSpellData.assignedSpells) do
                             local cdID = mod.CdClaimMarkerToCdID(memberId)
-                            if cdID then
-                                func("c" .. cdID)
-                            end
+                            if cdID then func("c" .. cdID) end
                         end
                     end
                 end
@@ -1222,9 +1102,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 mod.GetSpellSettingsStoreForProf
                                 and mod.GetSpellSettingsStoreForProf(profileTbl, ApplyBar.hostedFamKey, true)
                             )
-                        if not familyStore then
-                            return
-                        end
+                        if not familyStore then return end
                         local entry, fresh = familyStore[hkey], false
                         if not entry then
                             entry = {}
@@ -1236,9 +1114,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- drop blocking-false values the apply never touched, and the un-stamp
                         -- walks `keys` too, so it could not put them back.
                         for _, keyName in ipairs(keyList) do
-                            if rawget(entry, keyName) == false then
-                                entry[keyName] = nil
-                            end
+                            if rawget(entry, keyName) == false then entry[keyName] = nil end
                         end
                         if next(entry) == nil then
                             familyStore[hkey] = nil
@@ -1248,35 +1124,19 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     end)
                     -- A newly minted "c"..cooldownID entry stays invisible to the runtime until
                     -- the buff-family cd-key gate flips, the same call the menu's EnsureSS makes.
-                    if mintedCdKey and mod.MarkBuffFamHasCdKey then
-                        mod.MarkBuffFamHasCdKey()
-                    end
+                    if mintedCdKey and mod.MarkBuffFamHasCdKey then mod.MarkBuffFamHasCdKey() end
                 end
                 ApplyBar.StampMemberCas = function(barSpellData, applyWrite, value, keyList)
-                    if not (barSpellData and type(barSpellData.assignedSpells) == "table") then
-                        return
-                    end
-                    if not (mod.GetCustomActiveState and mod.ResolveCustomActiveKey) then
-                        return
-                    end
+                    if not (barSpellData and type(barSpellData.assignedSpells) == "table") then return end
+                    if not (mod.GetCustomActiveState and mod.ResolveCustomActiveKey) then return end
                     -- cas semantics: nil = no cd-state effect (PresetHasCdState checks effect
                     -- presence); explicit blocking-false is a tier/per-trinket-exclusion concept -- strip it from stamps. Threshold Text keys share the same cas semantics.
                     local function StripFalse(e)
-                        if e.cdStateEffect == false then
-                            e.cdStateEffect = nil
-                        end
-                        if e.cdStateGlow == false then
-                            e.cdStateGlow = nil
-                        end
-                        if e.thresholdSeconds == false then
-                            e.thresholdSeconds = nil
-                        end
-                        if e.thresholdDecimals == false then
-                            e.thresholdDecimals = nil
-                        end
-                        if e.thresholdColorEnabled == false then
-                            e.thresholdColorEnabled = nil
-                        end
+                        if e.cdStateEffect == false then e.cdStateEffect = nil end
+                        if e.cdStateGlow == false then e.cdStateGlow = nil end
+                        if e.thresholdSeconds == false then e.thresholdSeconds = nil end
+                        if e.thresholdDecimals == false then e.thresholdDecimals = nil end
+                        if e.thresholdColorEnabled == false then e.thresholdColorEnabled = nil end
                     end
                     for _, memberId in ipairs(barSpellData.assignedSpells) do
                         if ApplyBar.IsInjectedMember(barSpellData, memberId) then
@@ -1321,9 +1181,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- whose own value for a touched key differs -- equal values cost zero and don't count. Drives the "overwrite?" confirm popup.
                 ApplyBar.CountApplyOverwrites = function(keyList, applyWrite, value, everySpec)
                     keyList = keyList or {}
-                    if #keyList == 0 or not applyWrite then
-                        return 0
-                    end
+                    if #keyList == 0 or not applyWrite then return 0 end
                     -- Simulate the write to learn the concrete per-key values.
                     local temp = {}
                     applyWrite(temp, value)
@@ -1351,13 +1209,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local own = ApplyBar.ScopeVal(t, keyName, raw)
                         if own == nil and keyName == "cdStateGlowStyle" then
                             local g = rawget(t, "cdStateGlow")
-                            if g == nil then
-                                g = rawget(t, "cdStateEffect")
-                            end
+                            if g == nil then g = rawget(t, "cdStateEffect") end
                             local cg = g and mod.CD_STATE_GLOWS[g]
-                            if cg and cg ~= g then
-                                own = 3
-                            end
+                            if cg and cg ~= g then own = 3 end
                         end
                         return own
                     end
@@ -1366,19 +1220,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             local own = ownOf(e, keyName, true)
                             local new = temp[keyName]
                             -- cas stamping normalizes the blocking-false away.
-                            if isCas and CAS_FALSE_STRIPPED[keyName] and new == false then
-                                new = nil
-                            end
-                            if own ~= nil and own ~= new then
-                                return true
-                            end
+                            if isCas and CAS_FALSE_STRIPPED[keyName] and new == false then new = nil end
+                            if own ~= nil and own ~= new then return true end
                         end
                         return false
                     end
                     local function sweep(profileTbl)
-                        if type(profileTbl) ~= "table" then
-                            return
-                        end
+                        if type(profileTbl) ~= "table" then return end
                         local barSpellData = profileTbl.barSpells and profileTbl.barSpells[barId]
                         if everySpec and barSpellData and type(barSpellData.barSettings) == "table" then
                             for _, keyName in ipairs(keyList) do
@@ -1390,9 +1238,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                         end
                         ApplyBar.ForEachMemberEntry(profileTbl, barSpellData, function(_, e)
-                            if entryLoses(e, false) then
-                                count = count + 1
-                            end
+                            if entryLoses(e, false) then count = count + 1 end
                         end)
                         if
                             touchesCas
@@ -1406,9 +1252,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- Trinket slots resolve to the EQUIPPED item's own entry
                                     -- (the values the stamp will clear); the slot entry is the bar-level stamp itself (analogous to the tier) and is not counted.
                                     local e = mod.GetCustomActiveState(mod.ResolveCustomActiveKey(memberId))
-                                    if e and entryLoses(e, true) then
-                                        count = count + 1
-                                    end
+                                    if e and entryLoses(e, true) then count = count + 1 end
                                 end
                             end
                         end
@@ -1435,9 +1279,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     else
                         local specKeyA = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
                         local profileTbl = specStore and specKeyA and specStore[specKeyA]
-                        if profileTbl then
-                            sweep(profileTbl)
-                        end
+                        if profileTbl then sweep(profileTbl) end
                     end
                     return count
                 end
@@ -1446,9 +1288,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- overrides from the bar's member spells, so the apply visibly takes effect
                 -- everywhere. allSpecs writes the profile-level bd tier (which specs with no CDM data yet inherit) and sweeps every spec's spec-tier + overrides.
                 ApplyBar.RunBarApply = function(applyKeys, applyWrite, value, everySpec)
-                    if not applyWrite then
-                        return
-                    end
+                    if not applyWrite then return end
                     local keyList = applyKeys or {}
                     -- Resolve the value ONCE, before anything below clears a thing. A payload
                     -- writer (custom colour, Threshold Seconds) reads the source spell's own keys
@@ -1461,9 +1301,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- the pair it leaves alone keeps its look.
                     local splitCd = ApplyBar.TouchesCdState(keyList)
                     local function stamp(tbl)
-                        if splitCd then
-                            mod.CdStateSplitLegacy(tbl)
-                        end
+                        if splitCd then mod.CdStateSplitLegacy(tbl) end
                         for _, keyName in ipairs(keyList) do
                             tbl[keyName] = temp[keyName]
                         end
@@ -1477,9 +1315,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     end
                     local touchesHosted = ApplyBar.TouchesHosted(keyList)
                     local function sweepProf(profileTbl)
-                        if type(profileTbl) ~= "table" then
-                            return
-                        end
+                        if type(profileTbl) ~= "table" then return end
                         -- Sweeps can delete emptied member entries and the per-spec tier: retire memoized resolution results.
                         mod._cdmResGen = (mod._cdmResGen or 0) + 1
                         local barSpellData = profileTbl.barSpells and profileTbl.barSpells[barId]
@@ -1492,9 +1328,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             for _, keyName in ipairs(keyList) do
                                 barSpellData.barSettings[keyName] = nil
                             end
-                            if next(barSpellData.barSettings) == nil then
-                                barSpellData.barSettings = nil
-                            end
+                            if next(barSpellData.barSettings) == nil then barSpellData.barSettings = nil end
                         end
                         -- The bar tier a member entry of this spec renders over: a split
                         -- reads the entry through it, as the icon does.
@@ -1513,22 +1347,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                             if next(e) == nil then
                                 local familyStore = profileTbl[famKey]
-                                if familyStore then
-                                    familyStore[memberId] = nil
-                                end
+                                if familyStore then familyStore[memberId] = nil end
                             end
                         end)
-                        if touchesCas then
-                            ApplyBar.StampMemberCas(barSpellData, stamp, value, keyList)
-                        end
+                        if touchesCas then ApplyBar.StampMemberCas(barSpellData, stamp, value, keyList) end
                         if touchesHosted then
                             ApplyBar.StampHostedBuffs(profileTbl, barSpellData, stamp, value, keyList)
                         end
                     end
                     if everySpec then
-                        if not selectedBar then
-                            return
-                        end
+                        if not selectedBar then return end
                         local abs = selectedBar.barSpellSettings
                         if not abs then
                             abs = {}
@@ -1575,35 +1403,26 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local specStore = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
                         local specKeyA = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
                         local profileTbl = specStore and specKeyA and specStore[specKeyA]
-                        if profileTbl then
-                            sweepProf(profileTbl)
-                        end
+                        if profileTbl then sweepProf(profileTbl) end
                     end
                     -- The open menu's view keeps reading through the (possibly freshly created) tier chain.
                     mod.ChainSettings(spellSettings, mod.GetBarTierSettings(spellData, barId))
-                    if touchesCas and mod.FakeActive_Rearm then
-                        mod.FakeActive_Rearm()
-                    end
-                    if mod.RefreshCDMIconAppearance then
-                        mod.RefreshCDMIconAppearance(barId)
-                    end
-                    if mod.QueueReanchor then
-                        mod.QueueReanchor()
-                    end
+                    if touchesCas and mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                    if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                    if mod.QueueReanchor then mod.QueueReanchor() end
                 end
 
                 -- True when a BAR tier drives this setting -- "Apply to Bar" (this spec) or
                 -- "Apply to Bar (All Specs)" holds a value for any of these keys. A blocking
                 -- false counts (bar-spec "= Default" apply). Exclusion is per-spell now (SpellHasOwn), so there's no spec-level carve-out here: this only answers "does the bar drive this setting".
                 ApplyBar.KeysBarApplied = function(keyList)
-                    if not keyList then
-                        return false
-                    end
+                    if not keyList then return false end
                     local bs = spellData.barSettings
                     local abs = selectedBar and selectedBar.barSpellSettings
                     for _, keyName in ipairs(keyList) do
                         if
-                            (bs and ApplyBar.ScopeVal(bs, keyName, true) ~= nil) or (abs and ApplyBar.ScopeVal(abs, keyName) ~= nil)
+                            (bs and ApplyBar.ScopeVal(bs, keyName, true) ~= nil)
+                            or (abs and ApplyBar.ScopeVal(abs, keyName) ~= nil)
                         then
                             return true
                         end
@@ -1615,13 +1434,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- per-spell override in THIS spec's store) -- the "excluded from the bar"
                 -- state, having broken out of the bar apply. Inherently per spell AND spec (store is the active spec's profile).
                 ApplyBar.SpellHasOwn = function(keyList)
-                    if not (keyList and spellSettings) then
-                        return false
-                    end
+                    if not (keyList and spellSettings) then return false end
                     for _, keyName in ipairs(keyList) do
-                        if ApplyBar.ScopeVal(spellSettings, keyName, true) ~= nil then
-                            return true
-                        end
+                        if ApplyBar.ScopeVal(spellSettings, keyName, true) ~= nil then return true end
                         -- An own hide or None that shadows a single-value glow the
                         -- bar tiers hold is the spell's own "no glow": it reads as
                         -- excluded from the bar's glow, and Include rejoins it.
@@ -1633,9 +1448,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         then
                             local mt = getmetatable(spellSettings)
                             local p = mt and mt.__index
-                            if type(p) == "table" and mod.CdStateGlowOf(p) ~= nil then
-                                return true
-                            end
+                            if type(p) == "table" and mod.CdStateGlowOf(p) ~= nil then return true end
                         end
                     end
                     return false
@@ -1644,18 +1457,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Include This Spell: drop this spell's own value for these keys so it
                 -- rejoins the bar apply (per spell+spec; caller does the UI refresh). Shared by the b3 button and by Apply to Bar/All Specs on an already-excluded spell (same thing).
                 ApplyBar.IncludeSpell = function(keyList)
-                    if not (keyList and spellSettings) then
-                        return
-                    end
+                    if not (keyList and spellSettings) then return end
                     -- A single-value glow on the spell moves to cdStateGlow first, so
                     -- the half of the pair these keys leave keeps its look.
                     local glowKeys = false
                     if ApplyBar.TouchesCdState(keyList) then
                         mod.CdStateSplitLegacy(spellSettings)
                         for _, keyName in ipairs(keyList) do
-                            if keyName == "cdStateGlow" then
-                                glowKeys = true
-                            end
+                            if keyName == "cdStateGlow" then glowKeys = true end
                         end
                     end
                     for _, keyName in ipairs(keyList) do
@@ -1669,9 +1478,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     if glowKeys and tier and ApplyBar.MenuGlow(spellSettings) ~= ApplyBar.MenuGlow(tier) then
                         local t = tier
                         for _ = 1, 2 do
-                            if type(t) ~= "table" or mod.CdStateSplitLegacy(t) then
-                                break
-                            end
+                            if type(t) ~= "table" or mod.CdStateSplitLegacy(t) then break end
                             local mt = getmetatable(t)
                             t = mt and mt.__index
                         end
@@ -1689,9 +1496,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     else
                         t = spellData.barSettings
                     end
-                    if not t then
-                        return
-                    end
+                    if not t then return end
                     -- Cooldown State Effect: removing the glow takes a single-value glow
                     -- too (moved to cdStateGlow first). That glow is no hide apply, so
                     -- removing the hide leaves it, unless it blocks a hide below: then
@@ -1715,9 +1520,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local removed = {}
                     local touchesCas = false
                     for _, keyName in ipairs(keyList) do
-                        if ApplyBar.CAS_KEYS[keyName] then
-                            touchesCas = true
-                        end
+                        if ApplyBar.CAS_KEYS[keyName] then touchesCas = true end
                         local own = rawget(t, keyName)
                         if not (keyName == "cdStateEffect" and own and mod.CD_STATE_GLOWS[own]) then
                             removed[keyName] = own
@@ -1727,9 +1530,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local touchesHosted = ApplyBar.TouchesHosted(keyList)
                     if next(t) == nil then
                         if everySpec then
-                            if selectedBar then
-                                selectedBar.barSpellSettings = nil
-                            end
+                            if selectedBar then selectedBar.barSpellSettings = nil end
                         else
                             spellData.barSettings = nil
                         end
@@ -1741,13 +1542,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- trinket item entry may be CHAINED to its slot entry, and an inherited
                         -- value must not read as an own stamp (clearing own nil is a no-op, but the equality test has to see own values only).
                         local function unstampEntry(e)
-                            if not e then
-                                return
-                            end
+                            if not e then return end
                             -- A stamped single-value glow is compared as the cdStateGlow it moves to.
-                            if glowKeys then
-                                mod.CdStateSplitLegacy(e)
-                            end
+                            if glowKeys then mod.CdStateSplitLegacy(e) end
                             for _, keyName in ipairs(keyList) do
                                 local rv = removed[keyName]
                                 -- cas never stores the blocking-false (cdStateEffect, cdStateGlow + Threshold Text keys).
@@ -1763,9 +1560,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 then
                                     rv = nil
                                 end
-                                if rv ~= nil and rawget(e, keyName) == rv then
-                                    e[keyName] = nil
-                                end
+                                if rv ~= nil and rawget(e, keyName) == rv then e[keyName] = nil end
                             end
                         end
                         local function unstamp(profileTbl, barSpellData)
@@ -1774,14 +1569,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 if familyStore then
                                     ApplyBar.ForEachHostedKey(barSpellData, function(hkey)
                                         local entry = familyStore[hkey]
-                                        if not entry then
-                                            return
-                                        end
+                                        if not entry then return end
                                         unstampEntry(entry)
                                         -- Mirror the stamp: an entry the un-stamp empties is dropped, so it cannot linger and defeat the resolver's empty-store shortcut.
-                                        if next(entry) == nil then
-                                            familyStore[hkey] = nil
-                                        end
+                                        if next(entry) == nil then familyStore[hkey] = nil end
                                     end)
                                 end
                             end
@@ -1799,9 +1590,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if itemId then
                                             local itemE = mod.GetCustomActiveState(-itemId)
                                             -- Its split reads it over the slot entry, as the icon does.
-                                            if itemE and glowKeys then
-                                                mod.ChainSettings(itemE, slotE)
-                                            end
+                                            if itemE and glowKeys then mod.ChainSettings(itemE, slotE) end
                                             unstampEntry(itemE)
                                         end
                                     else
@@ -1817,7 +1606,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             if specStore then
                                 for _, profileTbl in pairs(specStore) do
                                     if type(profileTbl) == "table" then
-                                        unstamp(profileTbl, profileTbl.barSpells and profileTbl.barSpells[barId])
+                                        unstamp(
+                                            profileTbl,
+                                            profileTbl.barSpells and profileTbl.barSpells[barId]
+                                        )
                                     end
                                 end
                             end
@@ -1828,25 +1620,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 unstamp(profileTbl, profileTbl.barSpells and profileTbl.barSpells[barId])
                             end
                         end
-                        if mod.FakeActive_Rearm then
-                            mod.FakeActive_Rearm()
-                        end
+                        if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                     end
                     mod.ChainSettings(spellSettings, mod.GetBarTierSettings(spellData, barId))
-                    if mod.RefreshCDMIconAppearance then
-                        mod.RefreshCDMIconAppearance(barId)
-                    end
-                    if mod.QueueReanchor then
-                        mod.QueueReanchor()
-                    end
+                    if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                    if mod.QueueReanchor then mod.QueueReanchor() end
                 end
 
                 -- The scope flyout itself: a vertical list (Apply to This Spell / Apply to
                 -- Bar / Apply to Bar (All Specs) / conditional Exclude this spec) docked to the right of the hovered flyout item. One shared frame per menu; context swapped on each hover.
                 ApplyBar.GetApplyStrip = function()
-                    if dropMenu._applyStrip then
-                        return dropMenu._applyStrip
-                    end
+                    if dropMenu._applyStrip then return dropMenu._applyStrip end
                     -- Styled exactly like a subnav flyout: rows with a left-aligned label and the same white hover/selected overlay.
                     local SUBW = 180
                     local s = CreateFrame("Frame", nil, dropMenu)
@@ -1895,12 +1679,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             l:SetTextColor(1, 1, 1, 1)
                             highlight:SetAlpha(1)
                         end)
-                        widget:SetScript("OnLeave", function()
-                            widget._rest()
-                        end)
-                        widget._setText = function(t)
-                            l:SetText(t)
-                        end
+                        widget:SetScript("OnLeave", function() widget._rest() end)
+                        widget._setText = function(t) l:SetText(t) end
                         return widget
                     end
                     local thisBtn = MakeScopeItem(CludesUI.L("Apply to This Spell"))
@@ -1926,9 +1706,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         excludeBtn._rest()
                         excludeBtn._hl:SetAlpha(1)
                     end)
-                    excludeBtn:SetScript("OnLeave", function()
-                        excludeBtn._rest()
-                    end)
+                    excludeBtn:SetScript("OnLeave", function() excludeBtn._rest() end)
                     -- (Re)stack the visible rows top-to-bottom and size the frame.
                     -- Row 1 is "Apply to This Spell" normally, but a bar apply
                     -- REPLACES it with "Exclude / Include This Spell" (b3._shown) --
@@ -1959,7 +1737,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- the Exclude/Include row is re-captioned, so the swapped
                         -- text is measured; all four rows count, so swapping row 1
                         -- never resizes the strip under the cursor.
-                        local fitW = FitMenuWidth({ thisBtn._label, b1._label, b2._label, excludeBtn._label }, SUBW)
+                        local fitW =
+                            FitMenuWidth({ thisBtn._label, b1._label, b2._label, excludeBtn._label }, SUBW)
                         s:SetWidth(fitW)
                         sInner:SetWidth(fitW)
                     end
@@ -1976,18 +1755,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             context.write(temp, context.valueOf())
                         end
                         local function holds(tier, raw)
-                            if not tier then
-                                return false
-                            end
+                            if not tier then return false end
                             local anyOwn, match = false, true
                             for _, keyName in ipairs(keyList) do
                                 local own = ApplyBar.ScopeVal(tier, keyName, raw)
-                                if own ~= nil then
-                                    anyOwn = true
-                                end
-                                if own ~= temp[keyName] then
-                                    match = false
-                                end
+                                if own ~= nil then anyOwn = true end
+                                if own ~= temp[keyName] then match = false end
                             end
                             return anyOwn and match
                         end
@@ -2004,7 +1777,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             thisBtn._active = holds(spellSettings, true)
                         end
                         b1._active = (not excluded) and holds(spellData.barSettings, true)
-                        b2._active = (not excluded) and holds(selectedBar and selectedBar.barSpellSettings, false)
+                        b2._active = not excluded
+                            and holds(selectedBar and selectedBar.barSpellSettings, false)
                         thisBtn._rest()
                         b1._rest()
                         b2._rest()
@@ -2030,9 +1804,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     s._flashScopeFor = function()
                         local context = s._ctx
                         local keyList = context and context.keys
-                        if not keyList then
-                            return
-                        end
+                        if not keyList then return end
                         local abs = selectedBar and selectedBar.barSpellSettings
                         local allActive = false
                         if abs then
@@ -2044,22 +1816,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                         end
                         local target = allActive and b2 or b1
-                        if CludesUI.PlayWhiteFlash then
-                            CludesUI.PlayWhiteFlash(target)
-                        end
+                        if CludesUI.PlayWhiteFlash then CludesUI.PlayWhiteFlash(target) end
                     end
                     local function DoApply(everySpec)
                         local context = s._ctx
-                        if not context then
-                            return
-                        end
+                        if not context then return end
                         local value = context.valueOf and context.valueOf()
                         local keyList = context.keys or {}
                         -- Simulate the write once: drives the rejoin match test, the toggle-off check, and the replace warning below.
                         local temp = {}
-                        if context.write then
-                            context.write(temp, value)
-                        end
+                        if context.write then context.write(temp, value) end
                         local scopeT
                         if everySpec then
                             scopeT = selectedBar and selectedBar.barSpellSettings
@@ -2069,15 +1835,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local scopeActive, valuesMatch = false, true
                         for _, keyName in ipairs(keyList) do
                             local own
-                            if scopeT then
-                                own = ApplyBar.ScopeVal(scopeT, keyName, not everySpec)
-                            end
-                            if own ~= nil then
-                                scopeActive = true
-                            end
-                            if own ~= temp[keyName] then
-                                valuesMatch = false
-                            end
+                            if scopeT then own = ApplyBar.ScopeVal(scopeT, keyName, not everySpec) end
+                            if own ~= nil then scopeActive = true end
+                            if own ~= temp[keyName] then valuesMatch = false end
                         end
                         -- On an EXCLUDED spell the flyout sits on the bar's own value, so
                         -- Apply to Bar/All Specs means "rejoin the bar" (same as Include This
@@ -2094,18 +1854,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             )
                         then
                             ApplyBar.IncludeSpell(keyList)
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
-                            if mod.QueueReanchor then
-                                mod.QueueReanchor()
-                            end
-                            if context.refresh then
-                                context.refresh()
-                            end
-                            if s._updateActive then
-                                s._updateActive()
-                            end
+                            if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                            if mod.QueueReanchor then mod.QueueReanchor() end
+                            if context.refresh then context.refresh() end
+                            if s._updateActive then s._updateActive() end
                             return
                         end
                         -- Toggle OFF: clicking a scope that already holds this exact value
@@ -2133,35 +1885,26 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     else
                                         own = rawget(scopeT, keyName)
                                     end
-                                    if own ~= nil then
-                                        rawset(target, keyName, own)
-                                    end
+                                    if own ~= nil then rawset(target, keyName, own) end
                                 end
                             end
                             ApplyBar.RunBarUnapply(keyList, everySpec)
-                            if context.refresh then
-                                context.refresh()
-                            end
-                            if s._updateActive then
-                                s._updateActive()
-                            end
+                            if context.refresh then context.refresh() end
+                            if s._updateActive then s._updateActive() end
                             return
                         end
                         local function go()
                             ApplyBar.RunBarApply(keyList, context.write, value, everySpec)
-                            if context.refresh then
-                                context.refresh()
-                            end
-                            if s._updateActive then
-                                s._updateActive()
-                            end
+                            if context.refresh then context.refresh() end
+                            if s._updateActive then s._updateActive() end
                         end
                         -- Confirm before anything destructive or costly: a first-time Resource
                         -- Aware glow (perf note), replacing this scope's active apply with a
                         -- different value (mutually exclusive selections un-check each other), and/or replacing existing per-icon values. One composed popup, never two in a row.
                         local needRA = context.confirmRA and not ApplyBar.AnyResourceAwareGlowSaved()
                         local replacing = scopeActive -- (values differ, else un-applied above)
-                        local overwrites = ApplyBar.CountApplyOverwrites(keyList, context.write, value, everySpec)
+                        local overwrites =
+                            ApplyBar.CountApplyOverwrites(keyList, context.write, value, everySpec)
                         if not needRA and not replacing and overwrites == 0 then
                             go()
                             return
@@ -2195,9 +1938,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     and "This replaces %d existing value(s) for this setting across your specs."
                                 or "This replaces %d existing value(s) for this setting on this bar."
                             local success, line = pcall(string.format, CludesUI.L(key), overwrites)
-                            if not success then
-                                line = string.format(key, overwrites)
-                            end
+                            if not success then line = string.format(key, overwrites) end
                             if note ~= "" then
                                 note = note .. "\n\n" .. line
                             else
@@ -2233,35 +1974,19 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- in THIS spec's store (a per-spell override = excluding this spell+spec from the bar). No dissolve, no popup -- only this one spell changes; the bar apply stays for every other spell.
                     thisBtn:SetScript("OnClick", function()
                         local context = s._ctx
-                        if not (context and context.write) then
-                            return
-                        end
+                        if not (context and context.write) then return end
                         WriteSpellOwn(context, context.valueOf and context.valueOf())
-                        if mod.RefreshCDMIconAppearance then
-                            mod.RefreshCDMIconAppearance(barId)
-                        end
-                        if mod.QueueReanchor then
-                            mod.QueueReanchor()
-                        end
-                        if context.refresh then
-                            context.refresh()
-                        end
-                        if s:IsShown() and s._updateActive then
-                            s._updateActive()
-                        end
+                        if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                        if mod.QueueReanchor then mod.QueueReanchor() end
+                        if context.refresh then context.refresh() end
+                        if s:IsShown() and s._updateActive then s._updateActive() end
                     end)
-                    b1:SetScript("OnClick", function()
-                        DoApply(false)
-                    end)
-                    b2:SetScript("OnClick", function()
-                        DoApply(true)
-                    end)
+                    b1:SetScript("OnClick", function() DoApply(false) end)
+                    b2:SetScript("OnClick", function() DoApply(true) end)
                     -- Exclude / Include This Spell (per spell+spec, via ss).
                     excludeBtn:SetScript("OnClick", function()
                         local context = s._ctx
-                        if not (context and context.write) then
-                            return
-                        end
+                        if not (context and context.write) then return end
                         local keyList = context.keys or {}
                         if ApplyBar.SpellHasOwn(keyList) then
                             -- Include: drop this spell's own value -> rejoin the bar.
@@ -2279,18 +2004,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                             WriteSpellOwn(context, value)
                         end
-                        if mod.RefreshCDMIconAppearance then
-                            mod.RefreshCDMIconAppearance(barId)
-                        end
-                        if mod.QueueReanchor then
-                            mod.QueueReanchor()
-                        end
-                        if context.refresh then
-                            context.refresh()
-                        end
-                        if s._updateActive then
-                            s._updateActive()
-                        end
+                        if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                        if mod.QueueReanchor then mod.QueueReanchor() end
+                        if context.refresh then context.refresh() end
+                        if s._updateActive then s._updateActive() end
                     end)
                     Relayout()
                     s:Hide()
@@ -2302,9 +2019,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local s = ApplyBar.GetApplyStrip()
                     s._ctx = context
                     s._ownerItem = itemBtn
-                    if s._updateActive then
-                        s._updateActive()
-                    end
+                    if s._updateActive then s._updateActive() end
                     s:ClearAllPoints()
                     -- Same 2px offset as the subnav flyouts, top-aligned to the hovered item.
                     -- Like a subnav, the strip does NOT hide on hover-out (crossing the gap
@@ -2360,9 +2075,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 ApplyBar.MenuGlow = function(source, preset)
                     local g = mod.CdStateGlowOf(source)
                     g = g and mod.CD_STATE_GLOWS[g]
-                    if preset and g == "pixelGlowReadyUsable" then
-                        return "pixelGlowReady"
-                    end
+                    if preset and g == "pixelGlowReadyUsable" then return "pixelGlowReady" end
                     return g
                 end
                 -- itemState for a Cooldown State Effect flyout: greys a glow that can
@@ -2459,9 +2172,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         val = value,
                         label = labelText,
                         tooltip = tooltip,
-                        dynamicLabel = function()
-                            return "+ " .. CludesUI.L(labelText)
-                        end,
+                        dynamicLabel = function() return "+ " .. CludesUI.L(labelText) end,
                         choiceGet = m.get,
                         choiceSet = m.set,
                         applyKeys = ApplyBar.CD_GLOW_KEYS,
@@ -2476,9 +2187,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 ApplyBar.SsGlowSet = function(value)
                     local function commit()
                         mod.CdStateWriteGlow(EnsureStored(), value)
-                        if mod.RefreshCDMIconAppearance then
-                            mod.RefreshCDMIconAppearance(barId)
-                        end
+                        if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                     end
                     if value == "pixelGlowReadyUsable" and not ApplyBar.AnyResourceAwareGlowSaved() then
                         dropMenu:Hide()
@@ -2494,14 +2203,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     commit()
                 end
                 local ssGlowMenu = {
-                    get = function()
-                        return ApplyBar.MenuGlow(spellSettings)
-                    end,
+                    get = function() return ApplyBar.MenuGlow(spellSettings) end,
                     set = ApplyBar.SsGlowSet,
                     write = ApplyBar.CdGlowWrite(spellSettings),
-                    view = function(t)
-                        return ApplyBar.MenuGlow(t)
-                    end,
+                    view = function(t) return ApplyBar.MenuGlow(t) end,
                 }
                 local CD_STATE_ITEMS = {
                     { val = nil, label = "None" },
@@ -2517,41 +2222,31 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         charge = "suppressGCD",
                         label = "+ Suppress GCD",
                         applyKeys = { "suppressGCD" },
-                        applyWrite = function(tbl, value)
-                            tbl.suppressGCD = value and true or false
-                        end,
+                        applyWrite = function(tbl, value) tbl.suppressGCD = value and true or false end,
                     },
                     {
                         charge = "hideChargeText",
                         label = "+ Hide Charge Text",
                         applyKeys = { "hideChargeText" },
-                        applyWrite = function(tbl, value)
-                            tbl.hideChargeText = value and true or false
-                        end,
+                        applyWrite = function(tbl, value) tbl.hideChargeText = value and true or false end,
                     },
                     {
                         charge = "chargeHideSwipe",
                         label = "+ Hide Swipe (Charges)",
                         applyKeys = { "chargeHideSwipe" },
-                        applyWrite = function(tbl, value)
-                            tbl.chargeHideSwipe = value and true or false
-                        end,
+                        applyWrite = function(tbl, value) tbl.chargeHideSwipe = value and true or false end,
                     },
                     {
                         charge = "hideRechargeEdge",
                         label = "+ Hide Recharge Edge",
                         applyKeys = { "hideRechargeEdge" },
-                        applyWrite = function(tbl, value)
-                            tbl.hideRechargeEdge = value and true or false
-                        end,
+                        applyWrite = function(tbl, value) tbl.hideRechargeEdge = value and true or false end,
                     },
                     {
                         charge = "chargeHideCdText",
                         label = "+ Hide Duration (Charges > 0)",
                         applyKeys = { "chargeHideCdText" },
-                        applyWrite = function(tbl, value)
-                            tbl.chargeHideCdText = value and true or false
-                        end,
+                        applyWrite = function(tbl, value) tbl.chargeHideCdText = value and true or false end,
                     },
                     -- Charge reading for the two Hidden (CD Ready) modes only: they normally
                     -- treat a charge spell as ready at MAX charges (icon appears on the first
@@ -2561,9 +2256,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         charge = "chargeHideUntilSpent",
                         label = "+ Stay Hidden While Charges Remain",
                         applyKeys = { "chargeHideUntilSpent" },
-                        applyWrite = function(tbl, value)
-                            tbl.chargeHideUntilSpent = value and true or false
-                        end,
+                        applyWrite = function(tbl, value) tbl.chargeHideUntilSpent = value and true or false end,
                     },
                     -- The glow beside the hide effect: at most one, picked or cleared like
                     -- the "+" toggles above. The style is its own row below
@@ -2592,7 +2285,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         dynamicLabel = function()
                             local baseCaption = CludesUI.L("Lower Alpha (On CD)")
                             if spellSettings and spellSettings.cdStateEffect == "lowerAlphaOnCD" then
-                                local percent = math.floor(((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5)
+                                local percent =
+                                    math.floor(((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5)
                                 return percent .. "% " .. baseCaption
                             end
                             return baseCaption
@@ -2629,9 +2323,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- preset menu's values are a subset of these).
                 ApplyBar.CD_STATE_LABELS = {}
                 for _, it in ipairs(CD_STATE_ITEMS) do
-                    if it.val ~= nil then
-                        ApplyBar.CD_STATE_LABELS[it.val] = it.label
-                    end
+                    if it.val ~= nil then ApplyBar.CD_STATE_LABELS[it.val] = it.label end
                 end
                 -- Glow style picker (CDM saved numbering, every icon style), shared by
                 -- both the CD Ready and On CD glow effects.
@@ -2654,16 +2346,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 local function SetGlowWhenVisible(value)
                     EnsureStored()
                     SetOwnSetting("glowWhenVisible", value or nil)
-                    if mod.RefreshCDMIconAppearance then
-                        mod.RefreshCDMIconAppearance(barId)
-                    end
+                    if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                 end
                 local GLOW_VISIBLE_APPLY = {
                     apply = {
                         keys = { "glowWhenVisible" },
-                        write = function(tbl, value)
-                            tbl.glowWhenVisible = value or false
-                        end,
+                        write = function(tbl, value) tbl.glowWhenVisible = value or false end,
                     },
                 }
                 -- Cooldown Swipe (cd/utility spells + presets): a 3-way single-select over
@@ -2682,27 +2370,19 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     local STANCE_LABELS = {
                         inShift = {
                             "Hidden in %s (Shift Icons)",
-                            function(s)
-                                return CludesUI.Lf("Hidden in %1$s (Shift Icons)", s)
-                            end,
+                            function(s) return CludesUI.Lf("Hidden in %1$s (Shift Icons)", s) end,
                         },
                         outShift = {
                             "Hidden outside %s (Shift Icons)",
-                            function(s)
-                                return CludesUI.Lf("Hidden outside %1$s (Shift Icons)", s)
-                            end,
+                            function(s) return CludesUI.Lf("Hidden outside %1$s (Shift Icons)", s) end,
                         },
                         ["in"] = {
                             "Hidden in %s",
-                            function(s)
-                                return CludesUI.Lf("Hidden in %1$s", s)
-                            end,
+                            function(s) return CludesUI.Lf("Hidden in %1$s", s) end,
                         },
                         out = {
                             "Hidden outside %s",
-                            function(s)
-                                return CludesUI.Lf("Hidden outside %1$s", s)
-                            end,
+                            function(s) return CludesUI.Lf("Hidden outside %1$s", s) end,
                         },
                     }
                     local itemList = { { val = nil, label = "None" } }
@@ -2711,9 +2391,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         itemList[#itemList + 1] = {
                             val = mode .. ":" .. familyStore.id,
                             label = fmt[1]:format(familyStore.label),
-                            dynamicLabel = function()
-                                return fmt[2](CludesUI.L(familyStore.label))
-                            end,
+                            dynamicLabel = function() return fmt[2](CludesUI.L(familyStore.label)) end,
                         }
                     end
                     -- Shift Icons variants first, like the Cooldown State Effect list.
@@ -2773,34 +2451,27 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         end
                         -- opts.onRefresh: runs whenever the row repaints (build, every pick, a bar apply, hover-out)
-                        if options and options.onRefresh then
-                            options.onRefresh()
-                        end
+                        if options and options.onRefresh then options.onRefresh() end
                     end
                     PaintLabel()
                     -- The apply strip, when open, re-reads which scope holds the value.
                     local function PokeStrip()
                         local strip = dropMenu._applyStrip
-                        if strip and strip:IsShown() and strip._updateActive then
-                            strip._updateActive()
-                        end
+                        if strip and strip:IsShown() and strip._updateActive then strip._updateActive() end
                     end
                     -- After a pick: the row's own cue, the icons when the value
                     -- reaches them, then the strip.
                     local function Repaint(icons)
                         PaintLabel()
                         if icons then
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
-                            if mod.QueueReanchor then
-                                mod.QueueReanchor()
-                            end
+                            if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                            if mod.QueueReanchor then mod.QueueReanchor() end
                         end
                         PokeStrip()
                     end
 
-                    local arrow, highlight = ApplyBar.RowArrowAndHighlight(menuRow, RowDisabled() and 0.2 or 0.7)
+                    local arrow, highlight =
+                        ApplyBar.RowArrowAndHighlight(menuRow, RowDisabled() and 0.2 or 0.7)
 
                     local subMenu
                     -- Set by the first build: re-applies what a fresh open shows.
@@ -2809,14 +2480,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if dropMenu._openSub and dropMenu._openSub ~= subMenu and dropMenu._openSub.Hide then
                             dropMenu._openSub:Hide()
                         end
-                        if subMenu and subMenu:IsShown() then
-                            return
-                        end
+                        if subMenu and subMenu:IsShown() then return end
                         -- Built once per row; a later hover refreshes the same flyout in place.
                         if subMenu then
-                            if reshowSub then
-                                reshowSub()
-                            end
+                            if reshowSub then reshowSub() end
                             subMenu:Show()
                             dropMenu._openSub = subMenu
                             return
@@ -2870,9 +2537,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     entry.setSelected(entry.computeSelected())
                                     entry.refreshLabel()
                                     entry.updateArrow()
-                                    if itemState then
-                                        itemState(entry.frame, entry.item, subMenu)
-                                    end
+                                    if itemState then itemState(entry.frame, entry.item, subMenu) end
                                 end
                             end
                             RefitSub()
@@ -2904,9 +2569,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 -- item.dynamicLabel returns a caption composed (and
                                 -- localized) at render time, "50% Lower Alpha (On CD)".
                                 local function Recaption()
-                                    if entry.dynamicLabel then
-                                        sLbl:SetText(entry.dynamicLabel())
-                                    end
+                                    if entry.dynamicLabel then sLbl:SetText(entry.dynamicLabel()) end
                                 end
                                 if entry.dynamicLabel then
                                     Recaption()
@@ -2943,9 +2606,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end
                                     -- None/default is stored as a blocking false.
                                     local cv = getVal()
-                                    if cv == false then
-                                        cv = nil
-                                    end
+                                    if cv == false then cv = nil end
                                     return cv == entry.val
                                 end
 
@@ -2963,9 +2624,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     else
                                         sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                     end
-                                    if not plusLook then
-                                        sHl:SetAlpha(sel and 1 or 0)
-                                    end
+                                    if not plusLook then sHl:SetAlpha(sel and 1 or 0) end
                                 end
                                 ShowState(SelectedNow())
 
@@ -2993,25 +2652,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- no strip to escape through, so it is never bar applied
                                     -- (else its toggles would lock).
                                     if
-                                        hostedBuffNoApply or not (applyKeys and ApplyBar.KeysBarApplied(applyKeys))
+                                        hostedBuffNoApply
+                                        or not (applyKeys and ApplyBar.KeysBarApplied(applyKeys))
                                     then
                                         return false
                                     end
-                                    if isToggle then
-                                        return true
-                                    end
+                                    if isToggle then return true end
                                     local barTier = mod.GetBarTierSettings
                                         and mod.GetBarTierSettings(spellData, barId)
-                                    if not barTier then
-                                        return false
-                                    end
-                                    if applyView then
-                                        return applyView(barTier) == entry.val
-                                    end
+                                    if not barTier then return false end
+                                    if applyView then return applyView(barTier) == entry.val end
                                     local pk = applyKeys[1]
-                                    if not pk then
-                                        return false
-                                    end
+                                    if not pk then return false end
                                     local probe = {}
                                     applyWrite(probe, entry.val)
                                     return ApplyBar.ScopeVal(barTier, pk) == probe[pk]
@@ -3023,22 +2675,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     "Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png"
                                 )
                                 sArrow:SetAlpha(0.7)
-                                local function updateArrow()
-                                    sArrow:SetShown(canApply and itemIsBarApplied())
-                                end
+                                local function updateArrow() sArrow:SetShown(canApply and itemIsBarApplied()) end
                                 updateArrow()
                                 subItem:SetScript("OnEnter", function()
-                                    if not isSelected then
-                                        sLbl:SetTextColor(1, 1, 1, 1)
-                                    end
+                                    if not isSelected then sLbl:SetTextColor(1, 1, 1, 1) end
                                     sHl:SetAlpha(1)
                                     -- item.tooltip: the full text of a caption the flyout clips.
                                     if entry.tooltip then
                                         CludesUI.ShowWidgetTooltip(subItem, entry.tooltip)
                                     end
-                                    if not canApply then
-                                        return
-                                    end
+                                    if not canApply then return end
                                     -- While a bar apply drives a value setting, only the item
                                     -- holding the bar's value keeps the strip (the arrow row);
                                     -- the others are plain values, whatever the spell itself
@@ -3050,9 +2696,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         and ApplyBar.KeysBarApplied(applyKeys)
                                         and not itemIsBarApplied()
                                     then
-                                        if dropMenu._applyStrip then
-                                            dropMenu._applyStrip:Hide()
-                                        end
+                                        if dropMenu._applyStrip then dropMenu._applyStrip:Hide() end
                                         return
                                     end
                                     ApplyBar.ShowApplyStripFor(subItem, {
@@ -3078,9 +2722,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         -- where it is held un-applies); never read the selection
                                         -- here, or changing scope would flip an on toggle off.
                                         valueOf = function()
-                                            if isToggle then
-                                                return true
-                                            end
+                                            if isToggle then return true end
                                             return entry.val
                                         end,
                                         confirmRA = rowApply
@@ -3098,13 +2740,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     })
                                 end)
                                 subItem:SetScript("OnLeave", function()
-                                    if not isSelected then
-                                        sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                    end
+                                    if not isSelected then sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA) end
                                     sHl:SetAlpha((not plusLook and isSelected) and 1 or 0)
-                                    if entry.tooltip then
-                                        CludesUI.HideWidgetTooltip()
-                                    end
+                                    if entry.tooltip then CludesUI.HideWidgetTooltip() end
                                 end)
                                 -- A pick writes into the spell's OWN entry and keeps both the
                                 -- menu and the flyout open.
@@ -3159,9 +2797,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 subItem:SetScript("OnClick", function()
                                     -- The bar's own value is the arrow row: it is managed
                                     -- through the strip (Exclude / Include / Apply to Bar).
-                                    if itemIsBarApplied() then
-                                        return
-                                    end
+                                    if itemIsBarApplied() then return end
                                     -- While the bar drives this setting and the spell holds
                                     -- nothing of its own, picking the value the bar already
                                     -- applies changes nothing, so the strip flashes the scope
@@ -3178,9 +2814,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         local cv = getVal()
                                         if cv == entry.val then
                                             local strip = dropMenu._applyStrip
-                                            if strip and strip._flashScopeFor then
-                                                strip._flashScopeFor()
-                                            end
+                                            if strip and strip._flashScopeFor then strip._flashScopeFor() end
                                             return
                                         end
                                     end
@@ -3192,9 +2826,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- The hook may attach a dynamic caption (the Blackout percent).
                                     Recaption()
                                 end
-                                if itemState then
-                                    itemState(subItem, entry, subMenu)
-                                end
+                                if itemState then itemState(subItem, entry, subMenu) end
                                 flyoutEntries[#flyoutEntries + 1] = {
                                     frame = subItem,
                                     label = sLbl,
@@ -3264,9 +2896,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             sePh:SetTextColor(0.5, 0.5, 0.5, 0.6)
                             sePh:SetPoint("LEFT", searchBox, "LEFT", 4, 0)
                             sePh:SetText(CludesUI.L("Search..."))
-                            local function Unfocus(self)
-                                self:ClearFocus()
-                            end
+                            local function Unfocus(self) self:ClearFocus() end
                             searchBox:SetScript("OnEscapePressed", Unfocus)
                             searchBox:SetScript("OnHide", Unfocus)
 
@@ -3291,17 +2921,30 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             inset, dy = 6, 4
                                         end
                                         entry.frame:ClearAllPoints()
-                                        entry.frame:SetPoint("TOPLEFT", flyoutBody, "TOPLEFT", inset, -yy - dy)
-                                        entry.frame:SetPoint("TOPRIGHT", flyoutBody, "TOPRIGHT", -inset, -yy - dy)
+                                        entry.frame:SetPoint(
+                                            "TOPLEFT",
+                                            flyoutBody,
+                                            "TOPLEFT",
+                                            inset,
+                                            -yy - dy
+                                        )
+                                        entry.frame:SetPoint(
+                                            "TOPRIGHT",
+                                            flyoutBody,
+                                            "TOPRIGHT",
+                                            -inset,
+                                            -yy - dy
+                                        )
                                         yy = yy + (entry.isDivider and 9 or ITEM_H)
                                     end
                                 end
                                 flyoutBody:SetHeight(math.max(1, yy + 4))
                                 scrollTo(0)
                             end
-                            searchBox:SetScript("OnTextChanged", function(self)
-                                filterList(self:GetText())
-                            end)
+                            searchBox:SetScript(
+                                "OnTextChanged",
+                                function(self) filterList(self:GetText()) end
+                            )
                             filterList("")
                         elseif totalSubH > FLYOUT_MAX_H then
                             subMenu:SetSize(flyoutW, FLYOUT_MAX_H)
@@ -3319,12 +2962,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     entry.resetShown(entry.computeSelected())
                                     entry.refreshLabel()
                                     entry.updateArrow()
-                                    if itemState then
-                                        itemState(entry.frame, entry.item, subMenu)
-                                    end
-                                    if entry.frame._refreshSwatch then
-                                        entry.frame._refreshSwatch()
-                                    end
+                                    if itemState then itemState(entry.frame, entry.item, subMenu) end
+                                    if entry.frame._refreshSwatch then entry.frame._refreshSwatch() end
                                 end
                             end
                             flyoutW = SUB_BASE_W
@@ -3358,9 +2997,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         ShowSub()
                     end)
                     menuRow:SetScript("OnLeave", function()
-                        if options and options.disabledTooltip then
-                            CludesUI.HideWidgetTooltip()
-                        end
+                        if options and options.disabledTooltip then CludesUI.HideWidgetTooltip() end
                         PaintLabel()
                         highlight:SetAlpha(0)
                         -- Don't auto-close sub here. It closes when:
@@ -3382,9 +3019,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 --   get(key) effective read; set(key,v) own write (persists entry first);
                 --   clear(key) own clear (tier-blocking where applicable); refresh() post-change gate flip + apply calls.
                 local function AddThresholdTextRow(access)
-                    local function armedSeconds()
-                        return tonumber(access.get("thresholdSeconds")) or 0
-                    end
+                    local function armedSeconds() return tonumber(access.get("thresholdSeconds")) or 0 end
                     local TT_ITEMS = {
                         {
                             val = "seconds",
@@ -3397,15 +3032,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             dynamicLabel = function()
                                 local baseCaption = CludesUI.L("Threshold Seconds")
                                 local text = armedSeconds()
-                                if text > 0 then
-                                    return baseCaption .. " (" .. text .. "s)"
-                                end
+                                if text > 0 then return baseCaption .. " (" .. text .. "s)" end
                                 return baseCaption
                             end,
                             tooltip = "Seconds remaining below which Threshold Color and Threshold Decimals apply (0 = off).",
-                            toggleGet = function()
-                                return armedSeconds() > 0
-                            end,
+                            toggleGet = function() return armedSeconds() > 0 end,
                             applyKeys = { "thresholdSeconds" },
                             applyWrite = function(tbl, value)
                                 -- Push this spell's current seconds; "off" (0, or Exclude This
@@ -3418,9 +3049,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             val = "color",
                             label = "Threshold Color",
                             tooltip = "Recolor the countdown text below Threshold Seconds.",
-                            toggleGet = function()
-                                return access.get("thresholdColorEnabled") == true
-                            end,
+                            toggleGet = function() return access.get("thresholdColorEnabled") == true end,
                             toggleSet = function(value)
                                 if value then
                                     access.set("thresholdColorEnabled", true)
@@ -3459,9 +3088,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             val = "decimals",
                             label = "Threshold Decimals",
                             tooltip = "Show a 1-decimal countdown (2.7) below Threshold Seconds.",
-                            toggleGet = function()
-                                return access.get("thresholdDecimals") == true
-                            end,
+                            toggleGet = function() return access.get("thresholdDecimals") == true end,
                             toggleSet = function(value)
                                 if value then
                                     access.set("thresholdDecimals", true)
@@ -3471,65 +3098,66 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 access.refresh()
                             end,
                             applyKeys = { "thresholdDecimals" },
-                            applyWrite = function(tbl, value)
-                                tbl.thresholdDecimals = value or false
-                            end,
+                            applyWrite = function(tbl, value) tbl.thresholdDecimals = value or false end,
                         },
                     }
-                    return MakeSubnavRow("Threshold Text", TT_ITEMS, function()
-                        return nil
-                    end, function() end, function()
-                        return armedSeconds() == 0
-                            and access.get("thresholdColorEnabled") ~= true
-                            and access.get("thresholdDecimals") ~= true
-                    end, function(subItem, entry, subMenu)
-                        if entry.val == "seconds" then
-                            -- Popup flow (mirrors Lower Alpha): close the menu so only the popup shows; 0 disarms.
-                            subItem:SetScript("OnClick", function()
-                                local current = armedSeconds()
-                                dropMenu:Hide()
-                                ShowThresholdSecondsPopup(current > 0 and current or nil, function(value)
-                                    if value and value > 0 then
-                                        access.set("thresholdSeconds", value)
-                                    else
-                                        access.clear("thresholdSeconds")
-                                    end
-                                    access.refresh()
+                    return MakeSubnavRow(
+                        "Threshold Text",
+                        TT_ITEMS,
+                        function() return nil end,
+                        function() end,
+                        function()
+                            return armedSeconds() == 0
+                                and access.get("thresholdColorEnabled") ~= true
+                                and access.get("thresholdDecimals") ~= true
+                        end,
+                        function(subItem, entry, subMenu)
+                            if entry.val == "seconds" then
+                                -- Popup flow (mirrors Lower Alpha): close the menu so only the popup shows; 0 disarms.
+                                subItem:SetScript("OnClick", function()
+                                    local current = armedSeconds()
+                                    dropMenu:Hide()
+                                    ShowThresholdSecondsPopup(current > 0 and current or nil, function(value)
+                                        if value and value > 0 then
+                                            access.set("thresholdSeconds", value)
+                                        else
+                                            access.clear("thresholdSeconds")
+                                        end
+                                        access.refresh()
+                                    end)
                                 end)
-                            end)
-                        elseif entry.val == "color" then
-                            -- Inline color swatch (same shape as the Active State swipe swatch): picking a color also enables the toggle.
-                            ApplyBar.ItemSwatch(
-                                subItem,
-                                function()
-                                    return access.get("thresholdColorR") or 1,
-                                        access.get("thresholdColorG") or 0.2,
-                                        access.get("thresholdColorB") or 0.2,
-                                        1
-                                end,
-                                function(red, green, blue)
-                                    access.set("thresholdColorR", red)
-                                    access.set("thresholdColorG", green)
-                                    access.set("thresholdColorB", blue)
-                                    access.refresh()
-                                end,
-                                false,
-                                function()
-                                    access.set("thresholdColorEnabled", true)
-                                    if not access.get("thresholdColorR") then
-                                        access.set("thresholdColorR", 1)
-                                        access.set("thresholdColorG", 0.2)
-                                        access.set("thresholdColorB", 0.2)
+                            elseif entry.val == "color" then
+                                -- Inline color swatch (same shape as the Active State swipe swatch): picking a color also enables the toggle.
+                                ApplyBar.ItemSwatch(
+                                    subItem,
+                                    function()
+                                        return access.get("thresholdColorR") or 1,
+                                            access.get("thresholdColorG") or 0.2,
+                                            access.get("thresholdColorB") or 0.2,
+                                            1
+                                    end,
+                                    function(red, green, blue)
+                                        access.set("thresholdColorR", red)
+                                        access.set("thresholdColorG", green)
+                                        access.set("thresholdColorB", blue)
+                                        access.refresh()
+                                    end,
+                                    false,
+                                    function()
+                                        access.set("thresholdColorEnabled", true)
+                                        if not access.get("thresholdColorR") then
+                                            access.set("thresholdColorR", 1)
+                                            access.set("thresholdColorG", 0.2)
+                                            access.set("thresholdColorB", 0.2)
+                                        end
+                                        -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-on toggle.
+                                        if subMenu._refreshSelection then subMenu._refreshSelection() end
+                                        access.refresh()
                                     end
-                                    -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-on toggle.
-                                    if subMenu._refreshSelection then
-                                        subMenu._refreshSelection()
-                                    end
-                                    access.refresh()
-                                end
-                            )
+                                )
+                            end
                         end
-                    end)
+                    )
                 end
 
                 -- A HOSTED buff (buff placed on a CD/util bar) is a real Blizzard buff frame
@@ -3540,7 +3168,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 if isBuffBar or isHostedBuff then
                     -- Injected custom/preset buffs (cast-timer driven, identified by a stored
                     -- spellDuration) are show-on-cast only, so the Always Show Buffs/Desaturate Inactive overrides (which act on Blizzard-tracked inactive placeholders) don't apply to them.
-                    local isInjectedCustom = (spellData.spellDurations and (spellData.spellDurations[spellId] or 0) > 0)
+                    local isInjectedCustom = (
+                        spellData.spellDurations and (spellData.spellDurations[spellId] or 0) > 0
+                    )
                         or (spellData.customSpellIDs and spellData.customSpellIDs[spellId])
                         or false
 
@@ -3554,18 +3184,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             { val = "hidden", label = "Hidden" },
                             { val = "hiddenShift", label = "Hidden (Shift Icons)" },
                         }
-                        MakeSubnavRow("Visibility When Missing", MISSING_VIS_ITEMS, function()
-                            return spellSettings.hostedMissingVis
-                        end, function(value)
-                            EnsureStored()
-                            SetOwnSetting("hostedMissingVis", value)
-                            -- Re-collect so the placeholder is re-injected, skipped, or re-marked immediately.
-                            if mod.QueueReanchor then
-                                mod.QueueReanchor()
-                            end
-                        end, function()
-                            return spellSettings.hostedMissingVis == nil
-                        end)
+                        MakeSubnavRow(
+                            "Visibility When Missing",
+                            MISSING_VIS_ITEMS,
+                            function() return spellSettings.hostedMissingVis end,
+                            function(value)
+                                EnsureStored()
+                                SetOwnSetting("hostedMissingVis", value)
+                                -- Re-collect so the placeholder is re-injected, skipped, or re-marked immediately.
+                                if mod.QueueReanchor then mod.QueueReanchor() end
+                            end,
+                            function() return spellSettings.hostedMissingVis == nil end
+                        )
                     end
 
                     -- Always Show Buff heads a buff's menu: per-icon tri-state override of the bar
@@ -3591,9 +3221,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 dynamicLabel = function()
                                     local baseCaption = CludesUI.L("Also Show Below")
                                     local text = tonumber(spellSettings.missingShowBelow) or 0
-                                    if text > 0 then
-                                        return baseCaption .. " (" .. text .. "s)"
-                                    end
+                                    if text > 0 then return baseCaption .. " (" .. text .. "s)" end
                                     return baseCaption
                                 end,
                                 tooltip = "With Show When Missing, also show the buff for its last seconds. Buffs whose timers are hidden from addons in instances stay hidden there.",
@@ -3602,7 +3230,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end,
                                 applyKeys = { "missingShowBelow" },
                                 applyWrite = function(tbl, value)
-                                    local s = (value ~= false) and tonumber(spellSettings.missingShowBelow) or 0
+                                    local s = (value ~= false) and tonumber(spellSettings.missingShowBelow)
+                                        or 0
                                     tbl.missingShowBelow = (s > 0) and s or false
                                 end,
                             },
@@ -3610,12 +3239,15 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         MakeSubnavRow(
                             "Always Show Buff",
                             ALWAYS_SHOW_ITEMS,
-                            function()
-                                return spellSettings.alwaysShow
-                            end,
+                            function() return spellSettings.alwaysShow end,
                             function(value)
                                 -- Also Show Below opens its own popup; any other value is not this row's.
-                                if value ~= nil and value ~= "on" and value ~= "off" and value ~= "missing" then
+                                if
+                                    value ~= nil
+                                    and value ~= "on"
+                                    and value ~= "off"
+                                    and value ~= "missing"
+                                then
                                     return
                                 end
                                 EnsureStored()
@@ -3623,13 +3255,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 -- Refresh the page so "Keep Buffs in Same Place" grays/ungrays as this per-icon override flips.
                                 CludesUI:RefreshPage()
                             end,
-                            function()
-                                return spellSettings.alwaysShow == nil
-                            end,
+                            function() return spellSettings.alwaysShow == nil end,
                             function(subItem, entry)
-                                if entry.val ~= "below" then
-                                    return
-                                end
+                                if entry.val ~= "below" then return end
                                 -- Popup flow (mirrors Threshold Seconds): 0 turns it off.
                                 subItem:SetScript("OnClick", function()
                                     local current = tonumber(spellSettings.missingShowBelow) or 0
@@ -3638,7 +3266,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         current > 0 and current or nil,
                                         function(value)
                                             EnsureStored()
-                                            SetOwnSetting("missingShowBelow", (value and value > 0) and value or nil)
+                                            SetOwnSetting(
+                                                "missingShowBelow",
+                                                (value and value > 0) and value or nil
+                                            )
                                             mod.QueueReanchor()
                                         end,
                                         CludesUI.L("Also Show Below"),
@@ -3653,16 +3284,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             {
                                 disabled = function()
                                     local edge = mod.barDataByKey and mod.barDataByKey[barId]
-                                    return edge and edge.hidePlaceholderIcon == true and spellSettings.alwaysShow ~= "on"
+                                    return edge
+                                            and edge.hidePlaceholderIcon == true
+                                            and spellSettings.alwaysShow ~= "on"
                                         or false
                                 end,
                                 disabledTooltip = "Disabled while Keep Buffs in Same Place is enabled",
                                 -- Also Show Below acts only with Show When Missing: locked
                                 -- otherwise, unless it holds a value (clickable to clear it).
                                 itemState = function(subItem, entry)
-                                    if entry.val ~= "below" then
-                                        return
-                                    end
+                                    if entry.val ~= "below" then return end
                                     SetFlyoutItemLocked(
                                         subItem,
                                         spellSettings.alwaysShow ~= "missing"
@@ -3672,9 +3303,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end,
                                 apply = {
                                     keys = { "alwaysShow" },
-                                    write = function(tbl, value)
-                                        tbl.alwaysShow = value
-                                    end,
+                                    write = function(tbl, value) tbl.alwaysShow = value end,
                                 },
                             }
                         )
@@ -3686,23 +3315,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     MakeSubnavRow(
                         "Buff Glow",
                         BUFF_GLOW_ITEMS,
-                        function()
-                            return spellSettings.buffGlow
-                        end,
+                        function() return spellSettings.buffGlow end,
                         function(value)
                             EnsureStored()
                             SetOwnSetting("buffGlow", value)
                         end,
-                        function()
-                            return spellSettings.buffGlow == nil
-                        end,
+                        function() return spellSettings.buffGlow == nil end,
                         nil,
                         {
                             apply = {
                                 keys = { "buffGlow" },
-                                write = function(tbl, value)
-                                    tbl.buffGlow = value
-                                end,
+                                write = function(tbl, value) tbl.buffGlow = value end,
                             },
                         }
                     )
@@ -3712,13 +3335,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     MakeSubnavRow(
                         "Glow When Visible",
                         GLOW_VISIBLE_ITEMS,
-                        function()
-                            return spellSettings.glowWhenVisible and true or nil
-                        end,
+                        function() return spellSettings.glowWhenVisible and true or nil end,
                         SetGlowWhenVisible,
-                        function()
-                            return spellSettings.glowWhenVisible == nil
-                        end,
+                        function() return spellSettings.glowWhenVisible == nil end,
                         nil,
                         GLOW_VISIBLE_APPLY
                     )
@@ -3731,9 +3350,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     MakeSubnavRow(
                         "Glow Effect Color",
                         BUFF_GLOW_COLOR_ITEMS,
-                        function()
-                            return spellSettings.buffGlowColor
-                        end,
+                        function() return spellSettings.buffGlowColor end,
                         function(value)
                             EnsureStored()
                             SetOwnSetting("buffGlowColor", value)
@@ -3743,9 +3360,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 spellSettings.buffGlowColorB = 0.376
                             end
                         end,
-                        function()
-                            return spellSettings.buffGlowColor == nil
-                        end,
+                        function() return spellSettings.buffGlowColor == nil end,
                         ApplyBar.CustomColorSwatch("buffGlowColor", 0.776, 0.376),
                         ApplyBar.CustomColorApply("buffGlowColor", 0.776, 0.376)
                     )
@@ -3761,9 +3376,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     MakeSubnavRow(
                         "Cooldown Swipe",
                         CD_SWIPE_COLOR_ITEMS,
-                        function()
-                            return spellSettings.cdSwipeColor
-                        end,
+                        function() return spellSettings.cdSwipeColor end,
                         function(value)
                             EnsureStored()
                             SetOwnSetting("cdSwipeColor", value)
@@ -3772,13 +3385,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 spellSettings.cdSwipeColorG = 0.776
                                 spellSettings.cdSwipeColorB = 0.376
                             end
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
+                            if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                         end,
-                        function()
-                            return spellSettings.cdSwipeColor == nil
-                        end,
+                        function() return spellSettings.cdSwipeColor == nil end,
                         ApplyBar.CustomColorSwatch("cdSwipeColor", 0.776, 0.376),
                         ApplyBar.CustomColorApply("cdSwipeColor", 0.776, 0.376)
                     )
@@ -3789,13 +3398,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- Accent cue helpers: "changed" = override set AND its EFFECTIVE value
                     -- differs from the bar's, so an override matching the bar (or a bar edit
                     -- catching up) shows no accent. valChanged for scalars/toggles; colChanged for an RGB triple (nil components fall back to the bar's).
-                    local function differs(sv, bv)
-                        return sv ~= nil and sv ~= bv
-                    end
+                    local function differs(sv, bv) return sv ~= nil and sv ~= bv end
                     local function colChanged(sr, sg, scrollBar, br, backdrop, bb)
-                        if sr == nil and sg == nil and scrollBar == nil then
-                            return false
-                        end
+                        if sr == nil and sg == nil and scrollBar == nil then return false end
                         return (sr or br) ~= br or (sg or backdrop) ~= backdrop or (scrollBar or bb) ~= bb
                     end
                     -- isChanged: a function returning true when this cog's per-icon values
@@ -3825,9 +3430,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 showFn(menuRow) -- first call creates + shows it
                                 popFrame = showFn._popupFrame
                             else
-                                if popFrame._refresh then
-                                    popFrame._refresh()
-                                end
+                                if popFrame._refresh then popFrame._refresh() end
                                 popFrame:Show()
                             end
                             if popFrame then
@@ -3871,7 +3474,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 (b and b.cooldownTextG) or 1,
                                 (b and b.cooldownTextB) or 1
                             )
-                            or differs(spellSettings.cooldownTextPosition, (b and b.cooldownTextPosition) or "center")
+                            or differs(
+                                spellSettings.cooldownTextPosition,
+                                (b and b.cooldownTextPosition) or "center"
+                            )
                             or differs(spellSettings.cooldownTextX, (b and b.cooldownTextX) or 0)
                             or differs(spellSettings.cooldownTextY, (b and b.cooldownTextY) or 0)
                     end, function(menuRow)
@@ -3899,9 +3505,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -3911,7 +3515,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     max = 30,
                                     step = 1,
                                     get = function()
-                                        return spellSettings.cooldownFontSize or (cdmBd and cdmBd.cooldownFontSize) or 12
+                                        return spellSettings.cooldownFontSize
+                                            or (cdmBd and cdmBd.cooldownFontSize)
+                                            or 12
                                     end,
                                     set = function(value)
                                         EnsureStored()
@@ -3919,18 +3525,22 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
                                     type = "colorpicker",
                                     label = "Color",
                                     get = function()
-                                        return spellSettings.cooldownTextR or (cdmBd and cdmBd.cooldownTextR) or 1,
-                                            spellSettings.cooldownTextG or (cdmBd and cdmBd.cooldownTextG) or 1,
-                                            spellSettings.cooldownTextB or (cdmBd and cdmBd.cooldownTextB) or 1
+                                        return spellSettings.cooldownTextR
+                                            or (cdmBd and cdmBd.cooldownTextR)
+                                            or 1,
+                                            spellSettings.cooldownTextG
+                                                or (cdmBd and cdmBd.cooldownTextG)
+                                                or 1,
+                                            spellSettings.cooldownTextB
+                                                or (cdmBd and cdmBd.cooldownTextB)
+                                                or 1
                                     end,
                                     set = function(red, green, blue)
                                         EnsureStored()
@@ -3940,9 +3550,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -3961,9 +3569,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -3973,7 +3579,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     max = 50,
                                     step = 1,
                                     get = function()
-                                        return spellSettings.cooldownTextX or (cdmBd and cdmBd.cooldownTextX) or 0
+                                        return spellSettings.cooldownTextX
+                                            or (cdmBd and cdmBd.cooldownTextX)
+                                            or 0
                                     end,
                                     set = function(value)
                                         EnsureStored()
@@ -3981,9 +3589,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -3993,7 +3599,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     max = 50,
                                     step = 1,
                                     get = function()
-                                        return spellSettings.cooldownTextY or (cdmBd and cdmBd.cooldownTextY) or 0
+                                        return spellSettings.cooldownTextY
+                                            or (cdmBd and cdmBd.cooldownTextY)
+                                            or 0
                                     end,
                                     set = function(value)
                                         EnsureStored()
@@ -4001,9 +3609,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                             },
@@ -4012,23 +3618,29 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                     MakeCogRow("Stack Text and Glows", function()
                         local b = cdmBd
-                        return differs(spellSettings.showChargeStackText, (b and b.showChargeStackText) ~= false)
-                            or spellSettings.buffGlowStackEnabled == true
-                            or differs(spellSettings.stackCountSize, (b and b.stackCountSize) or 11)
-                            or colChanged(
-                                spellSettings.stackCountR,
-                                spellSettings.stackCountG,
-                                spellSettings.stackCountB,
-                                (b and b.stackCountR) or 1,
-                                (b and b.stackCountG) or 1,
-                                (b and b.stackCountB) or 1
-                            )
-                            or differs(
-                                spellSettings.stackCountPosition,
-                                (b and b.stackCountPosition) or "bottomright"
-                            )
-                            or differs(spellSettings.stackCountX, (b and b.stackCountX) or 0)
-                            or differs(spellSettings.stackCountY, (b and b.stackCountY) or 0)
+                        return differs(
+                            spellSettings.showChargeStackText,
+                            (b and b.showChargeStackText) ~= false
+                        ) or spellSettings.buffGlowStackEnabled == true or differs(
+                            spellSettings.stackCountSize,
+                            (b and b.stackCountSize) or 11
+                        ) or colChanged(
+                            spellSettings.stackCountR,
+                            spellSettings.stackCountG,
+                            spellSettings.stackCountB,
+                            (b and b.stackCountR) or 1,
+                            (b and b.stackCountG) or 1,
+                            (b and b.stackCountB) or 1
+                        ) or differs(
+                            spellSettings.stackCountPosition,
+                            (b and b.stackCountPosition) or "bottomright"
+                        ) or differs(
+                            spellSettings.stackCountX,
+                            (b and b.stackCountX) or 0
+                        ) or differs(
+                            spellSettings.stackCountY,
+                            (b and b.stackCountY) or 0
+                        )
                     end, function(menuRow)
                         return CludesUI.BuildCogPopup({
                             title = "Stack Text and Glows",
@@ -4040,18 +3652,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     type = "toggle",
                                     label = "Glow at Stacks",
                                     tooltip = "Replaces Buff Glow: the icon glows when its stack count matches the comparison below, using this spell's Buff Glow style (Modern WoW Glow if none is set).",
-                                    get = function()
-                                        return spellSettings.buffGlowStackEnabled == true
-                                    end,
+                                    get = function() return spellSettings.buffGlowStackEnabled == true end,
                                     set = function(value)
                                         EnsureStored()
                                         spellSettings.buffGlowStackEnabled = value or nil
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4065,22 +3673,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         gt = "Above (>)",
                                     },
                                     order = { "lt", "lte", "eq", "gte", "gt" },
-                                    disabled = function()
-                                        return not spellSettings.buffGlowStackEnabled
-                                    end,
+                                    disabled = function() return not spellSettings.buffGlowStackEnabled end,
                                     disabledTooltip = "Enable Glow at Stacks",
-                                    get = function()
-                                        return spellSettings.buffGlowStackOperator or "gte"
-                                    end,
+                                    get = function() return spellSettings.buffGlowStackOperator or "gte" end,
                                     set = function(value)
                                         EnsureStored()
                                         spellSettings.buffGlowStackOperator = value ~= "gte" and value or nil
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4088,29 +3690,21 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     label = "Stack Count",
                                     inputWidth = 42,
                                     commitOnBlur = true,
-                                    disabled = function()
-                                        return not spellSettings.buffGlowStackEnabled
-                                    end,
+                                    disabled = function() return not spellSettings.buffGlowStackEnabled end,
                                     disabledTooltip = "Enable Glow at Stacks",
                                     get = function()
                                         return tostring(tonumber(spellSettings.buffGlowStackThreshold) or 2)
                                     end,
                                     set = function(value)
                                         local t = math.floor(tonumber(value) or 0)
-                                        if t < 1 then
-                                            t = 1
-                                        end
-                                        if t > 99 then
-                                            t = 99
-                                        end
+                                        if t < 1 then t = 1 end
+                                        if t > 99 then t = 99 end
                                         EnsureStored()
                                         spellSettings.buffGlowStackThreshold = t
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4128,9 +3722,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4140,7 +3732,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     max = 30,
                                     step = 1,
                                     get = function()
-                                        return spellSettings.stackCountSize or (cdmBd and cdmBd.stackCountSize) or 11
+                                        return spellSettings.stackCountSize
+                                            or (cdmBd and cdmBd.stackCountSize)
+                                            or 11
                                     end,
                                     set = function(value)
                                         EnsureStored()
@@ -4148,9 +3742,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4169,9 +3761,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4210,9 +3800,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4230,9 +3818,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4250,9 +3836,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                             },
@@ -4294,9 +3878,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                                 {
@@ -4315,9 +3897,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if menuRow._updateLabel then
-                                            menuRow._updateLabel()
-                                        end
+                                        if menuRow._updateLabel then menuRow._updateLabel() end
                                     end,
                                 },
                             },
@@ -4336,20 +3916,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         MakeSubnavRow(
                             "Audio on Buff Gain",
                             AUDIO_ITEMS,
-                            function()
-                                return spellSettings.buffActiveSoundKey or "none"
-                            end,
+                            function() return spellSettings.buffActiveSoundKey or "none" end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("buffActiveSoundKey", (value ~= "none" and value) or nil)
                                 -- Flip the 0-cost gate live so the edge hook/cast timer starts playing on the next activation.
-                                if spellSettings.buffActiveSoundKey then
-                                    mod._cdmAnyBuffSound = true
-                                end
+                                if spellSettings.buffActiveSoundKey then mod._cdmAnyBuffSound = true end
                             end,
-                            function()
-                                return spellSettings.buffActiveSoundKey == nil
-                            end,
+                            function() return spellSettings.buffActiveSoundKey == nil end,
                             AddSoundPreviewButton,
                             {
                                 searchable = true,
@@ -4368,19 +3942,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         MakeSubnavRow(
                             "Audio on Buff Loss",
                             AUDIO_ITEMS,
-                            function()
-                                return spellSettings.buffLostSoundKey or "none"
-                            end,
+                            function() return spellSettings.buffLostSoundKey or "none" end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("buffLostSoundKey", (value ~= "none" and value) or nil)
-                                if spellSettings.buffLostSoundKey then
-                                    mod._cdmAnyBuffSound = true
-                                end
+                                if spellSettings.buffLostSoundKey then mod._cdmAnyBuffSound = true end
                             end,
-                            function()
-                                return spellSettings.buffLostSoundKey == nil
-                            end,
+                            function() return spellSettings.buffLostSoundKey == nil end,
                             AddSoundPreviewButton,
                             {
                                 searchable = true,
@@ -4410,23 +3978,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             MakeSubnavRow(
                                 "Desaturate Inactive",
                                 DESAT_ITEMS,
-                                function()
-                                    return spellSettings.desatInactive
-                                end,
+                                function() return spellSettings.desatInactive end,
                                 function(value)
                                     EnsureStored()
                                     SetOwnSetting("desatInactive", value)
                                 end,
-                                function()
-                                    return spellSettings.desatInactive == nil
-                                end,
+                                function() return spellSettings.desatInactive == nil end,
                                 nil,
                                 {
                                     apply = {
                                         keys = { "desatInactive" },
-                                        write = function(tbl, value)
-                                            tbl.desatInactive = value
-                                        end,
+                                        write = function(tbl, value) tbl.desatInactive = value end,
                                     },
                                 }
                             )
@@ -4445,22 +4007,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     MakeSubnavRow(
                         "Reverse Swipe",
                         REVERSE_SWIPE_ITEMS,
-                        function()
-                            return spellSettings.reverseSwipe and true or nil
-                        end,
+                        function() return spellSettings.reverseSwipe and true or nil end,
                         function(value)
                             EnsureStored()
                             SetOwnSetting("reverseSwipe", value or nil)
-                            if value then
-                                mod._cdmAnyReverseSwipe = true
-                            end
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
+                            if value then mod._cdmAnyReverseSwipe = true end
+                            if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                         end,
-                        function()
-                            return spellSettings.reverseSwipe == nil
-                        end,
+                        function() return spellSettings.reverseSwipe == nil end,
                         nil,
                         {
                             apply = {
@@ -4478,9 +4032,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- engine countdown formatter as cd/utility spells; the engine evaluates it, so secret aura durations format fine.
                     do
                         local access = {}
-                        access.get = function(keyName)
-                            return spellSettings[keyName]
-                        end
+                        access.get = function(keyName) return spellSettings[keyName] end
                         access.set = function(keyName, value)
                             EnsureStored()
                             spellSettings[keyName] = value
@@ -4493,12 +4045,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             if (tonumber(spellSettings.thresholdSeconds) or 0) > 0 then
                                 mod._cdmAnyThresholdText = true
                             end
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
-                            if mod.QueueReanchor then
-                                mod.QueueReanchor()
-                            end
+                            if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                            if mod.QueueReanchor then mod.QueueReanchor() end
                         end
                         AddThresholdTextRow(access)
                     end
@@ -4516,7 +4064,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- travels with the spell across every bar and spec, not in this bar's per-spell settings. Trinket slots key by the EQUIPPED item, so each tracks separately (casKey).
                         local casKey = (mod.ResolveCustomActiveKey and mod.ResolveCustomActiveKey(spellId))
                             or spellId
-                        local customState = mod.GetCustomActiveState and mod.GetCustomActiveState(casKey) or nil
+                        local customState = mod.GetCustomActiveState and mod.GetCustomActiveState(casKey)
+                            or nil
                         -- Trinket slots: the menu DISPLAYS the effective view -- the equipped item's
                         -- own entry chained per-key over the slot's "Apply to Bar" stamp
                         -- (GetEffectiveCustomActiveState uses the same chain at render time) -- while
@@ -4527,17 +4076,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             casSlot = mod.GetCustomActiveState(spellId)
                         end
                         -- Not-yet-persisted fresh view, persisted on first WRITE -- same contract as the family-store EnsureSS above.
-                        if not customState then
-                            customState = {}
-                        end
-                        if mod.ChainSettings then
-                            mod.ChainSettings(customState, casSlot)
-                        end
+                        if not customState then customState = {} end
+                        if mod.ChainSettings then mod.ChainSettings(customState, casSlot) end
                         local function ActiveStatesStore()
                             local storeC = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
-                            if storeC and not storeC[casKey] then
-                                storeC[casKey] = customState
-                            end
+                            if storeC and not storeC[casKey] then storeC[casKey] = customState end
                             return customState
                         end
                         -- Own-value writer for nil-off keys: writing nil would let a
@@ -4548,9 +4091,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local function SetOwnCas(key, v2)
                             local cas = ActiveStatesStore()
                             cas[key] = v2
-                            if v2 == nil and cas[key] ~= nil then
-                                cas[key] = false
-                            end
+                            if v2 == nil and cas[key] ~= nil then cas[key] = false end
                         end
                         local hasActive = (customState.duration or 0) > 0
 
@@ -4599,14 +4140,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- an apply never swaps the bar's spells to the plain glow.
                         local casGlowWrite = ApplyBar.CdGlowWrite(customState)
                         local casGlowMenu = {
-                            get = function()
-                                return ApplyBar.MenuGlow(customState, true)
-                            end,
+                            get = function() return ApplyBar.MenuGlow(customState, true) end,
                             set = function(value)
                                 mod.CdStateWriteGlow(ActiveStatesStore(), value)
-                                if mod.FakeActive_Rearm then
-                                    mod.FakeActive_Rearm()
-                                end
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                             end,
                             write = function(t, value)
                                 if
@@ -4618,9 +4155,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                                 casGlowWrite(t, value)
                             end,
-                            view = function(t)
-                                return ApplyBar.MenuGlow(t, true)
-                            end,
+                            view = function(t) return ApplyBar.MenuGlow(t, true) end,
                         }
                         local CD_STATE_ITEMS = {
                             { val = nil, label = "None" },
@@ -4636,7 +4171,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 dynamicLabel = function()
                                     local baseCaption = CludesUI.L("Lower Alpha (On CD)")
                                     if customState and customState.cdStateEffect == "lowerAlphaOnCD" then
-                                        local percent = math.floor(((customState.cdStateLowerAlpha or 0.5) * 100) + 0.5)
+                                        local percent =
+                                            math.floor(((customState.cdStateLowerAlpha or 0.5) * 100) + 0.5)
                                         return percent .. "% " .. baseCaption
                                     end
                                     return baseCaption
@@ -4681,11 +4217,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Right-aligned colour swatch on a subnav item.
                         -- Per-spell settings are outside Spec Overrides, so the swatch opts out of capture.
                         local function MakeColorSwatch(subItem, getR, getG, getB, onChanged)
-                            ApplyBar.ItemSwatch(subItem, function()
-                                return getR(), getG(), getB(), 1
-                            end, function(red, green, blue)
-                                onChanged(red, green, blue)
-                            end, false)
+                            ApplyBar.ItemSwatch(
+                                subItem,
+                                function() return getR(), getG(), getB(), 1 end,
+                                function(red, green, blue) onChanged(red, green, blue) end,
+                                false
+                            )
                         end
 
                         -- Combat Potion Icon (the three combat potion presets): the order the
@@ -4704,27 +4241,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             and #mod.COMBAT_POTION_FAMILIES > 0
                         then
                             local function PotSwapOn()
-                                if customState.potSwap == nil then
-                                    return mod.PotSwapLegacyDefault()
-                                end
+                                if customState.potSwap == nil then return mod.PotSwapLegacyDefault() end
                                 return customState.potSwap == true
                             end
                             local function PotIsDefault()
                                 return customState.potSwap == nil and customState.potOrder == nil
                             end
                             local function PotChanged()
-                                if mod._BumpPotResolveGen then
-                                    mod._BumpPotResolveGen()
-                                end
-                                if mod._MarkPresetCdDirty then
-                                    mod._MarkPresetCdDirty()
-                                end
-                                if mod.FakeActive_Rearm then
-                                    mod.FakeActive_Rearm()
-                                end
-                                if mod.QueueReanchor then
-                                    mod.QueueReanchor()
-                                end
+                                if mod._BumpPotResolveGen then mod._BumpPotResolveGen() end
+                                if mod._MarkPresetCdDirty then mod._MarkPresetCdDirty() end
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                                if mod.QueueReanchor then mod.QueueReanchor() end
                             end
 
                             local menuRow, labelFS = ApplyBar.NewMenuRow("Combat Potion Icon")
@@ -4749,9 +4276,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     dropMenu._openSub:Hide()
                                 end
                                 if subMenu then
-                                    if not subMenu:IsShown() then
-                                        subMenu:Show()
-                                    end
+                                    if not subMenu:IsShown() then subMenu:Show() end
                                     dropMenu._openSub = subMenu
                                     return
                                 end
@@ -4848,9 +4373,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         }
                                     end
                                 end
-                                local function SlotY(idx)
-                                    return -(rowsTop + (idx - 1) * ITEM_H)
-                                end
+                                local function SlotY(idx) return -(rowsTop + (idx - 1) * ITEM_H) end
                                 local rowList = {}
                                 local dragState = { dragging = false }
                                 for idx = 1, #movable do
@@ -4892,16 +4415,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     Paint()
                                     r._paint = Paint
                                     r:SetScript("OnEnter", function()
-                                        if dragState.dragging then
-                                            return
-                                        end
+                                        if dragState.dragging then return end
                                         rowLabel:SetTextColor(1, 1, 1, 1)
                                         rHl:SetAlpha(1)
                                     end)
                                     r:SetScript("OnLeave", function()
-                                        if dragState.dragging then
-                                            return
-                                        end
+                                        if dragState.dragging then return end
                                         rowLabel:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                         rHl:SetAlpha(0)
                                     end)
@@ -4961,100 +4480,116 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Picking or clearing a glow (or a bar apply doing so) rebuilds the menu,
                         -- which adds or drops the Glow Style row below.
                         local hadGlowC = mod.CdStateGlowOf(customState) ~= nil
-                        dropMenu._cseRow = MakeSubnavRow("Cooldown State Effect", CD_STATE_ITEMS, function()
-                            return mod.CdStateHideOf(customState)
-                        end, function(value)
-                            mod.CdStateWriteHide(ActiveStatesStore(), value)
-                            if mod.FakeActive_Rearm then
-                                mod.FakeActive_Rearm()
-                            end
-                        end, function()
-                            return not customState.cdStateEffect and not customState.cdStateGlow
-                        end, function(subItem, entry, subMenu)
-                            -- Lower Alpha (On CD): prompt for the opacity percent,
-                            -- then select the effect (mirrors the setVal above).
-                            if entry.val == "lowerAlphaOnCD" then
-                                subItem:SetScript("OnClick", function()
-                                    local current =
-                                        math.floor((((customState and customState.cdStateLowerAlpha) or 0.5) * 100) + 0.5)
-                                    -- Close the per-spell dropdown so only the popup shows.
-                                    dropMenu:Hide()
-                                    ShowAlphaPopup(current, function(percent)
-                                        local c = ActiveStatesStore()
-                                        c.cdStateLowerAlpha = percent / 100
-                                        mod.CdStateWriteHide(c, "lowerAlphaOnCD")
-                                        if mod.FakeActive_Rearm then
-                                            mod.FakeActive_Rearm()
-                                        end
+                        dropMenu._cseRow = MakeSubnavRow(
+                            "Cooldown State Effect",
+                            CD_STATE_ITEMS,
+                            function() return mod.CdStateHideOf(customState) end,
+                            function(value)
+                                mod.CdStateWriteHide(ActiveStatesStore(), value)
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                            end,
+                            function() return not customState.cdStateEffect and not customState.cdStateGlow end,
+                            function(subItem, entry, subMenu)
+                                -- Lower Alpha (On CD): prompt for the opacity percent,
+                                -- then select the effect (mirrors the setVal above).
+                                if entry.val == "lowerAlphaOnCD" then
+                                    subItem:SetScript("OnClick", function()
+                                        local current = math.floor(
+                                            (((customState and customState.cdStateLowerAlpha) or 0.5) * 100)
+                                                + 0.5
+                                        )
+                                        -- Close the per-spell dropdown so only the popup shows.
+                                        dropMenu:Hide()
+                                        ShowAlphaPopup(current, function(percent)
+                                            local c = ActiveStatesStore()
+                                            c.cdStateLowerAlpha = percent / 100
+                                            mod.CdStateWriteHide(c, "lowerAlphaOnCD")
+                                            if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                                        end)
                                     end)
-                                end)
-                            end
-                        end, {
-                            itemState = ApplyBar.CdStateItemState(customState, nil, true),
-                            onRefresh = function()
-                                if (mod.CdStateGlowOf(customState) ~= nil) ~= hadGlowC then
-                                    dropMenu._rebuildPending = true
                                 end
                             end,
-                            apply = {
-                                keys = { "cdStateEffect", "cdStateLowerAlpha" },
-                                write = ApplyBar.CdHideWrite(customState),
-                                view = mod.CdStateHideOf,
-                            },
-                        })
+                            {
+                                itemState = ApplyBar.CdStateItemState(customState, nil, true),
+                                onRefresh = function()
+                                    if (mod.CdStateGlowOf(customState) ~= nil) ~= hadGlowC then
+                                        dropMenu._rebuildPending = true
+                                    end
+                                end,
+                                apply = {
+                                    keys = { "cdStateEffect", "cdStateLowerAlpha" },
+                                    write = ApplyBar.CdHideWrite(customState),
+                                    view = mod.CdStateHideOf,
+                                },
+                            }
+                        )
 
                         -- Glow Style (preset/custom): mirror of the regular-spell row, shown only
                         -- while a glow is picked in Cooldown State Effect.
                         if hadGlowC then
-                            MakeSubnavRow("Glow Style", CD_READY_STYLE_ITEMS, function()
-                                return mod.CdReadyGlowStyle(mod.CdStateGlowOf(customState), customState)
-                            end, function(value)
-                                SetOwnCas("cdStateGlowStyle", value)
-                                if mod.FakeActive_Rearm then
-                                    mod.FakeActive_Rearm()
-                                end
-                            end, function()
-                                return customState.cdStateGlowStyle == nil
-                            end, function(subItem, entry, subMenu)
-                                -- Blackout: clicking prompts for the opacity percent, then
-                                -- selects this style (mirrors Lower Alpha's onClick above).
-                                if entry.val == 8 then
-                                    entry.dynamicLabel = function()
-                                        local baseCaption = CludesUI.L(mod.GLOW_STYLES[8].name)
-                                        if mod.CdReadyGlowStyle(mod.CdStateGlowOf(customState), customState) == 8 then
-                                            local percent = math.floor(((customState.cdStateGlowAlpha or 1) * 100) + 0.5)
-                                            return percent .. "% " .. baseCaption
+                            MakeSubnavRow(
+                                "Glow Style",
+                                CD_READY_STYLE_ITEMS,
+                                function()
+                                    return mod.CdReadyGlowStyle(mod.CdStateGlowOf(customState), customState)
+                                end,
+                                function(value)
+                                    SetOwnCas("cdStateGlowStyle", value)
+                                    if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                                end,
+                                function() return customState.cdStateGlowStyle == nil end,
+                                function(subItem, entry, subMenu)
+                                    -- Blackout: clicking prompts for the opacity percent, then
+                                    -- selects this style (mirrors Lower Alpha's onClick above).
+                                    if entry.val == 8 then
+                                        entry.dynamicLabel = function()
+                                            local baseCaption = CludesUI.L(mod.GLOW_STYLES[8].name)
+                                            if
+                                                mod.CdReadyGlowStyle(
+                                                    mod.CdStateGlowOf(customState),
+                                                    customState
+                                                ) == 8
+                                            then
+                                                local percent = math.floor(
+                                                    ((customState.cdStateGlowAlpha or 1) * 100) + 0.5
+                                                )
+                                                return percent .. "% " .. baseCaption
+                                            end
+                                            return baseCaption
                                         end
-                                        return baseCaption
+                                        subItem:SetScript("OnClick", function()
+                                            local current = math.floor(
+                                                (((customState and customState.cdStateGlowAlpha) or 1) * 100)
+                                                    + 0.5
+                                            )
+                                            dropMenu:Hide()
+                                            ShowAlphaPopup(
+                                                current,
+                                                function(percent)
+                                                    local c = ActiveStatesStore()
+                                                    c.cdStateGlowAlpha = percent / 100
+                                                    c.cdStateGlowStyle = 8
+                                                    if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                                                end,
+                                                CludesUI.L("Glow Opacity"),
+                                                CludesUI.L("Blackout glow opacity (1-100%)")
+                                            )
+                                        end)
                                     end
-                                    subItem:SetScript("OnClick", function()
-                                        local current =
-                                            math.floor((((customState and customState.cdStateGlowAlpha) or 1) * 100) + 0.5)
-                                        dropMenu:Hide()
-                                        ShowAlphaPopup(
-                                            current,
-                                            function(percent)
-                                                local c = ActiveStatesStore()
-                                                c.cdStateGlowAlpha = percent / 100
-                                                c.cdStateGlowStyle = 8
-                                                if mod.FakeActive_Rearm then
-                                                    mod.FakeActive_Rearm()
-                                                end
-                                            end,
-                                            CludesUI.L("Glow Opacity"),
-                                            CludesUI.L("Blackout glow opacity (1-100%)")
-                                        )
-                                    end)
-                                end
-                            end, {
-                                apply = {
-                                    keys = { "cdStateGlowStyle", "cdStateGlowAlpha" },
-                                    write = function(tbl, value)
-                                        tbl.cdStateGlowStyle = value
-                                        tbl.cdStateGlowAlpha = (value == 8) and customState and customState.cdStateGlowAlpha or nil
-                                    end,
-                                },
-                            })
+                                end,
+                                {
+                                    apply = {
+                                        keys = { "cdStateGlowStyle", "cdStateGlowAlpha" },
+                                        write = function(tbl, value)
+                                            tbl.cdStateGlowStyle = value
+                                            tbl.cdStateGlowAlpha = (value == 8)
+                                                    and customState
+                                                    and customState.cdStateGlowAlpha
+                                                or nil
+                                        end,
+                                    },
+                                }
+                            )
                         end -- hadGlowC
 
                         -- Cooldown Saturation (preset/custom): mirror of the regular-spell row.
@@ -5074,17 +4609,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     val = "ignoreResource",
                                     label = "+ Ignore Resource Cost",
                                     tooltip = "Keeps the icon in full color while you lack the resource to cast it. Out of range still tints it red.",
-                                    toggleGet = function()
-                                        return customState.noResourceTint == true
-                                    end,
+                                    toggleGet = function() return customState.noResourceTint == true end,
                                     toggleSet = function(value)
                                         SetOwnCas("noResourceTint", value or nil)
-                                        if value then
-                                            mod._cdmAnyNoResourceTint = true
-                                        end
-                                        if mod._MarkPresetCdDirty then
-                                            mod._MarkPresetCdDirty()
-                                        end
+                                        if value then mod._cdmAnyNoResourceTint = true end
+                                        if mod._MarkPresetCdDirty then mod._MarkPresetCdDirty() end
                                     end,
                                     applyKeys = { "noResourceTint" },
                                     applyWrite = function(tbl, value)
@@ -5098,33 +4627,21 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             satItems,
                             function()
                                 local value = customState.noDesatOnCD
-                                if value == false then
-                                    value = nil
-                                end -- blocked slot value = None
+                                if value == false then value = nil end -- blocked slot value = None
                                 return value and true or nil
                             end,
                             function(value)
                                 SetOwnCas("noDesatOnCD", value or nil)
-                                if value then
-                                    mod._cdmAnyNoDesatOnCD = true
-                                end
-                                if mod.FakeActive_Rearm then
-                                    mod.FakeActive_Rearm()
-                                end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
+                                if value then mod._cdmAnyNoDesatOnCD = true end
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
-                            function()
-                                return not customState.noDesatOnCD and not customState.noResourceTint
-                            end,
+                            function() return not customState.noDesatOnCD and not customState.noResourceTint end,
                             nil,
                             {
                                 apply = {
                                     keys = { "noDesatOnCD" },
-                                    write = function(tbl, value)
-                                        tbl.noDesatOnCD = value or false
-                                    end,
+                                    write = function(tbl, value) tbl.noDesatOnCD = value or false end,
                                 },
                             }
                         )
@@ -5134,9 +4651,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Threshold Seconds. Stored in the profile customActiveStates so it travels with the spell; the Fake-Active engine and the appearance pass both read it.
                         do
                             local access = {}
-                            access.get = function(keyName)
-                                return customState[keyName]
-                            end
+                            access.get = function(keyName) return customState[keyName] end
                             access.set = function(keyName, value)
                                 local cas = ActiveStatesStore()
                                 cas[keyName] = value
@@ -5145,23 +4660,15 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 -- Own clear; when a slot-stamp value would show
                                 -- through the chain, store the blocking false.
                                 customState[keyName] = nil
-                                if customState[keyName] ~= nil then
-                                    SetOwnCas(keyName, false)
-                                end
+                                if customState[keyName] ~= nil then SetOwnCas(keyName, false) end
                             end
                             access.refresh = function()
                                 if (tonumber(customState.thresholdSeconds) or 0) > 0 then
                                     mod._cdmAnyThresholdText = true
                                 end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
-                                if mod.FakeActive_Rearm then
-                                    mod.FakeActive_Rearm()
-                                end
-                                if mod.QueueReanchor then
-                                    mod.QueueReanchor()
-                                end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                                if mod.QueueReanchor then mod.QueueReanchor() end
                             end
                             AddThresholdTextRow(access)
                         end
@@ -5172,32 +4679,22 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             "Cooldown Swipe",
                             CD_SWIPE_ITEMS,
                             function()
-                                if customState and customState.hideCDSwipe then
-                                    return "hide"
-                                end
-                                if customState and customState.reverseSwipe then
-                                    return "reverse"
-                                end
+                                if customState and customState.hideCDSwipe then return "hide" end
+                                if customState and customState.reverseSwipe then return "reverse" end
                                 return nil
                             end,
                             function(value)
                                 SetOwnCas("reverseSwipe", (value == "reverse") or nil)
                                 SetOwnCas("hideCDSwipe", (value == "hide") or nil)
-                                if value == "reverse" then
-                                    mod._cdmAnyReverseSwipe = true
-                                end
-                                if value == "hide" then
-                                    mod._cdmAnyHideCDSwipe = true
-                                end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
-                                if mod.FakeActive_Rearm then
-                                    mod.FakeActive_Rearm()
-                                end
+                                if value == "reverse" then mod._cdmAnyReverseSwipe = true end
+                                if value == "hide" then mod._cdmAnyHideCDSwipe = true end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                             end,
                             function()
-                                return not (customState and (customState.reverseSwipe or customState.hideCDSwipe))
+                                return not (
+                                    customState and (customState.reverseSwipe or customState.hideCDSwipe)
+                                )
                             end,
                             nil,
                             {
@@ -5217,33 +4714,23 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             MakeSubnavRow(
                                 "Stance Bar",
                                 ApplyBar.STANCE_BAR_ITEMS,
-                                function()
-                                    return customState.stanceBarHide or nil
-                                end,
+                                function() return customState.stanceBarHide or nil end,
                                 function(value)
                                     SetOwnCas("stanceBarHide", value)
-                                    if value then
-                                        mod._cdmAnyStanceBar = true
-                                    end
+                                    if value then mod._cdmAnyStanceBar = true end
                                     if mod.RefreshCDMIconAppearance then
                                         mod.RefreshCDMIconAppearance(barId)
                                     end
-                                    if mod.FakeActive_Rearm then
-                                        mod.FakeActive_Rearm()
-                                    end
+                                    if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                                 end,
-                                function()
-                                    return not customState.stanceBarHide
-                                end,
+                                function() return not customState.stanceBarHide end,
                                 nil,
                                 {
                                     apply = {
                                         keys = { "stanceBarHide" },
                                         write = function(tbl, value)
                                             tbl.stanceBarHide = value or false
-                                            if value then
-                                                mod._cdmAnyStanceBar = true
-                                            end
+                                            if value then mod._cdmAnyStanceBar = true end
                                         end,
                                     },
                                 }
@@ -5264,28 +4751,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             MakeSubnavRow(
                                 "Out of Range Coloring",
                                 RANGE_COLOR_ITEMS,
-                                function()
-                                    return customState.outOfRangeColoring and true or nil
-                                end,
+                                function() return customState.outOfRangeColoring and true or nil end,
                                 function(value)
                                     SetOwnCas("outOfRangeColoring", value or nil)
-                                    if value then
-                                        mod._cdmAnyCustomRangeColor = true
-                                    end
+                                    if value then mod._cdmAnyCustomRangeColor = true end
                                     mod.RefreshCustomSpellRange()
                                 end,
-                                function()
-                                    return not customState.outOfRangeColoring
-                                end,
+                                function() return not customState.outOfRangeColoring end,
                                 nil,
                                 {
                                     disabled = function()
-                                        if customState.outOfRangeColoring then
-                                            return false
-                                        end
-                                        if C_Spell.SpellHasRange(spellId) then
-                                            return false
-                                        end
+                                        if customState.outOfRangeColoring then return false end
+                                        if C_Spell.SpellHasRange(spellId) then return false end
                                         local ovr = C_SpellBook.FindSpellOverrideByID(spellId)
                                         return not (ovr and ovr > 0 and C_Spell.SpellHasRange(ovr))
                                     end,
@@ -5298,130 +4775,142 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- ability comes off cooldown via the FakeActive poll (PresetOnCD). Stored in
                         -- customActiveStates so it travels with the item (own list/preview: the buff-bar branch's shared AUDIO_ITEMS is out of scope in this branch).
                         local CDR_ITEMS = SoundItems()
-                        MakeSubnavRow("Audio Effect on CD Ready", CDR_ITEMS, function()
-                            return (customState and customState.cdReadySoundKey) or "none"
-                        end, function(value)
-                            local cas = ActiveStatesStore()
-                            cas.cdReadySoundKey = (value ~= "none" and value) or nil
-                            if mod.FakeActive_Rearm then
-                                mod.FakeActive_Rearm()
-                            end
-                        end, function()
-                            return not (customState and customState.cdReadySoundKey)
-                        end, AddSoundPreviewButton, { searchable = true })
+                        MakeSubnavRow(
+                            "Audio Effect on CD Ready",
+                            CDR_ITEMS,
+                            function() return (customState and customState.cdReadySoundKey) or "none" end,
+                            function(value)
+                                local cas = ActiveStatesStore()
+                                cas.cdReadySoundKey = (value ~= "none" and value) or nil
+                                if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
+                            end,
+                            function() return not (customState and customState.cdReadySoundKey) end,
+                            AddSoundPreviewButton,
+                            { searchable = true }
+                        )
 
                         if not hasActive then
                             MakeActionRow("Add Active State", function()
                                 ShowDurationPopup(nil, function(seconds)
                                     ActiveStatesStore().duration = seconds
-                                    if mod.FakeActive_Rearm then
-                                        mod.FakeActive_Rearm()
-                                    end
+                                    if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                                 end)
                                 dropMenu:Hide()
                             end)
                         else
                             -- Active State (swipe colour / class / hide)
-                            MakeSubnavRow("Active State", CA_SWIPE_ITEMS, function()
-                                if customState and customState.activeSwipeMode == "none" then
-                                    return "none"
-                                end
-                                if customState and customState.activeSwipeClassColor then
-                                    return "class"
-                                end
-                                return "custom"
-                            end, function(value)
-                                local cas = ActiveStatesStore()
-                                if value == "class" then
-                                    SetOwnCas("activeSwipeMode", nil)
-                                    SetOwnCas("activeSwipeClassColor", true)
-                                elseif value == "none" then
-                                    SetOwnCas("activeSwipeMode", "none")
-                                    SetOwnCas("activeSwipeClassColor", nil)
-                                else
-                                    SetOwnCas("activeSwipeMode", "custom")
-                                    SetOwnCas("activeSwipeClassColor", nil)
-                                    -- Chained read: a slot-stamp color showing
-                                    -- through is kept as the starting custom color.
-                                    if not cas.activeSwipeR then
-                                        cas.activeSwipeR = 1
-                                        cas.activeSwipeG = 0.776
-                                        cas.activeSwipeB = 0.376
-                                        cas.activeSwipeA = 0.7
+                            MakeSubnavRow(
+                                "Active State",
+                                CA_SWIPE_ITEMS,
+                                function()
+                                    if customState and customState.activeSwipeMode == "none" then
+                                        return "none"
                                     end
-                                end
-                            end, function()
-                                return customState
-                                    and customState.activeSwipeMode ~= "none"
-                                    and not customState.activeSwipeClassColor
-                                    and not customState.activeSwipeR
-                            end, function(subItem, entry)
-                                if entry.val == "custom" then
-                                    MakeColorSwatch(subItem, function()
-                                        return (customState and customState.activeSwipeR) or 1
-                                    end, function()
-                                        return (customState and customState.activeSwipeG) or 0.776
-                                    end, function()
-                                        return (customState and customState.activeSwipeB) or 0.376
-                                    end, function(red, green, blue)
-                                        local cas = ActiveStatesStore()
-                                        cas.activeSwipeMode = "custom"
+                                    if customState and customState.activeSwipeClassColor then
+                                        return "class"
+                                    end
+                                    return "custom"
+                                end,
+                                function(value)
+                                    local cas = ActiveStatesStore()
+                                    if value == "class" then
+                                        SetOwnCas("activeSwipeMode", nil)
+                                        SetOwnCas("activeSwipeClassColor", true)
+                                    elseif value == "none" then
+                                        SetOwnCas("activeSwipeMode", "none")
                                         SetOwnCas("activeSwipeClassColor", nil)
-                                        cas.activeSwipeR = red
-                                        cas.activeSwipeG = green
-                                        cas.activeSwipeB = blue
-                                        cas.activeSwipeA = cas.activeSwipeA or 0.7
-                                    end)
-                                end
-                            end, {
-                                apply = {
-                                    keys = {
-                                        "activeSwipeMode",
-                                        "activeSwipeClassColor",
-                                        "activeSwipeR",
-                                        "activeSwipeG",
-                                        "activeSwipeB",
-                                        "activeSwipeA",
+                                    else
+                                        SetOwnCas("activeSwipeMode", "custom")
+                                        SetOwnCas("activeSwipeClassColor", nil)
+                                        -- Chained read: a slot-stamp color showing
+                                        -- through is kept as the starting custom color.
+                                        if not cas.activeSwipeR then
+                                            cas.activeSwipeR = 1
+                                            cas.activeSwipeG = 0.776
+                                            cas.activeSwipeB = 0.376
+                                            cas.activeSwipeA = 0.7
+                                        end
+                                    end
+                                end,
+                                function()
+                                    return customState
+                                        and customState.activeSwipeMode ~= "none"
+                                        and not customState.activeSwipeClassColor
+                                        and not customState.activeSwipeR
+                                end,
+                                function(subItem, entry)
+                                    if entry.val == "custom" then
+                                        MakeColorSwatch(
+                                            subItem,
+                                            function() return (customState and customState.activeSwipeR) or 1 end,
+                                            function()
+                                                return (customState and customState.activeSwipeG) or 0.776
+                                            end,
+                                            function()
+                                                return (customState and customState.activeSwipeB) or 0.376
+                                            end,
+                                            function(red, green, blue)
+                                                local cas = ActiveStatesStore()
+                                                cas.activeSwipeMode = "custom"
+                                                SetOwnCas("activeSwipeClassColor", nil)
+                                                cas.activeSwipeR = red
+                                                cas.activeSwipeG = green
+                                                cas.activeSwipeB = blue
+                                                cas.activeSwipeA = cas.activeSwipeA or 0.7
+                                            end
+                                        )
+                                    end
+                                end,
+                                {
+                                    apply = {
+                                        keys = {
+                                            "activeSwipeMode",
+                                            "activeSwipeClassColor",
+                                            "activeSwipeR",
+                                            "activeSwipeG",
+                                            "activeSwipeB",
+                                            "activeSwipeA",
+                                        },
+                                        write = function(tbl, value)
+                                            -- Read the source colour BEFORE the clear below: a bar
+                                            -- apply stamps every preset member's cas entry, this icon's included, so clearing first would wipe the colour this write then reads back.
+                                            local pr, pg, pb, pa
+                                            if customState then
+                                                pr, pg, pb, pa =
+                                                    customState.activeSwipeR,
+                                                    customState.activeSwipeG,
+                                                    customState.activeSwipeB,
+                                                    customState.activeSwipeA
+                                            end
+                                            -- Colour keys belong to Custom only; clear them for
+                                            -- class/none so a stale colour from an earlier Custom
+                                            -- apply can't linger in the tier. Leftover R/G/B/A
+                                            -- make valuesMatch always fail, so the apply never
+                                            -- toggles off and re-prompts the overwrite popup
+                                            -- forever without visibly changing anything.
+                                            tbl.activeSwipeR = nil
+                                            tbl.activeSwipeG = nil
+                                            tbl.activeSwipeB = nil
+                                            tbl.activeSwipeA = nil
+                                            if value == "class" then
+                                                tbl.activeSwipeMode = false
+                                                tbl.activeSwipeClassColor = true
+                                            elseif value == "none" then
+                                                tbl.activeSwipeMode = "none"
+                                                tbl.activeSwipeClassColor = false
+                                            else
+                                                -- Custom: push this icon's current color.
+                                                tbl.activeSwipeMode = "custom"
+                                                tbl.activeSwipeClassColor = false
+                                                tbl.activeSwipeR = pr or 1
+                                                tbl.activeSwipeG = pg or 0.776
+                                                tbl.activeSwipeB = pb or 0.376
+                                                tbl.activeSwipeA = pa or 0.7
+                                            end
+                                        end,
                                     },
-                                    write = function(tbl, value)
-                                        -- Read the source colour BEFORE the clear below: a bar
-                                        -- apply stamps every preset member's cas entry, this icon's included, so clearing first would wipe the colour this write then reads back.
-                                        local pr, pg, pb, pa
-                                        if customState then
-                                            pr, pg, pb, pa =
-                                                customState.activeSwipeR,
-                                                customState.activeSwipeG,
-                                                customState.activeSwipeB,
-                                                customState.activeSwipeA
-                                        end
-                                        -- Colour keys belong to Custom only; clear them for
-                                        -- class/none so a stale colour from an earlier Custom
-                                        -- apply can't linger in the tier. Leftover R/G/B/A
-                                        -- make valuesMatch always fail, so the apply never
-                                        -- toggles off and re-prompts the overwrite popup
-                                        -- forever without visibly changing anything.
-                                        tbl.activeSwipeR = nil
-                                        tbl.activeSwipeG = nil
-                                        tbl.activeSwipeB = nil
-                                        tbl.activeSwipeA = nil
-                                        if value == "class" then
-                                            tbl.activeSwipeMode = false
-                                            tbl.activeSwipeClassColor = true
-                                        elseif value == "none" then
-                                            tbl.activeSwipeMode = "none"
-                                            tbl.activeSwipeClassColor = false
-                                        else
-                                            -- Custom: push this icon's current color.
-                                            tbl.activeSwipeMode = "custom"
-                                            tbl.activeSwipeClassColor = false
-                                            tbl.activeSwipeR = pr or 1
-                                            tbl.activeSwipeG = pg or 0.776
-                                            tbl.activeSwipeB = pb or 0.376
-                                            tbl.activeSwipeA = pa or 0.7
-                                        end
-                                    end,
-                                },
-                            })
+                                }
+                            )
 
                             -- Active State Glow
                             MakeSubnavRow(
@@ -5429,89 +4918,86 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 ACTIVE_GLOW_ITEMS,
                                 function()
                                     local value = customState.activeGlow
-                                    if value == false then
-                                        value = nil
-                                    end -- blocked slot value = None
+                                    if value == false then value = nil end -- blocked slot value = None
                                     return value
                                 end,
-                                function(value)
-                                    SetOwnCas("activeGlow", value)
-                                end,
-                                function()
-                                    return not customState.activeGlow
-                                end,
+                                function(value) SetOwnCas("activeGlow", value) end,
+                                function() return not customState.activeGlow end,
                                 nil,
                                 {
                                     apply = {
                                         keys = { "activeGlow" },
-                                        write = function(tbl, value)
-                                            tbl.activeGlow = value
-                                        end,
+                                        write = function(tbl, value) tbl.activeGlow = value end,
                                     },
                                 }
                             )
                         end
 
                         -- Glow Effect Color (colours the active glow AND the CD-ready glow).
-                        MakeSubnavRow("Glow Effect Color", GLOW_COLOR_ITEMS, function()
-                            if customState and customState.glowColor == "class" then
-                                return "class"
-                            end
-                            if customState and customState.glowColor == "custom" then
-                                return "custom"
-                            end
-                            return nil
-                        end, function(value)
-                            SetOwnCas("glowColor", value)
-                            -- Chained read: a slot-stamp color showing through
-                            -- is kept as the starting custom color.
-                            if value == "custom" and not customState.glowColorR then
-                                local cas = ActiveStatesStore()
-                                cas.glowColorR = 1
-                                cas.glowColorG = 0.788
-                                cas.glowColorB = 0.137
-                            end
-                        end, function()
-                            return not (customState and customState.glowColor)
-                        end, function(subItem, entry)
-                            if entry.val == "custom" then
-                                MakeColorSwatch(subItem, function()
-                                    return (customState and customState.glowColorR) or 1
-                                end, function()
-                                    return (customState and customState.glowColorG) or 0.788
-                                end, function()
-                                    return (customState and customState.glowColorB) or 0.137
-                                end, function(red, green, blue)
+                        MakeSubnavRow(
+                            "Glow Effect Color",
+                            GLOW_COLOR_ITEMS,
+                            function()
+                                if customState and customState.glowColor == "class" then return "class" end
+                                if customState and customState.glowColor == "custom" then return "custom" end
+                                return nil
+                            end,
+                            function(value)
+                                SetOwnCas("glowColor", value)
+                                -- Chained read: a slot-stamp color showing through
+                                -- is kept as the starting custom color.
+                                if value == "custom" and not customState.glowColorR then
                                     local cas = ActiveStatesStore()
-                                    cas.glowColor = "custom"
-                                    cas.glowColorR = red
-                                    cas.glowColorG = green
-                                    cas.glowColorB = blue
-                                end)
-                            end
-                        end, {
-                            apply = {
-                                keys = { "glowColor", "glowColorR", "glowColorG", "glowColorB" },
-                                write = function(tbl, value)
-                                    tbl.glowColor = value
-                                    if value == "custom" then
-                                        -- Push this icon's current color.
-                                        tbl.glowColorR = (customState and customState.glowColorR) or 1
-                                        tbl.glowColorG = (customState and customState.glowColorG) or 0.788
-                                        tbl.glowColorB = (customState and customState.glowColorB) or 0.137
-                                    else
-                                        tbl.glowColorR = nil
-                                        tbl.glowColorG = nil
-                                        tbl.glowColorB = nil
-                                    end
-                                end,
-                            },
-                        })
+                                    cas.glowColorR = 1
+                                    cas.glowColorG = 0.788
+                                    cas.glowColorB = 0.137
+                                end
+                            end,
+                            function() return not (customState and customState.glowColor) end,
+                            function(subItem, entry)
+                                if entry.val == "custom" then
+                                    MakeColorSwatch(
+                                        subItem,
+                                        function() return (customState and customState.glowColorR) or 1 end,
+                                        function() return (customState and customState.glowColorG) or 0.788 end,
+                                        function() return (customState and customState.glowColorB) or 0.137 end,
+                                        function(red, green, blue)
+                                            local cas = ActiveStatesStore()
+                                            cas.glowColor = "custom"
+                                            cas.glowColorR = red
+                                            cas.glowColorG = green
+                                            cas.glowColorB = blue
+                                        end
+                                    )
+                                end
+                            end,
+                            {
+                                apply = {
+                                    keys = { "glowColor", "glowColorR", "glowColorG", "glowColorB" },
+                                    write = function(tbl, value)
+                                        tbl.glowColor = value
+                                        if value == "custom" then
+                                            -- Push this icon's current color.
+                                            tbl.glowColorR = (customState and customState.glowColorR) or 1
+                                            tbl.glowColorG = (customState and customState.glowColorG) or 0.788
+                                            tbl.glowColorB = (customState and customState.glowColorB) or 0.137
+                                        else
+                                            tbl.glowColorR = nil
+                                            tbl.glowColorG = nil
+                                            tbl.glowColorB = nil
+                                        end
+                                    end,
+                                },
+                            }
+                        )
 
                         -- Remove Active State (clears only the cast-triggered overlay; any Cooldown State Effect stays).
                         if hasActive then
                             MakeActionRow(
-                                CludesUI.L("Remove Active State") .. " (" .. (customState.duration or 0) .. "s)",
+                                CludesUI.L("Remove Active State")
+                                    .. " ("
+                                    .. (customState.duration or 0)
+                                    .. "s)",
                                 function()
                                     local storage = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
                                     local e = storage and storage[casKey]
@@ -5536,13 +5022,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                                 break
                                             end
                                         end
-                                        if not keep then
-                                            storage[casKey] = nil
-                                        end
+                                        if not keep then storage[casKey] = nil end
                                     end
-                                    if mod.FakeActive_Rearm then
-                                        mod.FakeActive_Rearm()
-                                    end
+                                    if mod.FakeActive_Rearm then mod.FakeActive_Rearm() end
                                     dropMenu:Hide()
                                 end
                             )
@@ -5552,16 +5034,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- On a custom injected spell, a row that does not apply to it is
                         -- dimmed, and hovering it shows why in place of its flyout.
                         ApplyBar.DimForCustom = function(menuRow)
-                            if not (isCustomInjected and menuRow) then
-                                return
-                            end
+                            if not (isCustomInjected and menuRow) then return end
                             menuRow:SetAlpha(0.35)
-                            menuRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(menuRow, customDisabledTip)
-                            end)
-                            menuRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
+                            menuRow:SetScript(
+                                "OnEnter",
+                                function() CludesUI.ShowWidgetTooltip(menuRow, customDisabledTip) end
+                            )
+                            menuRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                         end
 
                         -- Custom-shaped bars always render Shape Glow, so the per-spell proc
@@ -5576,23 +5055,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local procRow = MakeSubnavRow(
                             "Proc Glow",
                             GLOW_ITEMS,
-                            function()
-                                return spellSettings.procGlow
-                            end,
+                            function() return spellSettings.procGlow end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("procGlow", value)
                             end,
-                            function()
-                                return spellSettings.procGlow == nil
-                            end,
+                            function() return spellSettings.procGlow == nil end,
                             nil,
                             {
                                 apply = {
                                     keys = { "procGlow" },
-                                    write = function(tbl, value)
-                                        tbl.procGlow = value
-                                    end,
+                                    write = function(tbl, value) tbl.procGlow = value end,
                                 },
                                 -- Glow choices lock while the Cooldown State Effect has a glow
                                 -- (CD Ready or On CD): the reverse of that row's Proc Glow gate.
@@ -5611,22 +5084,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             local procDisabledTip = isCustomInjected and customDisabledTip
                                 or "Custom shapes always use Shape Glow. Set the bar's Icon Shape to None or Cropped to pick a different glow."
                             procRow:SetAlpha(0.35)
-                            procRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(procRow, procDisabledTip)
-                            end)
-                            procRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
+                            procRow:SetScript(
+                                "OnEnter",
+                                function() CludesUI.ShowWidgetTooltip(procRow, procDisabledTip) end
+                            )
+                            procRow:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                         end
 
                         -- 2. Active State (default = "custom" / CD Swipe Color #FFC660)
                         local activeRow = MakeSubnavRow("Active State", ACTIVE_SWIPE_ITEMS, function()
-                            if spellSettings.activeSwipeMode == "none" then
-                                return "none"
-                            end
-                            if spellSettings.activeSwipeClassColor then
-                                return "class"
-                            end
+                            if spellSettings.activeSwipeMode == "none" then return "none" end
+                            if spellSettings.activeSwipeClassColor then return "class" end
                             return "custom"
                         end, function(value)
                             EnsureStored()
@@ -5648,10 +5116,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end
                         end, function()
-                            if spellSettings.activeBorderEnabled then
-                                return false
-                            end
-                            if spellSettings.activeSwipeMode == "none" or spellSettings.activeSwipeClassColor then
+                            if spellSettings.activeBorderEnabled then return false end
+                            if
+                                spellSettings.activeSwipeMode == "none" or spellSettings.activeSwipeClassColor
+                            then
                                 return false
                             end
                             -- Check if custom color differs from default #FFC660
@@ -5683,9 +5151,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         spellSettings.activeSwipeG = green
                                         spellSettings.activeSwipeB = blue
                                         spellSettings.activeSwipeA = a
-                                        if mod.QueueReanchor then
-                                            mod.QueueReanchor()
-                                        end
+                                        if mod.QueueReanchor then mod.QueueReanchor() end
                                     end,
                                     true,
                                     function()
@@ -5704,12 +5170,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.activeSwipeA = 0.7
                                         end
                                         -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-selected Custom row.
-                                        if subMenu._refreshSelection then
-                                            subMenu._refreshSelection()
-                                        end
-                                        if mod.QueueReanchor then
-                                            mod.QueueReanchor()
-                                        end
+                                        if subMenu._refreshSelection then subMenu._refreshSelection() end
+                                        if mod.QueueReanchor then mod.QueueReanchor() end
                                     end
                                 )
                             elseif entry.activeBorder then
@@ -5730,9 +5192,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if mod.QueueReanchor then
-                                            mod.QueueReanchor()
-                                        end
+                                        if mod.QueueReanchor then mod.QueueReanchor() end
                                     end,
                                     true,
                                     function()
@@ -5748,9 +5208,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
-                                        if mod.QueueReanchor then
-                                            mod.QueueReanchor()
-                                        end
+                                        if mod.QueueReanchor then mod.QueueReanchor() end
                                     end
                                 )
                             end
@@ -5768,7 +5226,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- Read the source colour BEFORE the clear below: "Apply to This
                                     -- Spell" passes ss itself, so clearing first would wipe the picked colour this write then reads back, resetting it to the default.
                                     local pr, pg, pb, pa =
-                                        spellSettings.activeSwipeR, spellSettings.activeSwipeG, spellSettings.activeSwipeB, spellSettings.activeSwipeA
+                                        spellSettings.activeSwipeR,
+                                        spellSettings.activeSwipeG,
+                                        spellSettings.activeSwipeB,
+                                        spellSettings.activeSwipeA
                                     -- Colour keys belong to Custom only; clear them for class/none so a
                                     -- stale colour from an earlier Custom apply can't linger in the tier and make valuesMatch always fail (perpetual overwrite popup, no change).
                                     tbl.activeSwipeR = nil
@@ -5799,28 +5260,20 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local glowRow = MakeSubnavRow(
                             "Active State Glow",
                             ACTIVE_GLOW_ITEMS,
-                            function()
-                                return spellSettings.activeGlow
-                            end,
+                            function() return spellSettings.activeGlow end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("activeGlow", value)
-                                if value and value > 0 then
-                                    mod._cdmAnyActiveGlow = true
-                                end
+                                if value and value > 0 then mod._cdmAnyActiveGlow = true end
                             end,
-                            function()
-                                return spellSettings.activeGlow == nil
-                            end,
+                            function() return spellSettings.activeGlow == nil end,
                             nil,
                             {
                                 apply = {
                                     keys = { "activeGlow" },
                                     write = function(tbl, value)
                                         tbl.activeGlow = value
-                                        if value and value > 0 then
-                                            mod._cdmAnyActiveGlow = true
-                                        end
+                                        if value and value > 0 then mod._cdmAnyActiveGlow = true end
                                     end,
                                 },
                             }
@@ -5832,26 +5285,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local maxStacksGlowRow = MakeSubnavRow(
                             "Max Charges Glow",
                             ACTIVE_GLOW_ITEMS,
-                            function()
-                                return spellSettings.maxStacksGlow
-                            end,
+                            function() return spellSettings.maxStacksGlow end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("maxStacksGlow", value)
-                                if value and value > 0 then
-                                    mod._cdmAnyMaxStacksGlow = true
-                                end
+                                if value and value > 0 then mod._cdmAnyMaxStacksGlow = true end
                             end,
-                            function()
-                                return spellSettings.maxStacksGlow == nil
-                            end,
+                            function() return spellSettings.maxStacksGlow == nil end,
                             nil,
                             {
                                 apply = {
                                     keys = { "maxStacksGlow" },
-                                    write = function(tbl, value)
-                                        tbl.maxStacksGlow = value
-                                    end,
+                                    write = function(tbl, value) tbl.maxStacksGlow = value end,
                                 },
                             }
                         )
@@ -5865,26 +5310,18 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local nonActiveRow = MakeSubnavRow(
                             "Non Active State",
                             NONACTIVE_ITEMS,
-                            function()
-                                return spellSettings.desatNotActive and true or nil
-                            end,
+                            function() return spellSettings.desatNotActive and true or nil end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("desatNotActive", value or nil)
-                                if value then
-                                    mod._cdmAnyDesatNotActive = true
-                                end
+                                if value then mod._cdmAnyDesatNotActive = true end
                             end,
-                            function()
-                                return spellSettings.desatNotActive == nil
-                            end,
+                            function() return spellSettings.desatNotActive == nil end,
                             nil,
                             {
                                 apply = {
                                     keys = { "desatNotActive" },
-                                    write = function(tbl, value)
-                                        tbl.desatNotActive = value or false
-                                    end,
+                                    write = function(tbl, value) tbl.desatNotActive = value or false end,
                                 },
                             }
                         )
@@ -5901,15 +5338,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 val = "ignoreResource",
                                 label = "+ Ignore Resource Cost",
                                 tooltip = "Keeps the icon in full color while you lack the resource to cast it. Out of range still tints it red.",
-                                toggleGet = function()
-                                    return spellSettings.noResourceTint == true
-                                end,
+                                toggleGet = function() return spellSettings.noResourceTint == true end,
                                 toggleSet = function(value)
                                     EnsureStored()
                                     SetOwnSetting("noResourceTint", value or nil)
-                                    if value then
-                                        mod._cdmAnyNoResourceTint = true
-                                    end
+                                    if value then mod._cdmAnyNoResourceTint = true end
                                     if mod.RefreshCDMIconAppearance then
                                         mod.RefreshCDMIconAppearance(barId)
                                     end
@@ -5923,29 +5356,22 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local cdSatRow = MakeSubnavRow(
                             "Cooldown Saturation",
                             KEEP_COLORED_ITEMS,
-                            function()
-                                return spellSettings.noDesatOnCD and true or nil
-                            end,
+                            function() return spellSettings.noDesatOnCD and true or nil end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("noDesatOnCD", value or nil)
-                                if value then
-                                    mod._cdmAnyNoDesatOnCD = true
-                                end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
+                                if value then mod._cdmAnyNoDesatOnCD = true end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
                             function()
-                                return spellSettings.noDesatOnCD == nil and spellSettings.noResourceTint == nil
+                                return spellSettings.noDesatOnCD == nil
+                                    and spellSettings.noResourceTint == nil
                             end,
                             nil,
                             {
                                 apply = {
                                     keys = { "noDesatOnCD" },
-                                    write = function(tbl, value)
-                                        tbl.noDesatOnCD = value or false
-                                    end,
+                                    write = function(tbl, value) tbl.noDesatOnCD = value or false end,
                                 },
                             }
                         )
@@ -5958,60 +5384,31 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Picking or clearing a glow (or a bar apply doing so) rebuilds the menu,
                         -- which adds or drops the Glow Style row below.
                         local hadGlow = mod.CdStateGlowOf(spellSettings) ~= nil
-                        local cdStateRow = MakeSubnavRow("Cooldown State Effect", CD_STATE_ITEMS, function()
-                            return mod.CdStateHideOf(spellSettings)
-                        end, function(value)
-                            mod.CdStateWriteHide(EnsureStored(), value)
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
-                        end, function()
-                            return spellSettings.cdStateEffect == nil
-                                and spellSettings.cdStateGlow == nil
-                                and not spellSettings.suppressGCD
-                                and not spellSettings.hideChargeText
-                                and not spellSettings.chargeHideSwipe
-                                and not spellSettings.hideRechargeEdge
-                                and not spellSettings.chargeHideCdText
-                                and not spellSettings.chargeHideUntilSpent
-                        end, function(subItem, entry, subMenu)
-                            -- Lower Alpha (On CD): clicking prompts for the opacity percent, then selects the effect (mirrors the setVal above).
-                            if entry.val == "lowerAlphaOnCD" then
-                                subItem:SetScript("OnClick", function()
-                                    local current = math.floor(((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5)
-                                    -- Close the per-spell dropdown so only the popup shows.
-                                    dropMenu:Hide()
-                                    ShowAlphaPopup(current, function(percent)
-                                        local e = EnsureStored()
-                                        e.cdStateLowerAlpha = percent / 100
-                                        mod.CdStateWriteHide(e, "lowerAlphaOnCD")
-                                        if mod.RefreshCDMIconAppearance then
-                                            mod.RefreshCDMIconAppearance(barId)
-                                        end
-                                    end)
-                                end)
-                            end
-                        end, {
-                            itemState = ApplyBar.CdStateItemState(spellSettings, function()
-                                return (spellSettings.procGlow and spellSettings.procGlow > 0) and true or false
-                            end),
-                            onRefresh = function()
-                                if (mod.CdStateGlowOf(spellSettings) ~= nil) ~= hadGlow then
-                                    dropMenu._rebuildPending = true
-                                end
+                        local cdStateRow = MakeSubnavRow(
+                            "Cooldown State Effect",
+                            CD_STATE_ITEMS,
+                            function() return mod.CdStateHideOf(spellSettings) end,
+                            function(value)
+                                mod.CdStateWriteHide(EnsureStored(), value)
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
-                            apply = {
-                                confirmRA = true,
-                                keys = { "cdStateEffect", "cdStateLowerAlpha" },
-                                write = ApplyBar.CdHideWrite(spellSettings),
-                                -- The strip's own-entry write: an explicit value (None =
-                                -- false, the exclusion), keeping the glow the spell shows.
-                                -- Lower Alpha asks for its percent first, as a click on
-                                -- its row does.
-                                writeOwn = function(value)
-                                    if value == "lowerAlphaOnCD" then
+                            function()
+                                return spellSettings.cdStateEffect == nil
+                                    and spellSettings.cdStateGlow == nil
+                                    and not spellSettings.suppressGCD
+                                    and not spellSettings.hideChargeText
+                                    and not spellSettings.chargeHideSwipe
+                                    and not spellSettings.hideRechargeEdge
+                                    and not spellSettings.chargeHideCdText
+                                    and not spellSettings.chargeHideUntilSpent
+                            end,
+                            function(subItem, entry, subMenu)
+                                -- Lower Alpha (On CD): clicking prompts for the opacity percent, then selects the effect (mirrors the setVal above).
+                                if entry.val == "lowerAlphaOnCD" then
+                                    subItem:SetScript("OnClick", function()
                                         local current =
                                             math.floor(((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5)
+                                        -- Close the per-spell dropdown so only the popup shows.
                                         dropMenu:Hide()
                                         ShowAlphaPopup(current, function(percent)
                                             local e = EnsureStored()
@@ -6021,85 +5418,141 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                                 mod.RefreshCDMIconAppearance(barId)
                                             end
                                         end)
-                                        return
+                                    end)
+                                end
+                            end,
+                            {
+                                itemState = ApplyBar.CdStateItemState(
+                                    spellSettings,
+                                    function()
+                                        return (spellSettings.procGlow and spellSettings.procGlow > 0)
+                                                and true
+                                            or false
                                     end
-                                    local e = EnsureStored()
-                                    mod.CdStateWriteHide(e, value or false)
-                                    e.cdStateLowerAlpha = nil
+                                ),
+                                onRefresh = function()
+                                    if (mod.CdStateGlowOf(spellSettings) ~= nil) ~= hadGlow then
+                                        dropMenu._rebuildPending = true
+                                    end
                                 end,
-                                view = mod.CdStateHideOf,
-                            },
-                        })
+                                apply = {
+                                    confirmRA = true,
+                                    keys = { "cdStateEffect", "cdStateLowerAlpha" },
+                                    write = ApplyBar.CdHideWrite(spellSettings),
+                                    -- The strip's own-entry write: an explicit value (None =
+                                    -- false, the exclusion), keeping the glow the spell shows.
+                                    -- Lower Alpha asks for its percent first, as a click on
+                                    -- its row does.
+                                    writeOwn = function(value)
+                                        if value == "lowerAlphaOnCD" then
+                                            local current = math.floor(
+                                                ((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5
+                                            )
+                                            dropMenu:Hide()
+                                            ShowAlphaPopup(current, function(percent)
+                                                local e = EnsureStored()
+                                                e.cdStateLowerAlpha = percent / 100
+                                                mod.CdStateWriteHide(e, "lowerAlphaOnCD")
+                                                if mod.RefreshCDMIconAppearance then
+                                                    mod.RefreshCDMIconAppearance(barId)
+                                                end
+                                            end)
+                                            return
+                                        end
+                                        local e = EnsureStored()
+                                        mod.CdStateWriteHide(e, value or false)
+                                        e.cdStateLowerAlpha = nil
+                                    end,
+                                    view = mod.CdStateHideOf,
+                                },
+                            }
+                        )
                         dropMenu._cseRow = cdStateRow
                         ApplyBar.DimForCustom(cdStateRow)
 
                         -- 4b. Glow Style: the style the CD Ready and On CD glows use, shown only
                         -- while a glow is picked in Cooldown State Effect.
                         if not isCustomInjected and hadGlow then
-                            MakeSubnavRow("Glow Style", CD_READY_STYLE_ITEMS, function()
-                                return mod.CdReadyGlowStyle(mod.CdStateGlowOf(spellSettings), spellSettings)
-                            end, function(value)
-                                EnsureStored()
-                                SetOwnSetting("cdStateGlowStyle", value)
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
-                            end, function()
-                                return spellSettings.cdStateGlowStyle == nil
-                            end, function(subItem, entry, subMenu)
-                                -- Blackout: clicking prompts for the opacity percent, then
-                                -- selects this style (mirrors Lower Alpha's onClick above).
-                                if entry.val == 8 then
-                                    entry.dynamicLabel = function()
-                                        local baseCaption = CludesUI.L(mod.GLOW_STYLES[8].name)
-                                        if mod.CdReadyGlowStyle(mod.CdStateGlowOf(spellSettings), spellSettings) == 8 then
-                                            local percent = math.floor(((spellSettings.cdStateGlowAlpha or 1) * 100) + 0.5)
-                                            return percent .. "% " .. baseCaption
-                                        end
-                                        return baseCaption
+                            MakeSubnavRow(
+                                "Glow Style",
+                                CD_READY_STYLE_ITEMS,
+                                function()
+                                    return mod.CdReadyGlowStyle(
+                                        mod.CdStateGlowOf(spellSettings),
+                                        spellSettings
+                                    )
+                                end,
+                                function(value)
+                                    EnsureStored()
+                                    SetOwnSetting("cdStateGlowStyle", value)
+                                    if mod.RefreshCDMIconAppearance then
+                                        mod.RefreshCDMIconAppearance(barId)
                                     end
-                                    subItem:SetScript("OnClick", function()
-                                        local current = math.floor(((spellSettings.cdStateGlowAlpha or 1) * 100) + 0.5)
-                                        dropMenu:Hide()
-                                        ShowAlphaPopup(
-                                            current,
-                                            function(percent)
-                                                EnsureStored()
-                                                spellSettings.cdStateGlowAlpha = percent / 100
-                                                SetOwnSetting("cdStateGlowStyle", 8)
-                                                if mod.RefreshCDMIconAppearance then
-                                                    mod.RefreshCDMIconAppearance(barId)
-                                                end
-                                            end,
-                                            CludesUI.L("Glow Opacity"),
-                                            CludesUI.L("Blackout glow opacity (1-100%)")
-                                        )
-                                    end)
-                                end
-                            end, {
-                                apply = {
-                                    keys = { "cdStateGlowStyle", "cdStateGlowAlpha" },
-                                    -- The Blackout opacity rides along with the Blackout value
-                                    -- only: a spell that set its own opacity pushes it to the bar
-                                    -- instead of rejoining the bar's (see payloadValue).
-                                    payload = function(entry)
-                                        return entry.val == 8
-                                    end,
-                                    write = function(tbl, value)
-                                        tbl.cdStateGlowStyle = value
-                                        tbl.cdStateGlowAlpha = (value == 8) and spellSettings.cdStateGlowAlpha or nil
-                                    end,
-                                },
-                            })
+                                end,
+                                function() return spellSettings.cdStateGlowStyle == nil end,
+                                function(subItem, entry, subMenu)
+                                    -- Blackout: clicking prompts for the opacity percent, then
+                                    -- selects this style (mirrors Lower Alpha's onClick above).
+                                    if entry.val == 8 then
+                                        entry.dynamicLabel = function()
+                                            local baseCaption = CludesUI.L(mod.GLOW_STYLES[8].name)
+                                            if
+                                                mod.CdReadyGlowStyle(
+                                                    mod.CdStateGlowOf(spellSettings),
+                                                    spellSettings
+                                                ) == 8
+                                            then
+                                                local percent = math.floor(
+                                                    ((spellSettings.cdStateGlowAlpha or 1) * 100) + 0.5
+                                                )
+                                                return percent .. "% " .. baseCaption
+                                            end
+                                            return baseCaption
+                                        end
+                                        subItem:SetScript("OnClick", function()
+                                            local current = math.floor(
+                                                ((spellSettings.cdStateGlowAlpha or 1) * 100) + 0.5
+                                            )
+                                            dropMenu:Hide()
+                                            ShowAlphaPopup(
+                                                current,
+                                                function(percent)
+                                                    EnsureStored()
+                                                    spellSettings.cdStateGlowAlpha = percent / 100
+                                                    SetOwnSetting("cdStateGlowStyle", 8)
+                                                    if mod.RefreshCDMIconAppearance then
+                                                        mod.RefreshCDMIconAppearance(barId)
+                                                    end
+                                                end,
+                                                CludesUI.L("Glow Opacity"),
+                                                CludesUI.L("Blackout glow opacity (1-100%)")
+                                            )
+                                        end)
+                                    end
+                                end,
+                                {
+                                    apply = {
+                                        keys = { "cdStateGlowStyle", "cdStateGlowAlpha" },
+                                        -- The Blackout opacity rides along with the Blackout value
+                                        -- only: a spell that set its own opacity pushes it to the bar
+                                        -- instead of rejoining the bar's (see payloadValue).
+                                        payload = function(entry) return entry.val == 8 end,
+                                        write = function(tbl, value)
+                                            tbl.cdStateGlowStyle = value
+                                            tbl.cdStateGlowAlpha = (value == 8)
+                                                    and spellSettings.cdStateGlowAlpha
+                                                or nil
+                                        end,
+                                    },
+                                }
+                            )
                         end
 
                         -- 4a. Threshold Text: decimals/color change on this spell's countdowns
                         -- (cooldown, recharge and active state) below its Threshold Seconds. Engine countdown formatter -- see ns.ApplyThresholdFormatter; zero cost until armed.
                         do
                             local access = {}
-                            access.get = function(keyName)
-                                return spellSettings[keyName]
-                            end
+                            access.get = function(keyName) return spellSettings[keyName] end
                             access.set = function(keyName, value)
                                 EnsureStored()
                                 spellSettings[keyName] = value
@@ -6112,12 +5565,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 if (tonumber(spellSettings.thresholdSeconds) or 0) > 0 then
                                     mod._cdmAnyThresholdText = true
                                 end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
-                                if mod.QueueReanchor then
-                                    mod.QueueReanchor()
-                                end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
+                                if mod.QueueReanchor then mod.QueueReanchor() end
                             end
                             AddThresholdTextRow(access)
                         end
@@ -6128,27 +5577,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             "Cooldown Swipe",
                             CD_SWIPE_ITEMS,
                             function()
-                                if spellSettings.hideCDSwipe then
-                                    return "hide"
-                                end
-                                if spellSettings.reverseSwipe then
-                                    return "reverse"
-                                end
+                                if spellSettings.hideCDSwipe then return "hide" end
+                                if spellSettings.reverseSwipe then return "reverse" end
                                 return nil
                             end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("reverseSwipe", (value == "reverse") or nil)
                                 SetOwnSetting("hideCDSwipe", (value == "hide") or nil)
-                                if spellSettings.reverseSwipe then
-                                    mod._cdmAnyReverseSwipe = true
-                                end
-                                if spellSettings.hideCDSwipe then
-                                    mod._cdmAnyHideCDSwipe = true
-                                end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
+                                if spellSettings.reverseSwipe then mod._cdmAnyReverseSwipe = true end
+                                if spellSettings.hideCDSwipe then mod._cdmAnyHideCDSwipe = true end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
                             function()
                                 return spellSettings.reverseSwipe == nil and spellSettings.hideCDSwipe == nil
@@ -6174,31 +5613,23 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             MakeSubnavRow(
                                 "Stance Bar",
                                 ApplyBar.STANCE_BAR_ITEMS,
-                                function()
-                                    return spellSettings.stanceBarHide or nil
-                                end,
+                                function() return spellSettings.stanceBarHide or nil end,
                                 function(value)
                                     EnsureStored()
                                     SetOwnSetting("stanceBarHide", value)
-                                    if value then
-                                        mod._cdmAnyStanceBar = true
-                                    end
+                                    if value then mod._cdmAnyStanceBar = true end
                                     if mod.RefreshCDMIconAppearance then
                                         mod.RefreshCDMIconAppearance(barId)
                                     end
                                 end,
-                                function()
-                                    return not spellSettings.stanceBarHide
-                                end,
+                                function() return not spellSettings.stanceBarHide end,
                                 nil,
                                 {
                                     apply = {
                                         keys = { "stanceBarHide" },
                                         write = function(tbl, value)
                                             tbl.stanceBarHide = value or false
-                                            if value then
-                                                mod._cdmAnyStanceBar = true
-                                            end
+                                            if value then mod._cdmAnyStanceBar = true end
                                         end,
                                     },
                                 }
@@ -6213,24 +5644,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local cdReadySoundRow = MakeSubnavRow(
                             "Audio Effect on CD Ready",
                             CDR_AUDIO_ITEMS,
-                            function()
-                                return spellSettings.cdReadySoundKey or "none"
-                            end,
+                            function() return spellSettings.cdReadySoundKey or "none" end,
                             function(value)
                                 EnsureStored()
                                 SetOwnSetting("cdReadySoundKey", (value ~= "none" and value) or nil)
                                 -- Flip the 0-cost gate live so the edge hook starts evaluating on the next
                                 -- desaturation tick, and refresh so a CHARGE spell registers on the SPELL_UPDATE_CHARGES watcher immediately.
-                                if spellSettings.cdReadySoundKey then
-                                    mod._cdmAnyCdReadySound = true
-                                end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
+                                if spellSettings.cdReadySoundKey then mod._cdmAnyCdReadySound = true end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
-                            function()
-                                return spellSettings.cdReadySoundKey == nil
-                            end,
+                            function() return spellSettings.cdReadySoundKey == nil end,
                             AddSoundPreviewButton,
                             {
                                 searchable = true,
@@ -6257,12 +5680,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             "Glow Effect Color",
                             GLOW_COLOR_ITEMS,
                             function()
-                                if spellSettings.glowColor == "class" then
-                                    return "class"
-                                end
-                                if spellSettings.glowColor == "custom" then
-                                    return "custom"
-                                end
+                                if spellSettings.glowColor == "class" then return "class" end
+                                if spellSettings.glowColor == "custom" then return "custom" end
                                 return nil
                             end,
                             function(value)
@@ -6273,13 +5692,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     spellSettings.glowColorG = 0.788
                                     spellSettings.glowColorB = 0.137
                                 end
-                                if mod.RefreshCDMIconAppearance then
-                                    mod.RefreshCDMIconAppearance(barId)
-                                end
+                                if mod.RefreshCDMIconAppearance then mod.RefreshCDMIconAppearance(barId) end
                             end,
-                            function()
-                                return spellSettings.glowColor == nil
-                            end,
+                            function() return spellSettings.glowColor == nil end,
                             ApplyBar.CustomColorSwatch("glowColor", 0.788, 0.137),
                             ApplyBar.CustomColorApply("glowColor", 0.788, 0.137)
                         )
@@ -6383,9 +5798,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                                 -- Stamp/restore on every claimed frame now: DecorateFrame runs from
                                 -- the reanchor pass (the only re-style path for the default Essential/Utility bars).
-                                if mod.QueueReanchor then
-                                    mod.QueueReanchor()
-                                end
+                                if mod.QueueReanchor then mod.QueueReanchor() end
                                 -- Aura-tracked custom buffs render in an engine container the
                                 -- reanchor never reaches; their sync pass rebuilds it when the
                                 -- icon changes (a signature no-op for every other bar).
@@ -6447,9 +5860,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 })
                             else
                                 local disabled
-                                if curKey then
-                                    disabled = { [curKey] = "You're on this spec." }
-                                end
+                                if curKey then disabled = { [curKey] = "You're on this spec." } end
                                 CludesUI:ShowCDMSpecPickerPopup({
                                     title = "Copy to Other Specs",
                                     subtitle = "Copies this custom spell and its settings to the same bar on the specs you pick. Specs that already have it are skipped.",
@@ -6489,9 +5900,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 frame:Hide()
                 ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, removeOnly)
                 local r = frame._cseRow
-                if frame:IsShown() and r and r._showSub then
-                    r._showSub()
-                end
+                if frame:IsShown() and r and r._showSub then r._showSub() end
                 return
             end
             local overMenu = frame:IsMouseOver() or anchor:IsMouseOver()
@@ -6507,9 +5916,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             local overStrip = strip and strip:IsShown() and strip:IsMouseOver()
             if strip and strip:IsShown() then
                 local ownerFrame = strip._ownerItem
-                if not (ownerFrame and ownerFrame:IsVisible()) then
-                    strip:Hide()
-                end
+                if not (ownerFrame and ownerFrame:IsVisible()) then strip:Hide() end
             end
             -- Keep the menu open while the shared color picker is up: it's a separate popup, so interacting with it must not dismiss the menu (and its cog/subnav flyout).
             local cp = CludesUI._colorPickerPopup
@@ -6526,21 +5933,15 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         end)
         dropMenu:SetScript("OnHide", function(frame)
             frame:SetScript("OnUpdate", nil)
-            if frame._openSub and frame._openSub:IsShown() then
-                frame._openSub:Hide()
-            end
-            if frame._applyStrip then
-                frame._applyStrip:Hide()
-            end
+            if frame._openSub and frame._openSub:IsShown() then frame._openSub:Hide() end
+            if frame._applyStrip then frame._applyStrip:Hide() end
         end)
         dropMenu:Show()
         return
     end
 
     -- Divider after Remove Spell (only in full picker mode)
-    if slotIndex then
-        AddMenuDivider()
-    end
+    if slotIndex then AddMenuDivider() end
 
     -- The picker's own entries (hovering one leaves an open flyout alone).
     local function PickerRow(text, onClick)
@@ -6568,12 +5969,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     if not isBuffBar then
         PickerRow("Custom Spell ID", function()
             mod.CDMO_ShowCustomSpellIDPopup(edge and edge.key, function(spellRef)
-                if mod.UpdateCustomBuffAuraTracking then
-                    mod.UpdateCustomBuffAuraTracking()
-                end
-                if onSelect then
-                    onSelect(spellRef, true)
-                end
+                if mod.UpdateCustomBuffAuraTracking then mod.UpdateCustomBuffAuraTracking() end
+                if onSelect then onSelect(spellRef, true) end
             end, not isCustomBuff)
         end)
     end
@@ -6587,9 +5984,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     -- like any entry).
     if not isBuffBar and not isCustomBuff then
         local function Added(marker)
-            if onSelect then
-                onSelect(marker, true)
-            end
+            if onSelect then onSelect(marker, true) end
         end
         PickerRow("Custom Item ID", function()
             ShowCustomItemIDPopup(edge and edge.key, function(marker)
@@ -6597,9 +5992,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 Added(marker)
             end)
         end)
-        PickerRow("Equipment Slot", function()
-            ShowEquipmentSlotPopup(edge and edge.key, Added)
-        end)
+        PickerRow("Equipment Slot", function() ShowEquipmentSlotPopup(edge and edge.key, Added) end)
         PickerRow("Empty Slot", function()
             EnsureAssignedSpells(barId)
             mod.AddTrackedSpell(barId, mod.NewEmptySlotMarker())
@@ -6680,16 +6073,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         -- character's active racial; ns.NormalizeRacialAssignments rewrites it on
         -- every other race, so a shared profile needs the racial added only once.
         local racial = mod._activeRacialSpellID
-        if racial then
-            Preset(CludesUI.L("Racial"), C_Spell.GetSpellTexture(racial), racial)
-        end
+        if racial then Preset(CludesUI.L("Racial"), C_Spell.GetSpellTexture(racial), racial) end
         -- WoW Forever Paladins: Seals, the stand-in for Blizzard's Seals entry
         -- (CUI_CDM_ForeverSeals.lua), named by the client's own spell name.
         local seals = mod.CDM_SEALS_SPELL
         local sealsName = seals and C_Spell.GetSpellName(seals)
-        if sealsName then
-            Preset(sealsName, C_Spell.GetSpellTexture(seals), seals)
-        end
+        if sealsName then Preset(sealsName, C_Spell.GetSpellTexture(seals), seals) end
 
         -- "Potions & Healthstone" flyout subnav
         local _potionsSub
@@ -6724,9 +6113,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- Built once per picker: the presets and their on-bar states do not
                 -- change while it is open, so a later hover shows the same flyout.
                 if _potionsSub then
-                    if not _potionsSub:IsShown() then
-                        _potionsSub:Show()
-                    end
+                    if not _potionsSub:IsShown() then _potionsSub:Show() end
                     return
                 end
                 _potionsSub = CreateFrame("Frame", nil, dropMenu)
@@ -6845,9 +6232,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- this flyout and its row belong to the dress that left them.
                 local menuGen = PoolGen(dropMenu)
                 C_Timer.After(0.3, function()
-                    if PoolGen(dropMenu) ~= menuGen then
-                        return
-                    end
+                    if PoolGen(dropMenu) ~= menuGen then return end
                     if
                         _potionsSub
                         and _potionsSub:IsShown()
@@ -6901,9 +6286,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         mod.AddPresetToBar(barId, preset)
                         -- Arm the shared Sated listener now (debuff-driven presets
                         -- like Bloodlust); no-op for cooldown presets.
-                        if mod.UpdateLustListener then
-                            mod.UpdateLustListener()
-                        end
+                        if mod.UpdateLustListener then mod.UpdateLustListener() end
                         RefreshCDPreview()
                     end
                 )
@@ -6938,9 +6321,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         )
         menuH = menuH + ITEM_H
         allItems[#allItems + 1] = entry
-        if isDisabled then
-            return
-        end
+        if isDisabled then return end
         local function MarkOnThisBar()
             caption:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
             ico:SetDesaturated(true)
@@ -6962,9 +6343,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 highlight:SetAlpha(0)
             end)
         end
-        if excludeSet and (excludeSet[sp.cdID] or excludeSet[sp.spellID]) then
-            return MarkOnThisBar()
-        end
+        if excludeSet and (excludeSet[sp.cdID] or excludeSet[sp.spellID]) then return MarkOnThisBar() end
         local notLearned = sp.isKnown == false
         if notLearned then
             ico:SetDesaturated(true)
@@ -6974,16 +6353,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             caption:SetTextColor(1, 1, 1, 1)
             highlight:SetColorTexture(1, 1, 1, hlA)
             highlight:SetAlpha(1)
-            if notLearned then
-                CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented"))
-            end
+            if notLearned then CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented")) end
         end)
         entry:SetScript("OnLeave", function()
             caption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             highlight:SetAlpha(0)
-            if notLearned then
-                CludesUI.HideWidgetTooltip()
-            end
+            if notLearned then CludesUI.HideWidgetTooltip() end
         end)
         entry:SetScript("OnClick", function()
             if wrongGroup then
@@ -6992,19 +6367,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 return
             end
             -- assignedSpells stores spell ids.
-            if onSelect then
-                onSelect(sp.spellID, sp.isExtra)
-            end
-            if notLearned then
-                CludesUI.HideWidgetTooltip()
-            end
+            if onSelect then onSelect(sp.spellID, sp.isExtra) end
+            if notLearned then CludesUI.HideWidgetTooltip() end
             MarkOnThisBar()
         end)
     end
 
-    local function MakeDivider()
-        AddMenuDivider()
-    end
+    local function MakeDivider() AddMenuDivider() end
 
     -- The spell list. Custom buff bars have none (their Custom Spell ID entry is
     -- above). CD / utility bars: the primary group, then the secondary (each
@@ -7019,9 +6388,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             { secUnassigned, secAssigned },
             { notTracked },
         }
-        table.sort(notTracked, function(lhs, rhs)
-            return (lhs.name or "") < (rhs.name or "")
-        end)
+        table.sort(notTracked, function(lhs, rhs) return (lhs.name or "") < (rhs.name or "") end)
         local started = false
         for _, group in ipairs(groups) do
             local any = false
@@ -7029,9 +6396,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 any = any or #list > 0
             end
             if any then
-                if started then
-                    MakeDivider()
-                end
+                if started then MakeDivider() end
                 for _, list in ipairs(group) do
                     for _, sp in ipairs(list) do
                         MakeItem(sp, false)
@@ -7044,9 +6409,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         for _, sp in ipairs(itemsDisplayed) do
             MakeItem(sp, false)
         end
-        if #itemsDisplayed > 0 and #itemsExtra > 0 then
-            MakeDivider()
-        end
+        if #itemsDisplayed > 0 and #itemsExtra > 0 then MakeDivider() end
         for _, sp in ipairs(itemsExtra) do
             MakeItem(sp, false)
         end
@@ -7074,15 +6437,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         end
         Accented()
         text:SetText(CludesUI.L("Missing Spells?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
-        footer:SetScript("OnEnter", function()
-            text:SetTextColor(1, 1, 1, 1)
-        end)
+        footer:SetScript("OnEnter", function() text:SetTextColor(1, 1, 1, 1) end)
         footer:SetScript("OnLeave", Accented)
         footer:SetScript("OnClick", function()
             dropMenu:Hide()
-            if mod.OpenBlizzardCDMTab then
-                mod.OpenBlizzardCDMTab(true)
-            end
+            if mod.OpenBlizzardCDMTab then mod.OpenBlizzardCDMTab(true) end
         end)
         allItems[#allItems + 1] = footer
         menuH = menuH + FOOTER_H
@@ -7126,9 +6485,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     -- closing propagates them to synced specs.
     dropMenu:HookScript("OnHide", function(m)
         m:SetScript("OnUpdate", nil)
-        if mod.MaybePropagateRPT then
-            mod.MaybePropagateRPT()
-        end
+        if mod.MaybePropagateRPT then mod.MaybePropagateRPT() end
     end)
 
     dropMenu:Show()

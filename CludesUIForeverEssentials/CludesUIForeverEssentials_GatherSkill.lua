@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GatherSkill.lua  (WoW Forever only)
 --  Gathering Skill in Tooltips: on a herb or ore node's tooltip, the game's
@@ -103,9 +99,7 @@ end
 
 local function AddHerb(itemId)
     local name = C_Item.GetItemNameByID(itemId)
-    if not name then
-        return false
-    end
+    if not name then return false end
     nodes[name] = { HERBALISM, HERBS[itemId] }
     return true
 end
@@ -122,9 +116,7 @@ local function Build()
             C_Item.RequestLoadItemDataByID(itemId)
         end
     end
-    if next(missing) then
-        events:RegisterEvent("ITEM_DATA_LOAD_RESULT")
-    end
+    if next(missing) then events:RegisterEvent("ITEM_DATA_LOAD_RESULT") end
 end
 
 events:SetScript("OnEvent", function(self, evt, itemId, success)
@@ -132,14 +124,10 @@ events:SetScript("OnEvent", function(self, evt, itemId, success)
         Forget()
     elseif missing[itemId] then
         -- A herb that failed to load stays as the game shows it.
-        if success then
-            AddHerb(itemId)
-        end
+        if success then AddHerb(itemId) end
         missing[itemId] = nil
         Forget()
-        if not next(missing) then
-            self:UnregisterEvent("ITEM_DATA_LOAD_RESULT")
-        end
+        if not next(missing) then self:UnregisterEvent("ITEM_DATA_LOAD_RESULT") end
     end
 end)
 
@@ -148,9 +136,7 @@ local function Skill(line)
     for _, index in ipairs({ GetProfessions() }) do
         if index then
             local _, _, rank, _, _, _, ident = GetProfessionInfo(index)
-            if ident == line then
-                return rank
-            end
+            if ident == line then return rank end
         end
     end
 end
@@ -159,21 +145,13 @@ end
 -- 100, then grey.
 local function OddsColor(skill, need)
     local over = skill - need
-    if over < 25 then
-        return 1, 0.5, 0.25
-    end
-    if over < 50 then
-        return 1, 1, 0
-    end
-    if over < 100 then
-        return 0.25, 0.75, 0.25
-    end
+    if over < 25 then return 1, 0.5, 0.25 end
+    if over < 50 then return 1, 1, 0 end
+    if over < 100 then return 0.25, 0.75, 0.25 end
     return 0.5, 0.5, 0.5
 end
 
-local function Hex(red, green, blue)
-    return ("|cff%02x%02x%02x"):format(red * 255, green * 255, blue * 255)
-end
+local function Hex(red, green, blue) return ("|cff%02x%02x%02x"):format(red * 255, green * 255, blue * 255) end
 
 -- A minimap tooltip line rewritten: one name per line inside it (several
 -- nodes under the cursor stack up), each known node's name followed by its
@@ -196,12 +174,8 @@ local function MinimapLine(textValue)
 end
 
 local function OnMinimapTooltip(tooltip)
-    if tooltip ~= GameTooltip or not (F.Enabled() and F.Get("minimap")) then
-        return
-    end
-    if not nodes then
-        Build()
-    end
+    if tooltip ~= GameTooltip or not (F.Enabled() and F.Get("minimap")) then return end
+    if not nodes then Build() end
     local changed
     for index = 1, tooltip:NumLines() do
         local fontStr = _G["GameTooltipTextLeft" .. index]
@@ -210,9 +184,7 @@ local function OnMinimapTooltip(tooltip)
             local new = memo[textValue]
             if new == nil then
                 new = MinimapLine(textValue)
-                if memoN >= MEMO_MAX then
-                    Forget()
-                end
+                if memoN >= MEMO_MAX then Forget() end
                 memo[textValue] = new
                 memoN = memoN + 1
             end
@@ -222,40 +194,26 @@ local function OnMinimapTooltip(tooltip)
             end
         end
     end
-    if changed then
-        tooltip:Show()
-    end
+    if changed then tooltip:Show() end
 end
 
 local function OnObjectTooltip(tooltip, payload)
-    if tooltip ~= GameTooltip or not F.Enabled() then
-        return
-    end
+    if tooltip ~= GameTooltip or not F.Enabled() then return end
     local lines = payload and payload.lines
     local title = lines and lines[1] and lines[1].leftText
-    if not title or issecretvalue(title) then
-        return
-    end
-    if not nodes then
-        Build()
-    end
+    if not title or issecretvalue(title) then return end
+    if not nodes then Build() end
     local node = nodes[title]
-    if not node then
-        return
-    end
+    if not node then return end
     local skillName = C_Spell.GetSpellName(node[1] == MINING and MINING_SPELL or HERBALISM_SPELL)
-    if not skillName then
-        return
-    end
+    if not skillName then return end
     for index = 2, tooltip:NumLines() do
         local fontStr = _G["GameTooltipTextLeft" .. index]
         local textValue = fontStr and fontStr:GetText()
         if textValue and not issecretvalue(textValue) and textValue:find(skillName, 1, true) then
             fontStr:SetText(("%s (%d)"):format(textValue, node[2]))
             local skill = Skill(node[1])
-            if skill and skill >= node[2] then
-                fontStr:SetTextColor(OddsColor(skill, node[2]))
-            end
+            if skill and skill >= node[2] then fontStr:SetTextColor(OddsColor(skill, node[2])) end
             tooltip:Show()
             return
         end
@@ -278,17 +236,11 @@ local function Apply()
     -- Herbs that loaded while it was off.
     if nodes and next(missing) then
         for itemId in pairs(missing) do
-            if AddHerb(itemId) then
-                missing[itemId] = nil
-            end
+            if AddHerb(itemId) then missing[itemId] = nil end
         end
-        if next(missing) then
-            events:RegisterEvent("ITEM_DATA_LOAD_RESULT")
-        end
+        if next(missing) then events:RegisterEvent("ITEM_DATA_LOAD_RESULT") end
     end
-    if hooked then
-        return
-    end
+    if hooked then return end
     hooked = true
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Object, OnObjectTooltip)
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.MinimapMouseover, OnMinimapTooltip)

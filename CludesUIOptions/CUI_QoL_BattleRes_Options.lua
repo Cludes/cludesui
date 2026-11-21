@@ -1,14 +1,10 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_QoL_BattleRes_Options.lua
 --  Options page for the BattleRes icon (registered under CludesUIQoL).
 -------------------------------------------------------------------------------
 
-if not CludesUI._ModuleNS["CludesUIQoL"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
@@ -27,26 +23,18 @@ end
 
 local function ResCfg(key, fallback)
     local profile = P()
-    if not profile then
-        return fallback
-    end
-    if profile[key] == nil then
-        return fallback
-    end
+    if not profile then return fallback end
+    if profile[key] == nil then return fallback end
     return profile[key]
 end
 
 local function Set(key, val)
     local profile = P()
-    if profile then
-        profile[key] = val
-    end
+    if profile then profile[key] = val end
 end
 
 local function ApplyBattleRes()
-    if _G._CUI_BattleRes_Apply then
-        _G._CUI_BattleRes_Apply()
-    end
+    if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
 end
 -- Row setters over Set: the key written with the row's value, then Refresh() for the Then form.
 local function SetRowThen(key)
@@ -84,14 +72,10 @@ local function BorderSizeSliderCfg(get, set, refresh, disabled, disabledTooltip)
         step = 1,
         disabled = disabled,
         disabledTooltip = disabledTooltip,
-        getValue = function()
-            return CludesUI.BORDER_STEP_OF_LABEL[get("borderSize") or "thin"] or 1
-        end,
+        getValue = function() return CludesUI.BORDER_STEP_OF_LABEL[get("borderSize") or "thin"] or 1 end,
         setValue = function(val)
             local word = CludesUI.BORDER_LABEL_OF_STEP[math.floor(val + 0.5)] or "thin"
-            if word == (get("borderSize") or "thin") then
-                return
-            end
+            if word == (get("borderSize") or "thin") then return end
             set("borderSize", word)
             refresh()
         end,
@@ -113,9 +97,7 @@ local function MakeBorderColorSwatches()
             hasAlpha = false,
             getValue = function()
                 local color = ResCfg("borderColor")
-                if color then
-                    return color.r or 0, color.g or 0, color.b or 0
-                end
+                if color then return color.r or 0, color.g or 0, color.b or 0 end
                 return 0, 0, 0
             end,
             setValue = function(red, green, blue)
@@ -129,14 +111,10 @@ local function MakeBorderColorSwatches()
                     CludesUI:RefreshPage()
                     return
                 end
-                if self._eabOrigClick then
-                    self._eabOrigClick(self)
-                end
+                if self._eabOrigClick then self._eabOrigClick(self) end
             end,
             refreshAlpha = function()
-                if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then
-                    return 0.15
-                end
+                if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then return 0.15 end
                 return ResCfg("borderUseClass") and 0.3 or 1
             end,
         },
@@ -146,9 +124,7 @@ local function MakeBorderColorSwatches()
             getValue = function()
                 local _, ct = UnitClass("player")
                 local classColor = ct and RAID_CLASS_COLORS and RAID_CLASS_COLORS[ct]
-                if classColor then
-                    return classColor.r, classColor.g, classColor.b
-                end
+                if classColor then return classColor.r, classColor.g, classColor.b end
                 return 1, 1, 1
             end,
             setValue = function() end,
@@ -158,9 +134,7 @@ local function MakeBorderColorSwatches()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
-                if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then
-                    return 0.15
-                end
+                if ResCfg("enabled") == false or ResCfg("visibility") == "NEVER" then return 0.15 end
                 return ResCfg("borderUseClass") and 1 or 0.3
             end,
         },
@@ -169,9 +143,7 @@ end
 
 -- Text display mode ("2 | 4:14"): shared predicates + swatches for the
 -- Display Style controls.
-local function ShowsText()
-    return (ResCfg("displayMode") or "icon") == "text"
-end
+local function ShowsText() return (ResCfg("displayMode") or "icon") == "text" end
 
 local ICON_ROWS_TIP = "This option requires Display Style to be set to Icon"
 local TEXT_ROWS_TIP = "This option requires Display Style to be set to Text"
@@ -195,9 +167,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     local cursorY = yOffset
     local _, height, row
 
-    if CludesUI.ClearContentHeader then
-        CludesUI:ClearContentHeader()
-    end
+    if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
     hostFrame._showRowDivider = true
 
     -- -- BATTLE RES ----------------------------------------------------
@@ -210,9 +180,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         text = "Enable BattleRes Icon",
         values = VIS_VALUES,
         order = VIS_ORDER,
-        getValue = function()
-            return ResCfg("visibility") or "MPLUS_AND_RAID"
-        end,
+        getValue = function() return ResCfg("visibility") or "MPLUS_AND_RAID" end,
         setValue = function(val)
             Set("visibility", val)
             ApplyBattleRes()
@@ -221,17 +189,13 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     }, {
         type = "slider",
         text = "Icon Size",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         min = 16,
         max = 120,
         step = 1,
         isPercent = false,
-        getValue = function()
-            return ResCfg("iconSize") or 40
-        end,
+        getValue = function() return ResCfg("iconSize") or 40 end,
         setValue = SetRowThen("iconSize"),
     })
     cursorY = cursorY - height
@@ -240,22 +204,16 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Icon Shape",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         values = SHAPE_VALUES,
         order = SHAPE_ORDER,
-        getValue = function()
-            return ResCfg("shape") or "none"
-        end,
+        getValue = function() return ResCfg("shape") or "none" end,
         setValue = SetRowThen("shape"),
     }, {
         type = "multiSwatch",
         text = "Border Color",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         swatches = MakeBorderColorSwatches(),
     })
@@ -265,32 +223,30 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(
         hostFrame,
         cursorY,
-        BorderSizeSliderCfg(ResCfg, Set, ApplyBattleRes, function()
-            return ResCfg("visibility") == "NEVER"
-        end, "BattleRes Icon"),
+        BorderSizeSliderCfg(
+            ResCfg,
+            Set,
+            ApplyBattleRes,
+            function() return ResCfg("visibility") == "NEVER" end,
+            "BattleRes Icon"
+        ),
         {
             type = "slider",
             text = "Icon Zoom",
             disabled = function()
-                if ResCfg("visibility") == "NEVER" then
-                    return true
-                end
+                if ResCfg("visibility") == "NEVER" then return true end
                 local s = ResCfg("shape") or "none"
                 return s ~= "none" and s ~= "cropped"
             end,
             disabledTooltip = function()
-                if ResCfg("visibility") == "NEVER" then
-                    return "BattleRes Icon"
-                end
+                if ResCfg("visibility") == "NEVER" then return "BattleRes Icon" end
                 return "This option requires Icon Shape to be set to None or Cropped"
             end,
             min = 0,
             max = 20,
             step = 0.5,
             isPercent = false,
-            getValue = function()
-                return ResCfg("iconZoom") or 11
-            end,
+            getValue = function() return ResCfg("iconZoom") or 11 end,
             setValue = SetRowThen("iconZoom"),
         }
     )
@@ -300,32 +256,24 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Duration Size",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         min = 8,
         max = 30,
         step = 1,
         isPercent = false,
-        getValue = function()
-            return ResCfg("durationSize") or 12
-        end,
+        getValue = function() return ResCfg("durationSize") or 12 end,
         setValue = SetRowThen("durationSize"),
     }, {
         type = "slider",
         text = "Count Size",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
         min = 8,
         max = 20,
         step = 1,
         isPercent = false,
-        getValue = function()
-            return ResCfg("countSize") or 11
-        end,
+        getValue = function() return ResCfg("countSize") or 11 end,
         setValue = SetRowThen("countSize"),
     })
     cursorY = cursorY - height
@@ -342,9 +290,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return ResCfg(xKey) or 0
-                        end,
+                        get = function() return ResCfg(xKey) or 0 end,
                         set = function(val)
                             Set(xKey, val)
                             ApplyBattleRes()
@@ -356,9 +302,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return ResCfg(yKey) or 0
-                        end,
+                        get = function() return ResCfg(yKey) or 0 end,
                         set = function(val)
                             Set(yKey, val)
                             ApplyBattleRes()
@@ -367,9 +311,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                 },
                 gap = 6,
                 chain = false,
-                disabled = function()
-                    return ResCfg("visibility") == "NEVER"
-                end,
+                disabled = function() return ResCfg("visibility") == "NEVER" end,
             })
         end
         _attachOffsetCog(row._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
@@ -387,32 +329,22 @@ _G._CUI_BuildBattleResPage = BuildBattleResPage
 -- Live preview hidden per tracker for this session only (a preview toggle is
 -- never saved): shown again after a /reload.
 local previewHidden = {}
-local function PreviewHidden(key)
-    return previewHidden[key] == true
-end
-local function SetPreviewHidden(key, hidden)
-    previewHidden[key] = hidden or nil
-end
+local function PreviewHidden(key) return previewHidden[key] == true end
+local function SetPreviewHidden(key, hidden) previewHidden[key] = hidden or nil end
 
 -- Inline eye left of a row's control: shows/hides that tracker's live preview.
 local function AttachPreviewEye(region, key, showTip, hideTip, setOwner, ownerFrame)
     local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
     local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
     local eyeButton, eyeTex = CludesUI.NewInlineEye(region)
-    local function RefreshEye()
-        eyeTex:SetTexture(PreviewHidden(key) and EYE_VISIBLE or EYE_INVISIBLE)
-    end
+    local function RefreshEye() eyeTex:SetTexture(PreviewHidden(key) and EYE_VISIBLE or EYE_INVISIBLE) end
     RefreshEye()
     eyeButton:SetScript("OnClick", function(self)
         SetPreviewHidden(key, not PreviewHidden(key))
         RefreshEye()
         local func = _G[setOwner]
-        if func then
-            func((not PreviewHidden(key)) and ownerFrame or nil)
-        end
-        if self:IsMouseOver() then
-            self:GetScript("OnEnter")(self)
-        end
+        if func then func((not PreviewHidden(key)) and ownerFrame or nil) end
+        if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
     end)
     eyeButton:SetScript("OnEnter", function(self)
         CludesUI.SetGlyphAlpha(self, 0.7)
@@ -434,9 +366,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
     cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_BattleRes",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" end,
         disabledTooltip = "BattleRes Icon",
     })
 
@@ -456,9 +386,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 end
             end)
             hostFrame:HookScript("OnHide", function()
-                if _G._CUI_BattleRes_UpdateVisibility then
-                    _G._CUI_BattleRes_UpdateVisibility()
-                end
+                if _G._CUI_BattleRes_UpdateVisibility then _G._CUI_BattleRes_UpdateVisibility() end
             end)
         end
     end
@@ -468,37 +396,30 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         text = "Enable BattleRes Icon",
         values = VIS_VALUES,
         order = VIS_ORDER,
-        getValue = function()
-            return ResCfg("visibility") or "MPLUS_AND_RAID"
-        end,
+        getValue = function() return ResCfg("visibility") or "MPLUS_AND_RAID" end,
         -- DependentSetValue: the rows below Row 1 are hidden while Never;
         -- only the Never <-> shown flip forces the full rebuild.
-        setValue = CludesUI.DependentSetValue(function()
-            return ResCfg("visibility") ~= "NEVER"
-        end, function(val)
-            Set("visibility", val)
-            ApplyBattleRes()
-            CludesUI:RefreshPage()
-        end),
+        setValue = CludesUI.DependentSetValue(
+            function() return ResCfg("visibility") ~= "NEVER" end,
+            function(val)
+                Set("visibility", val)
+                ApplyBattleRes()
+                CludesUI:RefreshPage()
+            end
+        ),
     }, {
         type = "slider",
         text = "Icon Size",
-        disabled = function()
-            return ResCfg("visibility") == "NEVER" or ShowsText()
-        end,
+        disabled = function() return ResCfg("visibility") == "NEVER" or ShowsText() end,
         disabledTooltip = function()
-            if ResCfg("visibility") == "NEVER" then
-                return "BattleRes Icon"
-            end
+            if ResCfg("visibility") == "NEVER" then return "BattleRes Icon" end
             return ICON_ROWS_TIP
         end,
         min = 16,
         max = 120,
         step = 1,
         isPercent = false,
-        getValue = function()
-            return ResCfg("iconSize") or 40
-        end,
+        getValue = function() return ResCfg("iconSize") or 40 end,
         setValue = SetRowThen("iconSize"),
     })
     cursorY = cursorY - height
@@ -513,9 +434,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             disabledTooltip = ICON_ROWS_TIP,
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
-            getValue = function()
-                return ResCfg("shape") or "none"
-            end,
+            getValue = function() return ResCfg("shape") or "none" end,
             setValue = SetRowThen("shape"),
         }, {
             type = "multiSwatch",
@@ -536,32 +455,30 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         end
         cursorY = cursorY - height
 
-        row, height =
-            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(ResCfg, Set, ApplyBattleRes, ShowsText, ICON_ROWS_TIP), {
+        row, height = W:DualRow(
+            hostFrame,
+            cursorY,
+            BorderSizeSliderCfg(ResCfg, Set, ApplyBattleRes, ShowsText, ICON_ROWS_TIP),
+            {
                 type = "slider",
                 text = "Icon Zoom",
                 disabled = function()
-                    if ShowsText() then
-                        return true
-                    end
+                    if ShowsText() then return true end
                     local s = ResCfg("shape") or "none"
                     return s ~= "none" and s ~= "cropped"
                 end,
                 disabledTooltip = function()
-                    if ShowsText() then
-                        return ICON_ROWS_TIP
-                    end
+                    if ShowsText() then return ICON_ROWS_TIP end
                     return "This option requires Icon Shape to be set to None or Cropped"
                 end,
                 min = 0,
                 max = 20,
                 step = 0.5,
                 isPercent = false,
-                getValue = function()
-                    return ResCfg("iconZoom") or 11
-                end,
+                getValue = function() return ResCfg("iconZoom") or 11 end,
                 setValue = SetRowThen("iconZoom"),
-            })
+            }
+        )
         cursorY = cursorY - height
 
         row, height = W:DualRow(hostFrame, cursorY, {
@@ -573,9 +490,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             max = 30,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return ResCfg("durationSize") or 12
-            end,
+            getValue = function() return ResCfg("durationSize") or 12 end,
             setValue = SetRowThen("durationSize"),
         }, {
             type = "slider",
@@ -586,9 +501,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             max = 20,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return ResCfg("countSize") or 11
-            end,
+            getValue = function() return ResCfg("countSize") or 11 end,
             setValue = SetRowThen("countSize"),
         })
         cursorY = cursorY - height
@@ -604,9 +517,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return ResCfg(xKey) or 0
-                            end,
+                            get = function() return ResCfg(xKey) or 0 end,
                             set = function(val)
                                 Set(xKey, val)
                                 ApplyBattleRes()
@@ -618,9 +529,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return ResCfg(yKey) or 0
-                            end,
+                            get = function() return ResCfg(yKey) or 0 end,
                             set = function(val)
                                 Set(yKey, val)
                                 ApplyBattleRes()
@@ -645,9 +554,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             tooltip = "Show the tracker as the Rebirth icon or as a compact text line with charges and time until the next one.",
             values = { icon = "Icon", text = "Text" },
             order = { "icon", "text" },
-            getValue = function()
-                return ResCfg("displayMode") or "icon"
-            end,
+            getValue = function() return ResCfg("displayMode") or "icon" end,
             setValue = function(val)
                 Set("displayMode", val)
                 ApplyBattleRes()
@@ -656,17 +563,13 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         }, {
             type = "slider",
             text = "Text Size",
-            disabled = function()
-                return not ShowsText()
-            end,
+            disabled = function() return not ShowsText() end,
             disabledTooltip = TEXT_ROWS_TIP,
             min = 8,
             max = 40,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return ResCfg("textSize") or 14
-            end,
+            getValue = function() return ResCfg("textSize") or 14 end,
             setValue = SetRowThen("textSize"),
         })
         cursorY = cursorY - height
@@ -682,9 +585,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                     region:GetFrameLevel() + 5,
                     function()
                         local color = ResCfg(colorKey)
-                        if color then
-                            return color.r or 1, color.g or 1, color.b or 1
-                        end
+                        if color then return color.r or 1, color.g or 1, color.b or 1 end
                         return 1, 1, 1
                     end,
                     function(red, green, blue)
@@ -696,20 +597,15 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 )
                 Pix.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
                 colorSwatch:HookScript("OnEnter", function()
-                    if ShowsText() then
-                        CludesUI.ShowWidgetTooltip(colorSwatch, tipText)
-                    end
+                    if ShowsText() then CludesUI.ShowWidgetTooltip(colorSwatch, tipText) end
                 end)
-                colorSwatch:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                colorSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 local block = CludesUI.NewSwatchBlocker(colorSwatch)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, TEXT_ROWS_TIP)
-                end)
-                block:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                block:SetScript(
+                    "OnEnter",
+                    function() CludesUI.ShowWidgetTooltip(colorSwatch, TEXT_ROWS_TIP) end
+                )
+                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 local function UpdateState()
                     updateSwatch()
                     if ShowsText() then
@@ -724,12 +620,18 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 UpdateState()
                 return colorSwatch
             end
-            AttachToggleCog(region, "Icon Settings", "Desaturate when No Charges", function()
-                return ResCfg("desaturateNoCharges") ~= false
-            end, function(val)
-                Set("desaturateNoCharges", val)
-                ApplyBattleRes()
-            end, ShowsText, ICON_ROWS_TIP)
+            AttachToggleCog(
+                region,
+                "Icon Settings",
+                "Desaturate when No Charges",
+                function() return ResCfg("desaturateNoCharges") ~= false end,
+                function(val)
+                    Set("desaturateNoCharges", val)
+                    ApplyBattleRes()
+                end,
+                ShowsText,
+                ICON_ROWS_TIP
+            )
 
             local timerSwatch =
                 MakeInlineTextSwatch("textTimerColor", "Timer Color", region._lastInline or region._control)
@@ -753,28 +655,20 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Font",
-                disabled = function()
-                    return not ShowsText()
-                end,
+                disabled = function() return not ShowsText() end,
                 disabledTooltip = TEXT_ROWS_TIP,
                 values = fontValues,
                 order = fontOrder,
-                getValue = function()
-                    return ResCfg("font") or "__global"
-                end,
+                getValue = function() return ResCfg("font") or "__global" end,
                 setValue = SetRowThen("font"),
             }, {
                 type = "dropdown",
                 text = "Font Outline",
-                disabled = function()
-                    return not ShowsText()
-                end,
+                disabled = function() return not ShowsText() end,
                 disabledTooltip = TEXT_ROWS_TIP,
                 values = outlineValues,
                 order = outlineOrder,
-                getValue = function()
-                    return ResCfg("outlineMode") or "__global"
-                end,
+                getValue = function() return ResCfg("outlineMode") or "__global" end,
                 setValue = SetRowThen("outlineMode"),
             })
             cursorY = cursorY - height
@@ -826,36 +720,24 @@ local BL_OWN_KEYS = {
 local function LustCfg(key, fallback)
     local bl = BL_P()
     if BL_OWN_KEYS[key] then
-        if not bl then
-            return fallback
-        end
-        if bl[key] == nil then
-            return fallback
-        end
+        if not bl then return fallback end
+        if bl[key] == nil then return fallback end
         return bl[key]
     end
     -- Proxied appearance key: own override -> battleRes -> fallback.
-    if bl and bl[key] ~= nil then
-        return bl[key]
-    end
+    if bl and bl[key] ~= nil then return bl[key] end
     local br = BL_BR()
-    if br and br[key] ~= nil then
-        return br[key]
-    end
+    if br and br[key] ~= nil then return br[key] end
     return fallback
 end
 
 local function BL_Set(key, val)
     local bl = BL_P()
-    if bl then
-        bl[key] = val
-    end
+    if bl then bl[key] = val end
 end
 
 local function ApplyBloodlust()
-    if _G._CUI_Bloodlust_Apply then
-        _G._CUI_Bloodlust_Apply()
-    end
+    if _G._CUI_Bloodlust_Apply then _G._CUI_Bloodlust_Apply() end
 end
 
 local function MakeBloodlustBorderColorSwatches()
@@ -865,9 +747,7 @@ local function MakeBloodlustBorderColorSwatches()
             hasAlpha = false,
             getValue = function()
                 local color = LustCfg("borderColor")
-                if color then
-                    return color.r or 0, color.g or 0, color.b or 0
-                end
+                if color then return color.r or 0, color.g or 0, color.b or 0 end
                 return 0, 0, 0
             end,
             setValue = function(red, green, blue)
@@ -881,14 +761,10 @@ local function MakeBloodlustBorderColorSwatches()
                     CludesUI:RefreshPage()
                     return
                 end
-                if self._eabOrigClick then
-                    self._eabOrigClick(self)
-                end
+                if self._eabOrigClick then self._eabOrigClick(self) end
             end,
             refreshAlpha = function()
-                if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then
-                    return 0.15
-                end
+                if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then return 0.15 end
                 return LustCfg("borderUseClass") and 0.3 or 1
             end,
         },
@@ -898,9 +774,7 @@ local function MakeBloodlustBorderColorSwatches()
             getValue = function()
                 local _, ct = UnitClass("player")
                 local classColor = ct and RAID_CLASS_COLORS and RAID_CLASS_COLORS[ct]
-                if classColor then
-                    return classColor.r, classColor.g, classColor.b
-                end
+                if classColor then return classColor.r, classColor.g, classColor.b end
                 return 1, 1, 1
             end,
             setValue = function() end,
@@ -910,9 +784,7 @@ local function MakeBloodlustBorderColorSwatches()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
-                if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then
-                    return 0.15
-                end
+                if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then return 0.15 end
                 return LustCfg("borderUseClass") and 1 or 0.3
             end,
         },
@@ -929,9 +801,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
     cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_Bloodlust",
-        disabled = function()
-            return LustCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return LustCfg("visibility") == "NEVER" end,
         disabledTooltip = "Bloodlust Icon",
     })
 
@@ -952,9 +822,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 end
             end)
             hostFrame:HookScript("OnHide", function()
-                if _G._CUI_Bloodlust_UpdateVisibility then
-                    _G._CUI_Bloodlust_UpdateVisibility()
-                end
+                if _G._CUI_Bloodlust_UpdateVisibility then _G._CUI_Bloodlust_UpdateVisibility() end
             end)
         end
     end
@@ -964,36 +832,31 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         text = "Enable Bloodlust Icon",
         values = VIS_VALUES,
         order = VIS_ORDER,
-        getValue = function()
-            return LustCfg("visibility") or "NEVER"
-        end,
+        getValue = function() return LustCfg("visibility") or "NEVER" end,
         -- DependentSetValue: the rows below Row 1 are hidden while Never;
         -- only the Never <-> shown flip forces the full rebuild.
-        setValue = CludesUI.DependentSetValue(function()
-            return LustCfg("visibility") ~= "NEVER"
-        end, function(val)
-            local was = LustCfg("visibility") or "NEVER"
-            BL_Set("visibility", val)
-            if was == "NEVER" and val ~= "NEVER" and _G._CUI_Bloodlust_SeedPos then
-                _G._CUI_Bloodlust_SeedPos()
+        setValue = CludesUI.DependentSetValue(
+            function() return LustCfg("visibility") ~= "NEVER" end,
+            function(val)
+                local was = LustCfg("visibility") or "NEVER"
+                BL_Set("visibility", val)
+                if was == "NEVER" and val ~= "NEVER" and _G._CUI_Bloodlust_SeedPos then
+                    _G._CUI_Bloodlust_SeedPos()
+                end
+                ApplyBloodlust()
+                CludesUI:RefreshPage()
             end
-            ApplyBloodlust()
-            CludesUI:RefreshPage()
-        end),
+        ),
     }, {
         type = "slider",
         text = "Icon Size",
-        disabled = function()
-            return LustCfg("visibility") == "NEVER"
-        end,
+        disabled = function() return LustCfg("visibility") == "NEVER" end,
         disabledTooltip = "Bloodlust Icon",
         min = 16,
         max = 120,
         step = 1,
         isPercent = false,
-        getValue = function()
-            return LustCfg("iconSize") or 40
-        end,
+        getValue = function() return LustCfg("iconSize") or 40 end,
         setValue = function(val)
             BL_Set("iconSize", val)
             ApplyBloodlust()
@@ -1009,9 +872,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             text = "Icon Shape",
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
-            getValue = function()
-                return LustCfg("shape") or "none"
-            end,
+            getValue = function() return LustCfg("shape") or "none" end,
             setValue = function(val)
                 BL_Set("shape", val)
                 ApplyBloodlust()
@@ -1045,9 +906,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             max = 20,
             step = 0.5,
             isPercent = false,
-            getValue = function()
-                return LustCfg("iconZoom") or 11
-            end,
+            getValue = function() return LustCfg("iconZoom") or 11 end,
             setValue = function(val)
                 BL_Set("iconZoom", val)
                 ApplyBloodlust()
@@ -1062,9 +921,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             max = 30,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return LustCfg("durationSize") or 12
-            end,
+            getValue = function() return LustCfg("durationSize") or 12 end,
             setValue = function(val)
                 BL_Set("durationSize", val)
                 ApplyBloodlust()
@@ -1076,9 +933,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             max = 20,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return LustCfg("countSize") or 11
-            end,
+            getValue = function() return LustCfg("countSize") or 11 end,
             setValue = function(val)
                 BL_Set("countSize", val)
                 ApplyBloodlust()
@@ -1111,9 +966,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return LustCfg(xKey) or 0
-                            end,
+                            get = function() return LustCfg(xKey) or 0 end,
                             set = function(val)
                                 BL_Set(xKey, val)
                                 ApplyBloodlust()
@@ -1125,9 +978,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return LustCfg(yKey) or 0
-                            end,
+                            get = function() return LustCfg(yKey) or 0 end,
                             set = function(val)
                                 BL_Set(yKey, val)
                                 ApplyBloodlust()
@@ -1154,9 +1005,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 type = "toggle",
                 text = "Show Icon when Sated",
                 tooltip = "Show the Sated/Exhaustion lockout countdown on the icon.",
-                getValue = function()
-                    return LustCfg("showSated") ~= false
-                end,
+                getValue = function() return LustCfg("showSated") ~= false end,
                 setValue = function(val)
                     BL_Set("showSated", val)
                     ApplyBloodlust()
@@ -1166,9 +1015,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 type = "toggle",
                 text = "Show Icon with Ready Text",
                 tooltip = "Once the lockout expires, show a Ready label on the icon in place of the countdown. The visibility rule above still applies.",
-                getValue = function()
-                    return LustCfg("showReady") == true
-                end,
+                getValue = function() return LustCfg("showReady") == true end,
                 setValue = function(val)
                     BL_Set("showReady", val)
                     ApplyBloodlust()
@@ -1178,22 +1025,24 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             cursorY = cursorY - height
 
             if not CludesUI._prebuilding then
-                AttachToggleCog(row._leftRegion, "Sated Settings", "Desaturate when Sated", function()
-                    return LustCfg("desaturateSated") ~= false
-                end, function(val)
-                    BL_Set("desaturateSated", val)
-                    ApplyBloodlust()
-                end, function()
-                    return LustCfg("showSated") == false
-                end, "Show Icon when Sated")
+                AttachToggleCog(
+                    row._leftRegion,
+                    "Sated Settings",
+                    "Desaturate when Sated",
+                    function() return LustCfg("desaturateSated") ~= false end,
+                    function(val)
+                        BL_Set("desaturateSated", val)
+                        ApplyBloodlust()
+                    end,
+                    function() return LustCfg("showSated") == false end,
+                    "Show Icon when Sated"
+                )
             end
 
             -- Ready appearance: colour swatch, offset cog and size slider on one row,
             -- disabled (not hidden) while Show Ready is off so the layout never
             -- reshuffles on the toggle.
-            local function readyOff()
-                return LustCfg("showReady") ~= true
-            end
+            local function readyOff() return LustCfg("showReady") ~= true end
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Ready Size",
@@ -1203,9 +1052,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 max = 30,
                 step = 1,
                 isPercent = false,
-                getValue = function()
-                    return LustCfg("readySize") or 12
-                end,
+                getValue = function() return LustCfg("readySize") or 12 end,
                 setValue = function(val)
                     BL_Set("readySize", val)
                     ApplyBloodlust()
@@ -1229,9 +1076,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     leftRegion:GetFrameLevel() + 5,
                     function()
                         local color = LustCfg("readyColor")
-                        if color then
-                            return color.r or 1, color.g or 1, color.b or 1
-                        end
+                        if color then return color.r or 1, color.g or 1, color.b or 1 end
                         return 1, 1, 1
                     end,
                     function(red, green, blue)
@@ -1253,18 +1098,17 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 -- swatch is a manual inline extra, so it needs the same click-block
                 -- overlay the ActionBars range-colour swatch uses.
                 local readyColorBlock = CludesUI.NewSwatchBlocker(colorSwatch)
-                readyColorBlock:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(
-                        colorSwatch,
-                        CludesUI.DisabledTooltip("Show Icon with Ready Text")
-                    )
-                end)
-                readyColorBlock:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                CludesUI.RegisterWidgetRefresh(function()
-                    readyColorBlock:SetShown(readyOff())
-                end)
+                readyColorBlock:SetScript(
+                    "OnEnter",
+                    function()
+                        CludesUI.ShowWidgetTooltip(
+                            colorSwatch,
+                            CludesUI.DisabledTooltip("Show Icon with Ready Text")
+                        )
+                    end
+                )
+                readyColorBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                CludesUI.RegisterWidgetRefresh(function() readyColorBlock:SetShown(readyOff()) end)
                 readyColorBlock:SetShown(readyOff())
             end
         end

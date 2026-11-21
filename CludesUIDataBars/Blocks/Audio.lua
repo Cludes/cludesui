@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Audio.lua - Info Bar block: a volume bar for one sound channel.
 --
@@ -48,9 +46,7 @@ end
 -- held still or a wheel turned past the end writes nothing.
 local function SetVolume(ch, v)
     v = v < 0 and 0 or (v > 1 and 1 or v)
-    if abs(v - Volume(ch)) < 0.0005 then
-        return
-    end
+    if abs(v - Volume(ch)) < 0.0005 then return end
     SetCVar(ch.cvar, v)
 end
 
@@ -59,25 +55,17 @@ local function Notch(v, delta)
     return floor((v + delta * (IsShiftKeyDown() and 0.10 or 0.01)) * 100 + 0.5) / 100
 end
 
-local function ToggleMute(ch)
-    SetCVar(ch.enable, GetCVarBool(ch.enable) and 0 or 1)
-end
+local function ToggleMute(ch) SetCVar(ch.enable, GetCVarBool(ch.enable) and 0 or 1) end
 
-local function Audible(ch)
-    return GetCVarBool(ch.enable) and GetCVarBool(CHANNELS.master.enable)
-end
+local function Audible(ch) return GetCVarBool(ch.enable) and GetCVarBool(CHANNELS.master.enable) end
 
 mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "CVAR_UPDATE", "PLAYER_ENTERING_WORLD" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
-    local function Channel()
-        return CHANNELS[Settings().channel] or CHANNELS.master
-    end
+    local function Settings() return blockCfg.settings or {} end
+    local function Channel() return CHANNELS[Settings().channel] or CHANNELS.master end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetAllPoints()
@@ -119,13 +107,9 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     for _, key in ipairs(ORDER) do
         local ch = CHANNELS[key]
         rowClick[key] = function(mouseButton)
-            if mouseButton == "LeftButton" then
-                ToggleMute(ch)
-            end
+            if mouseButton == "LeftButton" then ToggleMute(ch) end
         end
-        rowWheel[key] = function(delta)
-            SetVolume(ch, Notch(Volume(ch), delta))
-        end
+        rowWheel[key] = function(delta) SetVolume(ch, Notch(Volume(ch), delta)) end
     end
 
     local function ShowTooltip()
@@ -182,37 +166,28 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     grab:SetScript("OnEnter", Enter)
     grab:SetScript("OnLeave", Leave)
 
-    button:SetScript("OnClick", function()
-        ToggleMute(Channel())
-    end)
-    button:SetScript("OnMouseWheel", function(_, delta)
-        SetVolume(Channel(), Notch(Volume(Channel()), delta))
-    end)
+    button:SetScript("OnClick", function() ToggleMute(Channel()) end)
+    button:SetScript(
+        "OnMouseWheel",
+        function(_, delta) SetVolume(Channel(), Notch(Volume(Channel()), delta)) end
+    )
 
     -- Drag: the volume follows the cursor across the bar.
     local function FollowCursor()
         local left, width = track:GetLeft(), track:GetWidth()
-        if not left or not width or width <= 0 then
-            return
-        end
+        if not left or not width or width <= 0 then return end
         local scale = track:GetEffectiveScale()
-        if not scale or scale == 0 then
-            scale = 1
-        end
+        if not scale or scale == 0 then scale = 1 end
         SetVolume(Channel(), (GetCursorPosition() / scale - left) / width)
     end
     grab:SetScript("OnMouseDown", function(_, mouseButton)
-        if mouseButton ~= "LeftButton" then
-            return
-        end
+        if mouseButton ~= "LeftButton" then return end
         dragging = true
         FollowCursor()
         grab:SetScript("OnUpdate", FollowCursor) -- only for the length of the drag
     end)
     grab:SetScript("OnMouseUp", function()
-        if not dragging then
-            return
-        end
+        if not dragging then return end
         dragging = false
         grab:SetScript("OnUpdate", nil)
         inst:Refresh()
@@ -226,9 +201,7 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
         local iconSize = showIcon and fontSize + 4 or 0
         local gap = showIcon and K.ICON_GAP or 0
         iconTex:SetShown(showIcon)
-        if showIcon then
-            iconTex:SetSize(iconSize, iconSize)
-        end
+        if showIcon then iconTex:SetSize(iconSize, iconSize) end
         Paint()
 
         iconTex:ClearAllPoints()
@@ -262,17 +235,13 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
 
         -- The tooltip follows too while it is ours (the cursor may sit on its
         -- rows, not on the block), except mid-drag.
-        if mod.Tip_IsOwned(button) and not dragging then
-            ShowTooltip()
-        end
+        if mod.Tip_IsOwned(button) and not dragging then ShowTooltip() end
         K.MaybeRelayout(inst)
     end
 
     -- Only sound settings (changed here or in the game's own options) redraw it.
     inst.eventFrame = K.MakeEventFrame(inst, function(self, event, cvar)
-        if event == "CVAR_UPDATE" and type(cvar) == "string" and not cvar:find("^Sound_") then
-            return
-        end
+        if event == "CVAR_UPDATE" and type(cvar) == "string" and not cvar:find("^Sound_") then return end
         self:Refresh()
     end)
 
@@ -287,9 +256,7 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 40)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 40) end
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local iconPart = Settings().showIcon ~= false and fontSize + 4 + K.ICON_GAP or 0
         return iconPart + max(40, floor(K.CONTENT_BASE * 2 + 0.5))

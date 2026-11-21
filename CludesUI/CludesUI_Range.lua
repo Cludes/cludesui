@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Range.lua
 --  Shared range-check engine for the suite's range consumers:
@@ -22,12 +20,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  live, so talent range extensions are reflected automatically) and a ladder
 --  of fixed-range harm items.
 -------------------------------------------------------------------------------
-if not CludesUI then
-    return
-end
-if CludesUI.Range_SetActive then
-    return
-end -- already loaded
+if not CludesUI then return end
+if CludesUI.Range_SetActive then return end -- already loaded
 
 local GetTime = GetTime
 
@@ -119,19 +113,13 @@ local function SpecAttackCutoff(holyPaladinMelee)
             local best
             for idx = 1, #RangeKit.ladder do
                 local r = RangeKit.ladder[idx].range
-                if r > 5 and r <= 40 then
-                    best = r
-                end
+                if r > 5 and r <= 40 then best = r end
             end
-            if best then
-                return best
-            end
+            if best then return best end
         end
         return 5
     end
-    if not specID then
-        return 5
-    end
+    if not specID then return 5 end
 
     if class == "DRUID" then
         if specID == 102 or specID == 105 then
@@ -174,9 +162,7 @@ function CludesUI.Range_GetAttackCutoff(customCutoff, holyPaladinMelee)
         -- between Bear and Cat), so it checks the form ID: Cat 1, Bear 5, Dire Bear 8.
         if CludesUI.IS_FOREVER == true then
             local fid = GetShapeshiftFormID()
-            if fid == 1 or fid == 5 or fid == 8 then
-                return 5
-            end
+            if fid == 1 or fid == 5 or fid == 8 then return 5 end
         elseif DRUID_MELEE_FORMS[GetShapeshiftForm()] then
             return 5
         end
@@ -239,9 +225,7 @@ local function BuildLadder()
                     local sinfo = C_Spell.GetSpellInfo(spellRef)
                     local maxR = sinfo and sinfo.maxRange
                     -- Ranges can read as float noise (23.999998 for a 24 yd spell): whole yards.
-                    if type(maxR) == "number" then
-                        maxR = math.floor(maxR + 0.5)
-                    end
+                    if type(maxR) == "number" then maxR = math.floor(maxR + 0.5) end
                     -- A charge/leap-style spell with a nonzero minRange answers
                     -- IsSpellInRange false both beyond maxRange AND inside its
                     -- own dead zone (e.g. a gap-closer unusable under ~8yd) --
@@ -249,9 +233,7 @@ local function BuildLadder()
                     -- rung," so such a spell would falsely fade a target
                     -- standing well inside melee range. Exclude it; other
                     -- spells sharing its maxRange rung are unaffected.
-                    if sinfo and sinfo.minRange and sinfo.minRange > 0 then
-                        maxR = nil
-                    end
+                    if sinfo and sinfo.minRange and sinfo.minRange > 0 then maxR = nil end
                     if maxR and maxR > 0 and maxR <= 100 then
                         local rung = byRange[maxR]
                         if not rung then
@@ -267,15 +249,11 @@ local function BuildLadder()
             end
         end
     end
-    table.sort(RangeKit.ladder, function(lhs, rhs)
-        return lhs.range < rhs.range
-    end)
+    table.sort(RangeKit.ladder, function(lhs, rhs) return lhs.range < rhs.range end)
 end
 
 EnsureLadder = function()
-    if RangeKit.dirty or not RangeKit.ladderBuilt then
-        BuildLadder()
-    end
+    if RangeKit.dirty or not RangeKit.ladderBuilt then BuildLadder() end
 end
 
 -- One rung's answer: first non-nil IsSpellInRange among its spells, checked
@@ -288,9 +266,7 @@ local function RungInRange(rung, unitToken)
         local spellRef = spells[idx]
         local live = (FindOvr and FindOvr(spellRef)) or spellRef
         local res = C_Spell.IsSpellInRange(live, unitToken)
-        if not (issecretvalue and issecretvalue(res)) and res ~= nil then
-            return res
-        end
+        if not (issecretvalue and issecretvalue(res)) and res ~= nil then return res end
     end
     return nil
 end
@@ -304,23 +280,15 @@ local function ItemEntryInRange(record, unitToken)
         for idx = 1, #ids do
             local res = C_Item.IsItemInRange(ids[idx], unitToken)
             if not (issecretvalue and issecretvalue(res)) then
-                if res == true then
-                    return true
-                end
-                if res == false then
-                    sawFalse = true
-                end
+                if res == true then return true end
+                if res == false then sawFalse = true end
             end
         end
-        if sawFalse then
-            return false
-        end
+        if sawFalse then return false end
         return nil
     end
     local res = C_Item.IsItemInRange(record.id, unitToken)
-    if issecretvalue and issecretvalue(res) then
-        return nil
-    end
+    if issecretvalue and issecretvalue(res) then return nil end
     return res
 end
 
@@ -330,13 +298,9 @@ end
 -- it must be gated up front. Hostile checks stay legal. Fails toward skipping the walk:
 -- a restricted query degrades to nil (no display) instead of a blocked action.
 local function ItemChecksAllowed(unitToken)
-    if not (InCombatLockdown() or (CludesUI.InProtectedInstance())) then
-        return true
-    end
+    if not (InCombatLockdown() or (CludesUI.InProtectedInstance())) then return true end
     local can = UnitCanAttack("player", unitToken)
-    if issecretvalue and issecretvalue(can) then
-        return false
-    end
+    if issecretvalue and issecretvalue(can) then return false end
     return can == true
 end
 -- Shared with any other item-range reader (Quickdraw's usability tint) so the
@@ -350,12 +314,8 @@ CludesUI.ItemRangeChecksAllowed = ItemChecksAllowed
 -- Largest spell-ladder rung the unit is BEYOND (0 = inside the smallest
 -- rung), or nil when no rung produced a usable answer. Displayed as "N+".
 function CludesUI.Range_LowerBound(unitToken)
-    if not unitToken or not UnitExists(unitToken) then
-        return nil
-    end
-    if not (C_Spell and C_Spell.IsSpellInRange) then
-        return nil
-    end
+    if not unitToken or not UnitExists(unitToken) then return nil end
+    if not (C_Spell and C_Spell.IsSpellInRange) then return nil end
     local nowTime = GetTime()
     if lbCache.has and lbCache.unit == unitToken and (nowTime - lbCache.t) < CACHE_TTL then
         return lbCache.v
@@ -374,9 +334,7 @@ function CludesUI.Range_LowerBound(unitToken)
             lower = ladder[idx].range
         end
     end
-    if answered and result == nil then
-        result = lower
-    end
+    if answered and result == nil then result = lower end
     lbCache.unit, lbCache.t, lbCache.has, lbCache.v = unitToken, nowTime, true, result
     return result
 end
@@ -408,27 +366,17 @@ local function ItemWalk(unitToken, stopRange)
             -- sitting exactly at stopRange answers nil, not false, and must
             -- not silently truncate the walk before a farther rung the
             -- player DOES own gets a chance to give a real verdict.
-            if stopRange and record.range >= stopRange then
-                break
-            end
+            if stopRange and record.range >= stopRange then break end
         end
     end
-    if not answered then
-        return nil
-    end
+    if not answered then return nil end
     return minY, maxY
 end
 
 function CludesUI.Range_ItemBracket(unitToken, stopRange)
-    if not unitToken or not UnitExists(unitToken) then
-        return nil
-    end
-    if not (C_Item and C_Item.IsItemInRange) then
-        return nil
-    end
-    if not ItemChecksAllowed(unitToken) then
-        return nil
-    end
+    if not unitToken or not UnitExists(unitToken) then return nil end
+    if not (C_Item and C_Item.IsItemInRange) then return nil end
+    if not ItemChecksAllowed(unitToken) then return nil end
     local nowTime = GetTime()
     if
         brCache.has
@@ -453,12 +401,8 @@ end
 -- Returns true/false, or nil when no probe answered -- the caller falls back
 -- to the item ladder.
 function CludesUI.Range_BeyondCutoff(unitToken, cutoff)
-    if not unitToken or not UnitExists(unitToken) then
-        return nil
-    end
-    if not (C_Spell and C_Spell.IsSpellInRange) then
-        return nil
-    end
+    if not unitToken or not UnitExists(unitToken) then return nil end
+    if not (C_Spell and C_Spell.IsSpellInRange) then return nil end
     EnsureLadder()
     if RangeKit.probeCutoff ~= cutoff then
         RangeKit.probeCutoff = cutoff
@@ -468,19 +412,13 @@ function CludesUI.Range_BeyondCutoff(unitToken, cutoff)
         for idx = 1, #ladder do -- ascending ladder walked forwards = closest-to-cutoff first
             local rung = ladder[idx]
             if rung.range >= cutoff then
-                if rung.range > maxWindow then
-                    break
-                end
+                if rung.range > maxWindow then break end
                 local spells = rung.spells
                 for jdx = 1, #spells do
-                    if #RangeKit.probes >= MAX_PROBE_SPELLS then
-                        break
-                    end
+                    if #RangeKit.probes >= MAX_PROBE_SPELLS then break end
                     RangeKit.probes[#RangeKit.probes + 1] = spells[jdx]
                 end
-                if #RangeKit.probes >= MAX_PROBE_SPELLS then
-                    break
-                end
+                if #RangeKit.probes >= MAX_PROBE_SPELLS then break end
             end
         end
     end
@@ -489,9 +427,7 @@ function CludesUI.Range_BeyondCutoff(unitToken, cutoff)
         local spellRef = RangeKit.probes[idx]
         local live = (FindOvr and FindOvr(spellRef)) or spellRef
         local res = C_Spell.IsSpellInRange(live, unitToken)
-        if not (issecretvalue and issecretvalue(res)) and res ~= nil then
-            return res == false
-        end
+        if not (issecretvalue and issecretvalue(res)) and res ~= nil then return res == false end
     end
     return nil
 end
@@ -504,20 +440,14 @@ function CludesUI.Range_IsBeyondAttackRange(unitToken, cutoff)
     cutoff = cutoff or CludesUI.Range_GetAttackCutoff()
     if cutoff > 5 then
         local beyond = CludesUI.Range_BeyondCutoff(unitToken, cutoff)
-        if beyond ~= nil then
-            return beyond
-        end
+        if beyond ~= nil then return beyond end
     end
     local minY, maxY = CludesUI.Range_ItemBracket(unitToken, cutoff)
-    if minY == nil then
-        return nil
-    end
+    if minY == nil then return nil end
     -- A bracket that straddles the cutoff (the first in-range rung sits past
     -- it, the last out-of-range rung before it) cannot say which side the
     -- unit is on: unknown, no fade, rather than a beyond guess.
-    if maxY and maxY > cutoff and minY < cutoff then
-        return nil
-    end
+    if maxY and maxY > cutoff and minY < cutoff then return nil end
     return maxY == nil or maxY > cutoff
 end
 
@@ -533,9 +463,7 @@ end
 local sweepCache = { t = 0, cutoff = nil, v = {} }
 local SWEEP_TTL = 0.4
 function CludesUI.Range_SweepBeyond(unitToken, cutoff)
-    if not unitToken or not UnitExists(unitToken) then
-        return nil
-    end
+    if not unitToken or not UnitExists(unitToken) then return nil end
     cutoff = cutoff or CludesUI.Range_GetAttackCutoff()
     local nowTime = GetTime()
     if (nowTime - sweepCache.t) > SWEEP_TTL or sweepCache.cutoff ~= cutoff then
@@ -545,15 +473,11 @@ function CludesUI.Range_SweepBeyond(unitToken, cutoff)
     end
     local hit = sweepCache.v[unitToken]
     if hit ~= nil then
-        if hit == 0 then
-            return nil
-        end
+        if hit == 0 then return nil end
         return hit == 1
     end
     local beyond
-    if cutoff > 5 then
-        beyond = CludesUI.Range_BeyondCutoff(unitToken, cutoff)
-    end
+    if cutoff > 5 then beyond = CludesUI.Range_BeyondCutoff(unitToken, cutoff) end
     if beyond == nil and C_Item and C_Item.IsItemInRange and ItemChecksAllowed(unitToken) then
         local minY, maxY = ItemWalk(unitToken, cutoff)
         -- Same straddle rule as Range_IsBeyondAttackRange: unknown, not beyond.
@@ -575,9 +499,7 @@ end
 -- with every range feature disabled. Idempotent and cheap on repeat calls.
 function CludesUI.Range_SetActive(key, enabled)
     enabled = enabled and true or nil
-    if RangeKit.active[key] == enabled then
-        return
-    end
+    if RangeKit.active[key] == enabled then return end
     RangeKit.active[key] = enabled
     RangeKit.activeCount = RangeKit.activeCount + (enabled and 1 or -1)
     if enabled and RangeKit.activeCount == 1 then
@@ -596,8 +518,6 @@ function CludesUI.Range_SetActive(key, enabled)
         RangeKit.dirty = true
         RangeKit.cutoffBase, RangeKit.cutoffHolyMelee = nil, nil
     elseif not enabled and RangeKit.activeCount == 0 then
-        if RangeKit.evt then
-            RangeKit.evt:UnregisterAllEvents()
-        end
+        if RangeKit.evt then RangeKit.evt:UnregisterAllEvents() end
     end
 end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Lifecycle.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local GetTime = GetTime
@@ -45,9 +41,7 @@ local _playerRace, _playerClass
 --  Register CDM bars with unlock mode
 -------------------------------------------------------------------------------
 RegisterCDMUnlockElements = function()
-    if not CludesUI or not CludesUI.RegisterUnlockElements then
-        return
-    end
+    if not CludesUI or not CludesUI.RegisterUnlockElements then return end
     local MK = CludesUI.MakeUnlockElement
 
     -- Build a lookup of which bars are anchored to which parent
@@ -55,9 +49,7 @@ RegisterCDMUnlockElements = function()
     for _, barInfo in ipairs(ECME.db.profile.cdmBars.bars) do
         local anchorKey = barInfo.anchorTo
         if anchorKey and anchorKey ~= "none" and anchorKey ~= "partyframe" and anchorKey ~= "playerframe" then
-            if not anchorChildren[anchorKey] then
-                anchorChildren[anchorKey] = {}
-            end
+            if not anchorChildren[anchorKey] then anchorChildren[anchorKey] = {} end
             anchorChildren[anchorKey][#anchorChildren[anchorKey] + 1] = barInfo.key
         end
     end
@@ -91,9 +83,7 @@ RegisterCDMUnlockElements = function()
                     end
                     xoff["CDM_" .. key] = function()
                         local bd3 = barDataByKey[key]
-                        if not bd3 or CludesUI._unlockActive then
-                            return 0, 0
-                        end
+                        if not bd3 or CludesUI._unlockActive then return 0, 0 end
                         return bd3.addOffsetX or 0, bd3.addOffsetY or 0
                     end
                 end
@@ -125,9 +115,7 @@ RegisterCDMUnlockElements = function()
                         local bd3 = barDataByKey[key]
                         local ox = (bd3 and bd3.addOffsetX) or 0
                         local oy = (bd3 and bd3.addOffsetY) or 0
-                        if ox == 0 and oy == 0 then
-                            return nil
-                        end
+                        if ox == 0 and oy == 0 then return nil end
                         -- Stored in coordinate units; the options sliders show
                         -- physical pixels, so report the same unit here.
                         local toPx = CludesUI.PP.ToPixels
@@ -143,16 +131,12 @@ RegisterCDMUnlockElements = function()
                     noResize = isDynamic,
                     -- Outside reach of the bar's textured icon border for size matching
                     -- (nil for dynamic bars, stock looks, custom shapes, solid borders).
-                    getMatchPad = function()
-                        return mod.CdmBarMatchPad(key)
-                    end,
+                    getMatchPad = function() return mod.CdmBarMatchPad(key) end,
                     isHidden = function()
                         -- If this bar key is no longer in the current profile's barDataByKey, it is a stale registration from a previous profile and should not get a mover.
                         return not barDataByKey[key]
                     end,
-                    getFrame = function()
-                        return cdmBarFrames[key]
-                    end,
+                    getFrame = function() return cdmBarFrames[key] end,
                     getSize = function()
                         local frame = cdmBarFrames[key]
                         local bd2 = barDataByKey[key]
@@ -163,9 +147,7 @@ RegisterCDMUnlockElements = function()
                         -- iconSize is derived live in LayoutCDMBar from the source bar's current width;
                         -- setWidth just triggers a re-layout. Nothing is persisted -- the source bar IS the truth. Wipe legacy cache fields so they can't poison anything.
                         local bd2 = barDataByKey[key]
-                        if not bd2 then
-                            return
-                        end
+                        if not bd2 then return end
                         bd2._matchPhysWidth = nil
                         bd2._matchPhysHeight = nil
                         bd2._matchIconPhys = nil
@@ -178,9 +160,7 @@ RegisterCDMUnlockElements = function()
                     setHeight = function(_, newH)
                         -- See setWidth -- live-derive in LayoutCDMBar.
                         local bd2 = barDataByKey[key]
-                        if not bd2 then
-                            return
-                        end
+                        if not bd2 then return end
                         bd2._matchPhysWidth = nil
                         bd2._matchPhysHeight = nil
                         bd2._matchIconPhys = nil
@@ -247,9 +227,7 @@ RegisterCDMUnlockElements = function()
                     end,
                     loadPos = function()
                         local place = ECME.db.profile.cdmBarPositions[key]
-                        if not place or not place.point then
-                            return place
-                        end
+                        if not place or not place.point then return place end
                         -- Convert edge/corner-stored positions back to CENTER for the unlock mode system (it always works with CENTER coords).
                         local pt = place.point
                         if pt ~= "CENTER" and pt ~= "" then
@@ -263,48 +241,32 @@ RegisterCDMUnlockElements = function()
                         end
                         return place
                     end,
-                    clearPos = function()
-                        ECME.db.profile.cdmBarPositions[key] = nil
-                    end,
+                    clearPos = function() ECME.db.profile.cdmBarPositions[key] = nil end,
                     applyPos = function()
                         -- While the authoritative reanchor pass is still pending (login window, or the
                         -- instant inside a spec-swap reconcile) the CDM pipeline owns layout and applies
                         -- saved positions itself; a rebuild here only races it against a still-churning engine pool. The flag is consumed deterministically by CollectAndReanchor.
-                        if mod._pendingApplyOnReanchor then
-                            return
-                        end
+                        if mod._pendingApplyOnReanchor then return end
                         -- Mid-transition guard: when the live spec key disagrees with the cached key, a
                         -- rebuild here can only construct the OLD spec's layout against the NEW spec's
                         -- already-repopulating engine pool (the pre-swap window before SPELLS_CHANGED lands). The talent_reconcile that follows is the only correct builder for that state.
                         local liveKey = ComputeLiveSpecKey()
-                        if liveKey and liveKey ~= GetCachedSpecKey() then
-                            return
-                        end
+                        if liveKey and liveKey ~= GetCachedSpecKey() then return end
                         -- Same-burst coalescing: position passes (ApplySavedPositions et al) call EVERY
                         -- CDM element's applyPosition back-to-back, and each call rebuilt ALL bars -- an
                         -- 11+ deep same-frame rebuild storm. The first call rebuilds synchronously (Save & Exit's sequencing depends on that); the rest of the burst no-ops until the next frame.
-                        if mod._applyPosCoalesced then
-                            return
-                        end
+                        if mod._applyPosCoalesced then return end
                         mod._applyPosCoalesced = true
-                        C_Timer.After(0, function()
-                            mod._applyPosCoalesced = nil
-                        end)
+                        C_Timer.After(0, function() mod._applyPosCoalesced = nil end)
                         BuildAllCDMBars()
                     end,
                     isAnchored = function()
                         local bd2 = barDataByKey[key]
-                        if not bd2 or not bd2.anchorTo then
-                            return false
-                        end
+                        if not bd2 or not bd2.anchorTo then return false end
                         local a = bd2.anchorTo
                         -- Only valid anchor types: mouse, partyframe, playerframe, erb_*
-                        if a == "mouse" or a == "partyframe" or a == "playerframe" then
-                            return true
-                        end
-                        if a:sub(1, 4) == "erb_" then
-                            return true
-                        end
+                        if a == "mouse" or a == "partyframe" or a == "playerframe" then return true end
+                        if a:sub(1, 4) == "erb_" then return true end
                         return false
                     end,
                 })
@@ -312,9 +274,7 @@ RegisterCDMUnlockElements = function()
         end
     end
 
-    if #elements > 0 then
-        CludesUI:RegisterUnlockElements(elements, "CludesUICooldownManager")
-    end
+    if #elements > 0 then CludesUI:RegisterUnlockElements(elements, "CludesUICooldownManager") end
     -- Expose for ApplyAnchorPosition's growth-direction edge read. Width-independent: stores edge anchor directly (LEFT/RIGHT/TOP).
     CludesUI._cdmBarPositions = ECME.db.profile.cdmBarPositions
 end
@@ -334,9 +294,7 @@ do
     local function AnyBarHasAddOffset()
         local profile = ECME and ECME.db and ECME.db.profile
         local barList = profile and profile.cdmBars and profile.cdmBars.bars
-        if not barList then
-            return false
-        end
+        if not barList then return false end
         for index = 1, #barList do
             local edge = barList[index]
             if edge.enabled and ((edge.addOffsetX or 0) ~= 0 or (edge.addOffsetY or 0) ~= 0) then
@@ -347,9 +305,7 @@ do
     end
     CludesUI._anchorShiftProviders = CludesUI._anchorShiftProviders or {}
     table.insert(CludesUI._anchorShiftProviders, {
-        dir = function()
-            return 0
-        end,
+        dir = function() return 0 end,
         wants = AnyBarHasAddOffset,
         enter = function()
             -- Reposition ONLY the offset bars, never a full rebuild: a rebuild
@@ -362,9 +318,7 @@ do
             -- bars have no movers and snapshot nothing.
             local profile = ECME and ECME.db and ECME.db.profile
             local barList = profile and profile.cdmBars and profile.cdmBars.bars
-            if not barList then
-                return
-            end
+            if not barList then return end
             for index = 1, #barList do
                 local edge = barList[index]
                 if
@@ -382,9 +336,7 @@ do
             end
         end,
         restore = function()
-            if not AnyBarHasAddOffset() then
-                return
-            end
+            if not AnyBarHasAddOffset() then return end
             BuildAllCDMBars()
             if CludesUI.PropagateAnchorChain and CludesUI.IsUnlockAnchored then
                 local profile = ECME and ECME.db and ECME.db.profile
@@ -421,23 +373,17 @@ mod.CDMReapplyBarPositions = function()
     local barList = profile and profile.cdmBars and profile.cdmBars.bars
     -- Never inside unlock mode: movers own positions there and a re-place
     -- from saved coords would revert un-saved drags.
-    if not barList or InCombatLockdown() or CludesUI._unlockActive then
-        return
-    end
+    if not barList or InCombatLockdown() or CludesUI._unlockActive then return end
     for index = 1, #barList do
         local edge = barList[index]
         if edge.enabled and (edge.anchorTo or "none") == "none" then
             local ukey = "CDM_" .. edge.key
             if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(ukey) then
-                if CludesUI.PropagateAnchorChain then
-                    CludesUI.PropagateAnchorChain(ukey)
-                end
+                if CludesUI.PropagateAnchorChain then CludesUI.PropagateAnchorChain(ukey) end
             else
                 local widget = cdmBarFrames[edge.key]
                 local place = profile.cdmBarPositions and profile.cdmBarPositions[edge.key]
-                if widget and place and place.point then
-                    ApplyBarPositionCentered(widget, place, edge.key)
-                end
+                if widget and place and place.point then ApplyBarPositionCentered(widget, place, edge.key) end
             end
         end
     end
@@ -445,9 +391,7 @@ end
 
 -- RequestUpdate delegates to ns.RequestUpdate (defined in CludesUICdmBarGlows.lua). Falls back to no-op if bar glows module hasn't loaded yet.
 local function RequestUpdate()
-    if mod.RequestUpdate then
-        mod.RequestUpdate()
-    end
+    if mod.RequestUpdate then mod.RequestUpdate() end
 end
 
 -------------------------------------------------------------------------------
@@ -465,16 +409,12 @@ function ECME:OnInitialize()
     -- only while Quality of Life's "Type /cd to open Blizzard CDM" is on: an
     -- account-wide key, off by default, read here once the saved variables are
     -- loaded; a change takes a reload.
-    if CludesUIDB and CludesUIDB.blizzCDMSlash == true then
-        SLASH_CUIBLIZZCDM1 = "/cd"
-    end
+    if CludesUIDB and CludesUIDB.blizzCDMSlash == true then SLASH_CUIBLIZZCDM1 = "/cd" end
 
     -- Save spec profile before StripDefaults runs on logout
     CludesUI.Lite.RegisterPreLogout(function()
         local specKey = mod.GetActiveSpecKey()
-        if specKey and specKey ~= "0" then
-            SaveCurrentSpecProfile()
-        end
+        if specKey and specKey ~= "0" then SaveCurrentSpecProfile() end
     end)
 
     -- Check if we need first-login capture (per-install flag on SV root)
@@ -507,12 +447,8 @@ function ECME:OnInitialize()
         else
             mod.FullCDMRebuild("apply")
         end
-        if mod.UpdateCustomBuffAuraTracking then
-            mod.UpdateCustomBuffAuraTracking()
-        end
-        if mod.UpdateCustomBuffBars then
-            mod.UpdateCustomBuffBars()
-        end
+        if mod.UpdateCustomBuffAuraTracking then mod.UpdateCustomBuffAuraTracking() end
+        if mod.UpdateCustomBuffBars then mod.UpdateCustomBuffBars() end
         -- A profile that switches the gate off has to release the glows the old
         -- profile suppressed: the edge-driven ones (proc, cd ready) have no
         -- ticker to bring them back on their own.
@@ -575,16 +511,10 @@ function ECME:OnEnable()
     -- before that finishes sees static defaults only and silently misses persisted
     -- hide/recategorize overrides.
     local function CheckCDMDataLoaded()
-        if mod._cdmDataLoaded then
-            return true
-        end
-        if not (CooldownViewerSettings and CooldownViewerSettings.GetDataProvider) then
-            return false
-        end
+        if mod._cdmDataLoaded then return true end
+        if not (CooldownViewerSettings and CooldownViewerSettings.GetDataProvider) then return false end
         local success, provider = pcall(CooldownViewerSettings.GetDataProvider, CooldownViewerSettings)
-        if not success or not provider or not provider.GetLayoutManager then
-            return false
-        end
+        if not success or not provider or not provider.GetLayoutManager then return false end
         local ok2, layoutManager = pcall(provider.GetLayoutManager, provider)
         if ok2 and layoutManager then
             mod._cdmDataLoaded = true
@@ -604,9 +534,7 @@ function ECME:OnEnable()
                 -- SetupViewerHooks' own 0.2/1/3/6s reanchor retries can all fire before
                 -- Blizzard's data actually becomes ready on a slow login and never try
                 -- again. Catch up now.
-                if mod.QueueReanchor then
-                    mod.QueueReanchor()
-                end
+                if mod.QueueReanchor then mod.QueueReanchor() end
                 -- A queued repopulate that reached its settled pass before the
                 -- layouts loaded runs now, a frame on, once every viewer shows them.
                 if mod._repopAwaitsLayouts then
@@ -631,12 +559,8 @@ function ECME:OnEnable()
     -- Spec-gated build: only run CDMFinishSetup once a real spec key exists from the live API; if
     -- the API isn't ready, defer until it is. Wait until the truth is known, then build once -- never guess the spec and repair later.
     local function TryBuildCDM()
-        if _cdmSetupStarted then
-            return
-        end
-        if not mod.GetActiveSpecKey() then
-            return
-        end -- spec API not ready yet
+        if _cdmSetupStarted then return end
+        if not mod.GetActiveSpecKey() then return end -- spec API not ready yet
         _cdmSetupStarted = true
         EnsureMappings(GetStore())
         if self._needsCapture then
@@ -649,9 +573,7 @@ function ECME:OnEnable()
             self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnCDMFirstLogin")
             if IsLoggedIn() then
                 C_Timer.After(0, function()
-                    if self._needsCapture then
-                        self:OnCDMFirstLogin()
-                    end
+                    if self._needsCapture then self:OnCDMFirstLogin() end
                 end)
             end
         else
@@ -684,9 +606,7 @@ function ECME:OnEnable()
     C_Timer.After(0.5, InstallProcGlowHooks)
 
     -- Initialize Bar Glows overlay system
-    if mod.InitBarGlows then
-        mod.InitBarGlows()
-    end
+    if mod.InitBarGlows then mod.InitBarGlows() end
 
     mod.RefreshRotationAssistIcon()
 end
@@ -695,9 +615,7 @@ function ECME:OnCDMFirstLogin()
     self:UnregisterEvent("PLAYER_ENTERING_WORLD")
     -- A profile import can stamp the capture flag mid-session (imported data is a chosen layout).
     -- Honor the stamp here so a still-pending capture never overwrites the imported profile; just finish the deferred setup.
-    if not self.db.sv._capturedOnce_CDM then
-        CDMFirstLoginCapture()
-    end
+    if not self.db.sv._capturedOnce_CDM then CDMFirstLoginCapture() end
     self._needsCapture = false
     self:CDMFinishSetup()
 end
@@ -736,19 +654,11 @@ function ECME:CDMFinishSetup()
                                 widget = CreateFrame("Frame", "ECME_CDMBar_" .. key, UIParent)
                                 widget:SetFrameStrata(barInfo.barStrata or "MEDIUM")
                                 widget:SetFrameLevel(5)
-                                if widget.SetSnapToPixelGrid then
-                                    widget:SetSnapToPixelGrid(false)
-                                end
-                                if widget.SetTexelSnappingBias then
-                                    widget:SetTexelSnappingBias(0)
-                                end
-                                if widget.EnableMouseClicks then
-                                    widget:EnableMouseClicks(false)
-                                end
+                                if widget.SetSnapToPixelGrid then widget:SetSnapToPixelGrid(false) end
+                                if widget.SetTexelSnappingBias then widget:SetTexelSnappingBias(0) end
+                                if widget.EnableMouseClicks then widget:EnableMouseClicks(false) end
                                 -- Containers never capture mouse motion (see BuildCDMBar creation block).
-                                if widget.EnableMouseMotion then
-                                    widget:EnableMouseMotion(false)
-                                end
+                                if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
                                 widget._barKey = key
                                 widget._barIndex = index
                                 cdmBarFrames[key] = widget
@@ -765,9 +675,7 @@ function ECME:CDMFinishSetup()
                             local grow = barInfo.growDirection or "CENTER"
                             -- Effective row count: collapses to 1 when a custom top-row split has no icons in its second row yet.
                             local stride, numRows = ComputeTopRowStride(barInfo, cachedCount)
-                            if numRows < 1 then
-                                numRows = 1
-                            end
+                            if numRows < 1 then numRows = 1 end
                             -- Minimum Bar Size reserves extra growth-axis slots (no-op when unset); without it a bar under its minimum pre-sizes too small and visibly snaps once real data lands.
                             local resStride = ReserveStride(barInfo, stride)
                             local isHoriz = (
@@ -820,9 +728,7 @@ function ECME:CDMFinishSetup()
     -- Initialize Tracking Bars GetTrackedBuffBars auto-initializes empty bars if none exist. No
     -- validation/removal: TBB bars can track any buff (procs, external buffs, food, etc.) not just
     -- CDM viewer spells. Bars with no active aura simply stay hidden at runtime. Nil-guarded so the TBB file can be bisect-disabled wholesale.
-    if mod.GetTrackedBuffBars then
-        mod.GetTrackedBuffBars()
-    end
+    if mod.GetTrackedBuffBars then mod.GetTrackedBuffBars() end
 
     -- (BuildTrackedBuffBars not called here -- FullCDMRebuild("init") above already called it.
     -- M1 cleanups also deleted: AddSpellToBar's variant-aware dedup prevents duplicate spell entries at insert time.)
@@ -841,9 +747,7 @@ function ECME:CDMFinishSetup()
         fkRearm:RegisterEvent("PLAYER_ENTERING_WORLD")
         fkRearm:SetScript("OnEvent", function()
             C_Timer.After(2, function()
-                if mod.RefreshFocusKickProxies then
-                    mod.RefreshFocusKickProxies()
-                end
+                if mod.RefreshFocusKickProxies then mod.RefreshFocusKickProxies() end
             end)
         end)
     end
@@ -869,9 +773,7 @@ function ECME:CDMFinishSetup()
     -- Edit mode close: no forced rebuild needed. The reanchor naturally skips inactive buff frames with hideWhenInactive (ghost frames from Edit Mode) and alpha-0s them as unclaimed. Normal hooks handle the rest.
 
     -- Register UNIT_AURA tracking if custom buff bars have spells
-    if mod.UpdateCustomBuffAuraTracking then
-        mod.UpdateCustomBuffAuraTracking()
-    end
+    if mod.UpdateCustomBuffAuraTracking then mod.UpdateCustomBuffAuraTracking() end
 
     -- Deferred keybind update: wait 3s so Blizzard's hotkey update cycle has fully run before we read HotKey text from button frames
     C_Timer.After(3, UpdateCDMKeybinds)
@@ -880,9 +782,7 @@ function ECME:CDMFinishSetup()
 
     -- Register with unlock mode. Both default+custom CDM bars and TBB elements register synchronously here so anchor data is available before CollectAndReanchor runs.
     RegisterCDMUnlockElements()
-    if mod.RegisterTBBUnlockElements then
-        mod.RegisterTBBUnlockElements()
-    end
+    if mod.RegisterTBBUnlockElements then mod.RegisterTBBUnlockElements() end
 
     -- CDM is the authoritative trigger for the final layout pass when it is enabled. Set a flag so
     -- the next CollectAndReanchor that completes (after icons are populated and bar sizes are correct) will fire ApplyAllWidthHeightMatches + _applySavedPositions in the right order.

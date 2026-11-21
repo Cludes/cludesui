@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_InstanceTracker.lua  (WoW Forever only)
 --  Instance Tracker: how many new dungeons and raids the account has entered
@@ -31,15 +27,9 @@ local Get, Enabled = F.Get, F.Enabled
 local HOUR = 3600
 local KEEP_RUNS = 20
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Instances:|r " .. textValue)
-end
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Instances:|r " .. textValue) end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 -- Account store: entries = { {t, map, copy}, ... } for the last hour;
 -- runs[guid] = { {name, start, seconds, deaths, xp, items}, ... } newest first.
@@ -53,9 +43,7 @@ end
 local function Prune()
     local nowTime, keep = time(), {}
     for _, entry in ipairs(Store().entries) do
-        if nowTime - entry.t < HOUR then
-            keep[#keep + 1] = entry
-        end
+        if nowTime - entry.t < HOUR then keep[#keep + 1] = entry end
     end
     Store().entries = keep
     return keep
@@ -66,9 +54,7 @@ function module.InstanceCount()
     local list = Prune()
     local oldest
     for _, entry in ipairs(list) do
-        if not oldest or entry.t < oldest then
-            oldest = entry.t
-        end
+        if not oldest or entry.t < oldest then oldest = entry.t end
     end
     return #list, oldest and (oldest + HOUR - time()) or nil
 end
@@ -84,9 +70,7 @@ end
 -- The copy (zone UID) a creature GUID names: Creature-0-server-instance-zoneUID-id-spawn.
 local function CopyFrom(unitToken)
     local unitGuid = UnitGUID(unitToken)
-    if not unitGuid or Secret(unitGuid) then
-        return nil
-    end
+    if not unitGuid or Secret(unitGuid) then return nil end
     local kind, _, _, _, zoneUID = strsplit("-", unitGuid)
     if kind == "Creature" or kind == "Vehicle" or kind == "GameObject" then
         return zoneUID ~= "0" and zoneUID or nil
@@ -95,19 +79,13 @@ end
 
 local copyEvents = CreateFrame("Frame")
 local function ReadCopy(unitToken)
-    if not visit or visit.copy then
-        return
-    end
+    if not visit or visit.copy then return end
     local copy = CopyFrom(unitToken)
-    if not copy then
-        return
-    end
+    if not copy then return end
     visit.copy = copy
     copyEvents:UnregisterAllEvents()
     local record = visit.entry
-    if record then
-        record.copy = copy
-    end
+    if record then record.copy = copy end
     -- The same copy earlier this hour: this visit is not a new instance.
     for index, entry in ipairs(Store().entries) do
         if entry ~= record and entry.map == visit.map and entry.copy == copy then
@@ -134,9 +112,7 @@ end)
 
 local function StartVisit(reload)
     local name, _, _, _, _, _, _, mapID = GetInstanceInfo()
-    if visit and visit.map == mapID then
-        return
-    end -- still the same visit
+    if visit and visit.map == mapID then return end -- still the same visit
     visit = { map = mapID, name = name, start = time(), deaths = 0, xp = 0, items = 0 }
     lastXP, lastMax = UnitXP("player"), UnitXPMax("player")
     if not reload then
@@ -162,9 +138,7 @@ local function StartVisit(reload)
 end
 
 local function EndVisit()
-    if not visit then
-        return
-    end
+    if not visit then return end
     local val = visit
     visit = nil
     copyEvents:UnregisterAllEvents()
@@ -203,9 +177,7 @@ local function EndVisit()
 end
 
 --- This character's recent runs, newest first.
-function module.InstanceRuns()
-    return Store().runs[UnitGUID("player")] or {}
-end
+function module.InstanceRuns() return Store().runs[UnitGUID("player")] or {} end
 
 -------------------------------------------------------------------------------
 --  HUD
@@ -213,9 +185,7 @@ end
 local hud, hudText
 
 local function Build()
-    if hud then
-        return hud
-    end
+    if hud then return hud end
     hud = CreateFrame("Frame", "CludesUIInstanceTracker", UIParent)
     hud:SetSize(170, 30)
     hudText = hud:CreateFontString(nil, "OVERLAY")
@@ -226,25 +196,17 @@ local function Build()
 end
 
 local function PaintHud()
-    if not hud then
-        return
-    end
+    if not hud then return end
     local show = Enabled() and Get("hud")
     local num, frees = module.InstanceCount()
-    if show and not visit and num == 0 and not CludesUI._unlockActive then
-        show = false
-    end
+    if show and not visit and num == 0 and not CludesUI._unlockActive then show = false end
     hud:SetShown(show and true or false)
-    if not show then
-        return
-    end
+    if not show then return end
     local cap = Get("cap")
     local colour = num >= cap and "|cffff6040"
         or (num >= cap - 2 and "|cffffb040" or CludesUI.Kit.AccentHex())
     local line = ("%sInstances %d/%d|r"):format(colour, num, cap)
-    if frees and num > 0 then
-        line = line .. ("  |cff9aa6b2next in %dm|r"):format(math.ceil(frees / 60))
-    end
+    if frees and num > 0 then line = line .. ("  |cff9aa6b2next in %dm|r"):format(math.ceil(frees / 60)) end
     if visit then
         local s = time() - visit.start
         line = line .. ("\n%s  |cff9aa6b2%d:%02d|r"):format(visit.name or "", math.floor(s / 60), s % 60)
@@ -254,9 +216,7 @@ end
 
 -- Coming back to life outside ends a run left open while a ghost.
 local function CheckAlive()
-    if visit and not InGroupInstance() and not UnitIsDeadOrGhost("player") then
-        EndVisit()
-    end
+    if visit and not InGroupInstance() and not UnitIsDeadOrGhost("player") then EndVisit() end
 end
 
 -------------------------------------------------------------------------------
@@ -285,20 +245,14 @@ eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
         local xp, max = UnitXP("player"), UnitXPMax("player")
         if lastXP then
             local skinData = xp - lastXP
-            if skinData < 0 then
-                skinData = (lastMax - lastXP) + xp
-            end -- a level-up in between
-            if skinData > 0 then
-                visit.xp = visit.xp + skinData
-            end
+            if skinData < 0 then skinData = (lastMax - lastXP) + xp end -- a level-up in between
+            if skinData > 0 then visit.xp = visit.xp + skinData end
         end
         lastXP, lastMax = xp, max
     elseif evt == "CHAT_MSG_LOOT" and type(a1) == "string" and not Secret(a1) then
         local mine = (LOOT_SELF and a1:sub(1, #LOOT_SELF) == LOOT_SELF)
             or (LOOT_SELF_MULTI and a1:sub(1, #LOOT_SELF_MULTI) == LOOT_SELF_MULTI)
-        if mine then
-            visit.items = visit.items + 1
-        end
+        if mine then visit.items = visit.items + 1 end
     end
     PaintHud()
 end)
@@ -317,15 +271,9 @@ local function Apply()
         }) do
             eventFrame:RegisterEvent(event)
         end
-        if not ticker then
-            ticker = C_Timer.NewTicker(1, PaintHud)
-        end
-        if not CludesUI._unlockActive then
-            F.Place(hud)
-        end
-        if InGroupInstance() and not visit then
-            StartVisit(true)
-        end
+        if not ticker then ticker = C_Timer.NewTicker(1, PaintHud) end
+        if not CludesUI._unlockActive then F.Place(hud) end
+        if InGroupInstance() and not visit then StartVisit(true) end
     else
         eventFrame:UnregisterAllEvents()
         copyEvents:UnregisterAllEvents()
@@ -358,9 +306,7 @@ F.Start(Apply, {
         end
         return hud
     end,
-    size = function()
-        return 170, 30
-    end,
+    size = function() return 170, 30 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })

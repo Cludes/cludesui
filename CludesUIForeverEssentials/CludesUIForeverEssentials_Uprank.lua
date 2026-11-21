@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Uprank.lua  (WoW Forever only)
 --  When you or your pet get a higher rank of a spell, swaps every lower rank
@@ -39,9 +35,7 @@ local pending = { player = {}, pet = {} } -- spell names to uprank once out of c
 local playerTop, petTop, petSlots, counts = {}, {}, {}, {}
 
 local function Plain(val, kind)
-    if not issecretvalue(val) and type(val) == (kind or "number") then
-        return val
-    end
+    if not issecretvalue(val) and type(val) == (kind or "number") then return val end
 end
 
 -------------------------------------------------------------------------------
@@ -75,9 +69,7 @@ local function ReadPetTop()
     wipe(petTop)
     wipe(petSlots)
     local num = C_SpellBook.HasPetSpells()
-    if not num or num == 0 then
-        return false
-    end
+    if not num or num == 0 then return false end
     for slot = 1, num do
         -- Pet spells are PetAction items; the stances and commands among them carry no spell ID.
         local details = C_SpellBook.GetSpellBookItemInfo(slot, PET)
@@ -94,9 +86,7 @@ end
 -- Family and name: a hunter's two cats stay apart, a warlock's demon keeps its own.
 local function PetKey()
     local family, name = Plain(UnitCreatureFamily("pet"), "string"), Plain(UnitName("pet"), "string")
-    if name == UNKNOWNOBJECT then
-        return
-    end -- the name loads a moment after the pet
+    if name == UNKNOWNOBJECT then return end -- the name loads a moment after the pet
     return family and name and (family .. ":" .. name)
 end
 
@@ -134,9 +124,7 @@ local function ProbeLearned(known)
     for ident in pairs(learned) do
         local name = C_Spell.GetSpellName(ident)
         local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(ident)
-        if not (name and slot) then
-            return false
-        end
+        if not (name and slot) then return false end
         if
             bank == PLAYER
             and not C_SpellBook.IsSpellBookItemPassive(slot, PLAYER)
@@ -171,9 +159,7 @@ end
 local function UprankPending()
     local hasPlayer = next(pending.player) ~= nil
     local hasPet = next(pending.pet) ~= nil and ReadPetTop()
-    if hasPlayer then
-        ReadPlayerTop()
-    end
+    if hasPlayer then ReadPlayerTop() end
     wipe(counts)
 
     for action = 1, MAX_ACTION_SLOT do
@@ -204,9 +190,7 @@ end
 
 -- Placing actions needs no combat and an empty cursor; waits for both.
 local function Flush()
-    if not (next(pending.player) or next(pending.pet)) then
-        return
-    end
+    if not (next(pending.player) or next(pending.pet)) then return end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("SpellUprank", Flush)
         return
@@ -226,14 +210,10 @@ local function Check()
     flusher:Hide()
     local known = Known()
     if next(learned) then
-        if not wantPlayer and not ProbeLearned(known) then
-            wantPlayer = true
-        end
+        if not wantPlayer and not ProbeLearned(known) then wantPlayer = true end
         wipe(learned)
     end
-    if wantPlayer then
-        Diff(ReadPlayerTop(), known.player, pending.player)
-    end
+    if wantPlayer then Diff(ReadPlayerTop(), known.player, pending.player) end
     if wantPet then
         local key = PetKey()
         if key and ReadPetTop() then
@@ -266,9 +246,7 @@ local function OnEvent(_, evt, spellId)
     end
     if evt == "LEARNED_SPELL_IN_SKILL_LINE" then
         spellId = Plain(spellId)
-        if not spellId then
-            return
-        end
+        if not spellId then return end
         learned[spellId] = true
     elseif evt == "SPELLS_CHANGED" then
         if firstScan then
@@ -284,12 +262,8 @@ local function OnEvent(_, evt, spellId)
 end
 
 local function Apply()
-    if events then
-        events:UnregisterAllEvents()
-    end
-    if flusher then
-        flusher:Hide()
-    end
+    if events then events:UnregisterAllEvents() end
+    if flusher then flusher:Hide() end
     local login = not booted
     booted = true
     wipe(learned)

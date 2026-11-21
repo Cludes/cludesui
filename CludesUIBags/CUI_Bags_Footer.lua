@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Footer.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local mod = select(2, ...)
 local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -31,9 +27,7 @@ local function FormatNumberWithCommas(num)
     local result = ""
     local total = 0
     for i = #text, 1, -1 do
-        if total > 0 and total % 3 == 0 then
-            result = "," .. result
-        end
+        if total > 0 and total % 3 == 0 then result = "," .. result end
         result = text:sub(i, i) .. result
         total = total + 1
     end
@@ -48,16 +42,12 @@ end
 local WARBANK_GOLD_R, WARBANK_GOLD_G, WARBANK_GOLD_B = 1, 0.8, 0.5
 
 local function UpdateBagMoneyDisplay()
-    if not CUI_Bags.Money then
-        return
-    end
+    if not CUI_Bags.Money then return end
     MoneyFrame_UpdateMoney(CUI_Bags.Money)
     local goldBtn = _G["CUI_BagMoneyFrameGoldButton"]
     if goldBtn then
         local txt = goldBtn:GetFontString()
-        if txt then
-            txt:SetText(FormatNumberWithCommas(math.floor((GoldLedger.Money() or 0) / 10000)))
-        end
+        if txt then txt:SetText(FormatNumberWithCommas(math.floor((GoldLedger.Money() or 0) / 10000))) end
     end
 end
 
@@ -71,9 +61,7 @@ end
 local function OnGoldChanged()
     UpdateBagMoneyDisplay()
     local bank = _G.CUI_BankFrame
-    if bank and bank.UpdateFooterGold and bank:IsVisible() then
-        bank:UpdateFooterGold()
-    end
+    if bank and bank.UpdateFooterGold and bank:IsVisible() then bank:UpdateFooterGold() end
 end
 
 -------------------------------------------------------------------------------
@@ -86,9 +74,7 @@ local GOLD_ROW_H = 14
 local GOLD_PAD = 8
 
 local function GetGoldTooltip()
-    if _goldTT then
-        return _goldTT
-    end
+    if _goldTT then return _goldTT end
     local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     frame:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
@@ -104,9 +90,7 @@ local function GetGoldTooltip()
     local fadeIn = fadeInAG:CreateAnimation("Alpha")
     fadeIn:SetDuration(0.25)
     fadeIn:SetSmoothing("OUT")
-    fadeInAG:SetScript("OnFinished", function()
-        frame:SetAlpha(1)
-    end)
+    fadeInAG:SetScript("OnFinished", function() frame:SetAlpha(1) end)
     frame._fadeInAG = fadeInAG
     frame._fadeIn = fadeIn
 
@@ -163,19 +147,13 @@ local function EnsureGoldRows(total)
 end
 
 local function StripRealm(name)
-    if not name then
-        return "Unknown"
-    end
-    if Ambiguate then
-        return Ambiguate(name, "short") or name
-    end
+    if not name then return "Unknown" end
+    if Ambiguate then return Ambiguate(name, "short") or name end
     return name
 end
 
 local function ShowGoldTooltip(anchor)
-    if not GoldLedger.IsTracking() then
-        return
-    end
+    if not GoldLedger.IsTracking() then return end
 
     local ledger = GoldLedger.Data()
     local totalGold = 0
@@ -184,26 +162,16 @@ local function ShowGoldTooltip(anchor)
         charList[#charList + 1] = { id = charID, data = payload }
         totalGold = totalGold + payload.money
     end
-    table.sort(charList, function(lhs, rhs)
-        return (lhs.data.name or lhs.id) < (rhs.data.name or rhs.id)
-    end)
+    table.sort(charList, function(lhs, rhs) return (lhs.data.name or lhs.id) < (rhs.data.name or rhs.id) end)
 
     local warbandGold = ledger.warband and ledger.warband.money
     -- An empty warband bank gets no row, as on the Data Bars Gold block.
-    if warbandGold and warbandGold <= 0 then
-        warbandGold = nil
-    end
-    if warbandGold then
-        totalGold = totalGold + warbandGold
-    end
-    if #charList == 0 and not warbandGold then
-        return
-    end
+    if warbandGold and warbandGold <= 0 then warbandGold = nil end
+    if warbandGold then totalGold = totalGold + warbandGold end
+    if #charList == 0 and not warbandGold then return end
 
     local rowCount = #charList + 1
-    if warbandGold then
-        rowCount = rowCount + 1
-    end
+    if warbandGold then rowCount = rowCount + 1 end
     EnsureGoldRows(rowCount)
     local tooltip = GetGoldTooltip()
 
@@ -220,12 +188,8 @@ local function ShowGoldTooltip(anchor)
         goldFS:Show()
         local nw = nameFS:GetStringWidth() or 0
         local gw = goldFS:GetStringWidth() or 0
-        if nw > colWidths[1] then
-            colWidths[1] = nw
-        end
-        if gw > colWidths[2] then
-            colWidths[2] = gw
-        end
+        if nw > colWidths[1] then colWidths[1] = nw end
+        if gw > colWidths[2] then colWidths[2] = gw end
     end
 
     local totalRow = #charList + 1
@@ -239,12 +203,8 @@ local function ShowGoldTooltip(anchor)
         goldFS:Show()
         local nw = nameFS:GetStringWidth() or 0
         local gw = goldFS:GetStringWidth() or 0
-        if nw > colWidths[1] then
-            colWidths[1] = nw
-        end
-        if gw > colWidths[2] then
-            colWidths[2] = gw
-        end
+        if nw > colWidths[1] then colWidths[1] = nw end
+        if gw > colWidths[2] then colWidths[2] = gw end
         totalRow = totalRow + 1
     end
 
@@ -257,12 +217,8 @@ local function ShowGoldTooltip(anchor)
     totalGoldFS:Show()
     local tnw = totalNameFS:GetStringWidth() or 0
     local tgw = totalGoldFS:GetStringWidth() or 0
-    if tnw > colWidths[1] then
-        colWidths[1] = tnw
-    end
-    if tgw > colWidths[2] then
-        colWidths[2] = tgw
-    end
+    if tnw > colWidths[1] then colWidths[1] = tnw end
+    if tgw > colWidths[2] then colWidths[2] = tgw end
 
     for i = totalRow + 1, #_goldTTRows do
         _goldTTRows[i][0]:Hide()
@@ -277,9 +233,7 @@ local function ShowGoldTooltip(anchor)
     for region = 1, rowCount do
         local posY = -(titleTop + (region - 1) * GOLD_ROW_H)
         -- Add gap before total row
-        if region == totalRow then
-            posY = posY - 4
-        end
+        if region == totalRow then posY = posY - 4 end
         _goldTTRows[region][0]:ClearAllPoints()
         _goldTTRows[region][0]:SetPoint("TOPLEFT", tooltip, "TOPLEFT", col1X, posY)
         _goldTTRows[region][1]:ClearAllPoints()
@@ -290,9 +244,7 @@ local function ShowGoldTooltip(anchor)
     tooltip._hint:ClearAllPoints()
     tooltip._hint:SetPoint("TOPLEFT", tooltip, "TOPLEFT", GOLD_PAD, -lastRowY)
     local hintW = (tooltip._hint:GetStringWidth() or 0) + GOLD_PAD * 2
-    if hintW > totalW then
-        totalW = hintW
-    end
+    if hintW > totalW then totalW = hintW end
     local totalH = lastRowY + (tooltip._hint:GetStringHeight() or 10) + GOLD_PAD
 
     tooltip:SetSize(totalW, totalH)
@@ -309,9 +261,7 @@ local function ShowGoldTooltip(anchor)
 end
 
 local function HideGoldTooltip()
-    if not _goldTT or not _goldTT:IsShown() then
-        return
-    end
+    if not _goldTT or not _goldTT:IsShown() then return end
     _goldTT._fadeInAG:Stop()
     _goldTT._fadeOutAG:Stop()
     _goldTT._fadeOut:SetFromAlpha(_goldTT:GetAlpha())
@@ -321,9 +271,7 @@ end
 
 local function PositionBagMoney(inset)
     local footer, money = CUI_Bags.Footer, CUI_Bags.Money
-    if not money then
-        return
-    end
+    if not money then return end
     money:ClearAllPoints()
     if footer._coinBox then
         money:SetPoint("RIGHT", footer._coinBox, "RIGHT", -inset, 0)
@@ -333,9 +281,7 @@ local function PositionBagMoney(inset)
 end
 
 local function CreateFooter()
-    if CUI_Bags.Footer then
-        return
-    end
+    if CUI_Bags.Footer then return end
     local footer = CreateFrame("Frame", nil, CUI_Bags)
     footer:SetPoint("BOTTOMLEFT", 0, 0)
     footer:SetPoint("BOTTOMRIGHT", 0, 0)
@@ -345,9 +291,7 @@ local function CreateFooter()
     footer.bg:SetColorTexture(0, 0, 0, 0.35)
 
     -- Currency displays are created dynamically from Blizzard's tracked currencies
-    if not CUI_Bags._currencyPool then
-        CUI_Bags._currencyPool = { displays = {}, hitboxes = {} }
-    end
+    if not CUI_Bags._currencyPool then CUI_Bags._currencyPool = { displays = {}, hitboxes = {} } end
 
     local money = CreateFrame("Frame", "CUI_BagMoneyFrame", footer, "SmallMoneyFrameTemplate")
     MoneyFrame_SetType(money, "PLAYER")
@@ -356,9 +300,7 @@ local function CreateFooter()
         local button = _G["CUI_BagMoneyFrame" .. suffix]
         if button then
             local txt = button:GetFontString()
-            if txt then
-                SetBagFont(txt, 11)
-            end
+            if txt then SetBagFont(txt, 11) end
         end
     end
 
@@ -372,16 +314,10 @@ local function CreateFooter()
     moneyHitbox:SetFrameLevel(money:GetFrameLevel() + 10)
     moneyHitbox:EnableMouse(true)
 
-    moneyHitbox:SetScript("OnEnter", function(self)
-        ShowGoldTooltip(self)
-    end)
-    moneyHitbox:SetScript("OnLeave", function()
-        HideGoldTooltip()
-    end)
+    moneyHitbox:SetScript("OnEnter", function(self) ShowGoldTooltip(self) end)
+    moneyHitbox:SetScript("OnLeave", function() HideGoldTooltip() end)
     moneyHitbox:SetScript("OnMouseDown", function(self, btnFrame)
-        if not GoldLedger.IsTracking() then
-            return
-        end
+        if not GoldLedger.IsTracking() then return end
         if btnFrame == "RightButton" and IsControlKeyDown() then
             ResetAllGoldData()
             HideGoldTooltip()
@@ -408,9 +344,7 @@ end
 
 local function UpdateCurrencyDisplays(footerWidth)
     local pool = CUI_Bags._currencyPool
-    if not pool or not CUI_Bags.Footer then
-        return FOOTER_H
-    end
+    if not pool or not CUI_Bags.Footer then return FOOTER_H end
     local footer = CUI_Bags.Footer
 
     for _, skinData in ipairs(pool.displays) do
@@ -429,9 +363,7 @@ local function UpdateCurrencyDisplays(footerWidth)
                 tracked[#tracked + 1] = { currencyTypesID = cID, order = sequence }
             end
         end
-        table.sort(tracked, function(lhs, rhs)
-            return lhs.order < rhs.order
-        end)
+        table.sort(tracked, function(lhs, rhs) return lhs.order < rhs.order end)
     end
 
     for i = #pool.displays + 1, #tracked do
@@ -449,9 +381,7 @@ local function UpdateCurrencyDisplays(footerWidth)
                 GameTooltip:SetCurrencyByID(self._currencyID)
             end
         end)
-        hb:SetScript("OnLeave", function()
-            GameTooltip:Hide()
-        end)
+        hb:SetScript("OnLeave", function() GameTooltip:Hide() end)
         pool.hitboxes[i] = hb
     end
 
@@ -464,9 +394,7 @@ local function UpdateCurrencyDisplays(footerWidth)
     local leftOffset = coinBox and 5 or 10
     local rightMargin = 180
     footerWidth = footerWidth or footer:GetWidth() or CUI_Bags:GetWidth() or 0
-    if footerWidth <= 0 then
-        footerWidth = CUI_Bags:GetWidth() or 400
-    end
+    if footerWidth <= 0 then footerWidth = CUI_Bags:GetWidth() or 400 end
     local availableWidth = math.max(40, footerWidth - leftOffset - rightMargin)
     local currentRow = 0
     local currentX = leftOffset
@@ -529,12 +457,8 @@ end
 local function SyncBagFrameToFooter()
     local previous = CUI_Bags._footerH or FOOTER_H
     local footerH = UpdateCurrencyDisplays() or FOOTER_H
-    if footerH == previous then
-        return
-    end
-    if not CUI_Bags:IsVisible() then
-        return
-    end
+    if footerH == previous then return end
+    if not CUI_Bags:IsVisible() then return end
     local delta = footerH - previous
     if CUI_Bags.AutoSizeOn() or (CUI.IS_FOREVER and not BP().bagHeight) then
         CUI_Bags._asMaxH =
@@ -552,9 +476,7 @@ end
 --  Reagent Bag UI
 -------------------------------------------------------------------------------
 local function CreateReagentBagUI()
-    if CUI_BagsReagent.Header then
-        return
-    end
+    if CUI_BagsReagent.Header then return end
     local header = CreateFrame("Frame", nil, CUI_BagsReagent)
     header:SetPoint("TOPLEFT", 1, -1)
     header:SetPoint("TOPRIGHT", -1, -1)
@@ -574,15 +496,9 @@ local function CreateReagentBagUI()
     close.icon:SetAllPoints()
     close.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
     close.icon:SetAlpha(0.7)
-    close:SetScript("OnEnter", function()
-        close.icon:SetAlpha(0.9)
-    end)
-    close:SetScript("OnLeave", function()
-        close.icon:SetAlpha(0.7)
-    end)
-    close:SetScript("OnClick", function()
-        CUI_BagsReagent:Hide()
-    end)
+    close:SetScript("OnEnter", function() close.icon:SetAlpha(0.9) end)
+    close:SetScript("OnLeave", function() close.icon:SetAlpha(0.7) end)
+    close:SetScript("OnClick", function() CUI_BagsReagent:Hide() end)
     if mod.BagsForever() then
         mod.LayoutForeverBagHeader(header, 35)
         header.bg:Hide()
@@ -591,9 +507,7 @@ local function CreateReagentBagUI()
         mod.PositionForeverBagClose(close)
     end
     -- Controller cursor: Cancel finds the close button.
-    if CUI.PadCP() then
-        CUI_BagsReagent.CloseButton = close
-    end
+    if CUI.PadCP() then CUI_BagsReagent.CloseButton = close end
     CUI_BagsReagent.Header = header
     local footer = CreateFrame("Frame", nil, CUI_BagsReagent)
     footer:SetPoint("BOTTOMLEFT", 1, 1)

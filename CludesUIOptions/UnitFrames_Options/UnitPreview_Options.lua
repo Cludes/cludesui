@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  UnitFrames_Options\UnitPreview_Options.lua
 --  Unit Frames options: the unit frame preview in the page header
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CUI_UnitFrames_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIUnitFrames"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- Page reuse: the frames this file builds under a kept header root go through
 -- the options frame pool (CludesUI_FramePool.lua), which hands the next
@@ -43,9 +39,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- the gradient on, the bar colour fading into the gradient colour.
     local GRADIENT_FALLBACK = { r = 0.20, g = 0.20, b = 0.80 }
     local function PV_FillColor(texture, texPath, red, green, blue, useGradient, toColor, direction, alpha)
-        if not texture then
-            return
-        end
+        if not texture then return end
         if not useGradient then
             if texPath then
                 texture:SetTexture(texPath)
@@ -84,9 +78,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         targettarget = true,
         focustarget = true,
     }
-    local function UnitPrefs()
-        return saved.profile[DRESSED_UNITS[unitName] and unitName or "player"]
-    end
+    local function UnitPrefs() return saved.profile[DRESSED_UNITS[unitName] and unitName or "player"] end
     local prefs = UnitPrefs()
 
     side = side or "left"
@@ -96,7 +88,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- its opt-in auras (shown while a Location is picked) and, on WoW
     -- Forever, its power bar in the CludesUI look (a stock style paints its own).
     local isMiniPreview = (unitName == "targettarget" or unitName == "focustarget" or unitName == "pet")
-    local petDrawsPower = unitName == "pet" and mod.UF_PetHasPower and not ResolveBlizzPreview(unitName, prefs)
+    local petDrawsPower = unitName == "pet"
+        and mod.UF_PetHasPower
+        and not ResolveBlizzPreview(unitName, prefs)
     local noPowerPreview = isMiniPreview and not petDrawsPower
     local noDebuffPreview = isMiniPreview and unitName ~= "pet"
     local noCastbarPreview = isMiniPreview
@@ -125,9 +119,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
     end
     local inStrip = CludesUI.UF_CastbarBelowFrame
-    if castbarH > 0 and inStrip and not inStrip(unitName) then
-        castbarH = 0
-    end
+    if castbarH > 0 and inStrip and not inStrip(unitName) then castbarH = 0 end
     local barH = healthH + initPpExtra
     local isAttachedInit = portraitLook == "attached"
     local portraitW = (showPortrait and isAttachedInit) and barH or 0
@@ -146,9 +138,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if atTop or atBottom then
             local rowH = (iconSize or 22) + 3
             initBuffExtra = initBuffExtra + rowH
-            if atTop then
-                initBuffTopPad = initBuffTopPad + rowH
-            end
+            if atTop then initBuffTopPad = initBuffTopPad + rowH end
         end
         local shift = math.max(-PREVIEW_Y_CAP, math.min(PREVIEW_Y_CAP, offsetY or 0))
         if shift > 0 and (atTop or (sideways and not atBottom)) then
@@ -173,9 +163,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     popFrame._previewBaseScale = previewScale
     -- Blizzard Style: Frame Scale rides the preview scale (the live frame is
     -- SetScale'd the same way), so anchors and the header math stay in step.
-    if ResolveBlizzPreview(unitName, prefs) then
-        previewScale = previewScale * BlizzPreviewScale(prefs)
-    end
+    if ResolveBlizzPreview(unitName, prefs) then previewScale = previewScale * BlizzPreviewScale(prefs) end
     popFrame:SetScale(previewScale)
     popFrame._buffExtra = initBuffExtra
     popFrame._buffTopPad = initBuffTopPad
@@ -252,9 +240,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             -- Mirror Portrait turns 3D models too, and never under a stock style.
             local mirror = cur.portraitMirror and not CludesUI.BlizzStyle.Get("unitframes") and true or false
             if modeName == drawn.mode and style == drawn.style and zoom == drawn.zoom then
-                if mirror == drawn.mirror then
-                    return
-                end
+                if mirror == drawn.mirror then return end
                 if modeName == "3d" and portraitModel then
                     drawn.mirror = mirror
                     mod.UF_ApplyPortraitRotation(portraitModel, mirror)
@@ -283,9 +269,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 mod.UF_ApplyPortraitRotation(model, mirror)
                 return
             end
-            if portraitModel then
-                portraitModel:Hide()
-            end
+            if portraitModel then portraitModel:Hide() end
             if modeName == "none" then
                 -- The non-player "Nothing" fallback: just the empty backing.
                 portraitTexture:Hide()
@@ -315,9 +299,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         portraitHolder._previewTex = portraitTexture
         portraitHolder._previewModel = portraitModel
         ApplyPortraitMode()
-        if not showPortrait then
-            portraitHolder:Hide()
-        end
+        if not showPortrait then portraitHolder:Hide() end
     end
 
     -- Health colours outside the dark theme, for a settings table (the
@@ -329,9 +311,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local function PlayerClassRGB()
             local _, token = UnitClass("player")
             local classColor = RAID_CLASS_COLORS[token]
-            if classColor then
-                return classColor.r, classColor.g, classColor.b
-            end
+            if classColor then return classColor.r, classColor.g, classColor.b end
             return 37 / 255, 193 / 255, 29 / 255
         end
         -- The boss preview stays hostile red: the live boss frame never class-colours.
@@ -360,9 +340,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             classBack = token and CludesUI.GetClassColor(token)
         end
         local backPick = classBack or cfg.customBgColor
-        if backPick then
-            return red, green, blue, backPick.r, backPick.g, backPick.b
-        end
+        if backPick then return red, green, blue, backPick.r, backPick.g, backPick.b end
         return red, green, blue, 17 / 255, 17 / 255, 17 / 255
     end
     local hR, hG, hB, hA, bgR, bgG, bgB, bgA
@@ -450,22 +428,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- frame's health reads as "bossHealth").
         local function Abbr(val, valueType)
             local decimalCfg = _G._CUI_AbbrevDecimalCfg
-            if decimalCfg then
-                return mod.AbbreviateNumbers(val, decimalCfg)
-            end
-            if valueType ~= "absorb" and unitName:match("^boss") then
-                valueType = "bossHealth"
-            end
+            if decimalCfg then return mod.AbbreviateNumbers(val, decimalCfg) end
+            if valueType ~= "absorb" and unitName:match("^boss") then valueType = "bossHealth" end
             return mod.AbbreviateValue(val, valueType)
         end
         local function Pct(share)
-            if not _G._CUI_TextDecimals then
-                return tostring(math.floor(share * 100))
-            end
+            if not _G._CUI_TextDecimals then return tostring(math.floor(share * 100)) end
             local trim = _G._CUI_PctTrim
-            if trim then
-                return AbbreviateNumbers(trim.curve:Evaluate(share), trim.cfg)
-            end
+            if trim then return AbbreviateNumbers(trim.curve:Evaluate(share), trim.cfg) end
             return string.format("%.1f", share * 100)
         end
         -- The name the live frame would show (the player's with its WoW
@@ -477,9 +447,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             else
                 shown = _previewCreatureNames[unitName] or unitName
             end
-            if prefixText and cfg then
-                shown = CludesUI.ShortName(shown, cfg[prefixText .. "NameFormat"])
-            end
+            if prefixText and cfg then shown = CludesUI.ShortName(shown, cfg[prefixText .. "NameFormat"]) end
             return shown
         end
         local function Tint(text, red, green, blue)
@@ -494,30 +462,20 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local _, token = UnitClass("player")
             local classColor = token and CludesUI.GetClassColor(token)
             local word = "Target"
-            if classColor and not plain then
-                word = Tint(word, classColor.r, classColor.g, classColor.b)
-            end
+            if classColor and not plain then word = Tint(word, classColor.r, classColor.g, classColor.b) end
             local sep = literal
             if not sep then
                 local picked = prefixText and cfg[prefixText .. "TargetSep"]
-                if type(picked) ~= "string" or picked == "" then
-                    picked = ">"
-                end
+                if type(picked) ~= "string" or picked == "" then picked = ">" end
                 sep = " " .. picked .. " "
             end
-            if sep == "" then
-                return word
-            end
+            if sep == "" then return word end
             if prefixText and cfg[prefixText .. "TargetSepClassColor"] then
-                if classColor then
-                    sep = Tint(sep, classColor.r, classColor.g, classColor.b)
-                end
+                if classColor then sep = Tint(sep, classColor.r, classColor.g, classColor.b) end
                 return sep .. word
             end
             local own = prefixText and cfg[prefixText .. "TargetSepColor"]
-            if type(own) ~= "table" then
-                own = {}
-            end
+            if type(own) ~= "table" then own = {} end
             return Tint(sep, own.r or 1, own.g or 1, own.b or 1) .. word
         end
         local maxHP = UnitHealthMax("player") or 1
@@ -531,149 +489,84 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             levelText = (type(levelText) == "number" and levelText > 0) and tostring(levelText) or "80"
             -- Level Difficulty Color: tinted as an attackable unit of your level.
             if cfg and cfg.levelDifficultyColor then
-                levelText = CludesUI.ColorText(levelText, CludesUI.GetLevelDifficultyColor(tonumber(levelText), true))
+                levelText =
+                    CludesUI.ColorText(levelText, CludesUI.GetLevelDifficultyColor(tonumber(levelText), true))
             end
             return levelText
         end
         -- A shield or heal absorb sized at share of max health.
         local function AbsorbText(share, short)
             local amount = math.floor(maxHP * share)
-            if short then
-                return Abbr(amount, "absorb")
-            end
+            if short then return Abbr(amount, "absorb") end
             return string.format("%d", amount)
         end
-        local hpAbbr = function()
-            return Abbr(curHP, "health")
-        end
-        local ppWhole = function()
-            return math.floor(ppShare * 100)
-        end
+        local hpAbbr = function() return Abbr(curHP, "health") end
+        local ppWhole = function() return math.floor(ppShare * 100) end
         -- Content keys and tag keys to the sample each shows. Live frames cut
         -- names to a Width % per slot; the preview leaves that to the
         -- FontString's own width.
         local SAMPLE = {
             name = NameText,
-            nametotarget = function()
-                return NameText() .. TargetText()
-            end,
+            nametotarget = function() return NameText() .. TargetText() end,
             -- The live Target content (ns.ContentToZone): prefix nil = "T:",
             -- "" = none, the name class coloured only while the slot is.
             targetname = function()
                 local pre = prefixText and cfg[prefixText .. "TargetPrefix"]
-                if type(pre) ~= "string" then
-                    pre = "T:"
-                end
+                if type(pre) ~= "string" then pre = "T:" end
                 return TargetText(
                     pre ~= "" and (pre .. " ") or "",
                     not (prefixText and cfg[prefixText .. "ClassColor"])
                 )
             end,
             level = LevelText,
-            levelname = function()
-                return LevelText() .. " | " .. NameText()
-            end,
-            namelevel = function()
-                return NameText() .. " | " .. LevelText()
-            end,
-            both = function()
-                return hpAbbr() .. " | " .. Pct(hpShare) .. "%"
-            end,
-            bothdash = function()
-                return hpAbbr() .. " - " .. Pct(hpShare) .. "%"
-            end,
+            levelname = function() return LevelText() .. " | " .. NameText() end,
+            namelevel = function() return NameText() .. " | " .. LevelText() end,
+            both = function() return hpAbbr() .. " | " .. Pct(hpShare) .. "%" end,
+            bothdash = function() return hpAbbr() .. " - " .. Pct(hpShare) .. "%" end,
             curhpshort = hpAbbr,
-            healthshort = function()
-                return mod.AbbreviateShortHealth(curHP)
-            end,
-            curmaxhp = function()
-                return hpAbbr() .. " / " .. Abbr(maxHP, "maxHealth")
-            end,
-            perhp = function()
-                return Pct(hpShare) .. "%"
-            end,
-            perhpnosign = function()
-                return Pct(hpShare)
-            end,
-            perhpnum = function()
-                return Pct(hpShare) .. "% | " .. hpAbbr()
-            end,
-            perhpnumdash = function()
-                return Pct(hpShare) .. "% - " .. hpAbbr()
-            end,
-            perpp = function()
-                return ppWhole() .. "%"
-            end,
-            curpp = function()
-                return mod.AbbreviateNumbers(curPP)
-            end,
+            healthshort = function() return mod.AbbreviateShortHealth(curHP) end,
+            curmaxhp = function() return hpAbbr() .. " / " .. Abbr(maxHP, "maxHealth") end,
+            perhp = function() return Pct(hpShare) .. "%" end,
+            perhpnosign = function() return Pct(hpShare) end,
+            perhpnum = function() return Pct(hpShare) .. "% | " .. hpAbbr() end,
+            perhpnumdash = function() return Pct(hpShare) .. "% - " .. hpAbbr() end,
+            perpp = function() return ppWhole() .. "%" end,
+            curpp = function() return mod.AbbreviateNumbers(curPP) end,
             curmaxpp = function()
                 return mod.AbbreviateNumbers(curPP) .. " / " .. mod.AbbreviateNumbers(maxPP)
             end,
-            curhp_curpp = function()
-                return hpAbbr() .. " | " .. mod.AbbreviateNumbers(curPP)
-            end,
-            perhp_perpp = function()
-                return Pct(hpShare) .. "% | " .. ppWhole() .. "%"
-            end,
-            absorb = function()
-                return AbsorbText(0.14)
-            end,
-            absorbshort = function()
-                return AbsorbText(0.14, true)
-            end,
-            healabsorb = function()
-                return AbsorbText(0.08)
-            end,
-            healabsorbshort = function()
-                return AbsorbText(0.08, true)
-            end,
-            group = function()
-                return "3"
-            end,
+            curhp_curpp = function() return hpAbbr() .. " | " .. mod.AbbreviateNumbers(curPP) end,
+            perhp_perpp = function() return Pct(hpShare) .. "% | " .. ppWhole() .. "%" end,
+            absorb = function() return AbsorbText(0.14) end,
+            absorbshort = function() return AbsorbText(0.14, true) end,
+            healabsorb = function() return AbsorbText(0.08) end,
+            healabsorbshort = function() return AbsorbText(0.08, true) end,
+            group = function() return "3" end,
         }
         -- Custom: the live parse of the slot's format (ns.ContentToZone's
         -- custom branch), filled with one sample per tag; an unknown tag
         -- reads as the short heal absorb.
         SAMPLE.custom = function()
-            local parsed =
-                CludesUI.TextTags.Parse(mod.UF_TextTags, prefixText and cfg and cfg[prefixText .. "CustomFormat"])
-            if not parsed then
-                return ""
-            end
+            local parsed = CludesUI.TextTags.Parse(
+                mod.UF_TextTags,
+                prefixText and cfg and cfg[prefixText .. "CustomFormat"]
+            )
+            if not parsed then return "" end
             local TAG = {
                 name = NameText,
-                target = function()
-                    return "Target"
-                end,
+                target = function() return "Target" end,
                 group = SAMPLE.group,
                 level = LevelText,
-                hp = function()
-                    return tostring(curHP)
-                end,
+                hp = function() return tostring(curHP) end,
                 ["hp:abr"] = hpAbbr,
-                ["hp:max"] = function()
-                    return tostring(maxHP)
-                end,
-                ["hp:max:abr"] = function()
-                    return Abbr(maxHP, "maxHealth")
-                end,
-                ["hp:pct"] = function()
-                    return Pct(hpShare)
-                end,
-                pp = function()
-                    return tostring(curPP)
-                end,
+                ["hp:max"] = function() return tostring(maxHP) end,
+                ["hp:max:abr"] = function() return Abbr(maxHP, "maxHealth") end,
+                ["hp:pct"] = function() return Pct(hpShare) end,
+                pp = function() return tostring(curPP) end,
                 ["pp:abr"] = SAMPLE.curpp,
-                ["pp:max"] = function()
-                    return tostring(maxPP)
-                end,
-                ["pp:max:abr"] = function()
-                    return mod.AbbreviateNumbers(maxPP)
-                end,
-                ["pp:pct"] = function()
-                    return tostring(ppWhole())
-                end,
+                ["pp:max"] = function() return tostring(maxPP) end,
+                ["pp:max:abr"] = function() return mod.AbbreviateNumbers(maxPP) end,
+                ["pp:pct"] = function() return tostring(ppWhole()) end,
                 absorb = SAMPLE.absorb,
                 ["absorb:abr"] = SAMPLE.absorbshort,
                 healabsorb = SAMPLE.healabsorb,
@@ -692,9 +585,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- player's class on the player preview, a hostile red on any other),
     -- else its own pick, white by default.
     local function PreviewClassColor(fontStr, useCC, customR, customG, customB)
-        if not fontStr then
-            return
-        end
+        if not fontStr then return end
         if useCC and unitName ~= "player" then
             fontStr:SetTextColor(0.9, 0.3, 0.3)
             return
@@ -714,9 +605,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- Power Color on a slot showing power content: the player's power
     -- colour, over any class colour.
     local function PreviewPowerColor(fontStr, contentKey, usePowerColor, customFmt)
-        if not (fontStr and usePowerColor and mod.UF_IsPowerContent(contentKey, customFmt)) then
-            return
-        end
+        if not (fontStr and usePowerColor and mod.UF_IsPowerContent(contentKey, customFmt)) then return end
         local red, green, blue = CludesUI.ResolveUnitPowerColor("player")
         if red then
             fontStr:SetTextColor(red, green, blue)
@@ -749,16 +638,21 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     local function PlaceSlot(fs, cfg, prefix, content, edge)
         SetPVFont(fs, PREVIEW_FONT, cfg[prefix .. "Size"] or cfg.textSize or 12)
         fs:ClearAllPoints()
-        if prefix == "extraText" then
-            fs:SetWidth(0)
-        end
+        if prefix == "extraText" then fs:SetWidth(0) end
         if content == "none" then
             fs:Hide()
             return false
         end
         local spot = SLOT_EDGE[edge]
         fs:SetJustifyH(spot[1])
-        Pix.Point(fs, spot[1], textOverlay, spot[1], spot[2] + (cfg[prefix .. "X"] or 0), cfg[prefix .. "Y"] or 0)
+        Pix.Point(
+            fs,
+            spot[1],
+            textOverlay,
+            spot[1],
+            spot[2] + (cfg[prefix .. "X"] or 0),
+            cfg[prefix .. "Y"] or 0
+        )
         return true
     end
     local function FillSlot(fs, cfg, prefix, content)
@@ -825,9 +719,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             return typeColor.r, typeColor.g, typeColor.b
         end
         local own = cfg.customPowerFillColor
-        if own then
-            return own.r, own.g, own.b
-        end
+        if own then return own.r, own.g, own.b end
         return 0, 0, 1
     end
     local function PaintPowerFill(fill, texPath, red, green, blue)
@@ -963,9 +855,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     if unitName == "player" or castbarH > 0 then
         local isPlayer = unitName == "player"
         local initCH = castbarH
-        if isPlayer and castbarH <= 0 then
-            initCH = 14
-        end
+        if isPlayer and castbarH <= 0 then initCH = 14 end
         -- Icon as part of the bar: the bar (backing, border and fill) narrows
         -- and the icon takes the freed room with the outer edge fixed, as on
         -- the live cast bar; off, the icon hangs outside a full-width bar.
@@ -1000,13 +890,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- A narrowed bar moves half the icon width toward the side without
         -- the icon, so bar and icon fill the full bar's footprint.
         local iconShift = 0
-        if iconInBar then
-            iconShift = iconOnRight and -(iconW / 2) or (iconW / 2)
-        end
+        if iconInBar then iconShift = iconOnRight and -(iconW / 2) or (iconW / 2) end
         Pix.Point(castBar, "TOP", cbAnchor, "BOTTOM", cbOffset + iconShift, 0)
-        if castbarH > 0 then
-            totalH = totalH + castbarH
-        end
+        if castbarH > 0 then totalH = totalH + castbarH end
 
         -- Half-black backing and a 1px black border, as the live cast bar.
         local cbBg = castBar:CreateTexture(nil, "BACKGROUND")
@@ -1173,9 +1059,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local ICON_SPOT = { center = { "CENTER", 0 }, right = { "RIGHT", -3 }, left = { "LEFT", 3 } }
         local function IconOverlayShown(on)
             local hit = popFrame._btbClassIconOv
-            if not hit then
-                return
-            end
+            if not hit then return end
             if on then
                 hit:Show()
             else
@@ -1202,7 +1086,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     )
                     fs:SetText(PreviewTextForContent(content, cfg, prefix))
                     fs:Show()
-                    local red, green, blue = cfg[prefix .. "ColorR"], cfg[prefix .. "ColorG"], cfg[prefix .. "ColorB"]
+                    local red, green, blue =
+                        cfg[prefix .. "ColorR"], cfg[prefix .. "ColorG"], cfg[prefix .. "ColorB"]
                     PreviewClassColor(fs, cfg[prefix .. "ClassColor"], red, green, blue)
                     PreviewPowerColor(fs, content, cfg[prefix .. "PowerColor"], cfg[prefix .. "CustomFormat"])
                 end
@@ -1269,9 +1154,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local litRGB = { 1.00, 0.84, 0.30 }
         local colorOf = CludesUI.GetResourceColor or CludesUI.GetClassColor
         local found = colorOf and colorOf(playerClass)
-        if found then
-            litRGB = { found.r, found.g, found.b }
-        end
+        if found then litRGB = { found.r, found.g, found.b } end
 
         if cpMax > 0 then
             comboPipHolder = CreateFrame("Frame", nil, popFrame)
@@ -1287,9 +1170,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 local pip = comboPipHolder:CreateTexture(nil, "OVERLAY", nil, 3)
                 pip:SetColorTexture(1, 1, 1, 1)
                 Pix.Size(pip, 8, 3)
-                if pipIndex <= lit then
-                    pip:SetColorTexture(litRGB[1], litRGB[2], litRGB[3], 1)
-                end
+                if pipIndex <= lit then pip:SetColorTexture(litRGB[1], litRGB[2], litRGB[3], 1) end
                 cpPips[pipIndex] = pip
             end
             -- Update shows the row unless the style is "none".
@@ -1342,9 +1223,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         nil,
         edgePx
     )
-    if bdrSize == 0 and bdrTexKey == "solid" then
-        edgeFrame:Hide()
-    end
+    if bdrSize == 0 and bdrTexKey == "solid" then edgeFrame:Hide() end
 
     -- Places an absorb StatusBar for its edge mode, as the live
     -- UpdateAbsorbBarReverseFill (CUI_UnitFrames_Absorb.lua) does. "right" /
@@ -1355,9 +1234,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- missing health from the current-health edge. Vertical fill swaps the
     -- axis but keeps the key names: "right" is the top, "left" the bottom.
     local function PositionPreviewAbsorb(barFrame, modeName, isRev, isVert)
-        if not barFrame then
-            return
-        end
+        if not barFrame then return end
         barFrame:ClearAllPoints()
         barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
         mod.ApplyFillRotation(barFrame)
@@ -1466,9 +1343,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         absorbFill = CreateFrame("StatusBar", nil, absClip)
         local absStyle = PaintShield(absorbFill, prefs)
         SizeAbsorbBar(absorbFill)
-        if not absStyle or absStyle == "none" then
-            absorbFill:Hide()
-        end
+        if not absStyle or absStyle == "none" then absorbFill:Hide() end
         healAbsorbFill = CreateFrame("StatusBar", nil, absClip)
         PaintHealAbsorb(healAbsorbFill, prefs, prefs.healAbsorbStyle or "clean")
         SizeAbsorbBar(healAbsorbFill)
@@ -1553,9 +1428,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local iconTex = SampleAuraIcon(size, _previewBuffIcons[slot] or 135932)
             Pix.Point(iconTex, "BOTTOMLEFT", popFrame, "TOPLEFT", (slot - 1) * (size + 1), 1)
             buffIcons[slot] = iconTex
-            if not buffsShown then
-                iconTex:Hide()
-            end
+            if not buffsShown then iconTex:Hide() end
         end
     end
 
@@ -1607,9 +1480,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             stackText:Hide()
             iconTex._stackText = stackText
             debuffIcons[slot] = iconTex
-            if debuffsHidden then
-                iconTex:Hide()
-            end
+            if debuffsHidden then iconTex:Hide() end
         end
     end
 
@@ -1640,14 +1511,10 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- module switch, page cache stash, the panel folding to its mini
     -- window) and comes back when the preview shows again without an
     -- Update (unfolding the panel runs no OnShow callback).
-    popFrame:HookScript("OnHide", function()
-        disabledOverlay:Hide()
-    end)
+    popFrame:HookScript("OnHide", function() disabledOverlay:Hide() end)
     popFrame:HookScript("OnShow", function()
         local sourceKey = unitName:match("^boss") and "boss" or unitName
-        if mod.GetUnitFrameSource(sourceKey) == "cui" then
-            return
-        end
+        if mod.GetUnitFrameSource(sourceKey) == "cui" then return end
         SyncDisabledOverlay()
         disabledOverlay:Show()
     end)
@@ -1747,7 +1614,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             or artFrame._artCutSpec ~= cut
             or artFrame._artMerged ~= mergedArt
         then
-            artFrame._artAtlas, artFrame._artMirror, artFrame._artCutSpec, artFrame._artMerged = artEntry, mirror, cut, mergedArt
+            artFrame._artAtlas, artFrame._artMirror, artFrame._artCutSpec, artFrame._artMerged =
+                artEntry, mirror, cut, mergedArt
             mod.UF_PaintBlizzArt(barRegion, artEntry)
         end
         -- The dark plaque behind the name and bars (classic kit), under the art.
@@ -1819,13 +1687,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             artFrame._levelBadge = lb
         end
         local lvOn = Lv and cfg.blizzShowLevel ~= false
-        if lb then
-            lb:SetShown((lvOn and B) and true or false)
-        end
+        if lb then lb:SetShown((lvOn and B) and true or false) end
         if not lvOn then
-            if lf then
-                lf:Hide()
-            end
+            if lf then lf:Hide() end
         else
             -- The name's font object (its shadow) and face, as live; a name on
             -- a font family lends its roman member's face. (Called plainly:
@@ -1837,9 +1701,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 local source = (family and fo:GetFontObjectForAlphabet("roman")) or nf
                 local face, size, flags = source:GetFont()
                 if face then
-                    if fo then
-                        lf:SetFontObject(fo)
-                    end
+                    if fo then lf:SetFontObject(fo) end
                     lf:SetFont(face, cfg.blizzLevelSize or size, flags)
                 end
             end
@@ -1860,9 +1722,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             lf:SetText(UnitLevel("player"))
             lf:Show()
         end
-        if popFrame._levelOv then
-            popFrame._levelOv:SetShown(lvOn and true or false)
-        end
+        if popFrame._levelOv then popFrame._levelOv:SetShown(lvOn and true or false) end
 
         -- Health bar at the stock spot, filling sideways (the stock track has
         -- no upright variant), in the colours, texture, gradient and opacity set.
@@ -1872,18 +1732,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         healthBar:SetFrameLevel(levelText + 3)
         -- The absorb pieces sit one level over the bars.
         local absClip = absorbFill and absorbFill:GetParent()
-        if absClip and absClip ~= healthBar then
-            absClip:SetFrameLevel(levelText + 4)
-        end
+        if absClip and absClip ~= healthBar then absClip:SetFrameLevel(levelText + 4) end
         for _, piece in ipairs({
             absorbFill or false,
             healAbsorbFill or false,
             absorbTopBar or false,
             healAbsorbTopBar or false,
         }) do
-            if piece then
-                piece:SetFrameLevel(levelText + 4)
-            end
+            if piece then piece:SetFrameLevel(levelText + 4) end
         end
         local hpW = math.floor(HB.w * pct + 0.5)
         healthFill:ClearAllPoints()
@@ -1896,9 +1752,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         healthBgColor:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", fromRight and -hpW or 0, 0)
         healthFill:SetWidth(hpW)
         for _, barFrame in ipairs({ absorbFill or false, healAbsorbFill or false }) do
-            if barFrame then
-                barFrame:SetSize(HB.w, HB.h)
-            end
+            if barFrame then barFrame:SetSize(HB.w, HB.h) end
         end
         -- The stock rounded mask goes on everything in the track (a mirrored
         -- small frame runs unmasked: masks cannot flip), then the bar's bevel.
@@ -1913,9 +1767,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         table.wipe(hTex)
         local function Track(region)
-            if region then
-                hTex[#hTex + 1] = region
-            end
+            if region then hTex[#hTex + 1] = region end
         end
         Track(healthFill)
         Track(healthBg)
@@ -2016,27 +1868,17 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 mod.UF_SetMask(backdrop, pm)
                 mod.UF_SetMask(popFrame._pvCostSeg, pm)
             elseif pm then
-                if fill then
-                    pcall(fill.RemoveMaskTexture, fill, pm)
-                end
-                if backdrop then
-                    pcall(backdrop.RemoveMaskTexture, backdrop, pm)
-                end
+                if fill then pcall(fill.RemoveMaskTexture, fill, pm) end
+                if backdrop then pcall(backdrop.RemoveMaskTexture, backdrop, pm) end
                 local cs = popFrame._pvCostSeg
-                if cs then
-                    pcall(cs.RemoveMaskTexture, cs, pm)
-                end
+                if cs then pcall(cs.RemoveMaskTexture, cs, pm) end
             end
             mod.UF_BlizzBarShadow(powerW, pMaskOK and pm or nil, G.power.h)
-            if isMini or (cfg.powerHeight or 6) > 0 then
-                powerW:Show()
-            end
+            if isMini or (cfg.powerHeight or 6) > 0 then powerW:Show() end
         elseif powerW and powerW._blizzMask then
             -- Detached now: the track pieces come off.
             local fill = popFrame._powerFill
-            if fill then
-                pcall(fill.RemoveMaskTexture, fill, powerW._blizzMask)
-            end
+            if fill then pcall(fill.RemoveMaskTexture, fill, powerW._blizzMask) end
             if popFrame._powerBg then
                 pcall(popFrame._powerBg.RemoveMaskTexture, popFrame._powerBg, powerW._blizzMask)
             end
@@ -2048,13 +1890,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         -- Hide Power Bar keeps the bar down, and its text with it (the text's
         -- own frame, which carries its click overlay).
-        if merged and powerW then
-            powerW:Hide()
-        end
+        if merged and powerW then powerW:Hide() end
         local ppOv = ppPreviewFS and ppPreviewFS:GetParent()
-        if ppOv then
-            ppOv:SetShown(not merged)
-        end
+        if ppOv then ppOv:SetShown(not merged) end
 
         -- Portrait: always shown, at the stock spot and size under the art,
         -- in the stock mask. 3D cannot be masked, so 2D art stands in for it
@@ -2068,9 +1906,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             portraitHolder:SetFrameLevel(levelText + 1)
             portraitHolder:SetClipsChildren(false)
             local function HideIf(region)
-                if region then
-                    region:Hide()
-                end
+                if region then region:Hide() end
             end
             HideIf(portraitHolder._previewBg)
             HideIf(portraitHolder._shapeBorderTex)
@@ -2082,15 +1918,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local texture = portraitHolder._previewTex
             local shapeMask = portraitHolder._shapeMask
             if shapeMask then
-                if texture then
-                    pcall(texture.RemoveMaskTexture, texture, shapeMask)
-                end
+                if texture then pcall(texture.RemoveMaskTexture, texture, shapeMask) end
                 shapeMask:Hide()
             end
             local model = portraitHolder._previewModel
-            if model and model:IsShown() then
-                model:Hide()
-            end
+            if model and model:IsShown() then model:Hide() end
             if texture then
                 texture:Show()
                 if (cfg.portraitMode or "2d") ~= "class" then
@@ -2132,9 +1964,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
 
         -- No CludesUI chrome: the border and the Text Bar make way for the art.
         edgeFrame:Hide()
-        if btbFrame then
-            btbFrame:Hide()
-        end
+        if btbFrame then btbFrame:Hide() end
 
         -- Cast bar: under the art box (no Text Bar between them now), or on
         -- the frames whose bar hangs off the aura block, under the lowest
@@ -2142,15 +1972,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- fill art, frame and text box.
         if castBar and castBar:IsShown() and ch > 0 then
             local inW = mod.UF_CastIconInWidth(unitName, cfg)
-            local onRight = cfg[unitName == "player" and "playerCastbarIconRight" or "castbarIconRight"] == true
+            local onRight = cfg[unitName == "player" and "playerCastbarIconRight" or "castbarIconRight"]
+                == true
             local UFC = mod.UF_CAST_BLIZZ
             -- The classic kit's own cast chrome (nil on the stock kit): the
             -- vanilla frame round the user's own fill, and no stock
             -- background, fill art or text box.
             local CK = mod.UF_BLIZZ.cast
-            local function StockAtlas(key)
-                return (not CK) and UFC and mod.UF_BlizzAtlas(UFC[key])
-            end
+            local function StockAtlas(key) return (not CK) and UFC and mod.UF_BlizzAtlas(UFC[key]) end
             -- The stock text box (while the spell name shows) hangs 13px under
             -- the bar and the icon spans bar and box, as live; an icon that
             -- is part of the bar moves the bar half that width to centre the pair.
@@ -2159,14 +1988,10 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local tbOn = tbAtlas and castNameText and nameSide ~= "none"
             local icoW = ch + (tbOn and 13 or 0)
             local shift = 0
-            if inW then
-                shift = onRight and -(icoW / 2) or (icoW / 2)
-            end
+            if inW then shift = onRight and -(icoW / 2) or (icoW / 2) end
             castBar:ClearAllPoints()
             castBar:SetPoint("TOP", barRegion, "BOTTOM", shift, padBottom - (drop or 0))
-            if castIconHolder then
-                castIconHolder:SetSize(icoW, icoW)
-            end
+            if castIconHolder then castIconHolder:SetSize(icoW, icoW) end
             -- The retail background, under WoW Forever too, as live.
             local bgAtlas = StockAtlas("bg")
             local backTex = castBar._previewBgTex
@@ -2186,9 +2011,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 -- Bare art as live: no plate, border or 1px inset (Update
                 -- re-seats the inset each pass; this runs after it).
                 Pix.HideBorder(castIconHolder)
-                if castIconHolder._bg then
-                    castIconHolder._bg:Hide()
-                end
+                if castIconHolder._bg then castIconHolder._bg:Hide() end
                 local art = castIconHolder._iconTex
                 if art then
                     art:ClearAllPoints()
@@ -2220,7 +2043,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     rim:SetPoint("TOPLEFT", castIconHolder, "TOPLEFT", 0, 0)
                     rim:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, 0)
                 end
-                mod.UF_SeatClassicCastFrame(castBar._blizzFrame, rim, ch, cfg[mod.UF_CastClassicKey(unitName)])
+                mod.UF_SeatClassicCastFrame(
+                    castBar._blizzFrame,
+                    rim,
+                    ch,
+                    cfg[mod.UF_CastClassicKey(unitName)]
+                )
             elseif frAtlas then
                 local fr = castBar._blizzFrame
                 if not fr then
@@ -2257,9 +2085,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     castNameText:SetPoint("LEFT", tb, "LEFT", 8 + ox, oy)
                 end
                 local wid = castBar:GetWidth() or 0
-                if wid > 20 then
-                    castNameText:SetWidth(wid - 16)
-                end
+                if wid > 20 then castNameText:SetWidth(wid - 16) end
             elseif castBar._blizzTextBox then
                 castBar._blizzTextBox:Hide()
             end
@@ -2271,9 +2097,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- (AnchorContainer's vis insets). `am` is the pass's own anchor entry.
     local function BlizzInsetAnchor(am, anchor, G, mirror)
         local val = G.vis
-        if not val then
-            return
-        end
+        if not val then return end
         local pad = G.pad
         local vl, vr = val.l, val.r
         if mirror then
@@ -2308,9 +2132,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- Visible, not shown: a kept header root keeps its preview's own shown
         -- flag while the root itself is hidden on another page.
         if not popFrame:IsVisible() then
-            if disabledOverlay then
-                disabledOverlay:Hide()
-            end
+            if disabledOverlay then disabledOverlay:Hide() end
             return
         end
         local cfg = popFrame._unitPrefs()
@@ -2325,9 +2147,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- Copy Auras From view (its own size, crop and placement, the source
         -- frame's look), every other unit's own table.
         local as = cfg
-        if unitName == "pet" then
-            as = mod.UF_AuraSettings("pet") or cfg
-        end
+        if unitName == "pet" then as = mod.UF_AuraSettings("pet") or cfg end
 
         -- Aura preview: mirror the live shared aura border style.
         if
@@ -2349,9 +2169,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 end
                 local edgeFrame = iconTex._cuiAuraBorder
                 if blizzAura then
-                    if edgeFrame then
-                        edgeFrame:Hide()
-                    end
+                    if edgeFrame then edgeFrame:Hide() end
                     return
                 end
                 if not edgeFrame then
@@ -2372,7 +2190,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     )
                 end
                 if iconTex._durText and (aboveEffects or iconTex._borderAboveEffects) then
-                    iconTex._durText:GetParent():SetFrameLevel(iconTex:GetFrameLevel() + (aboveEffects and 25 or 2))
+                    iconTex._durText
+                        :GetParent()
+                        :SetFrameLevel(iconTex:GetFrameLevel() + (aboveEffects and 25 or 2))
                     iconTex._borderAboveEffects = aboveEffects or nil
                 end
                 CludesUI.ApplyBorderStyle(
@@ -2470,9 +2290,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local cpStyle = (unitName == "player") and (cfg.classPowerStyle or "none") or "none"
         -- The style that builds (WoW Forever reads a saved "blizzard" as modern,
         -- and a rogue's own style); only the player frame has a class resource.
-        if unitName == "player" and mod.UF_ForeverCPStyle then
-            cpStyle = mod.UF_ForeverCPStyle(cpStyle)
-        end
+        if unitName == "player" and mod.UF_ForeverCPStyle then cpStyle = mod.UF_ForeverCPStyle(cpStyle) end
         local cpPos = (cpStyle == "modern") and (cfg.classPowerPosition or "top") or "none"
         local cpAboveH = 0
         if cpStyle == "modern" and cpPos == "above" and cpPips then
@@ -2505,9 +2323,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             pYOff = pYOff + 5
         end
         local portraitDim = bh2 + pSizeAdj -- portrait width & height
-        if portraitDim < 8 then
-            portraitDim = 8
-        end
+        if portraitDim < 8 then portraitDim = 8 end
         -- For attached, "top" and "inside*" fall back to default side
         local effectiveSide = side
         if isAttached and (side == "top" or pvIsInside) then
@@ -2517,18 +2333,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local powerW = (sp and isAttached and effectiveSide ~= "top") and portraitDim or 0
         local tw = fw + powerW
         -- Blizzard Style: the stock footprint (cast bar width, pf size, fit).
-        if stockGroup then
-            tw = stockGroup.w
-        end
+        if stockGroup then tw = stockGroup.w end
 
         Pix.Size(healthBar, fw, hh)
 
         -- Re-anchor portrait + health every update (no caching) to avoid circular
         -- dependency errors on style switches: clear BOTH first, then anchor in
         -- dependency order.
-        if portraitHolder then
-            portraitHolder:ClearAllPoints()
-        end
+        if portraitHolder then portraitHolder:ClearAllPoints() end
         healthBar:ClearAllPoints()
         local btbTopOff = (cfg.bottomTextBar and (cfg.btbPosition or "bottom") == "top")
                 and (cfg.bottomTextBarHeight or 16)
@@ -2545,9 +2357,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 -- Inside: portrait overlays the health bar
                 Pix.Point(healthBar, "TOPLEFT", barRegion, "TOPLEFT", 0, -cpAboveH - btbTopOff - pvPwAbove)
                 portraitHolder:SetClipsChildren(true)
-                if portraitHolder._previewBg then
-                    portraitHolder._previewBg:Hide()
-                end
+                if portraitHolder._previewBg then portraitHolder._previewBg:Hide() end
                 if effectiveSide == "insideleft" then
                     portraitHolder:SetPoint("TOPLEFT", healthBar, "TOPLEFT", pXOff, pYOff)
                 elseif effectiveSide == "insideright" then
@@ -2558,9 +2368,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             elseif isAttached then
                 -- Attached: portrait to barArea, then health to portrait
                 portraitHolder:SetClipsChildren(true)
-                if portraitHolder._previewBg then
-                    portraitHolder._previewBg:Show()
-                end
+                if portraitHolder._previewBg then portraitHolder._previewBg:Show() end
                 if effectiveSide == "left" then
                     portraitHolder:SetPoint("TOPLEFT", barRegion, "TOPLEFT", 0, 0)
                     Pix.Point(
@@ -2587,9 +2395,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 -- on; ApplyPreviewPortraitShape (later this Update) turns it off
                 -- again for Pixels Circle or a shown Outer Ring.
                 portraitHolder:SetClipsChildren(true)
-                if portraitHolder._previewBg then
-                    portraitHolder._previewBg:Show()
-                end
+                if portraitHolder._previewBg then portraitHolder._previewBg:Show() end
                 Pix.Point(healthBar, "TOPLEFT", barRegion, "TOPLEFT", 0, -cpAboveH - btbTopOff - pvPwAbove)
                 if effectiveSide == "top" then
                     -- Top: portrait centered above health bar
@@ -2611,9 +2417,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             end
         else
             Pix.Point(healthBar, "TOPLEFT", barRegion, "TOPLEFT", 0, -cpAboveH - btbTopOff - pvPwAbove)
-            if portraitHolder then
-                portraitHolder._anchored = false
-            end
+            if portraitHolder then portraitHolder._anchored = false end
         end
         healthFill:ClearAllPoints()
         -- Vertical Fill turns the fill axis upright (growing up from the
@@ -2674,9 +2478,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local texNow = (mod.healthBarTextures or {})[texKeyNow]
             if healthFill then
                 local fillA = cfg.healthBarOpacity or 90
-                if fillA > 1.0 then
-                    fillA = fillA / 100
-                end
+                if fillA > 1.0 then fillA = fillA / 100 end
                 local withGradient = (not isDark) and cfg.gradientEnabled
                 PV_FillColor(
                     healthFill,
@@ -2710,12 +2512,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 hFillA = (cfg.healthBarOpacity or 90) / 100
                 hBgA = (cfg.customBgAlpha or 100) / 100
             end
-            if healthFill then
-                healthFill:SetAlpha(hFillA)
-            end
-            if healthBgColor then
-                healthBgColor:SetAlpha(hBgA)
-            end
+            if healthFill then healthFill:SetAlpha(hFillA) end
+            if healthBgColor then healthBgColor:SetAlpha(hBgA) end
             -- Textured Background, as live: a fixed full-size layer while the
             -- fill is opaque.
             local tbPath = mod.UF_TexBgPaths(unitName, cfg, texKeyNow)
@@ -2739,9 +2537,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if powerBar then
             local pvPw = fw
             local pvPpIsDet = (powerPlace == "detached_top" or powerPlace == "detached_bottom")
-            if pvPpIsDet and (cfg.powerWidth or 0) > 0 then
-                pvPw = cfg.powerWidth
-            end
+            if pvPpIsDet and (cfg.powerWidth or 0) > 0 then pvPw = cfg.powerWidth end
             Pix.Size(powerBar, pvPw, ph)
             if pvPpIsDet and saved.profile.enableCustomBarStratas then
                 powerBar:SetFrameLevel(popFrame:GetFrameLevel() + 40)
@@ -2784,9 +2580,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             end
             -- Live-frame rule: attached bars get only the Solid seam facing health;
             -- detached bars keep their selected full style.
-            if mod.UpdatePowerBorder then
-                mod.UpdatePowerBorder(powerBar, cfg)
-            end
+            if mod.UpdatePowerBorder then mod.UpdatePowerBorder(powerBar, cfg) end
             if popFrame._powerFill then
                 popFrame._powerFill:ClearAllPoints()
                 if cfg.powerReverseFill then
@@ -2806,9 +2600,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             -- below, which would otherwise leave it at full opacity (mirrors
             -- ApplyPowerBarAlpha on the real frame).
             local pOpacity = (cfg.powerBarOpacity or 100) / 100
-            if popFrame._powerBg then
-                popFrame._powerBg:SetAlpha((cfg.customPowerBgAlpha or 100) / 100)
-            end
+            if popFrame._powerBg then popFrame._powerBg:SetAlpha((cfg.customPowerBgAlpha or 100) / 100) end
             -- Fill Opacity < 100: bg covers only the empty portion (live
             -- world-show-through); restore the full-size anchors at 100.
             if popFrame._powerBg and popFrame._powerFill then
@@ -2996,12 +2788,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
 
         if portraitHolder then
             if sp then
-                if not portraitHolder:IsShown() then
-                    portraitHolder:Show()
-                end
-                if portraitHolder._applyMode then
-                    portraitHolder._applyMode()
-                end
+                if not portraitHolder:IsShown() then portraitHolder:Show() end
+                if portraitHolder._applyMode then portraitHolder._applyMode() end
                 ApplyPreviewPortraitShape(portraitHolder, cfg)
                 -- Portrait Dragon (player, target, focus; any shape, attached
                 -- or detached, never a stock style): the live helper at the
@@ -3011,8 +2799,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     and (unitName == "player" or unitName == "target" or unitName == "focus")
                     and mod.UF_DragonSettings(unitName, cfg)
                 if pvDragon and pvDragon.on then
-                    local dt =
-                        mod.UF_PortraitDragon(portraitHolder, pvDragon, (unitName == "player") ~= pvDragon.flip)
+                    local dt = mod.UF_PortraitDragon(
+                        portraitHolder,
+                        pvDragon,
+                        (unitName == "player") ~= pvDragon.flip
+                    )
                     if dt then
                         dt:Show()
                         portraitHolder:SetClipsChildren(false)
@@ -3041,9 +2832,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local btbPos = cfg.btbPosition or "bottom"
         local btbIsAtt = (btbPos == "top" or btbPos == "bottom")
         if btbFrame and not cfg.bottomTextBar then
-            if btbFrame:IsShown() then
-                btbFrame:Hide()
-            end
+            if btbFrame:IsShown() then btbFrame:Hide() end
         elseif btbFrame then
             local floating = not btbIsAtt
             local ownW = floating and (cfg.btbWidth or 0) or 0
@@ -3068,9 +2857,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local fillColor = cfg.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
             btbBg:SetColorTexture(fillColor.r, fillColor.g, fillColor.b, cfg.btbBgOpacity or 1.0)
             ApplyBTBPreviewTexts(cfg)
-            if not btbFrame:IsShown() then
-                btbFrame:Show()
-            end
+            if not btbFrame:IsShown() then btbFrame:Show() end
         end
 
         -- Cast bar, laid out live: its width (narrowed when the icon is part of
@@ -3079,9 +2866,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- for the icon).
         if castBar and ch <= 0 then
             castBar:Hide()
-            if castIconHolder then
-                castIconHolder:Hide()
-            end
+            if castIconHolder then castIconHolder:Hide() end
         elseif castBar then
             local isPlayer = unitName == "player"
             local iconInBar = mod.UF_CastIconInWidth(unitName, cfg)
@@ -3134,15 +2919,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 -- live); WHITE8X8 as the fallback so the tint is always set fresh.
                 local ownTex = saved.profile.castBarTexture
                 local fillKey = cfg.healthBarTexture or saved.profile.healthBarTexture or "none"
-                if ownTex and ownTex ~= "inherit" then
-                    fillKey = ownTex
-                end
+                if ownTex and ownTex ~= "inherit" then fillKey = ownTex end
                 local fillPath = (mod.healthBarTextures or {})[fillKey] or "Interface\\Buttons\\WHITE8X8"
                 PV_FillColor(castFill, fillPath, fc.r, fc.g, fc.b, nil, nil, nil, 1)
                 -- "Blizzard" is the vanilla cast bar's own fill art, tinted.
-                if fillKey == "blizzard" then
-                    castFill:SetAtlas("UI-CastingBar-Fill", true)
-                end
+                if fillKey == "blizzard" then castFill:SetAtlas("UI-CastingBar-Fill", true) end
             end
             local sample = isPlayer and optionState._previewCastSpell or nil
             if castIconHolder then
@@ -3217,7 +2998,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 Tint(castTimeFS, cfg.castDurationColor)
                 castTimeFS:SetShown(showDur)
                 if hasW then
-                    PlaceZone(castTimeFS, timeSide, true, timeW, cfg.castDurationX or 0, (cfg.castDurationY or 0))
+                    PlaceZone(
+                        castTimeFS,
+                        timeSide,
+                        true,
+                        timeW,
+                        cfg.castDurationX or 0,
+                        (cfg.castDurationY or 0)
+                    )
                 end
             end
             if castTargetFS then
@@ -3246,9 +3034,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             -- An icon that is part of the bar moves the narrowed bar half an icon
             -- toward the icon-free side, so the pair sits flush under the frame.
             local iconShift = 0
-            if iconInBar then
-                iconShift = iconOnRight and -(ch / 2) or (ch / 2)
-            end
+            if iconInBar then iconShift = iconOnRight and -(ch / 2) or (ch / 2) end
             Pix.Point(castBar, "TOP", hangFrom, "BOTTOM", (onTextBar and 0 or cbOff) + iconShift, 0)
         end
 
@@ -3288,9 +3074,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             for _, pip in ipairs(cpPips) do
                 pip:Hide()
             end
-            if popFrame._cpPipOv then
-                popFrame._cpPipOv:Hide()
-            end
+            if popFrame._cpPipOv then popFrame._cpPipOv:Hide() end
         elseif comboPipHolder and cpPips then
             local cpPos = cfg.classPowerPosition or "top"
             local cpMax = #cpPips
@@ -3303,12 +3087,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             comboPipHolder:ClearAllPoints()
             -- Every edge rounds to a physical pixel, so the gaps all match.
             local efs = comboPipHolder:GetEffectiveScale()
-            if efs <= 0 then
-                efs = 1
-            end
-            local function Snap(val)
-                return math.floor(val * efs + 0.5) / efs
-            end
+            if efs <= 0 then efs = 1 end
+            local function Snap(val) return math.floor(val * efs + 0.5) / efs end
             if cpPos == "above" then
                 -- Flush with the health bar's edges: the width shared out as
                 -- cpMax pips with snapped gaps, each pip's edges snapped.
@@ -3337,10 +3117,15 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     -- measures from the stock box's bottom (barArea here), as
                     -- live, whatever hangs under the art.
                     local baseY = -1
-                    if dy == 0 and castBar and ch > 0 and cfg.showPlayerCastbar then
-                        baseY = -1 - ch
-                    end
-                    Pix.Point(comboPipHolder, "TOP", stockGroup and barRegion or popFrame, "BOTTOM", dx, baseY + dy)
+                    if dy == 0 and castBar and ch > 0 and cfg.showPlayerCastbar then baseY = -1 - ch end
+                    Pix.Point(
+                        comboPipHolder,
+                        "TOP",
+                        stockGroup and barRegion or popFrame,
+                        "BOTTOM",
+                        dx,
+                        baseY + dy
+                    )
                 end
                 local x = 0
                 for _, pip in ipairs(cpPips) do
@@ -3381,9 +3166,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 pip:SetAlpha(1)
             end
             comboPipHolder:Show()
-            if popFrame._cpPipOv then
-                popFrame._cpPipOv:Show()
-            end
+            if popFrame._cpPipOv then popFrame._cpPipOv:Show() end
         end
 
         -- Absorb bars (player/target/focus): the Heal Absorb Style eyeball
@@ -3503,9 +3286,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     barFrame:SetValue(val)
                     barFrame:Show()
                 end
-                if absorbFill then
-                    absorbFill:Hide()
-                end
+                if absorbFill then absorbFill:Hide() end
             else
                 popFrame._pvPredOther:Hide()
                 popFrame._pvPredMy:Hide()
@@ -3563,15 +3344,18 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 if modeName == "full" then
                     dispelPreview:SetAllPoints(healthBar)
                     dispelPreview:SetColorTexture(color.r, color.g, color.b, alpha)
-                elseif modeName == "gradient" or modeName == "gradient_sharp" or modeName == "gradient_reverse" then
+                elseif
+                    modeName == "gradient"
+                    or modeName == "gradient_sharp"
+                    or modeName == "gradient_reverse"
+                then
                     dispelPreview:SetAllPoints(healthBar)
                     dispelPreview:SetTexture(
-                        modeName == "gradient" and "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-tb.tga"
+                        modeName == "gradient"
+                                and "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-tb.tga"
                             or "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-sharp.tga"
                     )
-                    if modeName == "gradient_reverse" then
-                        dispelPreview:SetTexCoord(0, 1, 1, 0)
-                    end
+                    if modeName == "gradient_reverse" then dispelPreview:SetTexCoord(0, 1, 1, 0) end
                     dispelPreview:SetVertexColor(color.r, color.g, color.b, alpha)
                 else
                     dispelPreview:SetAllPoints(healthFill)
@@ -3696,9 +3480,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local maxBuf = cfg.maxBuffs or 4
             local visibleBuffCount = math.min(2, maxBuf)
             -- Boss preview always shows exactly 2 buffs regardless of Max Count.
-            if unitName == "boss" then
-                visibleBuffCount = math.min(#buffIcons, 2)
-            end
+            if unitName == "boss" then visibleBuffCount = math.min(#buffIcons, 2) end
             local showB = simpleBuffOn or (cfg.showBuffs and (cfg.buffAnchor or "topleft") ~= "none")
             if showB and visibleBuffCount > 0 then
                 local buffSize = cfg.buffSize or 22
@@ -3764,9 +3546,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     right = { pt = "RIGHT", ox = buffGapX + bOffX, oy = bOffY },
                 }
                 local am = anchorMap[barAnchor] or anchorMap.topleft
-                if stockGroup then
-                    popFrame._blizzInset(am, barAnchor, stockGroup, blizzMirror)
-                end
+                if stockGroup then popFrame._blizzInset(am, barAnchor, stockGroup, blizzMirror) end
 
                 -- Growth offset for icon 2 relative to icon 1
                 local dx, dy = 0, 0
@@ -3840,7 +3620,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                                     Pix.Point(
                                         bf,
                                         justH,
-                                        (barAnchor == "left" or barAnchor == "right") and barRegion or popFrame,
+                                        (barAnchor == "left" or barAnchor == "right") and barRegion
+                                            or popFrame,
                                         am.pt,
                                         am.ox,
                                         am.oy
@@ -3862,9 +3643,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                             end
                             bf._anchorKey = anchorKey
                         end
-                        if not bf:IsShown() then
-                            bf:Show()
-                        end
+                        if not bf:IsShown() then bf:Show() end
                         if bf._iconTex then
                             bf._iconTex:SetTexture(_previewBuffIcons[idx] or 135932)
                             -- SetTexture resets texcoord, so re-apply the crop each update.
@@ -3876,19 +3655,20 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                                 as.buffIconZoom or 0.07
                             )
                         end
-                        if idx == 1 then
-                            mod.UFOpt_PreviewPurgeGlow(bf, unitName, cfg, buffSize, buffH)
-                        end
+                        if idx == 1 then mod.UFOpt_PreviewPurgeGlow(bf, unitName, cfg, buffSize, buffH) end
                     else
-                        if bf:IsShown() then
-                            bf:Hide()
-                        end
+                        if bf:IsShown() then bf:Hide() end
                     end
                 end
 
                 -- Reserve buff height only for top/bottom anchors; Left/Right
                 -- columns grow sideways and need no vertical room.
-                if barAnchor == "topleft" or barAnchor == "topright" or barAnchor == "bottomleft" or barAnchor == "bottomright" then
+                if
+                    barAnchor == "topleft"
+                    or barAnchor == "topright"
+                    or barAnchor == "bottomleft"
+                    or barAnchor == "bottomright"
+                then
                     buffExtra = buffH + buffGapY + 2
                 end
                 -- The stack's lowest visible icon edge below the art (a
@@ -3902,13 +3682,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 -- Reserve Y-offset overflow beyond that footprint: top anchors push
                 -- up, bottom push down; side anchors have none, so all of it counts.
                 if barAnchor == "topleft" or barAnchor == "topright" then
-                    if bOffY > 0 then
-                        auraTopOv = auraTopOv + bOffY
-                    end
+                    if bOffY > 0 then auraTopOv = auraTopOv + bOffY end
                 elseif barAnchor == "bottomleft" or barAnchor == "bottomright" then
-                    if bOffY < 0 then
-                        auraBotOv = auraBotOv - bOffY
-                    end
+                    if bOffY < 0 then auraBotOv = auraBotOv - bOffY end
                 else
                     if bOffY > 0 then
                         auraTopOv = auraTopOv + bOffY
@@ -3918,9 +3694,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 end
             else
                 for _, bf in ipairs(buffIcons) do
-                    if bf:IsShown() then
-                        bf:Hide()
-                    end
+                    if bf:IsShown() then bf:Hide() end
                 end
             end
         end
@@ -3945,9 +3719,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local previewDebuffLimit = 5
             local visibleDebuffCount = math.min(#debuffIcons, maxDeb, previewDebuffLimit)
             -- Boss preview always shows exactly 3 debuffs regardless of Max Count.
-            if unitName == "boss" then
-                visibleDebuffCount = math.min(#debuffIcons, 3)
-            end
+            if unitName == "boss" then visibleDebuffCount = math.min(#debuffIcons, 3) end
             if detailAnchor ~= "none" and visibleDebuffCount > 0 then
                 local debuffSize = effectiveDebuffSize
                 -- Crop never applies in simple boss mode (runtime passes nil crop
@@ -4008,9 +3780,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     right = { pt = "RIGHT", ox = debuffGapX + dOffX, oy = dOffY },
                 }
                 local am = anchorMap[detailAnchor] or anchorMap.bottomleft
-                if stockGroup then
-                    popFrame._blizzInset(am, detailAnchor, stockGroup, blizzMirror)
-                end
+                if stockGroup then popFrame._blizzInset(am, detailAnchor, stockGroup, blizzMirror) end
 
                 local dx, dy = 0, 0
                 if gDir == "right" then
@@ -4091,7 +3861,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                                     Pix.Point(
                                         df,
                                         justH,
-                                        (detailAnchor == "left" or detailAnchor == "right") and barRegion or popFrame,
+                                        (detailAnchor == "left" or detailAnchor == "right") and barRegion
+                                            or popFrame,
                                         am.pt,
                                         am.ox,
                                         am.oy
@@ -4120,13 +3891,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                             end
                             df._anchorKey = anchorKey
                         end
-                        if not df:IsShown() then
-                            df:Show()
-                        end
+                        if not df:IsShown() then df:Show() end
                     else
-                        if df:IsShown() then
-                            df:Hide()
-                        end
+                        if df:IsShown() then df:Hide() end
                     end
                 end
 
@@ -4151,13 +3918,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 end
                 -- Reserve Y-offset overflow beyond the footprint (see the buff block).
                 if detailAnchor == "topleft" or detailAnchor == "topright" then
-                    if dOffY > 0 then
-                        auraTopOv = auraTopOv + dOffY
-                    end
+                    if dOffY > 0 then auraTopOv = auraTopOv + dOffY end
                 elseif detailAnchor == "bottomleft" or detailAnchor == "bottomright" then
-                    if dOffY < 0 then
-                        auraBotOv = auraBotOv - dOffY
-                    end
+                    if dOffY < 0 then auraBotOv = auraBotOv - dOffY end
                 else
                     if dOffY > 0 then
                         auraTopOv = auraTopOv + dOffY
@@ -4167,9 +3930,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 end
             else
                 for _, df in ipairs(debuffIcons) do
-                    if df:IsShown() then
-                        df:Hide()
-                    end
+                    if df:IsShown() then df:Hide() end
                 end
             end
         end
@@ -4236,7 +3997,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- Under Blizzard Style it is the visible art (its transparent rows
         -- trimmed) plus the cast bar strip, unless the cast bar hangs below
         -- the auras, when that strip is kept under them instead (auraExtra).
-        local textBarH = (btbFrame and cfg.bottomTextBar and btbIsAtt) and (cfg.bottomTextBarHeight or 16) or 0
+        local textBarH = (btbFrame and cfg.bottomTextBar and btbIsAtt) and (cfg.bottomTextBarHeight or 16)
+            or 0
         local th = bh2 + textBarH + (ch > 0 and ch or 0)
         if stockGroup then
             local pad = stockGroup.pad
@@ -4250,9 +4012,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 if UFC and not mod.UF_BLIZZ.cast and mod.UF_BlizzAtlas(UFC.textbox) and nameShown then
                     cbStrip = cbStrip + 13
                 end
-                if not blizzBelow then
-                    th = th + cbStrip
-                end
+                if not blizzBelow then th = th + cbStrip end
             end
         end
         popFrame:SetSize(tw, th)
@@ -4261,9 +4021,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local baseScale = popFrame._previewScale or 1
         local roomW = (popFrame:GetParent():GetWidth() - (CludesUI.CONTENT_PAD or 10) * 2) / baseScale
         local fitScale = 1
-        if tw > roomW and tw > 0 and roomW > 0 then
-            fitScale = roomW / tw
-        end
+        if tw > roomW and tw > 0 and roomW > 0 then fitScale = roomW / tw end
         local combinedScale = baseScale * fitScale
         popFrame:SetScale(combinedScale)
 
@@ -4307,7 +4065,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 end
             end
             if radius > 0 then
-                local port = sp and isAttached and portraitHolder and portraitHolder:IsShown() and portraitHolder
+                local port = sp
+                        and isAttached
+                        and portraitHolder
+                        and portraitHolder:IsShown()
+                        and portraitHolder
                     or nil
                 CludesUI.RoundCorners(popFrame, radius, {
                     roots = {
@@ -4337,9 +4099,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             end
         end
         if castBar then
-            if Pix.GetBorders(castBar) then
-                Pix.SetBorderSize(castBar, 1)
-            end
+            if Pix.GetBorders(castBar) then Pix.SetBorderSize(castBar, 1) end
             if castFill then
                 castFill:ClearAllPoints()
                 Pix.Point(castFill, "TOPLEFT", castBar, "TOPLEFT", 1, 0)
@@ -4387,12 +4147,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             Pix.Size(portraitHolder, portraitDim, portraitDim)
             local snappedPortW = portraitHolder:GetWidth()
             local snappedPortH = portraitHolder:GetHeight()
-            if snappedPortW + fw > snappedFrameW + 0.01 then
-                portraitHolder:SetWidth(snappedFrameW - fw)
-            end
-            if snappedPortH > snappedFrameH + 0.01 then
-                portraitHolder:SetHeight(snappedFrameH)
-            end
+            if snappedPortW + fw > snappedFrameW + 0.01 then portraitHolder:SetWidth(snappedFrameW - fw) end
+            if snappedPortH > snappedFrameH + 0.01 then portraitHolder:SetHeight(snappedFrameH) end
         end
 
         -- Re-snap health bar
@@ -4403,18 +4159,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             if portraitHolder and sp and isAttached then
                 availW = snappedFrameW - portraitHolder:GetWidth()
             end
-            if snappedHealthW > availW + 0.01 then
-                healthBar:SetWidth(availW)
-            end
+            if snappedHealthW > availW + 0.01 then healthBar:SetWidth(availW) end
         end
 
         -- Re-snap power bar
         if powerBar and powerBar:IsShown() then
             local pvPw2 = fw
             local pvPpIsDet2 = (powerPlace == "detached_top" or powerPlace == "detached_bottom")
-            if pvPpIsDet2 and (cfg.powerWidth or 0) > 0 then
-                pvPw2 = cfg.powerWidth
-            end
+            if pvPpIsDet2 and (cfg.powerWidth or 0) > 0 then pvPw2 = cfg.powerWidth end
             Pix.Size(powerBar, pvPw2, ph)
             if pvPpIsAtt and healthBar then
                 -- Height: ensure health + power don't exceed expected total
@@ -4434,9 +4186,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         -- Power Bar Seam: the live helper on the preview bar (preview = true:
         -- this panel repaints itself on a scale change).
-        if powerBar then
-            mod.UpdatePowerSeam(powerBar, cfg, CludesUI.BlizzStyle.Get("unitframes"), true)
-        end
+        if powerBar then mod.UpdatePowerSeam(powerBar, cfg, CludesUI.BlizzStyle.Get("unitframes"), true) end
         if cfg.portraitSeparator or popFrame._portraitSeparator then
             mod.UpdatePortraitSeparator(
                 popFrame,
@@ -4457,12 +4207,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if popFrame._pvDispelBorder and popFrame._pvDispelBorder:IsShown() then
             local mc = saved.profile.dispelColorMagic or { r = 0.349, g = 0.475, b = 1.0 }
             local pSeam, vSeam = powerBar and powerBar._pbSeam, popFrame._portraitSeparator
-            if pSeam and pSeam:IsShown() then
-                pSeam._tex:SetVertexColor(mc.r, mc.g, mc.b, 1)
-            end
-            if vSeam and vSeam:IsShown() then
-                vSeam._tex:SetVertexColor(mc.r, mc.g, mc.b, 1)
-            end
+            if pSeam and pSeam:IsShown() then pSeam._tex:SetVertexColor(mc.r, mc.g, mc.b, 1) end
+            if vSeam and vSeam:IsShown() then vSeam._tex:SetVertexColor(mc.r, mc.g, mc.b, 1) end
         end
 
         -- An attached Text Bar snapped again: no wider than the frame, and
@@ -4470,13 +4216,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if btbFrame and cfg.bottomTextBar and btbIsAtt then
             Pix.Size(btbFrame, tw, cfg.bottomTextBarHeight or 16)
             local barW, barH = btbFrame:GetWidth(), btbFrame:GetHeight()
-            if barW > snappedFrameW + 0.01 then
-                btbFrame:SetWidth(snappedFrameW)
-            end
+            if barW > snappedFrameW + 0.01 then btbFrame:SetWidth(snappedFrameW) end
             local stackH = cpAboveH + (healthBar and healthBar:GetHeight() or 0)
-            if powerBar and pvPpIsAtt and powerBar:IsShown() then
-                stackH = stackH + powerBar:GetHeight()
-            end
+            if powerBar and pvPpIsAtt and powerBar:IsShown() then stackH = stackH + powerBar:GetHeight() end
             if stackH + barH > snappedFrameH + 0.01 then
                 btbFrame:SetHeight(barH - (stackH + barH - snappedFrameH))
             end
@@ -4503,9 +4245,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local merged = cfg.debuffAnchorBuffs == true and (cfg.debuffAnchor or "none") ~= "none"
             stackDrop = debuffDrop or (not merged and buffDrop) or 0
         end
-        if stockGroup then
-            popFrame._blizzApply(cfg, stockGroup, blizzMirror, blizzExtras, ch, stackDrop)
-        end
+        if stockGroup then popFrame._blizzApply(cfg, stockGroup, blizzMirror, blizzExtras, ch, stackDrop) end
         -- Spell cost preview: a third of the fill, as the stock styles left it.
         local costSeg = popFrame._pvCostSeg
         if costSeg and costSeg:IsShown() and popFrame._powerFill then
@@ -4515,13 +4255,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- Room the auras need above the frame (the preview moves down by it):
         -- a top-anchored buff or debuff row, then whatever a Y offset pushes
         -- past the footprint on any anchor.
-        local function TopAnchored(anchor)
-            return anchor == "topleft" or anchor == "topright"
-        end
+        local function TopAnchored(anchor) return anchor == "topleft" or anchor == "topright" end
         local auraTopPad = 0
-        if buffExtra > 0 and TopAnchored(cfg.buffAnchor or "topleft") then
-            auraTopPad = buffExtra
-        end
+        if buffExtra > 0 and TopAnchored(cfg.buffAnchor or "topleft") then auraTopPad = buffExtra end
         if debuffExtra > 0 and TopAnchored(cfg.debuffAnchor or "bottomleft") then
             auraTopPad = auraTopPad + debuffExtra
         end
@@ -4536,12 +4272,15 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if portraitUp and portraitHolder and portraitHolder:IsShown() then
             detTopExtra = detTopExtra + portraitDim + 15 + pYOff
         end
-        if btbFrame and cfg.bottomTextBar and (cfg.btbPosition or "bottom") == "detached_top" and not stockGroup then
+        if
+            btbFrame
+            and cfg.bottomTextBar
+            and (cfg.btbPosition or "bottom") == "detached_top"
+            and not stockGroup
+        then
             detTopExtra = detTopExtra + (cfg.bottomTextBarHeight or 16) + 15 + (cfg.btbY or 0)
         end
-        if cpTopH > 0 then
-            detTopExtra = detTopExtra + cpTopH
-        end
+        if cpTopH > 0 then detTopExtra = detTopExtra + cpTopH end
         if popFrame._happyInd and cfg.happinessEnabled ~= false and cfg.happinessAlign == "top" then
             detTopExtra = detTopExtra + math.max(0, (cfg.happinessSize or 20) + (cfg.happinessY or 0))
         end
@@ -4561,9 +4300,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- preview grows/shrinks. auraBotOv clears auras pushed below their footprint.
         local auraExtra = buffExtra + debuffExtra + auraBotOv
         -- Blizzard Style: the cast bar strip under the bottom stacks.
-        if blizzBelow then
-            auraExtra = auraExtra + cbStrip
-        end
+        if blizzBelow then auraExtra = auraExtra + cbStrip end
         popFrame._buffExtra = auraExtra
         popFrame._detTopExtra = detTopExtra
         local parentTH = th * combinedScale
@@ -4642,9 +4379,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 -- The custom combat icons (combat0..5) draw untinted.
                 combatIcon:SetTexture(COMBAT_MEDIA_P .. ciStyle .. ".tga")
                 combatIcon:SetTexCoord(0, 1, 0, 1)
-                if combatIcon.SetDesaturated then
-                    combatIcon:SetDesaturated(false)
-                end
+                if combatIcon.SetDesaturated then combatIcon:SetDesaturated(false) end
                 combatIcon:SetVertexColor(1, 1, 1, 1)
             else
                 -- Standard and Class Theme take the colour mode's tint.
@@ -4681,12 +4416,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             else
                 local mine = UnitFactionGroup("player")
                 local fac = mine
-                if unitName == "target" then
-                    fac = (mine == "Horde") and "Alliance" or "Horde"
-                end
-                if fac ~= "Horde" and fac ~= "Alliance" then
-                    fac = "Horde"
-                end
+                if unitName == "target" then fac = (mine == "Horde") and "Alliance" or "Horde" end
+                if fac ~= "Horde" and fac ~= "Alliance" then fac = "Horde" end
                 local fSz = cfg.factionIndicatorSize or 18
                 local fPos = cfg.factionIndicatorPosition or "topright"
                 local fOx, fOy = cfg.factionIndicatorX or 0, cfg.factionIndicatorY or 0
@@ -4769,7 +4500,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     and cfg.eliteIndicatorEnabled == true
                     and not mod.UF_DragonLegacy(cfg)
                 then
-                    if cfg.eliteIndicatorStyle == "pixelsDragon" and portraitHolder and sp and not stockGroup then
+                    if
+                        cfg.eliteIndicatorStyle == "pixelsDragon"
+                        and portraitHolder
+                        and sp
+                        and not stockGroup
+                    then
                         -- Pixels Dragon (Elite sample) around the portrait, as live
                         -- (the stock styles draw the Badge).
                         local d = portraitHolder:GetHeight() * mod.UF_ELITE_DRAGON_SCALE
@@ -4868,9 +4604,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- (a frame dressed again for another unit keeps its overlay for that unit)
     local oldPv = allPreviews[unitName]
     if oldPv and oldPv ~= popFrame and oldPv._pvUnit == unitName then
-        if oldPv._disabledOverlay then
-            oldPv._disabledOverlay:Hide()
-        end
+        if oldPv._disabledOverlay then oldPv._disabledOverlay:Hide() end
     end
     -- Also purge any orphaned previews (parent set to nil by ClearContentHeaderInner)
     -- and every entry whose frame was dressed again for another unit (this one included)
@@ -4878,9 +4612,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if preview and preview._pvUnit ~= keyName then
             allPreviews[keyName] = nil
         elseif preview and preview ~= popFrame and not preview:GetParent() then
-            if preview._disabledOverlay then
-                preview._disabledOverlay:Hide()
-            end
+            if preview._disabledOverlay then preview._disabledOverlay:Hide() end
             allPreviews[keyName] = nil
         end
     end

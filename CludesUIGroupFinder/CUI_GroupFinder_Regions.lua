@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_GroupFinder_Regions.lua - where a group's leader plays from
 --  us: na / oce / mex / bra by realm. eu: the realm's language.
 --  the region filter and the region tags read this. other regions: off
 -------------------------------------------------------------------------------
 local FOLDER, mod = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then
-    return
-end -- held back (CludesUIGroupFinder.lua)
+if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
 local L = CludesUI.L
 
 local FLAG_DIR = "Interface\\AddOns\\" .. FOLDER .. "\\media\\flags\\"
@@ -240,15 +236,11 @@ local SETS = {
     },
 }
 
-function mod.RegionID()
-    return GetCurrentRegion and GetCurrentRegion() or 1
-end
+function mod.RegionID() return GetCurrentRegion and GetCurrentRegion() or 1 end
 
 local set, byKey, realmOf
 local function Set()
-    if set ~= nil then
-        return set or nil
-    end
+    if set ~= nil then return set or nil end
     set = SETS[mod.RegionID()] or false
     if set then
         byKey, realmOf = {}, {}
@@ -275,9 +267,7 @@ end
 local cache = {}
 function mod.RegionOfRealm(realm)
     local cfg = Set()
-    if not cfg or type(realm) ~= "string" then
-        return nil
-    end
+    if not cfg or type(realm) ~= "string" then return nil end
     local k = cache[realm]
     if not k then
         k = realmOf[Key(realm)] or cfg.default

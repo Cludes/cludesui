@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_Options.lua
 --
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  top accent line.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIChat"] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 local CHAT = mod.ECHAT
 
 -- Page reuse: the frames this file builds go through the options frame pool
@@ -20,45 +16,27 @@ local CHAT = mod.ECHAT
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 CludesUI.AtOptionsLogin(function()
-    if not CHAT then
-        return
-    end
+    if not CHAT then return end
 
     local function DB()
         local db = _G._CUCHAT_DB
-        if db and db.profile and db.profile.chat then
-            return db.profile.chat
-        end
+        if db and db.profile and db.profile.chat then return db.profile.chat end
         return {}
     end
-    local function ChatCfg(keyName)
-        return DB()[keyName]
-    end
+    local function ChatCfg(keyName) return DB()[keyName] end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
     local function CfgOr(key, default)
-        return function()
-            return ChatCfg(key) or default
-        end
+        return function() return ChatCfg(key) or default end
     end
     local function CfgIs(key)
-        return function()
-            return ChatCfg(key) == true
-        end
+        return function() return ChatCfg(key) == true end
     end
-    local function ChatSet(keyName, val)
-        DB()[keyName] = val
-    end
+    local function ChatSet(keyName, val) DB()[keyName] = val end
 
     local function ApplyChatLook()
-        if CHAT.ApplyBackground then
-            CHAT.ApplyBackground()
-        end
-        if CHAT.ApplyFonts then
-            CHAT.ApplyFonts()
-        end
-        if CHAT.RefreshVisibility then
-            CHAT.RefreshVisibility()
-        end
+        if CHAT.ApplyBackground then CHAT.ApplyBackground() end
+        if CHAT.ApplyFonts then CHAT.ApplyFonts() end
+        if CHAT.RefreshVisibility then CHAT.RefreshVisibility() end
     end
 
     local function BuildPage(pageName, hostFrame, yOffset)
@@ -67,9 +45,7 @@ CludesUI.AtOptionsLogin(function()
         local cursorY = yOffset
         local _, height
 
-        if CludesUI.ClearContentHeader then
-            CludesUI:ClearContentHeader()
-        end
+        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         local isChat = pageName == "Chat"
@@ -89,9 +65,7 @@ CludesUI.AtOptionsLogin(function()
         local FV = STOCK and BS.Forever("chat")
         if isTabs and STOCK then
             cursorY = BS.Note(hostFrame, cursorY, "chat")
-            if BS.Active("chat") == "blizzard" and not FV then
-                isTabs = false
-            end
+            if BS.Active("chat") == "blizzard" and not FV then isTabs = false end
         end
 
         if isChat then
@@ -103,9 +77,7 @@ CludesUI.AtOptionsLogin(function()
             heading, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
             cursorY = cursorY - height
             CludesUI.BuildSectionUnlockJump(heading, { key = "ECHAT_MainChat" })
-            if BS then
-                cursorY = BS.Note(hostFrame, cursorY, "chat")
-            end
+            if BS then cursorY = BS.Note(hostFrame, cursorY, "chat") end
 
             -- Row 1: Visibility (one control; no mouseover for chat frames) | Lock Main Chat Size
             _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
@@ -113,12 +85,8 @@ CludesUI.AtOptionsLogin(function()
                 legacyKey = "visibility",
                 caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
                 onChanged = function()
-                    if CHAT.ResetIdleTimer then
-                        CHAT.ResetIdleTimer()
-                    end
-                    if CHAT.ApplyIdleFadeHoverMotion then
-                        CHAT.ApplyIdleFadeHoverMotion()
-                    end
+                    if CHAT.ResetIdleTimer then CHAT.ResetIdleTimer() end
+                    if CHAT.ApplyIdleFadeHoverMotion then CHAT.ApplyIdleFadeHoverMotion() end
                     ApplyChatLook()
                 end,
                 onOptionChanged = ApplyChatLook,
@@ -129,9 +97,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("lockChatSize", false),
                 setValue = function(val)
                     ChatSet("lockChatSize", val)
-                    if CHAT.ApplyLockChatSize then
-                        CHAT.ApplyLockChatSize()
-                    end
+                    if CHAT.ApplyLockChatSize then CHAT.ApplyLockChatSize() end
                 end,
             })
             cursorY = cursorY - height
@@ -142,9 +108,7 @@ CludesUI.AtOptionsLogin(function()
             -- background (its tab menu's Background swatch sets it); WoW Forever
             -- fills its framed boxes with these.
             if not STOCK or FV then
-                if CHAT.RefreshBgTextureCatalogue then
-                    CHAT.RefreshBgTextureCatalogue()
-                end
+                if CHAT.RefreshBgTextureCatalogue then CHAT.RefreshBgTextureCatalogue() end
                 local btValues, btOrder = {}, {}
                 do
                     local texNames = mod.chatBgTextureNames or {}
@@ -157,9 +121,7 @@ CludesUI.AtOptionsLogin(function()
                     local texLookup = mod.chatBgTextures or {}
                     btValues._menuOpts = {
                         itemHeight = 28,
-                        background = function(key)
-                            return texLookup[key]
-                        end,
+                        background = function(key) return texLookup[key] end,
                     }
                 end
                 local bgRow
@@ -193,7 +155,9 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         bgRow:GetFrameLevel() + 3,
                         function()
-                            return (ChatCfg("bgR") or 0.03), (ChatCfg("bgG") or 0.045), (ChatCfg("bgB") or 0.05)
+                            return (ChatCfg("bgR") or 0.03),
+                                (ChatCfg("bgG") or 0.045),
+                                (ChatCfg("bgB") or 0.05)
                         end,
                         function(red, green, blue)
                             ChatSet("bgR", red)
@@ -205,9 +169,7 @@ CludesUI.AtOptionsLogin(function()
                         20
                     )
                     Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
-                    CludesUI.RegisterWidgetRefresh(function()
-                        bgSwatchRefresh()
-                    end)
+                    CludesUI.RegisterWidgetRefresh(function() bgSwatchRefresh() end)
                 end
                 cursorY = cursorY - height
             end -- not STOCK or FV
@@ -240,23 +202,17 @@ CludesUI.AtOptionsLogin(function()
                     max = 27,
                     step = 1,
                     getValue = function()
-                        if ChatCfg("chatFontSize") then
-                            return ChatCfg("chatFontSize")
-                        end
+                        if ChatCfg("chatFontSize") then return ChatCfg("chatFontSize") end
                         local castFrame = _G.ChatFrame1
                         if castFrame and castFrame.GetFont then
                             local _, fh = castFrame:GetFont()
-                            if fh and fh > 0 then
-                                return math.floor(fh + 0.5)
-                            end
+                            if fh and fh > 0 then return math.floor(fh + 0.5) end
                         end
                         return 14
                     end,
                     setValue = function(val)
                         ChatSet("chatFontSize", val)
-                        if CHAT.ApplyChatFontSize then
-                            CHAT.ApplyChatFontSize(val)
-                        end
+                        if CHAT.ApplyChatFontSize then CHAT.ApplyChatFontSize(val) end
                     end,
                 })
                 -- Cog for Outline Mode
@@ -319,9 +275,7 @@ CludesUI.AtOptionsLogin(function()
                             -- A style with a select colour (Pixels grey) seeds the custom
                             -- colour; the colour mode is kept, every other style keeps its colour.
                             local selC = CludesUI.GetBorderSelectColor(val)
-                            if selC then
-                                ChatSet("panelBorderColor", selC)
-                            end
+                            if selC then ChatSet("panelBorderColor", selC) end
                             -- A style pick lands on the style's default step, so an exact
                             -- pixel size paired with the old step is cleared (false, not
                             -- nil: the clear must travel through mirror sync).
@@ -334,12 +288,8 @@ CludesUI.AtOptionsLogin(function()
                             if type(defSize) == "number" then
                                 defSize = CludesUI.BORDER_LABEL_OF_STEP[defSize] or "thin"
                             end
-                            if defSize then
-                                ChatSet("panelBorderThickness", defSize)
-                            end
-                            if CHAT.ApplyExtendedBackground then
-                                CHAT.ApplyExtendedBackground()
-                            end
+                            if defSize then ChatSet("panelBorderThickness", defSize) end
+                            if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                             -- Rebuild: the offset row below exists only for a textured style.
                             CludesUI:RefreshPage(true)
                         end,
@@ -348,24 +298,17 @@ CludesUI.AtOptionsLogin(function()
                         text = "Border Size",
                         -- The step the panel renders with: its label as a step, anything unknown = thin.
                         getStep = function()
-                            return CludesUI.BORDER_STEP_OF_LABEL[ChatCfg("panelBorderThickness") or "none"] or 1
+                            return CludesUI.BORDER_STEP_OF_LABEL[ChatCfg("panelBorderThickness") or "none"]
+                                or 1
                         end,
                         setStep = function(step)
                             ChatSet("panelBorderThickness", CludesUI.BORDER_LABEL_OF_STEP[step])
                         end,
-                        getTex = function()
-                            return ChatCfg("panelBorderTexture") or "solid"
-                        end,
-                        getPx = function()
-                            return ChatCfg("panelBorderThicknessPx")
-                        end,
-                        setPx = function(val)
-                            ChatSet("panelBorderThicknessPx", val)
-                        end,
+                        getTex = function() return ChatCfg("panelBorderTexture") or "solid" end,
+                        getPx = function() return ChatCfg("panelBorderThicknessPx") end,
+                        setPx = function(val) ChatSet("panelBorderThicknessPx", val) end,
                         apply = function()
-                            if CHAT.ApplyExtendedBackground then
-                                CHAT.ApplyExtendedBackground()
-                            end
+                            if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                         end,
                     })
                 )
@@ -379,35 +322,19 @@ CludesUI.AtOptionsLogin(function()
                     if pTex and pTex ~= "" and pTex ~= "solid" then
                         local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                             addonKey = "chat",
-                            getTex = function()
-                                return ChatCfg("panelBorderTexture") or "solid"
-                            end,
+                            getTex = function() return ChatCfg("panelBorderTexture") or "solid" end,
                             getStep = function()
                                 return CludesUI.BORDER_STEP_OF_LABEL[ChatCfg("panelBorderThickness") or "none"]
                                     or 1
                             end,
-                            getSizeKey = function()
-                                return ChatCfg("panelBorderThickness") or "none"
-                            end,
-                            getPx = function()
-                                return ChatCfg("panelBorderThicknessPx")
-                            end,
-                            getX = function()
-                                return ChatCfg("panelBorderOffsetX")
-                            end,
-                            setX = function(val)
-                                ChatSet("panelBorderOffsetX", val)
-                            end,
-                            getY = function()
-                                return ChatCfg("panelBorderOffsetY")
-                            end,
-                            setY = function(val)
-                                ChatSet("panelBorderOffsetY", val)
-                            end,
+                            getSizeKey = function() return ChatCfg("panelBorderThickness") or "none" end,
+                            getPx = function() return ChatCfg("panelBorderThicknessPx") end,
+                            getX = function() return ChatCfg("panelBorderOffsetX") end,
+                            setX = function(val) ChatSet("panelBorderOffsetX", val) end,
+                            getY = function() return ChatCfg("panelBorderOffsetY") end,
+                            setY = function(val) ChatSet("panelBorderOffsetY", val) end,
                             apply = function()
-                                if CHAT.ApplyExtendedBackground then
-                                    CHAT.ApplyExtendedBackground()
-                                end
+                                if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                             end,
                         })
                         _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
@@ -429,9 +356,7 @@ CludesUI.AtOptionsLogin(function()
                                 get = CfgOr("panelBorderBehind", false),
                                 set = function(val)
                                     ChatSet("panelBorderBehind", val)
-                                    if CHAT.ApplyExtendedBackground then
-                                        CHAT.ApplyExtendedBackground()
-                                    end
+                                    if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                                 end,
                             },
                             {
@@ -442,9 +367,7 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = ChatCfg("panelBorderShiftX")
-                                    if val ~= nil then
-                                        return val
-                                    end
+                                    if val ~= nil then return val end
                                     local _, _, value = CludesUI.GetBorderDefaults(
                                         "chat",
                                         ChatCfg("panelBorderTexture") or "solid",
@@ -454,9 +377,7 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     ChatSet("panelBorderShiftX", val == 0 and nil or val)
-                                    if CHAT.ApplyExtendedBackground then
-                                        CHAT.ApplyExtendedBackground()
-                                    end
+                                    if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                                 end,
                             },
                             {
@@ -467,9 +388,7 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = ChatCfg("panelBorderShiftY")
-                                    if val ~= nil then
-                                        return val
-                                    end
+                                    if val ~= nil then return val end
                                     local _, _, _, value = CludesUI.GetBorderDefaults(
                                         "chat",
                                         ChatCfg("panelBorderTexture") or "solid",
@@ -479,9 +398,7 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     ChatSet("panelBorderShiftY", val == 0 and nil or val)
-                                    if CHAT.ApplyExtendedBackground then
-                                        CHAT.ApplyExtendedBackground()
-                                    end
+                                    if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                                 end,
                             },
                         },
@@ -494,9 +411,7 @@ CludesUI.AtOptionsLogin(function()
                     local control = region._control
                     local function ApplyMode(mode)
                         ChatSet("panelBorderColorMode", mode)
-                        if CHAT.ApplyExtendedBackground then
-                            CHAT.ApplyExtendedBackground()
-                        end
+                        if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                         CludesUI:RefreshPage()
                     end
 
@@ -513,31 +428,27 @@ CludesUI.AtOptionsLogin(function()
                         20
                     )
                     Pix.Point(classSwatch, "RIGHT", control, "LEFT", -8, 0)
-                    classSwatch:SetScript("OnClick", function()
-                        ApplyMode("class")
-                    end)
-                    classSwatch:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(classSwatch, "Class Color")
-                    end)
+                    classSwatch:SetScript("OnClick", function() ApplyMode("class") end)
+                    classSwatch:SetScript(
+                        "OnEnter",
+                        function() CludesUI.ShowWidgetTooltip(classSwatch, "Class Color") end
+                    )
                     classSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
 
                     local accentSwatch, refreshAccent = CludesUI.BuildColorSwatch(
                         region,
                         borderRow:GetFrameLevel() + 3,
-                        function()
-                            return CludesUI.GetAccentColor()
-                        end,
+                        function() return CludesUI.GetAccentColor() end,
                         function() end,
                         false,
                         20
                     )
                     Pix.Point(accentSwatch, "RIGHT", classSwatch, "LEFT", -8, 0)
-                    accentSwatch:SetScript("OnClick", function()
-                        ApplyMode("accent")
-                    end)
-                    accentSwatch:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-                    end)
+                    accentSwatch:SetScript("OnClick", function() ApplyMode("accent") end)
+                    accentSwatch:SetScript(
+                        "OnEnter",
+                        function() CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
+                    )
                     accentSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
 
                     local customSwatch, refreshCustom = CludesUI.BuildColorSwatch(
@@ -551,9 +462,7 @@ CludesUI.AtOptionsLogin(function()
                             ChatSet("panelBorderColor", { r = red, g = green, b = blue })
                             ChatSet("panelBorderOpacity", a)
                             ChatSet("panelBorderColorMode", "custom")
-                            if CHAT.ApplyExtendedBackground then
-                                CHAT.ApplyExtendedBackground()
-                            end
+                            if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                         end,
                         true,
                         20
@@ -565,13 +474,12 @@ CludesUI.AtOptionsLogin(function()
                             ApplyMode("custom")
                             return
                         end
-                        if customClick then
-                            customClick(self, ...)
-                        end
+                        if customClick then customClick(self, ...) end
                     end)
-                    customSwatch:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-                    end)
+                    customSwatch:SetScript(
+                        "OnEnter",
+                        function() CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
+                    )
                     customSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
 
                     local function RefreshBorderSwatches()
@@ -607,9 +515,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         ChatSet("foreverBorder", val)
-                        if CludesUI.ForeverBorderKind(val) == mod.ChatFvKind() then
-                            return
-                        end
+                        if CludesUI.ForeverBorderKind(val) == mod.ChatFvKind() then return end
                         CludesUI:ShowConfirmPopup({
                             title = "Reload Required",
                             message = "Border Style changed. A UI reload is needed to apply it.",
@@ -630,17 +536,11 @@ CludesUI.AtOptionsLogin(function()
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Enable Idle Fade",
-                getValue = function()
-                    return ChatCfg("idleFadeEnabled") ~= false
-                end,
+                getValue = function() return ChatCfg("idleFadeEnabled") ~= false end,
                 setValue = function(val)
                     ChatSet("idleFadeEnabled", val)
-                    if CHAT.ResetIdleTimer then
-                        CHAT.ResetIdleTimer()
-                    end
-                    if CHAT.ApplyIdleFadeHoverMotion then
-                        CHAT.ApplyIdleFadeHoverMotion()
-                    end
+                    if CHAT.ResetIdleTimer then CHAT.ResetIdleTimer() end
+                    if CHAT.ApplyIdleFadeHoverMotion then CHAT.ApplyIdleFadeHoverMotion() end
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -649,16 +549,12 @@ CludesUI.AtOptionsLogin(function()
                 min = 5,
                 max = 30,
                 step = 1,
-                disabled = function()
-                    return ChatCfg("idleFadeEnabled") == false
-                end,
+                disabled = function() return ChatCfg("idleFadeEnabled") == false end,
                 disabledTooltip = "Enable Idle Fade",
                 getValue = CfgOr("idleFadeDelay", 15),
                 setValue = function(val)
                     ChatSet("idleFadeDelay", val)
-                    if CHAT.ResetIdleTimer then
-                        CHAT.ResetIdleTimer()
-                    end
+                    if CHAT.ResetIdleTimer then CHAT.ResetIdleTimer() end
                 end,
             })
             cursorY = cursorY - height
@@ -670,16 +566,12 @@ CludesUI.AtOptionsLogin(function()
                 min = 0,
                 max = 100,
                 step = 1,
-                disabled = function()
-                    return ChatCfg("idleFadeEnabled") == false
-                end,
+                disabled = function() return ChatCfg("idleFadeEnabled") == false end,
                 disabledTooltip = "Enable Idle Fade",
                 getValue = CfgOr("idleFadeStrength", 40),
                 setValue = function(val)
                     ChatSet("idleFadeStrength", val)
-                    if CHAT.ResetIdleTimer then
-                        CHAT.ResetIdleTimer()
-                    end
+                    if CHAT.ResetIdleTimer then CHAT.ResetIdleTimer() end
                 end,
             }, { type = "label", text = "" })
             cursorY = cursorY - height
@@ -689,9 +581,7 @@ CludesUI.AtOptionsLogin(function()
         if isSidebar then
             _, height = W:SectionHeader(hostFrame, "SIDEBAR", cursorY)
             cursorY = cursorY - height
-            if STOCK then
-                cursorY = BS.Note(hostFrame, cursorY, "chat")
-            end
+            if STOCK then cursorY = BS.Note(hostFrame, cursorY, "chat") end
 
             -- Row 1: Sidebar Visibility (+ cog) | Sidebar Background
             local sidebarVisValues = {
@@ -724,7 +614,8 @@ CludesUI.AtOptionsLogin(function()
                     "showSettings",
                 }
             for _, keyName in ipairs(sidebarOrderedKeys) do
-                sidebarIconItems[#sidebarIconItems + 1] = { key = keyName, label = SIDEBAR_ICON_LABELS[keyName] }
+                sidebarIconItems[#sidebarIconItems + 1] =
+                    { key = keyName, label = SIDEBAR_ICON_LABELS[keyName] }
             end
             sidebarIconItems[#sidebarIconItems + 1] =
                 { key = "showScroll", label = "Scroll to Bottom", fixed = true }
@@ -740,17 +631,13 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("sidebarVisibility", "always"),
                     setValue = function(val)
                         ChatSet("sidebarVisibility", val)
-                        if CHAT.ApplySidebarVisibility then
-                            CHAT.ApplySidebarVisibility()
-                        end
+                        if CHAT.ApplySidebarVisibility then CHAT.ApplySidebarVisibility() end
                     end,
                 },
                 -- Classic WoW UI and WoW Forever draw nothing behind the column;
                 -- Blizzard Style's column backdrop follows this toggle.
                 (function(rowConf)
-                    if STOCK and (BS.Active("chat") == "classic" or FV) then
-                        BS.Gate("chat", rowConf)
-                    end
+                    if STOCK and (BS.Active("chat") == "classic" or FV) then BS.Gate("chat", rowConf) end
                     return rowConf
                 end)({
                     type = "toggle",
@@ -758,9 +645,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("hideSidebarBg", false),
                     setValue = function(val)
                         ChatSet("hideSidebarBg", val)
-                        if CHAT.ApplySidebarBackground then
-                            CHAT.ApplySidebarBackground()
-                        end
+                        if CHAT.ApplySidebarBackground then CHAT.ApplySidebarBackground() end
                     end,
                 })
             )
@@ -776,9 +661,7 @@ CludesUI.AtOptionsLogin(function()
                             get = CfgOr("sidebarRight", false),
                             set = function(val)
                                 ChatSet("sidebarRight", val)
-                                if CHAT.ApplySidebarPosition then
-                                    CHAT.ApplySidebarPosition()
-                                end
+                                if CHAT.ApplySidebarPosition then CHAT.ApplySidebarPosition() end
                             end,
                         },
                     },
@@ -799,9 +682,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     ChatSet("sidebarWidth", val)
-                    if CHAT.ApplySidebarWidth then
-                        CHAT.ApplySidebarWidth()
-                    end
+                    if CHAT.ApplySidebarWidth then CHAT.ApplySidebarWidth() end
                 end,
             }, {
                 type = "toggle",
@@ -810,21 +691,15 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("sidebarSeparate", false),
                 setValue = function(val)
                     ChatSet("sidebarSeparate", val)
-                    if CHAT.ApplySidebarPosition then
-                        CHAT.ApplySidebarPosition()
-                    end
-                    if CHAT.ApplyExtendedBackground then
-                        CHAT.ApplyExtendedBackground()
-                    end
+                    if CHAT.ApplySidebarPosition then CHAT.ApplySidebarPosition() end
+                    if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                     CludesUI:RefreshPage()
                 end,
             })
             if not CludesUI._prebuilding then
                 local lrgn = sidebarLayoutRow._rightRegion
                 CludesUI.BuildInlineCog(lrgn, {
-                    disabled = function()
-                        return not ChatCfg("sidebarSeparate")
-                    end,
+                    disabled = function() return not ChatCfg("sidebarSeparate") end,
                     disabledTooltip = "Separate Sidebar",
                     title = "Separate Sidebar",
                     rows = {
@@ -838,12 +713,8 @@ CludesUI.AtOptionsLogin(function()
                             get = CfgOr("sidebarSeparateSpacing", 8),
                             set = function(val)
                                 ChatSet("sidebarSeparateSpacing", val)
-                                if CHAT.ApplySidebarPosition then
-                                    CHAT.ApplySidebarPosition()
-                                end
-                                if CHAT.ApplyExtendedBackground then
-                                    CHAT.ApplyExtendedBackground()
-                                end
+                                if CHAT.ApplySidebarPosition then CHAT.ApplySidebarPosition() end
+                                if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
                             end,
                         },
                     },
@@ -867,26 +738,18 @@ CludesUI.AtOptionsLogin(function()
                             ChatSet("iconR", red)
                             ChatSet("iconG", green)
                             ChatSet("iconB", blue)
-                            if CHAT.ApplyIconColor then
-                                CHAT.ApplyIconColor()
-                            end
+                            if CHAT.ApplyIconColor then CHAT.ApplyIconColor() end
                         end,
                         onClick = function(self)
                             if ChatCfg("iconUseAccent") then
                                 ChatSet("iconUseAccent", false)
-                                if CHAT.ApplyIconColor then
-                                    CHAT.ApplyIconColor()
-                                end
+                                if CHAT.ApplyIconColor then CHAT.ApplyIconColor() end
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
+                            if self._eabOrigClick then self._eabOrigClick(self) end
                         end,
-                        refreshAlpha = function()
-                            return ChatCfg("iconUseAccent") and 0.3 or 1
-                        end,
+                        refreshAlpha = function() return ChatCfg("iconUseAccent") and 0.3 or 1 end,
                     },
                     {
                         tooltip = "Accent Color",
@@ -898,14 +761,10 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function() end,
                         onClick = function()
                             ChatSet("iconUseAccent", true)
-                            if CHAT.ApplyIconColor then
-                                CHAT.ApplyIconColor()
-                            end
+                            if CHAT.ApplyIconColor then CHAT.ApplyIconColor() end
                             CludesUI:RefreshPage()
                         end,
-                        refreshAlpha = function()
-                            return ChatCfg("iconUseAccent") and 1 or 0.3
-                        end,
+                        refreshAlpha = function() return ChatCfg("iconUseAccent") and 1 or 0.3 end,
                     },
                 }
             end
@@ -923,34 +782,26 @@ CludesUI.AtOptionsLogin(function()
                     text = "Sidebar Icons",
                     values = { __placeholder = "..." },
                     order = { "__placeholder" },
-                    getValue = function()
-                        return "__placeholder"
-                    end,
+                    getValue = function() return "__placeholder" end,
                     setValue = function() end,
                 }
             )
             if not CludesUI._prebuilding then
                 local rightRegion = iconOptionsRow._rightRegion
-                if rightRegion._control then
-                    rightRegion._control:Hide()
-                end
+                if rightRegion._control then rightRegion._control:Hide() end
                 local pendingIconReload = false
                 local checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
                     rightRegion,
                     210,
                     rightRegion:GetFrameLevel() + 2,
                     sidebarIconItems,
-                    function(keyName)
-                        return ChatCfg(keyName) ~= false
-                    end,
+                    function(keyName) return ChatCfg(keyName) ~= false end,
                     function(keyName, val)
                         if val and CHAT.SidebarIconExists and not CHAT.SidebarIconExists(keyName) then
                             pendingIconReload = true
                         end
                         ChatSet(keyName, val)
-                        if CHAT.ApplySidebarIcons then
-                            CHAT.ApplySidebarIcons()
-                        end
+                        if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
                     end,
                     {
                         hint2 = "Reload required - close dropdown to reload",
@@ -962,9 +813,7 @@ CludesUI.AtOptionsLogin(function()
                             ChatSet("sidebarIconOrder", map)
                         end,
                         onClose = function(orderChanged)
-                            if not orderChanged and not pendingIconReload then
-                                return
-                            end
+                            if not orderChanged and not pendingIconReload then return end
                             pendingIconReload = false
                             CludesUI:ShowConfirmPopup({
                                 title = "Reload Required",
@@ -994,9 +843,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("sidebarIconScale", 1.0),
                 setValue = function(val)
                     ChatSet("sidebarIconScale", val)
-                    if CHAT.ApplySidebarIconScale then
-                        CHAT.ApplySidebarIconScale()
-                    end
+                    if CHAT.ApplySidebarIconScale then CHAT.ApplySidebarIconScale() end
                 end,
             }, {
                 type = "toggle",
@@ -1005,9 +852,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("freeMoveIcons", false),
                 setValue = function(val)
                     ChatSet("freeMoveIcons", val)
-                    if CHAT.ApplySidebarIcons then
-                        CHAT.ApplySidebarIcons()
-                    end
+                    if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
                     CludesUI:RefreshPage()
                 end,
             })
@@ -1027,15 +872,15 @@ CludesUI.AtOptionsLogin(function()
                             step = 1,
                             get = function()
                                 if STOCK then
-                                    return ChatCfg("stockIconSpacing") or (CHAT.SB_KIT and CHAT.SB_KIT.gap) or 4
+                                    return ChatCfg("stockIconSpacing")
+                                        or (CHAT.SB_KIT and CHAT.SB_KIT.gap)
+                                        or 4
                                 end
                                 return ChatCfg("sidebarIconSpacing") or 10
                             end,
                             set = function(val)
                                 ChatSet(STOCK and "stockIconSpacing" or "sidebarIconSpacing", val)
-                                if CHAT.ApplySidebarIcons then
-                                    CHAT.ApplySidebarIcons()
-                                end
+                                if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
                             end,
                         },
                     },
@@ -1052,17 +897,11 @@ CludesUI.AtOptionsLogin(function()
                 local hitBtn = CreateFrame("Button", nil, region)
                 hitBtn:SetAllPoints(resetFS)
                 hitBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-                hitBtn:SetScript("OnEnter", function()
-                    resetFS:SetTextColor(1, 0.3, 0.3, 1)
-                end)
-                hitBtn:SetScript("OnLeave", function()
-                    resetFS:SetTextColor(1, 1, 1, 0.8)
-                end)
+                hitBtn:SetScript("OnEnter", function() resetFS:SetTextColor(1, 0.3, 0.3, 1) end)
+                hitBtn:SetScript("OnLeave", function() resetFS:SetTextColor(1, 1, 1, 0.8) end)
                 hitBtn:SetScript("OnClick", function()
                     ChatSet("iconPositions", {})
-                    if CHAT.ApplySidebarIcons then
-                        CHAT.ApplySidebarIcons()
-                    end
+                    if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
                 end)
                 local function UpdateResetVis()
                     local enabled = ChatCfg("freeMoveIcons")
@@ -1082,12 +921,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgIs("scrollButtonOnChat"),
                 setValue = function(val)
                     ChatSet("scrollButtonOnChat", val)
-                    if CHAT.ApplySidebarIcons then
-                        CHAT.ApplySidebarIcons()
-                    end
-                    if CHAT.ApplySidebarVisibility then
-                        CHAT.ApplySidebarVisibility()
-                    end
+                    if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
+                    if CHAT.ApplySidebarVisibility then CHAT.ApplySidebarVisibility() end
                 end,
             }, { type = "label", text = "" })
             cursorY = cursorY - height
@@ -1108,12 +943,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("extendBgBehindTabs", false),
                     setValue = function(val)
                         ChatSet("extendBgBehindTabs", val)
-                        if CHAT.ApplyTabPadding then
-                            CHAT.ApplyTabPadding()
-                        end
-                        if CHAT.ApplyTabSpacing then
-                            CHAT.ApplyTabSpacing()
-                        end
+                        if CHAT.ApplyTabPadding then CHAT.ApplyTabPadding() end
+                        if CHAT.ApplyTabSpacing then CHAT.ApplyTabSpacing() end
                         CludesUI:RefreshPage()
                     end,
                 }, {
@@ -1122,17 +953,13 @@ CludesUI.AtOptionsLogin(function()
                     min = 0,
                     max = 10,
                     step = 1,
-                    disabled = function()
-                        return ChatCfg("extendBgBehindTabs") == true
-                    end,
+                    disabled = function() return ChatCfg("extendBgBehindTabs") == true end,
                     disabledTooltip = "Tabs Inside Chat Panel",
                     requireState = "disabled",
                     getValue = CfgOr("tabSpacing", 1),
                     setValue = function(val)
                         ChatSet("tabSpacing", val)
-                        if CHAT.ApplyTabSpacing then
-                            CHAT.ApplyTabSpacing()
-                        end
+                        if CHAT.ApplyTabSpacing then CHAT.ApplyTabSpacing() end
                     end,
                 })
                 cursorY = cursorY - height
@@ -1146,9 +973,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("tabHeight", 24),
                     setValue = function(val)
                         ChatSet("tabHeight", val)
-                        if CHAT.ApplyTabLayout then
-                            CHAT.ApplyTabLayout()
-                        end
+                        if CHAT.ApplyTabLayout then CHAT.ApplyTabLayout() end
                     end,
                 }, {
                     type = "slider",
@@ -1159,9 +984,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("tabInnerPaddingX", 12),
                     setValue = function(val)
                         ChatSet("tabInnerPaddingX", val)
-                        if CHAT.ApplyTabLayout then
-                            CHAT.ApplyTabLayout()
-                        end
+                        if CHAT.ApplyTabLayout then CHAT.ApplyTabLayout() end
                     end,
                 })
                 cursorY = cursorY - height
@@ -1179,12 +1002,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("tabFont", "__global"),
                     setValue = function(val)
                         ChatSet("tabFont", val)
-                        if CHAT.ApplyTabAppearance then
-                            CHAT.ApplyTabAppearance()
-                        end
-                        if CHAT.ApplyTabLayout then
-                            CHAT.ApplyTabLayout()
-                        end
+                        if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
+                        if CHAT.ApplyTabLayout then CHAT.ApplyTabLayout() end
                     end,
                 }, {
                     type = "slider",
@@ -1195,12 +1014,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("tabFontSize", 11),
                     setValue = function(val)
                         ChatSet("tabFontSize", val)
-                        if CHAT.ApplyTabAppearance then
-                            CHAT.ApplyTabAppearance()
-                        end
-                        if CHAT.ApplyTabLayout then
-                            CHAT.ApplyTabLayout()
-                        end
+                        if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
+                        if CHAT.ApplyTabLayout then CHAT.ApplyTabLayout() end
                     end,
                 })
                 cursorY = cursorY - height
@@ -1211,13 +1026,9 @@ CludesUI.AtOptionsLogin(function()
             -- Class. modeKey records which is in use (unset = Custom); the
             -- unused ones rest dimmed, and clicking one switches to it.
             local function TabModeSwatches(key, modeKey, fallback, withAlpha)
-                local function Mode()
-                    return ChatCfg(modeKey) or "custom"
-                end
+                local function Mode() return ChatCfg(modeKey) or "custom" end
                 local function ApplyTabs()
-                    if CHAT.ApplyTabAppearance then
-                        CHAT.ApplyTabAppearance()
-                    end
+                    if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                 end
                 local function SetMode(mode)
                     ChatSet(modeKey, mode)
@@ -1225,9 +1036,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                 end
                 local function Lit(mode)
-                    return function()
-                        return Mode() == mode and 1 or 0.3
-                    end
+                    return function() return Mode() == mode and 1 or 0.3 end
                 end
                 return {
                     {
@@ -1251,22 +1060,16 @@ CludesUI.AtOptionsLogin(function()
                                 SetMode("custom")
                                 return
                             end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
+                            if self._eabOrigClick then self._eabOrigClick(self) end
                         end,
                         refreshAlpha = Lit("custom"),
                     },
                     {
                         tooltip = "Accent Color",
                         hasAlpha = false,
-                        getValue = function()
-                            return CludesUI.GetAccentColor()
-                        end,
+                        getValue = function() return CludesUI.GetAccentColor() end,
                         setValue = function() end,
-                        onClick = function()
-                            SetMode("accent")
-                        end,
+                        onClick = function() SetMode("accent") end,
                         refreshAlpha = Lit("accent"),
                     },
                     {
@@ -1278,9 +1081,7 @@ CludesUI.AtOptionsLogin(function()
                             return color and color.r or 1, color and color.g or 1, color and color.b or 1
                         end,
                         setValue = function() end,
-                        onClick = function()
-                            SetMode("class")
-                        end,
+                        onClick = function() SetMode("class") end,
                         refreshAlpha = Lit("class"),
                     },
                 }
@@ -1333,9 +1134,7 @@ CludesUI.AtOptionsLogin(function()
                                 local color = ChatCfg("tabBackgroundColor") or fallback
                                 local a = color.a == nil and fallback.a or color.a
                                 ChatSet("tabBackgroundColor", { r = red, g = green, b = blue, a = a })
-                                if CHAT.ApplyTabAppearance then
-                                    CHAT.ApplyTabAppearance()
-                                end
+                                if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                             end,
                         },
                     }
@@ -1379,9 +1178,7 @@ CludesUI.AtOptionsLogin(function()
                                 set = function(val)
                                     local color = ChatCfg(key) or fallback
                                     ChatSet(key, { r = color.r, g = color.g, b = color.b, a = val / 100 })
-                                    if CHAT.ApplyTabAppearance then
-                                        CHAT.ApplyTabAppearance()
-                                    end
+                                    if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                                 end,
                             },
                         },
@@ -1412,44 +1209,30 @@ CludesUI.AtOptionsLogin(function()
                             setValue = function(red, green, blue, a)
                                 ChatSet("activeUnderlineColor", { r = red, g = green, b = blue, a = a })
                                 ChatSet("activeUnderlineColorMode", "custom")
-                                if CHAT.ApplyTabAppearance then
-                                    CHAT.ApplyTabAppearance()
-                                end
+                                if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                             end,
                             onClick = function(self)
                                 if UnderlineMode() ~= "custom" then
                                     ChatSet("activeUnderlineColorMode", "custom")
-                                    if CHAT.ApplyTabAppearance then
-                                        CHAT.ApplyTabAppearance()
-                                    end
+                                    if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                                     CludesUI:RefreshPage()
                                     return
                                 end
-                                if self._eabOrigClick then
-                                    self._eabOrigClick(self)
-                                end
+                                if self._eabOrigClick then self._eabOrigClick(self) end
                             end,
-                            refreshAlpha = function()
-                                return UnderlineMode() == "custom" and 1 or 0.3
-                            end,
+                            refreshAlpha = function() return UnderlineMode() == "custom" and 1 or 0.3 end,
                         },
                         {
                             tooltip = "Accent Color",
                             hasAlpha = false,
-                            getValue = function()
-                                return CludesUI.GetAccentColor()
-                            end,
+                            getValue = function() return CludesUI.GetAccentColor() end,
                             setValue = function() end,
                             onClick = function()
                                 ChatSet("activeUnderlineColorMode", "accent")
-                                if CHAT.ApplyTabAppearance then
-                                    CHAT.ApplyTabAppearance()
-                                end
+                                if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                                 CludesUI:RefreshPage()
                             end,
-                            refreshAlpha = function()
-                                return UnderlineMode() == "accent" and 1 or 0.3
-                            end,
+                            refreshAlpha = function() return UnderlineMode() == "accent" and 1 or 0.3 end,
                         },
                         {
                             tooltip = "Class Color",
@@ -1462,23 +1245,17 @@ CludesUI.AtOptionsLogin(function()
                             setValue = function() end,
                             onClick = function()
                                 ChatSet("activeUnderlineColorMode", "class")
-                                if CHAT.ApplyTabAppearance then
-                                    CHAT.ApplyTabAppearance()
-                                end
+                                if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                                 CludesUI:RefreshPage()
                             end,
-                            refreshAlpha = function()
-                                return UnderlineMode() == "class" and 1 or 0.3
-                            end,
+                            refreshAlpha = function() return UnderlineMode() == "class" and 1 or 0.3 end,
                         },
                     }
                 end
 
                 -- Texture belongs to the tab appearance controls, alongside the
                 -- combined underline toggle and its inline color choices.
-                if CHAT.RefreshBgTextureCatalogue then
-                    CHAT.RefreshBgTextureCatalogue()
-                end
+                if CHAT.RefreshBgTextureCatalogue then CHAT.RefreshBgTextureCatalogue() end
                 local btValues, btOrder = {}, {}
                 do
                     local texNames = mod.chatBgTextureNames or {}
@@ -1491,23 +1268,17 @@ CludesUI.AtOptionsLogin(function()
                     local texLookup = mod.chatBgTextures or {}
                     btValues._menuOpts = {
                         itemHeight = 28,
-                        background = function(key)
-                            return texLookup[key]
-                        end,
+                        background = function(key) return texLookup[key] end,
                     }
                 end
                 local underlineRow
                 underlineRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Active Underline",
-                    getValue = function()
-                        return ChatCfg("activeUnderline") ~= false
-                    end,
+                    getValue = function() return ChatCfg("activeUnderline") ~= false end,
                     setValue = function(val)
                         ChatSet("activeUnderline", val)
-                        if CHAT.ApplyTabAppearance then
-                            CHAT.ApplyTabAppearance()
-                        end
+                        if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                     end,
                 }, {
                     type = "dropdown",
@@ -1518,9 +1289,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("tabBackgroundTexture", "none"),
                     setValue = function(val)
                         ChatSet("tabBackgroundTexture", val)
-                        if CHAT.ApplyTabAppearance then
-                            CHAT.ApplyTabAppearance()
-                        end
+                        if CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
                     end,
                 })
                 if not CludesUI._prebuilding then
@@ -1539,33 +1308,21 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Sync Border with Chat Panel",
                     tooltip = "For tabs outside the chat panel, uses the chat panel's border style and color instead of separate tab border settings.",
-                    disabled = function()
-                        return ChatCfg("extendBgBehindTabs") == true
-                    end,
+                    disabled = function() return ChatCfg("extendBgBehindTabs") == true end,
                     disabledTooltip = "Tabs Inside Chat Panel",
                     requireState = "disabled",
-                    getValue = function()
-                        return ChatCfg("syncTabBorder") ~= false
-                    end,
+                    getValue = function() return ChatCfg("syncTabBorder") ~= false end,
                     setValue = function(val)
                         ChatSet("syncTabBorder", val)
-                        if CHAT.ApplyTabBorders then
-                            CHAT.ApplyTabBorders()
-                        end
+                        if CHAT.ApplyTabBorders then CHAT.ApplyTabBorders() end
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
                 cursorY = cursorY - height
-                local syncTabs = function()
-                    return ChatCfg("syncTabBorder") ~= false
-                end
-                local tabBordersOff = function()
-                    return ChatCfg("extendBgBehindTabs") == true or syncTabs()
-                end
+                local syncTabs = function() return ChatCfg("syncTabBorder") ~= false end
+                local tabBordersOff = function() return ChatCfg("extendBgBehindTabs") == true or syncTabs() end
                 local function TabBorderOffTip()
-                    if ChatCfg("extendBgBehindTabs") then
-                        return "Tabs Inside Chat Panel"
-                    end
+                    if ChatCfg("extendBgBehindTabs") then return "Tabs Inside Chat Panel" end
                     return "Sync Border with Chat Panel"
                 end
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
@@ -1591,27 +1348,19 @@ CludesUI.AtOptionsLogin(function()
                             -- A style with a select colour (Pixels grey) seeds the custom
                             -- colour; the colour mode is kept, every other style keeps its colour.
                             local selC = CludesUI.GetBorderSelectColor(val)
-                            if selC then
-                                ChatSet("tabBorderColor", selC)
-                            end
+                            if selC then ChatSet("tabBorderColor", selC) end
                             -- A style pick lands on the style's default step, so an exact
                             -- pixel size paired with the old step is cleared (false, not
                             -- nil: the clear must travel through mirror sync).
-                            if ChatCfg("tabBorderThicknessPx") then
-                                ChatSet("tabBorderThicknessPx", false)
-                            end
+                            if ChatCfg("tabBorderThicknessPx") then ChatSet("tabBorderThicknessPx", false) end
                             local def = CludesUI.GetBorderDefaultSize("chat", val)
                                 or CludesUI.GetBorderTextureDefaultThickness(val)
                             -- Unregistered SharedMedia borders default to the NUMBER 1; this key stores labels.
                             if type(def) == "number" then
                                 def = CludesUI.BORDER_LABEL_OF_STEP[def] or "thin"
                             end
-                            if def then
-                                ChatSet("tabBorderThickness", def)
-                            end
-                            if CHAT.ApplyTabBorders then
-                                CHAT.ApplyTabBorders()
-                            end
+                            if def then ChatSet("tabBorderThickness", def) end
+                            if CHAT.ApplyTabBorders then CHAT.ApplyTabBorders() end
                             -- Rebuild: the offset row below exists only for a textured style.
                             CludesUI:RefreshPage(true)
                         end,
@@ -1628,19 +1377,11 @@ CludesUI.AtOptionsLogin(function()
                         setStep = function(step)
                             ChatSet("tabBorderThickness", CludesUI.BORDER_LABEL_OF_STEP[step])
                         end,
-                        getTex = function()
-                            return ChatCfg("tabBorderTexture") or "solid"
-                        end,
-                        getPx = function()
-                            return ChatCfg("tabBorderThicknessPx")
-                        end,
-                        setPx = function(val)
-                            ChatSet("tabBorderThicknessPx", val)
-                        end,
+                        getTex = function() return ChatCfg("tabBorderTexture") or "solid" end,
+                        getPx = function() return ChatCfg("tabBorderThicknessPx") end,
+                        setPx = function(val) ChatSet("tabBorderThicknessPx", val) end,
                         apply = function()
-                            if CHAT.ApplyTabBorders then
-                                CHAT.ApplyTabBorders()
-                            end
+                            if CHAT.ApplyTabBorders then CHAT.ApplyTabBorders() end
                         end,
                     })
                 )
@@ -1658,34 +1399,19 @@ CludesUI.AtOptionsLogin(function()
                             disabled = tabBordersOff,
                             disabledTooltip = TabBorderOffTip,
                             requireState = "disabled",
-                            getTex = function()
-                                return ChatCfg("tabBorderTexture") or "solid"
-                            end,
+                            getTex = function() return ChatCfg("tabBorderTexture") or "solid" end,
                             getStep = function()
-                                return CludesUI.BORDER_STEP_OF_LABEL[ChatCfg("tabBorderThickness") or "none"] or 1
+                                return CludesUI.BORDER_STEP_OF_LABEL[ChatCfg("tabBorderThickness") or "none"]
+                                    or 1
                             end,
-                            getSizeKey = function()
-                                return ChatCfg("tabBorderThickness") or "none"
-                            end,
-                            getPx = function()
-                                return ChatCfg("tabBorderThicknessPx")
-                            end,
-                            getX = function()
-                                return ChatCfg("tabBorderOffsetX")
-                            end,
-                            setX = function(val)
-                                ChatSet("tabBorderOffsetX", val)
-                            end,
-                            getY = function()
-                                return ChatCfg("tabBorderOffsetY")
-                            end,
-                            setY = function(val)
-                                ChatSet("tabBorderOffsetY", val)
-                            end,
+                            getSizeKey = function() return ChatCfg("tabBorderThickness") or "none" end,
+                            getPx = function() return ChatCfg("tabBorderThicknessPx") end,
+                            getX = function() return ChatCfg("tabBorderOffsetX") end,
+                            setX = function(val) ChatSet("tabBorderOffsetX", val) end,
+                            getY = function() return ChatCfg("tabBorderOffsetY") end,
+                            setY = function(val) ChatSet("tabBorderOffsetY", val) end,
                             apply = function()
-                                if CHAT.ApplyTabBorders then
-                                    CHAT.ApplyTabBorders()
-                                end
+                                if CHAT.ApplyTabBorders then CHAT.ApplyTabBorders() end
                             end,
                         })
                         _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
@@ -1710,9 +1436,7 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = ChatCfg("tabBorderShiftX")
-                                    if val ~= nil then
-                                        return val
-                                    end
+                                    if val ~= nil then return val end
                                     local _, _, d = CludesUI.GetBorderDefaults(
                                         "chat",
                                         ChatCfg("tabBorderTexture") or "solid",
@@ -1733,9 +1457,7 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = ChatCfg("tabBorderShiftY")
-                                    if val ~= nil then
-                                        return val
-                                    end
+                                    if val ~= nil then return val end
                                     local _, _, _, d = CludesUI.GetBorderDefaults(
                                         "chat",
                                         ChatCfg("tabBorderTexture") or "solid",
@@ -1755,9 +1477,7 @@ CludesUI.AtOptionsLogin(function()
                 if not CludesUI._prebuilding then
                     local region, control = borderRow._rightRegion, borderRow._rightRegion._control
                     local function SetMode(mode)
-                        if tabBordersOff() then
-                            return
-                        end
+                        if tabBordersOff() then return end
                         ChatSet("tabBorderColorMode", mode)
                         CHAT.ApplyTabBorders()
                         CludesUI:RefreshPage()
@@ -1775,23 +1495,17 @@ CludesUI.AtOptionsLogin(function()
                         20
                     )
                     Pix.Point(classSw, "RIGHT", control, "LEFT", -8, 0)
-                    classSw:SetScript("OnClick", function()
-                        SetMode("class")
-                    end)
+                    classSw:SetScript("OnClick", function() SetMode("class") end)
                     local accentSw, refreshAccent = CludesUI.BuildColorSwatch(
                         region,
                         borderRow:GetFrameLevel() + 3,
-                        function()
-                            return CludesUI.GetAccentColor()
-                        end,
+                        function() return CludesUI.GetAccentColor() end,
                         function() end,
                         false,
                         20
                     )
                     Pix.Point(accentSw, "RIGHT", classSw, "LEFT", -8, 0)
-                    accentSw:SetScript("OnClick", function()
-                        SetMode("accent")
-                    end)
+                    accentSw:SetScript("OnClick", function() SetMode("accent") end)
                     local customSw, refreshCustom = CludesUI.BuildColorSwatch(
                         region,
                         borderRow:GetFrameLevel() + 3,
@@ -1811,9 +1525,7 @@ CludesUI.AtOptionsLogin(function()
                     Pix.Point(customSw, "RIGHT", accentSw, "LEFT", -8, 0)
                     local orig = customSw:GetScript("OnClick")
                     customSw:SetScript("OnClick", function(self, ...)
-                        if tabBordersOff() then
-                            return
-                        end
+                        if tabBordersOff() then return end
                         if (ChatCfg("tabBorderColorMode") or "custom") ~= "custom" then
                             SetMode("custom")
                         elseif orig then
@@ -1841,14 +1553,10 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Gives the selected tab its own border color.",
                     disabled = tabBordersOff,
                     disabledTooltip = TabBorderOffTip,
-                    getValue = function()
-                        return ChatCfg("activeTabBorder") ~= false
-                    end,
+                    getValue = function() return ChatCfg("activeTabBorder") ~= false end,
                     setValue = function(val)
                         ChatSet("activeTabBorder", val)
-                        if CHAT.ApplyTabBorders then
-                            CHAT.ApplyTabBorders()
-                        end
+                        if CHAT.ApplyTabBorders then CHAT.ApplyTabBorders() end
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
@@ -1863,18 +1571,17 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         function(red, green, blue, a)
                             ChatSet("tabBorderColorActive", { r = red, g = green, b = blue, a = a })
-                            if CHAT.ApplyTabBorders then
-                                CHAT.ApplyTabBorders()
-                            end
+                            if CHAT.ApplyTabBorders then CHAT.ApplyTabBorders() end
                         end,
                         true,
                         20
                     )
                     Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                     region._lastInline = colorSwatch
-                    colorSwatch:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(colorSwatch, "Active Border Color")
-                    end)
+                    colorSwatch:SetScript(
+                        "OnEnter",
+                        function() CludesUI.ShowWidgetTooltip(colorSwatch, "Active Border Color") end
+                    )
                     colorSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                     local function RefreshActiveSwatch()
                         refreshSwatch()
@@ -1905,9 +1612,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("editBoxHeight", 23),
                     setValue = function(val)
                         ChatSet("editBoxHeight", val)
-                        if CHAT.ApplyInputPosition then
-                            CHAT.ApplyInputPosition()
-                        end
+                        if CHAT.ApplyInputPosition then CHAT.ApplyInputPosition() end
                     end,
                 }
                 if FV then
@@ -1919,9 +1624,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = CfgOr("inputOnTop", false),
                         setValue = function(val)
                             ChatSet("inputOnTop", val)
-                            if CHAT.ApplyInputPosition then
-                                CHAT.ApplyInputPosition()
-                            end
+                            if CHAT.ApplyInputPosition then CHAT.ApplyInputPosition() end
                         end,
                     }, ebHeightCfg)
                 end
@@ -1940,9 +1643,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("editBoxFont", "__chat"),
                     setValue = function(val)
                         ChatSet("editBoxFont", val)
-                        if CHAT.ApplyFonts then
-                            CHAT.ApplyFonts()
-                        end
+                        if CHAT.ApplyFonts then CHAT.ApplyFonts() end
                     end,
                 }, {
                     type = "slider",
@@ -1951,20 +1652,14 @@ CludesUI.AtOptionsLogin(function()
                     max = 24,
                     step = 1,
                     getValue = function()
-                        if ChatCfg("editBoxFontSize") then
-                            return ChatCfg("editBoxFontSize")
-                        end
+                        if ChatCfg("editBoxFontSize") then return ChatCfg("editBoxFontSize") end
                         local size
-                        if FCF_GetChatWindowInfo then
-                            size = select(2, FCF_GetChatWindowInfo(1))
-                        end
+                        if FCF_GetChatWindowInfo then size = select(2, FCF_GetChatWindowInfo(1)) end
                         return size or 12
                     end,
                     setValue = function(val)
                         ChatSet("editBoxFontSize", val)
-                        if CHAT.ApplyFonts then
-                            CHAT.ApplyFonts()
-                        end
+                        if CHAT.ApplyFonts then CHAT.ApplyFonts() end
                     end,
                 })
                 cursorY = cursorY - height
@@ -1993,9 +1688,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Hide Tooltip on Hover",
                 getValue = CfgOr("hideTooltipOnHover", false),
-                setValue = function(val)
-                    ChatSet("hideTooltipOnHover", val)
-                end,
+                setValue = function(val) ChatSet("hideTooltipOnHover", val) end,
             })
             if not CludesUI._prebuilding then
                 local lrgn = histRow._leftRegion
@@ -2009,9 +1702,7 @@ CludesUI.AtOptionsLogin(function()
                             max = 300,
                             step = 10,
                             get = CfgOr("persistChatHistoryMaxLines", 100),
-                            set = function(val)
-                                ChatSet("persistChatHistoryMaxLines", val)
-                            end,
+                            set = function(val) ChatSet("persistChatHistoryMaxLines", val) end,
                         },
                     },
                 })
@@ -2032,29 +1723,19 @@ CludesUI.AtOptionsLogin(function()
                 maxTextWidthPct = 0.8,
                 searchable = true,
                 iconAtlas = function(key)
-                    if key == "none" then
-                        return nil
-                    end
-                    if not whisperSoundPaths[key] then
-                        return nil
-                    end
+                    if key == "none" then return nil end
+                    if not whisperSoundPaths[key] then return nil end
                     return CludesUI.SOUND_ICON_ATLAS
                 end,
                 iconPressedAtlas = function(key)
-                    if not whisperSoundPaths[key] then
-                        return nil
-                    end
+                    if not whisperSoundPaths[key] then return nil end
                     return CludesUI.SOUND_ICON_PRESSED_ATLAS
                 end,
                 iconOnClick = function(key)
                     local filePath = whisperSoundPaths[key]
-                    if filePath then
-                        PlaySoundFile(filePath, "Master")
-                    end
+                    if filePath then PlaySoundFile(filePath, "Master") end
                 end,
-                iconTooltip = function()
-                    return "Preview Sound"
-                end,
+                iconTooltip = function() return "Preview Sound" end,
             }
 
             -- Row 2: Hide Borders (+ inline inner-border swatches) | Whisper Sound
@@ -2066,15 +1747,11 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("hideBorders", false),
                 setValue = function(val)
                     ChatSet("hideBorders", val)
-                    if CHAT.ApplyBorders then
-                        CHAT.ApplyBorders()
-                    end
+                    if CHAT.ApplyBorders then CHAT.ApplyBorders() end
                     CludesUI:RefreshPage()
                 end,
             }
-            if BS then
-                BS.Gate("chat", hideBordersCfg)
-            end
+            if BS then BS.Gate("chat", hideBordersCfg) end
             local extrasBorderRow
             extrasBorderRow, height = W:DualRow(hostFrame, cursorY, hideBordersCfg, {
                 type = "dropdown",
@@ -2092,19 +1769,11 @@ CludesUI.AtOptionsLogin(function()
                 local region = extrasBorderRow._leftRegion
                 local control = region._control
                 local function SetInnerMode(mode)
-                    if ChatCfg("hideBorders") then
-                        return
-                    end
+                    if ChatCfg("hideBorders") then return end
                     ChatSet("innerBorderColorMode", mode)
-                    if CHAT.ApplyBorders then
-                        CHAT.ApplyBorders()
-                    end
-                    if CHAT.ApplyExtendedBackground then
-                        CHAT.ApplyExtendedBackground()
-                    end
-                    if CHAT.ApplyTabSeparators then
-                        CHAT.ApplyTabSeparators()
-                    end
+                    if CHAT.ApplyBorders then CHAT.ApplyBorders() end
+                    if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
+                    if CHAT.ApplyTabSeparators then CHAT.ApplyTabSeparators() end
                     CludesUI:RefreshPage()
                 end
                 local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
@@ -2117,15 +1786,9 @@ CludesUI.AtOptionsLogin(function()
                     function(red, green, blue, a)
                         ChatSet("innerBorderColor", { r = red, g = green, b = blue, a = a })
                         ChatSet("innerBorderColorMode", "custom")
-                        if CHAT.ApplyBorders then
-                            CHAT.ApplyBorders()
-                        end
-                        if CHAT.ApplyExtendedBackground then
-                            CHAT.ApplyExtendedBackground()
-                        end
-                        if CHAT.ApplyTabSeparators then
-                            CHAT.ApplyTabSeparators()
-                        end
+                        if CHAT.ApplyBorders then CHAT.ApplyBorders() end
+                        if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
+                        if CHAT.ApplyTabSeparators then CHAT.ApplyTabSeparators() end
                     end,
                     true,
                     20
@@ -2136,35 +1799,31 @@ CludesUI.AtOptionsLogin(function()
                 local accentSw, refreshAccent = CludesUI.BuildColorSwatch(
                     region,
                     extrasBorderRow:GetFrameLevel() + 3,
-                    function()
-                        return CludesUI.GetAccentColor()
-                    end,
+                    function() return CludesUI.GetAccentColor() end,
                     function() end,
                     false,
                     20
                 )
                 Pix.Point(accentSw, "RIGHT", colorSwatch, "LEFT", -8, 0)
-                accentSw:SetScript("OnClick", function()
-                    SetInnerMode("accent")
-                end)
-                accentSw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(accentSw, "Accent Inner Border Color")
-                end)
+                accentSw:SetScript("OnClick", function() SetInnerMode("accent") end)
+                accentSw:SetScript(
+                    "OnEnter",
+                    function() CludesUI.ShowWidgetTooltip(accentSw, "Accent Inner Border Color") end
+                )
                 accentSw:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                 local origClick = colorSwatch:GetScript("OnClick")
                 colorSwatch:SetScript("OnClick", function(self, ...)
-                    if ChatCfg("hideBorders") then
-                        return
-                    end
+                    if ChatCfg("hideBorders") then return end
                     if (ChatCfg("innerBorderColorMode") or "custom") ~= "custom" then
                         SetInnerMode("custom")
                     elseif origClick then
                         origClick(self, ...)
                     end
                 end)
-                colorSwatch:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, "Inner Border Color")
-                end)
+                colorSwatch:SetScript(
+                    "OnEnter",
+                    function() CludesUI.ShowWidgetTooltip(colorSwatch, "Inner Border Color") end
+                )
                 colorSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                 local function RefreshInner()
                     refreshSwatch()
@@ -2211,19 +1870,13 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Timestamp All Messages",
                     tooltip = "Adds timestamps to system messages, loot, achievements, and addon messages, not just player chat.",
-                    disabled = function()
-                        return (ChatCfg("timestampFormat") or "%I:%M ") == "none"
-                    end,
+                    disabled = function() return (ChatCfg("timestampFormat") or "%I:%M ") == "none" end,
                     disabledTooltip = "Set a Timestamps format first",
                     getValue = CfgIs("timestampAll"),
                     setValue = function(val)
                         ChatSet("timestampAll", val)
-                        if CHAT.ApplyTimestampCVar then
-                            CHAT.ApplyTimestampCVar()
-                        end
-                        if CHAT.EngineQueueRebuildAll then
-                            CHAT.EngineQueueRebuildAll()
-                        end
+                        if CHAT.ApplyTimestampCVar then CHAT.ApplyTimestampCVar() end
+                        if CHAT.EngineQueueRebuildAll then CHAT.EngineQueueRebuildAll() end
                     end,
                 }, {
                     type = "dropdown",
@@ -2233,9 +1886,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("timestampFormat", "%I:%M "),
                     setValue = function(val)
                         ChatSet("timestampFormat", val)
-                        if CHAT.ApplyTimestampCVar then
-                            CHAT.ApplyTimestampCVar()
-                        end
+                        if CHAT.ApplyTimestampCVar then CHAT.ApplyTimestampCVar() end
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -2251,12 +1902,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgIs("abbreviateChannels"),
                 setValue = function(val)
                     ChatSet("abbreviateChannels", val)
-                    if CHAT.EngineSetChannelAbbrev then
-                        CHAT.EngineSetChannelAbbrev(val)
-                    end
-                    if CHAT.EngineQueueRebuildAll then
-                        CHAT.EngineQueueRebuildAll()
-                    end
+                    if CHAT.EngineSetChannelAbbrev then CHAT.EngineSetChannelAbbrev(val) end
+                    if CHAT.EngineQueueRebuildAll then CHAT.EngineQueueRebuildAll() end
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -2266,12 +1913,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgIs("classColorNames"),
                 setValue = function(val)
                     ChatSet("classColorNames", val)
-                    if CHAT.ApplyClassColorNames then
-                        CHAT.ApplyClassColorNames(val)
-                    end
-                    if CHAT.EngineQueueRebuildAll then
-                        CHAT.EngineQueueRebuildAll()
-                    end
+                    if CHAT.ApplyClassColorNames then CHAT.ApplyClassColorNames(val) end
+                    if CHAT.EngineQueueRebuildAll then CHAT.EngineQueueRebuildAll() end
                 end,
             })
             if not CludesUI._prebuilding then
@@ -2279,9 +1922,7 @@ CludesUI.AtOptionsLogin(function()
                 -- instead of their numbers. Dimmed and inert while the toggle is off.
                 local lrgn = abbrevRow._leftRegion
                 CludesUI.BuildInlineCog(lrgn, {
-                    disabled = function()
-                        return ChatCfg("abbreviateChannels") ~= true
-                    end,
+                    disabled = function() return ChatCfg("abbreviateChannels") ~= true end,
                     disabledTooltip = "Shortened Channel Names",
                     title = "Shortened Channel Names",
                     rows = {
@@ -2295,9 +1936,7 @@ CludesUI.AtOptionsLogin(function()
                                 if CHAT.EngineSetChannelAbbrevLetters then
                                     CHAT.EngineSetChannelAbbrevLetters(val)
                                 end
-                                if CHAT.EngineQueueRebuildAll then
-                                    CHAT.EngineQueueRebuildAll()
-                                end
+                                if CHAT.EngineQueueRebuildAll then CHAT.EngineQueueRebuildAll() end
                             end,
                         },
                     },
@@ -2320,24 +1959,18 @@ CludesUI.AtOptionsLogin(function()
     local chatPages = blizzTabsStyle and { "Chat", "Sidebar" } or { "Chat", "Tabs", "Sidebar" }
     -- Chat Bubbles live in Blizzard Skins+: this tab links straight there, so it
     -- is offered only while that module is loaded.
-    if CludesUI._ModuleNS["CludesUIBlizzardSkin"] then
-        chatPages[#chatPages + 1] = "Chat Bubbles"
-    end
+    if CludesUI._ModuleNS["CludesUIBlizzardSkin"] then chatPages[#chatPages + 1] = "Chat Bubbles" end
 
     CludesUI:RegisterModule("CludesUIChat", {
         title = "Chat",
         description = "Chat frame reskin, clickable URLs, copy chat, sidebar icons.",
         pages = chatPages,
         pageLinks = { ["Chat Bubbles"] = { module = "CludesUIBlizzardSkin", page = "Chat Bubbles" } },
-        buildPage = function(pageName, p, yOffset)
-            return BuildPage(pageName, p, yOffset)
-        end,
+        buildPage = function(pageName, p, yOffset) return BuildPage(pageName, p, yOffset) end,
         searchTerms = "chat tabs border spacing background sidebar friends voice url copy whisper channel abbreviate shortened class color names timestamps timestamp all messages font size",
         onReset = function()
             local db = _G._CUCHAT_DB
-            if db and db.ResetProfile then
-                db:ResetProfile()
-            end
+            if db and db.ResetProfile then db:ResetProfile() end
             ApplyChatLook()
             CludesUI:InvalidatePageCache()
         end,

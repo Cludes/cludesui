@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIAuraBuffReminders.lua
 --  Raid Buffs, Auras, and Consumables reminders: clickable SecureActionButton icons
@@ -148,9 +146,7 @@ if REMIND.FOREVER then
     -- reminder's label would read wrong there.
     function REMIND.FvClassBuffs()
         local t = REMIND._fvClassBuffs
-        if t then
-            return t
-        end
+        if t then return t end
         t = {
             DRUID = {
                 { key = "thorns", lines = { { 467, 782, 1075, 8914, 9756, 9910 } } },
@@ -245,22 +241,16 @@ local Known = function(ident)
         )
 end
 local _eabrInCombat = false
-local InCombat = function()
-    return _eabrInCombat or (InCombatLockdown and InCombatLockdown())
-end
+local InCombat = function() return _eabrInCombat or (InCombatLockdown and InCombatLockdown()) end
 -- Whether important buffs ride the cursor right now: Attach Important Buffs to
 -- Cursor, and with its Only on Cursor in Combat option only while in combat.
 -- p = the profile's display table. Every combat edge refreshes the reminders,
 -- so their placement follows the moment combat starts or ends.
 local CursorAttachActive = function(profile)
-    if not (profile and profile.cursorAttach) then
-        return false
-    end
+    if not (profile and profile.cursorAttach) then return false end
     return not profile.cursorAttachCombatOnly or InCombat()
 end
-local isSecret = issecretvalue or function()
-    return false
-end
+local isSecret = issecretvalue or function() return false end
 local AURA_SCAN_LIMIT = 255 -- Midnight supports more than the legacy 40 buff limit
 local DEFAULT_GLOW_COLOR = { r = 1, g = 0.776, b = 0.376 }
 local DEFAULT_TEXT_COLOR = { r = 1, g = 1, b = 1 }
@@ -269,16 +259,10 @@ local DEFAULT_TEXT_COLOR = { r = 1, g = 1, b = 1 }
 -- [0.5, 3.0] (UI range) is corruption -> reset to 1.0, every call. (2) glowColorMode: one-time migration
 -- per profile, never alters the stored color.
 local function EnsureGlowModeMigrated(profile)
-    if not profile then
-        return
-    end
+    if not profile then return end
     local s = profile.scale
-    if type(s) == "number" and (s < 0.5 or s > 3.0) then
-        profile.scale = 1.0
-    end
-    if profile.glowColorMode then
-        return
-    end
+    if type(s) == "number" and (s < 0.5 or s > 3.0) then profile.scale = 1.0 end
+    if profile.glowColorMode then return end
     local color = profile.glowColor
     if color and not (color.r == 1 and color.g == 0.776 and color.b == 0.376) then
         profile.glowColorMode = "custom"
@@ -288,21 +272,15 @@ local function EnsureGlowModeMigrated(profile)
 end
 
 local function ResolveGlowTint(profile)
-    if not profile then
-        return nil
-    end
+    if not profile then return nil end
     EnsureGlowModeMigrated(profile)
     if profile.glowColorMode == "class" then
         local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
         return classColor.r, classColor.g, classColor.b
     end
-    if profile.glowColorMode ~= "custom" then
-        return nil
-    end
+    if profile.glowColorMode ~= "custom" then return nil end
     local color = profile.glowColor
-    if not color then
-        return nil
-    end
+    if not color then return nil end
     return color.r or 1, color.g or 0.776, color.b or 0.376
 end
 
@@ -326,26 +304,18 @@ local saved -- set in EABR:OnInitialize()
 local texCache = {}
 local function Tex(ident)
     local c = texCache[ident]
-    if c then
-        return c
-    end
+    if c then return c end
     local t = C_Spell.GetSpellTexture(ident)
-    if t then
-        texCache[ident] = t
-    end
+    if t then texCache[ident] = t end
     return t
 end
 
 local spellNameCache = {}
 local function SpellName(ident)
     local c = spellNameCache[ident]
-    if c then
-        return c
-    end
+    if c then return c end
     local num = C_Spell.GetSpellName(ident)
-    if num then
-        spellNameCache[ident] = num
-    end
+    if num then spellNameCache[ident] = num end
     return num
 end
 
@@ -359,13 +329,9 @@ local function GetPlayerClass()
 end
 
 local function GetSpecID()
-    if not GetSpecialization then
-        return nil
-    end -- legacy global, not registered on WoW Forever
+    if not GetSpecialization then return nil end -- legacy global, not registered on WoW Forever
     local s = GetSpecialization()
-    if not s then
-        return nil
-    end
+    if not s then return nil end
     return GetSpecializationInfo(s)
 end
 
@@ -375,23 +341,15 @@ end
 local function ResolveFontPath(fontName)
     if fontName and fontName ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(fontName)
-        if filePath and filePath ~= "" then
-            return filePath
-        end
+        if filePath and filePath ~= "" then return filePath end
     end
-    if CludesUI and CludesUI.GetFontPath then
-        return CludesUI.GetFontPath("auraBuff")
-    end
+    if CludesUI and CludesUI.GetFontPath then return CludesUI.GetFontPath("auraBuff") end
     return "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 end
 local _cachedOutline
 local function SetABRFont(fontStr, font, size)
-    if not (fontStr and fontStr.SetFont) then
-        return
-    end
-    if not _cachedOutline then
-        _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff")
-    end
+    if not (fontStr and fontStr.SetFont) then return end
+    if not _cachedOutline then _cachedOutline = CludesUI.GetFontOutlineFlag("auraBuff") end
     CludesUI.PrimeFontShadow(fontStr, _cachedOutline == "" and CludesUI.GetFontUseShadow("auraBuff"))
     fontStr:SetFont(font, size, _cachedOutline)
 end
@@ -420,9 +378,7 @@ local function ShortLabel(name, classOverride)
     if classOverride and LABEL_CLASS_OVERRIDES[classOverride] then
         return CludesUI.L(LABEL_CLASS_OVERRIDES[classOverride])
     end
-    if LABEL_OVERRIDES[name] then
-        return LABEL_OVERRIDES[name]
-    end
+    if LABEL_OVERRIDES[name] then return LABEL_OVERRIDES[name] end
     return name:match("^(%S+)") or name
 end
 
@@ -451,28 +407,20 @@ local function CacheInstanceInfo()
     _cachedDiffID = tonumber(diffID) or 0
     REMIND._cachedDiffID = _cachedDiffID
     REMIND._cachedWorldTier = hasWorldTier == true
-    if REMIND.FOREVER then
-        return
-    end -- the instance check only serves the pre-key threshold window
+    if REMIND.FOREVER then return end -- the instance check only serves the pre-key threshold window
     -- The instance ID, never a map lookup: this runs on every refresh, and the
     -- game client itself crashes inside C_Map.GetBestMapForUnit in places
     -- (Murder Row on 12.1.5, whatever addon or Blizzard frame asks).
-    if instanceID ~= _cachedInstanceID then
-        _dungeonPrePull = true
-    end
+    if instanceID ~= _cachedInstanceID then _dungeonPrePull = true end
     _cachedInstanceID = instanceID
 end
 
 -- Called from PLAYER_REGEN_DISABLED: once you've actually pulled, the
 -- pre-key top-up window is over for the rest of this dungeon visit.
-local function MarkDungeonPullStarted()
-    _dungeonPrePull = false
-end
+local function MarkDungeonPullStarted() _dungeonPrePull = false end
 
 local function InRealInstancedContent()
-    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
-        return false
-    end
+    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then return false end
     -- Housing plots report as "scenario"; they belong to the open world.
     if
         _cachedIType == "scenario"
@@ -497,25 +445,19 @@ local function InRealInstancedContent()
 end
 
 local function InMythicPlusKey()
-    if REMIND.FOREVER then
-        return false
-    end -- no keystones on WoW Forever
+    if REMIND.FOREVER then return false end -- no keystones on WoW Forever
     return C_ChallengeMode
         and C_ChallengeMode.IsChallengeModeActive
         and C_ChallengeMode.IsChallengeModeActive()
 end
 
 -- Mythic raid diff IDs: 16 fixed-20p (PrimaryRaidMythic), 233 flex (RaidMythicFlexible). Add future IDs here so every gate below stays correct.
-local function IsMythicRaidDiff(skinData)
-    return skinData == 16 or skinData == 233
-end
+local function IsMythicRaidDiff(skinData) return skinData == 16 or skinData == 233 end
 
 -- Mythic 0 dungeon (difficulty 23). A keyed M+ run is not M0.
 -- Hung on EABR.
 function REMIND.InMythicZeroDungeon()
-    if InMythicPlusKey() then
-        return false
-    end
+    if InMythicPlusKey() then return false end
     return _cachedIType == "party" and _cachedDiffID == 23
 end
 
@@ -524,15 +466,11 @@ end
 -- inserted and started) this goes false; that run is governed by
 -- ShowUnderThresholdApplies() instead (thresholds ignored, buff-gone only).
 local function InPreKeyDungeon()
-    if InMythicPlusKey() then
-        return false
-    end
+    if InMythicPlusKey() then return false end
     return _cachedIType == "party" and _cachedDiffID == 8
 end
 
-local function InPvPInstance()
-    return _cachedIType == "pvp" or _cachedIType == "arena"
-end
+local function InPvPInstance() return _cachedIType == "pvp" or _cachedIType == "arena" end
 
 -------------------------------------------------------------------------------
 --  Per-section "Where to Show" visibility model. The stored table keeps only
@@ -541,51 +479,25 @@ end
 -------------------------------------------------------------------------------
 -- Fine-grained instanced difficulty category, or nil outside mapped content.
 function REMIND.CurrentDifficultyCat()
-    if InMythicPlusKey() then
-        return "d_mplus"
-    end
+    if InMythicPlusKey() then return "d_mplus" end
     local it, skinData = _cachedIType, _cachedDiffID
     if it == "party" then
-        if skinData == 23 or skinData == 8 then
-            return "d_mythic"
-        end
-        if skinData == 2 then
-            return "d_heroic"
-        end
-        if skinData == 1 then
-            return "d_normal"
-        end
-        if skinData == 24 then
-            return "d_timewalking"
-        end
-        if skinData == 205 then
-            return "d_follower"
-        end
+        if skinData == 23 or skinData == 8 then return "d_mythic" end
+        if skinData == 2 then return "d_heroic" end
+        if skinData == 1 then return "d_normal" end
+        if skinData == 24 then return "d_timewalking" end
+        if skinData == 205 then return "d_follower" end
     elseif it == "raid" then
-        if IsMythicRaidDiff(skinData) then
-            return "r_mythic"
-        end
-        if skinData == 15 or skinData == 6 then
-            return "r_heroic"
-        end
-        if skinData == 14 or skinData == 3 or skinData == 4 or skinData == 5 then
-            return "r_normal"
-        end
-        if skinData == 17 or skinData == 7 then
-            return "r_lfr"
-        end
-        if skinData == 33 then
-            return "d_timewalking"
-        end
+        if IsMythicRaidDiff(skinData) then return "r_mythic" end
+        if skinData == 15 or skinData == 6 then return "r_heroic" end
+        if skinData == 14 or skinData == 3 or skinData == 4 or skinData == 5 then return "r_normal" end
+        if skinData == 17 or skinData == 7 then return "r_lfr" end
+        if skinData == 33 then return "d_timewalking" end
         -- WoW Forever raids report the legacy 40- and 20-player ids; they feed
         -- the Forever section's "Raids" bucket. Retail leaves them unmapped.
-        if REMIND.FOREVER and (skinData == 9 or skinData == 148) then
-            return "r_normal"
-        end
+        if REMIND.FOREVER and (skinData == 9 or skinData == 148) then return "r_normal" end
     elseif it == "scenario" then
-        if skinData == 208 then
-            return "s_delve"
-        end
+        if skinData == 208 then return "s_delve" end
     end
     return nil
 end
@@ -599,53 +511,29 @@ function REMIND.CurrentWhereBucket(inInstance)
     -- Lairs carry the World Tier flag instead of a difficulty id the allowlist
     -- knows; the instance gate keeps the flag from ever reclassifying the
     -- open world, whatever else it may be set on.
-    if inInstance and REMIND._cachedWorldTier then
-        return "lair"
-    end
+    if inInstance and REMIND._cachedWorldTier then return "lair" end
     local category = REMIND.CurrentDifficultyCat()
-    if category == "d_mplus" or category == "d_mythic" then
-        return "dungeon_mythic"
-    end
+    if category == "d_mplus" or category == "d_mythic" then return "dungeon_mythic" end
     if category == "d_heroic" or category == "d_normal" or category == "d_follower" then
         return "dungeon_nonmythic"
     end
-    if category == "d_timewalking" then
-        return "timewalking"
-    end
-    if category == "r_mythic" then
-        return "raid_mythic"
-    end
-    if category == "r_heroic" then
-        return "raid_heroic"
-    end
-    if category == "r_normal" or category == "r_lfr" then
-        return "raid_normal_lfr"
-    end
-    if category == "s_delve" then
-        return "delve"
-    end
-    if not inInstance then
-        return "open_world"
-    end
-    if _cachedIType == "scenario" then
-        return "scenario"
-    end
+    if category == "d_timewalking" then return "timewalking" end
+    if category == "r_mythic" then return "raid_mythic" end
+    if category == "r_heroic" then return "raid_heroic" end
+    if category == "r_normal" or category == "r_lfr" then return "raid_normal_lfr" end
+    if category == "s_delve" then return "delve" end
+    if not inInstance then return "open_world" end
+    if _cachedIType == "scenario" then return "scenario" end
     return nil
 end
 
 -- Per-section gate. "In Combat" is an orthogonal state gate layered on top of
 -- the location buckets.
 function REMIND.SectionShows(whereToShow, inInstance)
-    if whereToShow and whereToShow.in_combat == false and InCombat() then
-        return false
-    end
+    if whereToShow and whereToShow.in_combat == false and InCombat() then return false end
     local bucket = REMIND.CurrentWhereBucket(inInstance)
-    if not bucket then
-        return true
-    end
-    if not whereToShow then
-        return true
-    end
+    if not bucket then return true end
+    if not whereToShow then return true end
     return whereToShow[bucket] ~= false
 end
 
@@ -661,33 +549,25 @@ REMIND.SPECIALS = {
 }
 function REMIND.SpecialsWhere(co, field)
     local t = field and co[field]
-    if type(t) == "table" then
-        return t
-    end
+    if type(t) == "table" then return t end
     return co.specialsWhereToShow
 end
 -- A section set to no sound stores "none" (not nil), so it never reads
 -- through to the shared value; HandleAppearSounds skips "none".
 function REMIND.SpecialsSound(co, field)
     local snd = field and co[field]
-    if snd == nil then
-        snd = co.specialsSound
-    end
+    if snd == nil then snd = co.specialsSound end
     return snd
 end
 
 -- Bag/equip consumable call sites share the consumables section set; the key
 -- arg is retained for call-site clarity.
-function REMIND.ConsumableShows(co, key, inInstance)
-    return REMIND.SectionShows(co.whereToShow, inInstance)
-end
+function REMIND.ConsumableShows(co, key, inInstance) return REMIND.SectionShows(co.whereToShow, inInstance) end
 
 -- Global Display thresholds. "Show Below Pre-Key" is the Mythic 0 / keystone
 -- lobby value so flasks and food are topped up before the key starts.
 function REMIND.GetShowUnderMinutes()
-    if not (saved and saved.profile) then
-        return 0
-    end
+    if not (saved and saved.profile) then return 0 end
     local disp = saved.profile.display or {}
     if (REMIND.InMythicZeroDungeon() or InPreKeyDungeon()) and _dungeonPrePull then
         return disp.showUnderMPlus or 40
@@ -698,25 +578,17 @@ end
 -- Thresholds apply everywhere except combat and active Mythic+ keys (there a
 -- reminder means the buff is fully gone).
 function REMIND.ShowUnderThresholdApplies()
-    if InCombat() or InMythicPlusKey() then
-        return false
-    end
+    if InCombat() or InMythicPlusKey() then return false end
     return true
 end
 
 function REMIND.IsUnderDuration(duration, expirationTime, sectionKey)
-    if not (saved and saved.profile and duration and expirationTime and sectionKey) then
-        return false
-    end
-    if not REMIND.ShowUnderThresholdApplies() then
-        return false
-    end
+    if not (saved and saved.profile and duration and expirationTime and sectionKey) then return false end
+    if not REMIND.ShowUnderThresholdApplies() then return false end
     local thresholdSeconds = REMIND.GetShowUnderMinutes() * 60
     if thresholdSeconds > 0 and duration >= thresholdSeconds then
         local nowTime = GetTime()
-        if expirationTime - nowTime < thresholdSeconds then
-            return true
-        end
+        if expirationTime - nowTime < thresholdSeconds then return true end
         local refreshAt = expirationTime - thresholdSeconds
         if
             refreshAt > nowTime
@@ -880,19 +752,13 @@ CludesUI.NewInternals(mod, "_abrInternals", {
     Tex = Tex,
     texCache = texCache,
     dbSetters = {
-        function(val)
-            saved = val
-        end,
+        function(val) saved = val end,
     },
     inCombatSetters = {
-        function(val)
-            _eabrInCombat = val
-        end,
+        function(val) _eabrInCombat = val end,
     },
     outlineSetters = {
-        function(val)
-            _cachedOutline = val
-        end,
+        function(val) _cachedOutline = val end,
     },
     huntersMarkSetters = {},
     panelOpenSetters = {},

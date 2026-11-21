@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_Color.lua
 --  Color widgets: HSV helpers, the color picker popup, the color swatches
@@ -90,26 +88,18 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     local PICKER_MAX_SWATCHES = 10
 
     local function GetPickerDB()
-        if not CludesUIDB then
-            return {}
-        end
-        if not CludesUIDB.colorPicker then
-            CludesUIDB.colorPicker = {}
-        end
+        if not CludesUIDB then return {} end
+        if not CludesUIDB.colorPicker then CludesUIDB.colorPicker = {} end
         return CludesUIDB.colorPicker
     end
     local function GetRecentColorsDB()
         local saved = GetPickerDB()
-        if not saved.recentColors then
-            saved.recentColors = {}
-        end
+        if not saved.recentColors then saved.recentColors = {} end
         return saved.recentColors
     end
     local function GetFavoritesDB()
         local saved = GetPickerDB()
-        if not saved.favorites then
-            saved.favorites = {}
-        end
+        if not saved.favorites then saved.favorites = {} end
         return saved.favorites
     end
     local function ColorKey(red, green, blue)
@@ -124,9 +114,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local saved = GetRecentColorsDB()
         local key = ColorKey(red, green, blue)
         for idx = #saved, 1, -1 do
-            if ColorKey(saved[idx][1], saved[idx][2], saved[idx][3]) == key then
-                table.remove(saved, idx)
-            end
+            if ColorKey(saved[idx][1], saved[idx][2], saved[idx][3]) == key then table.remove(saved, idx) end
         end
         table.insert(saved, 1, { red, green, blue })
         while #saved > PICKER_MAX_SWATCHES do
@@ -136,9 +124,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     local function IsFavorite(red, green, blue)
         local key = ColorKey(red, green, blue)
         for _, c in ipairs(GetFavoritesDB()) do
-            if ColorKey(c[1], c[2], c[3]) == key then
-                return true
-            end
+            if ColorKey(c[1], c[2], c[3]) == key then return true end
         end
         return false
     end
@@ -198,9 +184,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         clickOffFrame:SetScript("OnEvent", function(_, evt)
             if evt == "GLOBAL_MOUSE_DOWN" then
                 if dialog:IsShown() and not dialog:IsMouseOver() then
-                    if cancelFunc then
-                        cancelFunc()
-                    end
+                    if cancelFunc then cancelFunc() end
                     dialog:Hide()
                 end
             end
@@ -232,12 +216,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         titleBar:SetPoint("TOPRIGHT")
         titleBar:EnableMouse(true)
         titleBar:RegisterForDrag("LeftButton")
-        titleBar:SetScript("OnDragStart", function()
-            dialog:StartMoving()
-        end)
-        titleBar:SetScript("OnDragStop", function()
-            dialog:StopMovingOrSizing()
-        end)
+        titleBar:SetScript("OnDragStart", function() dialog:StartMoving() end)
+        titleBar:SetScript("OnDragStop", function() dialog:StopMovingOrSizing() end)
         -- House look: an accent cap, a header band (to just above the colour
         -- field) with a hairline under it, and the title on its left.
         local band = dialog:CreateTexture(nil, "BACKGROUND", nil, 2)
@@ -284,20 +264,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             closeBrd:SetColor(1, 1, 1, 0.40)
         end)
         closeBtn:SetScript("OnClick", function()
-            if cancelFunc then
-                cancelFunc()
-            end
+            if cancelFunc then cancelFunc() end
             dialog:Hide()
         end)
 
         -- Getters kept Blizzard-API-compatible
         local outR, outG, outB, outA = 1, 1, 1, 1
-        function dialog:GetColorRGB()
-            return outR, outG, outB
-        end
-        function dialog:GetColorAlpha()
-            return outA
-        end
+        function dialog:GetColorRGB() return outR, outG, outB end
+        function dialog:GetColorAlpha() return outA end
 
         -- Forward declarations
         local UpdateSVPadHue, UpdateSVCrosshair, UpdateHueIndicator
@@ -305,42 +279,22 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local newPreviewTex, prevPreviewTex
 
         local function NotifySwatch()
-            if swatchFunc then
-                swatchFunc()
-            end
-            if hasOpacity and opacityFunc then
-                opacityFunc()
-            end
+            if swatchFunc then swatchFunc() end
+            if hasOpacity and opacityFunc then opacityFunc() end
         end
 
         local function UpdateAllControls()
-            if updating then
-                return
-            end
+            if updating then return end
             updating = true
             local red, green, blue = HSVtoRGB(currentH, currentS, currentV)
             outR, outG, outB, outA = red, green, blue, currentA
-            if UpdateSVPadHue then
-                UpdateSVPadHue(currentH)
-            end
-            if UpdateSVCrosshair then
-                UpdateSVCrosshair(currentS, currentV)
-            end
-            if UpdateHueIndicator then
-                UpdateHueIndicator(currentH)
-            end
-            if UpdateAlphaBar then
-                UpdateAlphaBar(red, green, blue, currentA)
-            end
-            if UpdateHexInput then
-                UpdateHexInput(red, green, blue)
-            end
-            if UpdateOpacityInput then
-                UpdateOpacityInput(currentA)
-            end
-            if newPreviewTex then
-                newPreviewTex:SetColorTexture(red, green, blue, currentA)
-            end
+            if UpdateSVPadHue then UpdateSVPadHue(currentH) end
+            if UpdateSVCrosshair then UpdateSVCrosshair(currentS, currentV) end
+            if UpdateHueIndicator then UpdateHueIndicator(currentH) end
+            if UpdateAlphaBar then UpdateAlphaBar(red, green, blue, currentA) end
+            if UpdateHexInput then UpdateHexInput(red, green, blue) end
+            if UpdateOpacityInput then UpdateOpacityInput(currentA) end
+            if newPreviewTex then newPreviewTex:SetColorTexture(red, green, blue, currentA) end
             updating = false
         end
 
@@ -538,9 +492,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 ck:SetSize(CK, CK)
                 ck:SetPoint("TOPLEFT", alphaBar, "TOPLEFT", col * CK, -row * CK)
                 ck:SetColorTexture(c, c, c, 1)
-                if alphaMask then
-                    ck:AddMaskTexture(alphaMask)
-                end
+                if alphaMask then ck:AddMaskTexture(alphaMask) end
             end
         end
 
@@ -665,13 +617,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local lastValidHex = "FFFFFF"
         local lastHexR, lastHexG, lastHexB = -1, -1, -1
         UpdateHexInput = function(red, green, blue)
-            if hexBox:HasFocus() then
-                return
-            end
-            local ri, gi, bi = math.floor(red * 255 + 0.5), math.floor(green * 255 + 0.5), math.floor(blue * 255 + 0.5)
-            if ri == lastHexR and gi == lastHexG and bi == lastHexB then
-                return
-            end
+            if hexBox:HasFocus() then return end
+            local ri, gi, bi =
+                math.floor(red * 255 + 0.5), math.floor(green * 255 + 0.5), math.floor(blue * 255 + 0.5)
+            if ri == lastHexR and gi == lastHexG and bi == lastHexB then return end
             lastHexR, lastHexG, lastHexB = ri, gi, bi
             local hex = string.format("%02X%02X%02X", ri, gi, bi)
             lastValidHex = hex
@@ -682,12 +631,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         -- entry only, as three digits are also the first half of six.
         local function ParseHex(text, short)
             local digits = (text or ""):upper():gsub("[^%dA-F]", "")
-            if short and #digits == 3 then
-                digits = digits:gsub("(.)", "%1%1")
-            end
-            if #digits == 6 then
-                return digits
-            end
+            if short and #digits == 3 then digits = digits:gsub("(.)", "%1%1") end
+            if #digits == 6 then return digits end
         end
         local function ApplyHex(digits)
             local ri, gi, bi =
@@ -718,28 +663,18 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             hexBox:SetText(lastValidHex)
             hexBox:ClearFocus()
             hexEscaping = false
-            if cancelFunc then
-                cancelFunc()
-            end
+            if cancelFunc then cancelFunc() end
             dialog:Hide()
         end)
         hexBox:SetScript("OnEditFocusLost", function()
-            if not hexEscaping then
-                CommitHex()
-            end
+            if not hexEscaping then CommitHex() end
         end)
-        hexBox:SetScript("OnEditFocusGained", function()
-            hexBox:HighlightText()
-        end)
+        hexBox:SetScript("OnEditFocusGained", function() hexBox:HighlightText() end)
         hexBox:SetScript("OnTextChanged", function(self, userInput)
-            if not self:HasFocus() then
-                return
-            end
+            if not self:HasFocus() then return end
             -- A whole colour typed or pasted shows at once.
             local digits = ParseHex(self:GetText())
-            if digits and digits ~= lastValidHex then
-                ApplyHex(digits)
-            end
+            if digits and digits ~= lastValidHex then ApplyHex(digits) end
         end)
 
         -- Opacity input: shown only with an alpha slider, below Hex# and styled identically. Integer percentage, 0-100.
@@ -765,13 +700,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         local lastOpacityPct = -1
         UpdateOpacityInput = function(a)
-            if opacityBox:HasFocus() then
-                return
-            end
+            if opacityBox:HasFocus() then return end
             local pct = math.floor((a or 1) * 100 + 0.5)
-            if pct == lastOpacityPct then
-                return
-            end
+            if pct == lastOpacityPct then return end
             lastOpacityPct = pct
             opacityBox:SetText(tostring(pct))
         end
@@ -800,23 +731,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             opacityBox:SetText(tostring(math.floor(currentA * 100 + 0.5)))
             opacityBox:ClearFocus()
             opacityEscaping = false
-            if cancelFunc then
-                cancelFunc()
-            end
+            if cancelFunc then cancelFunc() end
             dialog:Hide()
         end)
         opacityBox:SetScript("OnEditFocusLost", function()
-            if not opacityEscaping then
-                ApplyOpacityText(true)
-            end
+            if not opacityEscaping then ApplyOpacityText(true) end
         end)
-        opacityBox:SetScript("OnEditFocusGained", function()
-            opacityBox:HighlightText()
-        end)
+        opacityBox:SetScript("OnEditFocusGained", function() opacityBox:HighlightText() end)
         opacityBox:SetScript("OnTextChanged", function(self, userInput)
-            if not self:HasFocus() then
-                return
-            end
+            if not self:HasFocus() then return end
             ApplyOpacityText(false)
         end)
         opacityLbl:Hide()
@@ -846,12 +769,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         cancelText:SetPoint("CENTER")
         cancelText:SetText(CUI.L("cancel"))
         cancelText:SetTextColor(1, 1, 1, 0.4)
-        cancelBtn:SetScript("OnEnter", function()
-            cancelText:SetTextColor(1, 1, 1, 0.7)
-        end)
-        cancelBtn:SetScript("OnLeave", function()
-            cancelText:SetTextColor(1, 1, 1, 0.4)
-        end)
+        cancelBtn:SetScript("OnEnter", function() cancelText:SetTextColor(1, 1, 1, 0.7) end)
+        cancelBtn:SetScript("OnLeave", function() cancelText:SetTextColor(1, 1, 1, 0.4) end)
         cancelBtn:SetScript("OnClick", function()
             _confirmed = false
             dialog:Hide()
@@ -874,9 +793,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             CUI.RoundBody(button, texture)
             button:SetScript("OnEnter", function(self)
                 local color = self._color
-                if not color then
-                    return
-                end
+                if not color then return end
                 local hex = string.format(
                     "%02X%02X%02X",
                     math.floor(color[1] * 255 + 0.5),
@@ -888,15 +805,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 -- Anchor on the hovered swatch so the tooltip sits directly above it (default placement is BOTTOM -> anchor TOP).
                 ShowWidgetTooltip(self, "|cff" .. hex .. "#|r" .. hex .. "\n" .. hint)
             end)
-            button:SetScript("OnLeave", function()
-                HideWidgetTooltip()
-            end)
+            button:SetScript("OnLeave", function() HideWidgetTooltip() end)
             button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
             button:SetScript("OnClick", function(self, mouseButton)
                 local color = self._color
-                if not color then
-                    return
-                end
+                if not color then return end
                 if mouseButton == "RightButton" then
                     if isFavorites or not IsFavorite(color[1], color[2], color[3]) then
                         ToggleFavorite(color[1], color[2], color[3])
@@ -969,9 +882,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local padOpener
         dialog:SetScript("OnHide", function()
             CUI._colorPickerOpen = false
-            if not _confirmed and cancelFunc then
-                cancelFunc()
-            end
+            if not _confirmed and cancelFunc then cancelFunc() end
             _confirmed = false
             svDragging = false
             hueDragging = false
@@ -992,17 +903,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             if padOpener then
                 local opener = padOpener
                 padOpener = nil
-                if CUI.PadCursorShown() then
-                    CUI.PadFocus(opener)
-                end
+                if CUI.PadCursorShown() then CUI.PadFocus(opener) end
             end
         end)
         CUI.RegisterEscapeClose(dialog)
 
         function dialog:Open(details, anchor)
-            if dialog:IsShown() and cancelFunc then
-                cancelFunc()
-            end
+            if dialog:IsShown() and cancelFunc then cancelFunc() end
             swatchFunc = details.swatchFunc
             opacityFunc = details.opacityFunc
             cancelFunc = details.cancelFunc
@@ -1062,9 +969,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             dialog:Show()
             UpdateAllControls()
             -- Controller cursor: into the picker, on OK (its first stop would be the close box).
-            if CUI.PadCursorShown() then
-                CUI.PadFocus(okBtn)
-            end
+            if CUI.PadCursorShown() then CUI.PadFocus(okBtn) end
         end
 
         -- Spec Overrides auto-capture: color picker edits attribute to the slot whose swatch opened it.
@@ -1082,9 +987,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     local function BuildColorSwatch(parentFrame, baseLevel, getValue, setValue, hasAlpha, overrideSize)
         -- Search prebuild on an absorber row: the swatch indexes nothing, so none is built.
         local standIn = PrebuildStandIn(parentFrame)
-        if standIn then
-            return standIn, standIn
-        end
+        if standIn then return standIn, standIn end
         -- Spec Overrides auto-capture (see BuildToggleControl): fires for direct swatch writes and every color-picker change routed through it. The slot is read before the setter runs: a setter that rebuilds the page may dress the frames again for another slot.
         local userSet = setValue -- the caller's own setter, for picker writes made after a rebuild (OnClick)
         do
@@ -1114,9 +1017,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local borderBuilt = false
 
         local function BuildBorder()
-            if borderBuilt then
-                return
-            end
+            if borderBuilt then return end
             borderBuilt = true
             -- The rounded outline sits on a pixel layer (1 px at every Window
             -- Scale) on the swatch's edge; the fill takes the same shape.
@@ -1136,13 +1037,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         -- Border builds lazily on first show, or now if already visible
         colorSwatch:HookScript("OnShow", function()
-            if not borderBuilt then
-                BuildBorder()
-            end
+            if not borderBuilt then BuildBorder() end
         end)
-        if colorSwatch:IsVisible() then
-            BuildBorder()
-        end
+        if colorSwatch:IsVisible() then BuildBorder() end
 
         colorSwatch:SetScript("OnClick", function()
             local red, green, blue, a = getValue()
@@ -1152,9 +1049,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             -- open (page reuse) can dress this swatch again for another use, or
             -- leave it idle; what shows then is that rebuild's own paint.
             local openGen = PoolGen(colorSwatch)
-            local function SameDress()
-                return PoolGen(colorSwatch) == openGen and not PoolIsIdle(colorSwatch)
-            end
+            local function SameDress() return PoolGen(colorSwatch) == openGen and not PoolIsIdle(colorSwatch) end
             -- The slot the picker writes for, taken as it opens (Spec Overrides):
             -- every write names it, whatever a rebuild has made of the swatch
             -- since (dressed again for another slot, or left on a parked row).
@@ -1172,31 +1067,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
             local function OnColorChanged()
                 local dialog = CUI._colorPickerPopup
-                if not dialog then
-                    return
-                end
+                if not dialog then return end
                 local cr, cg, checkBtn = dialog:GetColorRGB()
                 local ca = hasAlpha and dialog:GetColorAlpha() or 1
-                if SameDress() then
-                    sFill:SetColorTexture(cr, cg, checkBtn, ca)
-                end
-                if Write(cr, cg, checkBtn, ca) then
-                    UpdateSwatch()
-                end
+                if SameDress() then sFill:SetColorTexture(cr, cg, checkBtn, ca) end
+                if Write(cr, cg, checkBtn, ca) then UpdateSwatch() end
             end
             local details = {
-                swatchFunc = function()
-                    OnColorChanged()
-                end,
+                swatchFunc = function() OnColorChanged() end,
                 hasOpacity = hasAlpha,
-                opacityFunc = function()
-                    OnColorChanged()
-                end,
+                opacityFunc = function() OnColorChanged() end,
                 opacity = a,
                 cancelFunc = function()
-                    if Write(snapR, snapG, snapB, snapA) then
-                        UpdateSwatch()
-                    end
+                    if Write(snapR, snapG, snapB, snapA) then UpdateSwatch() end
                 end,
                 r = red,
                 g = green,
@@ -1236,46 +1119,35 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end, function(red, green, blue)
             options.setCustomRGB(red, green, blue)
             options.setMode("custom")
-            if options.onChange then
-                options.onChange()
-            end
+            if options.onChange then options.onChange() end
         end, options.hasAlpha, options.overrideSize)
-        customSwatch:HookScript("OnEnter", function()
-            ShowWidgetTooltip(customSwatch, "Custom Color")
-        end)
-        customSwatch:HookScript("OnLeave", function()
-            HideWidgetTooltip()
-        end)
+        customSwatch:HookScript("OnEnter", function() ShowWidgetTooltip(customSwatch, "Custom Color") end)
+        customSwatch:HookScript("OnLeave", function() HideWidgetTooltip() end)
         -- Suite-wide multiSwatch convention: clicking an INACTIVE custom swatch only selects custom mode; the picker opens on a second click while custom is already active.
         customSwatch._eabOrigClick = customSwatch:GetScript("OnClick")
         customSwatch:SetScript("OnClick", function(self)
             if options.getMode() ~= "custom" then
                 options.setMode("custom")
-                if options.onChange then
-                    options.onChange()
-                end
+                if options.onChange then options.onChange() end
                 return
             end
-            if self._eabOrigClick then
-                self._eabOrigClick(self)
-            end
+            if self._eabOrigClick then self._eabOrigClick(self) end
         end)
 
-        local defaultSwatch = BuildColorSwatch(parentFrame, baseLevel, function()
-            return DEFAULT_UNTINTED_R, DEFAULT_UNTINTED_G, DEFAULT_UNTINTED_B, 1
-        end, function() end, options.hasAlpha, options.overrideSize)
+        local defaultSwatch = BuildColorSwatch(
+            parentFrame,
+            baseLevel,
+            function() return DEFAULT_UNTINTED_R, DEFAULT_UNTINTED_G, DEFAULT_UNTINTED_B, 1 end,
+            function() end,
+            options.hasAlpha,
+            options.overrideSize
+        )
         defaultSwatch:SetScript("OnClick", function()
             options.setMode("default")
-            if options.onChange then
-                options.onChange()
-            end
+            if options.onChange then options.onChange() end
         end)
-        defaultSwatch:SetScript("OnEnter", function()
-            ShowWidgetTooltip(defaultSwatch, "Default")
-        end)
-        defaultSwatch:SetScript("OnLeave", function()
-            HideWidgetTooltip()
-        end)
+        defaultSwatch:SetScript("OnEnter", function() ShowWidgetTooltip(defaultSwatch, "Default") end)
+        defaultSwatch:SetScript("OnLeave", function() HideWidgetTooltip() end)
 
         local classSwatch
         if options.hasClassColor then
@@ -1285,16 +1157,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end, function() end, options.hasAlpha, options.overrideSize)
             classSwatch:SetScript("OnClick", function()
                 options.setMode("class")
-                if options.onChange then
-                    options.onChange()
-                end
+                if options.onChange then options.onChange() end
             end)
-            classSwatch:SetScript("OnEnter", function()
-                ShowWidgetTooltip(classSwatch, "Class Colored")
-            end)
-            classSwatch:SetScript("OnLeave", function()
-                HideWidgetTooltip()
-            end)
+            classSwatch:SetScript("OnEnter", function() ShowWidgetTooltip(classSwatch, "Class Colored") end)
+            classSwatch:SetScript("OnLeave", function() HideWidgetTooltip() end)
         end
 
         local function Update()
@@ -1304,15 +1170,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 local a = options.disabledAlpha or 0.3
                 customSwatch:SetAlpha(a)
                 defaultSwatch:SetAlpha(a)
-                if classSwatch then
-                    classSwatch:SetAlpha(a)
-                end
+                if classSwatch then classSwatch:SetAlpha(a) end
             else
                 customSwatch:SetAlpha(mode == "custom" and 1 or 0.3)
                 defaultSwatch:SetAlpha(mode == "default" and 1 or 0.3)
-                if classSwatch then
-                    classSwatch:SetAlpha(mode == "class" and 1 or 0.3)
-                end
+                if classSwatch then classSwatch:SetAlpha(mode == "class" and 1 or 0.3) end
             end
             updateCustom()
         end
@@ -1342,9 +1204,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         -- Public refresh so external code can update the swatch after bar changes
         widget.RefreshSwatch = UpdateSwatch
-        RegisterWidgetRefresh(function()
-            UpdateSwatch()
-        end)
+        RegisterWidgetRefresh(function() UpdateSwatch() end)
 
         return widget, ROW_H
     end

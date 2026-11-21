@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIMinimap.lua
 --  Custom minimap skin and layout for CludesUI.
@@ -204,17 +202,11 @@ end
 local function GetBorderStyleColor(conf)
     if conf.borderUseClassColor and CludesUI.GetClassColor then
         local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
-        if classColor then
-            return classColor.r, classColor.g, classColor.b, conf.borderA or 1
-        end
+        if classColor then return classColor.r, classColor.g, classColor.b, conf.borderA or 1 end
     end
-    if conf.useClassColor then
-        return ACC.r, ACC.g, ACC.b, conf.borderA or 1
-    end
+    if conf.useClassColor then return ACC.r, ACC.g, ACC.b, conf.borderA or 1 end
     local color = conf.borderColor
-    if color then
-        return color.r, color.g, color.b, conf.borderA or 1
-    end
+    if color then return color.r, color.g, color.b, conf.borderA or 1 end
     return GetBorderColor(conf)
 end
 
@@ -222,9 +214,7 @@ end
 -- a square frame on the Forever client (its bronze frame takes no colour, and
 -- the border colour rows are hidden there). An EBS field.
 function SKIN._EdgeBoxColor(conf)
-    if SKIN._fvSquare then
-        return 0, 0, 0
-    end
+    if SKIN._fvSquare then return 0, 0, 0 end
     return GetBorderStyleColor(conf)
 end
 
@@ -234,9 +224,7 @@ end
 local ApplyAll -- forward declaration
 
 -- Keyed queue entry: repeat requests before regen collapse into one apply.
-local function QueueApplyAll()
-    mod.CombatQueue.Defer("ApplyAll", ApplyAll)
-end
+local function QueueApplyAll() mod.CombatQueue.Defer("ApplyAll", ApplyAll) end
 
 -------------------------------------------------------------------------------
 --  Minimap Skin
@@ -289,9 +277,7 @@ CludesUI.NewInternals(mod, "_internals", {
     QueueApplyAll = QueueApplyAll,
     TEMP_DISABLED = TEMP_DISABLED,
     applyAllSetters = {
-        function(val)
-            ApplyAll = val
-        end,
+        function(val) ApplyAll = val end,
     },
     applyMinimapSetters = {},
     moEvaluateSetters = {},

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Threat.lua
 --
@@ -17,9 +15,7 @@ local Pix = CludesUI.PP
 local Inner = mod._internals
 local frameList, GetSelectedFont, SetFSFont = Inner.frames, Inner.GetSelectedFont, Inner.SetFSFont
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 --  Player Threat border (additive "Shadow" style on the PLAYER frame)
@@ -36,12 +32,8 @@ local _ptShownState -- nil / "has" / "near" -- skip redundant re-apply
 -- party/raid/delve instances only (mirrors the nameplate threat-context gate)
 local function PT_InInstancedContent()
     local _, instanceType, difficultyID = GetInstanceInfo()
-    if (tonumber(difficultyID) or 0) == 0 then
-        return false
-    end
-    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
-        return false
-    end
+    if (tonumber(difficultyID) or 0) == 0 then return false end
+    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then return false end
     local isDelve = C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress()
     return instanceType == "party" or instanceType == "raid" or isDelve
 end
@@ -50,9 +42,7 @@ end
 -- sits behind the frame like the real "Shadow" border style, separate from the
 -- unified border so it ADDS to whatever border the user already has.
 local function PT_EnsureBorder(popFrame)
-    if popFrame._threatShadowBorder then
-        return popFrame._threatShadowBorder
-    end
+    if popFrame._threatShadowBorder then return popFrame._threatShadowBorder end
     local widget = CreateFrame("Frame", nil, popFrame)
     Pix.Point(widget, "TOPLEFT", popFrame, "TOPLEFT", 0, 0)
     Pix.Point(widget, "BOTTOMRIGHT", popFrame, "BOTTOMRIGHT", 0, 0)
@@ -64,9 +54,7 @@ end
 
 local function PT_HideGlow()
     local popFrame = frameList.player
-    if popFrame and popFrame._threatShadowBorder then
-        popFrame._threatShadowBorder:Hide()
-    end
+    if popFrame and popFrame._threatShadowBorder then popFrame._threatShadowBorder:Hide() end
     _ptShownState = nil
 end
 
@@ -74,13 +62,25 @@ end
 -- identical to picking "Shadow" at size 2 from the Border Style dropdown.
 local function PT_Show(state, color)
     local popFrame = frameList.player
-    if not popFrame then
-        return
-    end
+    if not popFrame then return end
     local widget = PT_EnsureBorder(popFrame)
     if _ptShownState ~= state then
         _ptShownState = state
-        CludesUI.ApplyBorderStyle(widget, 2, color.r, color.g, color.b, 1, "shadow", nil, nil, nil, nil, "unitframes", 2)
+        CludesUI.ApplyBorderStyle(
+            widget,
+            2,
+            color.r,
+            color.g,
+            color.b,
+            1,
+            "shadow",
+            nil,
+            nil,
+            nil,
+            nil,
+            "unitframes",
+            2
+        )
     else
         CludesUI.SetBorderStyleColor(widget, color.r, color.g, color.b, 1)
     end
@@ -93,9 +93,7 @@ function mod.UpdatePlayerThreatBorder()
         PT_HideGlow()
         return
     end
-    if not frameList.player then
-        return
-    end
+    if not frameList.player then return end
     if not PT_InInstancedContent() or not IsInGroup() then
         PT_HideGlow()
         return
@@ -119,9 +117,7 @@ function mod.SetPlayerThreatEnabled(enabled)
     if enabled then
         if not _ptWatcher then
             _ptWatcher = CreateFrame("Frame")
-            _ptWatcher:SetScript("OnEvent", function()
-                mod.UpdatePlayerThreatBorder()
-            end)
+            _ptWatcher:SetScript("OnEvent", function() mod.UpdatePlayerThreatBorder() end)
         end
         _ptWatcher:RegisterUnitEvent("UNIT_THREAT_SITUATION_UPDATE", "player")
         _ptWatcher:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -130,9 +126,7 @@ function mod.SetPlayerThreatEnabled(enabled)
         _ptWatcher:RegisterEvent("GROUP_ROSTER_UPDATE")
         mod.UpdatePlayerThreatBorder()
     else
-        if _ptWatcher then
-            _ptWatcher:UnregisterAllEvents()
-        end
+        if _ptWatcher then _ptWatcher:UnregisterAllEvents() end
         PT_HideGlow()
     end
 end
@@ -202,9 +196,7 @@ if CludesUI.IS_FOREVER then
     -- (a readable 0 hides the text), then it goes straight to PaintThreatPct.
     local function PaintUnitThreat(unitToken)
         local widget = frameList[unitToken]
-        if not (widget and widget._textOverlay) then
-            return
-        end
+        if not (widget and widget._textOverlay) then return end
         local fontStr = widget._threatPctText
         local profile = saved.profile
         if profile.threatPctEnabled and (unitToken == "target" or profile.threatPctFocus) then
@@ -221,9 +213,7 @@ if CludesUI.IS_FOREVER then
                 return
             end
         end
-        if fontStr then
-            fontStr:Hide()
-        end
+        if fontStr then fontStr:Hide() end
     end
 
     local function PaintAllThreat()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_Where.lua - Where to Show, for every Mythic+ Tools feature.
 --
@@ -102,23 +100,17 @@ local function Bucket()
     difficulty = tonumber(difficulty) or 0
     -- Lairs carry the World Tier flag instead of a known difficulty; only
     -- inside an instance, so the flag never reclassifies the open world.
-    if worldTier == true and kind ~= "none" then
-        return "lair"
-    end
+    if worldTier == true and kind ~= "none" then return "lair" end
     local byDifficulty = BY_DIFFICULTY[kind]
     if byDifficulty then
         local bucket = byDifficulty[difficulty]
-        if bucket then
-            return bucket
-        end
+        if bucket then return bucket end
     elseif kind == "scenario" then
         return difficulty == 208 and "delve" or "scenario"
     elseif BY_TYPE[kind] then
         return BY_TYPE[kind]
     end
-    if IsInInstance and not IsInInstance() then
-        return "open_world"
-    end
+    if IsInInstance and not IsInInstance() then return "open_world" end
     return nil -- content not mapped: it always shows, as in AuraBuffReminders
 end
 MTWhere.Bucket = Bucket
@@ -133,25 +125,17 @@ MTWhere.Bucket = Bucket
 local inCombat = false
 
 local function ReadCombat()
-    if not InCombatLockdown then
-        return false
-    end
+    if not InCombatLockdown then return false end
     local ok, value = pcall(InCombatLockdown)
-    if not ok then
-        return false
-    end
+    if not ok then return false end
     if issecretvalue then
         local checked, secret = pcall(issecretvalue, value)
-        if checked and secret then
-            return false
-        end
+        if checked and secret then return false end
     end
     return value and true or false
 end
 
-function MTWhere.InCombat()
-    return inCombat
-end
+function MTWhere.InCombat() return inCombat end
 
 --------------------------------------------------------------------------------
 --  The filter: nothing ticked shows everywhere. Ticked buckets limit WHERE,
@@ -159,14 +143,10 @@ end
 --  and a bucket the feature does not offer, never hide.
 --------------------------------------------------------------------------------
 function MTWhere.Shows(filter, keySet)
-    if not filter or not next(filter) then
-        return true
-    end
+    if not filter or not next(filter) then return true end
     local inTicked, outTicked = filter.in_combat == true, filter.out_of_combat == true
     -- Exactly one ticked: it must match (both or neither = either state).
-    if inTicked ~= outTicked and inCombat ~= inTicked then
-        return false
-    end
+    if inTicked ~= outTicked and inCombat ~= inTicked then return false end
     local anyPlace = false
     for _, key in ipairs(keySet.list) do
         if filter[key] == true then
@@ -174,13 +154,9 @@ function MTWhere.Shows(filter, keySet)
             break
         end
     end
-    if not anyPlace then
-        return true
-    end
+    if not anyPlace then return true end
     local bucket = Bucket()
-    if not bucket or not keySet.set[bucket] then
-        return true
-    end
+    if not bucket or not keySet.set[bucket] then return true end
     return filter[bucket] == true
 end
 
@@ -209,9 +185,7 @@ local securecallfunction = securecallfunction
 local function Tell(event)
     for i = #callbacks, 1, -1 do
         local fn = callbacks[i]
-        if fn then
-            securecallfunction(fn, event)
-        end
+        if fn then securecallfunction(fn, event) end
     end
 end
 
@@ -273,15 +247,11 @@ end
 -- The last subscriber leaving disarms the watcher.
 function MTWhere.Unsubscribe(key)
     local slot = slotOf[key]
-    if not slot then
-        return
-    end
+    if not slot then return end
     local last = #callbacks
     callbacks[slot], keys[slot] = callbacks[last], keys[last]
     slotOf[keys[slot]] = slot
     callbacks[last], keys[last] = nil, nil
     slotOf[key] = nil
-    if last == 1 then
-        watcher:UnregisterAllEvents()
-    end
+    if last == 1 then watcher:UnregisterAllEvents() end
 end

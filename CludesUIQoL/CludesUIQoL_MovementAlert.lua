@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_MovementAlert.lua
 --  Three independent on-screen trackers for class mobility abilities:
@@ -145,9 +143,7 @@ CludesUI._MovementDefaultOff = MOVEMENT_DEFAULT_OFF
 -- Effective enabled state for a preset/tracked spell id: an explicit saved
 -- enabled wins; otherwise absence means enabled unless default-off.
 local function SpellEffectivelyEnabled(overrideId, alertSpell)
-    if overrideId and overrideId.enabled ~= nil then
-        return overrideId.enabled ~= false
-    end
+    if overrideId and overrideId.enabled ~= nil then return overrideId.enabled ~= false end
     return not MOVEMENT_DEFAULT_OFF[alertSpell]
 end
 
@@ -171,15 +167,11 @@ do
 end
 
 local function GetKnownCategoryDuration(alertSpell)
-    if SPELL_CATEGORY_DURATION[alertSpell] then
-        return SPELL_CATEGORY_DURATION[alertSpell]
-    end
+    if SPELL_CATEGORY_DURATION[alertSpell] then return SPELL_CATEGORY_DURATION[alertSpell] end
     local set = SPELL_ALIAS_MAP[alertSpell]
     if set then
         for _, ident in ipairs(set) do
-            if SPELL_CATEGORY_DURATION[ident] then
-                return SPELL_CATEGORY_DURATION[ident]
-            end
+            if SPELL_CATEGORY_DURATION[ident] then return SPELL_CATEGORY_DURATION[ident] end
         end
     end
     return 0
@@ -206,33 +198,23 @@ local MIN_REAL_COOLDOWN = 3
 -- GetSpellBaseCooldown is the GLOBAL (client-verified: no C_Spell form exists).
 local function ResolveBaseDuration(record)
     local base = record and record.baseDuration
-    if type(base) == "number" and not IsSecret(base) then
-        return base
-    end
+    if type(base) == "number" and not IsSecret(base) then return base end
     local ident = record and (record.baseSpellId or record.spellId)
-    if not ident then
-        return 0
-    end
+    if not ident then return 0 end
     if GetSpellBaseCooldown then
         local ms = GetSpellBaseCooldown(ident)
         if type(ms) == "number" and not IsSecret(ms) then
             local secs = ms / 1000
-            if secs > MIN_REAL_COOLDOWN then
-                return secs
-            end
+            if secs > MIN_REAL_COOLDOWN then return secs end
         end
     end
     return GetKnownCategoryDuration(ident)
 end
 
 local function IsLockoutWindow(record, seconds)
-    if type(seconds) ~= "number" or IsSecret(seconds) then
-        return false
-    end
+    if type(seconds) ~= "number" or IsSecret(seconds) then return false end
     local base = ResolveBaseDuration(record)
-    if type(base) ~= "number" or base <= MIN_REAL_COOLDOWN then
-        return false
-    end
+    if type(base) ~= "number" or base <= MIN_REAL_COOLDOWN then return false end
     return seconds < MIN_REAL_COOLDOWN
 end
 
@@ -262,17 +244,11 @@ end
 -- the longer of the two, so a user-added spell with a genuine 1-2s cooldown still
 -- tracks normally -- the same condition IsLockoutWindow applies.
 local function LockoutAlpha(record, dur)
-    if not dur or not dur.EvaluateTotalDuration then
-        return 1
-    end
+    if not dur or not dur.EvaluateTotalDuration then return 1 end
     local base = ResolveBaseDuration(record)
-    if type(base) ~= "number" or base <= MIN_REAL_COOLDOWN then
-        return 1
-    end
+    if type(base) ~= "number" or base <= MIN_REAL_COOLDOWN then return 1 end
     local curve = GetLockoutAlphaCurve()
-    if not curve then
-        return 1
-    end
+    if not curve then return 1 end
     return dur:EvaluateTotalDuration(curve, 1) or 1
 end
 
@@ -337,9 +313,7 @@ local defaultSet = {
 }
 
 local saved = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet)
-local function AlertCfg()
-    return saved.profile.movementAlert
-end
+local function AlertCfg() return saved.profile.movementAlert end
 
 -- Movement Cooldown Alert enable state: enabledClasses is a per-class
 -- checkbox set (nil = nothing checked = fully disabled). Everything at
@@ -348,44 +322,24 @@ end
 local function MovementEnabled()
     local alertCfg = AlertCfg()
     local ec = alertCfg and alertCfg.enabledClasses
-    if not ec then
-        return false
-    end
+    if not ec then return false end
     return ec[playerClassToken] == true
 end
-_G._CUI_MovementAlert_DB = function()
-    return saved
-end
+_G._CUI_MovementAlert_DB = function() return saved end
 CludesUI._ResetMovementAlert = function()
     saved:ResetProfile()
-    if CludesUI._RebuildMovementSpellLookup then
-        CludesUI._RebuildMovementSpellLookup()
-    end
-    if CludesUI._CacheMovementSpells then
-        CludesUI._CacheMovementSpells(true)
-    end
-    if CludesUI._UpdateMovementAlertEvents then
-        CludesUI._UpdateMovementAlertEvents()
-    end
-    if CludesUI._applyMovementAlert then
-        CludesUI._applyMovementAlert()
-    end
-    if CludesUI._applyTimeSpiral then
-        CludesUI._applyTimeSpiral()
-    end
-    if CludesUI._applyGateway then
-        CludesUI._applyGateway()
-    end
+    if CludesUI._RebuildMovementSpellLookup then CludesUI._RebuildMovementSpellLookup() end
+    if CludesUI._CacheMovementSpells then CludesUI._CacheMovementSpells(true) end
+    if CludesUI._UpdateMovementAlertEvents then CludesUI._UpdateMovementAlertEvents() end
+    if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
+    if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
+    if CludesUI._applyGateway then CludesUI._applyGateway() end
     -- Explicit self-correct: ApplyMovementFrame/CheckGatewayUsable only hide
     -- an actively-displayed frame when their own tracker is enabled, which
     -- ResetProfile() just turned off -- without these, a frame that was
     -- showing at reset-time stays frozen on screen.
-    if CludesUI._CheckMovementCooldown then
-        CludesUI._CheckMovementCooldown()
-    end
-    if CludesUI._CheckGatewayUsable then
-        CludesUI._CheckGatewayUsable()
-    end
+    if CludesUI._CheckMovementCooldown then CludesUI._CheckMovementCooldown() end
+    if CludesUI._CheckGatewayUsable then CludesUI._CheckGatewayUsable() end
 end
 
 -------------------------------------------------------------------------------
@@ -395,14 +349,10 @@ end
 --  sound/TTS system.
 -------------------------------------------------------------------------------
 local FALLBACK_FONT = "Fonts\\FRIZQT__.TTF"
-local function AlertFontPath()
-    return (CludesUI.GetFontPath("extras")) or FALLBACK_FONT
-end
+local function AlertFontPath() return (CludesUI.GetFontPath("extras")) or FALLBACK_FONT end
 local function AlertFontOutline()
     local o = (CludesUI.GetFontOutlineFlag("extras")) or ""
-    if not o:find("OUTLINE") then
-        o = (o == "") and "OUTLINE" or (o .. ", OUTLINE")
-    end
+    if not o:find("OUTLINE") then o = (o == "") and "OUTLINE" or (o .. ", OUTLINE") end
     return o
 end
 local function ResolveAlertColor(prefixText, useClassKey)
@@ -410,11 +360,11 @@ local function ResolveAlertColor(prefixText, useClassKey)
     if alertCfg[useClassKey] then
         local _, classToken = UnitClass("player")
         local color = classToken and CludesUI.GetClassColor(classToken)
-        if color then
-            return color.r, color.g, color.b
-        end
+        if color then return color.r, color.g, color.b end
     end
-    return alertCfg[prefixText .. "R"] or 1, alertCfg[prefixText .. "G"] or 1, alertCfg[prefixText .. "B"] or 1
+    return alertCfg[prefixText .. "R"] or 1,
+        alertCfg[prefixText .. "G"] or 1,
+        alertCfg[prefixText .. "B"] or 1
 end
 -- LSM "sound" entries are either a file path (string) or a Blizzard
 -- SoundKitID (number -- most of the built-in SOUNDKIT.* entries other addons
@@ -422,9 +372,7 @@ end
 -- type. Shared with CUI_QoL_MovementAlert_Options.lua's preview button via
 -- CludesUI._PlayLSMSound so both play a given LSM value identically.
 local function PlayLSMSound(value)
-    if not value or value == 1 then
-        return
-    end
+    if not value or value == 1 then return end
     if type(value) == "number" then
         PlaySound(value, "Master")
     else
@@ -439,13 +387,9 @@ CludesUI._PlayLSMSound = PlayLSMSound
 -- that instead of querying LSM directly a second time, so there's one sound
 -- list/preview implementation in the addon, not two.
 local function PlayAlertSound(key)
-    if not key or key == "none" then
-        return
-    end
+    if not key or key == "none" then return end
     local value = CludesUI._groupDeathSoundPaths and CludesUI._groupDeathSoundPaths[key]
-    if value then
-        PlayLSMSound(value)
-    end
+    if value then PlayLSMSound(value) end
 end
 
 -- Text-to-speech: local-only playback via C_VoiceChat. The live-client
@@ -455,12 +399,8 @@ end
 -- destination is the literal 1 (local playback). Silently no-ops if TTS
 -- isn't available instead of erroring.
 local function SpeakAlertText(voiceId, textValue, volume)
-    if not (C_VoiceChat and C_VoiceChat.SpeakText) then
-        return
-    end
-    if not textValue or textValue == "" then
-        return
-    end
+    if not (C_VoiceChat and C_VoiceChat.SpeakText) then return end
+    if not textValue or textValue == "" then return end
     pcall(C_VoiceChat.SpeakText, voiceId or 0, textValue, 1, volume or 100, true)
 end
 
@@ -539,7 +479,11 @@ local readyAlertFresh = false
 local RequestMovementCheck
 local function OnSlotCooldownDone(cooldown)
     local nowTime = GetTime()
-    if nowTime == cooldown._maBoundAt or nowTime - (cooldown._maDoneAt or 0) < 0.25 or not cooldown:GetParent():IsVisible() then
+    if
+        nowTime == cooldown._maBoundAt
+        or nowTime - (cooldown._maDoneAt or 0) < 0.25
+        or not cooldown:GetParent():IsVisible()
+    then
         return
     end
     cooldown._maDoneAt = nowTime
@@ -585,19 +529,13 @@ local function CreateDisplaySlot()
     slotRec.cdNum:SetDrawSwipe(false)
     slotRec.cdNum:SetDrawEdge(false)
     slotRec.cdNum:SetScript("OnCooldownDone", OnSlotCooldownDone)
-    if slotRec.cdNum.SetDrawBling then
-        slotRec.cdNum:SetDrawBling(false)
-    end
+    if slotRec.cdNum.SetDrawBling then slotRec.cdNum:SetDrawBling(false) end
     slotRec.cdNum:SetHideCountdownNumbers(false)
-    if slotRec.cdNum.SetCountdownFont then
-        slotRec.cdNum:SetCountdownFont("CUI_MovementAlertCdFont")
-    end
+    if slotRec.cdNum.SetCountdownFont then slotRec.cdNum:SetCountdownFont("CUI_MovementAlertCdFont") end
     -- Blizzard suppresses countdown text on short cooldowns by default, which
     -- would silently drop the number on exactly the short mobility cooldowns
     -- this feature exists for.
-    if slotRec.cdNum.SetMinimumCountdownDuration then
-        slotRec.cdNum:SetMinimumCountdownDuration(0)
-    end
+    if slotRec.cdNum.SetMinimumCountdownDuration then slotRec.cdNum:SetMinimumCountdownDuration(0) end
     -- The engine exposes the FontString it draws into, so the number can be
     -- placed and sized against our own text instead of being inferred from the
     -- host frame's geometry (which is what made it render at a different size).
@@ -627,9 +565,7 @@ local function CreateDisplaySlot()
 end
 
 local function GetDisplaySlot(index)
-    if not displayPool[index] then
-        displayPool[index] = CreateDisplaySlot()
-    end
+    if not displayPool[index] then displayPool[index] = CreateDisplaySlot() end
     return displayPool[index]
 end
 
@@ -657,7 +593,11 @@ local function StyleSlot(slotRec)
     local tR, tG, tB = ResolveAlertColor("textColor", "textColorUseClass")
     local showIcon = alertCfg.barShowIcon ~= false
     local texPath = (
-        CludesUI.ResolveTexturePath(BAR_TEXTURES, alertCfg.barTexture or "none", "Interface\\Buttons\\WHITE8x8")
+        CludesUI.ResolveTexturePath(
+            BAR_TEXTURES,
+            alertCfg.barTexture or "none",
+            "Interface\\Buttons\\WHITE8x8"
+        )
     ) or "Interface\\Buttons\\WHITE8x8"
     local iconSz = math.max(16, math.min(128, alertCfg.iconSize or 40))
 
@@ -758,9 +698,7 @@ local function BindEngineCountdown(cooldown, dur)
 end
 
 local function HideEngineCountdown(slotRec)
-    if slotRec.cdNum then
-        slotRec.cdNum:Hide()
-    end
+    if slotRec.cdNum then slotRec.cdNum:Hide() end
     -- ShowEngineCountdown slides the name off centre to make room for the
     -- number, so every render has to start from the plain centred layout or
     -- the offset accumulates across modes.
@@ -772,9 +710,7 @@ end
 
 local function ShowEngineCountdown(slotRec, showMode, dur)
     local cooldown = slotRec.cdNum
-    if not cooldown then
-        return false
-    end
+    if not cooldown then return false end
     local alertCfg = AlertCfg()
     local fontPx = math.max(8, math.min(72, alertCfg.textSize or 24))
     -- Decimals: this is the engine's version of the Show Decimal toggle. Above
@@ -786,9 +722,7 @@ local function ShowEngineCountdown(slotRec, showMode, dur)
     end
     -- Blizzard abbreviates past two minutes by default, so a 90s cooldown would
     -- print "1:30" where every other path in this feature prints "90".
-    if cooldown.SetCountdownAbbrevThreshold then
-        cooldown:SetCountdownAbbrevThreshold(0)
-    end
+    if cooldown.SetCountdownAbbrevThreshold then cooldown:SetCountdownAbbrevThreshold(0) end
     -- Layout. The number is a separate object from the name, so the pair has to
     -- be centred as a unit: reserve a fixed width for the number and slide the
     -- name half of that the other way. The width is RESERVED rather than
@@ -801,9 +735,7 @@ local function ShowEngineCountdown(slotRec, showMode, dur)
     local numberFirst = (showMode ~= "text_nd")
     -- text_d: no name at all, the number IS the text -- centre it on the slot.
     local numberOnly = (showMode == "text_d")
-    if numberOnly then
-        shift = 0
-    end
+    if numberOnly then shift = 0 end
 
     slotRec.text:ClearAllPoints()
     slotRec.text:SetPoint("CENTER", slotRec, "CENTER", numberFirst and shift or -shift, 0)
@@ -854,9 +786,7 @@ end
 -- needs the binding but none of the two-object layout above.
 local function ShowEngineCountdownCentred(slotRec, anchor, dur)
     local cooldown = slotRec.cdNum
-    if not cooldown then
-        return false
-    end
+    if not cooldown then return false end
     local alertCfg = AlertCfg()
     local fontPx = math.max(8, math.min(72, alertCfg.textSize or 24))
     local decimals = ((tonumber(alertCfg.precision) or 1) > 0) and 1 or 0
@@ -865,15 +795,11 @@ local function ShowEngineCountdownCentred(slotRec, anchor, dur)
     end
     -- Blizzard abbreviates past two minutes by default, so a 90s cooldown would
     -- print "1:30" where every other path in this feature prints "90".
-    if cooldown.SetCountdownAbbrevThreshold then
-        cooldown:SetCountdownAbbrevThreshold(0)
-    end
+    if cooldown.SetCountdownAbbrevThreshold then cooldown:SetCountdownAbbrevThreshold(0) end
     cooldown:ClearAllPoints()
     -- The host frame is created before slot.bar, so without this the number is
     -- painted under the bar's background and fill and never appears.
-    if anchor.GetFrameLevel then
-        cooldown:SetFrameLevel(anchor:GetFrameLevel() + 5)
-    end
+    if anchor.GetFrameLevel then cooldown:SetFrameLevel(anchor:GetFrameLevel() + 5) end
     local fontStr = slotRec.cdNumText
     if fontStr then
         cooldown:SetSize(1, 1)
@@ -903,18 +829,14 @@ local function SafeGetChargeInfo(alertSpell)
     local chargeInfo = C_Spell.GetSpellCharges(alertSpell)
     if not chargeInfo then
         local cached = knownChargeSpells[alertSpell]
-        if cached then
-            return true, cached.maxCh, cached.rechDur
-        end
+        if cached then return true, cached.maxCh, cached.rechDur end
         return false, 1, 0
     end
     local m = chargeInfo.maxCharges or 1
     local region = chargeInfo.cooldownDuration or 0
     if IsSecret(m) or IsSecret(region) then
         local cached = knownChargeSpells[alertSpell]
-        if cached then
-            return true, cached.maxCh, cached.rechDur
-        end
+        if cached then return true, cached.maxCh, cached.rechDur end
         return false, 1, 0
     end
     if m > 1 then
@@ -922,9 +844,7 @@ local function SafeGetChargeInfo(alertSpell)
         return true, m, region
     end
     local cached = knownChargeSpells[alertSpell]
-    if cached then
-        return true, cached.maxCh, cached.rechDur
-    end
+    if cached then return true, cached.maxCh, cached.rechDur end
     return false, m, region
 end
 
@@ -935,38 +855,28 @@ local function SafeGetBaseDuration(alertSpell)
         local dur = C_Spell.GetSpellCooldownDuration(alertSpell, true)
         if dur then
             local sum = dur:GetTotalDuration()
-            if not IsSecret(sum) and sum and sum > 1.5 then
-                return sum
-            end
+            if not IsSecret(sum) and sum and sum > 1.5 then return sum end
         end
     end
     -- Global, not C_Spell (client-verified: no C_Spell form exists). Static
     -- spell data, so it stays readable when the live cooldown is secret.
     if GetSpellBaseCooldown then
         local ms = GetSpellBaseCooldown(alertSpell)
-        if not IsSecret(ms) and ms and ms > 1500 then
-            return ms / 1000
-        end
+        if not IsSecret(ms) and ms and ms > 1500 then return ms / 1000 end
     end
     local cdInfo = C_Spell.GetSpellCooldown(alertSpell)
     if cdInfo and cdInfo.duration then
         local skinData = cdInfo.duration
-        if not IsSecret(skinData) and skinData > 1.5 then
-            return skinData
-        end
+        if not IsSecret(skinData) and skinData > 1.5 then return skinData end
     end
     return 0
 end
 
 local function PlayerSpecId()
     local specInfo = C_SpecializationInfo.GetSpecialization()
-    if not specInfo then
-        return nil
-    end
+    if not specInfo then return nil end
     local specId = C_SpecializationInfo.GetSpecializationInfo(specInfo)
-    if specId and specId > 0 then
-        return specId
-    end
+    if specId and specId > 0 then return specId end
     return nil
 end
 
@@ -1017,9 +927,7 @@ do
                             break
                         end
                     end
-                    if not dup and not skip[spellRef] then
-                        merged[#merged + 1] = spellRef
-                    end
+                    if not dup and not skip[spellRef] then merged[#merged + 1] = spellRef end
                 end
             end
         end
@@ -1030,22 +938,14 @@ end
 local function GetPlayerMovementSpells()
     local classFile = select(2, UnitClass("player"))
     local specId = PlayerSpecId()
-    if not specId then
-        return {}
-    end
+    if not specId then return {} end
 
     local overrides = AlertCfg().spellOverrides or {}
     local classAbilities = MOVEMENT_ABILITIES[classFile]
-    if not classAbilities then
-        return {}
-    end
+    if not classAbilities then return {} end
     local specAbilities = classAbilities[specId]
-    if CludesUI.IS_FOREVER then
-        specAbilities = ForeverMovementList()
-    end
-    if not specAbilities then
-        return {}
-    end
+    if CludesUI.IS_FOREVER then specAbilities = ForeverMovementList() end
+    if not specAbilities then return {} end
 
     local result, seen = {}, {}
 
@@ -1060,9 +960,7 @@ local function GetPlayerMovementSpells()
                     local shownId = alertSpell
                     if C_Spell.GetOverrideSpell then
                         local okOvr, oid = pcall(C_Spell.GetOverrideSpell, alertSpell)
-                        if okOvr and oid and oid > 0 and oid ~= alertSpell then
-                            shownId = oid
-                        end
+                        if okOvr and oid and oid > 0 and oid ~= alertSpell then shownId = oid end
                     end
                     if not seen[shownId] then
                         seen[alertSpell] = true
@@ -1074,7 +972,8 @@ local function GetPlayerMovementSpells()
                             isCharge, maxCh, rechargeDur = SafeGetChargeInfo(baseSpell)
                         end
                         if spellData then
-                            local defaultCustom = BUFF_ACTIVE_SPELLS[shownId] or BUFF_ACTIVE_SPELLS[alertSpell]
+                            local defaultCustom = BUFF_ACTIVE_SPELLS[shownId]
+                                or BUFF_ACTIVE_SPELLS[alertSpell]
                             if defaultCustom then
                                 table.insert(result, {
                                     spellId = shownId,
@@ -1094,9 +993,7 @@ local function GetPlayerMovementSpells()
                                 if not isCharge and rawBaseDur <= 0 and rechargeDur > 0 then
                                     rawBaseDur = rechargeDur
                                 end
-                                if rawBaseDur <= 0 then
-                                    rawBaseDur = GetKnownCategoryDuration(shownId)
-                                end
+                                if rawBaseDur <= 0 then rawBaseDur = GetKnownCategoryDuration(shownId) end
                                 if rawBaseDur <= 0 and baseSpell then
                                     rawBaseDur = GetKnownCategoryDuration(baseSpell)
                                 end
@@ -1129,9 +1026,7 @@ local function GetPlayerMovementSpells()
                 local shownId = alertSpell
                 if C_Spell.GetOverrideSpell then
                     local okOvr, oid = pcall(C_Spell.GetOverrideSpell, alertSpell)
-                    if okOvr and oid and oid > 0 and oid ~= alertSpell then
-                        shownId = oid
-                    end
+                    if okOvr and oid and oid > 0 and oid ~= alertSpell then shownId = oid end
                 end
                 if not seen[shownId] then
                     seen[alertSpell] = true
@@ -1165,9 +1060,7 @@ local function GetPlayerMovementSpells()
                             if not isCharge and rawBaseDur <= 0 and rechargeDur > 0 then
                                 rawBaseDur = rechargeDur
                             end
-                            if rawBaseDur <= 0 then
-                                rawBaseDur = GetKnownCategoryDuration(shownId)
-                            end
+                            if rawBaseDur <= 0 then rawBaseDur = GetKnownCategoryDuration(shownId) end
                             table.insert(result, {
                                 spellId = shownId,
                                 baseSpellId = baseSpell,
@@ -1190,9 +1083,7 @@ local function GetPlayerMovementSpells()
 end
 
 local function UpdateCachedCharges()
-    if inCombat or InCombatLockdown() then
-        return
-    end
+    if inCombat or InCombatLockdown() then return end
     for _, record in ipairs(cachedMovementSpells) do
         if record.checkType == "buffActive" then
             -- Aura-tracked: no cooldown and no charges to cache.
@@ -1311,9 +1202,7 @@ local function LoadMovementSpells(fullReset)
     local overrides = AlertCfg().spellOverrides or {}
     local classAbilities = MOVEMENT_ABILITIES[classFile]
     local specAbilities = classAbilities and specId and classAbilities[specId]
-    if CludesUI.IS_FOREVER and specId then
-        specAbilities = ForeverMovementList()
-    end
+    if CludesUI.IS_FOREVER and specId then specAbilities = ForeverMovementList() end
     if specAbilities then
         for _, alertSpell in ipairs(specAbilities) do
             local spellOverride = overrides[alertSpell]
@@ -1342,13 +1231,9 @@ CancelAllRechargeTimers = function()
 end
 
 local function StartRechargeTimer(record, delay)
-    if rechargeTimers[record.spellId] then
-        return
-    end
+    if rechargeTimers[record.spellId] then return end
     local dur = delay or record.rechargeDuration or 0
-    if dur <= 0 then
-        return
-    end
+    if dur <= 0 then return end
     rechargeTimers[record.spellId] = C_Timer.NewTimer(dur, function()
         rechargeTimers[record.spellId] = nil
         local current = cachedChargeCount[record.spellId] or 0
@@ -1361,27 +1246,17 @@ local function StartRechargeTimer(record, delay)
         else
             chargeRechargeStart[record.spellId] = nil
         end
-        if CheckMovementCooldown then
-            CheckMovementCooldown()
-        end
+        if CheckMovementCooldown then CheckMovementCooldown() end
     end)
 end
 
 local function OnTrackedSpellCast(alertSpell)
     local baseSpell = trackedSpellSet[alertSpell]
     -- The cast starts the cooldown the "ready" callout announces.
-    if baseSpell then
-        readyAlertArmed[baseSpell] = true
-    end
-    if (GetTime() - cacheResetTime) < 2 then
-        return
-    end
-    if TALENT_CD_TRIGGER_SPELLS[alertSpell] then
-        return
-    end
-    if not baseSpell then
-        return
-    end
+    if baseSpell then readyAlertArmed[baseSpell] = true end
+    if (GetTime() - cacheResetTime) < 2 then return end
+    if TALENT_CD_TRIGGER_SPELLS[alertSpell] then return end
+    if not baseSpell then return end
     spellWasCast[baseSpell] = true
     spellCastTime[baseSpell] = GetTime()
 
@@ -1389,39 +1264,25 @@ local function OnTrackedSpellCast(alertSpell)
         for _, record in ipairs(cachedMovementSpells) do
             if record.spellId == baseSpell and not record.isChargeSpell then
                 local dur = SafeGetBaseDuration(baseSpell)
-                if dur <= 0 and record.baseSpellId then
-                    dur = SafeGetBaseDuration(record.baseSpellId)
-                end
+                if dur <= 0 and record.baseSpellId then dur = SafeGetBaseDuration(record.baseSpellId) end
                 if dur <= 0 and record.rechargeDuration and record.rechargeDuration > 0 then
                     dur = record.rechargeDuration
                 end
-                if dur <= 0 then
-                    dur = GetKnownCategoryDuration(baseSpell)
-                end
-                if dur <= 0 and record.baseSpellId then
-                    dur = GetKnownCategoryDuration(record.baseSpellId)
-                end
-                if dur > 0 then
-                    record.baseDuration = dur
-                end
+                if dur <= 0 then dur = GetKnownCategoryDuration(baseSpell) end
+                if dur <= 0 and record.baseSpellId then dur = GetKnownCategoryDuration(record.baseSpellId) end
+                if dur > 0 then record.baseDuration = dur end
                 break
             end
         end
     end
 
-    if not inCombat then
-        return
-    end
+    if not inCombat then return end
     for _, record in ipairs(cachedMovementSpells) do
         if record.spellId == baseSpell and record.isChargeSpell then
             local current = cachedChargeCount[baseSpell] or record.maxCharges or 1
             cachedChargeCount[baseSpell] = math.max(0, current - 1)
-            if not chargeRechargeStart[baseSpell] then
-                chargeRechargeStart[baseSpell] = GetTime()
-            end
-            if not rechargeTimers[baseSpell] then
-                StartRechargeTimer(record)
-            end
+            if not chargeRechargeStart[baseSpell] then chargeRechargeStart[baseSpell] = GetTime() end
+            if not rechargeTimers[baseSpell] then StartRechargeTimer(record) end
             return
         end
     end
@@ -1430,9 +1291,7 @@ end
 -------------------------------------------------------------------------------
 --  Movement bar rendering
 -------------------------------------------------------------------------------
-local function StopMovementCountdown()
-    movementRepaintFrame:Hide()
-end
+local function StopMovementCountdown() movementRepaintFrame:Hide() end
 
 -- buffActive engine-lane handles (declared here so HideMovementDisplay -- the
 -- universal off-path -- can park the host; defined in the lane block below).
@@ -1446,9 +1305,7 @@ local function HideAlertDisplay(keepBuffLane)
     wipe(readyAlertShown)
     -- Taken down for good (not the empty end of a check): the next check starts
     -- the callout over, see readyAlertArmed.
-    if not keepBuffLane then
-        readyAlertFresh = true
-    end
+    if not keepBuffLane then readyAlertFresh = true end
     moveFrame:Hide()
     for _, slotRec in ipairs(displayPool) do
         slotRec.text:Hide()
@@ -1459,9 +1316,7 @@ local function HideAlertDisplay(keepBuffLane)
         slotRec:Hide()
     end
     activeSlotCount = 0
-    if buffAlertHost and not keepBuffLane then
-        buffAlertHost:Hide()
-    end
+    if buffAlertHost and not keepBuffLane then buffAlertHost:Hide() end
     StopMovementCountdown()
 end
 
@@ -1525,9 +1380,7 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, dur)
     -- first (relational compares on secret numbers throw); a secret recovery
     -- falls through to the main path, whose engine sinks accept secrets.
     local recov = cdInfo and cdInfo.timeUntilEndOfStartRecovery
-    if issecretvalue and issecretvalue(recov) then
-        recov = nil
-    end
+    if issecretvalue and issecretvalue(recov) then recov = nil end
     if type(recov) == "number" and recov > 0 and not IsLockoutWindow(spellEntry, recov) then
         -- Repainted until the window ends or drops under MIN_REAL_COOLDOWN, where
         -- IsLockoutWindow reclassifies it (IsLockoutWindow(entry, 0) asks whether
@@ -1613,12 +1466,8 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, dur)
         end
     end
 
-    if not cdLeft then
-        return false
-    end
-    if not hasSecretDuration and cdLeft <= 0 then
-        return false
-    end
+    if not cdLeft then return false end
+    if not hasSecretDuration and cdLeft <= 0 then return false end
 
     -- The text branches format cdRemaining themselves, so what decides them is
     -- whether THAT value can be rendered, not whether some other field of the
@@ -1714,9 +1563,7 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, dur)
             slotRec.bar.text:SetFormattedText(PREC_FMT[decimals], cdLeft)
         else
             slotRec.bar.text:SetShown(false)
-            if fromDuration then
-                ShowEngineCountdownCentred(slotRec, slotRec.bar, dur)
-            end
+            if fromDuration then ShowEngineCountdownCentred(slotRec, slotRec.bar, dur) end
         end
         if alertCfg.barShowIcon ~= false and spellIcon then
             slotRec.bar.icon:SetTexture(spellIcon)
@@ -1785,9 +1632,7 @@ local BUFF_ALERT_STYLE = "qol:movealert"
 local function BuffAlertApplyExtra(btnFrame, skinData, style)
     local alertCfg = AlertCfg()
     local mode = alertCfg.displayMode or "text"
-    if not skinData.maText then
-        skinData.maText = btnFrame:CreateFontString(nil, "OVERLAY")
-    end
+    if not skinData.maText then skinData.maText = btnFrame:CreateFontString(nil, "OVERLAY") end
     local record = style.maEntry
     local labelText = (record and (record.customText or record.spellName)) or "Active!"
     local red, green, blue = ResolveAlertColor("textColor", "textColorUseClass")
@@ -1800,17 +1645,13 @@ local function BuffAlertApplyExtra(btnFrame, skinData, style)
     skinData.maText:SetTextColor(red, green, blue)
     skinData.maText:ClearAllPoints()
     if mode == "icon" then
-        if skinData.icon then
-            skinData.icon:SetAlpha(1)
-        end
+        if skinData.icon then skinData.icon:SetAlpha(1) end
         skinData.maText:Hide()
     else
         -- text AND bar modes render as the plain label: a permanent toggle
         -- buff has no duration for a bar to add, and the engine button is the
         -- only restriction-safe visibility carrier either way.
-        if skinData.icon then
-            skinData.icon:SetAlpha(0)
-        end
+        if skinData.icon then skinData.icon:SetAlpha(0) end
         skinData.maText:SetPoint("CENTER", btnFrame, "CENTER", 0, 0)
         skinData.maText:SetText(labelText)
         skinData.maText:Show()
@@ -1849,16 +1690,12 @@ end
 -- UnitUsingVehicle is still true across the EXIT transition (see the RF assist
 -- gate's AssistProbe, which guards the same engine gate one unit over).
 local function BuffAlertAssistable()
-    if buffAlertVehicle then
-        return false
-    end
+    if buffAlertVehicle then return false end
     -- Cinematics flip the same flag without a vehicle (UNIT_FACTION edge). A
     -- CLEANLY-false answer denies; unreadable ones stay fail-open, since a
     -- transient nil must not blank a working alert.
     local success, canAssist = pcall(UnitCanAssist, "player", "player")
-    if success and not IsSecret(canAssist) and canAssist == false then
-        return false
-    end
+    if success and not IsSecret(canAssist) and canAssist == false then return false end
     return true
 end
 
@@ -1879,9 +1716,7 @@ end
 -- host -- creation-time parenting is legal) and re-enable reuses everything.
 local function EnsureBuffAlertLane()
     local AK = CludesUI.AuraKit
-    if not (AK and AK.RequestContainer and AK.AddGroupToContainer and AK.RestyleSoon) then
-        return
-    end
+    if not (AK and AK.RequestContainer and AK.AddGroupToContainer and AK.RestyleSoon) then return end
     local record
     for _, entry in ipairs(cachedMovementSpells) do
         if entry.checkType == "buffActive" then
@@ -1890,9 +1725,7 @@ local function EnsureBuffAlertLane()
         end
     end
     if not record then
-        if buffAlertHost then
-            buffAlertHost:Hide()
-        end
+        if buffAlertHost then buffAlertHost:Hide() end
         return
     end
     -- Resolved ahead of the Show() below, not beside it: every pass runs through
@@ -1942,9 +1775,7 @@ local function EnsureBuffAlertLane()
     -- none today, guarded for the day it grows one.
     if FindSpellOverrideByID then
         local shade = FindSpellOverrideByID(record.spellId)
-        if type(shade) == "number" and shade > 0 then
-            include[shade] = true
-        end
+        if type(shade) == "number" and shade > 0 then include[shade] = true end
     end
     AK.RequestContainer(buffAlertHost, "player", {
         point = { "CENTER", buffAlertHost, "CENTER", 0, 0 },
@@ -1960,9 +1791,7 @@ local function EnsureBuffAlertLane()
             layout = { anchorPoint = "CENTER", padding = { 0, 0, 0, 0 }, rowWidth = 400 },
         })
     end)
-    if not assist then
-        buffAlertHost:Hide()
-    end
+    if not assist then buffAlertHost:Hide() end
 end
 
 -- Numeric follow of the alert stack's top (slots grow UP from movementFrame's
@@ -1971,24 +1800,18 @@ end
 -- blocked, so combat passes arm a one-shot regen re-apply reading the LAST
 -- counted stack height.
 local function RepositionBuffAlertHost(stacks)
-    if not buffAlertHost then
-        return
-    end
+    if not buffAlertHost then return end
     buffAlertLastCount = stacks
     if InCombatLockdown() then
         if not buffAlertRegenFn then
-            buffAlertRegenFn = function()
-                RepositionBuffAlertHost(buffAlertLastCount or 0)
-            end
+            buffAlertRegenFn = function() RepositionBuffAlertHost(buffAlertLastCount or 0) end
         end
         ns.CombatQueue.Defer("BuffAlertHostPos", buffAlertRegenFn)
         return
     end
     local fw, fh = moveFrame:GetWidth(), moveFrame:GetHeight()
     local leftX, bottom = moveFrame:GetLeft(), moveFrame:GetBottom()
-    if not (fw and fh and leftX and bottom) then
-        return
-    end
+    if not (fw and fh and leftX and bottom) then return end
     buffAlertHost:ClearAllPoints()
     buffAlertHost:SetPoint(
         "CENTER",
@@ -2033,9 +1856,7 @@ local function GetChargeAlphaCurve()
 end
 
 local function ApplyChargeVisibility(slotRec, alertSpell, chargeInfo, record, dur)
-    if not slotRec then
-        return
-    end
+    if not slotRec then return end
     -- maxCharges stays PLAIN even when the rest of the charge record is secret,
     -- so this branch is safe (and is why the entry's cached isChargeSpell flag
     -- is not consulted -- SafeGetChargeInfo throws the whole record away when
@@ -2083,9 +1904,7 @@ movementCheckFrame:SetScript("OnUpdate", function(self)
     end
     CheckMovementCooldown()
 end)
-RequestMovementCheck = function()
-    movementCheckFrame:Show()
-end
+RequestMovementCheck = function() movementCheckFrame:Show() end
 local function RequestMovementCheckWithCharges()
     movementCheckCharges = true
     movementCheckFrame:Show()
@@ -2103,9 +1922,7 @@ local function RepaintMovementSlots(nowTime)
         local kind = slotRec._maKind
         if kind == "num" then
             local rem = slotRec._maEnd - nowTime
-            if rem <= 0 or rem < slotRec._maFloor then
-                return false
-            end
+            if rem <= 0 or rem < slotRec._maFloor then return false end
             local out = slotRec._maOut
             if out == "text" then
                 slotRec.text:SetFormattedText(slotRec._maFmt, rem)
@@ -2113,9 +1930,7 @@ local function RepaintMovementSlots(nowTime)
                 slotRec.icon.timeText:SetFormattedText(slotRec._maFmt, rem)
             else
                 slotRec.bar:SetValue(rem)
-                if slotRec._maBarText then
-                    slotRec.bar.text:SetFormattedText(slotRec._maFmt, rem)
-                end
+                if slotRec._maBarText then slotRec.bar.text:SetFormattedText(slotRec._maFmt, rem) end
             end
         elseif kind == "fill" then
             slotRec.bar:SetValue(slotRec._maDur:GetRemainingDuration())
@@ -2133,12 +1948,8 @@ local function ArmMovementRepaint(stacks)
     local tick, untimed = false, false
     for index = 1, stacks do
         local kind = displayPool[index]._maKind
-        if kind == "num" or kind == "fill" then
-            tick = true
-        end
-        if kind ~= "num" then
-            untimed = true
-        end
+        if kind == "num" or kind == "fill" then tick = true end
+        if kind ~= "num" then untimed = true end
     end
     movementBackstopAt = untimed and (nowTime + MOVEMENT_BACKSTOP) or math.huge
     movementRepaintAt = tick and (nowTime + 0.1) or movementBackstopAt
@@ -2147,9 +1958,7 @@ end
 
 movementRepaintFrame:SetScript("OnUpdate", function(self)
     local nowTime = GetTime()
-    if nowTime < movementRepaintAt then
-        return
-    end
+    if nowTime < movementRepaintAt then return end
     if nowTime >= movementBackstopAt or not RepaintMovementSlots(nowTime) then
         self:Hide()
         RequestMovementCheck()
@@ -2161,9 +1970,7 @@ end)
 CheckMovementCooldown = function()
     -- The options-panel preview owns the display while it runs; the real
     -- renderer resumes from the preview's stop path. Costs one nil-check.
-    if movementPreviewTicker then
-        return
-    end
+    if movementPreviewTicker then return end
     local alertCfg = AlertCfg()
     if not MovementEnabled() then
         HideAlertDisplay()
@@ -2223,9 +2030,7 @@ CheckMovementCooldown = function()
                 if isShown then
                     stacks = stacks + 1
                     nowShownReady[record.spellId] = record
-                    if ownCooldown then
-                        readyAlertArmed[record.spellId] = true
-                    end
+                    if ownCooldown then readyAlertArmed[record.spellId] = true end
                     -- Charge spells alpha-hide while a charge is still banked;
                     -- non-charge slots get the secret-lockout classification.
                     ApplyChargeVisibility(GetDisplaySlot(stacks), alertSpell, hasCharges, record, dur)
@@ -2248,9 +2053,7 @@ CheckMovementCooldown = function()
     if readyAlertFresh then
         readyAlertFresh = false
         for alertSpell in pairs(readyAlertArmed) do
-            if not nowShownReady[alertSpell] then
-                readyAlertArmed[alertSpell] = nil
-            end
+            if not nowShownReady[alertSpell] then readyAlertArmed[alertSpell] = nil end
         end
     end
     local announce = alertCfg.maTtsEnabled or (alertCfg.maSoundKey and alertCfg.maSoundKey ~= "none")
@@ -2291,26 +2094,16 @@ CheckMovementCooldown = function()
     end
 end
 CludesUI._CheckMovementCooldown = function()
-    if CheckMovementCooldown then
-        CheckMovementCooldown()
-    end
+    if CheckMovementCooldown then CheckMovementCooldown() end
 end
 
 local function ApplyMovementFrame()
     local alertCfg = AlertCfg()
-    if not alertCfg then
-        return
-    end
+    if not alertCfg then return end
     moveFrame:ClearAllPoints()
     local place = alertCfg.pos
     if place and place.point then
-        moveFrame:SetPoint(
-            place.point,
-            UIParent,
-            place.relPoint or place.point,
-            place.x or 0,
-            place.y or 0
-        )
+        moveFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
         moveFrame:SetSize(place.width or 200, place.height or 40)
     else
         moveFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
@@ -2319,9 +2112,7 @@ local function ApplyMovementFrame()
     for _, slotRec in ipairs(displayPool) do
         StyleSlot(slotRec)
     end
-    if MovementEnabled() and not CludesUI._unlockActive then
-        CheckMovementCooldown()
-    end
+    if MovementEnabled() and not CludesUI._unlockActive then CheckMovementCooldown() end
 end
 CludesUI._applyMovementAlert = ApplyMovementFrame
 
@@ -2342,9 +2133,7 @@ local function PreviewEntry()
     -- Prefer the player's first real tracked cooldown so the preview shows a
     -- familiar name/icon; fall back to any known class mobility spell.
     local e = cachedMovementSpells[1]
-    if e and e.checkType ~= "buffActive" then
-        return e
-    end
+    if e and e.checkType ~= "buffActive" then return e end
     local classFile = select(2, UnitClass("player"))
     local classAbilities = MOVEMENT_ABILITIES[classFile]
     if classAbilities then
@@ -2368,9 +2157,7 @@ local function PreviewEntry()
 end
 
 local function StopMovementPreview()
-    if not movementPreviewTicker then
-        return
-    end
+    if not movementPreviewTicker then return end
     movementPreviewTicker:Cancel()
     movementPreviewTicker = nil
     previewEntry = nil
@@ -2393,9 +2180,7 @@ local function PreviewTick()
     end
 
     local nowTime = GetTime()
-    if nowTime >= previewEnds then
-        previewEnds = nowTime + PREVIEW_CD
-    end
+    if nowTime >= previewEnds then previewEnds = nowTime + PREVIEW_CD end
     previewCdInfo.startTime = previewEnds - PREVIEW_CD
     if ShowMovementSlot(1, previewCdInfo, previewEntry) then
         for index = 2, activeSlotCount do
@@ -2416,13 +2201,9 @@ local function PreviewTick()
 end
 
 local function StartMovementPreview()
-    if movementPreviewTicker then
-        return
-    end
+    if movementPreviewTicker then return end
     local alertCfg = AlertCfg()
-    if not alertCfg then
-        return
-    end
+    if not alertCfg then return end
     previewEntry = PreviewEntry()
     previewEnds = GetTime() + PREVIEW_CD
     -- The preview owns the display: stop the real poll loop (its state
@@ -2432,9 +2213,7 @@ local function StartMovementPreview()
     PreviewTick()
 end
 
-CludesUI._MovementAlertPreviewActive = function()
-    return movementPreviewTicker ~= nil
-end
+CludesUI._MovementAlertPreviewActive = function() return movementPreviewTicker ~= nil end
 CludesUI._MovementAlertPreview = function(on)
     if on then
         StartMovementPreview()
@@ -2472,9 +2251,7 @@ local castFilters = {}
 local function RefreshCastFilters()
     wipe(castFilters)
     local classData = MOVEMENT_ABILITIES[select(2, UnitClass("player"))]
-    if not classData or not classData.filter then
-        return
-    end
+    if not classData or not classData.filter then return end
     for talentId, spells in pairs(classData.filter) do
         if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(talentId) then
             for _, ident in ipairs(spells) do
@@ -2485,9 +2262,7 @@ local function RefreshCastFilters()
 end
 
 local function OnSpellCast(alertSpell)
-    if castFilters[alertSpell] then
-        glowCooldown = GetTime() + 1.5
-    end
+    if castFilters[alertSpell] then glowCooldown = GetTime() + 1.5 end
 end
 
 local allMobilitySpells = {}
@@ -2497,9 +2272,7 @@ local function RebuildMobilitySpellLookup()
         for key, value in pairs(classData) do
             if type(key) == "number" and type(value) == "table" then
                 for _, alertSpell in ipairs(value) do
-                    if not BUFF_ACTIVE_SPELLS[alertSpell] then
-                        allMobilitySpells[alertSpell] = true
-                    end
+                    if not BUFF_ACTIVE_SPELLS[alertSpell] then allMobilitySpells[alertSpell] = true end
                 end
             end
         end
@@ -2517,16 +2290,12 @@ CludesUI._RebuildMovementSpellLookup = RebuildMobilitySpellLookup
 
 local function IsValidTimeSpiralProc(alertSpell)
     local nowTime = GetTime()
-    if BUFF_ACTIVE_SPELLS[alertSpell] then
-        return false
-    end
+    if BUFF_ACTIVE_SPELLS[alertSpell] then return false end
     local classFile = select(2, UnitClass("player"))
     local specId = PlayerSpecId()
     local classData = MOVEMENT_ABILITIES[classFile]
     local specSpells = classData and specId and classData[specId]
-    if CludesUI.IS_FOREVER and specId then
-        specSpells = ForeverMovementList()
-    end
+    if CludesUI.IS_FOREVER and specId then specSpells = ForeverMovementList() end
     local matched = false
     if specSpells then
         for _, ident in ipairs(specSpells) do
@@ -2543,18 +2312,10 @@ local function IsValidTimeSpiralProc(alertSpell)
             end
         end
     end
-    if not matched and allMobilitySpells[alertSpell] then
-        matched = true
-    end
-    if not matched then
-        return false
-    end
-    if nowTime < glowCooldown then
-        return false
-    end
-    if (nowTime - procDebounce) < 0.12 then
-        return false
-    end
+    if not matched and allMobilitySpells[alertSpell] then matched = true end
+    if not matched then return false end
+    if nowTime < glowCooldown then return false end
+    if (nowTime - procDebounce) < 0.12 then return false end
     return true
 end
 
@@ -2587,9 +2348,7 @@ end
 
 local function ApplyTimeSpiralFrame()
     local alertCfg = AlertCfg()
-    if not alertCfg then
-        return
-    end
+    if not alertCfg then return end
     -- Self-correct: if this got turned off while the banner was actively
     -- showing/counting down, the disable path only cancels the countdown
     -- timer (the one thing that would otherwise hide it) -- explicitly hide
@@ -2603,13 +2362,7 @@ local function ApplyTimeSpiralFrame()
     spiralFrame:ClearAllPoints()
     local place = alertCfg.tsPos
     if place and place.point then
-        spiralFrame:SetPoint(
-            place.point,
-            UIParent,
-            place.relPoint or place.point,
-            place.x or 0,
-            place.y or 0
-        )
+        spiralFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
         spiralFrame:SetSize(place.width or 200, place.height or 40)
     else
         spiralFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 100)
@@ -2675,9 +2428,7 @@ local function PollGateway()
     end
 
     local isUsable = not not C_Item.IsUsableItem(GATEWAY_SHARD_ITEM_ID)
-    if isUsable and not lastGatewayUsable then
-        FireTrackerAlert("gw")
-    end
+    if isUsable and not lastGatewayUsable then FireTrackerAlert("gw") end
     lastGatewayUsable = isUsable
 
     -- 10 Hz poll: only the usability read is per-tick work; the label and
@@ -2688,9 +2439,7 @@ local function PollGateway()
             lastGatewayText = txt
             gatewayText:SetText(txt)
         end
-        if not gateFrame:IsShown() then
-            gateFrame:Show()
-        end
+        if not gateFrame:IsShown() then gateFrame:Show() end
     elseif gateFrame:IsShown() then
         gateFrame:Hide()
     end
@@ -2700,35 +2449,23 @@ CludesUI._CheckGatewayUsable = PollGateway
 local function StartGatewayTicker()
     StopGatewayTicker()
     local alertCfg = AlertCfg()
-    if not alertCfg.gwEnabled then
-        return
-    end
+    if not alertCfg.gwEnabled then return end
     PollGateway()
     -- CheckGatewayUsable already self-pauses (via StopGatewayPolling) when
     -- Combat Only is on and we're out of combat -- don't immediately
     -- recreate the ticker it just stopped. PLAYER_REGEN_DISABLED calls
     -- StartGatewayPolling() again on combat entry to resume it.
-    if alertCfg.gwCombatOnly and not inCombat then
-        return
-    end
+    if alertCfg.gwCombatOnly and not inCombat then return end
     gatewayPollTicker = C_Timer.NewTicker(0.1, PollGateway)
 end
 
 local function ApplyGatewayFrame()
     local alertCfg = AlertCfg()
-    if not alertCfg then
-        return
-    end
+    if not alertCfg then return end
     gateFrame:ClearAllPoints()
     local place = alertCfg.gwPos
     if place and place.point then
-        gateFrame:SetPoint(
-            place.point,
-            UIParent,
-            place.relPoint or place.point,
-            place.x or 0,
-            place.y or 0
-        )
+        gateFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
         gateFrame:SetSize(place.width or 200, place.height or 40)
     else
         gateFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 150)
@@ -2784,9 +2521,7 @@ local timeSpiralEventsRegistered = false
 
 local function UpdateEventRegistration()
     local alertCfg = AlertCfg()
-    if not alertCfg then
-        return
-    end
+    if not alertCfg then return end
 
     local moveOn = MovementEnabled()
     local anyEnabled = moveOn or alertCfg.tsEnabled or alertCfg.gwEnabled
@@ -2868,18 +2603,14 @@ local function UpdateEventRegistration()
         StartGatewayTicker()
     else
         StopGatewayTicker()
-        if not alertCfg.gwEnabled then
-            gateFrame:Hide()
-        end
+        if not alertCfg.gwEnabled then gateFrame:Hide() end
     end
 end
 CludesUI._UpdateMovementAlertEvents = UpdateEventRegistration
 
 loadFrame:SetScript("OnEvent", function(self, evt, ...)
     local alertCfg = AlertCfg()
-    if not alertCfg then
-        return
-    end
+    if not alertCfg then return end
 
     if evt == "PLAYER_LOGIN" then
         -- Zero cost while every tracker is off: UpdateEventRegistration does
@@ -2916,9 +2647,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                     -- isHiddenKey: profile key name, or a predicate function
                     -- (the movement tracker's enable state is per-class).
                     isHidden = function()
-                        if type(isHiddenKey) == "function" then
-                            return not isHiddenKey()
-                        end
+                        if type(isHiddenKey) == "function" then return not isHiddenKey() end
                         return not AlertCfg()[isHiddenKey]
                     end,
                     getFrame = getFrameFn,
@@ -2939,9 +2668,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                         applyFn()
                     end,
                     savePos = function(_, point, relPoint, posX, posY)
-                        if not point then
-                            return
-                        end
+                        if not point then return end
                         local m = AlertCfg()
                         m[posKey] = m[posKey] or {}
                         m[posKey].point, m[posKey].relPoint, m[posKey].x, m[posKey].y =
@@ -2949,9 +2676,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                     end,
                     loadPos = function()
                         local place = AlertCfg()[posKey]
-                        if place and place.point then
-                            return place
-                        end
+                        if place and place.point then return place end
                         return nil
                     end,
                     clearPos = function()
@@ -2963,17 +2688,21 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
             end
 
             CludesUI:RegisterUnlockElements({
-                MakeMoverEntry("CUI_MovementAlert", "Movement Alerts", 750, MovementEnabled, function()
-                    return moveFrame
-                end, ApplyMovementFrame, "pos"),
+                MakeMoverEntry(
+                    "CUI_MovementAlert",
+                    "Movement Alerts",
+                    750,
+                    MovementEnabled,
+                    function() return moveFrame end,
+                    ApplyMovementFrame,
+                    "pos"
+                ),
                 MakeMoverEntry(
                     "CUI_TimeSpiralAlert",
                     "Movement Alerts - Time Spiral",
                     751,
                     "tsEnabled",
-                    function()
-                        return spiralFrame
-                    end,
+                    function() return spiralFrame end,
                     ApplyTimeSpiralFrame,
                     "tsPos"
                 ),
@@ -2982,9 +2711,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                     "Movement Alerts - Gateway Shard",
                     752,
                     "gwEnabled",
-                    function()
-                        return gateFrame
-                    end,
+                    function() return gateFrame end,
                     ApplyGatewayFrame,
                     "gwPos"
                 ),
@@ -3095,7 +2822,8 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
                                     end
                                     local newRemaining = remaining - mod.reduce
                                     if newRemaining > 0 then
-                                        chargeRechargeStart[spellRef] = GetTime() - (rechargeDur - newRemaining)
+                                        chargeRechargeStart[spellRef] = GetTime()
+                                            - (rechargeDur - newRemaining)
                                         StartRechargeTimer(record, newRemaining)
                                     else
                                         cachedChargeCount[spellRef] =
@@ -3134,9 +2862,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         end
     elseif evt == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
         local alertSpell = ...
-        if alertSpell then
-            timeSpiralActiveSpells[alertSpell] = nil
-        end
+        if alertSpell then timeSpiralActiveSpells[alertSpell] = nil end
         if not next(timeSpiralActiveSpells) then
             timeSpiralActiveTime = nil
             StopSpiralCountdown()

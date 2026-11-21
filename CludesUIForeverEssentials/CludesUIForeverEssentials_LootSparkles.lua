@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_LootSparkles.lua  (WoW Forever only)
 --  Loot Sparkles: keeps the game's sparkle on lootable quest items, so you
@@ -30,18 +26,14 @@ local wasOn = false
 
 local function Write(value)
     local current = C_CVar.GetCVar(CVAR)
-    if current == nil or current == value then
-        return
-    end -- not on this client, or already right
+    if current == nil or current == value then return end -- not on this client, or already right
     applying = true
     pcall(C_CVar.SetCVar, CVAR, value)
     applying = false
 end
 
 local function Ensure()
-    if not Enabled() then
-        return
-    end
+    if not Enabled() then return end
     if InCombatLockdown() then
         pending = true
         return
@@ -52,9 +44,7 @@ end
 
 local timer
 local function EnsureSoon(delay)
-    if timer then
-        timer:Cancel()
-    end
+    if timer then timer:Cancel() end
     timer = C_Timer.NewTimer(delay, function()
         timer = nil
         Ensure()
@@ -69,9 +59,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, name)
             Ensure()
         end
     elseif evt == "CVAR_UPDATE" then
-        if not applying and type(name) == "string" and WATCHED[name:lower()] then
-            EnsureSoon(1)
-        end
+        if not applying and type(name) == "string" and WATCHED[name:lower()] then EnsureSoon(1) end
     end
 end)
 
@@ -87,9 +75,7 @@ local function Apply()
         if wasOn or (F.Read().switchedOff and C_CVar.GetCVar(CVAR) == "1") then
             wasOn = false
             F.Cfg().switchedOff = nil
-            if not InCombatLockdown() then
-                Write("0")
-            end
+            if not InCombatLockdown() then Write("0") end
             CludesUI.Print(
                 "|cff4cc9f0Loot Sparkles:|r off. Sparkles already showing stay until you restart the game; /reload is not enough."
             )

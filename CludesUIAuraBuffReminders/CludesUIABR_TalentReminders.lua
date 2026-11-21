@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then
-    return
-end -- WoW Forever: talent reminders are retail-only (its options page is not built there)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then return end -- WoW Forever: talent reminders are retail-only (its options page is not built there)
 -------------------------------------------------------------------------------
 --  CludesUIABR_TalentReminders.lua
 --  Standalone talent reminder system. Zero dependency on ABR aura/buff logic.
@@ -16,34 +12,22 @@ local ICON_SIZE = 40
 -------------------------------------------------------------------------------
 --  Helpers (self-contained, no ABR imports)
 -------------------------------------------------------------------------------
-local function Known(ident)
-    return ident and (IsPlayerSpell(ident) or IsSpellKnown(ident))
-end
+local function Known(ident) return ident and (IsPlayerSpell(ident) or IsSpellKnown(ident)) end
 
 local texCache = {}
 local function Tex(ident)
     local c = texCache[ident]
-    if c then
-        return c
-    end
+    if c then return c end
     local t = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident)
-    if t then
-        texCache[ident] = t
-    end
+    if t then texCache[ident] = t end
     return t
 end
 
-local function InCombat()
-    return InCombatLockdown and InCombatLockdown()
-end
+local function InCombat() return InCombatLockdown and InCombatLockdown() end
 
 local function InRealInstancedContent()
-    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
-        return false
-    end
-    if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
-        return false
-    end
+    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then return false end
+    if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then return false end
     local _, iType = GetInstanceInfo()
     return iType == "party" or iType == "raid" or iType == "scenario" or iType == "arena" or iType == "pvp"
 end
@@ -106,12 +90,8 @@ local ZONE_BY_MAPID = {}
 local ZONE_BY_INSTANCEID = {}
 local ZONE_BY_NAME = {}
 for _, z in ipairs(TALENT_REMINDER_ZONES) do
-    if z.mapID then
-        ZONE_BY_MAPID[z.mapID] = z
-    end
-    if z.instanceID then
-        ZONE_BY_INSTANCEID[z.instanceID] = z
-    end
+    if z.mapID then ZONE_BY_MAPID[z.mapID] = z end
+    if z.instanceID then ZONE_BY_INSTANCEID[z.instanceID] = z end
     ZONE_BY_NAME[z.name] = z
 end
 
@@ -121,9 +101,7 @@ end
 -- as "season" and off as "never" (read here, never written back).
 local function NotNeededMode(reminder)
     local m = reminder.notNeededMode
-    if m == "never" or m == "season" or m == "all" then
-        return m
-    end
+    if m == "never" or m == "season" or m == "all" then return m end
     return reminder.showNotNeeded and "season" or "never"
 end
 _G._CUABR_TR_NotNeededMode = NotNeededMode
@@ -136,9 +114,7 @@ _G._CUABR_TALENT_REMINDER_ZONES = TALENT_REMINDER_ZONES
 -------------------------------------------------------------------------------
 local saved -- set during Init
 
-local function GetReminders()
-    return saved and saved.profile and saved.profile.talentReminders
-end
+local function GetReminders() return saved and saved.profile and saved.profile.talentReminders end
 
 -------------------------------------------------------------------------------
 --  Icon pool & display
@@ -148,9 +124,7 @@ local talentIconPool = {}
 local talentActiveIcons = {}
 
 local function GetOrCreateIcon(index)
-    if talentIconPool[index] then
-        return talentIconPool[index]
-    end
+    if talentIconPool[index] then return talentIconPool[index] end
     local button =
         CreateFrame("Button", "EABR_TalentIcon" .. index, talentIconAnchor, "SecureActionButtonTemplate")
     button:SetSize(ICON_SIZE, ICON_SIZE)
@@ -164,9 +138,7 @@ local function GetOrCreateIcon(index)
     iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     button._icon = iconTex
     local Pix = CludesUI and CludesUI.PP
-    if Pix then
-        Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7)
-    end
+    if Pix then Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7) end
     local textValue = button:CreateFontString(nil, "OVERLAY")
     textValue:SetPoint("TOP", button, "BOTTOM", 0, -2)
     CludesUI.ApplyModuleFont(textValue, nil, 11, "auraBuff")
@@ -200,9 +172,7 @@ end
 
 local function LayoutIcons()
     local total = #talentActiveIcons
-    if total == 0 then
-        return
-    end
+    if total == 0 then return end
     local spacing = 40
     local sz = ICON_SIZE
     local totalW = (total * sz) + ((total - 1) * spacing)
@@ -216,9 +186,7 @@ local function LayoutIcons()
 end
 
 local function HideIcons()
-    if InCombat() then
-        return
-    end
+    if InCombat() then return end
     for index = 1, #talentActiveIcons do
         local button = talentActiveIcons[index]
         if button then
@@ -227,9 +195,7 @@ local function HideIcons()
         end
     end
     wipe(talentActiveIcons)
-    if talentIconAnchor then
-        CludesUI.SetElementVisibility(talentIconAnchor, false)
-    end
+    if talentIconAnchor then CludesUI.SetElementVisibility(talentIconAnchor, false) end
 end
 
 -------------------------------------------------------------------------------
@@ -249,22 +215,16 @@ local function Collect()
 
     local inInstance = InRealInstancedContent()
     local inKeystone = InMythicPlusKey()
-    if inKeystone or InCombat() or not inInstance then
-        return
-    end
+    if inKeystone or InCombat() or not inInstance then return end
 
     local reminders = GetReminders()
-    if not reminders or #reminders == 0 then
-        return
-    end
+    if not reminders or #reminders == 0 then return end
 
     local currentInstance, _, _, _, _, _, _, currentInstanceID = GetInstanceInfo()
     local currentMapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     local _, playerClass = UnitClass("player")
     local playerSpecID = GetSpecializationInfo(GetSpecialization() or 1)
-    if not currentInstance then
-        return
-    end
+    if not currentInstance then return end
     -- The picker zone of this instance, by its ID or map first (locale-proof),
     -- names the zone the reminders match below. Any picker zone is the reach of
     -- "Current Season Instances", the instance's own name counting too.
@@ -372,9 +332,7 @@ local function Collect()
                 break
             end
         end
-        if not stillNeeded then
-            _migNeeded = false
-        end
+        if not stillNeeded then _migNeeded = false end
     end
 end
 
@@ -388,9 +346,7 @@ local function Refresh()
     _refreshQueued = false
     _lastRefresh = GetTime()
 
-    if not saved then
-        return
-    end
+    if not saved then return end
 
     -- Suppress while dead, mounted+flying, or in vehicle
     if
@@ -416,9 +372,7 @@ local function Refresh()
 end
 
 local function QueueRefresh()
-    if _refreshQueued then
-        return
-    end
+    if _refreshQueued then return end
     _refreshQueued = true
     local elapsed = GetTime() - _lastRefresh
     if elapsed >= 0.5 then
@@ -443,9 +397,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
     if evt == "PLAYER_LOGIN" then
         -- Get DB reference from ABR
         saved = _G._CUABR_AceDB
-        if not saved then
-            return
-        end
+        if not saved then return end
 
         -- Check if migration needed
         local reminders = GetReminders()

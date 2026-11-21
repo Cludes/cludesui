@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_CheckboxDropdowns.lua
 --  Checkbox dropdowns shared by the options pages: the empty-filter
@@ -21,9 +19,7 @@ local CreateFrame, PoolKept, PoolGen = Pool.CreateFrame, Pool.Kept, Pool.Gen
 -- control on an absorber row (PrebuildStandIn, CludesUI_Widgets.lua). Nil
 -- outside the pass and for a real parent.
 local function StandIn(hostFrame)
-    if not CUI._prebuilding then
-        return nil
-    end
+    if not CUI._prebuilding then return nil end
     return CUI._widgetInternals.PrebuildStandIn(hostFrame)
 end
 
@@ -56,9 +52,7 @@ end
 function CUI.AttachEmptyFilterWarn(region, checkDrop, warnText, hasContentFn, options)
     -- Search prebuild on an absorber row: the warning indexes nothing, so none is built.
     local standIn = StandIn(region) or StandIn(checkDrop)
-    if standIn then
-        return standIn
-    end
+    if standIn then return standIn end
     local Pix = CUI.PanelPP
     local onDismiss = options and options.onDismiss
     local Update
@@ -134,31 +128,23 @@ function CUI.AttachEmptyFilterWarn(region, checkDrop, warnText, hasContentFn, op
     -- Two pulses read as a deliberate alert; one reads as a rendering glitch.
     anim:SetLooping("REPEAT")
     local loops = 0
-    anim:SetScript("OnPlay", function()
-        loops = 0
-    end)
+    anim:SetScript("OnPlay", function() loops = 0 end)
     anim:SetScript("OnLoop", function(self)
         loops = loops + 1
-        if loops >= 2 then
-            self:Stop()
-        end
+        if loops >= 2 then self:Stop() end
     end)
 
     Update = function()
         local empty = not hasContentFn()
         bubble:SetShown(empty)
         warnBorder:SetShown(empty)
-        if not empty and anim:IsPlaying() then
-            anim:Stop()
-        end
+        if not empty and anim:IsPlaying() then anim:Stop() end
     end
     Update()
     CUI.RegisterWidgetRefresh(Update)
     return function()
         Update()
-        if not hasContentFn() then
-            anim:Restart()
-        end
+        if not hasContentFn() then anim:Restart() end
     end
 end
 
@@ -197,9 +183,7 @@ function CUI.BuildVisOptsCBDropdown(
 )
     -- Search prebuild on an absorber row: the dropdown indexes nothing, so none is built.
     local standIn = StandIn(parentFrame)
-    if standIn then
-        return standIn, standIn
-    end
+    if standIn then return standIn, standIn end
     local Pix = CUI.PanelPP
     options = options or {}
     -- Opt-in dynamic items: pass a FUNCTION returning the items array and it re-evaluates on every menu OPEN (the menu rebuilds), so lists that depend on other settings never go stale. A table stays static.
@@ -244,9 +228,7 @@ function CUI.BuildVisOptsCBDropdown(
         local held = options.ovHeldFn and options.ovHeldFn()
         if held then
             for _, entry in ipairs(itemList) do
-                if entry.key == held then
-                    return CUI.L(entry.label)
-                end
+                if entry.key == held then return CUI.L(entry.label) end
             end
         end
         for _, entry in ipairs(itemList) do
@@ -260,13 +242,9 @@ function CUI.BuildVisOptsCBDropdown(
                 and not (entry.excludeFromSummaryFn and entry.excludeFromSummaryFn())
             then
                 sum = sum + 1
-                if getFn(entry.key) then
-                    nameList[#nameList + 1] = CUI.L(entry.label)
-                end
+                if getFn(entry.key) then nameList[#nameList + 1] = CUI.L(entry.label) end
                 -- Dual-lane rows: the hide lane reads through getFn(key, true).
-                if entry.dual and getFn(entry.key, true) then
-                    hiddenCount = hiddenCount + 1
-                end
+                if entry.dual and getFn(entry.key, true) then hiddenCount = hiddenCount + 1 end
             end
         end
         local base
@@ -284,15 +262,11 @@ function CUI.BuildVisOptsCBDropdown(
         else
             base = table.concat(nameList, sep)
         end
-        if hiddenCount > 0 then
-            base = base .. " (-" .. hiddenCount .. ")"
-        end
+        if hiddenCount > 0 then base = base .. " (-" .. hiddenCount .. ")" end
         return base
     end
     local function SyncCaption()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetText(SummaryLabel())
     end
     SyncCaption()
@@ -422,11 +396,14 @@ function CUI.BuildVisOptsCBDropdown(
         if entry.swatch then
             -- The swatch reads and writes the swatch spec of the item the row shows (row._swSpec).
             row._swSpec = entry.swatch
-            local sw, swUpdate = CUI.BuildColorSwatch(row, row:GetFrameLevel() + 1, function()
-                return row._swSpec.get()
-            end, function(...)
-                row._swSpec.set(...)
-            end, entry.swatch.hasAlpha, 16)
+            local sw, swUpdate = CUI.BuildColorSwatch(
+                row,
+                row:GetFrameLevel() + 1,
+                function() return row._swSpec.get() end,
+                function(...) row._swSpec.set(...) end,
+                entry.swatch.hasAlpha,
+                16
+            )
             sw:ClearAllPoints()
             sw:SetPoint("RIGHT", row, "RIGHT", row._negBox and -32 or -10, 0)
             labelFS:SetPoint("RIGHT", sw, "LEFT", -6, 0)
@@ -436,13 +413,9 @@ function CUI.BuildVisOptsCBDropdown(
             swBlock:EnableMouse(true)
             swBlock:SetScript("OnEnter", function()
                 local tipText = CUI.ResolveDisabledTip(row._swSpec)
-                if tipText then
-                    CUI.ShowWidgetTooltip(sw, tipText)
-                end
+                if tipText then CUI.ShowWidgetTooltip(sw, tipText) end
             end)
-            swBlock:SetScript("OnLeave", function()
-                CUI.HideWidgetTooltip()
-            end)
+            swBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             swBlock:Hide()
             row._sw, row._swUpdate, row._swBlock = sw, swUpdate, swBlock
         end
@@ -450,18 +423,14 @@ function CUI.BuildVisOptsCBDropdown(
     end
 
     local function BuildMenuOnce()
-        if dropMenu and not menuStale then
-            return
-        end
+        if dropMenu and not menuStale then return end
         menuStale = nil
         local firstBuild = not dropMenu
         -- Opt-in top-action rows (item.isTopAction with label + onClick): accent clickable entries pinned ABOVE the search box with a divider under the group -- the "Custom Spell ID at the top" pattern from the CDM spell pickers. Excluded from the scroll list, the checkable count, and the summary label.
         local topActions = {}
         wipe(_taTints)
         for _, entry in ipairs(itemList) do
-            if entry.isTopAction then
-                topActions[#topActions + 1] = entry
-            end
+            if entry.isTopAction then topActions[#topActions + 1] = entry end
         end
         local TOP_H = (#topActions > 0) and (#topActions * ITEM_HEIGHT + 7) or 0
         local checkableCount = 0
@@ -482,7 +451,9 @@ function CUI.BuildVisOptsCBDropdown(
         contentH = contentH + CLOSE_BTN_H
         local needsScroll = maxVisibleItems and checkableCount > maxVisibleItems
         -- +2 accounts for scroll frame 1px top + 1px bottom insets so non-scrolling menus don't scroll
-        local menuH = (needsScroll and (4 + maxVisibleItems * ITEM_HEIGHT + 4 + CLOSE_BTN_H) or (contentH + 4))
+        local menuH = (
+            needsScroll and (4 + maxVisibleItems * ITEM_HEIGHT + 4 + CLOSE_BTN_H) or (contentH + 4)
+        )
             + SEARCH_PAD
             + TOP_H
         if firstBuild then
@@ -527,28 +498,16 @@ function CUI.BuildVisOptsCBDropdown(
                 row:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, ay)
                 row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                 local labelFS, highlight = row._lbl, row._hl
-                labelFS:SetTextColor(
-                    CUI.CLUDES_GREEN.r,
-                    CUI.CLUDES_GREEN.g,
-                    CUI.CLUDES_GREEN.b,
-                    0.8
-                )
+                labelFS:SetTextColor(CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b, 0.8)
                 labelFS:SetText(CUI.L(entry.label))
                 highlight:SetColorTexture(1, 1, 1, 0)
                 -- Opt-in locked state (item.lockedFn + item.lockedTooltip): evaluated LIVE on hover/click (checkbox toggles can flip it while the menu is open), plus once at build for the initial tint.
-                local function TALocked()
-                    return entry.lockedFn and entry.lockedFn() or false
-                end
+                local function TALocked() return entry.lockedFn and entry.lockedFn() or false end
                 local function PaintApplyAll()
                     if TALocked() then
                         labelFS:SetTextColor(1, 1, 1, 0.3)
                     else
-                        labelFS:SetTextColor(
-                            CUI.CLUDES_GREEN.r,
-                            CUI.CLUDES_GREEN.g,
-                            CUI.CLUDES_GREEN.b,
-                            0.8
-                        )
+                        labelFS:SetTextColor(CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b, 0.8)
                     end
                 end
                 PaintApplyAll()
@@ -558,10 +517,7 @@ function CUI.BuildVisOptsCBDropdown(
                     if TALocked() then
                         local tipText = entry.lockedTooltip
                         if tipText and CUI.ShowWidgetTooltip then
-                            CUI.ShowWidgetTooltip(
-                                row,
-                                type(tipText) == "function" and tipText() or tipText
-                            )
+                            CUI.ShowWidgetTooltip(row, type(tipText) == "function" and tipText() or tipText)
                         end
                         return
                     end
@@ -573,13 +529,9 @@ function CUI.BuildVisOptsCBDropdown(
                     PaintApplyAll()
                 end)
                 row:SetScript("OnClick", function()
-                    if TALocked() then
-                        return
-                    end
+                    if TALocked() then return end
                     dropMenu:Hide()
-                    if entry.onClick then
-                        entry.onClick()
-                    end
+                    if entry.onClick then entry.onClick() end
                 end)
                 ay = ay - ITEM_HEIGHT
             end
@@ -618,9 +570,7 @@ function CUI.BuildVisOptsCBDropdown(
                 searchPlaceholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
                 searchPlaceholder:SetPoint("LEFT", searchEdit, "LEFT", 10, 0)
                 searchPlaceholder:SetText(CUI.L("Search..."))
-                searchEdit:SetScript("OnEscapePressed", function(self)
-                    self:ClearFocus()
-                end)
+                searchEdit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
             end
             -- The list's flush first row: inside the border (below the top
             -- actions), its last unit the divider, the scroll area right below.
@@ -659,9 +609,7 @@ function CUI.BuildVisOptsCBDropdown(
             -- Controller cursor: it scrolls the list to the row itself; the pointer-drag thumb is no stop.
             CUI.PadHint(cbThumb, "nodeignore")
 
-            local function SafeMaxScroll()
-                return math.max(0, childFrame:GetHeight() - sf:GetHeight())
-            end
+            local function SafeMaxScroll() return math.max(0, childFrame:GetHeight() - sf:GetHeight()) end
 
             UpdateCBThumb = function()
                 local maxScroll = SafeMaxScroll()
@@ -683,9 +631,7 @@ function CUI.BuildVisOptsCBDropdown(
 
             -- Thumb drag
             cbThumb:SetScript("OnMouseDown", function(self, btnFrame)
-                if btnFrame ~= "LeftButton" then
-                    return
-                end
+                if btnFrame ~= "LeftButton" then return end
                 local _, cursorY = GetCursorPosition()
                 local dragStartY = cursorY / self:GetEffectiveScale()
                 local dragStartScroll = sf:GetVerticalScroll()
@@ -699,9 +645,7 @@ function CUI.BuildVisOptsCBDropdown(
                     local deltaY = dragStartY - curY
                     local trackH = cbTrack:GetHeight()
                     local maxTravel = trackH - self2:GetHeight()
-                    if maxTravel <= 0 then
-                        return
-                    end
+                    if maxTravel <= 0 then return end
                     local maxScroll = SafeMaxScroll()
                     local newScroll =
                         math.max(0, math.min(maxScroll, dragStartScroll + (deltaY / maxTravel) * maxScroll))
@@ -710,17 +654,13 @@ function CUI.BuildVisOptsCBDropdown(
                 end)
             end)
             cbThumb:SetScript("OnMouseUp", function(self, btnFrame)
-                if btnFrame ~= "LeftButton" then
-                    return
-                end
+                if btnFrame ~= "LeftButton" then return end
                 self:SetScript("OnUpdate", nil)
             end)
 
             sf:SetScript("OnMouseWheel", function(self, delta)
                 local maxScroll = SafeMaxScroll()
-                if maxScroll <= 0 then
-                    return
-                end
+                if maxScroll <= 0 then return end
                 local current = self:GetVerticalScroll()
                 self:SetVerticalScroll(math.max(0, math.min(maxScroll, current - delta * ITEM_HEIGHT)))
                 UpdateCBThumb()
@@ -766,19 +706,13 @@ function CUI.BuildVisOptsCBDropdown(
                     hdrR:Show()
                     hdrLine:SetPoint("RIGHT", hdrR, "LEFT", -6, 0)
                 else
-                    if heading._right then
-                        heading._right:Hide()
-                    end
+                    if heading._right then heading._right:Hide() end
                     hdrLine:SetPoint("RIGHT", heading, "RIGHT", -10, 0)
                 end
                 if entry.tooltip then
                     heading:EnableMouse(true)
-                    heading:SetScript("OnEnter", function()
-                        CUI.ShowWidgetTooltip(heading, entry.tooltip)
-                    end)
-                    heading:SetScript("OnLeave", function()
-                        CUI.HideWidgetTooltip()
-                    end)
+                    heading:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(heading, entry.tooltip) end)
+                    heading:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 else
                     heading:SetScript("OnEnter", nil)
                     heading:SetScript("OnLeave", nil)
@@ -795,22 +729,14 @@ function CUI.BuildVisOptsCBDropdown(
                 row:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -1, yOff)
                 row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                 local labelFS, highlight = row._lbl, row._hl
-                labelFS:SetTextColor(
-                    CUI.CLUDES_GREEN.r,
-                    CUI.CLUDES_GREEN.g,
-                    CUI.CLUDES_GREEN.b,
-                    0.8
-                )
+                labelFS:SetTextColor(CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b, 0.8)
                 labelFS:SetText(CUI.L(entry.labelFn and entry.labelFn() or entry.label))
                 local function UpdateActionLabel()
-                    if entry.labelFn then
-                        labelFS:SetText(CUI.L(entry.labelFn()))
-                    end
+                    if entry.labelFn then labelFS:SetText(CUI.L(entry.labelFn())) end
                 end
                 row._updateActionLabel = UpdateActionLabel
                 highlight:SetColorTexture(1, 1, 1, 0)
-                local EG_r, EG_g, EG_b =
-                    CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b
+                local EG_r, EG_g, EG_b = CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b
                 local function UpdateActionLocked()
                     local isLocked = entry.lockedFn and entry.lockedFn()
                     if isLocked then
@@ -832,21 +758,13 @@ function CUI.BuildVisOptsCBDropdown(
                     highlight:SetColorTexture(1, 1, 1, 0)
                 end)
                 row:SetScript("OnClick", function()
-                    if entry.lockedFn and entry.lockedFn() then
-                        return
-                    end
+                    if entry.lockedFn and entry.lockedFn() then return end
                     setFn(entry.key, true)
                     -- Refresh all checkbox visuals + dynamic action labels
                     for _, r in ipairs(_allRows) do
-                        if r.frame._updateCheck then
-                            r.frame._updateCheck()
-                        end
-                        if r.frame._updateActionLabel then
-                            r.frame._updateActionLabel()
-                        end
-                        if r.frame._updateLocked then
-                            r.frame._updateLocked()
-                        end
+                        if r.frame._updateCheck then r.frame._updateCheck() end
+                        if r.frame._updateActionLabel then r.frame._updateActionLabel() end
+                        if r.frame._updateLocked then r.frame._updateLocked() end
                     end
                     for idx = 1, #_taTints do
                         _taTints[idx]()
@@ -875,12 +793,7 @@ function CUI.BuildVisOptsCBDropdown(
                 row._isLocked = nil
                 local boxFrame, boxBrd, chk = row._box, row._boxBrd, row._chk
                 if chk then
-                    chk:SetColorTexture(
-                        CUI.CLUDES_GREEN.r,
-                        CUI.CLUDES_GREEN.g,
-                        CUI.CLUDES_GREEN.b,
-                        1
-                    )
+                    chk:SetColorTexture(CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b, 1)
                     boxFrame:SetScript("OnEnter", nil)
                     boxFrame:SetScript("OnLeave", nil)
                     boxFrame:EnableMouse(false)
@@ -895,18 +808,14 @@ function CUI.BuildVisOptsCBDropdown(
                 -- Opt-in dimmed rows (item.dimFn): a pick that has no effect here right now
                 -- (it shows somewhere else) rests dimmed but stays clickable, and hovering it
                 -- shows item.dimTooltip (string or function) in place of item.tooltip.
-                local function Dimmed()
-                    return (entry.dimFn and entry.dimFn()) and true or false
-                end
+                local function Dimmed() return (entry.dimFn and entry.dimFn()) and true or false end
                 -- Modifier rows rest in the accent only while active; read live, since a
                 -- sibling's click flips the checked state (UpdateCheck runs on every row).
                 local function RestColor()
                     if entry.isModifier and getFn(entry.key) then
                         return CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b
                     end
-                    if Dimmed() then
-                        return 0.5, 0.5, 0.5
-                    end
+                    if Dimmed() then return 0.5, 0.5, 0.5 end
                     return 0.75, 0.75, 0.75
                 end
                 local labelFS, highlight = row._lbl, row._hl
@@ -925,41 +834,26 @@ function CUI.BuildVisOptsCBDropdown(
                 -- opens the colour picker and never toggles the row. While disabled it dims
                 -- and a blocker takes its clicks and explains the requirement.
                 local sw, swUpdate, swBlock = row._sw, row._swUpdate, row._swBlock
-                if sw then
-                    row._swSpec = entry.swatch
-                end
-                local function ShowLaneLocked()
-                    return entry.showLockedFn and entry.showLockedFn() or false
-                end
+                if sw then row._swSpec = entry.swatch end
+                local function ShowLaneLocked() return entry.showLockedFn and entry.showLockedFn() or false end
                 -- item.ovLockedFn is the override-session lock: it blocks the click like any
                 -- other lock, but is painted and explained differently, because the row is not
                 -- merely unavailable here -- it cannot be captured into an override at all.
-                local function OvLocked()
-                    return (entry.ovLockedFn and entry.ovLockedFn()) and true or false
-                end
+                local function OvLocked() return (entry.ovLockedFn and entry.ovLockedFn()) and true or false end
                 local function RowLocked()
-                    if OvLocked() or entry.locked then
-                        return true
-                    end
+                    if OvLocked() or entry.locked then return true end
                     return (entry.lockedFn and entry.lockedFn()) and true or false
                 end
                 local function LockedTip()
                     local lt = (OvLocked() and entry.ovLockedTooltip) or entry.lockedTooltip
-                    if type(lt) == "function" then
-                        lt = lt()
-                    end
+                    if type(lt) == "function" then lt = lt() end
                     return lt
                 end
                 local function SyncCheck()
                     if chk then
                         if getFn(entry.key) then
                             chk:Show()
-                            boxBrd:SetColor(
-                                CUI.CLUDES_GREEN.r,
-                                CUI.CLUDES_GREEN.g,
-                                CUI.CLUDES_GREEN.b,
-                                0.8
-                            )
+                            boxBrd:SetColor(CUI.CLUDES_GREEN.r, CUI.CLUDES_GREEN.g, CUI.CLUDES_GREEN.b, 0.8)
                         else
                             chk:Hide()
                             boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
@@ -1002,36 +896,24 @@ function CUI.BuildVisOptsCBDropdown(
                     if row._isLocked then
                         -- Locked rows keep the gray look (no highlight); if the item explains its lock, show that instead of the normal tooltip.
                         local lt = LockedTip()
-                        if lt then
-                            CUI.ShowWidgetTooltip(row, lt)
-                        end
+                        if lt then CUI.ShowWidgetTooltip(row, lt) end
                         return
                     end
                     labelFS:SetTextColor(1, 1, 1, 1)
                     highlight:SetColorTexture(1, 1, 1, 0.04)
                     local tipText = entry.tooltip
-                    if entry.dimTooltip and Dimmed() then
-                        tipText = entry.dimTooltip
-                    end
-                    if type(tipText) == "function" then
-                        tipText = tipText()
-                    end
-                    if tipText then
-                        CUI.ShowWidgetTooltip(row, tipText)
-                    end
+                    if entry.dimTooltip and Dimmed() then tipText = entry.dimTooltip end
+                    if type(tipText) == "function" then tipText = tipText() end
+                    if tipText then CUI.ShowWidgetTooltip(row, tipText) end
                 end)
                 row:SetScript("OnLeave", function()
                     if row._isLocked then
-                        if entry.lockedTooltip or entry.ovLockedTooltip then
-                            CUI.HideWidgetTooltip()
-                        end
+                        if entry.lockedTooltip or entry.ovLockedTooltip then CUI.HideWidgetTooltip() end
                         return
                     end
                     labelFS:SetTextColor(RestColor())
                     highlight:SetColorTexture(1, 1, 1, 0)
-                    if entry.tooltip or entry.dimTooltip then
-                        CUI.HideWidgetTooltip()
-                    end
+                    if entry.tooltip or entry.dimTooltip then CUI.HideWidgetTooltip() end
                 end)
                 local function UpdateLocked()
                     local isLocked = RowLocked()
@@ -1061,21 +943,13 @@ function CUI.BuildVisOptsCBDropdown(
                     -- the write when it happens. ddBtn's parent carries the row's
                     -- _captureCfg, so the slot is attributed exactly. Opt-in: every other
                     -- checklist keeps the behaviour it has always had.
-                    if options.notifyWrites then
-                        CUI._NotifySettingWrite(dropdownBtn, snap)
-                    end
+                    if options.notifyWrites then CUI._NotifySettingWrite(dropdownBtn, snap) end
                     SyncCaption()
                     -- Refresh checkbox visuals + dynamic action labels, so items whose checked state depends on others (e.g. "Always" in crosshair) update live. Locked visuals refresh too, so rows whose lockedFn depends on the current selection never show a stale gray/active state.
                     for _, r in ipairs(_allRows) do
-                        if r.frame._updateCheck then
-                            r.frame._updateCheck()
-                        end
-                        if r.frame._updateActionLabel then
-                            r.frame._updateActionLabel()
-                        end
-                        if r.frame._updateLocked then
-                            r.frame._updateLocked()
-                        end
+                        if r.frame._updateCheck then r.frame._updateCheck() end
+                        if r.frame._updateActionLabel then r.frame._updateActionLabel() end
+                        if r.frame._updateLocked then r.frame._updateLocked() end
                     end
                     for idx = 1, #_taTints do
                         _taTints[idx]()
@@ -1092,9 +966,7 @@ function CUI.BuildVisOptsCBDropdown(
                     end
                 end
                 row:SetScript("OnClick", function()
-                    if RowLocked() then
-                        return
-                    end
+                    if RowLocked() then return end
                     -- The slot the write belongs to, taken before the setter runs: a
                     -- setter that rebuilds the page can dress ddBtn for another slot.
                     local snap = options.notifyWrites and CUI._SOAttribution(dropdownBtn) or nil
@@ -1109,9 +981,7 @@ function CUI.BuildVisOptsCBDropdown(
                 end)
                 if negBox then
                     negBox:SetScript("OnClick", function()
-                        if RowLocked() then
-                            return
-                        end
+                        if RowLocked() then return end
                         local snap = options.notifyWrites and CUI._SOAttribution(dropdownBtn) or nil
                         CUI._SyncPickNotice(dropdownBtn)
                         setFn(entry.key, not getFn(entry.key, true), true)
@@ -1120,26 +990,20 @@ function CUI.BuildVisOptsCBDropdown(
                     negBox:SetScript("OnEnter", function()
                         if row._isLocked then
                             local lt = LockedTip()
-                            if lt then
-                                CUI.ShowWidgetTooltip(negBox, lt)
-                            end
+                            if lt then CUI.ShowWidgetTooltip(negBox, lt) end
                             return
                         end
                         labelFS:SetTextColor(1, 1, 1, 1)
                         highlight:SetColorTexture(1, 1, 1, 0.04)
                         local hlt = options.hideLaneTooltip
-                        if type(hlt) == "function" then
-                            hlt = hlt(entry.key)
-                        end
+                        if type(hlt) == "function" then hlt = hlt(entry.key) end
                         CUI.ShowWidgetTooltip(
                             negBox,
                             hlt and CUI.L(hlt) or CUI.L("Hide these instead of showing them")
                         )
                     end)
                     negBox:SetScript("OnLeave", function()
-                        if not row._isLocked then
-                            labelFS:SetTextColor(RestColor())
-                        end
+                        if not row._isLocked then labelFS:SetTextColor(RestColor()) end
                         highlight:SetColorTexture(1, 1, 1, 0)
                         CUI.HideWidgetTooltip()
                     end)
@@ -1152,17 +1016,11 @@ function CUI.BuildVisOptsCBDropdown(
                             labelFS:SetTextColor(1, 1, 1, 1)
                             highlight:SetColorTexture(1, 1, 1, 0.04)
                             local tt = entry.showLockedTooltip
-                            if type(tt) == "function" then
-                                tt = tt()
-                            end
-                            if tt then
-                                CUI.ShowWidgetTooltip(boxFrame, tt)
-                            end
+                            if type(tt) == "function" then tt = tt() end
+                            if tt then CUI.ShowWidgetTooltip(boxFrame, tt) end
                         end)
                         boxFrame:SetScript("OnLeave", function()
-                            if not row._isLocked then
-                                labelFS:SetTextColor(RestColor())
-                            end
+                            if not row._isLocked then labelFS:SetTextColor(RestColor()) end
                             highlight:SetColorTexture(1, 1, 1, 0)
                             CUI.HideWidgetTooltip()
                         end)
@@ -1223,9 +1081,7 @@ function CUI.BuildVisOptsCBDropdown(
                             CUI.ShowWidgetTooltip(self, options.ovLockedTooltip)
                         end
                     end)
-                    seal:SetScript("OnLeave", function()
-                        CUI.HideWidgetTooltip()
-                    end)
+                    seal:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                 end
                 seal:ClearAllPoints()
                 seal:SetPoint("TOPLEFT", _allRows[first].frame, "TOPLEFT", 1, 0)
@@ -1238,9 +1094,7 @@ function CUI.BuildVisOptsCBDropdown(
                 seal:SetShown(options.ovLockedFn())
             else
                 dropMenu._ovSeal = nil
-                if seal then
-                    seal:Hide()
-                end
+                if seal then seal:Hide() end
             end
         end
 
@@ -1264,15 +1118,12 @@ function CUI.BuildVisOptsCBDropdown(
                 closeLbl:SetPoint("CENTER")
                 closeLbl:SetText(CUI.L(type(closeButton) == "string" and closeButton or "Okay"))
                 closeLbl:SetTextColor(1, 1, 1, 1)
-                closeBtn:SetScript("OnClick", function()
-                    dropMenu:Hide()
-                end)
-                closeBtn:SetScript("OnEnter", function()
-                    closeBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                end)
-                closeBtn:SetScript("OnLeave", function()
-                    closeBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85)
-                end)
+                closeBtn:SetScript("OnClick", function() dropMenu:Hide() end)
+                closeBtn:SetScript("OnEnter", function() closeBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 1) end)
+                closeBtn:SetScript(
+                    "OnLeave",
+                    function() closeBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85) end
+                )
             end
             closeBtn._bg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85)
             closeBtn:ClearAllPoints()
@@ -1291,9 +1142,7 @@ function CUI.BuildVisOptsCBDropdown(
                 r._updateCheck, r._updateLocked, r._updateActionLabel = nil, nil, nil
             end
         end
-        if not firstBuild then
-            return
-        end
+        if not firstBuild then return end
 
         -- Wire search filtering
         if searchEdit then
@@ -1307,9 +1156,7 @@ function CUI.BuildVisOptsCBDropdown(
                 for _, r in ipairs(_allRows) do
                     if r.isHeader then
                         -- Defer header: show only if a child is visible
-                        if lastHdr and not hdrHasVisible then
-                            lastHdr:Hide()
-                        end
+                        if lastHdr and not hdrHasVisible then lastHdr:Hide() end
                         lastHdr = r.frame
                         lastHdrY = visY
                         hdrHasVisible = false
@@ -1343,9 +1190,7 @@ function CUI.BuildVisOptsCBDropdown(
                     end
                 end
                 -- Hide trailing header with no visible children
-                if lastHdr and not hdrHasVisible then
-                    lastHdr:Hide()
-                end
+                if lastHdr and not hdrHasVisible then lastHdr:Hide() end
                 -- The override seal is anchored to the FIRST and LAST row of its run,
                 -- which this filter hides and repositions without touching the seal. Drop
                 -- it while a filter is active rather than re-deriving the run: with rows
@@ -1363,9 +1208,7 @@ function CUI.BuildVisOptsCBDropdown(
             dropMenu:HookScript("OnShow", function()
                 searchEdit:SetText("")
                 -- Not under the controller cursor: focus would pop its on-screen keyboard over the list.
-                if not CUI.PadCursorShown() then
-                    searchEdit:SetFocus()
-                end
+                if not CUI.PadCursorShown() then searchEdit:SetFocus() end
                 UpdateCBThumb()
             end)
         end
@@ -1375,12 +1218,8 @@ function CUI.BuildVisOptsCBDropdown(
         -- Refresh all checkbox + locked visuals on show
         dropMenu:HookScript("OnShow", function()
             for _, rowInfo in ipairs(_allRows) do
-                if rowInfo.frame._updateCheck then
-                    rowInfo.frame._updateCheck()
-                end
-                if rowInfo.frame._updateLocked then
-                    rowInfo.frame._updateLocked()
-                end
+                if rowInfo.frame._updateCheck then rowInfo.frame._updateCheck() end
+                if rowInfo.frame._updateLocked then rowInfo.frame._updateLocked() end
             end
             for idx = 1, #_taTints do
                 _taTints[idx]()
@@ -1409,28 +1248,20 @@ function CUI.BuildVisOptsCBDropdown(
     end
 
     local function PaintDropNormal()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetTextColor(1, 1, 1, CUI.DD_TXT_A)
         ddBrd:SetColor(1, 1, 1, CUI.DD_BRD_A)
         ddBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_A)
     end
     local function PaintDropHover()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetTextColor(1, 1, 1, CUI.DD_TXT_HA)
         ddBrd:SetColor(1, 1, 1, CUI.DD_BRD_HA)
         ddBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_HA)
     end
-    dropdownBtn:SetScript("OnEnter", function()
-        PaintDropHover()
-    end)
+    dropdownBtn:SetScript("OnEnter", function() PaintDropHover() end)
     dropdownBtn:SetScript("OnLeave", function()
-        if not (dropMenu and dropMenu:IsShown()) then
-            PaintDropNormal()
-        end
+        if not (dropMenu and dropMenu:IsShown()) then PaintDropNormal() end
     end)
 
     local function ShowMenu()
@@ -1452,16 +1283,10 @@ function CUI.BuildVisOptsCBDropdown(
         -- closed would show stale: refresh checked state AND locks on every open. The
         -- case that matters is an override session starting between two opens.
         for _, r in ipairs(dropMenu._rows or {}) do
-            if r.frame._updateCheck then
-                r.frame._updateCheck()
-            end
-            if r.frame._updateLocked then
-                r.frame._updateLocked()
-            end
+            if r.frame._updateCheck then r.frame._updateCheck() end
+            if r.frame._updateLocked then r.frame._updateLocked() end
         end
-        if dropMenu._ovSeal then
-            dropMenu._ovSeal:SetShown(options.ovLockedFn())
-        end
+        if dropMenu._ovSeal then dropMenu._ovSeal:SetShown(options.ovLockedFn()) end
         -- Match the panel's effective scale since menu lives on UIParent
         local btnScale = dropdownBtn:GetEffectiveScale()
         local uiScale = UIParent:GetEffectiveScale()
@@ -1507,43 +1332,29 @@ function CUI.BuildVisOptsCBDropdown(
                     local sfBot = scrollFrame:GetBottom()
                     local btnBot = dropdownBtn:GetBottom()
                     if sfTop and sfBot and btnBot then
-                        if btnBot < sfBot or btnBot > sfTop then
-                            self:Hide()
-                        end
+                        if btnBot < sfBot or btnBot > sfTop then self:Hide() end
                     end
                 end
             end
         end)
         dropMenu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
-            if CUI._openDropdownMenu == self then
-                CUI._openDropdownMenu = nil
-            end
+            if CUI._openDropdownMenu == self then CUI._openDropdownMenu = nil end
             if dropdownBtn:IsMouseOver() then
                 PaintDropHover()
             else
                 PaintDropNormal()
             end
-            if onMenuClosed then
-                onMenuClosed()
-            end
+            if onMenuClosed then onMenuClosed() end
             -- Controller cursor: back onto the dropdown button (a no-op once that is hidden too).
-            if CUI.PadCursorShown() then
-                CUI.PadFocus(dropdownBtn)
-            end
+            if CUI.PadCursorShown() then CUI.PadFocus(dropdownBtn) end
         end)
-        if dropMenu._padFocus and CUI.PadCursorShown() then
-            dropMenu._padFocus()
-        end
+        if dropMenu._padFocus and CUI.PadCursorShown() then dropMenu._padFocus() end
     end
 
-    dropdownBtn:SetScript("OnClick", function()
-        ShowMenu()
-    end)
+    dropdownBtn:SetScript("OnClick", function() ShowMenu() end)
     dropdownBtn:HookScript("OnHide", function()
-        if dropMenu then
-            dropMenu:Hide()
-        end
+        if dropMenu then dropMenu:Hide() end
     end)
 
     -- RefreshAll(true), opt-in: a dynamic list is read again first, so the summary
@@ -1552,25 +1363,17 @@ function CUI.BuildVisOptsCBDropdown(
     local function RefreshAll(reread)
         -- A caller may keep this past a page pass that dressed ddBtn (and with it
         -- the kept menu) for another build.
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         if reread == true and itemsFn and not (dropMenu and dropMenu:IsShown()) then
             itemList = itemsFn() or {}
         end
         SyncCaption()
         if dropMenu then
             for _, r in ipairs(dropMenu._rows or {}) do
-                if r.frame._updateCheck then
-                    r.frame._updateCheck()
-                end
-                if r.frame._updateLocked then
-                    r.frame._updateLocked()
-                end
+                if r.frame._updateCheck then r.frame._updateCheck() end
+                if r.frame._updateLocked then r.frame._updateLocked() end
             end
-            if dropMenu._ovSeal then
-                dropMenu._ovSeal:SetShown(options.ovLockedFn())
-            end
+            if dropMenu._ovSeal then dropMenu._ovSeal:SetShown(options.ovLockedFn()) end
         end
     end
 
@@ -1581,20 +1384,14 @@ function CUI.BuildVisOptsCBDropdown(
         block:EnableMouse(true)
         block:SetScript("OnEnter", function()
             local tipText = CUI.ResolveDisabledTip(options)
-            if tipText then
-                CUI.ShowWidgetTooltip(dropdownBtn, tipText)
-            end
+            if tipText then CUI.ShowWidgetTooltip(dropdownBtn, tipText) end
         end)
-        block:SetScript("OnLeave", function()
-            CUI.HideWidgetTooltip()
-        end)
+        block:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         local function DisabledState()
             local off = options.disabled() and true or false
             dropdownBtn:SetAlpha(off and 0.4 or 1)
             block:SetShown(off)
-            if off and dropMenu then
-                dropMenu:Hide()
-            end
+            if off and dropMenu then dropMenu:Hide() end
         end
         DisabledState()
         CUI.RegisterWidgetRefresh(DisabledState)
@@ -1621,8 +1418,7 @@ function CUI.SpecPickItems(options)
     options = options or {}
     local lockedFn, allLockedFn = options.lockedFn, options.allLockedFn
     local itemList, roles = {}, {}
-    itemList[1] =
-        { key = CUI.SPEC_PICK_ALL, label = "All Specs", isAction = true, lockedFn = allLockedFn }
+    itemList[1] = { key = CUI.SPEC_PICK_ALL, label = "All Specs", isAction = true, lockedFn = allLockedFn }
     if CUI.IS_FOREVER then
         local classes = CUI.ForeverClasses()
         for num = 1, #classes do
@@ -1633,9 +1429,7 @@ function CUI.SpecPickItems(options)
                 label = CUI.ForeverClassName(token),
                 lockedFn = lockedFn and function()
                     for idx = 1, #ids do
-                        if lockedFn(ids[idx]) then
-                            return true
-                        end
+                        if lockedFn(ids[idx]) then return true end
                     end
                     return false
                 end or nil,
@@ -1658,13 +1452,9 @@ function CUI.SpecPickItems(options)
     local classList = {}
     for classID = 1, (GetNumClasses and GetNumClasses() or 13) do
         local className = GetClassInfo(classID)
-        if className then
-            classList[#classList + 1] = { classID = classID, className = className }
-        end
+        if className then classList[#classList + 1] = { classID = classID, className = className } end
     end
-    table.sort(classList, function(lhs, rhs)
-        return lhs.className < rhs.className
-    end)
+    table.sort(classList, function(lhs, rhs) return lhs.className < rhs.className end)
     local healers, tanks, dps = {}, {}, {}
     for _, cls in ipairs(classList) do
         itemList[#itemList + 1] = { isHeader = true, label = cls.className }
@@ -1675,9 +1465,7 @@ function CUI.SpecPickItems(options)
                 itemList[#itemList + 1] = {
                     key = specID,
                     label = specName,
-                    lockedFn = lockedFn and function()
-                        return lockedFn(spellRef)
-                    end or nil,
+                    lockedFn = lockedFn and function() return lockedFn(spellRef) end or nil,
                 }
                 if role == "HEALER" then
                     healers[#healers + 1] = specID
@@ -1722,9 +1510,7 @@ function CUI.AttachRowReorder(host, specInfo)
     local insLine, status = specInfo.insLine, specInfo.state
     -- Read live: a host raised after this call (a cog popup lifts its open
     -- dropdown menu) would otherwise park dropped rows behind its background.
-    local function BaseLevel()
-        return host:GetFrameLevel() + 2
-    end
+    local function BaseLevel() return host:GetFrameLevel() + 2 end
     local function Park(row)
         row:SetFrameLevel(BaseLevel())
         row:SetAlpha(1)
@@ -1753,26 +1539,18 @@ function CUI.AttachRowReorder(host, specInfo)
         local dsY, dgO, dgFrom
         local DragUpdate
         row:SetScript("OnMouseDown", function(self, b)
-            if b ~= "LeftButton" then
-                return
-            end
+            if b ~= "LeftButton" then return end
             row._suppressClick = nil
-            if specInfo.canReorder and not specInfo.canReorder() then
-                return
-            end
+            if specInfo.canReorder and not specInfo.canReorder() then return end
             local _, curY = GetCursorPosition()
             dsY = curY
             self:SetScript("OnUpdate", DragUpdate)
         end)
         row:SetScript("OnMouseUp", function(self, b)
-            if b ~= "LeftButton" then
-                return
-            end
+            if b ~= "LeftButton" then return end
             dsY = nil
             self:SetScript("OnUpdate", nil)
-            if not status.dragging then
-                return
-            end
+            if not status.dragging then return end
             self._suppressClick = true
             status.dragging = false
             insLine:Hide()
@@ -1793,9 +1571,7 @@ function CUI.AttachRowReorder(host, specInfo)
             end
             -- Gap -> insertion index: removing the row first shifts everything after it up one, so downward moves adjust by -1 (same as the raid frames Sort By drop).
             local iI = TargetGap(curY, from)
-            if from and from < iI then
-                iI = iI - 1
-            end
+            if from and from < iI then iI = iI - 1 end
             local to = math.max(1, math.min(iI, #movable))
             if from and from ~= to then
                 local mv = table.remove(movable, from)
@@ -1811,14 +1587,10 @@ function CUI.AttachRowReorder(host, specInfo)
             specInfo.refresh()
         end)
         DragUpdate = function(self)
-            if not dsY then
-                return
-            end
+            if not dsY then return end
             local _, curY = GetCursorPosition()
             if not status.dragging then
-                if math.abs(curY - dsY) < 3 then
-                    return
-                end
+                if math.abs(curY - dsY) < 3 then return end
                 status.dragging = true
                 local sc = host:GetEffectiveScale()
                 dgO = (curY / sc) - (self:GetTop() or 0)
@@ -1831,9 +1603,7 @@ function CUI.AttachRowReorder(host, specInfo)
                 end
                 self:SetFrameLevel(BaseLevel() + 8)
                 self:SetAlpha(0.8)
-                if specInfo.onDragStart then
-                    specInfo.onDragStart(self)
-                end
+                if specInfo.onDragStart then specInfo.onDragStart(self) end
             end
             local sc = host:GetEffectiveScale()
             local cY = curY / sc
@@ -1850,9 +1620,7 @@ function CUI.AttachRowReorder(host, specInfo)
             insLine:Show()
         end
         row._cancelDrag = function(self)
-            if not dsY then
-                return
-            end
+            if not dsY then return end
             dsY = nil
             self:SetScript("OnUpdate", nil)
             Park(self)
@@ -1890,9 +1658,7 @@ end
 function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, setFn, options)
     -- Search prebuild on an absorber row: the dropdown indexes nothing, so none is built.
     local standIn = StandIn(parentFrame)
-    if standIn then
-        return standIn, standIn
-    end
+    if standIn then return standIn, standIn end
     options = options or {}
     local Pix = CUI.PanelPP
     local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
@@ -1948,33 +1714,23 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
     dropCaption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
     local function SummaryLabel()
-        if options.summaryLabel then
-            return options.summaryLabel(movable, fixedItems, getFn)
-        end
+        if options.summaryLabel then return options.summaryLabel(movable, fixedItems, getFn) end
         local nameList = {}
         local sum = 0
         local function collect(entries)
             for _, entry in ipairs(entries) do
                 sum = sum + 1
-                if getFn(entry.key) then
-                    nameList[#nameList + 1] = CUI.L(entry.label)
-                end
+                if getFn(entry.key) then nameList[#nameList + 1] = CUI.L(entry.label) end
             end
         end
         collect(movable)
         collect(fixedItems)
-        if #nameList == 0 then
-            return CUI.L("None")
-        end
-        if #nameList == sum then
-            return CUI.L("All")
-        end
+        if #nameList == 0 then return CUI.L("None") end
+        if #nameList == sum then return CUI.L("All") end
         return table.concat(nameList, ", ")
     end
     local function SyncCaption()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetText(SummaryLabel())
     end
     SyncCaption()
@@ -1988,9 +1744,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
     local DIV_H = 7
 
     local function BuildMenuOnce()
-        if dropMenu then
-            return
-        end
+        if dropMenu then return end
         local HEAD_H = (#head > 0) and (#head * ITEM_HEIGHT + DIV_H) or 0
         local TAIL_H = (#tail > 0) and (DIV_H + #tail * ITEM_HEIGHT) or 0
         local ROWS_BASE_Y = -4 - HEAD_H - HINT_H
@@ -2075,9 +1829,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             end)
             row:SetScript("OnClick", function()
                 hover = false
-                if onPick then
-                    onPick(entry.key)
-                end
+                if onPick then onPick(entry.key) end
                 dropMenu:Hide()
                 SyncCaption()
             end)
@@ -2101,9 +1853,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
         insLine:Hide()
 
-        local function SlotY(idx)
-            return ROWS_BASE_Y - (idx - 1) * ITEM_HEIGHT
-        end
+        local function SlotY(idx) return ROWS_BASE_Y - (idx - 1) * ITEM_HEIGHT end
 
         local function BuildRow(entry, slotY, draggable)
             local row = CreateFrame("Button", nil, dropMenu)
@@ -2159,41 +1909,29 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             row._updateCheck = SyncCheck
             row._lbl = labelFS
             row:SetScript("OnEnter", function()
-                if dragState.dragging then
-                    return
-                end
+                if dragState.dragging then return end
                 labelFS:SetTextColor(1, 1, 1, 1)
                 highlight:SetColorTexture(1, 1, 1, 0.04)
                 -- The row's current item (drops shuffle row contents).
                 local tipText = row._item.tooltip
-                if tipText then
-                    CUI.ShowWidgetTooltip(row, tipText)
-                end
+                if tipText then CUI.ShowWidgetTooltip(row, tipText) end
             end)
             row:SetScript("OnLeave", function()
-                if dragState.dragging then
-                    return
-                end
+                if dragState.dragging then return end
                 labelFS:SetTextColor(0.75, 0.75, 0.75, 1)
                 highlight:SetColorTexture(1, 1, 1, 0)
-                if row._item.tooltip then
-                    CUI.HideWidgetTooltip()
-                end
+                if row._item.tooltip then CUI.HideWidgetTooltip() end
             end)
             row:SetScript("OnClick", function()
                 if row._suppressClick then
                     row._suppressClick = nil
                     return
                 end
-                if dragState.dragging then
-                    return
-                end
+                if dragState.dragging then return end
                 setFn(row._item.key, not getFn(row._item.key), MovableKeys())
                 SyncCaption()
                 for _, r in ipairs(allRows) do
-                    if r._updateCheck then
-                        r._updateCheck()
-                    end
+                    if r._updateCheck then r._updateCheck() end
                 end
                 PaintPlainRows()
             end)
@@ -2228,16 +1966,12 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             refresh = RefreshMovableRows,
             onDragStart = function()
                 for _, rf in ipairs(movableRows) do
-                    if rf._lbl then
-                        rf._lbl:SetTextColor(0.75, 0.75, 0.75, 1)
-                    end
+                    if rf._lbl then rf._lbl:SetTextColor(0.75, 0.75, 0.75, 1) end
                 end
             end,
             onDrop = function(keyList)
                 orderChanged = true
-                if options.setOrder then
-                    options.setOrder(keyList)
-                end
+                if options.setOrder then options.setOrder(keyList) end
                 SyncCaption()
             end,
         })
@@ -2251,7 +1985,11 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             dl:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -10, divY)
             dl:SetColorTexture(1, 1, 1, 0.08)
             for idx = 1, #fixedItems do
-                BuildRow(fixedItems[idx], ROWS_BASE_Y - #movable * ITEM_HEIGHT - DIV_H - (idx - 1) * ITEM_HEIGHT, false)
+                BuildRow(
+                    fixedItems[idx],
+                    ROWS_BASE_Y - #movable * ITEM_HEIGHT - DIV_H - (idx - 1) * ITEM_HEIGHT,
+                    false
+                )
             end
         end
 
@@ -2303,9 +2041,7 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
                 RefreshMovableRows()
             end
             for _, r in ipairs(allRows) do
-                if r._updateCheck then
-                    r._updateCheck()
-                end
+                if r._updateCheck then r._updateCheck() end
             end
             PaintPlainRows()
         end)
@@ -2319,14 +2055,10 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
             insLine:Hide()
             -- Controller cursor: back onto the dropdown button before onClose, so a
             -- prompt it opens can still take the cursor (a no-op once the button is hidden).
-            if CUI.PadCursorShown() then
-                CUI.PadFocus(dropdownBtn)
-            end
+            if CUI.PadCursorShown() then CUI.PadFocus(dropdownBtn) end
             local changed = orderChanged
             orderChanged = false
-            if options.onClose then
-                options.onClose(changed)
-            end
+            if options.onClose then options.onClose(changed) end
         end)
 
         CUI.TrackOverlay(dropMenu)
@@ -2334,26 +2066,20 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
     end
 
     local function PaintDropNormal()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetTextColor(1, 1, 1, CUI.DD_TXT_A)
         ddBrd:SetColor(1, 1, 1, CUI.DD_BRD_A)
         ddBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_A)
     end
     local function PaintDropHover()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetTextColor(1, 1, 1, CUI.DD_TXT_HA)
         ddBrd:SetColor(1, 1, 1, CUI.DD_BRD_HA)
         ddBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, CUI.DD_BG_HA)
     end
     dropdownBtn:SetScript("OnEnter", PaintDropHover)
     dropdownBtn:SetScript("OnLeave", function()
-        if not (dropMenu and dropMenu:IsShown()) then
-            PaintDropNormal()
-        end
+        if not (dropMenu and dropMenu:IsShown()) then PaintDropNormal() end
     end)
 
     local function ShowMenu()
@@ -2369,33 +2095,29 @@ function CUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, getFn, s
         PaintDropHover()
         dropMenu:Show()
         dropMenu:SetScript("OnUpdate", function(self)
-            if not self:IsMouseOver() and not dropdownBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+            if
+                not self:IsMouseOver()
+                and not dropdownBtn:IsMouseOver()
+                and IsMouseButtonDown("LeftButton")
+            then
                 self:Hide()
             end
         end)
         -- Controller cursor: into the opened list.
-        if CUI.PadCursorShown() then
-            CUI.PadFocus(dropMenu)
-        end
+        if CUI.PadCursorShown() then CUI.PadFocus(dropMenu) end
     end
     dropdownBtn:SetScript("OnClick", ShowMenu)
     dropdownBtn:HookScript("OnHide", function()
-        if dropMenu then
-            dropMenu:Hide()
-        end
+        if dropMenu then dropMenu:Hide() end
     end)
 
     local function RefreshAll()
         -- A caller may keep this past a page pass that dressed ddBtn (and with it
         -- the kept menu's rows) for another build.
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         SyncCaption()
         for _, r in ipairs(allRows) do
-            if r._updateCheck then
-                r._updateCheck()
-            end
+            if r._updateCheck then r._updateCheck() end
         end
         PaintPlainRows()
     end
@@ -2416,9 +2138,7 @@ end
 function CUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, options)
     -- Search prebuild on an absorber row: the dropdown indexes nothing, so none is built.
     local standIn = StandIn(parentFrame)
-    if standIn then
-        return standIn, standIn
-    end
+    if standIn then return standIn, standIn end
     local Pix = CUI.PanelPP
     options = options or {}
     local fontFile = CUI.EXPRESSWAY
@@ -2440,30 +2160,19 @@ function CUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, options)
     dropCaption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
     local function PaintEntry(hover)
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         dropCaption:SetTextColor(1, 1, 1, hover and CUI.DD_TXT_HA or CUI.DD_TXT_A)
         ddBrd:SetColor(1, 1, 1, hover and CUI.DD_BRD_HA or CUI.DD_BRD_A)
-        ddBg:SetColorTexture(
-            CUI.DD_BG_R,
-            CUI.DD_BG_G,
-            CUI.DD_BG_B,
-            hover and CUI.DD_BG_HA or CUI.DD_BG_A
-        )
+        ddBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, hover and CUI.DD_BG_HA or CUI.DD_BG_A)
     end
     PaintEntry(false)
 
     local function SyncCaption()
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         local nameList = {}
         for _, entry in ipairs(itemList) do
             local val = entry.get()
-            if val and val ~= (entry.min or 0) then
-                nameList[#nameList + 1] = CUI.L(entry.label)
-            end
+            if val and val ~= (entry.min or 0) then nameList[#nameList + 1] = CUI.L(entry.label) end
         end
         if #nameList == 0 then
             dropCaption:SetText(CUI.L("None"))
@@ -2478,9 +2187,7 @@ function CUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, options)
     local dropMenu, refreshers
     local ROW_H, PAD, TRACK_W = 34, 6, 140
     local function BuildMenuOnce()
-        if dropMenu then
-            return
-        end
+        if dropMenu then return end
         -- One menu per dropdown button for the session: a build that dresses the
         -- button again gets this frame back here, reset to new.
         dropMenu = PoolKept(dropdownBtn, "sliderMenu", "Frame", CUI.OverlayParent())
@@ -2551,12 +2258,8 @@ function CUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, options)
             labelFS:SetText(CUI.L(entry.label))
             if entry.tooltip then
                 row:EnableMouse(true)
-                row:SetScript("OnEnter", function()
-                    CUI.ShowWidgetTooltip(labelFS, entry.tooltip)
-                end)
-                row:SetScript("OnLeave", function()
-                    CUI.HideWidgetTooltip()
-                end)
+                row:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(labelFS, entry.tooltip) end)
+                row:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
             end
             if idx < #itemList then
                 local div = row:CreateTexture(nil, "ARTWORK")
@@ -2569,18 +2272,12 @@ function CUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, options)
 
         dropMenu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
-            if CUI._openDropdownMenu == self then
-                CUI._openDropdownMenu = nil
-            end
+            if CUI._openDropdownMenu == self then CUI._openDropdownMenu = nil end
             PaintEntry(dropdownBtn:IsMouseOver())
             -- Controller cursor: back onto the button (a no-op once that is hidden too).
-            if CUI.PadCursorShown() then
-                CUI.PadFocus(dropdownBtn)
-            end
+            if CUI.PadCursorShown() then CUI.PadFocus(dropdownBtn) end
         end)
-        if CUI.PadCP() then
-            CUI.TrackOverlay(dropMenu)
-        end
+        if CUI.PadCP() then CUI.TrackOverlay(dropMenu) end
     end
 
     -- Whether the button scrolls with the page (decided on the first open).
@@ -2628,36 +2325,24 @@ function CUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, options)
             -- The button scrolled out of the page's visible area.
             if inScroll then
                 local topY, bot, b = sf:GetTop(), sf:GetBottom(), dropdownBtn:GetBottom()
-                if topY and bot and b and (b < bot or b > topY) then
-                    self:Hide()
-                end
+                if topY and bot and b and (b < bot or b > topY) then self:Hide() end
             end
         end)
-        if CUI.PadCursorShown() then
-            CUI.PadFocus(dropMenu)
-        end
+        if CUI.PadCursorShown() then CUI.PadFocus(dropMenu) end
     end
-    dropdownBtn:SetScript("OnEnter", function()
-        PaintEntry(true)
-    end)
+    dropdownBtn:SetScript("OnEnter", function() PaintEntry(true) end)
     dropdownBtn:SetScript("OnLeave", function()
-        if not (dropMenu and dropMenu:IsShown()) then
-            PaintEntry(false)
-        end
+        if not (dropMenu and dropMenu:IsShown()) then PaintEntry(false) end
     end)
     dropdownBtn:SetScript("OnClick", ShowMenu)
     dropdownBtn:HookScript("OnHide", function()
-        if dropMenu then
-            dropMenu:Hide()
-        end
+        if dropMenu then dropMenu:Hide() end
     end)
 
     local function RefreshAll()
         -- A caller may keep this past a page pass that dressed ddBtn (and with it
         -- the kept menu's sliders) for another build.
-        if PoolGen(dropdownBtn) ~= dressGen then
-            return
-        end
+        if PoolGen(dropdownBtn) ~= dressGen then return end
         SyncCaption()
         if dropMenu and dropMenu:IsShown() then
             for idx = 1, #refreshers do

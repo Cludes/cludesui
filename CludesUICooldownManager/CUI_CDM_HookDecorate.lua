@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookDecorate.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local barMap = mod.barDataByKey
@@ -60,25 +56,17 @@ end
 local parkWatched = setmetatable({}, { __mode = "k" })
 
 local function OnParkedIconSetPoint(widget, _, relativeTo)
-    if relativeTo == UIParent then
-        return
-    end
+    if relativeTo == UIParent then return end
     local frameData = hookFrameData[widget]
-    if frameData and frameData.decorated then
-        return
-    end
+    if frameData and frameData.decorated then return end
     widget:SetAlpha(0)
     QueueViewerAnchor(widget)
 end
 
 local function WatchParkedIcon(widget)
-    if parkWatched[widget] then
-        return
-    end
+    if parkWatched[widget] then return end
     local frameData = hookFrameData[widget]
-    if frameData and frameData.decorated then
-        return
-    end
+    if frameData and frameData.decorated then return end
     parkWatched[widget] = true
     hooksecurefunc(widget, "SetPoint", OnParkedIconSetPoint)
 end
@@ -106,13 +94,9 @@ local function RestoreViewerAnchors(viewer)
             end
         end
     end
-    if next(viewerPending) == nil then
-        viewerRestore:Hide()
-    end
+    if next(viewerPending) == nil then viewerRestore:Hide() end
 end
-viewerRestore:SetScript("OnUpdate", function()
-    RestoreViewerAnchors()
-end)
+viewerRestore:SetScript("OnUpdate", function() RestoreViewerAnchors() end)
 
 -------------------------------------------------------------------------------
 --  DecorateFrame
@@ -123,9 +107,7 @@ local function DecorateFrame(widget, barInfo)
     -- cooldown/border/glowOverlay). Never register it in hookFrameData -- every
     -- _getFD(icon) lookup then reads nil and every fd-driven pass (bar-wide
     -- glow/border/background included) already no-ops on a nil fd.
-    if widget._isEmptySlotFrame then
-        return
-    end
+    if widget._isEmptySlotFrame then return end
     local frameData = hookFrameData[widget]
     if not frameData then
         frameData = {}
@@ -149,9 +131,7 @@ local function DecorateFrame(widget, barInfo)
     frameData._blizzArt = blizzArt or nil
 
     if blizzArt then
-        if frameData.bg then
-            frameData.bg:Hide()
-        end
+        if frameData.bg then frameData.bg:Hide() end
     else
         if not frameData.bg then
             local backdrop = widget:CreateTexture(nil, "BACKGROUND")
@@ -192,17 +172,13 @@ local function DecorateFrame(widget, barInfo)
         if frameData.borderFrame then
             CludesUI.PP.HideBorder(frameData.borderFrame)
             local bdFrame = CludesUI._bdBorderData and CludesUI._bdBorderData[frameData.borderFrame]
-            if bdFrame then
-                bdFrame:Hide()
-            end
+            if bdFrame then bdFrame:Hide() end
         end
     elseif shapeKey and shapeKey ~= "none" and shapeKey ~= "cropped" then
         if frameData.borderFrame then
             CludesUI.PP.HideBorder(frameData.borderFrame)
             local bdFrame = CludesUI._bdBorderData and CludesUI._bdBorderData[frameData.borderFrame]
-            if bdFrame then
-                bdFrame:Hide()
-            end
+            if bdFrame then bdFrame:Hide() end
         end
     else
         if not frameData.borderFrame then
@@ -257,22 +233,14 @@ local function DecorateFrame(widget, barInfo)
             CludesUI.SetBorderStyleColor(frameData.borderFrame, abR, abG, abB, abA)
         end
     end
-    if frameData.glowOverlay then
-        frameData.glowOverlay:SetFrameLevel(baseLvl + 16)
-    end
+    if frameData.glowOverlay then frameData.glowOverlay:SetFrameLevel(baseLvl + 16) end
     -- Blackout (solid-fill Cooldown State glow) sits BELOW frame.Cooldown
     -- (icon+14, +13 under a Pixels border), unlike every other glow style on glowOverlay (icon+16): a
     -- fill above it would hide the swipe and countdown. Made by
     -- ns.StartCdGlow on the icon's first Blackout start.
-    if frameData.blackoutOverlay then
-        frameData.blackoutOverlay:SetFrameLevel(baseLvl + 12)
-    end
-    if frameData.textOverlay then
-        frameData.textOverlay:SetFrameLevel(baseLvl + 23)
-    end
-    if blizzArt then
-        mod.CdmApplyBlizzIconArt(widget)
-    end
+    if frameData.blackoutOverlay then frameData.blackoutOverlay:SetFrameLevel(baseLvl + 12) end
+    if frameData.textOverlay then frameData.textOverlay:SetFrameLevel(baseLvl + 23) end
+    if blizzArt then mod.CdmApplyBlizzIconArt(widget) end
 
     if frameData.decorated then
         -- Late retry: the style block already ran; skip one-time decoration.
@@ -294,9 +262,7 @@ local function DecorateFrame(widget, barInfo)
 
     local iconWidget = widget.Icon
     if iconWidget and not iconWidget.GetTexture then
-        if iconWidget.Icon then
-            iconWidget = iconWidget.Icon
-        end
+        if iconWidget.Icon then iconWidget = iconWidget.Icon end
     end
     frameData.tex = iconWidget
     frameData.cooldown = widget.Cooldown
@@ -331,9 +297,7 @@ local function DecorateFrame(widget, barInfo)
     if not frameData._setPointHooked then
         frameData._setPointHooked = true
         hooksecurefunc(widget, "SetPoint", function(_, anchorPoint, relativeTo)
-            if frameData._parkGuard then
-                return
-            end
+            if frameData._parkGuard then return end
             local anchor = frameData._cdmAnchor
             if not anchor then
                 -- Not yet claimed by our bar system: re-blank so it does not flash at
@@ -342,16 +306,12 @@ local function DecorateFrame(widget, barInfo)
                     widget:SetAlpha(0)
                     -- Alpha can be raised by the engine; park CD/utility icons
                     -- after measurement. Unclaimed buff pools stay hands-off.
-                    if not frameData._isBuffViewerFrame then
-                        QueueViewerAnchor(widget)
-                    end
+                    if not frameData._isBuffViewerFrame then QueueViewerAnchor(widget) end
                 end
                 return
             end
             -- relativeTo == our bar container: our own LayoutCDMBar SetPoint.
-            if relativeTo == anchor[2] then
-                return
-            end
+            if relativeTo == anchor[2] then return end
             QueueViewerAnchor(widget)
         end)
     end
@@ -385,9 +345,7 @@ local function DecorateFrame(widget, barInfo)
     if not frameData.keybindText then
         local kt = frameData.textOverlay:CreateFontString(nil, "OVERLAY")
         local kbScale = widget:GetScale() or 1
-        if kbScale < 0.01 then
-            kbScale = 1
-        end
+        if kbScale < 0.01 then kbScale = 1 end
         CludesUI.ApplyIconTextFont(kt, GetCDMFont(), (barInfo.keybindSize or 10) / kbScale, "cdm")
         kt:Hide()
         mod.StyleCDMKeybind(kt, barInfo, frameData.textOverlay, 1 / kbScale, GetCDMFont())
@@ -406,9 +364,7 @@ local function DecorateFrame(widget, barInfo)
         widget:HookScript("OnEnter", function()
             local ffc = _ecmeFC[widget]
             local edge = ffc and ffc.barKey and barMap[ffc.barKey]
-            if edge and not edge.showTooltip then
-                GameTooltip:Hide()
-            end
+            if edge and not edge.showTooltip then GameTooltip:Hide() end
         end)
     end
 
@@ -436,9 +392,7 @@ local function DecorateFrame(widget, barInfo)
             frameData._swipeColorHooked = true
             local cooldown = frameData.cooldown
             hooksecurefunc(cooldown, "SetSwipeColor", function()
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 -- Buff-viewer frame (buff bar or hosted) or our own preset/custom
                 -- buff frame (cast-timer driven): the swipe is the aura DURATION,
                 -- so skip all cd-style logic (Suppress-GCD, active-state) and
@@ -483,9 +437,7 @@ local function DecorateFrame(widget, barInfo)
                 -- suppressGCD flag joins the bar toggle there (pure hoist --
                 -- this resolve always ran once per hook pass, just later).
                 local iconSettings
-                if spellKey and barKeyOf then
-                    iconSettings = ResolveSpellSettings(widget, spellKey, false)
-                end
+                if spellKey and barKeyOf then iconSettings = ResolveSpellSettings(widget, spellKey, false) end
                 local _gcdSuppressed = false
                 -- Recharge duration of a charge spell whose recharge is running
                 -- out underneath a GCD; see ns.GCDTailAlpha at the swipe writes.
@@ -533,13 +485,18 @@ local function DecorateFrame(widget, barInfo)
                     local chargeRecharging = false
                     do
                         local chargeInfo = CdmChargeInfoFor(widget, spellKey)
-                        chargeRecharging = (chargeInfo and (chargeInfo.maxCharges or 0) > 1 and chargeInfo.isActive == true) or false
+                        chargeRecharging = (
+                            chargeInfo
+                            and (chargeInfo.maxCharges or 0) > 1
+                            and chargeInfo.isActive == true
+                        ) or false
                     end
                     -- The GCD read must use the override too: a transform's real
                     -- CD ticks on the override ID, and the base-ID query reads
                     -- isOnGCD=true through that whole CD, suppressing the swipe
                     -- for its full duration.
-                    local cooldownInfo = C_Spell.GetSpellCooldown(effID2) or C_Spell.GetSpellCooldown(spellKey)
+                    local cooldownInfo = C_Spell.GetSpellCooldown(effID2)
+                        or C_Spell.GetSpellCooldown(spellKey)
                     if cooldownInfo and cooldownInfo.isOnGCD then
                         if not chargeRecharging then
                             if not frameData._hideActiveOverriding then
@@ -577,12 +534,8 @@ local function DecorateFrame(widget, barInfo)
                 -- Flip the per-session gates the moment any spell uses these
                 -- settings, so the SetDesaturated/SetDrawSwipe hooks early-out on
                 -- one check for everyone else. Runs for every icon on login.
-                if iconSettings and iconSettings.desatNotActive then
-                    mod._cdmAnyDesatNotActive = true
-                end
-                if iconSettings and iconSettings.noDesatOnCD then
-                    mod._cdmAnyNoDesatOnCD = true
-                end
+                if iconSettings and iconSettings.desatNotActive then mod._cdmAnyDesatNotActive = true end
+                if iconSettings and iconSettings.noDesatOnCD then mod._cdmAnyNoDesatOnCD = true end
                 if iconSettings and iconSettings.noResourceTint and not frameData._resTintHooked then
                     mod._cdmAnyNoResourceTint = true
                     ApplyResourceTint(widget, frameData)
@@ -596,24 +549,14 @@ local function DecorateFrame(widget, barInfo)
                 if iconSettings and iconSettings.activeGlow and iconSettings.activeGlow > 0 then
                     mod._cdmAnyActiveGlow = true
                 end
-                if iconSettings and iconSettings.chargeHideCdText then
-                    mod._cdmAnyChargeHideCdText = true
-                end
+                if iconSettings and iconSettings.chargeHideCdText then mod._cdmAnyChargeHideCdText = true end
                 if iconSettings and iconSettings.showCooldownText ~= nil then
                     mod._cdmAnySpellDurationText = true
                 end
-                if iconSettings and iconSettings.hideChargeText then
-                    mod._cdmAnyHideChargeText = true
-                end
-                if iconSettings and iconSettings.suppressGCD then
-                    mod._cdmAnySuppressGcd = true
-                end
-                if iconSettings and iconSettings.reverseSwipe then
-                    mod._cdmAnyReverseSwipe = true
-                end
-                if iconSettings and iconSettings.hideCDSwipe then
-                    mod._cdmAnyHideCDSwipe = true
-                end
+                if iconSettings and iconSettings.hideChargeText then mod._cdmAnyHideChargeText = true end
+                if iconSettings and iconSettings.suppressGCD then mod._cdmAnySuppressGcd = true end
+                if iconSettings and iconSettings.reverseSwipe then mod._cdmAnyReverseSwipe = true end
+                if iconSettings and iconSettings.hideCDSwipe then mod._cdmAnyHideCDSwipe = true end
                 if iconSettings and (tonumber(iconSettings.thresholdSeconds) or 0) > 0 then
                     mod._cdmAnyThresholdText = true
                 end
@@ -647,8 +590,11 @@ local function DecorateFrame(widget, barInfo)
                         local chargeRecharging = false
                         do
                             local chargeInfo = CdmChargeInfoFor(widget, spellKey)
-                            chargeRecharging = (chargeInfo and (chargeInfo.maxCharges or 0) > 1 and chargeInfo.isActive == true)
-                                or false
+                            chargeRecharging = (
+                                chargeInfo
+                                and (chargeInfo.maxCharges or 0) > 1
+                                and chargeInfo.isActive == true
+                            ) or false
                         end
                         if not chargeRecharging then
                             local ovrID = C_SpellBook.FindSpellOverrideByID(spellKey)
@@ -667,9 +613,7 @@ local function DecorateFrame(widget, barInfo)
                         frameData._wasActive = true
                     elseif frameData._hideActiveOverriding then
                         frameData._hideActiveOverriding = false
-                        if cooldown.SetUseAuraDisplayTime then
-                            cooldown:SetUseAuraDisplayTime(true)
-                        end
+                        if cooldown.SetUseAuraDisplayTime then cooldown:SetUseAuraDisplayTime(true) end
                     end
                 elseif isActive then
                     -- Active: swipe color (custom, class, or default #FFC660).
@@ -685,7 +629,11 @@ local function DecorateFrame(widget, barInfo)
                     end
                     -- Blizzard Style: the viewer's own active swipe colour
                     -- unless a per-spell active colour is set.
-                    if frameData._blizzArt and not cr and not (iconSettings and iconSettings.activeSwipeR) then
+                    if
+                        frameData._blizzArt
+                        and not cr
+                        and not (iconSettings and iconSettings.activeSwipeR)
+                    then
                         cr, cg, callback = 1, 0.95, 0.57
                     end
                     cr = cr or (iconSettings and iconSettings.activeSwipeR) or 1
@@ -701,7 +649,12 @@ local function DecorateFrame(widget, barInfo)
                 else
                     -- Not active: black swipe.
                     if not _gcdSuppressed then
-                        cooldown:SetSwipeColor(0, 0, 0, mod.GCDTailAlpha(_gcdChargeTail, barInfo.swipeAlpha or 0.7))
+                        cooldown:SetSwipeColor(
+                            0,
+                            0,
+                            0,
+                            mod.GCDTailAlpha(_gcdChargeTail, barInfo.swipeAlpha or 0.7)
+                        )
                     end
                     -- Desaturate When Not Active (per-spell). Symmetric, but
                     -- re-saturates only icons WE desaturated (fd._desatNA), so
@@ -721,7 +674,11 @@ local function DecorateFrame(widget, barInfo)
                     -- the spell actually has an active cooldown.
                     if frameData._wasActive then
                         frameData._wasActive = false
-                        if spellKey and cooldown.SetCooldownFromDurationObject and C_Spell.GetSpellCooldown then
+                        if
+                            spellKey
+                            and cooldown.SetCooldownFromDurationObject
+                            and C_Spell.GetSpellCooldown
+                        then
                             local cooldownInfo = C_Spell.GetSpellCooldown(spellKey)
                             if cooldownInfo and cooldownInfo.isActive then
                                 local durationObj = C_Spell.GetSpellCooldownDuration(spellKey)
@@ -759,7 +716,12 @@ local function DecorateFrame(widget, barInfo)
                 -- Consuming a charge fires this swipe hook, refilling to max
                 -- fires Cooldown:Clear. Register for charge events (the only
                 -- catch for refill-to-max) and eval now so a SPEND is immediate.
-                if mod._cdmAnyMaxStacksGlow and iconSettings and iconSettings.maxStacksGlow and iconSettings.maxStacksGlow > 0 then
+                if
+                    mod._cdmAnyMaxStacksGlow
+                    and iconSettings
+                    and iconSettings.maxStacksGlow
+                    and iconSettings.maxStacksGlow > 0
+                then
                     WatchMaxStacksFrame(widget, frameData)
                     EvalMaxStacksFrame(widget, frameData)
                 elseif frameData._maxStacksGlowOn then
@@ -771,13 +733,9 @@ local function DecorateFrame(widget, barInfo)
                 frameData._isProcessingOverride = false
             end)
             hooksecurefunc(cooldown, "SetDrawSwipe", function(_, shouldShow)
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 -- Hosted buff: never toggle its duration swipe from our cd logic.
-                if frameData._isBuffViewerFrame then
-                    return
-                end
+                if frameData._isBuffViewerFrame then return end
                 -- Charges/Stacks Only (No Icon): art is hidden, so a swipe would
                 -- draw a dark pie over empty space on every re-push. Suppress
                 -- instead of the force-true below, ahead of the charge-style call
@@ -810,9 +768,7 @@ local function DecorateFrame(widget, barInfo)
                     end
                 end
                 frameData._isProcessingOverride = false
-                if handled then
-                    return
-                end
+                if handled then return end
                 -- Per-spell Hide CD Swipe (non-charge): keep the swipe suppressed
                 -- across Blizzard re-pushes. Gated (costs nothing until enabled),
                 -- resolved from our own flags (secret-safe) in BOTH stores:
@@ -837,9 +793,7 @@ local function DecorateFrame(widget, barInfo)
                         return
                     end
                 end
-                if shouldShow then
-                    return
-                end
+                if shouldShow then return end
                 frameData._isProcessingOverride = true
                 cooldown:SetDrawSwipe(true)
                 frameData._isProcessingOverride = false
@@ -848,18 +802,12 @@ local function DecorateFrame(widget, barInfo)
             -- per-spell Hide Recharge Edge, across Blizzard cooldown re-pushes.
             if cooldown.SetDrawEdge then
                 hooksecurefunc(cooldown, "SetDrawEdge", function(_, shouldShow)
-                    if frameData._isProcessingOverride then
-                        return
-                    end
+                    if frameData._isProcessingOverride then return end
                     -- Edge-off pushes only matter to the bar-wide edge re-assert
                     -- (every other branch below acts on show=true alone), so the
                     -- disabled/default path keeps its zero-cost early-out.
-                    if not shouldShow and not frameData._edgeFeatureOn then
-                        return
-                    end
-                    if frameData._isBuffViewerFrame then
-                        return
-                    end
+                    if not shouldShow and not frameData._edgeFeatureOn then return end
+                    if frameData._isBuffViewerFrame then return end
                     -- No icon art: no recharge edge, charge or not. Blizzard
                     -- re-enables it on every re-push, so this must be in the hook.
                     if frameData._osnOn then
@@ -903,14 +851,10 @@ local function DecorateFrame(widget, barInfo)
             -- spells use the charge re-arm below. Gated tightly to that exact failure
             -- (widget cleared to ~0 while a genuine non-GCD cooldown is live), so it never fights a GCD swipe or aura-display time (both non-zero).
             local function ReAssertRealCooldown()
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 -- Always-Show placeholders deliberately keep their widget cleared
                 -- (never arm a 0-duration swipe); never re-assert onto one.
-                if frameData._isBuffViewerFrame or widget._isPlaceholderFrame then
-                    return
-                end
+                if frameData._isBuffViewerFrame or widget._isPlaceholderFrame then return end
                 -- Charge spells: owned by the charge re-arm path.
                 if
                     type(widget.HasVisualDataSource_Charges) == "function"
@@ -923,9 +867,7 @@ local function DecorateFrame(widget, barInfo)
                 end
                 local iconCache = _ecmeFC[widget]
                 local spellKey = iconCache and iconCache.spellID
-                if not spellKey then
-                    return
-                end
+                if not spellKey then return end
                 -- Act only when the widget is cleared to ~0 (never fight a real
                 -- cooldown, GCD, or aura-display time). The secret check MUST
                 -- precede any truthiness/comparison (a secret errors on either);
@@ -945,15 +887,9 @@ local function DecorateFrame(widget, barInfo)
                 local staleLink = CdmStaleLinkedSpell(widget)
                 if not staleLink and cooldown.GetCooldownDuration then
                     local success, curDur = pcall(cooldown.GetCooldownDuration, cooldown)
-                    if not success then
-                        return
-                    end
-                    if issecretvalue and issecretvalue(curDur) then
-                        return
-                    end
-                    if curDur and curDur > 100 then
-                        return
-                    end
+                    if not success then return end
+                    if issecretvalue and issecretvalue(curDur) then return end
+                    if curDur and curDur > 100 then return end
                 end
                 local effectiveId = spellKey
                 if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
@@ -964,19 +900,14 @@ local function DecorateFrame(widget, barInfo)
                 end
                 -- Only re-assert for a genuine, non-GCD cooldown still running.
                 -- isActive / isOnGCD are clean bools (read bare elsewhere).
-                local cooldownInfo = C_Spell.GetSpellCooldown(effectiveId) or C_Spell.GetSpellCooldown(spellKey)
-                if not (cooldownInfo and cooldownInfo.isActive and not cooldownInfo.isOnGCD) then
-                    return
-                end
+                local cooldownInfo = C_Spell.GetSpellCooldown(effectiveId)
+                    or C_Spell.GetSpellCooldown(spellKey)
+                if not (cooldownInfo and cooldownInfo.isActive and not cooldownInfo.isOnGCD) then return end
                 local durationObj = C_Spell.GetSpellCooldownDuration(effectiveId)
                     or C_Spell.GetSpellCooldownDuration(spellKey)
-                if not durationObj then
-                    return
-                end
+                if not durationObj then return end
                 frameData._isProcessingOverride = true
-                if cooldown.SetUseAuraDisplayTime then
-                    cooldown:SetUseAuraDisplayTime(false)
-                end
+                if cooldown.SetUseAuraDisplayTime then cooldown:SetUseAuraDisplayTime(false) end
                 cooldown:SetCooldownFromDurationObject(durationObj)
                 if staleLink then
                     -- Blizzard's expired branch never calls SetSwipeColor, so the
@@ -1014,9 +945,7 @@ local function DecorateFrame(widget, barInfo)
             -- recharge swipe vanishes: re-arm from the charge recharge duration.
             -- Charge spells only; non-charge frames route to the re-assert above.
             hooksecurefunc(cooldown, "Clear", function()
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 -- HasVisualDataSource_Charges is a clean bool present only on
                 -- Blizzard CooldownViewer item frames, so this also excludes our
                 -- custom (trinket/racial/item) and aura buff frames.
@@ -1071,22 +1000,16 @@ local function DecorateFrame(widget, barInfo)
                 -- keep Blizzard's native display. currentCharges never read.
                 local chargeActive = frameData._hideActiveOverriding
                     and (CdmChargeInfoFor(widget, spellKey) or {}).isActive == true
-                if not (cdActive or chargeActive) then
-                    return
-                end
+                if not (cdActive or chargeActive) then return end
                 -- Re-derive the recharge duration. The duration object is opaque,
                 -- fed straight to the widget and never inspected: secret-safe.
                 local durationObj = C_Spell.GetSpellChargeDuration(effectiveId)
                 if not durationObj and effectiveId ~= spellKey then
                     durationObj = C_Spell.GetSpellChargeDuration(spellKey)
                 end
-                if not durationObj then
-                    return
-                end
+                if not durationObj then return end
                 frameData._isProcessingOverride = true
-                if cooldown.SetUseAuraDisplayTime then
-                    cooldown:SetUseAuraDisplayTime(false)
-                end
+                if cooldown.SetUseAuraDisplayTime then cooldown:SetUseAuraDisplayTime(false) end
                 cooldown:SetCooldownFromDurationObject(durationObj)
                 -- Baseline charge edge (+ per-spell Hide Swipe) on the re-arm.
                 ApplyCdmChargeStyle(widget, cooldown)
@@ -1100,17 +1023,13 @@ local function DecorateFrame(widget, barInfo)
             -- gated to EXACTLY (charge frame + Hide-Active window + recharge
             -- running) = no-op otherwise; _isProcessingOverride blocks recursion.
             local function ReArmChargeRecharge()
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 -- Two field reads and nothing else. This runs from the SetCooldown
                 -- / SetCooldownFromDurationObject / SetUseAuraDisplayTime hooks, so
                 -- it fires for EVERY icon on EVERY cooldown push -- every GCD the
                 -- player triggers. Neither entry can be live without one of these
                 -- set, so bail before touching the frame or any API.
-                if not (frameData._hideActiveOverriding or frameData._gcdChargeTailArmed) then
-                    return
-                end
+                if not (frameData._hideActiveOverriding or frameData._gcdChargeTailArmed) then return end
                 local iconCache = _ecmeFC[widget]
                 local spellKey = iconCache and iconCache.spellID
                 if
@@ -1125,9 +1044,7 @@ local function DecorateFrame(widget, barInfo)
                 -- reason the SetSwipeColor and Clear hooks exclude them: their
                 -- cooldown widget is showing an AURA, and arming a spell recharge
                 -- over it would overwrite the duration they exist to display.
-                if frameData._isBuffViewerFrame or widget._isCustomBuffFrame then
-                    return
-                end
+                if frameData._isBuffViewerFrame or widget._isCustomBuffFrame then return end
                 -- Split from the value: "false" and "the frame has no such method"
                 -- are different states, and entry B needs the first. Preset, racial,
                 -- custom-spell and trinket frames are ours rather than CooldownViewer
@@ -1163,7 +1080,12 @@ local function DecorateFrame(widget, barInfo)
                 -- latch to "re-arm a charge spell that is genuinely recharging",
                 -- which is the intended action anyway.
                 local entryB = false
-                if not entryA and isViewerItem and not hasCharges and frameData._gcdChargeTailArmed == true then
+                if
+                    not entryA
+                    and isViewerItem
+                    and not hasCharges
+                    and frameData._gcdChargeTailArmed == true
+                then
                     local buffBarKey = iconCache.barKey
                     local bdB = buffBarKey and barMap and barMap[buffBarKey]
                     entryB = (bdB and bdB.suppressGCD and true) or false
@@ -1174,9 +1096,7 @@ local function DecorateFrame(widget, barInfo)
                         entryB = (ssB and ssB.suppressGCD and true) or false
                     end
                 end
-                if not (entryA or entryB) then
-                    return
-                end
+                if not (entryA or entryB) then return end
                 local effectiveId = spellKey
                 if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                     local overrideId = C_SpellBook.FindSpellOverrideByID(spellKey)
@@ -1198,13 +1118,9 @@ local function DecorateFrame(widget, barInfo)
                 if not durationObj and effectiveId ~= spellKey then
                     durationObj = C_Spell.GetSpellChargeDuration(spellKey)
                 end
-                if not durationObj then
-                    return
-                end
+                if not durationObj then return end
                 frameData._isProcessingOverride = true
-                if cooldown.SetUseAuraDisplayTime then
-                    cooldown:SetUseAuraDisplayTime(false)
-                end
+                if cooldown.SetUseAuraDisplayTime then cooldown:SetUseAuraDisplayTime(false) end
                 cooldown:SetCooldownFromDurationObject(durationObj)
                 -- No-op on the entry-B path by construction: ApplyCdmChargeStyle
                 -- bails unless HasVisualDataSource_Charges is true, and entry B
@@ -1250,9 +1166,7 @@ local function DecorateFrame(widget, barInfo)
             -- recharge until the active state ends, so re-arm on SetCooldown too.
             -- ReArmChargeRecharge fully self-gates and is re-entry guarded: a
             -- no-op for normal cooldowns and outside the override window.
-            if cooldown.SetCooldown then
-                hooksecurefunc(cooldown, "SetCooldown", ReArmChargeRecharge)
-            end
+            if cooldown.SetCooldown then hooksecurefunc(cooldown, "SetCooldown", ReArmChargeRecharge) end
         end
         -- Hook SetDesaturated AND SetDesaturation on the icon texture (Blizzard
         -- calls these every cooldown tick): while overriding the CD model (hide
@@ -1260,9 +1174,7 @@ local function DecorateFrame(widget, barInfo)
         if frameData.tex and not frameData._desatOverrideHooked then
             frameData._desatOverrideHooked = true
             local function onDesatChange()
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 -- Two owners of this path now. The Hide-Active override is the
                 -- original one. The second is the stale-linked-spell state, where
                 -- Blizzard re-clears the widget AND re-saturates the icon on every
@@ -1271,9 +1183,7 @@ local function DecorateFrame(widget, barInfo)
                 -- for it: it re-arms the cooldown from OUR spell id and then sets
                 -- the desaturation from that same id's real cooldown state.
                 -- Cheap-first: the flag is one lookup, the helper two more.
-                if not (frameData._hideActiveOverriding or CdmStaleLinkedSpell(widget)) then
-                    return
-                end
+                if not (frameData._hideActiveOverriding or CdmStaleLinkedSpell(widget)) then return end
                 frameData._isProcessingOverride = true
                 local cooldownWidget = frameData.cooldown
                 local iconCache = _ecmeFC[widget]
@@ -1317,15 +1227,16 @@ local function DecorateFrame(widget, barInfo)
                                 -- proc suppresses the borrow. Mirrors the desat guard
                                 -- below so swipe and saturation agree. isActive/isOnGCD
                                 -- are clean bools.
-                                local overlayCache = C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(effectiveId)
-                                if (not overlayCache) or (overlayCache.isActive and not overlayCache.isOnGCD) then
+                                local overlayCache = C_Spell.GetSpellCooldown
+                                    and C_Spell.GetSpellCooldown(effectiveId)
+                                if
+                                    not overlayCache or (overlayCache.isActive and not overlayCache.isOnGCD)
+                                then
                                     durationObj = C_Spell.GetSpellCooldownDuration(spellKey)
                                 end
                             end
                         end
-                        if durationObj then
-                            cooldownWidget:SetCooldownFromDurationObject(durationObj)
-                        end
+                        if durationObj then cooldownWidget:SetCooldownFromDurationObject(durationObj) end
                     end
                 end
                 -- Desaturate only if actually on cooldown; procs without a real
@@ -1340,9 +1251,7 @@ local function DecorateFrame(widget, barInfo)
                 local effID2 = spellKey
                 if spellKey and C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                     local overrideId = C_SpellBook.FindSpellOverrideByID(spellKey)
-                    if overrideId and overrideId > 0 and overrideId ~= spellKey then
-                        effID2 = overrideId
-                    end
+                    if overrideId and overrideId > 0 and overrideId ~= spellKey then effID2 = overrideId end
                 end
                 local cdInfo2 = effID2
                     and C_Spell.GetSpellCooldown
@@ -1421,9 +1330,7 @@ local function DecorateFrame(widget, barInfo)
                         end
                     end
                 end
-                if outOfCharges == false then
-                    onRealCD = false
-                end
+                if outOfCharges == false then onRealCD = false end
                 -- No clear-only transform guard here: asking the override first
                 -- already answers the castable-proc case. Such a guard can turn
                 -- greying off but never on, so an icon whose cooldown lives on
@@ -1473,22 +1380,14 @@ local function DecorateFrame(widget, barInfo)
         if frameData.tex and not frameData._cdStateHooked then
             frameData._cdStateHooked = true
             hooksecurefunc(frameData.tex, "SetDesaturated", function()
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if frameData._isProcessingOverride then return end
                 local iconCache = _ecmeFC[widget]
                 local spellKey = iconCache and iconCache.spellID
                 local barKeyOf = iconCache and iconCache.barKey
-                if not spellKey or not barKeyOf then
-                    return
-                end
-                if barKeyOf:sub(1, 7) == "__ghost" then
-                    return
-                end
+                if not spellKey or not barKeyOf then return end
+                if barKeyOf:sub(1, 7) == "__ghost" then return end
                 -- FocusKick icon alpha is owned by SetFocusKickAlpha only.
-                if barKeyOf == mod.FOCUSKICK_BAR_KEY then
-                    return
-                end
+                if barKeyOf == mod.FOCUSKICK_BAR_KEY then return end
                 -- Preset frames (trinket/racial/potion/custom spell) own their cd-state
                 -- through the Fake-Active engine, which reads the ITEM/racial cooldown.
                 -- GetSpellCooldown cannot read a negative item key, so this spell path
@@ -1523,7 +1422,12 @@ local function DecorateFrame(widget, barInfo)
                 -- it runs as Hidden (On CD) with the cooldown never read.
                 local stance = mod.CdmStanceBarOf(iconSettings, widget)
                 local stanceOnly = false
-                if stance and cooldownEdge ~= "hiddenOnCD" and cooldownEdge ~= "hiddenReady" and cooldownEdge ~= "lowerAlphaOnCD" then
+                if
+                    stance
+                    and cooldownEdge ~= "hiddenOnCD"
+                    and cooldownEdge ~= "hiddenReady"
+                    and cooldownEdge ~= "lowerAlphaOnCD"
+                then
                     cooldownEdge, stanceOnly = "hiddenOnCD", true
                 end
                 if not cooldownEdge and not glow then
@@ -1536,9 +1440,7 @@ local function DecorateFrame(widget, barInfo)
                     -- here would flash it visible every desat tick. Those frames
                     -- already returned through the PresetHasCdState hand-off above,
                     -- so no re-check is needed on this path.
-                    if iconCache and iconCache._cdStateHidden then
-                        iconCache._cdStateHidden = false
-                    end
+                    if iconCache and iconCache._cdStateHidden then iconCache._cdStateHidden = false end
                     if iconCache and iconCache._cdStateShiftHidden and mod.SetCdStateShiftHidden then
                         mod.SetCdStateShiftHidden(iconCache, false)
                     end
@@ -1547,7 +1449,11 @@ local function DecorateFrame(widget, barInfo)
                 -- Clear stale hidden state while no hide effect runs (a glow
                 -- alone; lowerAlphaOnCD is alpha-owning like the hidden modes,
                 -- so exclude it).
-                if cooldownEdge ~= "hiddenOnCD" and cooldownEdge ~= "hiddenReady" and cooldownEdge ~= "lowerAlphaOnCD" then
+                if
+                    cooldownEdge ~= "hiddenOnCD"
+                    and cooldownEdge ~= "hiddenReady"
+                    and cooldownEdge ~= "lowerAlphaOnCD"
+                then
                     if iconCache and iconCache._cdStateHidden then
                         iconCache._cdStateHidden = false
                         local bd2 = barMap and barMap[barKeyOf]
@@ -1562,7 +1468,11 @@ local function DecorateFrame(widget, barInfo)
                 -- evaluator (ArmCdStateEval -- see its comment for the
                 -- one-frame wait). cse is normalized, so Shift variants arrive
                 -- as their base mode plus cseShift.
-                if cooldownEdge == "hiddenOnCD" or cooldownEdge == "hiddenReady" or cooldownEdge == "lowerAlphaOnCD" then
+                if
+                    cooldownEdge == "hiddenOnCD"
+                    or cooldownEdge == "hiddenReady"
+                    or cooldownEdge == "lowerAlphaOnCD"
+                then
                     ArmCdStateEval(
                         widget,
                         frameData,
@@ -1772,18 +1682,12 @@ local function DecorateFrame(widget, barInfo)
         if frameData.tex and not frameData._desatNotActiveHooked then
             frameData._desatNotActiveHooked = true
             local function _maintainDesat()
-                if not mod._cdmAnyDesatNotActive then
-                    return
-                end
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if not mod._cdmAnyDesatNotActive then return end
+                if frameData._isProcessingOverride then return end
                 local iconCache = _ecmeFC[widget]
                 local spellKey = iconCache and iconCache.spellID
                 local barKeyOf = iconCache and iconCache.barKey
-                if not spellKey or not barKeyOf then
-                    return
-                end
+                if not spellKey or not barKeyOf then return end
                 local iconSettings = ResolveSpellSettings(widget, spellKey, false)
                 if not (iconSettings and iconSettings.desatNotActive) then
                     -- Setting turned off: re-saturate if WE greyed this icon, so it
@@ -1800,13 +1704,9 @@ local function DecorateFrame(widget, barInfo)
                 local sc = widget.cooldownSwipeColor
                 if sc and type(sc) ~= "number" and sc.GetRGBA then
                     local region = sc:GetRGBA()
-                    if type(region) == "number" and not issecretvalue(region) then
-                        isAct = (region ~= 0)
-                    end
+                    if type(region) == "number" and not issecretvalue(region) then isAct = (region ~= 0) end
                 end
-                if isAct then
-                    return
-                end
+                if isAct then return end
                 frameData._isProcessingOverride = true
                 frameData.tex:SetDesaturated(true)
                 frameData._desatNA = true
@@ -1828,30 +1728,18 @@ local function DecorateFrame(widget, barInfo)
         if frameData.tex and not frameData._noDesatOnCDHooked then
             frameData._noDesatOnCDHooked = true
             local function _keepColored()
-                if not mod._cdmAnyNoDesatOnCD then
-                    return
-                end
-                if frameData._isProcessingOverride then
-                    return
-                end
+                if not mod._cdmAnyNoDesatOnCD then return end
+                if frameData._isProcessingOverride then return end
                 local iconCache = _ecmeFC[widget]
                 local spellKey = iconCache and iconCache.spellID
                 local barKeyOf = iconCache and iconCache.barKey
-                if not spellKey or not barKeyOf then
-                    return
-                end
+                if not spellKey or not barKeyOf then return end
                 local iconSettings = ResolveSpellSettings(widget, spellKey, false)
-                if not (iconSettings and iconSettings.noDesatOnCD) then
-                    return
-                end
-                if iconSettings.desatNotActive then
-                    return
-                end
+                if not (iconSettings and iconSettings.noDesatOnCD) then return end
+                if iconSettings.desatNotActive then return end
                 frameData._isProcessingOverride = true
                 frameData.tex:SetDesaturated(false)
-                if frameData.tex.SetDesaturation then
-                    frameData.tex:SetDesaturation(0)
-                end
+                if frameData.tex.SetDesaturation then frameData.tex:SetDesaturation(0) end
                 frameData._isProcessingOverride = false
             end
             hooksecurefunc(frameData.tex, "SetDesaturated", _keepColored)
@@ -1877,9 +1765,7 @@ end
 -------------------------------------------------------------------------------
 local function CategorizeFrame(widget, viewerBarKey)
     local displaySID, baseSID = ResolveFrameSpellID(widget)
-    if not displaySID or displaySID <= 0 then
-        return nil, nil, nil
-    end
+    if not displaySID or displaySID <= 0 then return nil, nil, nil end
 
     -- Lazy route resolution: ResolveCDIDToBar handles cache lookup,
     -- diversion-set match, and viewer-default fallback (defaultBar =
@@ -1898,9 +1784,7 @@ local function CategorizeFrame(widget, viewerBarKey)
         -- pass in RebuildSpellRouteMap), so the buff's real frame reparents onto
         -- the CD/util bar just like on a buff bar. A CD viewer -> buff bar is still
         -- rejected (falls through) -- that direction is never wanted.
-        if viewerIsBuff == claimIsBuff or viewerIsBuff then
-            return claimBarKey, displaySID, baseSID
-        end
+        if viewerIsBuff == claimIsBuff or viewerIsBuff then return claimBarKey, displaySID, baseSID end
         -- Type mismatch (CD viewer routing to a buff bar). Under the 1-spell-per-bar
         -- rule this can't happen via picker claims, but legacy data could trigger
         -- it. Fall through to the viewer's default bar so the frame still renders.

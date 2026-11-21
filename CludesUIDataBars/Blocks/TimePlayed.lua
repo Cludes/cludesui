@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\TimePlayed.lua - Info Bar block: time played, and the account-wide
 --  record of every character's total.
@@ -47,42 +45,28 @@ local total, levelTime, since, charLevel
 local lastMinute -- the heartbeat's last seen minute counters
 local awaitingWorld -- a saved time waits for the first PLAYER_ENTERING_WORLD
 
-local function Total()
-    return total + (GetTime() - since)
-end
-local function AtThisLevel()
-    return levelTime + (GetTime() - since)
-end
+local function Total() return total + (GetTime() - since) end
+local function AtThisLevel() return levelTime + (GetTime() - since) end
 
 local function Record()
     local db = CludesUIDB
-    if type(db) ~= "table" then
-        return nil
-    end
-    if type(db.timePlayedChars) ~= "table" then
-        db.timePlayedChars = {}
-    end
+    if type(db) ~= "table" then return nil end
+    if type(db.timePlayedChars) ~= "table" then db.timePlayedChars = {} end
     return db.timePlayedChars
 end
 
 -- This character's key in the record; nil while the GUID cannot be read.
 local function MyKey()
     local guid = UnitGUID("player")
-    if not guid or CludesUI.IsSecret(guid) then
-        return nil
-    end
+    if not guid or CludesUI.IsSecret(guid) then return nil end
     return guid
 end
 
 -- Writes the live total to this character's entry.
 local function SaveMe()
-    if not total then
-        return
-    end
+    if not total then return end
     local record, key = Record(), MyKey()
-    if not record or not key then
-        return
-    end
+    if not record or not key then return end
     local entry = record[key]
     if not entry then
         entry = {}
@@ -108,9 +92,7 @@ end
 -- Forgets every character; this one is recorded again at once, the others
 -- when they next log in with a block enabled.
 local function ForgetAll()
-    if type(CludesUIDB) == "table" then
-        CludesUIDB.timePlayedChars = nil
-    end
+    if type(CludesUIDB) == "table" then CludesUIDB.timePlayedChars = nil end
     SaveMe()
 end
 
@@ -118,13 +100,9 @@ end
 -- redraws only if its text changed (over a day the text shows hours, so most
 -- minutes change nothing on screen).
 local function Heartbeat()
-    if not total then
-        return
-    end
+    if not total then return end
     local minute = floor(Total() / 60) + floor(AtThisLevel() / 60)
-    if minute == lastMinute then
-        return
-    end
+    if minute == lastMinute then return end
     lastMinute = minute
     SaveMe()
     for block in pairs(blocks) do
@@ -134,9 +112,7 @@ end
 
 -- Takes a reply as of now; ignores anything else (no reply known yet).
 local function TakeReply(sum, atLevel)
-    if type(sum) ~= "number" or type(atLevel) ~= "number" then
-        return
-    end
+    if type(sum) ~= "number" or type(atLevel) ~= "number" then return end
     total, levelTime, since, charLevel = sum, atLevel, GetTime(), UnitLevel("player")
     SaveMe()
     RedrawAll()
@@ -144,17 +120,13 @@ end
 
 local function Ask()
     -- Not before the first PLAYER_ENTERING_WORLD has looked at a saved time.
-    if awaitingWorld then
-        return
-    end
+    if awaitingWorld then return end
     TakeReply(CludesUI.RequestTimePlayed())
 end
 
 -- PLAYER_LOGOUT (on /reload too): the time as of now, for the next load.
 local function SaveForReload()
-    if not total then
-        return
-    end
+    if not total then return end
     SaveMe()
     local record, key = Record(), MyKey()
     local entry = record and key and record[key]
@@ -183,15 +155,11 @@ local function TakeBackReload(isReload)
                     and entry.level == UnitLevel("player")
                     and at <= now
                     and now - at < RELOAD_WINDOW
-                if usable then
-                    TakeReply(entry.total + (now - at), atLevel + (now - at))
-                end
+                if usable then TakeReply(entry.total + (now - at), atLevel + (now - at)) end
             end
         end
     end
-    if next(blocks) and not total then
-        Ask()
-    end
+    if next(blocks) and not total then Ask() end
 end
 
 listener:SetScript("OnEvent", function(_, event, arg1, arg2)
@@ -218,9 +186,7 @@ local function Listen()
         listener:RegisterEvent("PLAYER_LOGOUT")
         mod.RegisterHeartbeat("timeplayed", Heartbeat)
         -- A level-up while no block was enabled also leaves the level time stale.
-        if not total or charLevel ~= UnitLevel("player") then
-            Ask()
-        end
+        if not total or charLevel ~= UnitLevel("player") then Ask() end
     else
         -- The record stays current up to the moment the last block goes.
         SaveMe()
@@ -267,9 +233,7 @@ local function Roster(record)
         end
     end
     table.sort(realms)
-    local function MostPlayed(a, b)
-        return record[a].total > record[b].total
-    end
+    local function MostPlayed(a, b) return record[a].total > record[b].total end
     for _, realm in ipairs(realms) do
         table.sort(byRealm[realm], MostPlayed)
     end
@@ -280,9 +244,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
     inst.key = K.InstKey(barCtx, blockCfg)
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetAllPoints()
@@ -295,12 +257,8 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
     local shownText -- the text on screen; a minute that would not change it draws nothing
 
     local function Text()
-        if not total then
-            return "--"
-        end
-        if Settings().alwaysTotal == true or K.AtMaxLevel() then
-            return Duration(Total())
-        end
+        if not total then return "--" end
+        if Settings().alwaysTotal == true or K.AtMaxLevel() then return Duration(Total()) end
         return Duration(AtThisLevel())
     end
 
@@ -313,9 +271,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:Refresh()
-        if self._dead then
-            return
-        end
+        if self._dead then return end
         local text = Text()
         shownText = text
         local barH = barCtx.GetThickness()
@@ -326,9 +282,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
         -- the text changes now, the size when combat ends.
         if InCombatLockdown() then
             label:SetText(text)
-            mod.DeferUntilOOC("timeplayed:" .. inst.key, function()
-                inst:Refresh()
-            end)
+            mod.DeferUntilOOC("timeplayed:" .. inst.key, function() inst:Refresh() end)
             return
         end
         if barCtx.IsVertical() then
@@ -355,9 +309,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
 
     -- The heartbeat's minute: a redraw only when the shown text changes.
     function inst:Tick()
-        if not self._dead and Text() ~= shownText then
-            self:Refresh()
-        end
+        if not self._dead and Text() ~= shownText then self:Refresh() end
     end
 
     local function ShowTooltip()
@@ -379,18 +331,12 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
                     red, green, blue = color.r, color.g, color.b
                 end
                 local who = entry.name or "?"
-                if entry.level then
-                    who = format("%s (%d)", who, entry.level)
-                end
+                if entry.level then who = format("%s (%d)", who, entry.level) end
                 -- Ctrl+Alt+click forgets a character; never this one, which
                 -- would be saved again within the minute.
                 mod.Tip_AddClickable(who, Duration(entry.total), function(mouseButton)
-                    if key == me or mouseButton ~= "LeftButton" then
-                        return
-                    end
-                    if not (IsControlKeyDown() and IsAltKeyDown()) then
-                        return
-                    end
+                    if key == me or mouseButton ~= "LeftButton" then return end
+                    if not (IsControlKeyDown() and IsAltKeyDown()) then return end
                     record[key] = nil
                     mod.Tip_Hide(button)
                 end, red, green, blue, 1, 1, 1)
@@ -411,9 +357,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
         hovered = true
         PaintText()
         -- Retry a request whose reply never came.
-        if not total then
-            Ask()
-        end
+        if not total then Ask() end
         ShowTooltip()
     end)
     button:SetScript("OnLeave", function()
@@ -450,9 +394,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Tank_Options.lua
 --  The Tank Kit pages of the CludesUI settings panel: Frame, Alerts, Tools.
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUITank"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local PAGE_FRAME = "Frame"
 local PAGE_ALERTS = "Alerts"
@@ -20,17 +16,10 @@ local PAGE_TOOLS = "Tools"
 local GLOBAL_FONT = "__global" -- dropdown key for "use the CludesUI font"
 
 CludesUI.AtOptionsLogin(function()
-
     local K = mod.K
-    local function DB()
-        return mod.DB()
-    end
-    local function Frame()
-        return _G.CoTankAuras
-    end
-    local function Round(val)
-        return math.floor(val + 0.5)
-    end
+    local function DB() return mod.DB() end
+    local function Frame() return _G.CoTankAuras end
+    local function Round(val) return math.floor(val + 0.5) end
 
     -- A blank right-hand slot.
     local EMPTY = { type = "label", text = "" }
@@ -44,9 +33,7 @@ CludesUI.AtOptionsLogin(function()
     local function IconsChanged()
         mod.RefreshAllIconSettings()
         local frame = Frame()
-        if mod.isTestMode and frame then
-            frame:UpdateDebuffs()
-        end
+        if mod.isTestMode and frame then frame:UpdateDebuffs() end
     end
 
     -- { values, order } for a dropdown, from one of the module's {id, label} lists.
@@ -68,14 +55,10 @@ CludesUI.AtOptionsLogin(function()
             max = max,
             step = step or 1,
             tooltip = tooltip,
-            getValue = function()
-                return mod.SettingNumber(key, default)
-            end,
+            getValue = function() return mod.SettingNumber(key, default) end,
             setValue = function(val)
                 DB()[key] = Round(val)
-                if apply then
-                    apply(Round(val))
-                end
+                if apply then apply(Round(val)) end
             end,
         }
     end
@@ -86,14 +69,10 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = textValue,
             tooltip = tooltip,
-            getValue = function()
-                return DB()[key] and true or false
-            end,
+            getValue = function() return DB()[key] and true or false end,
             setValue = function(val)
                 DB()[key] = val and true or false
-                if apply then
-                    apply(val)
-                end
+                if apply then apply(val) end
             end,
         }
     end
@@ -104,14 +83,10 @@ CludesUI.AtOptionsLogin(function()
             type = "colorpicker",
             text = textValue,
             hasAlpha = false,
-            getValue = function()
-                return mod.FontColor(key)
-            end,
+            getValue = function() return mod.FontColor(key) end,
             setValue = function(red, green, blue)
                 mod.SetFontColor(key, red, green, blue)
-                if apply then
-                    apply()
-                end
+                if apply then apply() end
             end,
         }
     end
@@ -141,9 +116,7 @@ CludesUI.AtOptionsLogin(function()
             values = fontValues,
             order = fontOrder,
             tooltip = "CludesUI Global Font follows the font chosen under Global Settings > Fonts.",
-            getValue = function()
-                return DB().fontFace or GLOBAL_FONT
-            end,
+            getValue = function() return DB().fontFace or GLOBAL_FONT end,
             setValue = function(val)
                 DB().fontFace = (val ~= GLOBAL_FONT) and val or nil
                 mod.RefreshAllFonts()
@@ -153,9 +126,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Font Outline",
             values = flagValues,
             order = flagOrder,
-            getValue = function()
-                return DB().fontFlags or "OUTLINE"
-            end,
+            getValue = function() return DB().fontFlags or "OUTLINE" end,
             setValue = function(val)
                 DB().fontFlags = val
                 mod.RefreshAllFonts()
@@ -210,9 +181,7 @@ CludesUI.AtOptionsLogin(function()
             end),
             Slider("Height", "frameHeight", K.DEFAULT_HEIGHT, K.MIN_HEIGHT, K.MAX_HEIGHT, 5, function(val)
                 local frame = Frame()
-                if frame and not InCombatLockdown() then
-                    frame:SetHeight(val)
-                end
+                if frame and not InCombatLockdown() then frame:SetHeight(val) end
                 mod.RefreshAuraContainerLayout(frame)
                 mod.RestyleAuraButtons()
             end)
@@ -227,9 +196,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Co-Tank Debuffs",
             tooltip = "The row of harmful effects on your co-tank.",
-            getValue = function()
-                return mod.DebuffsEnabled()
-            end,
+            getValue = function() return mod.DebuffsEnabled() end,
             setValue = function(val)
                 if (mod.DebuffsEnabled() and true or false) ~= (val and true or false) then
                     mod.ToggleDebuffs()
@@ -241,9 +208,7 @@ CludesUI.AtOptionsLogin(function()
             values = filterValues,
             order = filterOrder,
             tooltip = "The game applies this filter itself, so it holds during boss fights.",
-            getValue = function()
-                return DB().debuffFilter or "ALL"
-            end,
+            getValue = function() return DB().debuffFilter or "ALL" end,
             setValue = function(val)
                 DB().debuffFilter = val
                 mod.RefreshDebuffFilter()
@@ -265,9 +230,7 @@ CludesUI.AtOptionsLogin(function()
                     local frame = Frame()
                     if frame then
                         frame:UpdateAndRefreshDebuffLayout(val)
-                        if mod.isTestMode then
-                            frame:ShowMockDebuffs()
-                        end
+                        if mod.isTestMode then frame:ShowMockDebuffs() end
                     end
                 end
             ),
@@ -328,9 +291,7 @@ CludesUI.AtOptionsLogin(function()
                     local frame = Frame()
                     if frame then
                         frame:UpdateAndRefreshDefensiveLayout(val)
-                        if mod.isTestMode then
-                            frame:UpdateBigDefensives()
-                        end
+                        if mod.isTestMode then frame:UpdateBigDefensives() end
                     end
                 end,
                 "Your co-tank's active defensive cooldowns. 0 hides the row."
@@ -349,9 +310,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Show Externals on You",
                 tooltip = "A row of the big defensives other players put on you, such as Pain Suppression or Ironbark. It shows only in a tank spec. Move it in Layout Mode.",
-                getValue = function()
-                    return mod.ExternalsEnabled()
-                end,
+                getValue = function() return mod.ExternalsEnabled() end,
                 setValue = function(val)
                     DB().extEnabled = val and true or false
                     mod.RefreshExternals()
@@ -411,9 +370,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Stack Count Position",
                 values = posValues,
                 order = posOrder,
-                getValue = function()
-                    return DB().stackCountPos or "BR_IN"
-                end,
+                getValue = function() return DB().stackCountPos or "BR_IN" end,
                 setValue = function(val)
                     DB().stackCountPos = val
                     mod.RefreshAllIconSettings()
@@ -454,9 +411,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Timer Position",
                 values = { icon = "On Icon", above = "Above Icon" },
                 order = { "icon", "above" },
-                getValue = function()
-                    return DB().cdAbove and "above" or "icon"
-                end,
+                getValue = function() return DB().cdAbove and "above" or "icon" end,
                 setValue = function(val)
                     DB().cdAbove = (val == "above")
                     mod.RefreshAllIconSettings()
@@ -517,9 +472,7 @@ CludesUI.AtOptionsLogin(function()
                     local frame = Frame()
                     if frame then
                         frame:UpdateAndRefreshAuraLayout(val)
-                        if mod.isTestMode then
-                            frame:ShowMockPrivateAuras()
-                        end
+                        if mod.isTestMode then frame:ShowMockPrivateAuras() end
                     end
                 end,
                 "Boss effects the game draws itself, shown above the frame."
@@ -534,9 +487,7 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     mod.RefreshPrivateAuraSize()
                     local frame = Frame()
-                    if mod.isTestMode and frame then
-                        frame:ShowMockPrivateAuras()
-                    end
+                    if mod.isTestMode and frame then frame:ShowMockPrivateAuras() end
                 end
             )
         )
@@ -550,9 +501,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Grow Direction",
                 values = growValues,
                 order = growOrder,
-                getValue = function()
-                    return DB().privateAuraGrowDir or "LEFT"
-                end,
+                getValue = function() return DB().privateAuraGrowDir or "LEFT" end,
                 setValue = function(val)
                     DB().privateAuraGrowDir = val
                     mod.RefreshPrivateAuraGrow()
@@ -639,9 +588,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 local a = Entry()
-                if a then
-                    a.threshold = Round(val)
-                end
+                if a then a.threshold = Round(val) end
             end,
         })
         return height
@@ -665,24 +612,16 @@ CludesUI.AtOptionsLogin(function()
             inputWidth = 170,
             placeholder = "TAUNT",
             tooltip = "The words shown on screen when an alert fires. Press Enter to save.",
-            getValue = function()
-                return DB().alertText or "TAUNT"
-            end,
-            setValue = function(textValue)
-                mod.Alert:SetText(textValue)
-            end,
+            getValue = function() return DB().alertText or "TAUNT" end,
+            setValue = function(textValue) mod.Alert:SetText(textValue) end,
         }, {
             type = "slider",
             text = "Alert Text Size",
             min = 12,
             max = 48,
             step = 1,
-            getValue = function()
-                return mod.SettingNumber("alertTextSize", 22)
-            end,
-            setValue = function(val)
-                mod.Alert:SetTextSize(Round(val))
-            end,
+            getValue = function() return mod.SettingNumber("alertTextSize", 22) end,
+            setValue = function(val) mod.Alert:SetTextSize(Round(val)) end,
         })
         cursorY = cursorY - height
 
@@ -692,9 +631,7 @@ CludesUI.AtOptionsLogin(function()
             buttonText = "Test",
             width = 90,
             tooltip = "Fires the flash, sound and text once.",
-            onClick = function()
-                mod.Alert:Test()
-            end,
+            onClick = function() mod.Alert:Test() end,
         }, {
             type = "input",
             text = "Add a Spell ID",
@@ -702,14 +639,10 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Spell ID",
             inputWidth = 110,
             tooltip = "Type the spell ID of a tank debuff and press Enter. It is added below at 1 stack; change the count there.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 local spellRef = tonumber(textValue)
-                if not spellRef or spellRef <= 0 then
-                    return
-                end
+                if not spellRef or spellRef <= 0 then return end
                 spellRef = math.floor(spellRef)
                 local profile = DB()
                 profile.spellAlerts = profile.spellAlerts or {}
@@ -731,7 +664,8 @@ CludesUI.AtOptionsLogin(function()
             cursorY = cursorY - height
             for _, record in ipairs(custom) do
                 local name = mod.Alert.SpellName(record.id) or ("Spell " .. record.id)
-                cursorY = cursorY - AlertRow(W, hostFrame, cursorY, name, record.key, "Spell ID " .. record.id)
+                cursorY = cursorY
+                    - AlertRow(W, hostFrame, cursorY, name, record.key, "Spell ID " .. record.id)
                 _, height = W:DualRow(hostFrame, cursorY, {
                     type = "labeledButton",
                     text = "Remove " .. name,
@@ -739,9 +673,7 @@ CludesUI.AtOptionsLogin(function()
                     width = 90,
                     onClick = function()
                         local alerts = DB().spellAlerts
-                        if alerts then
-                            alerts[record.key] = nil
-                        end
+                        if alerts then alerts[record.key] = nil end
                         ResyncSounds()
                         Rebuild()
                     end,
@@ -789,13 +721,9 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Test Mode",
             tooltip = "Shows the frame on yourself with sample debuffs, so you can set it up without a co-tank. Not available in combat.",
-            getValue = function()
-                return mod.isTestMode and true or false
-            end,
+            getValue = function() return mod.isTestMode and true or false end,
             setValue = function(val)
-                if not mod.SetTestMode(val and true or false) then
-                    Rebuild()
-                end
+                if not mod.SetTestMode(val and true or false) then Rebuild() end
             end,
         }, {
             type = "labeledButton",
@@ -804,13 +732,9 @@ CludesUI.AtOptionsLogin(function()
             width = 120,
             tooltip = "Opens Layout Mode, where every CludesUI frame is moved and resized.",
             onClick = function()
-                if InCombatLockdown() then
-                    return
-                end
+                if InCombatLockdown() then return end
                 CludesUI:EnsureUnlockCore()
-                if CludesUI._openUnlockMode then
-                    CludesUI._openUnlockMode()
-                end
+                if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
             end,
         })
         cursorY = cursorY - height
@@ -819,9 +743,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Click-Through",
             tooltip = "The frame ignores the mouse. Not available in combat.",
-            getValue = function()
-                return DB().clickThrough and true or false
-            end,
+            getValue = function() return DB().clickThrough and true or false end,
             setValue = function(val)
                 if InCombatLockdown() then
                     Rebuild()
@@ -829,9 +751,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 DB().clickThrough = val and true or false
                 local frame = Frame()
-                if frame then
-                    frame:EnableMouse(not val)
-                end
+                if frame then frame:EnableMouse(not val) end
             end,
         }, {
             type = "labeledButton",
@@ -841,9 +761,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Moves the co-tank frame back to the middle of the screen. Not available in combat.",
             onClick = function()
                 local f = Frame()
-                if f and not InCombatLockdown() then
-                    mod.ResetPosition(f)
-                end
+                if f and not InCombatLockdown() then mod.ResetPosition(f) end
             end,
         })
         cursorY = cursorY - height
@@ -863,9 +781,7 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Player name",
             tooltip = status
                 .. ". Pin a player when there are more than two tanks in the group. Press Enter to save.",
-            getValue = function()
-                return DB().pinnedTank or ""
-            end,
+            getValue = function() return DB().pinnedTank or "" end,
             setValue = function(textValue)
                 textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
                 DB().pinnedTank = (textValue ~= "") and textValue or nil
@@ -882,9 +798,7 @@ CludesUI.AtOptionsLogin(function()
                 else
                     local unitToken = mod.FindCoTank()
                     local name = unitToken and UnitName(unitToken)
-                    if type(name) == "string" then
-                        DB().pinnedTank = name
-                    end
+                    if type(name) == "string" then DB().pinnedTank = name end
                 end
                 Rebuild()
             end,
@@ -902,26 +816,16 @@ CludesUI.AtOptionsLogin(function()
         description = "For tanks: your co-tank's health, debuffs and defensives, and TAUNT alerts.",
         pages = { PAGE_FRAME, PAGE_ALERTS, PAGE_TOOLS },
         buildPage = function(page, hostFrame, yOffset)
-            if page == PAGE_FRAME then
-                return BuildFramePage(page, hostFrame, yOffset)
-            end
-            if page == PAGE_ALERTS then
-                return BuildAlertsPage(page, hostFrame, yOffset)
-            end
-            if page == PAGE_TOOLS then
-                return BuildToolsPage(page, hostFrame, yOffset)
-            end
+            if page == PAGE_FRAME then return BuildFramePage(page, hostFrame, yOffset) end
+            if page == PAGE_ALERTS then return BuildAlertsPage(page, hostFrame, yOffset) end
+            if page == PAGE_TOOLS then return BuildToolsPage(page, hostFrame, yOffset) end
         end,
         onReset = function()
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             wipe(mod.DB())
             mod.SpellData.SeedDefaults(mod.DB())
             local f = Frame()
-            if f then
-                mod.ResetPosition(f)
-            end
+            if f then mod.ResetPosition(f) end
             CludesUI:InvalidatePageCache()
             ReloadUI()
         end,

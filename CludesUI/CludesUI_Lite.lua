@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_Lite.lua
 --  Lightweight replacement for AceAddon-3.0, AceEvent-3.0, and AceDB-3.0
@@ -33,9 +31,7 @@ CludesUI.PANEL_SCALE_MIN, CludesUI.PANEL_SCALE_MAX = 0.75, 2.00
 -- Nearest 5% step to v, inside the range. Ties round up (harmless: the panel reads
 -- large rather than small, which is the direction this whole seed exists to fix).
 function CludesUI.SnapPanelScale(val)
-    if type(val) ~= "number" or val ~= val then
-        return 1.00
-    end
+    if type(val) ~= "number" or val ~= val then return 1.00 end
     val = math.floor(val * 20 + 0.5) / 20
     return math.max(CludesUI.PANEL_SCALE_MIN, math.min(CludesUI.PANEL_SCALE_MAX, val))
 end
@@ -46,13 +42,9 @@ local pairs, type, next, rawset, rawget, setmetatable, wipe =
 local tinsert, tremove = table.insert, table.remove
 local xpcall, geterrorhandler = xpcall, geterrorhandler
 
-local function errorhandler(err)
-    return geterrorhandler()(err)
-end
+local function errorhandler(err) return geterrorhandler()(err) end
 local function safecall(func, ...)
-    if type(func) == "function" then
-        return xpcall(func, errorhandler, ...)
-    end
+    if type(func) == "function" then return xpcall(func, errorhandler, ...) end
 end
 
 --------------------------------------------------------------------------------
@@ -73,16 +65,12 @@ local statuses = {} -- name -> true if enabled
 -- every mixin event frame in the suite was parent-stamped and the whole suite's event
 -- handling was billed to the parent addon.
 local function GetOrCreateEventFrame(addon)
-    if addon._eventFrame then
-        return addon._eventFrame
-    end
+    if addon._eventFrame then return addon._eventFrame end
     local frame = CreateFrame("Frame")
     frame._handlers = {}
     frame:SetScript("OnEvent", function(self, evt, ...)
         local handler = self._handlers[evt]
-        if handler then
-            handler(addon, evt, ...)
-        end
+        if handler then handler(addon, evt, ...) end
     end)
     addon._eventFrame = frame
     return frame
@@ -91,9 +79,7 @@ end
 --- Create a new addon object. Replaces AceAddon:NewAddon().
 -- Returns a table with :RegisterEvent / :UnregisterEvent mixed in.
 function LiteKit.NewAddon(name)
-    if addons[name] then
-        return addons[name]
-    end
+    if addons[name] then return addons[name] end
     local addon = { name = name, enabledState = true }
     addons[name] = addon
     tinsert(initQueue, addon)
@@ -145,16 +131,12 @@ function LiteKit._RegisterEvent(self, eventname, callback)
         handler = callback
     elseif type(callback) == "string" then
         handler = function(addon, evt, ...)
-            if addon[callback] then
-                addon[callback](addon, evt, ...)
-            end
+            if addon[callback] then addon[callback](addon, evt, ...) end
         end
     else
         -- No callback: look for self:EVENT_NAME
         handler = function(addon, evt, ...)
-            if addon[eventname] then
-                addon[eventname](addon, evt, ...)
-            end
+            if addon[eventname] then addon[eventname](addon, evt, ...) end
         end
     end
     frame._handlers[eventname] = handler
@@ -164,9 +146,7 @@ end
 --- Unregister a Blizzard event.
 function LiteKit._UnregisterEvent(self, eventname)
     local frame = self._eventFrame
-    if not frame then
-        return
-    end
+    if not frame then return end
     frame._handlers[eventname] = nil
     frame:UnregisterEvent(eventname)
 end
@@ -186,14 +166,10 @@ local function DeepMergeDefaults(dest, source)
     -- Merge src into dest, only filling in keys that don't exist yet
     for key, val in pairs(source) do
         if type(val) == "table" then
-            if type(dest[key]) ~= "table" then
-                dest[key] = {}
-            end
+            if type(dest[key]) ~= "table" then dest[key] = {} end
             DeepMergeDefaults(dest[key], val)
         else
-            if dest[key] == nil then
-                dest[key] = val
-            end
+            if dest[key] == nil then dest[key] = val end
         end
     end
 end
@@ -207,9 +183,7 @@ local function StripDefaults(saved, defaultSet)
         if type(val) == "table" and type(saved[key]) == "table" then
             StripDefaults(saved[key], val)
             -- Keep empty array entries; DeepMergeDefaults fills them on login.
-            if not next(saved[key]) and type(key) ~= "number" then
-                saved[key] = nil
-            end
+            if not next(saved[key]) and type(key) ~= "number" then saved[key] = nil end
         elseif saved[key] == val then
             saved[key] = nil
         end
@@ -217,9 +191,7 @@ local function StripDefaults(saved, defaultSet)
 end
 
 local function DeepCopy(source)
-    if type(source) ~= "table" then
-        return source
-    end
+    if type(source) ~= "table" then return source end
     return CopyTable(source)
 end
 
@@ -255,9 +227,7 @@ local _preSVDBs = {} -- dbs created before that, awaiting re-root
 -- persisting, anything derived from db.profile.
 --
 -- Always true in the suite, where no db is ever created pre-SavedVariables.
-function LiteKit.IsDBReady()
-    return (not IS_STANDALONE) or _svLoaded
-end
+function LiteKit.IsDBReady() return (not IS_STANDALONE) or _svLoaded end
 
 --- Create or open a database backed by the central CludesUIDB store.
 -- Returns a db object with .profile pointing to the active profile table
@@ -271,27 +241,15 @@ function LiteKit.NewDB(svName, defaultSet, defaultToCharKey)
 
     -- Resolve the active profile name from the central DB
     local profileName = "Default"
-    if CludesUIDB and CludesUIDB.activeProfile then
-        profileName = CludesUIDB.activeProfile
-    end
+    if CludesUIDB and CludesUIDB.activeProfile then profileName = CludesUIDB.activeProfile end
 
     -- Ensure the profile and addons tables exist in the central DB
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
-    if not CludesUIDB.profiles then
-        CludesUIDB.profiles = {}
-    end
-    if type(CludesUIDB.profiles[profileName]) ~= "table" then
-        CludesUIDB.profiles[profileName] = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB.profiles then CludesUIDB.profiles = {} end
+    if type(CludesUIDB.profiles[profileName]) ~= "table" then CludesUIDB.profiles[profileName] = {} end
     local profileData = CludesUIDB.profiles[profileName]
-    if not profileData.addons then
-        profileData.addons = {}
-    end
-    if type(profileData.addons[folder]) ~= "table" then
-        profileData.addons[folder] = {}
-    end
+    if not profileData.addons then profileData.addons = {} end
+    if type(profileData.addons[folder]) ~= "table" then profileData.addons[folder] = {} end
     local profile = profileData.addons[folder]
 
     -- Child SV globals are vestigial (all data lives in CludesUIDB).
@@ -322,13 +280,16 @@ function LiteKit.NewDB(svName, defaultSet, defaultToCharKey)
             -- One-time warning per session
             if not LiteKit._corruptionWarned then
                 LiteKit._corruptionWarned = true
-                C_Timer.After(5, function()
-                    CludesUI.Print(
-                        "|cffff6600CludesUI:|r Profile data for "
-                            .. folder
-                            .. " was corrupted and has been repaired. Your settings may have been reset to defaults."
-                    )
-                end)
+                C_Timer.After(
+                    5,
+                    function()
+                        CludesUI.Print(
+                            "|cffff6600CludesUI:|r Profile data for "
+                                .. folder
+                                .. " was corrupted and has been repaired. Your settings may have been reset to defaults."
+                        )
+                    end
+                )
             end
         end
     end
@@ -347,9 +308,7 @@ function LiteKit.NewDB(svName, defaultSet, defaultToCharKey)
     --- Reset the current profile to defaults.
     function saved:ResetProfile()
         wipe(self.profile)
-        if self._profileDefaults then
-            DeepMergeDefaults(self.profile, self._profileDefaults)
-        end
+        if self._profileDefaults then DeepMergeDefaults(self.profile, self._profileDefaults) end
     end
 
     -- Register for logout cleanup
@@ -358,9 +317,7 @@ function LiteKit.NewDB(svName, defaultSet, defaultToCharKey)
     -- Created before the owning addon's SavedVariables loaded: the real
     -- saved table will replace CludesUIDB momentarily, so queue this db
     -- for the in-place re-root at ADDON_LOADED (see _preSVDBs above).
-    if IS_STANDALONE and not _svLoaded then
-        tinsert(_preSVDBs, saved)
-    end
+    if IS_STANDALONE and not _svLoaded then tinsert(_preSVDBs, saved) end
 
     return saved
 end
@@ -374,9 +331,7 @@ local preLogoutCallbacks = {}
 
 --- Register a function to run before StripDefaults on logout.
 --- Used by the profile system to save a complete snapshot.
-function LiteKit.RegisterPreLogout(fn)
-    tinsert(preLogoutCallbacks, fn)
-end
+function LiteKit.RegisterPreLogout(fn) tinsert(preLogoutCallbacks, fn) end
 
 local logoutFrame = CreateFrame("Frame")
 logoutFrame:RegisterEvent("PLAYER_LOGOUT")
@@ -442,31 +397,17 @@ local _dbGuardArmed = true -- true from load until PLAYER_LOGIN
 -- WoW will serialize at logout. The vestigial child SV global is re-wiped in place (its
 -- saved copy loaded after NewDB's file-scope wipe and would otherwise persist junk).
 local function RerootPreSVDBs()
-    if #_preSVDBs == 0 then
-        return
-    end
+    if #_preSVDBs == 0 then return end
     local profileName = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
-    if type(CludesUIDB.profiles) ~= "table" then
-        CludesUIDB.profiles = {}
-    end
-    if type(CludesUIDB.profiles[profileName]) ~= "table" then
-        CludesUIDB.profiles[profileName] = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
+    if type(CludesUIDB.profiles) ~= "table" then CludesUIDB.profiles = {} end
+    if type(CludesUIDB.profiles[profileName]) ~= "table" then CludesUIDB.profiles[profileName] = {} end
     local profileData = CludesUIDB.profiles[profileName]
-    if not profileData.addons then
-        profileData.addons = {}
-    end
+    if not profileData.addons then profileData.addons = {} end
     for _, saved in ipairs(_preSVDBs) do
-        if type(profileData.addons[saved.folder]) ~= "table" then
-            profileData.addons[saved.folder] = {}
-        end
+        if type(profileData.addons[saved.folder]) ~= "table" then profileData.addons[saved.folder] = {} end
         local profile = profileData.addons[saved.folder]
-        if saved._profileDefaults then
-            DeepMergeDefaults(profile, saved._profileDefaults)
-        end
+        if saved._profileDefaults then DeepMergeDefaults(profile, saved._profileDefaults) end
         saved.sv = CludesUIDB
         saved._profileName = profileName
         saved.profile = profile
@@ -487,16 +428,12 @@ local function FlushEnableQueue()
     -- Ensure PP.mult is current before any addon's OnEnable runs. PP is
     -- defined in CludesUI.lua (loaded after this file) so it exists by the
     -- time PLAYER_LOGIN fires.
-    if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then
-        CludesUI.PP.UpdateMult()
-    end
+    if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then CludesUI.PP.UpdateMult() end
     -- Apply spec-assigned profile data into each child SV before any OnEnable
     -- runs. The spec API is available here (after OnInitialize, before
     -- OnEnable) so we can resolve the current spec and inject the correct
     -- profile snapshot. ADDON_LOADED is too early (spec API not ready yet).
-    if CludesUI and CludesUI.PreSeedSpecProfile then
-        CludesUI.PreSeedSpecProfile()
-    end
+    if CludesUI and CludesUI.PreSeedSpecProfile then CludesUI.PreSeedSpecProfile() end
     while #enableQueue > 0 do
         local addon = tremove(enableQueue, 1)
         if addon.enabledState then
@@ -511,9 +448,7 @@ end
 -- re-rooted and before any OnInitialize opens a profile and merges defaults
 -- into it -- in the suite and in every standalone alike.
 local _svLoadedHooks = {}
-function LiteKit.OnSavedVariablesLoaded(fn)
-    _svLoadedHooks[#_svLoadedHooks + 1] = fn
-end
+function LiteKit.OnSavedVariablesLoaded(fn) _svLoadedHooks[#_svLoadedHooks + 1] = fn end
 
 --- For those passes: true while CludesUIDB is still the stand-in a
 --- pre-SavedVariables db built (a standalone's file-scope NewDB), with no saved
@@ -539,9 +474,7 @@ lifecycleFrame:SetScript("OnEvent", function(self, evt, arg1)
                 RerootPreSVDBs()
                 -- Runtime files can cache default fonts before this addon's
                 -- SavedVariables load. Resolve the saved choice when frames init.
-                if CludesUI.InvalidateFontCache then
-                    CludesUI.InvalidateFontCache()
-                end
+                if CludesUI.InvalidateFontCache then CludesUI.InvalidateFontCache() end
             end
         elseif _dbGuardArmed and _parentDBRef and CludesUIDB ~= _parentDBRef then
             -- A stale SavedVariables copy from a child's WTF file replaced the central

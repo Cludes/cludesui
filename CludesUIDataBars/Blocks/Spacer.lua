@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Spacer.lua - Info Bar block: empty space.
 --
@@ -23,11 +21,7 @@ mod.BlockFactories.spacer = function(blockCfg, slot, contentFrame, barCtx)
         Refresh = Nothing,
         Enable = Nothing,
         Disable = Nothing,
-        Destroy = function(self)
-            self._dead = true
-        end,
-        GetAutoLength = function()
-            return 0
-        end,
+        Destroy = function(self) self._dead = true end,
+        GetAutoLength = function() return 0 end,
     }
 end

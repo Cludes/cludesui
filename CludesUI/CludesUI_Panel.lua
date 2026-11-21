@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Panel.lua
 --  The options panel shell: main frame, sidebar, header, tabs, content
@@ -129,9 +127,7 @@ do
     local _scrollRootHiders = {}
     function CUI._AddScrollRootHider(fn)
         for i = 1, #_scrollRootHiders do
-            if _scrollRootHiders[i] == fn then
-                return
-            end
+            if _scrollRootHiders[i] == fn then return end
         end
         _scrollRootHiders[#_scrollRootHiders + 1] = fn
     end
@@ -139,25 +135,19 @@ do
         -- Pack children into reusable scratch table (one GetChildren call)
         local count = _packIntoScratch(parent:GetChildren())
         for i = 1, count do
-            if not (keepSet and keepSet[_hideAllScratch[i]]) then
-                _hideAllScratch[i]:Hide()
-            end
+            if not (keepSet and keepSet[_hideAllScratch[i]]) then _hideAllScratch[i]:Hide() end
             _hideAllScratch[i] = nil
         end
         count = _packIntoScratch(parent:GetRegions())
         for i = 1, count do
-            if not (keepSet and keepSet[_hideAllScratch[i]]) then
-                _hideAllScratch[i]:Hide()
-            end
+            if not (keepSet and keepSet[_hideAllScratch[i]]) then _hideAllScratch[i]:Hide() end
             _hideAllScratch[i] = nil
         end
         -- Also hide custom root frames parented to contentScroll (bypass scroll child)
         for i = 1, #_scrollRootHiders do
             _scrollRootHiders[i]()
         end
-        if CUI._hideScrollFrameRoots then
-            CUI._hideScrollFrameRoots()
-        end
+        if CUI._hideScrollFrameRoots then CUI._hideScrollFrameRoots() end
     end
 end
 
@@ -195,15 +185,11 @@ end
 
 -- OnShow callbacks -- available immediately; panelFrame hooks in when created
 local _onShowCallbacks = {}
-function CUI:RegisterOnShow(fn)
-    _onShowCallbacks[#_onShowCallbacks + 1] = fn
-end
+function CUI:RegisterOnShow(fn) _onShowCallbacks[#_onShowCallbacks + 1] = fn end
 
 -- OnHide callbacks -- fired when the settings panel closes
 local _onHideCallbacks = {}
-function CUI:RegisterOnHide(fn)
-    _onHideCallbacks[#_onHideCallbacks + 1] = fn
-end
+function CUI:RegisterOnHide(fn) _onHideCallbacks[#_onHideCallbacks + 1] = fn end
 
 -------------------------------------------------------------------------------
 --  Tab helpers  (forward-declared, defined before CreateMainFrame uses them)
@@ -234,13 +220,9 @@ local function BuildFrame()
         local userScale2 = (CludesUIDB and CludesUIDB.panelScale) or 1.0
         panelFrame:SetScale(baseScale2 * userScale2)
         -- Re-sync PanelPP mult for the (possibly new) scale
-        if CUI.PanelPP then
-            CUI.PanelPP.UpdateMult()
-        end
+        if CUI.PanelPP then CUI.PanelPP.UpdateMult() end
         -- The mini window was dragged and then closed: open with the panel on screen.
-        if CUI._panelNudge then
-            CUI._KeepPanelOnScreen()
-        end
+        if CUI._panelNudge then CUI._KeepPanelOnScreen() end
         -- Panel borders are resnapped by the tab-switch ResnapBordersUnder (active page only, ~2ms);
         -- a global ResnapAllBorders here costs ~74ms and is unnecessary, since non-panel borders have their own scale and resnap triggers.
         for _, fn in ipairs(_onShowCallbacks) do
@@ -248,17 +230,13 @@ local function BuildFrame()
         end
         -- Controller cursor: every open is one the player asked for (slash, button,
         -- binding, pause menu), so bring the gamepad pointer up.
-        if CUI.PadNative() then
-            CUI.RaiseGamePadCursor()
-        end
+        if CUI.PadNative() then CUI.RaiseGamePadCursor() end
     end)
     panelFrame:SetScript("OnHide", function()
         -- Every close path (Escape, combat, the mini window's X) unfolds a collapsed
         -- window, so the next open is always the full panel. A parent hiding it
         -- (Alt-Z, a cinematic) leaves it shown: it stays folded and comes back as it was.
-        if CUI._panelCollapsed and not panelFrame:IsShown() then
-            CUI._SetPanelCollapsed(false)
-        end
+        if CUI._panelCollapsed and not panelFrame:IsShown() then CUI._SetPanelCollapsed(false) end
         -- Close the sidebar sync popup so it never lingers after the window is dismissed.
         CUI.CloseSyncPopup()
         if _onHideCallbacks then
@@ -276,9 +254,7 @@ local function BuildFrame()
     local userScale = (CludesUIDB and CludesUIDB.panelScale) or 1.0
     panelFrame:SetScale(baseScale * userScale)
     -- Initialize PanelPP mult for the saved user scale
-    if CUI.PanelPP then
-        CUI.PanelPP.UpdateMult()
-    end
+    if CUI.PanelPP then CUI.PanelPP.UpdateMult() end
 
     CUI.RegisterEscapeClose(panelFrame)
 
@@ -357,9 +333,7 @@ local function BuildFrame()
     -- A colour picked off the art (r, g, b), as the art shows it under the theme's tint.
     function titleBoxes.Tinted(skinName, tr, tg, tb, red, green, blue)
         local fr, fg, fb = titleBoxes.TintColor(skinName, tr, tg, tb)
-        if not fr then
-            return red, green, blue
-        end
+        if not fr then return red, green, blue end
         local lum = 0.2126 * red + 0.7152 * green + 0.0722 * blue
         return lum * fr, lum * fg, lum * fb
     end
@@ -395,9 +369,7 @@ local function BuildFrame()
         local boxState = { anchor = anchor, ox = ox, oy = oy, dx = dx, glyph = glyph, alpha = 1, s = {} }
         for i = 1, 4 do
             local tex = owner:CreateTexture(nil, glyph and "BACKGROUND" or "HIGHLIGHT")
-            if not glyph then
-                tex:SetBlendMode("ADD")
-            end
+            if not glyph then tex:SetBlendMode("ADD") end
             boxState.s[i] = tex
         end
         if glyph then
@@ -416,9 +388,7 @@ local function BuildFrame()
             local acc = boxState.acc
             RegAccent({
                 type = "callback",
-                fn = function(red, green, blue)
-                    acc:SetVertexColor(red, green, blue, acc:GetAlpha())
-                end,
+                fn = function(red, green, blue) acc:SetVertexColor(red, green, blue, acc:GetAlpha()) end,
             })
         end
         return boxState
@@ -509,7 +479,8 @@ local function BuildFrame()
                 boxState.base:SetPoint("CENTER", boxState.anchor, "TOPLEFT", cx, -centerY)
                 boxState.acc:ClearAllPoints()
                 boxState.acc:SetPoint("CENTER", boxState.anchor, "TOPLEFT", cx, -centerY)
-                local red, green, blue = titleBoxes.Tinted(skinName, tr, tg, tb, artSpec.r, artSpec.g, artSpec.b)
+                local red, green, blue =
+                    titleBoxes.Tinted(skinName, tr, tg, tb, artSpec.r, artSpec.g, artSpec.b)
                 boxState.base:SetVertexColor(red, green, blue, 1)
                 boxState.acc:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
             end
@@ -525,21 +496,13 @@ local function BuildFrame()
         button:SetScript("OnEnter", function(self)
             glow.alpha = 0.5
             titleBoxes.Paint(glow, titleBoxes.Theme())
-            if tip then
-                CUI.ShowWidgetTooltip(self, tip)
-            end
+            if tip then CUI.ShowWidgetTooltip(self, tip) end
         end)
         button:SetScript("OnLeave", function()
-            if tip then
-                CUI.HideWidgetTooltip()
-            end
+            if tip then CUI.HideWidgetTooltip() end
         end)
-        button:SetScript("OnMouseDown", function()
-            titleBoxes.Alpha(glow, 0.85)
-        end)
-        button:SetScript("OnMouseUp", function()
-            titleBoxes.Alpha(glow, 0.5)
-        end)
+        button:SetScript("OnMouseDown", function() titleBoxes.Alpha(glow, 0.85) end)
+        button:SetScript("OnMouseUp", function() titleBoxes.Alpha(glow, 0.5) end)
     end
 
     -- The collapse box: a front/back pair on backdrop that swaps and crossfades
@@ -625,9 +588,7 @@ local function BuildFrame()
             -- (every theme pick re-applies the accent right after starting it).
             RegAccent({
                 type = "callback",
-                fn = function(red, green, blue)
-                    overlay:SetVertexColor(red, green, blue, overlay:GetAlpha())
-                end,
+                fn = function(red, green, blue) overlay:SetVertexColor(red, green, blue, overlay:GetAlpha()) end,
             })
         end
         local path = MEDIA_PATH .. artSpec.file
@@ -678,9 +639,7 @@ local function BuildFrame()
         titleBoxes.Paint(titleBoxes.front, skinName, red, green, blue)
         titleBoxes.Alpha(titleBoxes.back, 1)
         -- A collapsed window shows the mini instead: it takes the new art at once.
-        if CUI._panelCollapsed then
-            titleBoxes.SkinMini(skinName, red, green, blue)
-        end
+        if CUI._panelCollapsed then titleBoxes.SkinMini(skinName, red, green, blue) end
 
         -- Start crossfade (the accent overlay, if either theme has one, rides it)
         bgFadeProgress = 0
@@ -688,9 +647,7 @@ local function BuildFrame()
         bgFadeTicker:Show()
 
         -- The sidebar opacity slider's orientation follows the theme.
-        if CUI._layoutOpacitySlider then
-            CUI._layoutOpacitySlider()
-        end
+        if CUI._layoutOpacitySlider then CUI._layoutOpacitySlider() end
     end
 
     -- For tint-only updates (Custom Color picker dragging), update the front layer directly
@@ -698,9 +655,7 @@ local function BuildFrame()
         local skinName = ResolveFactionTheme((CludesUIDB or {}).activeTheme or CUI.DEFAULT_THEME)
         ApplyBgTintToLayer(frontBg, skinName, red, green, blue)
         titleBoxes.Paint(titleBoxes.front, skinName, red, green, blue)
-        if CUI._panelCollapsed then
-            titleBoxes.SkinMini(skinName, red, green, blue)
-        end
+        if CUI._panelCollapsed then titleBoxes.SkinMini(skinName, red, green, blue) end
     end
 
     -- Apply initial theme at creation (no crossfade, just set correct texture + tint)
@@ -728,18 +683,12 @@ local function BuildFrame()
     hitArea:SetMovable(true)
     hitArea:RegisterForDrag("LeftButton")
     -- No SetClampedToScreen: the whole window moves as one and drags freely off any edge.
-    hitArea:SetScript("OnDragStart", function()
-        panelFrame:StartMoving()
-    end)
-    hitArea:SetScript("OnDragStop", function()
-        panelFrame:StopMovingOrSizing()
-    end)
+    hitArea:SetScript("OnDragStart", function() panelFrame:StartMoving() end)
+    hitArea:SetScript("OnDragStop", function() panelFrame:StopMovingOrSizing() end)
     -- Shift + mouse wheel over any part of the panel without a wheel of its own (the
     -- header, the footer, the margins) scales it too; a plain wheel there does nothing.
     hitArea:EnableMouseWheel(true)
-    hitArea:SetScript("OnMouseWheel", function(_, stepDelta)
-        CUI._ShiftWheelScale(stepDelta)
-    end)
+    hitArea:SetScript("OnMouseWheel", function(_, stepDelta) CUI._ShiftWheelScale(stepDelta) end)
     -- Controller cursor: the drag surface is not a stop; its children are.
     CUI.PadHint(hitArea, "nodepass")
 
@@ -750,14 +699,10 @@ local function BuildFrame()
     closeBtn:SetSize(40, 40)
     closeBtn:SetPoint("TOPRIGHT", hitArea, "TOPRIGHT", -14, -11)
     closeBtn:SetFrameLevel(hitArea:GetFrameLevel() + 20)
-    closeBtn:SetScript("OnClick", function()
-        CUI:Hide()
-    end)
+    closeBtn:SetScript("OnClick", function() CUI:Hide() end)
     titleBoxes.Hover(closeBtn, backdrop, 0, 0, 0)
     -- Controller cursor: its cancel press closes the window through this button.
-    if CUI.PadCP() then
-        panelFrame.CloseButton = closeBtn
-    end
+    if CUI.PadCP() then panelFrame.CloseButton = closeBtn end
 
     -----------------------------------------------------------------------
     --  Collapse button  (hit area over titleBoxes.front/back, left of the close X)
@@ -768,9 +713,7 @@ local function BuildFrame()
         collapseBtn:SetSize(40, 40)
         collapseBtn:SetPoint("TOPRIGHT", hitArea, "TOPRIGHT", -(titleBoxes.DX + 14), -11)
         collapseBtn:SetFrameLevel(hitArea:GetFrameLevel() + 20)
-        collapseBtn:SetScript("OnClick", function()
-            CUI._SetPanelCollapsed(true)
-        end)
+        collapseBtn:SetScript("OnClick", function() CUI._SetPanelCollapsed(true) end)
         titleBoxes.Hover(collapseBtn, backdrop, 0, 0, titleBoxes.DX, CUI.L("Collapse"))
     end
 
@@ -794,9 +737,7 @@ local function BuildFrame()
         miniBox:SetFlattensRenderLayers(true)
         miniBox:EnableMouse(true)
         miniBox:RegisterForDrag("LeftButton")
-        miniBox:SetScript("OnDragStart", function()
-            panelFrame:StartMoving()
-        end)
+        miniBox:SetScript("OnDragStart", function() panelFrame:StartMoving() end)
         miniBox:SetScript("OnDragStop", function()
             panelFrame:StopMovingOrSizing()
             CUI._panelNudge = true
@@ -820,9 +761,7 @@ local function BuildFrame()
                 tex:SetTexCoord(x0 / BG_WIDTH, x1 / BG_WIDTH, top, bot)
                 tex:SetSize(x1 - x0, 112)
                 tex:SetPoint("TOPLEFT", miniBox, "TOPLEFT", x0 - MX, (half == 0) and 74 or -38)
-                if piece == 0 then
-                    tex:SetGradient("HORIZONTAL", fadeFrom, fadeTo)
-                end
+                if piece == 0 then tex:SetGradient("HORIZONTAL", fadeFrom, fadeTo) end
             end
         end
 
@@ -844,17 +783,13 @@ local function BuildFrame()
         expandBtn:SetSize(40, 40)
         expandBtn:SetPoint("TOPLEFT", miniBox, "TOPLEFT", (1346 - titleBoxes.DX) - MX, -(115 - MY))
         expandBtn:SetFrameLevel(miniBox:GetFrameLevel() + 5)
-        expandBtn:SetScript("OnClick", function()
-            CUI._SetPanelCollapsed(false)
-        end)
+        expandBtn:SetScript("OnClick", function() CUI._SetPanelCollapsed(false) end)
         titleBoxes.Hover(expandBtn, miniBox, MX, MY, titleBoxes.DX, CUI.L("Expand"))
         local miniClose = CreateFrame("Button", nil, miniBox)
         miniClose:SetSize(40, 40)
         miniClose:SetPoint("TOPLEFT", miniBox, "TOPLEFT", 1346 - MX, -(115 - MY))
         miniClose:SetFrameLevel(miniBox:GetFrameLevel() + 5)
-        miniClose:SetScript("OnClick", function()
-            CUI:Hide()
-        end)
+        miniClose:SetScript("OnClick", function() CUI:Hide() end)
         titleBoxes.Hover(miniClose, miniBox, MX, MY, 0)
 
         -- Badge: a thin ring (a disc 2 units wider behind it) and the emblem square.
@@ -913,8 +848,7 @@ local function BuildFrame()
         -- Re-skinned on each collapse (and on a theme change while collapsed).
         function titleBoxes.SkinMini(skinName, tr, tg, tb)
             local file = THEME_BG_FILES[skinName] or THEME_BG_FILES["CludesUI"]
-            local artSpec = CUI.THEME_CLOSE_BOX[file]
-                or CUI.THEME_CLOSE_BOX[THEME_BG_FILES["CludesUI"]]
+            local artSpec = CUI.THEME_CLOSE_BOX[file] or CUI.THEME_CLOSE_BOX[THEME_BG_FILES["CludesUI"]]
             local path = MEDIA_PATH .. file
             barTop:SetTexture(path)
             ApplyBgTintToLayer(barTop, skinName, tr, tg, tb)
@@ -944,20 +878,14 @@ local function BuildFrame()
         local hooks = CUI._onCollapseCallbacks
         CUI.HideWidgetTooltip(true)
         if on then
-            if CUI._panelCollapsed or not panelFrame:IsShown() then
-                return
-            end
+            if CUI._panelCollapsed or not panelFrame:IsShown() then return end
             CUI._panelCollapsed = true
             CUI.CloseSyncPopup()
             -- Name/icon popups sit on UIParent with no click-off (the panel's own
             -- OnHide closes them for the same reason).
-            if CUI._specOvNamePopup then
-                CUI._specOvNamePopup:Hide()
-            end
+            if CUI._specOvNamePopup then CUI._specOvNamePopup:Hide() end
             local cond = CUI._CondOv
-            if cond and cond._namePopup then
-                cond._namePopup:Hide()
-            end
+            if cond and cond._namePopup then cond._namePopup:Hide() end
             body:Hide()
             miniBox = miniBox or titleBoxes.BuildMini()
             titleBoxes.SkinMini(titleBoxes.Theme())
@@ -971,13 +899,9 @@ local function BuildFrame()
             body:Show()
             -- Unfolded by a close (panelFrame's OnHide): the OnHide callbacks take it
             -- from here, and a deferred page rebuild waits for the next open.
-            if not panelFrame:IsShown() then
-                return
-            end
+            if not panelFrame:IsShown() then return end
             -- Dropped somewhere else: keep the unfolded panel on screen.
-            if CUI._panelNudge then
-                CUI._KeepPanelOnScreen()
-            end
+            if CUI._panelNudge then CUI._KeepPanelOnScreen() end
             -- Pages are only ever built or re-read on screen (RefreshPage defers while folded).
             RunDeferredRefresh()
             for i = 1, #hooks do
@@ -993,28 +917,16 @@ local function BuildFrame()
         CUI._panelNudge = nil
         local l, r, t, b = hitArea:GetLeft(), hitArea:GetRight(), hitArea:GetTop(), hitArea:GetBottom()
         local ml, mb = panelFrame:GetLeft(), panelFrame:GetBottom()
-        if not (l and r and t and b and ml and mb) then
-            return
-        end
+        if not (l and r and t and b and ml and mb) then return end
         local isv = issecretvalue
-        if isv and (isv(l) or isv(r) or isv(t) or isv(b) or isv(ml) or isv(mb)) then
-            return
-        end
+        if isv and (isv(l) or isv(r) or isv(t) or isv(b) or isv(ml) or isv(mb)) then return end
         local uiScale = UIParent:GetEffectiveScale() / panelFrame:GetEffectiveScale()
         local sw, sh = UIParent:GetWidth() * uiScale, UIParent:GetHeight() * uiScale
         local dx, dy = 0, 0
-        if r > sw then
-            dx = sw - r
-        end
-        if l + dx < 0 then
-            dx = -l
-        end
-        if b < 0 then
-            dy = -b
-        end
-        if t + dy > sh then
-            dy = sh - t
-        end
+        if r > sw then dx = sw - r end
+        if l + dx < 0 then dx = -l end
+        if b < 0 then dy = -b end
+        if t + dy > sh then dy = sh - t end
         if dx ~= 0 or dy ~= 0 then
             panelFrame:ClearAllPoints()
             panelFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", ml + dx, mb + dy)
@@ -1237,12 +1149,8 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnLeave", function(self)
-            if CUI.HideWidgetTooltip then
-                CUI.HideWidgetTooltip()
-            end
-            if self._ovLocked then
-                return
-            end
+            if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+            if self._ovLocked then return end
             hoverFill:SetAlpha(0)
             self._hoverGlow:Hide()
             self._hoverIndicator:Hide()
@@ -1256,12 +1164,8 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnClick", function(self)
-            if self._ovLocked then
-                return
-            end
-            if moduleList[self._folder] then
-                CUI:SelectModule(self._folder)
-            end
+            if self._ovLocked then return end
+            if moduleList[self._folder] then CUI:SelectModule(self._folder) end
         end)
 
         sidebarButtons[GLOBAL_KEY] = button
@@ -1310,12 +1214,8 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnLeave", function(self)
-            if CUI.HideWidgetTooltip then
-                CUI.HideWidgetTooltip()
-            end
-            if self._ovLocked then
-                return
-            end
+            if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+            if self._ovLocked then return end
             hoverFill:SetAlpha(0)
             self._hoverGlow:Hide()
             self._hoverIndicator:Hide()
@@ -1329,20 +1229,14 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnClick", function(self)
-            if self._ovLocked then
-                return
-            end
+            if self._ovLocked then return end
             -- Opening Patch Notes consumes the new-patch reminder dot; it
             -- re-arms only on the next version increase.
             if CludesUIDB and CludesUIDB.patchDotPending then
                 CludesUIDB.patchDotPending = nil
-                if CUI._UpdatePatchDot then
-                    CUI._UpdatePatchDot()
-                end
+                if CUI._UpdatePatchDot then CUI._UpdatePatchDot() end
             end
-            if moduleList[self._folder] then
-                CUI:SelectModule(self._folder)
-            end
+            if moduleList[self._folder] then CUI:SelectModule(self._folder) end
         end)
 
         -- Pulsing "new patch" dot: shown while patchDotPending is raised (version-increase
@@ -1355,9 +1249,7 @@ local function BuildSidebar()
                     and true
                 or false
             if not dotTex then
-                if not show then
-                    return
-                end
+                if not show then return end
                 dotTex = CreateFrame("Frame", nil, button)
                 dotTex:SetFrameLevel(button:GetFrameLevel() + 5)
                 dotTex:SetSize(9, 9)
@@ -1447,12 +1339,8 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnLeave", function(self)
-            if CUI.HideWidgetTooltip then
-                CUI.HideWidgetTooltip()
-            end
-            if self._ovLocked then
-                return
-            end
+            if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+            if self._ovLocked then return end
             hoverFill:SetAlpha(0)
             self._hoverGlow:Hide()
             self._hoverIndicator:Hide()
@@ -1466,12 +1354,8 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnClick", function(self)
-            if self._ovLocked then
-                return
-            end
-            if moduleList[self._folder] then
-                CUI:SelectModule(self._folder)
-            end
+            if self._ovLocked then return end
+            if moduleList[self._folder] then CUI:SelectModule(self._folder) end
         end)
 
         sidebarButtons["_CUIProfiles"] = button
@@ -1510,14 +1394,8 @@ local function BuildSidebar()
         CUI.SL_INPUT_A + 0.10
     )
     sbBg:SetAllPoints()
-    local sbBrd = CUI.MakeRoundedBorder(
-        sidebarSearchFrame,
-        CUI.BORDER_R,
-        CUI.BORDER_G,
-        CUI.BORDER_B,
-        0.10,
-        sbBg
-    )
+    local sbBrd =
+        CUI.MakeRoundedBorder(sidebarSearchFrame, CUI.BORDER_R, CUI.BORDER_G, CUI.BORDER_B, 0.10, sbBg)
 
     local sidebarEdit = CreateFrame("EditBox", nil, sidebarSearchFrame)
     sidebarEdit:SetAllPoints()
@@ -1539,39 +1417,26 @@ local function BuildSidebar()
     local sbClearLabel = MakeFont(clearSearchBtn, 15, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
     sbClearLabel:SetPoint("CENTER")
     sbClearLabel:SetText("x")
-    clearSearchBtn:SetScript("OnEnter", function()
-        sbClearLabel:SetTextColor(1, 1, 1, 1)
-    end)
-    clearSearchBtn:SetScript("OnLeave", function()
-        sbClearLabel:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
-    end)
+    clearSearchBtn:SetScript("OnEnter", function() sbClearLabel:SetTextColor(1, 1, 1, 1) end)
+    clearSearchBtn:SetScript(
+        "OnLeave",
+        function() sbClearLabel:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35) end
+    )
     clearSearchBtn:SetScript("OnClick", function()
         sidebarEdit:SetText("")
         sidebarEdit:ClearFocus()
     end)
 
-    local function _sbBorderHover(a)
-        sbBrd:SetColor(CUI.BORDER_R, CUI.BORDER_G, CUI.BORDER_B, a)
-    end
-    sidebarSearchFrame:SetScript("OnEnter", function()
-        _sbBorderHover(0.15)
-    end)
-    sidebarSearchFrame:SetScript("OnLeave", function()
-        _sbBorderHover(0.10)
-    end)
-    sidebarEdit:SetScript("OnEditFocusGained", function()
-        _sbBorderHover(0.15)
-    end)
-    sidebarEdit:SetScript("OnEditFocusLost", function()
-        _sbBorderHover(0.10)
-    end)
+    local function _sbBorderHover(a) sbBrd:SetColor(CUI.BORDER_R, CUI.BORDER_G, CUI.BORDER_B, a) end
+    sidebarSearchFrame:SetScript("OnEnter", function() _sbBorderHover(0.15) end)
+    sidebarSearchFrame:SetScript("OnLeave", function() _sbBorderHover(0.10) end)
+    sidebarEdit:SetScript("OnEditFocusGained", function() _sbBorderHover(0.15) end)
+    sidebarEdit:SetScript("OnEditFocusLost", function() _sbBorderHover(0.10) end)
     sidebarEdit:SetScript("OnEscapePressed", function(self)
         self:SetText("")
         self:ClearFocus()
     end)
-    sidebarEdit:SetScript("OnEnterPressed", function(self)
-        self:ClearFocus()
-    end)
+    sidebarEdit:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
 
     CUI._sidebarSearchBox = sidebarEdit
     CUI._sidebarSearchText = ""
@@ -1655,13 +1520,12 @@ local function BuildSidebar()
     end
     arrowButton:SetAlpha(arrowButton._aEnabled)
     arrowButton:SetScript("OnEnter", function(self)
-        if not self._atBottom then
-            self:SetAlpha(self._aHover)
-        end
+        if not self._atBottom then self:SetAlpha(self._aHover) end
     end)
-    arrowButton:SetScript("OnLeave", function(self)
-        self:SetAlpha(self._atBottom and self._aDisabled or self._aEnabled)
-    end)
+    arrowButton:SetScript(
+        "OnLeave",
+        function(self) self:SetAlpha(self._atBottom and self._aDisabled or self._aEnabled) end
+    )
     CUI._addonScrollArrow = arrowButton
 
     local function SyncAddonThumb()
@@ -1735,13 +1599,9 @@ local function BuildSidebar()
     end)
 
     addonScroller:SetScript("OnMouseWheel", function(self, stepDelta)
-        if CUI._ShiftWheelScale(stepDelta) then
-            return
-        end
+        if CUI._ShiftWheelScale(stepDelta) then return end
         local scrollMax = CUI.SafeScrollRange(self) or 0
-        if scrollMax <= 0 then
-            return
-        end
+        if scrollMax <= 0 then return end
         local zoom = self:GetEffectiveScale()
         scrollMax = math.floor(scrollMax * zoom) / zoom
         local base = addonIsSmoothing and addonScrollTarget or self:GetVerticalScroll()
@@ -1760,18 +1620,14 @@ local function BuildSidebar()
     -- follows (the lerp already paints its own frames).
     if CUI.PadCP() then
         addonScroller:HookScript("OnVerticalScroll", function()
-            if not addonIsSmoothing and not addonRail:GetScript("OnUpdate") then
-                SyncAddonThumb()
-            end
+            if not addonIsSmoothing and not addonRail:GetScript("OnUpdate") then SyncAddonThumb() end
         end)
     end
 
     -- Arrow click: smooth-animate to the bottom, reusing the wheel's scroll state.
     arrowButton:SetScript("OnClick", function()
         local scrollMax = CUI.SafeScrollRange(addonScroller) or 0
-        if scrollMax <= 0 then
-            return
-        end
+        if scrollMax <= 0 then return end
         local zoom = addonScroller:GetEffectiveScale()
         scrollMax = math.floor(scrollMax * zoom) / zoom
         addonScrollTarget = scrollMax
@@ -1787,9 +1643,7 @@ local function BuildSidebar()
     addonRail:SetHitRectInsets(-8, -2, 0, 0)
     local function _scrollToCursor()
         local scrollMax = CUI.SafeScrollRange(addonScroller) or 0
-        if scrollMax <= 0 then
-            return
-        end
+        if scrollMax <= 0 then return end
         local trackH = addonRail:GetHeight()
         local thumbH = addonThumb:GetHeight()
         local travel = math.max(1, trackH - thumbH)
@@ -1814,12 +1668,8 @@ local function BuildSidebar()
         addonSmoothFrame:Hide()
         self:SetScript("OnUpdate", _scrollToCursor)
     end)
-    addonRail:SetScript("OnMouseUp", function(self)
-        self:SetScript("OnUpdate", nil)
-    end)
-    addonRail:SetScript("OnHide", function(self)
-        self:SetScript("OnUpdate", nil)
-    end)
+    addonRail:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
+    addonRail:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
     -- Controller cursor: a pointer-position control, never a stop.
     CUI.PadHint(addonRail, "nodeignore")
 
@@ -1886,17 +1736,11 @@ local function BuildSidebar()
                 Paint(line:IsMouseOver())
             end,
         })
-        line:SetScript("OnEnter", function()
-            Paint(true)
-        end)
-        line:SetScript("OnLeave", function()
-            Paint(false)
-        end)
+        line:SetScript("OnEnter", function() Paint(true) end)
+        line:SetScript("OnLeave", function() Paint(false) end)
 
         local entryKey = navGroup.key
-        line:SetScript("OnClick", function()
-            CUI_NS.ToggleSidebarGroup(entryKey)
-        end)
+        line:SetScript("OnClick", function() CUI_NS.ToggleSidebarGroup(entryKey) end)
 
         line._isGroup = true
         line._label = navLabel
@@ -1963,19 +1807,14 @@ local function BuildSidebar()
             pwrBtn:SetScript("OnLeave", function(self)
                 local isEnabled = IsAddonLoaded(self._folder)
                 self._tex:SetVertexColor(1, 1, 1, isEnabled and 1 or 0.5)
-                if CUI.HideWidgetTooltip then
-                    CUI.HideWidgetTooltip()
-                end
+                if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
             end)
             pwrBtn:SetScript("OnClick", function(self)
                 local isEnabled = IsAddonLoaded(self._folder)
                 local action = isEnabled and "disable" or "enable"
                 local moduleKey = self._folder
                 CUI:ShowConfirmPopup({
-                    title = CUI.Lf(
-                        "%1$s Module",
-                        isEnabled and CUI.L("Disable") or CUI.L("Enable")
-                    ),
+                    title = CUI.Lf("%1$s Module", isEnabled and CUI.L("Disable") or CUI.L("Enable")),
                     message = CUI.Lf(
                         "Are you sure you want to %1$s %2$s?",
                         CUI.L(action),
@@ -2044,9 +1883,7 @@ local function BuildSidebar()
                 if CludesUIDB and CludesUIDB.profiles then
                     for _ in pairs(CludesUIDB.profiles) do
                         profCount = profCount + 1
-                        if profCount > 1 then
-                            break
-                        end
+                        if profCount > 1 then break end
                     end
                 end
                 if profCount <= 1 then
@@ -2082,9 +1919,7 @@ local function BuildSidebar()
             syncButton._refreshAlpha = RefreshSyncState
             -- Bulk-refresh registry (e.g. after profile deletion), keyed by folder so a
             -- sidebar rebuild overwrites the old closure instead of accumulating stale ones.
-            if not CUI._syncRefreshFns then
-                CUI._syncRefreshFns = {}
-            end
+            if not CUI._syncRefreshFns then CUI._syncRefreshFns = {} end
             CUI._syncRefreshFns[navInfo.folder] = RefreshSyncState
             syncButton:SetScript("OnEnter", function(self)
                 if isGlobalOnly then
@@ -2108,14 +1943,10 @@ local function BuildSidebar()
             end)
             syncButton:SetScript("OnLeave", function(self)
                 RefreshSyncState()
-                if CUI.HideWidgetTooltip then
-                    CUI.HideWidgetTooltip()
-                end
+                if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
             end)
             syncButton:SetScript("OnClick", function(self)
-                if isGlobalOnly then
-                    return
-                end
+                if isGlobalOnly then return end
                 CUI.OpenSyncPopup(self._folder, self._display, self)
             end)
             button._syncBtn = syncButton
@@ -2128,12 +1959,15 @@ local function BuildSidebar()
         navLabel:SetWordWrap(false)
         navLabel:SetMaxLines(1)
         local rightEdge = button._syncBtn or button._pwrBtn or button._dlIcon
-        if rightEdge then
-            navLabel:SetPoint("RIGHT", rightEdge, "LEFT", -6, 0)
-        end
+        if rightEdge then navLabel:SetPoint("RIGHT", rightEdge, "LEFT", -6, 0) end
 
         -- Default to unloaded appearance (refreshed each time panel opens)
-        navLabel:SetTextColor(NAV_DISABLED_TEXT.r, NAV_DISABLED_TEXT.g, NAV_DISABLED_TEXT.b, NAV_DISABLED_TEXT.a)
+        navLabel:SetTextColor(
+            NAV_DISABLED_TEXT.r,
+            NAV_DISABLED_TEXT.g,
+            NAV_DISABLED_TEXT.b,
+            NAV_DISABLED_TEXT.a
+        )
         button._folder = navInfo.folder
         button._loaded = false
         button._alwaysLoaded = navInfo.alwaysLoaded or false
@@ -2144,15 +1978,11 @@ local function BuildSidebar()
         hoverFill:SetAllPoints()
         button:SetScript("OnEnter", function(self)
             if self._comingSoon then
-                if CUI.ShowWidgetTooltip then
-                    CUI.ShowWidgetTooltip(self, "Coming soon")
-                end
+                if CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, "Coming soon") end
                 return
             end
             if self._maintenance then
-                if CUI.ShowWidgetTooltip then
-                    CUI.ShowWidgetTooltip(self, "In Maintenance")
-                end
+                if CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, "In Maintenance") end
                 return
             end
             if self._ovLocked then
@@ -2164,9 +1994,7 @@ local function BuildSidebar()
                 end
                 return
             end
-            if self._notEnabled then
-                return
-            end
+            if self._notEnabled then return end
             hoverFill:SetAlpha(0.06)
             if currentModule ~= self._folder then
                 self._hoverGlow:Show()
@@ -2189,21 +2017,11 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnLeave", function(self)
-            if CUI.HideWidgetTooltip then
-                CUI.HideWidgetTooltip()
-            end
-            if self._comingSoon then
-                return
-            end
-            if self._maintenance then
-                return
-            end
-            if self._ovLocked then
-                return
-            end
-            if self._notEnabled then
-                return
-            end
+            if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
+            if self._comingSoon then return end
+            if self._maintenance then return end
+            if self._ovLocked then return end
+            if self._notEnabled then return end
             hoverFill:SetAlpha(0)
             self._hoverGlow:Hide()
             self._hoverIndicator:Hide()
@@ -2226,21 +2044,11 @@ local function BuildSidebar()
             end
         end)
         button:SetScript("OnClick", function(self)
-            if self._comingSoon then
-                return
-            end
-            if self._maintenance then
-                return
-            end
-            if self._ovLocked then
-                return
-            end
-            if self._notEnabled then
-                return
-            end
-            if self._loaded and moduleList[self._folder] then
-                CUI:SelectModule(self._folder)
-            end
+            if self._comingSoon then return end
+            if self._maintenance then return end
+            if self._ovLocked then return end
+            if self._notEnabled then return end
+            if self._loaded and moduleList[self._folder] then CUI:SelectModule(self._folder) end
         end)
 
         return button
@@ -2257,9 +2065,7 @@ local function BuildSidebar()
     local _infoByFolder = CUI_NS.navInfo
     local GROUP_GAP = CUI.SIDEBAR_GROUP_GAP
     for i, navGroup in ipairs(CUI_NS.navGroups) do
-        if i > 1 then
-            _y = _y + GROUP_GAP
-        end
+        if i > 1 then _y = _y + GROUP_GAP end
         local header = CreateGroupHeader(navGroup)
         header:SetPoint("TOPLEFT", addonScrollChild, "TOPLEFT", 0, -_y)
         _groupHeaders[navGroup.key] = header
@@ -2285,8 +2091,7 @@ local function BuildSidebar()
     -- Lock/unlock excluded modules during an override editing session: their settings cannot be
     -- captured, so the row grays out and blocks clicks. Called from the session enter/exit paths in CUI_SpecOverrides_Session.lua.
     CUI.RefreshSidebarOverrideLocks = function()
-        local active = CUI.SpecOverrides_EditSessionActive and CUI.SpecOverrides_EditSessionActive()
-            or false
+        local active = CUI.SpecOverrides_EditSessionActive and CUI.SpecOverrides_EditSessionActive() or false
         for moduleKey, button in pairs(sidebarButtons) do
             local lock = (
                 active
@@ -2327,9 +2132,7 @@ local function BuildSidebar()
     -- Refresh all sync icons (called from global settings toggle)
     CUI._refreshAllSyncIcons = function()
         for _, button in pairs(sidebarButtons) do
-            if button._syncBtn and button._syncBtn._refreshAlpha then
-                button._syncBtn._refreshAlpha()
-            end
+            if button._syncBtn and button._syncBtn._refreshAlpha then button._syncBtn._refreshAlpha() end
         end
     end
     addonScrollChild:SetHeight(_y)
@@ -2397,9 +2200,7 @@ local function BuildSidebar()
         -- Track length along the slider axis (falls back before the first layout pass)
         local function TrackLength()
             local len = horizontal and rail:GetWidth() or rail:GetHeight()
-            if not len or len < 1 then
-                len = horizontal and SLIDER_W or SLIDER_H
-            end
+            if not len or len < 1 then len = horizontal and SLIDER_W or SLIDER_H end
             return len
         end
 
@@ -2422,13 +2223,9 @@ local function BuildSidebar()
         local function CursorFrac()
             local curX, centerY = GetCursorPosition()
             local len = horizontal and rail:GetWidth() or rail:GetHeight()
-            if not len or len < 1 then
-                return nil
-            end
+            if not len or len < 1 then return nil end
             local origin = horizontal and rail:GetLeft() or rail:GetBottom()
-            if not origin then
-                return nil
-            end
+            if not origin then return nil end
             local cur = (horizontal and curX or centerY) / opacityPanel:GetEffectiveScale()
             local fraction = (cur - origin - THUMB_H / 2) / (len - THUMB_H)
             return math.max(0, math.min(1, fraction))
@@ -2439,13 +2236,9 @@ local function BuildSidebar()
         local function StartDrag()
             dragging = true
             knob:SetScript("OnUpdate", function()
-                if not dragging then
-                    return
-                end
+                if not dragging then return end
                 local fraction = CursorFrac()
-                if fraction then
-                    SetOpacity(MIN_ALPHA + fraction * (MAX_ALPHA - MIN_ALPHA))
-                end
+                if fraction then SetOpacity(MIN_ALPHA + fraction * (MAX_ALPHA - MIN_ALPHA)) end
             end)
         end
         local function StopDrag()
@@ -2454,37 +2247,25 @@ local function BuildSidebar()
         end
         knob:EnableMouse(true)
         knob:SetScript("OnMouseDown", function(_, button)
-            if button == "LeftButton" then
-                StartDrag()
-            end
+            if button == "LeftButton" then StartDrag() end
         end)
         knob:SetScript("OnMouseUp", function(_, button)
-            if button == "LeftButton" then
-                StopDrag()
-            end
+            if button == "LeftButton" then StopDrag() end
         end)
         trackFrame:SetScript("OnMouseDown", function(_, button)
-            if button ~= "LeftButton" then
-                return
-            end
+            if button ~= "LeftButton" then return end
             local fraction = CursorFrac()
-            if fraction then
-                SetOpacity(MIN_ALPHA + fraction * (MAX_ALPHA - MIN_ALPHA))
-            end
+            if fraction then SetOpacity(MIN_ALPHA + fraction * (MAX_ALPHA - MIN_ALPHA)) end
             StartDrag()
         end)
         trackFrame:SetScript("OnMouseUp", function(_, button)
-            if button == "LeftButton" then
-                StopDrag()
-            end
+            if button == "LeftButton" then StopDrag() end
         end)
 
         -- Mouse wheel on the whole area
         opacityPanel:EnableMouseWheel(true)
         opacityPanel:SetScript("OnMouseWheel", function(self, stepDelta)
-            if CUI._ShiftWheelScale(stepDelta) then
-                return
-            end
+            if CUI._ShiftWheelScale(stepDelta) then return end
             local cur = panelFrame:GetAlpha()
             SetOpacity(cur + stepDelta * 0.05)
         end)
@@ -2516,9 +2297,7 @@ local function BuildSidebar()
                 trackFrame:SetPoint("TOPLEFT", rail, "TOPLEFT", -(THUMB_W / 2), 0)
                 trackFrame:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", (THUMB_W / 2), 0)
             end
-            C_Timer.After(0, function()
-                SetOpacity(currentAlpha)
-            end)
+            C_Timer.After(0, function() SetOpacity(currentAlpha) end)
         end
         CUI._layoutOpacitySlider = Layout
 
@@ -2611,9 +2390,7 @@ local function BuildSidebar()
         if C_AddOnProfiler and C_AddOnProfiler.GetAddOnMetric then
             local fps = GetFramerate() or 0
             local pct = 0
-            if fps > 0 then
-                pct = cpuVal / (1000 / fps) * 100
-            end
+            if fps > 0 then pct = cpuVal / (1000 / fps) * 100 end
             resCpuText:SetText(
                 CUI.COLOR_CODES.WHITE .. string.format("%.3f MS (%.1f%%)", cpuVal, pct) .. "|r"
             )
@@ -2626,9 +2403,7 @@ local function BuildSidebar()
     local resTicker
     resUpdateFrame:SetScript("OnShow", function()
         UpdateResourceText()
-        if not resTicker then
-            resTicker = C_Timer.NewTicker(RES_UPDATE_INTERVAL, UpdateResourceText)
-        end
+        if not resTicker then resTicker = C_Timer.NewTicker(RES_UPDATE_INTERVAL, UpdateResourceText) end
     end)
     resUpdateFrame:SetScript("OnHide", function()
         if resTicker then
@@ -2689,9 +2464,7 @@ local function BuildContent()
     headStrip:SetFrameLevel(hitArea:GetFrameLevel() + 4)
     headStrip:EnableMouseWheel(true)
     headStrip:SetScript("OnMouseWheel", function(_, stepDelta)
-        if contentScroll then
-            contentScroll:GetScript("OnMouseWheel")(contentScroll, stepDelta)
-        end
+        if contentScroll then contentScroll:GetScript("OnMouseWheel")(contentScroll, stepDelta) end
     end)
     headStrip:SetClipsChildren(true)
     headStrip:Hide()
@@ -2802,9 +2575,7 @@ local function BuildContent()
     smoothing = false
 
     local function StopScrollDrag()
-        if not isDragging then
-            return
-        end
+        if not isDragging then return end
         isDragging = false
         thumbKnob:SetScript("OnUpdate", nil)
     end
@@ -2882,36 +2653,26 @@ local function BuildContent()
     -- Current content scroll offset: the in-flight target while animating, else the
     -- settled position. Lets callers capture and restore scroll across a page rebuild.
     function CUI.GetContentScroll()
-        if smoothing then
-            return scrollTarget or 0
-        end
+        if smoothing then return scrollTarget or 0 end
         return (contentScroll and tonumber(contentScroll:GetVerticalScroll())) or 0
     end
 
     contentScroll:SetScript("OnMouseWheel", function(self, stepDelta)
-        if CUI._ShiftWheelScale(stepDelta) then
-            return
-        end
+        if CUI._ShiftWheelScale(stepDelta) then return end
         local scrollMax = CUI.SafeScrollRange(self)
-        if scrollMax <= 0 then
-            return
-        end
+        if scrollMax <= 0 then return end
         -- Accumulate on top of the current target (not current position) for responsive chained scrolls
         local base = smoothing and scrollTarget or self:GetVerticalScroll()
         SmoothScrollTo(base - stepDelta * SCROLL_STEP)
     end)
     contentScroll:SetScript("OnScrollRangeChanged", function(self)
-        if suppressScrollRangeChanged then
-            return
-        end
+        if suppressScrollRangeChanged then return end
         -- An offset past the new range would strand the view: the thumb hides
         -- and the wheel ignores a zero range, so pull it back in.
         local scrollMax = CUI.SafeScrollRange(self)
         if (tonumber(self:GetVerticalScroll()) or 0) > scrollMax then
             self:SetVerticalScroll(scrollMax)
-            if scrollTarget > scrollMax then
-                scrollTarget = scrollMax
-            end
+            if scrollTarget > scrollMax then scrollTarget = scrollMax end
         end
         UpdateScrollThumb()
     end)
@@ -2930,9 +2691,7 @@ local function BuildContent()
         local deltaY = dragStartY - cursorY
         local trackH = thumbRail:GetHeight()
         local maxThumbTravel = trackH - self:GetHeight()
-        if maxThumbTravel <= 0 then
-            return
-        end
+        if maxThumbTravel <= 0 then return end
         local scrollMax = CUI.SafeScrollRange(contentScroll)
         local nextScroll =
             math.max(0, math.min(scrollMax, dragStartScroll + (deltaY / maxThumbTravel) * scrollMax))
@@ -2945,9 +2704,7 @@ local function BuildContent()
     end
 
     thumbKnob:SetScript("OnMouseDown", function(self, button)
-        if button ~= "LeftButton" then
-            return
-        end
+        if button ~= "LeftButton" then return end
         smoothing = false
         smoother:Hide()
         isDragging = true
@@ -2957,33 +2714,25 @@ local function BuildContent()
         self:SetScript("OnUpdate", ScrollThumbOnUpdate)
     end)
     thumbKnob:SetScript("OnMouseUp", function(_, button)
-        if button ~= "LeftButton" then
-            return
-        end
+        if button ~= "LeftButton" then return end
         StopScrollDrag()
     end)
 
     -- Hit area: click to jump + drag (same as track click but with wider target)
     scrollHit:SetScript("OnMouseDown", function(_, button)
-        if button ~= "LeftButton" then
-            return
-        end
+        if button ~= "LeftButton" then return end
         -- Cancel any smooth animation
         smoothing = false
         smoother:Hide()
         local scrollMax = CUI.SafeScrollRange(contentScroll)
-        if scrollMax <= 0 then
-            return
-        end
+        if scrollMax <= 0 then return end
         -- Jump to cursor position
         local _, centerY = GetCursorPosition()
         centerY = centerY / thumbRail:GetEffectiveScale()
         local top = thumbRail:GetTop() or 0
         local trackH = thumbRail:GetHeight()
         local thumbH = thumbKnob:GetHeight()
-        if trackH <= thumbH then
-            return
-        end
+        if trackH <= thumbH then return end
         local fraction = (top - centerY - thumbH / 2) / (trackH - thumbH)
         fraction = math.max(0, math.min(1, fraction))
         local nextScroll = fraction * scrollMax
@@ -2999,9 +2748,7 @@ local function BuildContent()
         thumbKnob:SetScript("OnUpdate", ScrollThumbOnUpdate)
     end)
     scrollHit:SetScript("OnMouseUp", function(_, button)
-        if button ~= "LeftButton" then
-            return
-        end
+        if button ~= "LeftButton" then return end
         StopScrollDrag()
     end)
     -- Controller cursor: pointer-position controls are never stops, and its own
@@ -3010,9 +2757,7 @@ local function BuildContent()
     CUI.PadHint(scrollHit, "nodeignore")
     if CUI.PadCP() then
         contentScroll:HookScript("OnVerticalScroll", function()
-            if not smoothing and not isDragging then
-                UpdateScrollThumb()
-            end
+            if not smoothing and not isDragging then UpdateScrollThumb() end
         end)
     end
 
@@ -3036,9 +2781,7 @@ local function BuildContent()
         local ch = { headStrip:GetChildren() }
         for _, child in ipairs(ch) do
             child:Hide()
-            if not isRoot[child] then
-                child:SetParent(nil)
-            end
+            if not isRoot[child] then child:SetParent(nil) end
         end
         local rg = { headStrip:GetRegions() }
         for _, r in ipairs(rg) do
@@ -3053,9 +2796,7 @@ local function BuildContent()
         -- collapses under it (Pool.Pin, CludesUI_FramePool.lua).
         local activeFlag = Hdr.active
         if activeFlag then
-            if CUI_NS.PoolPin then
-                CUI_NS.PoolPin(activeFlag)
-            end
+            if CUI_NS.PoolPin then CUI_NS.PoolPin(activeFlag) end
             Hdr.stale[isRoot[activeFlag]] = true
             CUI_NS.DropRootForeign(activeFlag)
             Hdr.active = nil
@@ -3070,17 +2811,13 @@ local function BuildContent()
     -- ClearContentHeaderInner cannot destroy them while clearing for other pages.
     -- A kept root is only hidden, its height kept for the restore.
     local function SaveContentHeaderToCache(pageKey)
-        if not headStrip:IsShown() then
-            return false
-        end
+        if not headStrip:IsShown() then return false end
         local Hdr = CUI_NS.hdr
         local rootFrame = Hdr.roots[pageKey]
         if rootFrame and Hdr.active == rootFrame then
             rootFrame:Hide()
             -- what still shows over it stays put while the header collapses
-            if CUI_NS.PoolPin then
-                CUI_NS.PoolPin(rootFrame)
-            end
+            if CUI_NS.PoolPin then CUI_NS.PoolPin(rootFrame) end
             Hdr.active = nil
             Hdr.height[pageKey] = contentHeaderH
             headStrip:Hide()
@@ -3091,19 +2828,13 @@ local function BuildContent()
         end
         local children = {}
         for _, child in ipairs({ headStrip:GetChildren() }) do
-            if not Hdr.isRoot[child] then
-                children[#children + 1] = child
-            end
+            if not Hdr.isRoot[child] then children[#children + 1] = child end
         end
         local regions = {}
         for _, r in ipairs({ headStrip:GetRegions() }) do
-            if r ~= contentHeaderBg and r ~= contentHeaderDiv then
-                regions[#regions + 1] = r
-            end
+            if r ~= contentHeaderBg and r ~= contentHeaderDiv then regions[#regions + 1] = r end
         end
-        if #children == 0 and #regions == 0 then
-            return false
-        end
+        if #children == 0 and #regions == 0 then return false end
         -- Move children and regions to stash so ClearContentHeaderInner can't touch them
         for _, c in ipairs(children) do
             c:Hide()
@@ -3132,16 +2863,12 @@ local function BuildContent()
         local Hdr = CUI_NS.hdr
         local rootFrame = Hdr.roots[pageKey]
         if rootFrame and Hdr.height[pageKey] ~= nil then
-            if Hdr.stale[pageKey] then
-                return false
-            end
+            if Hdr.stale[pageKey] then return false end
             for _, child in ipairs({ headStrip:GetChildren() }) do
                 child:Hide()
             end
             for _, r in ipairs({ headStrip:GetRegions() }) do
-                if r ~= contentHeaderBg and r ~= contentHeaderDiv then
-                    r:Hide()
-                end
+                if r ~= contentHeaderBg and r ~= contentHeaderDiv then r:Hide() end
             end
             rootFrame:Show()
             Hdr.active = rootFrame
@@ -3152,9 +2879,7 @@ local function BuildContent()
             return true
         end
         local record = _contentHeaderCache[pageKey]
-        if not record then
-            return false
-        end
+        if not record then return false end
         -- Hide any current header children first (without orphaning)
         local ch = { headStrip:GetChildren() }
         for _, child in ipairs(ch) do
@@ -3162,9 +2887,7 @@ local function BuildContent()
         end
         local rg = { headStrip:GetRegions() }
         for _, r in ipairs(rg) do
-            if r ~= contentHeaderBg and r ~= contentHeaderDiv then
-                r:Hide()
-            end
+            if r ~= contentHeaderBg and r ~= contentHeaderDiv then r:Hide() end
         end
         -- Reparent cached children and regions back to headStrip and show
         for _, c in ipairs(record.children) do
@@ -3201,9 +2924,7 @@ local function BuildContent()
         local Hdr = CUI_NS.hdr
         for entryKey, rootFrame in pairs(Hdr.roots) do
             Hdr.stale[entryKey] = true
-            if rootFrame ~= Hdr.active then
-                CUI_NS.DropRootForeign(rootFrame)
-            end
+            if rootFrame ~= Hdr.active then CUI_NS.DropRootForeign(rootFrame) end
         end
     end
 
@@ -3225,9 +2946,7 @@ local function BuildContent()
         local rootFrame = Hdr.roots[entryKey]
         if rootFrame then
             Hdr.stale[entryKey] = true
-            if rootFrame ~= Hdr.active then
-                CUI_NS.DropRootForeign(rootFrame)
-            end
+            if rootFrame ~= Hdr.active then CUI_NS.DropRootForeign(rootFrame) end
         end
     end
 
@@ -3241,9 +2960,7 @@ local function BuildContent()
         if entryKey then
             local Hdr = CUI_NS.hdr
             -- A saved root built again drops its old parts first, as above.
-            if Hdr.roots[entryKey] then
-                CUI_NS.DropRootForeign(Hdr.roots[entryKey])
-            end
+            if Hdr.roots[entryKey] then CUI_NS.DropRootForeign(Hdr.roots[entryKey]) end
             local rootFrame = CUI_NS.PoolKept(CUI_NS.headerOwner, entryKey, "Frame", headStrip)
             rootFrame:SetAllPoints(headStrip)
             rootFrame:SetFrameLevel(headStrip:GetFrameLevel())
@@ -3260,17 +2977,13 @@ local function BuildContent()
             Hdr.height[entryKey] = h
             Hdr.stale[entryKey] = nil
             -- dev mode: an idle pooled object left showing on the kept root
-            if CUI_NS.PoolDevEndPass then
-                CUI_NS.PoolDevEndPass(target, entryKey)
-            end
+            if CUI_NS.PoolDevEndPass then CUI_NS.PoolDevEndPass(target, entryKey) end
         end
         LayoutContent()
     end
 
     function CUI:UpdateContentHeaderHeight(h)
-        if not headStrip:IsShown() then
-            return
-        end
+        if not headStrip:IsShown() then return end
         local oldActualH = headStrip:GetHeight()
         -- Save scroll state BEFORE ApplyContentLayout, which may clobber it
         -- if WoW returns a stale scroll range after the resize.
@@ -3300,17 +3013,13 @@ local function BuildContent()
     -- Silent variant: resizes the header with no scroll compensation, for cosmetic
     -- height changes (buff icons toggled) that must not jump the scroll.
     function CUI:SetContentHeaderHeightSilent(h)
-        if not headStrip:IsShown() then
-            return
-        end
+        if not headStrip:IsShown() then return end
         contentHeaderH = h
         PanelPP.Height(headStrip, h)
         LayoutContent()
     end
 
-    function CUI:ClearContentHeader()
-        ClearContentHeaderInner()
-    end
+    function CUI:ClearContentHeader() ClearContentHeaderInner() end
 
     -- Lightweight hide (no orphaning), for when the header is already cached.
     -- A kept root hidden this way is built again before it shows (stale), as a
@@ -3330,14 +3039,10 @@ local function BuildContent()
         end
         local rg = { headStrip:GetRegions() }
         for _, r in ipairs(rg) do
-            if r ~= contentHeaderBg and r ~= contentHeaderDiv then
-                r:Hide()
-            end
+            if r ~= contentHeaderBg and r ~= contentHeaderDiv then r:Hide() end
         end
         -- what still shows over the root stays put while the header collapses
-        if activeFlag and CUI_NS.PoolPin then
-            CUI_NS.PoolPin(activeFlag)
-        end
+        if activeFlag and CUI_NS.PoolPin then CUI_NS.PoolPin(activeFlag) end
         headStrip:Hide()
         headStrip:SetHeight(1)
         contentHeaderH = 0
@@ -3345,15 +3050,9 @@ local function BuildContent()
     end
 
     -- Expose cache functions for SelectPage (outside CreateMainFrame scope)
-    function CUI:SaveContentHeaderToCache(pageKey)
-        return SaveContentHeaderToCache(pageKey)
-    end
-    function CUI:RestoreContentHeaderFromCache(pageKey)
-        return RestoreContentHeaderFromCache(pageKey)
-    end
-    function CUI:InvalidateContentHeaderCache()
-        InvalidateContentHeaderCache()
-    end
+    function CUI:SaveContentHeaderToCache(pageKey) return SaveContentHeaderToCache(pageKey) end
+    function CUI:RestoreContentHeaderFromCache(pageKey) return RestoreContentHeaderFromCache(pageKey) end
+    function CUI:InvalidateContentHeaderCache() InvalidateContentHeaderCache() end
 
     return rightW, rightX
 end
@@ -3453,9 +3152,7 @@ local function BuildFooter(rightW, rightX)
             end)
         end
         button:SetScript("OnClick", function()
-            if onClick then
-                onClick()
-            end
+            if onClick then onClick() end
         end)
         return button
     end
@@ -3515,9 +3212,7 @@ local function BuildFooter(rightW, rightX)
                 confirmText = "Reset & Reload",
                 cancelText = "Cancel",
                 reload = true,
-                onConfirm = function()
-                    moduleConfig.onReset()
-                end,
+                onConfirm = function() moduleConfig.onReset() end,
             })
         end
     )
@@ -3550,9 +3245,7 @@ local function BuildFooter(rightW, rightX)
         RS_BRD_HB,
         RS_BRD_HA,
         "Reload UI",
-        function()
-            CUI.RequestReload(CUI.L("Reload UI"), CUI.L("Reload the UI now?"))
-        end
+        function() CUI.RequestReload(CUI.L("Reload UI"), CUI.L("Reload the UI now?")) end
     )
     footerBar._reloadBtn = reloadBtn
 
@@ -3560,9 +3253,7 @@ local function BuildFooter(rightW, rightX)
     -- slide Reload UI left into its slot. Called from SelectModule.
     CUI._UpdateResetButtonVisible = function(hasReset)
         local resetBtn, reloadBtn = footerBar._resetBtn, footerBar._reloadBtn
-        if not resetBtn or not reloadBtn then
-            return
-        end
+        if not resetBtn or not reloadBtn then return end
         reloadBtn:ClearAllPoints()
         if hasReset then
             resetBtn:Show()
@@ -3584,12 +3275,8 @@ local function BuildFooter(rightW, rightX)
         -- Reusable link popup (created once, shared by all social icons)
         local linkDialog, linkShade
         local function HideLinkPopup()
-            if linkDialog then
-                linkDialog:Hide()
-            end
-            if linkShade then
-                linkShade:Hide()
-            end
+            if linkDialog then linkDialog:Hide() end
+            if linkShade then linkShade:Hide() end
         end
         local function ShowLinkPopup(url, anchorBtn)
             if not linkDialog then
@@ -3627,14 +3314,7 @@ local function BuildFooter(rightW, rightX)
 
                 local bg = SolidTex(linkDialog, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.97)
                 bg:SetAllPoints()
-                CUI.MakeRoundedBorder(
-                    linkDialog,
-                    BORDER_COLOR.r,
-                    BORDER_COLOR.g,
-                    BORDER_COLOR.b,
-                    0.15,
-                    bg
-                )
+                CUI.MakeRoundedBorder(linkDialog, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg)
 
                 local hintText = MakeFont(
                     linkDialog,
@@ -3663,9 +3343,7 @@ local function BuildFooter(rightW, rightX)
                     self:ClearFocus()
                     HideLinkPopup()
                 end)
-                eb:SetScript("OnMouseUp", function(self)
-                    self:HighlightText()
-                end)
+                eb:SetScript("OnMouseUp", function(self) self:HighlightText() end)
                 linkDialog:EnableMouse(true)
                 linkDialog:SetScript("OnMouseDown", function()
                     linkDialog._eb:SetFocus()
@@ -3677,9 +3355,7 @@ local function BuildFooter(rightW, rightX)
                 CUI.TrackOverlay(linkDialog)
                 CUI.PadHint(linkShade, "nodepass")
                 -- Controller cursor: its cancel press clicks the backdrop, which closes.
-                if CUI.PadCP() then
-                    linkDialog.CloseButton = linkShade
-                end
+                if CUI.PadCP() then linkDialog.CloseButton = linkShade end
             end
             linkDialog._eb:SetText(url)
             linkDialog:ClearAllPoints()
@@ -3729,9 +3405,7 @@ local function BuildFooter(rightW, rightX)
             PanelPP.DisablePixelSnap(texture)
 
             local fadeProgress, target = 0, 0
-            local function Apply(t)
-                texture:SetAlpha(lerp(SOCIAL_ALPHA, SOCIAL_HOVER, t))
-            end
+            local function Apply(t) texture:SetAlpha(lerp(SOCIAL_ALPHA, SOCIAL_HOVER, t)) end
             local function OnUpdate(self, timePassed)
                 local dir = (target == 1) and 1 or -1
                 fadeProgress = fadeProgress + dir * (timePassed / SOCIAL_FADE)
@@ -3744,20 +3418,14 @@ local function BuildFooter(rightW, rightX)
             button:SetScript("OnEnter", function(self)
                 target = 1
                 self:SetScript("OnUpdate", OnUpdate)
-                if def.tooltip and CUI.ShowWidgetTooltip then
-                    CUI.ShowWidgetTooltip(self, def.tooltip)
-                end
+                if def.tooltip and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, def.tooltip) end
             end)
             button:SetScript("OnLeave", function(self)
                 target = 0
                 self:SetScript("OnUpdate", OnUpdate)
-                if CUI.HideWidgetTooltip then
-                    CUI.HideWidgetTooltip()
-                end
+                if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
             end)
-            button:SetScript("OnClick", function()
-                ShowLinkPopup(def.url, button)
-            end)
+            button:SetScript("OnClick", function() ShowLinkPopup(def.url, button) end)
         end
     end
 
@@ -3769,8 +3437,7 @@ local function BuildFooter(rightW, rightX)
         button:SetFrameLevel(footerBar:GetFrameLevel() + 1)
         local bg = SolidTex(button, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         bg:SetAllPoints()
-        local brd =
-            CUI.MakeRoundedBorder(button, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.7, bg, 2)
+        local brd = CUI.MakeRoundedBorder(button, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.7, bg, 2)
         local captionText = MakeFont(button, 13, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
         captionText:SetAlpha(0.7)
         captionText:SetPoint("CENTER")
@@ -3801,9 +3468,7 @@ local function BuildFooter(rightW, rightX)
             self:SetScript("OnUpdate", OnUpdate)
         end)
         button:SetScript("OnClick", function()
-            if panelFrame then
-                panelFrame:Hide()
-            end
+            if panelFrame then panelFrame:Hide() end
         end)
         -- Register for accent updates
         RegAccent({
@@ -3817,9 +3482,7 @@ local function BuildFooter(rightW, rightX)
 end
 
 local function CreateMainFrame()
-    if panelFrame then
-        return panelFrame
-    end
+    if panelFrame then return panelFrame end
 
     BuildFrame()
     BuildSidebar()
@@ -3898,26 +3561,20 @@ CreateTabButton = function(index, name)
         -- tab swallows its click.
         button:SetScript("OnEnter", function(self)
             if self._tip then
-                if CUI.ShowWidgetTooltip then
-                    CUI.ShowWidgetTooltip(self, self._tip)
-                end
+                if CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(self, self._tip) end
             elseif activePage ~= self._name then
                 self._label:SetTextColor(1, 1, 1, 0.86)
             end
         end)
         button:SetScript("OnLeave", function(self)
             if self._tip then
-                if CUI.HideWidgetTooltip then
-                    CUI.HideWidgetTooltip()
-                end
+                if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
             elseif activePage ~= self._name then
                 self._label:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
             end
         end)
         button:SetScript("OnClick", function(self)
-            if not self._disabled then
-                CUI:SelectPage(self._name)
-            end
+            if not self._disabled then CUI:SelectPage(self._name) end
         end)
         pool[index] = button
     end
@@ -3988,14 +3645,8 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             STYLE.SL_INPUT_A + 0.10
         )
         searchBg:SetAllPoints()
-        local searchBrd = CUI.MakeRoundedBorder(
-            searchPanel,
-            STYLE.BORDER_R,
-            STYLE.BORDER_G,
-            STYLE.BORDER_B,
-            0.10,
-            searchBg
-        )
+        local searchBrd =
+            CUI.MakeRoundedBorder(searchPanel, STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10, searchBg)
 
         local inputBox = CreateFrame("EditBox", nil, searchPanel)
         inputBox:SetAllPoints()
@@ -4020,12 +3671,11 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             MakeFont(clearBtn, 15, nil, STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.35)
         clearLabel:SetPoint("CENTER")
         clearLabel:SetText("x")
-        clearBtn:SetScript("OnEnter", function()
-            clearLabel:SetTextColor(1, 1, 1, 1)
-        end)
-        clearBtn:SetScript("OnLeave", function()
-            clearLabel:SetTextColor(STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.35)
-        end)
+        clearBtn:SetScript("OnEnter", function() clearLabel:SetTextColor(1, 1, 1, 1) end)
+        clearBtn:SetScript(
+            "OnLeave",
+            function() clearLabel:SetTextColor(STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.35) end
+        )
         clearBtn:SetScript("OnClick", function()
             inputBox:SetText("")
             inputBox:ClearFocus()
@@ -4038,33 +3688,34 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         searchBlock:SetFrameLevel(clearBtn:GetFrameLevel() + 1)
         searchBlock:EnableMouse(true)
         searchBlock:Hide()
-        searchBlock:SetScript("OnEnter", function()
-            CUI.ShowWidgetTooltip(searchPanel, CUI.L("Search is not available on this page."))
-        end)
-        searchBlock:SetScript("OnLeave", function()
-            CUI.HideWidgetTooltip()
-        end)
+        searchBlock:SetScript(
+            "OnEnter",
+            function() CUI.ShowWidgetTooltip(searchPanel, CUI.L("Search is not available on this page.")) end
+        )
+        searchBlock:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         tabStrip._setSearchDisabled = function(off)
-            if off then
-                inputBox:ClearFocus()
-            end
+            if off then inputBox:ClearFocus() end
             searchPanel:SetAlpha(off and 0.3 or 1)
             searchBlock:SetShown(off)
         end
 
         -- Border hover effect
-        searchPanel:SetScript("OnEnter", function()
-            searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.15)
-        end)
-        searchPanel:SetScript("OnLeave", function()
-            searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10)
-        end)
-        inputBox:SetScript("OnEditFocusGained", function()
-            searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.15)
-        end)
-        inputBox:SetScript("OnEditFocusLost", function()
-            searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10)
-        end)
+        searchPanel:SetScript(
+            "OnEnter",
+            function() searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.15) end
+        )
+        searchPanel:SetScript(
+            "OnLeave",
+            function() searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10) end
+        )
+        inputBox:SetScript(
+            "OnEditFocusGained",
+            function() searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.15) end
+        )
+        inputBox:SetScript(
+            "OnEditFocusLost",
+            function() searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10) end
+        )
 
         local searchDebounceTimer
         inputBox:SetScript("OnTextChanged", function(self, userInput)
@@ -4094,9 +3745,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             self:ClearFocus()
         end)
 
-        inputBox:SetScript("OnEnterPressed", function(self)
-            self:ClearFocus()
-        end)
+        inputBox:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
 
         tabStrip._searchBox = inputBox
         tabStrip._searchFrame = searchPanel
@@ -4115,9 +3764,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
     end
     tabStrip._searchFrame:Show()
     -- Clear search text when tabs are rebuilt (module switch)
-    if tabStrip._searchBox:GetText() ~= "" then
-        tabStrip._searchBox:SetText("")
-    end
+    if tabStrip._searchBox:GetText() ~= "" then tabStrip._searchBox:SetText("") end
 
     -- Defer a relayout so GetStringWidth returns correct values after render
     tabStrip:SetScript("OnUpdate", function(self)
@@ -4196,9 +3843,7 @@ local function RecycleAllSearchHighlights(detach)
         pulse:Hide()
         pulse:SetScript("OnUpdate", nil)
         pulse:ClearAllPoints()
-        if detach then
-            pulse:SetParent(nil)
-        end
+        if detach then pulse:SetParent(nil) end
         _searchHighlightPool[#_searchHighlightPool + 1] = pulse
         _searchHighlightsActive[i] = nil
     end
@@ -4208,9 +3853,7 @@ local function RecycleAllSearchHighlights(detach)
     if detach then
         for i = 1, #_searchHighlightPool do
             local pulse = _searchHighlightPool[i]
-            if pulse:GetParent() then
-                pulse:SetParent(nil)
-            end
+            if pulse:GetParent() then pulse:SetParent(nil) end
         end
     end
 end
@@ -4245,18 +3888,14 @@ local function CollectAllChildren(wrapper)
     local isIdle = CUI_NS.PoolIsIdle
     if isIdle then
         for i = #children, 1, -1 do
-            if isIdle(children[i]) then
-                table.remove(children, i)
-            end
+            if isIdle(children[i]) then table.remove(children, i) end
         end
     end
     -- Save original anchor info on first encounter so we can restore later.
     for _, kid in ipairs(children) do
         if not kid._origAnchor then
             local point, relTo, relPoint, x, rowY = kid:GetPoint(1)
-            if point then
-                kid._origAnchor = { point, relTo, relPoint, x, rowY }
-            end
+            if point then kid._origAnchor = { point, relTo, relPoint, x, rowY } end
         end
         -- For split containers, build a searchable label from all children inside
         if kid._leftCol or kid._rightCol then
@@ -4264,9 +3903,7 @@ local function CollectAllChildren(wrapper)
                 local labels = {}
                 local labelsLoc = {}
                 local function GatherLabels(col)
-                    if not col then
-                        return
-                    end
+                    if not col then return end
                     local subs = { col:GetChildren() }
                     for _, sub in ipairs(subs) do
                         -- (a parked object keeps its last dress's labels)
@@ -4287,9 +3924,7 @@ local function CollectAllChildren(wrapper)
                 kid._splitSearchLabels = table.concat(labels, " ")
                 -- Bilingual search: localized variant, only stored when it differs (nil on English).
                 local _loc = table.concat(labelsLoc, " ")
-                if _loc ~= kid._splitSearchLabels then
-                    kid._splitSearchLabelsLoc = _loc
-                end
+                if _loc ~= kid._splitSearchLabels then kid._splitSearchLabelsLoc = _loc end
             end
         end
     end
@@ -4324,18 +3959,14 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
     -- label matches instead of pulsing the whole row; returns that child region, or nil to fall
     -- back to the full row. Inline, not a file-scope local: the main chunk is at the 200-local cap.
     local function ResolveHighlightSlot(line, textValue, exactOnly)
-        if not textValue or not line.GetChildren then
-            return nil
-        end
+        if not textValue or not line.GetChildren then return nil end
         local locText = CUI.L(textValue) or textValue
         local regions = { line:GetChildren() }
         -- Objects the page pool parked keep their last dress's labels: not slots.
         local isIdle = CUI_NS.PoolIsIdle
         if isIdle then
             for i = #regions, 1, -1 do
-                if isIdle(regions[i]) then
-                    table.remove(regions, i)
-                end
+                if isIdle(regions[i]) then table.remove(regions, i) end
             end
         end
         -- A label equal to the text first, so "Sidebar Icons" lands on its own slot rather
@@ -4344,14 +3975,10 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
             local captionText = regionObj._label
             if captionText and captionText.GetText then
                 local t = captionText:GetText()
-                if t and t ~= "" and (t == textValue or t == locText) then
-                    return regionObj
-                end
+                if t and t ~= "" and (t == textValue or t == locText) then return regionObj end
             end
         end
-        if exactOnly then
-            return nil
-        end
+        if exactOnly then return nil end
         for _, regionObj in ipairs(regions) do
             local captionText = regionObj._label
             if captionText and captionText.GetText then
@@ -4359,7 +3986,11 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
                 if
                     text
                     and text ~= ""
-                    and (text:find(textValue, 1, true) or (locText ~= textValue and text:find(locText, 1, true)))
+                    and (
+                        text:find(textValue, 1, true) or (
+                            locText ~= textValue and text:find(locText, 1, true)
+                        )
+                    )
                 then
                     return regionObj
                 end
@@ -4379,9 +4010,11 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
     -- building the panel on the session's first open, so run the whole deep
     -- link next frame rather than navigating a panel that does not exist yet.
     if
-        self:_SplitFirstOpen(function()
-            CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSelectFn, highlightText)
-        end)
+        self:_SplitFirstOpen(
+            function()
+                CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSelectFn, highlightText)
+            end
+        )
     then
         return
     end
@@ -4404,9 +4037,7 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
             local moduleConfig = moduleList[moduleName]
             if moduleConfig and moduleConfig.getHeaderBuilder then
                 local hb = moduleConfig.getHeaderBuilder(pageTitle)
-                if hb then
-                    self:SetContentHeader(hb)
-                end
+                if hb then self:SetContentHeader(hb) end
             end
             self:RefreshPage(true)
         end
@@ -4423,9 +4054,7 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
     C_Timer.After(0.05, function()
         local pageKey = moduleName .. "::" .. pageTitle
         local cachedPage = _pageCache[pageKey]
-        if not cachedPage or not cachedPage.wrapper then
-            return
-        end
+        if not cachedPage or not cachedPage.wrapper then return end
 
         local sections = CollectAllChildren(cachedPage.wrapper)
         for _, section in ipairs(sections) do
@@ -4457,9 +4086,7 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
                                 end
                             end
                         end
-                        if target ~= section.header then
-                            break
-                        end
+                        if target ~= section.header then break end
                     end
                 end
 
@@ -4472,9 +4099,7 @@ function CUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, preSe
                     local Gen = CUI_NS.PoolGen
                     local hlGen = Gen and Gen(hlTarget)
                     C_Timer.After(0.15, function()
-                        if Gen and Gen(hlTarget) ~= hlGen then
-                            return
-                        end
+                        if Gen and Gen(hlTarget) ~= hlGen then return end
                         local pulse = GetSearchHighlight()
                         PlaySearchHighlight(pulse, hlTarget)
                     end)
@@ -4489,32 +4114,20 @@ end
 -- appended so search matches either language; on English the *Loc fields are nil.
 local function GetSearchLabel(kid)
     local en = kid._labelText or kid._sectionName or kid._splitSearchLabels
-    if not en then
-        return ""
-    end
+    if not en then return "" end
     local loc = kid._labelTextLoc or kid._sectionNameLoc or kid._splitSearchLabelsLoc
-    if loc then
-        return en .. " " .. loc
-    end
+    if loc then return en .. " " .. loc end
     return en
 end
 
 -- Resolve the current display text of a dropdown on a region (if any)
 local function GetDropdownValueText(regionObj)
-    if not regionObj._ddGetValue or not regionObj._ddValues then
-        return nil
-    end
+    if not regionObj._ddGetValue or not regionObj._ddValues then return nil end
     local entryKey = regionObj._ddGetValue()
-    if entryKey == nil then
-        return nil
-    end
+    if entryKey == nil then return nil end
     local val = regionObj._ddValues[entryKey]
-    if val == nil then
-        return nil
-    end
-    if type(val) == "table" then
-        return val.text
-    end
+    if val == nil then return nil end
+    if type(val) == "table" then return val.text end
     return tostring(val)
 end
 
@@ -4526,9 +4139,7 @@ do
     local hintText
     SetInlineEmptyHint = function(searchQuery)
         if not searchQuery then
-            if hintText then
-                hintText:Hide()
-            end
+            if hintText then hintText:Hide() end
             return
         end
         if not hintText then
@@ -4565,12 +4176,8 @@ do
             })
             PanelPP.Size(linkText, linkFS:GetStringWidth() + 16, 18)
             linkText:SetAlpha(0.8)
-            linkText:SetScript("OnEnter", function()
-                linkText:SetAlpha(1)
-            end)
-            linkText:SetScript("OnLeave", function()
-                linkText:SetAlpha(0.8)
-            end)
+            linkText:SetScript("OnEnter", function() linkText:SetAlpha(1) end)
+            linkText:SetScript("OnLeave", function() linkText:SetAlpha(0.8) end)
             linkText:SetScript("OnClick", function()
                 local box = tabStrip and tabStrip._searchBox
                 local q = box and box:GetText() or ""
@@ -4599,9 +4206,7 @@ end
 
 function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
     SetInlineEmptyHint(nil)
-    if not currentModule or not activePage then
-        return
-    end
+    if not currentModule or not activePage then return end
     -- Active search force-expands every "Show Less Common" section (links hidden);
     -- clearing collapses back to session state. MUST run before the cache lookup below:
     -- a state transition rebuilds and replaces this page's cache entry.
@@ -4610,21 +4215,15 @@ function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
     end
     local pageKey = currentModule .. "::" .. activePage
     local cachedPage = _pageCache[pageKey]
-    if not cachedPage or not cachedPage.wrapper then
-        return
-    end
+    if not cachedPage or not cachedPage.wrapper then return end
 
     -- Per-page search-state hook (e.g. the party tab hides its sync overlays
     -- while a search is active). Fires for both filtering and restore.
-    if CUI._onInlineSearch then
-        CUI._onInlineSearch(searchQuery or "")
-    end
+    if CUI._onInlineSearch then CUI._onInlineSearch(searchQuery or "") end
 
     RecycleAllSearchHighlights()
     -- Section cards (CludesUI_Widgets.lua) step aside while a query moves rows.
-    if CUI._SetSectionCardsShown then
-        CUI._SetSectionCardsShown(not searchQuery or searchQuery == "")
-    end
+    if CUI._SetSectionCardsShown then CUI._SetSectionCardsShown(not searchQuery or searchQuery == "") end
 
     local sections, orphans = CollectAllChildren(cachedPage.wrapper)
 
@@ -4659,9 +4258,7 @@ function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
         if contentScroll and contentScroll.SetVerticalScroll then
             scrollTarget = 0
             smoothing = false
-            if smoother then
-                smoother:Hide()
-            end
+            if smoother then smoother:Hide() end
             contentScroll:SetVerticalScroll(0)
             UpdateScrollThumb()
         end
@@ -4778,9 +4375,7 @@ function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
                             local slotMatch = slot.label:lower():find(lowerQuery, 1, true)
                             if not slotMatch then
                                 local ddText = GetDropdownValueText(slot.region)
-                                if ddText then
-                                    slotMatch = ddText:lower():find(lowerQuery, 1, true)
-                                end
+                                if ddText then slotMatch = ddText:lower():find(lowerQuery, 1, true) end
                             end
                             if vs.sectionMatch or slotMatch then
                                 litSlots = litSlots + 1
@@ -4807,13 +4402,15 @@ function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
         if not orphan._isSpacer then
             local slots = {}
             if orphan._leftRegion then
-                slots[#slots + 1] = { region = orphan._leftRegion, label = orphan._leftRegion._slotLabel or "" }
+                slots[#slots + 1] =
+                    { region = orphan._leftRegion, label = orphan._leftRegion._slotLabel or "" }
             end
             if orphan._midRegion then
                 slots[#slots + 1] = { region = orphan._midRegion, label = orphan._midRegion._slotLabel or "" }
             end
             if orphan._rightRegion then
-                slots[#slots + 1] = { region = orphan._rightRegion, label = orphan._rightRegion._slotLabel or "" }
+                slots[#slots + 1] =
+                    { region = orphan._rightRegion, label = orphan._rightRegion._slotLabel or "" }
             end
 
             if #slots > 0 then
@@ -4823,9 +4420,7 @@ function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
                         local slotMatch = slot.label:lower():find(lowerQuery, 1, true)
                         if not slotMatch then
                             local ddText = GetDropdownValueText(slot.region)
-                            if ddText then
-                                slotMatch = ddText:lower():find(lowerQuery, 1, true)
-                            end
+                            if ddText then slotMatch = ddText:lower():find(lowerQuery, 1, true) end
                         end
                         if slotMatch then
                             litSlots = litSlots + 1
@@ -4945,9 +4540,7 @@ function CUI:ApplyInlineSearch(searchQuery, skipHighlights)
     if contentScroll and contentScroll.SetVerticalScroll then
         scrollTarget = 0
         smoothing = false
-        if smoother then
-            smoother:Hide()
-        end
+        if smoother then smoother:Hide() end
         contentScroll:SetVerticalScroll(0)
         UpdateScrollThumb()
     end
@@ -4977,17 +4570,13 @@ UpdateSidebarHighlight = function(selectedFolder)
                 button._icon:SetDesaturated(false)
                 button._icon:SetAlpha(NAV_SELECTED_ICON_A)
             end
-            if button._iconGlow then
-                button._iconGlow:Show()
-            end
+            if button._iconGlow then button._iconGlow:Show() end
         else
             button._indicator:Hide()
             button._glow:Hide()
             button._glowTop:Hide()
             button._glowBot:Hide()
-            if button._iconGlow then
-                button._iconGlow:Hide()
-            end
+            if button._iconGlow then button._iconGlow:Hide() end
             if button._loaded then
                 button._label:SetTextColor(
                     NAV_ENABLED_TEXT.r,
@@ -5030,28 +4619,18 @@ end
 -- and region of contentChild. The cached page wrappers among them stay attached
 -- (_pageCache still holds them and shows them again).
 ClearContent = function()
-    if not contentChild then
-        return
-    end
+    if not contentChild then return end
     -- Clear widget refresh registry
     WipeWidgetRefreshes()
     -- Clear content header (non-scrolling region) if active
-    if CUI.ClearContentHeader then
-        CUI:ClearContentHeader()
-    end
+    if CUI.ClearContentHeader then CUI:ClearContentHeader() end
     -- Reset alternating row counters
     ResetRowCounters()
     -- Clear per-page layout flags so they don't bleed into the next page
-    if contentChild then
-        contentChild._showRowDivider = nil
-    end
+    if contentChild then contentChild._showRowDivider = nil end
     -- Hide copy popup if visible
-    if CUI._copyPopup then
-        CUI._copyPopup:Hide()
-    end
-    if CUI._copyBackdrop then
-        CUI._copyBackdrop:Hide()
-    end
+    if CUI._copyPopup then CUI._copyPopup:Hide() end
+    if CUI._copyBackdrop then CUI._copyBackdrop:Hide() end
     -- Hidden, never detached: a detached cached wrapper would show again
     -- detached from the panel when its page is revisited.
     local children = { contentChild:GetChildren() }
@@ -5177,9 +4756,7 @@ do
     -- trusted paths below and from the plugin registry. open: an outside
     -- addon's own key, which it may register again (as it always could).
     function CUI_NS.StoreModule(moduleFolder, moduleConfig, open)
-        if not open then
-            sealed[moduleFolder] = true
-        end
+        if not open then sealed[moduleFolder] = true end
         moduleList[moduleFolder] = moduleConfig
         -- If the UI is built, update the sidebar button now; else RefreshSidebarStates does it on first open
         local button = sidebarButtons[moduleFolder]
@@ -5199,34 +4776,24 @@ do
         -- Don't auto-select here; RefreshSidebarStates handles default selection in roster order
     end
 
-    function CUI_NS.IsModuleKeyTaken(moduleFolder)
-        return sealed[moduleFolder] == true
-    end
+    function CUI_NS.IsModuleKeyTaken(moduleFolder) return sealed[moduleFolder] == true end
 
     -- One of the suite's own addon folders (exact names: an outside addon may
     -- start its folder name with "CludesUI" too).
-    function CUI_NS.IsSuiteFolder(moduleKey)
-        return ALLOWED[moduleKey] == true
-    end
+    function CUI_NS.IsSuiteFolder(moduleKey) return ALLOWED[moduleKey] == true end
 
     -- A suite page's key: any suite folder (including one the running client
     -- hides from the sidebar), one of the fixed panel pages, or a key the core
     -- registered itself.
     function CUI_NS.IsSuiteKey(entryKey)
-        if CUI_NS.IsPluginKey(entryKey) then
-            return false
-        end
+        if CUI_NS.IsPluginKey(entryKey) then return false end
         return ALLOWED[entryKey] == true or CORE_PAGE_KEYS[entryKey] == true or sealed[entryKey] == true
     end
 
     -- Internal registration for pages the core file builds itself (no caller check).
     function CUI_NS.RegisterCoreModule(moduleFolder, moduleConfig, isCore)
-        if type(moduleFolder) ~= "string" or type(moduleConfig) ~= "table" then
-            return false
-        end
-        if sealed[moduleFolder] or CUI_NS.IsPluginKey(moduleFolder) then
-            return false
-        end
+        if type(moduleFolder) ~= "string" or type(moduleConfig) ~= "table" then return false end
+        if sealed[moduleFolder] or CUI_NS.IsPluginKey(moduleFolder) then return false end
         moduleConfig._cuiCore = isCore == true
         moduleConfig._plugin = nil
         CUI_NS.StoreModule(moduleFolder, moduleConfig)
@@ -5234,9 +4801,7 @@ do
     end
 
     function CUI:RegisterModule(moduleFolder, moduleConfig)
-        if type(moduleFolder) ~= "string" or type(moduleConfig) ~= "table" then
-            return
-        end
+        if type(moduleFolder) ~= "string" or type(moduleConfig) ~= "table" then return end
         -- The caller's addon folder, from its file path (nil without one).
         local caller = debugstack(2, 1, 0) or ""
         local callerFolder = caller:match("AddOns/([^/]+)/")
@@ -5302,9 +4867,7 @@ function CUI_NS.HeaderReuseKey()
     if not (m and p) then
         m, p = currentModule, activePage
     end
-    if not (m and p) or not ReuseFor(m) then
-        return nil
-    end
+    if not (m and p) or not ReuseFor(m) then return nil end
     return m .. "::" .. p
 end
 
@@ -5321,16 +4884,10 @@ end
 -- or folded: it is rebuilt as the panel shows again instead of showing blank
 -- (RefreshPage's deferral, consumed by the on-show callback and the unfold).
 local function PendActiveRebuild()
-    if not (currentModule and activePage) then
-        return
-    end
-    if panelFrame and panelFrame:IsShown() and not CUI._panelCollapsed then
-        return
-    end
+    if not (currentModule and activePage) then return end
+    if panelFrame and panelFrame:IsShown() and not CUI._panelCollapsed then return end
     local e = _pageCache[currentModule .. "::" .. activePage]
-    if not e or e.stale then
-        CUI._pendingForceRefresh = true
-    end
+    if not e or e.stale then CUI._pendingForceRefresh = true end
 end
 
 -- Invalidate all cached pages (called on profile reset, module reload, etc.)
@@ -5339,19 +4896,13 @@ function CUI:InvalidatePageCache()
     for entryKey, record in pairs(_pageCache) do
         if record.reuse then
             record.stale = true
-            if record.wrapper == _activePageWrapper then
-                keepActive = true
-            end
+            if record.wrapper == _activePageWrapper then keepActive = true end
         else
             DropLegacyPage(entryKey, record)
         end
     end
-    if not keepActive then
-        _activePageWrapper = nil
-    end
-    if CUI.InvalidateContentHeaderCache then
-        CUI:InvalidateContentHeaderCache()
-    end
+    if not keepActive then _activePageWrapper = nil end
+    if CUI.InvalidateContentHeaderCache then CUI:InvalidateContentHeaderCache() end
     PendActiveRebuild()
 end
 
@@ -5360,9 +4911,7 @@ end
 -- so the screen is not blanked (the caller rebuilds it in place via RefreshPage(true)). Panel
 -- CLOSED: every cached page is dropped for a fresh build. Teardown matches RefreshPage: Hide + SetParent(nil) the wrapper, then drop the entry.
 function CUI:InvalidateModulePageCache(moduleName)
-    if not moduleName then
-        return
-    end
+    if not moduleName then return end
     local prefix = moduleName .. "::"
     local keepKey
     if self.IsShown and self:IsShown() and currentModule and activePage then
@@ -5388,17 +4937,13 @@ function CUI._InvalidateSearchSensitive()
     local hit = false
     for entryKey, record in pairs(_pageCache) do
         if record.searchSensitive then
-            if entryKey == activeKey then
-                hit = true
-            end
+            if entryKey == activeKey then hit = true end
             if record.reuse then
                 record.stale = true
             else
                 DropLegacyPage(entryKey, record)
             end
-            if CUI_NS.InvalidateHeaderKey then
-                CUI_NS.InvalidateHeaderKey(entryKey)
-            end
+            if CUI_NS.InvalidateHeaderKey then CUI_NS.InvalidateHeaderKey(entryKey) end
         end
     end
     return hit
@@ -5425,26 +4970,16 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
         reuse = ReuseFor(currentModule)
     end
     -- stale until this pass completes: a pass that stops half way is built again
-    if reuse and record then
-        record.stale = true
-    end
+    if reuse and record then record.stale = true end
     local wrapper
     if reuse then
         RecycleAllSearchHighlights(true)
         WipeWidgetRefreshes()
-        if CUI.ClearContentHeader then
-            CUI:ClearContentHeader()
-        end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         ResetRowCounters()
-        if contentChild then
-            contentChild._showRowDivider = nil
-        end
-        if CUI._copyPopup then
-            CUI._copyPopup:Hide()
-        end
-        if CUI._copyBackdrop then
-            CUI._copyBackdrop:Hide()
-        end
+        if contentChild then contentChild._showRowDivider = nil end
+        if CUI._copyPopup then CUI._copyPopup:Hide() end
+        if CUI._copyBackdrop then CUI._copyBackdrop:Hide() end
         if refresh then
             skipScrollChildReanchor = true
             suppressScrollRangeChanged = true
@@ -5465,19 +5000,11 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
         record = nil
         -- Clear widget refresh registry and header (safe -- these are per-page)
         WipeWidgetRefreshes()
-        if CUI.ClearContentHeader then
-            CUI:ClearContentHeader()
-        end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         ResetRowCounters()
-        if contentChild then
-            contentChild._showRowDivider = nil
-        end
-        if CUI._copyPopup then
-            CUI._copyPopup:Hide()
-        end
-        if CUI._copyBackdrop then
-            CUI._copyBackdrop:Hide()
-        end
+        if contentChild then contentChild._showRowDivider = nil end
+        if CUI._copyPopup then CUI._copyPopup:Hide() end
+        if CUI._copyBackdrop then CUI._copyBackdrop:Hide() end
         skipScrollChildReanchor = true
         suppressScrollRangeChanged = true
         -- Create a fresh wrapper for the rebuilt page
@@ -5488,15 +5015,9 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
         lastHeaderPadded = false
         WipeWidgetRefreshes()
         ResetRowCounters()
-        if CUI._copyPopup then
-            CUI._copyPopup:Hide()
-        end
-        if CUI._copyBackdrop then
-            CUI._copyBackdrop:Hide()
-        end
-        if CUI.ClearContentHeader then
-            CUI:ClearContentHeader()
-        end
+        if CUI._copyPopup then CUI._copyPopup:Hide() end
+        if CUI._copyBackdrop then CUI._copyBackdrop:Hide() end
+        if CUI.ClearContentHeader then CUI:ClearContentHeader() end
         wrapper = CreateFrame("Frame", nil, contentChild)
         wrapper:SetAllPoints(contentChild)
     end
@@ -5509,9 +5030,7 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
         CUI._buildingPage = pageTitle
         local h
         ok, h = xpcall(moduleConfig.buildPage, CUI_NS.ReportError, pageTitle, wrapper, -6)
-        if CUI._CloseSectionCards then
-            CUI._CloseSectionCards()
-        end
+        if CUI._CloseSectionCards then CUI._CloseSectionCards() end
         CUI._buildingModule = nil
         CUI._buildingPage = nil
         CUI._buildingSelector = nil
@@ -5566,9 +5085,7 @@ local function PagePassBody(pageKey, pageTitle, moduleConfig, refresh)
         }
     end
     CUI._pageBuildSerial = (CUI._pageBuildSerial or 0) + 1
-    if reuse and CUI_NS.PoolDevEndPass then
-        CUI_NS.PoolDevEndPass(wrapper, pageKey)
-    end
+    if reuse and CUI_NS.PoolDevEndPass then CUI_NS.PoolDevEndPass(wrapper, pageKey) end
 end
 
 -- rerun: this pass runs a forced refresh that reached the page during its
@@ -5608,9 +5125,7 @@ end
 do
     local renders, drop = {}, {}
     function CUI._BeginRootRender(entryKey)
-        if entryKey == nil then
-            return
-        end
+        if entryKey == nil then return end
         local record = renders[entryKey]
         if not record then
             record = { fns = {} }
@@ -5639,9 +5154,7 @@ do
     end
     function CUI._EndRootRender(entryKey)
         local record = entryKey ~= nil and renders[entryKey]
-        if not (record and record.mark) then
-            return
-        end
+        if not (record and record.mark) then return end
         local fns, entryList = record.fns, _widgetRefreshList
         for i = record.mark + 1, #entryList do
             fns[#fns + 1] = entryList[i]
@@ -5665,12 +5178,8 @@ function CUI:SelectPage(pageTitle)
     then
         return
     end
-    if not currentModule or not moduleList[currentModule] then
-        return
-    end
-    if pageTitle == activePage then
-        return
-    end
+    if not currentModule or not moduleList[currentModule] then return end
+    if pageTitle == activePage then return end
 
     -- A link tab (config.pageLinks[pageTitle] = { module =, page = }) opens another
     -- module's page instead of one of its own. Nothing here changes, so coming
@@ -5683,9 +5192,7 @@ function CUI:SelectPage(pageTitle)
             -- so the module's previous page is never built on the way.
             _lastPagePerModule[linkText.module] = linkText.page
             self:SelectModule(linkText.module)
-            if activePage ~= linkText.page then
-                self:SelectPage(linkText.page)
-            end
+            if activePage ~= linkText.page then self:SelectPage(linkText.page) end
         end
         return
     end
@@ -5703,16 +5210,10 @@ function CUI:SelectPage(pageTitle)
 
     -- "Disable Addons" is a fake nav item -- close CUI and open the Blizzard addon list.
     if pageTitle == "Disable Addons" then
-        if CUI._mainFrame then
-            CUI._mainFrame:Hide()
-        end
+        if CUI._mainFrame then CUI._mainFrame:Hide() end
         C_Timer.After(0, function()
-            if not AddonList then
-                C_AddOns.LoadAddOn("Blizzard_AddonList")
-            end
-            if AddonList then
-                ShowUIPanel(AddonList)
-            end
+            if not AddonList then C_AddOns.LoadAddOn("Blizzard_AddonList") end
+            if AddonList then ShowUIPanel(AddonList) end
         end)
         return
     end
@@ -5797,9 +5298,7 @@ function CUI:SelectPage(pageTitle)
         -- Restore elements hidden by a previous inline search, keyed off the page's own filtered
         -- flag and NOT the search box: clearing the box on a tab/module switch does not reliably
         -- restore the page being left, so a cached page can stay filtered while the box reads empty. The flag tracks the real state.
-        if cachedPage._searchFiltered then
-            CUI:ApplyInlineSearch("")
-        end
+        if cachedPage._searchFiltered then CUI:ApplyInlineSearch("") end
 
         -- Restore this page's refresh list
         WipeWidgetRefreshes()
@@ -5816,9 +5315,7 @@ function CUI:SelectPage(pageTitle)
 
         -- Fire module-level refresh hooks (preview update, etc.)
         local moduleConfig = moduleList[currentModule]
-        if moduleConfig.onPageCacheRestore then
-            moduleConfig.onPageCacheRestore(pageTitle)
-        end
+        if moduleConfig.onPageCacheRestore then moduleConfig.onPageCacheRestore(pageTitle) end
     else
         -- Cold path: build page for the first time (or dress its kept wrapper again)
         HideAllChildren(contentChild)
@@ -5829,9 +5326,7 @@ function CUI:SelectPage(pageTitle)
     if contentScroll and contentScroll.SetVerticalScroll then
         scrollTarget = 0
         smoothing = false
-        if smoother then
-            smoother:Hide()
-        end
+        if smoother then smoother:Hide() end
         contentScroll:SetVerticalScroll(0)
         UpdateScrollThumb()
     end
@@ -5845,9 +5340,7 @@ function CUI:SelectPage(pageTitle)
         if PP and _activePageWrapper then
             wipe(tabResnapRoots)
             tabResnapRoots[_activePageWrapper] = true
-            if headStrip then
-                tabResnapRoots[headStrip] = true
-            end
+            if headStrip then tabResnapRoots[headStrip] = true end
             -- the active kept header root is a root of its own (its parts sit one
             -- level deeper than the walk from the header frame reaches)
             local Hdr = CUI_NS.hdr
@@ -5864,9 +5357,7 @@ end
 -- Rebuild the current page content without resetting scroll position
 -- Pass force=true to bypass the fast refresh path (e.g. when widget layout changes).
 function CUI:RefreshPage(force)
-    if not currentModule or not activePage then
-        return
-    end
+    if not currentModule or not activePage then return end
     -- Panel hidden: a rebuild here would run buildPage with nothing on screen, firing page-open
     -- side effects (preview flags, placeholder shows) AFTER the OnHide cleanup already cleared
     -- them -- they then stick until the next open (e.g. CDM buff previews staying visible when
@@ -5908,9 +5399,7 @@ function CUI:RefreshPage(force)
     RunPagePass(pageKey, activePage, moduleList[currentModule], true)
 
     smoothing = false
-    if smoother then
-        smoother:Hide()
-    end
+    if smoother then smoother:Hide() end
     if contentScroll then
         -- The range is stale right after the height change; recompute it so a
         -- shrunken page (card collapsed) clamps instead of keeping the old offset.
@@ -5951,17 +5440,13 @@ function CUI:ScrollToTop()
     if contentScroll and contentScroll.SetVerticalScroll then
         scrollTarget = 0
         smoothing = false
-        if smoother then
-            smoother:Hide()
-        end
+        if smoother then smoother:Hide() end
         contentScroll:SetVerticalScroll(0)
         UpdateScrollThumb()
     end
 end
 
-function CUI:GetActiveModule()
-    return currentModule
-end
+function CUI:GetActiveModule() return currentModule end
 
 function CUI:GetModuleTitle(moduleFolder)
     local m = moduleFolder and moduleList[moduleFolder]
@@ -5984,14 +5469,10 @@ local RESET_SCOPE_TEXT = {
 
 local function ConfirmModuleReset(entryKey, name)
     local moduleConfig = moduleList[entryKey]
-    if not (moduleConfig and moduleConfig.onReset) then
-        return
-    end
+    if not (moduleConfig and moduleConfig.onReset) then return end
     local title = CUI.Lf("Reset %1$s", name)
     local msg = moduleConfig.resetMessage
-    if type(msg) == "function" then
-        msg = msg()
-    end
+    if type(msg) == "function" then msg = msg() end
     CUI:ShowConfirmPopup({
         title = title,
         message = msg
@@ -6006,9 +5487,7 @@ local function ConfirmModuleReset(entryKey, name)
         onConfirm = function()
             CUI.RequestReload(title, CUI.L("Reload to finish the reset."), function()
                 local c = moduleList[entryKey]
-                if c and c.onReset then
-                    c.onReset()
-                end
+                if c and c.onReset then c.onReset() end
             end)
         end,
     })
@@ -6028,17 +5507,13 @@ function CUI._ShowModuleResetMenu(anchor, onAll)
     }
     local function Add(entryKey)
         local moduleConfig = moduleList[entryKey]
-        if not (moduleConfig and moduleConfig.onReset and CUI_NS.IsSuiteKey(entryKey)) then
-            return
-        end
+        if not (moduleConfig and moduleConfig.onReset and CUI_NS.IsSuiteKey(entryKey)) then return end
         local nav = CUI_NS.navInfo[entryKey]
         local name = CUI.L((nav and nav.display) or moduleConfig.title or entryKey)
         items[#items + 1] = {
             text = name,
             noLoc = true,
-            onClick = function()
-                ConfirmModuleReset(entryKey, name)
-            end,
+            onClick = function() ConfirmModuleReset(entryKey, name) end,
         }
     end
     Add(CUI.GLOBAL_KEY)
@@ -6051,21 +5526,15 @@ function CUI._ShowModuleResetMenu(anchor, onAll)
 end
 
 function CUI:SelectModule(moduleFolder)
-    if not moduleList[moduleFolder] then
-        return
-    end
+    if not moduleList[moduleFolder] then return end
     -- The panel is not always built when we get here: on the session's first
     -- open the first-open split (see _SplitFirstOpen) makes Show()/Toggle()
     -- return BEFORE CreateMainFrame, so a caller that opens the panel and
     -- selects a module in the same execution arrives with headerFrame nil.
     -- Bail before currentModule is written -- a half-applied selection also
     -- suppresses CreateMainFrame's default-module pick, leaving a blank panel.
-    if not headerFrame then
-        return
-    end
-    if moduleFolder == currentModule then
-        return
-    end
+    if not headerFrame then return end
+    if moduleFolder == currentModule then return end
     -- Excluded modules are locked while an override editing session is
     -- active; blocking at the choke point covers every navigation path
     -- (sidebar, list rows, links), not just the grayed buttons.
@@ -6079,9 +5548,7 @@ function CUI:SelectModule(moduleFolder)
     end
 
     -- Re-sync pixel perfect mult on every addon switch
-    if CUI.PanelPP then
-        CUI.PanelPP.UpdateMult()
-    end
+    if CUI.PanelPP then CUI.PanelPP.UpdateMult() end
 
     -- Save current page's content header under the CORRECT old key
     -- before we overwrite currentModule.
@@ -6132,9 +5599,7 @@ function CUI:SelectModule(moduleFolder)
         rb._label:SetMaxLines(1)
     end
     if CUI._UpdateResetButtonVisible then
-        CUI._UpdateResetButtonVisible(
-            moduleConfig.onReset ~= nil and not CUI_NS.IsSuiteKey(moduleFolder)
-        )
+        CUI._UpdateResetButtonVisible(moduleConfig.onReset ~= nil and not CUI_NS.IsSuiteKey(moduleFolder))
     end
     headerFrame._desc:SetText(CUI.L(moduleConfig.description or ""))
     BuildTabs(moduleConfig.pages, moduleConfig.disabledPages, moduleConfig.disabledPageTooltips)
@@ -6146,9 +5611,7 @@ function CUI:SelectModule(moduleFolder)
         if tabStrip._searchFrame then
             tabStrip._searchFrame:SetShown(core or moduleFolder == CUI.GLOBAL_KEY)
         end
-        if tabStrip._specOvBtn then
-            tabStrip._specOvBtn:SetShown(core)
-        end
+        if tabStrip._specOvBtn then tabStrip._specOvBtn:SetShown(core) end
     end
     local savedPage = _lastPagePerModule[moduleFolder]
     -- Validate saved page still exists in this module's page list
@@ -6207,9 +5670,7 @@ local function SyncNavStates()
     end
 
     local contentChild = CUI._addonScrollChild
-    if not contentChild then
-        return
-    end
+    if not contentChild then return end
 
     local firstLoaded = nil
     local groupHeaders = CUI_NS.sidebarGroupButtons
@@ -6225,9 +5686,7 @@ local function SyncNavStates()
     local rowY = 0
     local afterRows = false
     for _, navGroup in ipairs(CUI_NS.navGroups) do
-        if afterRows then
-            rowY = rowY + GROUP_GAP
-        end
+        if afterRows then rowY = rowY + GROUP_GAP end
         afterRows = false
         local shut = collapsed and collapsed[navGroup.key] and true or false
         local header = groupHeaders[navGroup.key]
@@ -6269,9 +5728,7 @@ local function SyncNavStates()
                 button._dlIcon:Hide()
 
                 -- Refresh sync icon state
-                if button._syncBtn and button._syncBtn._refreshAlpha then
-                    button._syncBtn._refreshAlpha()
-                end
+                if button._syncBtn and button._syncBtn._refreshAlpha then button._syncBtn._refreshAlpha() end
 
                 if effectiveLoaded and moduleKey == currentModule then
                     button._label:SetTextColor(
@@ -6280,9 +5737,7 @@ local function SyncNavStates()
                         NAV_SELECTED_TEXT.b,
                         NAV_SELECTED_TEXT.a
                     )
-                    if button._pwrBtn then
-                        button._pwrBtn._tex:SetAlpha(1)
-                    end
+                    if button._pwrBtn then button._pwrBtn._tex:SetAlpha(1) end
                 elseif effectiveLoaded then
                     button._label:SetTextColor(
                         NAV_ENABLED_TEXT.r,
@@ -6290,12 +5745,8 @@ local function SyncNavStates()
                         NAV_ENABLED_TEXT.b,
                         NAV_ENABLED_TEXT.a
                     )
-                    if button._pwrBtn then
-                        button._pwrBtn._tex:SetAlpha(1)
-                    end
-                    if not firstLoaded then
-                        firstLoaded = moduleKey
-                    end
+                    if button._pwrBtn then button._pwrBtn._tex:SetAlpha(1) end
+                    if not firstLoaded then firstLoaded = moduleKey end
                 else
                     button._label:SetTextColor(
                         NAV_DISABLED_TEXT.r,
@@ -6303,9 +5754,7 @@ local function SyncNavStates()
                         NAV_DISABLED_TEXT.b,
                         NAV_DISABLED_TEXT.a
                     )
-                    if button._pwrBtn then
-                        button._pwrBtn._tex:SetAlpha(0.5)
-                    end
+                    if button._pwrBtn then button._pwrBtn._tex:SetAlpha(0.5) end
                     button._indicator:Hide()
                     button._glow:Hide()
                     button._glowTop:Hide()
@@ -6315,9 +5764,7 @@ local function SyncNavStates()
         end
     end
 
-    if contentChild.SetHeight then
-        contentChild:SetHeight(math.max(CHILD_H, rowY))
-    end
+    if contentChild.SetHeight then contentChild:SetHeight(math.max(CHILD_H, rowY)) end
 
     -- Default to Global Settings if no module is active
     if not currentModule then
@@ -6335,17 +5782,13 @@ local function SyncNavStates()
 
     -- Re-assert override-session locks LAST: the recolor loop above paints by loaded
     -- state and would otherwise wash out locked rows on every module/page switch.
-    if CUI.RefreshSidebarOverrideLocks then
-        CUI.RefreshSidebarOverrideLocks()
-    end
+    if CUI.RefreshSidebarOverrideLocks then CUI.RefreshSidebarOverrideLocks() end
 end
 
 -- Collapse or expand a sidebar group (header click). The state is account-wide,
 -- in CludesUIDB.sidebarCollapsed keyed by group key (true = collapsed).
 function CUI_NS.ToggleSidebarGroup(entryKey)
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     local c = CludesUIDB.sidebarCollapsed
     if not c then
         c = {}
@@ -6360,9 +5803,7 @@ end
 -- modules the player cannot see).
 function CUI_NS.RevealSidebarRow(moduleKey)
     local c = CludesUIDB and CludesUIDB.sidebarCollapsed
-    if not (c and next(c)) then
-        return
-    end
+    if not (c and next(c)) then return end
     for _, navGroup in ipairs(CUI_NS.navGroups) do
         if c[navGroup.key] then
             for _, member in ipairs(navGroup.members) do
@@ -6381,28 +5822,18 @@ end
 -----------------------------------------------------------------------
 local _sidebarUnlockTip
 local function ShowSidebarUnlockTip()
-    if CludesUIDB and CludesUIDB.sidebarUnlockTipSeen then
-        return
-    end
-    if _sidebarUnlockTip and _sidebarUnlockTip:IsShown() then
-        return
-    end
+    if CludesUIDB and CludesUIDB.sidebarUnlockTipSeen then return end
+    if _sidebarUnlockTip and _sidebarUnlockTip:IsShown() then return end
     local anchor = CUI._unlockSidebarBtn
-    if not anchor then
-        return
-    end
+    if not anchor then return end
 
     if not _sidebarUnlockTip then
         local tip = CUI.BuildTipCallout(CUI._panelBody, {
             width = 320,
             height = 100,
-            text = CUI.L(
-                "Layout Mode is where you can adjust\npositioning for all the elements of CludesUI"
-            ),
+            text = CUI.L("Layout Mode is where you can adjust\npositioning for all the elements of CludesUI"),
             onOkay = function()
-                if CludesUIDB then
-                    CludesUIDB.sidebarUnlockTipSeen = true
-                end
+                if CludesUIDB then CludesUIDB.sidebarUnlockTipSeen = true end
             end,
         })
         -- Center horizontally on the Unlock Mode label text
@@ -6432,13 +5863,9 @@ end
 -- the exact legacy failure path; _openPending swallows re-clicks during the
 -- one-frame gap so a Toggle can't double-fire.
 function CUI:_SplitFirstOpen(afterFn)
-    if self._deferredLoaded then
-        return false
-    end
+    if self._deferredLoaded then return false end
     self:EnsureLoaded()
-    if not self._deferredLoaded then
-        return false
-    end
+    if not self._deferredLoaded then return false end
     self._openPending = true
     C_Timer.After(0, function()
         CUI._openPending = nil
@@ -6453,47 +5880,31 @@ end
 -- link (NavigateToElementSettings) can come from a click on a game frame.
 -- Pages built then would call widget methods that are blocked in combat.
 function CUI:Show()
-    if self._openPending then
-        return
-    end
+    if self._openPending then return end
     if InCombatLockdown() then
         CUI.PrintError("Cannot open options during combat.")
         return
     end
-    if self:_SplitFirstOpen(function()
-        CUI:Show()
-    end) then
-        return
-    end
+    if self:_SplitFirstOpen(function() CUI:Show() end) then return end
     CreateMainFrame()
     SyncNavStates()
     panelFrame:Show()
     -- An open request while folded to the mini window unfolds it.
-    if self._panelCollapsed then
-        self._SetPanelCollapsed(false)
-    end
+    if self._panelCollapsed then self._SetPanelCollapsed(false) end
     ShowSidebarUnlockTip()
 end
 function CUI:Hide()
-    if panelFrame then
-        panelFrame:Hide()
-    end
+    if panelFrame then panelFrame:Hide() end
 end
 function CUI:Toggle()
-    if self._openPending then
-        return
-    end
+    if self._openPending then return end
     -- Closing still works in combat; opening or unfolding the mini window does
     -- not (see Show).
     if InCombatLockdown() and not (panelFrame and panelFrame:IsShown() and not self._panelCollapsed) then
         CUI.PrintError("Cannot open options during combat.")
         return
     end
-    if self:_SplitFirstOpen(function()
-        CUI:Toggle()
-    end) then
-        return
-    end
+    if self:_SplitFirstOpen(function() CUI:Toggle() end) then return end
     CreateMainFrame()
     if self._panelCollapsed then
         -- Folded to the mini window: the toggle asks for the options back.
@@ -6506,22 +5917,14 @@ function CUI:Toggle()
         ShowSidebarUnlockTip()
         -- Refresh widget disabled states (e.g. width-match may have
         -- changed in unlock mode since the page was last shown).
-        if self.RefreshPage then
-            self:RefreshPage()
-        end
+        if self.RefreshPage then self:RefreshPage() end
     end
 end
-function CUI:IsShown()
-    return panelFrame and panelFrame:IsShown()
-end
+function CUI:IsShown() return panelFrame and panelFrame:IsShown() end
 -- The main settings window frame. Used e.g. to scope popup click-catchers to the
 -- panel instead of UIParent, so an open popup doesn't block world mouse/mouselook.
-function CUI:GetMainFrame()
-    return panelFrame
-end
-function CUI:GetActivePage()
-    return activePage
-end
+function CUI:GetMainFrame() return panelFrame end
+function CUI:GetActivePage() return activePage end
 
 --- Apply a user-defined panel scale on top of the pixel-perfect base scale.
 --- @param userScale number  multiplier (1.0 = default, PANEL_SCALE_MIN-MAX)
@@ -6545,9 +5948,7 @@ do
     -- measures the same spot from the screen centre, so a centred panel stays
     -- centred through later resolution changes.
     local function HoldPin(final)
-        if not pinX then
-            return
-        end
+        if not pinX then return end
         local scale = panelFrame:GetEffectiveScale()
         local x, rowY = pinX / scale - pinOX, pinY / scale - pinOY
         panelFrame:ClearAllPoints()
@@ -6576,16 +5977,10 @@ do
         settleRoots[CUI._panelBody] = true
         for _, record in pairs(_pageCache) do
             local w = record.wrapper
-            if w then
-                settleRoots[w] = "skip"
-            end
+            if w then settleRoots[w] = "skip" end
         end
-        if _activePageWrapper then
-            settleRoots[_activePageWrapper] = true
-        end
-        if headStrip then
-            settleRoots[headStrip] = true
-        end
+        if _activePageWrapper then settleRoots[_activePageWrapper] = true end
+        if headStrip then settleRoots[headStrip] = true end
         -- Kept header roots of other pages re-snap at their own tab switch; the
         -- active one is a root of its own (its parts sit one level deeper).
         local Hdr = CUI_NS.hdr
@@ -6596,9 +5991,7 @@ do
         if pops then
             for i = 1, #pops do
                 local rootFrame = pops[i].dimmer or pops[i].popup
-                if rootFrame then
-                    settleRoots[rootFrame] = true
-                end
+                if rootFrame then settleRoots[rootFrame] = true end
             end
         end
         PP.ResnapBordersUnderRoots(settleRoots)
@@ -6625,19 +6018,13 @@ do
     end
 
     function CUI:SetPanelScale(userScale, pin)
-        if not panelFrame then
-            return
-        end
+        if not panelFrame then return end
         local physW = (GetPhysicalScreenSize())
         local baseScale = GetScreenWidth() / physW
         local targetScale = baseScale * (userScale or 1.0)
-        if CludesUIDB then
-            CludesUIDB.panelScale = userScale
-        end
+        if CludesUIDB then CludesUIDB.panelScale = userScale end
         -- Recalculate PanelPP mult for the new scale
-        if CUI.PanelPP then
-            CUI.PanelPP.UpdateMult()
-        end
+        if CUI.PanelPP then CUI.PanelPP.UpdateMult() end
         -- The pin shares the panel's scale, so its centre and the panel's edges read
         -- in the same units (the cursor is converted into them).
         pinX = nil
@@ -6679,9 +6066,7 @@ do
             v = math.ceil(cur / 5 - 1e-6) * 5 - 5
         end
         v = math.max(CUI.PANEL_SCALE_MIN * 100, math.min(CUI.PANEL_SCALE_MAX * 100, v))
-        if math.abs(v - cur) < 0.01 then
-            return false
-        end
+        if math.abs(v - cur) < 0.01 then return false end
         self:SetPanelScale(v / 100, pin)
         return true
     end
@@ -6691,12 +6076,8 @@ do
     -- (CludesUI._FlashWindowScale, set by that control once it is built). The
     -- panel's wheel handlers call this first; true = the wheel was used here.
     function CUI._ShiftWheelScale(stepDelta)
-        if not IsShiftKeyDown() or CUI._sliderDragging then
-            return false
-        end
-        if CUI:StepPanelScale(stepDelta, "cursor") and CUI._FlashWindowScale then
-            CUI._FlashWindowScale()
-        end
+        if not IsShiftKeyDown() or CUI._sliderDragging then return false end
+        if CUI:StepPanelScale(stepDelta, "cursor") and CUI._FlashWindowScale then CUI._FlashWindowScale() end
         return true
     end
 end
@@ -6707,26 +6088,16 @@ function CUI:ShowModule(moduleFolder)
         CUI.PrintError("Cannot open options during combat.")
         return
     end
-    if self._openPending then
-        return
-    end
+    if self._openPending then return end
     -- First-open split (see _SplitFirstOpen): the combat check above stays in
     -- the click execution; the deferred re-invoke re-checks it harmlessly.
-    if self:_SplitFirstOpen(function()
-        CUI:ShowModule(moduleFolder)
-    end) then
-        return
-    end
+    if self:_SplitFirstOpen(function() CUI:ShowModule(moduleFolder) end) then return end
     CreateMainFrame()
     SyncNavStates()
     panelFrame:Show()
-    if self._panelCollapsed then
-        self._SetPanelCollapsed(false)
-    end
+    if self._panelCollapsed then self._SetPanelCollapsed(false) end
     ShowSidebarUnlockTip()
-    if moduleList[moduleFolder] then
-        self:SelectModule(moduleFolder)
-    end
+    if moduleList[moduleFolder] then self:SelectModule(moduleFolder) end
 end
 
 -------------------------------------------------------------------------------
@@ -6779,18 +6150,14 @@ do
                 break
             end
         end
-        if cut then
-            text = text:sub(1, cut - 1):gsub("%s+$", "")
-        end
+        if cut then text = text:sub(1, cut - 1):gsub("%s+$", "") end
         return text
     end
 
     -- Plain single-line text: drops every UI escape sequence (colors, textures,
     -- atlases, hyperlinks, line breaks) so a label cannot borrow suite styling.
     local function PlainText(text, maxChars)
-        if type(text) ~= "string" then
-            return nil
-        end
+        if type(text) ~= "string" then return nil end
         text = text:gsub("|[Tt].-|[Tt]", "")
             :gsub("|[Aa].-|[Aa]", "")
             :gsub("|[Kk].-|[Kk]", "")
@@ -6804,9 +6171,7 @@ do
             :gsub("%s+", " ")
             :gsub("^ ", "")
             :gsub(" $", "")
-        if text == "" then
-            return nil
-        end
+        if text == "" then return nil end
         return CapChars(text, maxChars)
     end
 
@@ -6814,17 +6179,13 @@ do
     -- and localized), the fixed panel entries, and the suite name itself.
     local function IsReservedLabel(navLabel)
         local lower = navLabel:lower()
-        if lower:find("^cludes") or lower:find("^cui") then
-            return true
-        end
+        if lower:find("^cludes") or lower:find("^cui") then return true end
         local reserved = { "Global Settings", "Profiles", "Patch Notes", "CUI Legends" }
         for _, group in ipairs(CUI_NS.coreGroups) do
             reserved[#reserved + 1] = group.label
         end
         for _, r in ipairs(reserved) do
-            if lower == r:lower() or lower == tostring(CUI.L(r)):lower() then
-                return true
-            end
+            if lower == r:lower() or lower == tostring(CUI.L(r)):lower() then return true end
         end
         return false
     end
@@ -6834,29 +6195,21 @@ do
     end
 
     local function Guard(fn)
-        if fn == nil then
-            return nil
-        end
+        if fn == nil then return nil end
         return function(...)
             local ok, a = xpcall(fn, ReportError, ...)
-            if ok then
-                return a
-            end
+            if ok then return a end
         end
     end
 
     -- Guarded header builders, cached so a page keeps one builder identity.
     local guardedHeaders = setmetatable({}, { __mode = "k" })
     local function GuardHeaderSource(getHeaderBuilder)
-        if getHeaderBuilder == nil then
-            return nil
-        end
+        if getHeaderBuilder == nil then return nil end
         local get = Guard(getHeaderBuilder)
         return function(pageTitle)
             local hb = get(pageTitle)
-            if type(hb) ~= "function" then
-                return nil
-            end
+            if type(hb) ~= "function" then return nil end
             local g = guardedHeaders[hb]
             if not g then
                 g = Guard(hb)
@@ -6870,20 +6223,14 @@ do
 
     -- Validates one module spec and returns the registry's private config copy.
     local function BuildModuleConfig(pluginId, navLabel, m, index, seenKeys)
-        if type(m) ~= "table" then
-            return nil, ("modules[%d] must be a table"):format(index)
-        end
+        if type(m) ~= "table" then return nil, ("modules[%d] must be a table"):format(index) end
         if not ValidId(m.key) then
             return nil,
                 ("modules[%d].key must match ^%%a[%%w_%%-]*$ (max %d chars)"):format(index, MAX_ID_LEN)
         end
-        if seenKeys[m.key] then
-            return nil, ("duplicate module key %q"):format(m.key)
-        end
+        if seenKeys[m.key] then return nil, ("duplicate module key %q"):format(m.key) end
         local title = PlainText(m.title, MAX_TITLE_CHARS)
-        if not title then
-            return nil, ("modules[%d].title must be a non-empty string"):format(index)
-        end
+        if not title then return nil, ("modules[%d].title must be a non-empty string"):format(index) end
         if m.description ~= nil and type(m.description) ~= "string" then
             return nil, ("modules[%d].description must be a string"):format(index)
         end
@@ -6932,19 +6279,13 @@ do
     local function BuildLateSection(navGroup)
         local createHeader = CUI_NS.CreateSidebarGroupHeader
         local createRow = CUI_NS.CreateSidebarChildRow
-        if not (createHeader and createRow) then
-            return
-        end
+        if not (createHeader and createRow) then return end
         CUI_NS.sidebarGroupButtons[navGroup.key] = createHeader(navGroup)
         for _, entryKey in ipairs(navGroup.members) do
             sidebarButtons[entryKey] = createRow(CUI_NS.navInfo[entryKey])
         end
-        if CUI.RefreshSidebarOverrideLocks then
-            CUI.RefreshSidebarOverrideLocks()
-        end
-        if panelFrame and panelFrame:IsShown() then
-            SyncNavStates()
-        end
+        if CUI.RefreshSidebarOverrideLocks then CUI.RefreshSidebarOverrideLocks() end
+        if panelFrame and panelFrame:IsShown() then SyncNavStates() end
     end
 
     -- Adds one validated module to a plugin's record and section.
@@ -6971,25 +6312,17 @@ do
         if not ValidId(pluginId) then
             return Reject(pluginId, ("id must match ^%%a[%%w_%%-]*$ (max %d chars)"):format(MAX_ID_LEN))
         end
-        if plugins[pluginId] then
-            return Reject(pluginId, "a plugin with this id is already registered")
-        end
-        if type(pluginSpec) ~= "table" then
-            return Reject(pluginId, "spec must be a table")
-        end
+        if plugins[pluginId] then return Reject(pluginId, "a plugin with this id is already registered") end
+        if type(pluginSpec) ~= "table" then return Reject(pluginId, "spec must be a table") end
 
         local navLabel = PlainText(pluginSpec.label, MAX_LABEL_CHARS)
-        if not navLabel then
-            return Reject(pluginId, "label must be a non-empty string")
-        end
+        if not navLabel then return Reject(pluginId, "label must be a non-empty string") end
         if IsReservedLabel(navLabel) then
             return Reject(pluginId, ("label %q is reserved"):format(navLabel))
         end
 
         local position = pluginSpec.position
-        if position == nil then
-            position = "bottom"
-        end
+        if position == nil then position = "bottom" end
         if position ~= "bottom" and position ~= "top" then
             return Reject(pluginId, 'position must be "bottom" or "top"')
         end
@@ -7006,9 +6339,7 @@ do
         local configs, seenKeys = {}, {}
         for i, m in ipairs(pluginSpec.modules) do
             local moduleConfig, err = BuildModuleConfig(pluginId, navLabel, m, i, seenKeys)
-            if not moduleConfig then
-                return Reject(pluginId, err)
-            end
+            if not moduleConfig then return Reject(pluginId, err) end
             local fullKey = PREFIX .. pluginId .. ":" .. m.key
             if CUI_NS.IsModuleKeyTaken(fullKey) then
                 return Reject(pluginId, ("module key %q is already registered"):format(fullKey))
@@ -7030,16 +6361,12 @@ do
         return true
     end
 
-    function CUI.IsPluginRegistered(pluginId)
-        return plugins[pluginId] ~= nil
-    end
+    function CUI.IsPluginRegistered(pluginId) return plugins[pluginId] ~= nil end
 
     --- True while the global search's hidden pre-build pass is running a page
     --- builder. The builder then gets a stub widget factory; skip side effects
     --- (event registration, hooks, previews) while this is true.
-    function CUI.IsSearchPrebuild()
-        return CUI._prebuilding == true
-    end
+    function CUI.IsSearchPrebuild() return CUI._prebuilding == true end
 
     --- Full module key of a plugin module ("plugin:<id>:<moduleKey>"), for the
     --- panel calls that take one (GetActiveModule comparisons,
@@ -7053,14 +6380,10 @@ do
     --- nil), optionally on a given page. Returns false when nothing matches.
     function CUI.OpenPlugin(pluginId, moduleKey, pageTitle)
         local record = plugins[pluginId]
-        if not record then
-            return false
-        end
+        if not record then return false end
         local entryKey = (moduleKey == nil) and record.firstKey or record.keys[moduleKey]
         local moduleConfig = entryKey and moduleList[entryKey]
-        if not moduleConfig then
-            return false
-        end
+        if not moduleConfig then return false end
         if InCombatLockdown() then
             CUI.PrintError("Cannot open options during combat.")
             return false
@@ -7073,9 +6396,7 @@ do
                     break
                 end
             end
-            if not valid then
-                return false
-            end
+            if not valid then return false end
             -- SelectModule opens the module on its last page.
             _lastPagePerModule[entryKey] = pageTitle
         end
@@ -7117,9 +6438,7 @@ do
     end
 
     -- An addon whose change to a suite page was ignored (named in the notice).
-    local function Offend(moduleKey)
-        offenders[moduleKey] = true
-    end
+    local function Offend(moduleKey) offenders[moduleKey] = true end
     CUI_NS.RecordLegacyOffender = Offend -- the RegisterModule reclaim (CludesUI.lua)
 
     -- An addon's TOC title as plain text (nil if it has none).
@@ -7134,9 +6453,7 @@ do
     -- a chunk named after one of our files.
     local function WriterOf(t, entryKey)
         local _, by = issecurevariable(t, entryKey)
-        if type(by) == "string" and not CUI_NS.IsSuiteFolder(by) and AddonTitle(by) then
-            return by
-        end
+        if type(by) == "string" and not CUI_NS.IsSuiteFolder(by) and AddonTitle(by) then return by end
     end
     CUI_NS.WriterOf = WriterOf -- the RegisterModule reclaim (CludesUI.lua)
 
@@ -7145,9 +6462,7 @@ do
         for key in pairs(t) do
             if type(key) == "string" then
                 local by = WriterOf(t, key)
-                if by then
-                    return by
-                end
+                if by then return by end
             end
         end
     end
@@ -7155,13 +6470,9 @@ do
     -- The roster entry an addon published for one of its keys, if any.
     local function PublicInfo(entryKey)
         local navInfo = CUI._addonInfoByFolder and CUI._addonInfoByFolder[entryKey]
-        if type(navInfo) == "table" then
-            return navInfo
-        end
+        if type(navInfo) == "table" then return navInfo end
         for _, entry in ipairs(ADDON_ROSTER) do
-            if type(entry) == "table" and entry.folder == entryKey then
-                return entry
-            end
+            if type(entry) == "table" and entry.folder == entryKey then return entry end
         end
     end
 
@@ -7169,9 +6480,7 @@ do
         local s = sections[source]
         if not s then
             navLabel = navLabel or "Other Addons"
-            if IsReservedLabel(navLabel) then
-                navLabel = CapChars("Plugin: " .. navLabel, MAX_LABEL_CHARS)
-            end
+            if IsReservedLabel(navLabel) then navLabel = CapChars("Plugin: " .. navLabel, MAX_LABEL_CHARS) end
             s = { key = "ext:" .. source, label = navLabel, members = {} }
             sections[source] = s
             local entryList = top and CUI_NS.pluginGroupsTop or CUI_NS.pluginGroupsBottom
@@ -7183,9 +6492,7 @@ do
     -- Gives an outside key its row in section s, labelled from the roster entry
     -- its addon published, else from its page. Returns true for a new row.
     local function Place(entryKey, s)
-        if placed[entryKey] or #s.members >= MAX_MODULES then
-            return false
-        end
+        if placed[entryKey] or #s.members >= MAX_MODULES then return false end
         local pub = PublicInfo(entryKey)
         local page = moduleList[entryKey]
         local display = (pub and PlainText(pub.display, MAX_LABEL_CHARS))
@@ -7248,13 +6555,9 @@ do
                 end
             end
         end
-        if not added then
-            return
-        end
+        if not added then return end
         CUI_NS.RebuildNavGroups()
-        if not panelFrame then
-            return
-        end
+        if not panelFrame then return end
         for s in pairs(added) do
             if CUI_NS.sidebarGroupButtons[s.key] then
                 -- Its section is already on the sidebar: add the new rows.
@@ -7267,50 +6570,32 @@ do
                 BuildLateSection(s)
             end
         end
-        if CUI.RefreshSidebarOverrideLocks then
-            CUI.RefreshSidebarOverrideLocks()
-        end
-        if panelFrame:IsShown() then
-            SyncNavStates()
-        end
+        if CUI.RefreshSidebarOverrideLocks then CUI.RefreshSidebarOverrideLocks() end
+        if panelFrame:IsShown() then SyncNavStates() end
     end
 
     -- A page another addon registers under a key of its own (folder: that
     -- addon as the stack names it). It may register again.
     function CUI_NS.RegisterExternal(moduleKey, entryKey, moduleConfig)
-        if type(entryKey) ~= "string" or type(moduleConfig) ~= "table" then
-            return
-        end
+        if type(entryKey) ~= "string" or type(moduleConfig) ~= "table" then return end
         -- No folder on the stack, or one of ours: the page's builder names it.
-        if not moduleKey or CUI_NS.IsSuiteFolder(moduleKey) then
-            moduleKey = Author(moduleConfig)
-        end
+        if not moduleKey or CUI_NS.IsSuiteFolder(moduleKey) then moduleKey = Author(moduleConfig) end
         if CUI_NS.IsSuiteKey(entryKey) then
-            if moduleKey then
-                Offend(moduleKey)
-            end
+            if moduleKey then Offend(moduleKey) end
             return
         end
-        if CUI_NS.IsPluginKey(entryKey) then
-            return
-        end
+        if CUI_NS.IsPluginKey(entryKey) then return end
         moduleConfig._cuiCore = false
         CUI_NS.StoreModule(entryKey, moduleConfig, true)
-        if owner[entryKey] == nil then
-            owner[entryKey] = moduleKey or false
-        end
-        if panelFrame then
-            CUI_NS.SyncExternal()
-        end
+        if owner[entryKey] == nil then owner[entryKey] = moduleKey or false end
+        if panelFrame then CUI_NS.SyncExternal() end
     end
 
     -- The old public registry, kept as an inbox: writes register the page,
     -- reads only ever return an outside addon's own pages.
     CUI._modules = setmetatable({}, {
         __index = function(_, entryKey)
-            if owner[entryKey] ~= nil then
-                return moduleList[entryKey]
-            end
+            if owner[entryKey] ~= nil then return moduleList[entryKey] end
         end,
         __newindex = function(_, entryKey, page)
             CUI_NS.RegisterExternal((debugstack(2, 1, 0) or ""):match("AddOns/([^/]+)/"), entryKey, page)
@@ -7319,7 +6604,5 @@ do
     })
 
     -- Whenever the panel opens: places what the outside addons added since.
-    CUI:RegisterOnShow(function()
-        CUI_NS.SyncExternal()
-    end)
+    CUI:RegisterOnShow(function() CUI_NS.SyncExternal() end)
 end

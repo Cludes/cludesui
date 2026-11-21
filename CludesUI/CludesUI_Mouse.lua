@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Mouse.lua
 --  The suite's single shared cursor service. Every feature that follows or
@@ -74,9 +72,7 @@ local function OnRenderFrame(elapsed)
     local anyAlways = false
     for _, s in pairs(frameSubs) do
         s.fn(posX, posY, moved, elapsed)
-        if not s.motionOnly then
-            anyAlways = true
-        end
+        if not s.motionOnly then anyAlways = true end
     end
     -- Park the per-frame path once every remaining subscriber is motion-only
     -- and the cursor has settled; the watch ticker owns the re-arm.
@@ -134,9 +130,7 @@ local watchHost = CreateFrame("Frame")
 
 local function SyncTicker()
     if frameCount + tickCount == 0 then
-        if ticker then
-            ticker.Stop()
-        end
+        if ticker then ticker.Stop() end
         return
     end
     local wanted = (frameCount > 0) and WATCH_FAST or WATCH_SLOW
@@ -159,12 +153,8 @@ end
 -- replaces. motionOnly subscribers park with the cursor; others hold the
 -- driver until unsubscribed (transient animators must unsubscribe when done).
 function M.SubscribeFrame(key, func, motionOnly)
-    if not key or type(func) ~= "function" then
-        return
-    end
-    if not frameSubs[key] then
-        frameCount = frameCount + 1
-    end
+    if not key or type(func) ~= "function" then return end
+    if not frameSubs[key] then frameCount = frameCount + 1 end
     frameSubs[key] = { fn = func, motionOnly = motionOnly and true or false }
     if not frameArmed then
         frameArmed = true
@@ -175,9 +165,7 @@ function M.SubscribeFrame(key, func, motionOnly)
 end
 
 function M.UnsubscribeFrame(key)
-    if not frameSubs[key] then
-        return
-    end
+    if not frameSubs[key] then return end
     frameSubs[key] = nil
     frameCount = frameCount - 1
     if frameCount == 0 and frameArmed then
@@ -190,9 +178,7 @@ end
 -- Tier B. fn(rawX, rawY) every `interval` seconds (multiples of the watch
 -- cadence). Same key replaces and keeps the accumulator.
 function M.SubscribeTick(key, interval, func)
-    if not key or type(func) ~= "function" then
-        return
-    end
+    if not key or type(func) ~= "function" then return end
     local cfg = tickSubs[key]
     if cfg then
         cfg.fn = func
@@ -205,9 +191,7 @@ function M.SubscribeTick(key, interval, func)
 end
 
 function M.UnsubscribeTick(key)
-    if not tickSubs[key] then
-        return
-    end
+    if not tickSubs[key] then return end
     tickSubs[key] = nil
     tickCount = tickCount - 1
     SyncTicker()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_RowAddons.lua
 --  Row add-ons: inline toggle, cog and button, the row-label and button
@@ -34,20 +32,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- itself is never disabled. opts: region, getValue, setValue, onToggle, sizeRatio.
     local function BuildInlineToggle(options)
         local regionFrame = options.region
-        if not regionFrame then
-            return nil
-        end
+        if not regionFrame then return nil end
         local toggle, _, tgSnap = BuildToggleControl(
             regionFrame,
             regionFrame:GetFrameLevel() + 5,
             options.getValue,
             function(val)
-                if options.setValue then
-                    options.setValue(val)
-                end
-                if options.onToggle then
-                    options.onToggle(val)
-                end
+                if options.setValue then options.setValue(val) end
+                if options.onToggle then options.onToggle(val) end
             end,
             { sizeRatio = options.sizeRatio or 0.8 }
         )
@@ -103,9 +95,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     }
     local cogTip, cogTipCog, cogTipInScroll, cogTipScrollHooked
 
-    local function CogTipSeen()
-        return CludesUIDB and CludesUIDB.inlineCogTipSeen
-    end
+    local function CogTipSeen() return CludesUIDB and CludesUIDB.inlineCogTipSeen end
 
     -- The cog being built: module, page, section, row label and popup title.
     function CogDot.Key(region, options)
@@ -145,9 +135,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- The opened cogs as a set, read from the saved string once a session.
     function CogDot.Seen()
         local set = CogDot.set
-        if set then
-            return set
-        end
+        if set then return set end
         set = {}
         local str = CludesUIDB and CludesUIDB.cogSeen
         if type(str) == "string" then
@@ -163,9 +151,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- built cog with that id (the same row on another unit or bar) loses its dot.
     function CogDot.Mark(ident)
         local set = CogDot.Seen()
-        if set[ident] then
-            return
-        end
+        if set[ident] then return end
         set[ident] = true
         if CludesUIDB then
             local str = CludesUIDB.cogSeen
@@ -184,9 +170,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- of the unrounded height, a share on a half pixel (the step and the
     -- notification dot's offsets at 30 pixels) rounds either way with the float
     -- error a cog's effective scale carries.
-    function CogDot.Px(val)
-        return math.floor(val + 0.5)
-    end
+    function CogDot.Px(val) return math.floor(val + 0.5) end
 
     -- The dots in whole pixels on the cog's pixel layer: the middle one centred,
     -- the others a step above and below, the notification dot (and the pulse ring
@@ -194,9 +178,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     function CogDot.Fit(L, scale)
         local wid, height = L.parent:GetSize()
         local wp, hp = math.floor(wid * scale + 0.5), math.floor(height * scale + 0.5)
-        if wp == L.wp and hp == L.hp then
-            return
-        end
+        if wp == L.wp and hp == L.hp then return end
         L.wp, L.hp = wp, hp
         local Px = CogDot.Px
         local d = math.max(2, Px(hp * CogDot.DOT))
@@ -232,9 +214,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     function CogDot.PulseLoop(ag)
         local num = (ag._cuiLoops or 0) + 1
         ag._cuiLoops = num
-        if num >= 3 then
-            ag:Stop()
-        end
+        if num >= 3 then ag:Stop() end
     end
 
     function CogDot.Pulse(cog)
@@ -247,9 +227,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- cog's twins until the panel closes, and every dot this edit brings up on
     -- screen pulses.
     function CogDot.Edited(ident)
-        if CogDot.Seen()[ident] then
-            return
-        end
+        if CogDot.Seen()[ident] then return end
         CogDot.edited[ident] = true
         local up
         for b in pairs(CogDot.live) do
@@ -267,9 +245,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- The panel closed (not hidden with the UI, which leaves it shown): this
     -- session's dots go.
     function CogDot.PanelClosed()
-        if CUI:IsShown() or not next(CogDot.edited) then
-            return
-        end
+        if CUI:IsShown() or not next(CogDot.edited) then return end
         local edited = CogDot.edited
         for b in pairs(CogDot.live) do
             if edited[b._cuiCogId] then
@@ -284,33 +260,25 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
     local function HideCogTip()
         cogTipCog = nil
-        if cogTip then
-            cogTip:Hide()
-        end
+        if cogTip then cogTip:Hide() end
     end
 
     local function CogTipDone()
         HideCogTip()
-        if CludesUIDB then
-            CludesUIDB.inlineCogTipSeen = true
-        end
+        if CludesUIDB then CludesUIDB.inlineCogTipSeen = true end
     end
 
     -- A cog that hides (page switch, panel close, its page built again) takes its
     -- tip with it, unseen: the next change shows it again. A pulse stops with it.
     local function CogHidden(self)
-        if self == cogTipCog then
-            HideCogTip()
-        end
+        if self == cogTipCog then HideCogTip() end
         self._cuiCogPulse:Stop()
     end
 
     local function InScrollArea(frame)
         local scrollFrame = CUI._scrollFrame
         while frame do
-            if frame == scrollFrame then
-                return true
-            end
+            if frame == scrollFrame then return true end
             frame = frame:GetParent()
         end
         return false
@@ -319,25 +287,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- For a cog in the scrolled content, the tip shows only while the cog's
     -- centre is inside the scroll area: scrolled out it hides, back in it shows.
     local function CogTipScroll()
-        if not (cogTipCog and cogTipInScroll) then
-            return
-        end
+        if not (cogTipCog and cogTipInScroll) then return end
         local scrollFrame = CUI._scrollFrame
         local _, cy = cogTipCog:GetCenter()
         local topY, bottom = scrollFrame:GetTop(), scrollFrame:GetBottom()
         if cy and topY and bottom and cy <= topY and cy >= bottom then
-            if not cogTip:IsShown() then
-                CUI.ShowTipCallout(cogTip)
-            end
+            if not cogTip:IsShown() then CUI.ShowTipCallout(cogTip) end
         elseif cogTip:IsShown() then
             cogTip:Hide()
         end
     end
 
     local function ShowCogTip(cog)
-        if cogTip and cogTipCog == cog and cogTip:IsShown() then
-            return
-        end
+        if cogTip and cogTipCog == cog and cogTip:IsShown() then return end
         if not cogTip then
             -- The panel tips' metrics (the Raid & Party Frames eye tip's), on the
             -- panel body: it rides the panel scale and hides with the panel.
@@ -366,9 +328,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end
         cogTip:ClearAllPoints()
         cogTip:SetPoint("BOTTOM", cog, "TOP", 0, 14)
-        if not cogTip:IsShown() then
-            CUI.ShowTipCallout(cogTip)
-        end
+        if not cogTip:IsShown() then CUI.ShowTipCallout(cogTip) end
     end
 
     -- frame: the widget that wrote (or its region); the cog is the one its DualRow
@@ -376,23 +336,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- again holds a new cog of the same id, which CogDot.Edited finds). A disabled
     -- cog is left alone; the tip goes to a visible one.
     function CUI._CogWriteNotice(widget)
-        if type(widget) ~= "table" or CUI._prebuilding then
-            return
-        end
+        if type(widget) ~= "table" or CUI._prebuilding then return end
         local cog
         for _ = 1, 3 do
             cog = widget._cuiCog
-            if cog or not widget.GetParent then
-                break
-            end
+            if cog or not widget.GetParent then break end
             widget = widget:GetParent()
-            if not widget then
-                return
-            end
+            if not widget then return end
         end
-        if not cog then
-            return
-        end
+        if not cog then return end
         local ident, off = cog._cuiCogId, cog._cuiCogOff
         if off and off() then
             -- The edit turned its own cog off: the one that turns it back on
@@ -400,12 +352,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             CogDot.up[ident] = nil
             return
         end
-        if not CogDot.up[ident] then
-            CogDot.Edited(ident)
-        end
-        if not CogTipSeen() and cog:IsVisible() then
-            ShowCogTip(cog)
-        end
+        if not CogDot.up[ident] then CogDot.Edited(ident) end
+        if not CogTipSeen() and cog:IsVisible() then ShowCogTip(cog) end
     end
 
     -- Inline cog button on a DualRow half-region, left of its control (or of the last inline item). Returns cogBtn, showFn; nil during the search prebuild.
@@ -418,9 +366,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     --   draws opts.icon bare instead, 26 square and with no dot (the unlock jump).
     -- A cog with a dot is the one its region's writes light (the cog notice above; the last such cog built on the region).
     local function BuildInlineCog(region, options)
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         -- A disabled cog with no tooltip of its own explains itself with its host control's requirement.
         local tipSrc = (options.disabled and not options.disabledTooltip) and region._cfg or options
         if options.disabled and not (tipSrc and tipSrc.disabledTooltip) and CUI.IsDevModeActive() then
@@ -439,9 +385,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             -(options.gap or 8),
             0
         )
-        if options.chain ~= false then
-            region._lastInline = button
-        end
+        if options.chain ~= false then region._lastInline = button end
         button:SetFrameLevel(region:GetFrameLevel() + 5)
         local texture, L, note, ident, hostCfg
         if paint then
@@ -500,13 +444,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             block:EnableMouse(true)
             block:SetScript("OnEnter", function()
                 local tipText = tipSrc and ResolveDisabledTip(tipSrc)
-                if tipText then
-                    ShowWidgetTooltip(button, tipText)
-                end
+                if tipText then ShowWidgetTooltip(button, tipText) end
             end)
-            block:SetScript("OnLeave", function()
-                HideWidgetTooltip()
-            end)
+            block:SetScript("OnLeave", function() HideWidgetTooltip() end)
         end
         -- hover: the enter / leave scripts say which edge they are (a rect test at
         -- the moment of the event can disagree with the hit test on an edge);
@@ -544,13 +484,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         or (hostCfg and hostCfg.disabled and hostCfg.disabled())
                     )
                 note:SetShown(dot)
-                if not dot then
-                    button._cuiCogPulse:Stop()
-                end
+                if not dot then button._cuiCogPulse:Stop() end
             end
-            if block then
-                block:SetShown(off and true or false)
-            end
+            if block then block:SetShown(off and true or false) end
         end
         button._cuiCogState = PaintState
         -- opts.paint reads the accent (the unlock jump), so it repaints on accent changes.
@@ -559,31 +495,23 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             CUI.RegAccent({
                 type = "callback",
                 obj = texture,
-                fn = function()
-                    PaintState()
-                end,
+                fn = function() PaintState() end,
             })
         end
 
         button:SetScript("OnEnter", function(self)
             PaintState(true)
-            if options.tip then
-                ShowWidgetTooltip(self, options.tip)
-            end
+            if options.tip then ShowWidgetTooltip(self, options.tip) end
         end)
         button:SetScript("OnLeave", function()
             PaintState(false)
-            if options.tip then
-                HideWidgetTooltip()
-            end
+            if options.tip then HideWidgetTooltip() end
         end)
         button:SetScript("OnClick", function(self)
             -- A cog clicked while the cog tip is up: the tip has done its job.
             -- Opened once, its dot is gone for good.
             if not paint then
-                if cogTipCog then
-                    CogTipDone()
-                end
+                if cogTipCog then CogTipDone() end
                 CogDot.Mark(ident)
             end
             show(self)
@@ -591,9 +519,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         PaintState()
         -- A refresh re-reads the disabled states: the cog's own and, for the dot,
         -- its setting's.
-        if options.disabled or (hostCfg and hostCfg.disabled) then
-            RegisterWidgetRefresh(PaintState)
-        end
+        if options.disabled or (hostCfg and hostCfg.disabled) then RegisterWidgetRefresh(PaintState) end
         return button, show
     end
 
@@ -606,9 +532,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- explaining itself on hover while disabled, re-checked with the page's
     -- widgets. Returns the button; nil during the search prebuild.
     function CUI.BuildInlineButton(region, textValue, onClick, options)
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         options = options or {}
         local button = CreateFrame("Button", nil, region)
         Pix.Size(button, options.width or 110, options.height or 24)
@@ -618,15 +542,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         else
             Pix.Point(button, "RIGHT", region, "RIGHT", -20, 0)
         end
-        if options.chain ~= false then
-            region._lastInline = button
-        end
+        if options.chain ~= false then region._lastInline = button end
         button:SetFrameLevel(region:GetFrameLevel() + 5)
         MakeStyledButton(button, textValue, 11, WB_COLOURS, onClick)
         local tipText, disabled = options.tip, options.disabled
-        if not (tipText or disabled) then
-            return button
-        end
+        if not (tipText or disabled) then return button end
         -- The styled button's hover scripts paint its hover colours; these wrap
         -- them so a disabled button keeps its resting colours.
         local hoverOn, hoverOff = button:GetScript("OnEnter"), button:GetScript("OnLeave")
@@ -644,9 +564,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
             hoverOn(self)
             local t = tipText
-            if type(t) == "function" then
-                t = t()
-            end
+            if type(t) == "function" then t = t() end
             if t then
                 ShowWidgetTooltip(self, t)
             else
@@ -664,18 +582,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local shownOff
             local function PaintState()
                 local off = disabled() and true or false
-                if off == shownOff then
-                    return
-                end
+                if off == shownOff then return end
                 local flipped = shownOff ~= nil
                 shownOff = off
                 button:SetEnabled(not off)
                 button:SetAlpha(off and 0.35 or 1)
                 -- A flip while it holds the mouse repaints and re-explains for the
                 -- new state (a menu open over it keeps the focus instead).
-                if flipped and GetMouseFoci()[1] == button then
-                    OnEnter(button)
-                end
+                if flipped and GetMouseFoci()[1] == button then OnEnter(button) end
             end
             PaintState()
             RegisterWidgetRefresh(PaintState)
@@ -697,9 +611,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             return false
         end
         -- Installed by the unlock core's init, so a live check rather than a dead guard.
-        if not CUI._openUnlockMode then
-            return false
-        end
+        if not CUI._openUnlockMode then return false end
         CUI._unlockReturnModule = CUI:GetActiveModule()
         CUI._unlockReturnPage = CUI:GetActivePage()
         CUI._unlockAutoSelectKey = key
@@ -725,21 +637,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     end
 
     function CUI.BuildUnlockJump(region, options)
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         local key = options.key
         local button = BuildInlineCog(region, {
             icon = CUI.UNLOCK_ICON,
             tip = options.tooltip or "Move in Layout Mode",
             show = function()
                 local keyName = key
-                if type(keyName) == "function" then
-                    keyName = keyName()
-                end
-                if keyName then
-                    CUI.OpenUnlockModeAt(keyName)
-                end
+                if type(keyName) == "function" then keyName = keyName() end
+                if keyName then CUI.OpenUnlockModeAt(keyName) end
             end,
             disabled = options.disabled,
             disabledTooltip = options.disabledTooltip,
@@ -772,13 +678,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- (20). Returns the button; nil during the search prebuild or without a
     -- titled header.
     function CUI.BuildSectionUnlockJump(heading, options)
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         local labelText = heading and heading._label
-        if not labelText then
-            return
-        end
+        if not labelText then return end
         local size = options.size or 20
         local button = CUI.BuildUnlockJump(heading, {
             key = options.key,
@@ -810,16 +712,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- WireDropdownScripts paints a dropdown button's border and background; these
     -- buttons keep their own look.
     local NO_PAINT = { SetColor = function() end, SetColorTexture = function() end }
-    local function NoSelection()
-        return nil
-    end
+    local function NoSelection() return nil end
 
     -- The accent, or a darker white when the accent itself is near white.
     local function RowMenuLitColor()
         local ac = CUI.CLUDES_GREEN
-        if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then
-            return 0.72, 0.72, 0.72
-        end
+        if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then return 0.72, 0.72, 0.72 end
         return ac.r, ac.g, ac.b
     end
 
@@ -833,13 +731,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     --   page's widgets. Never touches region._lastInline or region._control.
     -- Returns the button; nil during the search prebuild.
     local function BuildRowLabelMenu(region, options)
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         local labelText = region._label
-        if not labelText then
-            return
-        end
+        if not labelText then return end
         local locked = options.locked
         local lockCfg = locked and { disabledTooltip = options.lockTip, rawTooltip = options.rawLockTip }
         local button = CreateFrame("Button", nil, region)
@@ -866,9 +760,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local function OnEnter()
             if locked and locked() then
                 local tipText = ResolveDisabledTip(lockCfg)
-                if tipText then
-                    ShowWidgetTooltip(button, tipText)
-                end
+                if tipText then ShowWidgetTooltip(button, tipText) end
                 return
             end
             Lit(true)
@@ -877,9 +769,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end
         local function OnLeave()
-            if not (dropMenu and dropMenu:IsShown()) then
-                Lit(false)
-            end
+            if not (dropMenu and dropMenu:IsShown()) then Lit(false) end
             HideWidgetTooltip()
         end
         button:SetScript("OnEnter", OnEnter)
@@ -887,9 +777,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local function EnsureMenu()
-            if dropMenu then
-                return dropMenu
-            end
+            if dropMenu then return dropMenu end
             local m, _, refresh = BuildDropdownMenu(
                 button,
                 options.menuWidth or 170,
@@ -915,18 +803,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             )
             button:HookScript("OnEnter", OnEnter)
             button:HookScript("OnLeave", OnLeave)
-            dropMenu:HookScript("OnShow", function()
-                Lit(true)
-            end)
-            dropMenu:HookScript("OnHide", function()
-                Lit(button:IsMouseOver())
-            end)
+            dropMenu:HookScript("OnShow", function() Lit(true) end)
+            dropMenu:HookScript("OnHide", function() Lit(button:IsMouseOver()) end)
             return dropMenu
         end
         button:SetScript("OnClick", function()
-            if locked and locked() then
-                return
-            end
+            if locked and locked() then return end
             HideWidgetTooltip()
             local m = EnsureMenu()
             if m:IsShown() then
@@ -936,9 +818,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end)
         button:HookScript("OnHide", function()
-            if dropMenu then
-                dropMenu:Hide()
-            end
+            if dropMenu then dropMenu:Hide() end
         end)
         Lit(false)
         if locked then
@@ -961,17 +841,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     --   setValue(v), itemDisabled(v) (as BuildRowLabelMenu). Returns the toggle the
     --   button's click calls; nil during the search prebuild.
     local function AttachButtonMenu(button, options)
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         local enter, leave = button:GetScript("OnEnter"), button:GetScript("OnLeave")
         local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local dropMenu
         local function EnsureMenu()
-            if dropMenu then
-                return dropMenu
-            end
+            if dropMenu then return dropMenu end
             local m, _, refresh = BuildDropdownMenu(
                 button,
                 options.width or button:GetWidth(),
@@ -994,27 +870,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 CUI.RD_DD_COLOURS,
                 true
             )
-            if enter then
-                button:HookScript("OnEnter", enter)
-            end
+            if enter then button:HookScript("OnEnter", enter) end
             if leave then
                 button:HookScript("OnLeave", function(self)
-                    if not dropMenu:IsShown() then
-                        leave(self)
-                    end
+                    if not dropMenu:IsShown() then leave(self) end
                 end)
                 dropMenu:HookScript("OnHide", function()
-                    if not button:IsMouseOver() then
-                        leave(button)
-                    end
+                    if not button:IsMouseOver() then leave(button) end
                 end)
             end
             return dropMenu
         end
         button:HookScript("OnHide", function()
-            if dropMenu then
-                dropMenu:Hide()
-            end
+            if dropMenu then dropMenu:Hide() end
         end)
         return function()
             local m = EnsureMenu()
@@ -1109,53 +977,37 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
     local function BuildLessCommonExpander(hostFrame, cursorY, sectionKey, labelText)
         -- Hidden search pre-build: always build the wrapped rows so they register in the global search index; no link (the page is never shown).
-        if CUI._prebuilding then
-            return true, cursorY
-        end
+        if CUI._prebuilding then return true, cursorY end
         -- This page reads the search flag: a search transition rebuilds it (SetLessCommonSearchActive).
         CUI._passReadSearchFlag = true
         -- Active search (either box): sections render force-expanded with NO link line at all; clearing the search collapses them back. Transient flag -- the session Show/Hide state below is untouched and restores afterwards (see SetLessCommonSearchActive).
-        if CUI._lessCommonSearchActive then
-            return true, cursorY
-        end
+        if CUI._lessCommonSearchActive then return true, cursorY end
         local sess = CUI._lessCommonExpanded
         if not sess then
             sess = {}
             CUI._lessCommonExpanded = sess
         end
         -- Expanded: render nothing here -- the caller builds the rows, then FinishLessCommonExpander places the "Hide ..." link below them.
-        if sess[sectionKey] then
-            return true, cursorY
-        end
+        if sess[sectionKey] then return true, cursorY end
         return false, BuildLessCommonLink(hostFrame, cursorY, sectionKey, labelText, false)
     end
 
     -- Call after the wrapped rows (safe to call unconditionally: no-ops while the section is collapsed, during the search pre-build or during an active search).
     local function FinishLessCommonExpander(hostFrame, cursorY, sectionKey, labelText)
-        if CUI._prebuilding then
-            return cursorY
-        end
+        if CUI._prebuilding then return cursorY end
         CUI._passReadSearchFlag = true
-        if CUI._lessCommonSearchActive then
-            return cursorY
-        end
+        if CUI._lessCommonSearchActive then return cursorY end
         local sess = CUI._lessCommonExpanded
-        if not (sess and sess[sectionKey]) then
-            return cursorY
-        end
+        if not (sess and sess[sectionKey]) then return cursorY end
         return BuildLessCommonLink(hostFrame, cursorY, sectionKey, labelText, true)
     end
 
     -- Search-driven expansion (both the sidebar global box and the top-bar module box call this with query ~= ""). While active, every less-common section renders expanded with no link; on clear, sections fall back to their session Show/Hide state. Idempotent -- only transitions act, and only on the pages whose last build read the flag (the expanders above, Bar Glows): those go (or are marked for a rebuild), and the active one is rebuilt in place, unless a page switch is clearing the box (the page being left is rebuilt on its next visit).
     local function SetLessCommonSearchActive(isActive)
         isActive = isActive and true or false
-        if (CUI._lessCommonSearchActive or false) == isActive then
-            return
-        end
+        if (CUI._lessCommonSearchActive or false) == isActive then return end
         CUI._lessCommonSearchActive = isActive
-        if CUI._InvalidateSearchSensitive() and not CUI._selectingPage then
-            CUI:RefreshPage(true)
-        end
+        if CUI._InvalidateSearchSensitive() and not CUI._selectingPage then CUI:RefreshPage(true) end
     end
 
     -- A colour scale across a swatch: stops = { { r, g, b }, ... }, drawn left to
@@ -1190,9 +1042,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -------------------------------------------------------------------------------
     local function BuildInlineSwatches(regionFrame, swatches, options)
         -- Hidden search pre-build: swatches index nothing and the pre-built page is never shown, so none are built (its regions are stand-ins with no frame to build on).
-        if CUI._prebuilding then
-            return
-        end
+        if CUI._prebuilding then return end
         options = options or {}
         local level = regionFrame:GetFrameLevel() + 3
         local anchorTo = regionFrame._lastInline or regionFrame._control
@@ -1209,21 +1059,15 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             Pix.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
             anchorTo = colorSwatch
             regionFrame._lastInline = colorSwatch
-            if sc.gradient then
-                PaintSwatchGradient(colorSwatch, sc.gradient)
-            end
+            if sc.gradient then PaintSwatchGradient(colorSwatch, sc.gradient) end
             if sc.onClick then
                 colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
                 colorSwatch:SetScript("OnClick", sc.onClick)
             end
             local function SwatchEffectiveDisabled()
-                if options.disabled and options.disabled() then
-                    return true
-                end
+                if options.disabled and options.disabled() then return true end
                 if sc.disabled ~= nil then
-                    if type(sc.disabled) == "function" then
-                        return sc.disabled()
-                    end
+                    if type(sc.disabled) == "function" then return sc.disabled() end
                     return sc.disabled
                 end
                 return false
@@ -1233,13 +1077,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 swatchBlock:SetScript("OnEnter", function()
                     local source = (sc.disabledTooltip ~= nil) and sc or options
                     local tipText = ResolveDisabledTip(source)
-                    if tipText then
-                        ShowWidgetTooltip(colorSwatch, tipText)
-                    end
+                    if tipText then ShowWidgetTooltip(colorSwatch, tipText) end
                 end)
-                swatchBlock:SetScript("OnLeave", function()
-                    HideWidgetTooltip()
-                end)
+                swatchBlock:SetScript("OnLeave", function() HideWidgetTooltip() end)
                 local function UpdateSwatchDisabled()
                     if SwatchEffectiveDisabled() then
                         colorSwatch:SetAlpha(0.3)
@@ -1253,27 +1093,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 RegisterWidgetRefresh(UpdateSwatchDisabled)
             end
             if sc.tooltip then
-                colorSwatch:HookScript("OnEnter", function()
-                    ShowWidgetTooltip(colorSwatch, sc.tooltip)
-                end)
-                colorSwatch:HookScript("OnLeave", function()
-                    HideWidgetTooltip()
-                end)
+                colorSwatch:HookScript("OnEnter", function() ShowWidgetTooltip(colorSwatch, sc.tooltip) end)
+                colorSwatch:HookScript("OnLeave", function() HideWidgetTooltip() end)
             end
             if sc.refreshAlpha then
                 local _sw, _ra = colorSwatch, sc.refreshAlpha
                 local function UpdateAlpha()
-                    if SwatchEffectiveDisabled() then
-                        return
-                    end
+                    if SwatchEffectiveDisabled() then return end
                     _sw:SetAlpha(_ra())
                 end
                 UpdateAlpha()
                 RegisterWidgetRefresh(UpdateAlpha)
             end
-            RegisterWidgetRefresh(function()
-                updateSwatch()
-            end)
+            RegisterWidgetRefresh(function() updateSwatch() end)
         end
     end
     CUI.BuildInlineSwatches = BuildInlineSwatches
@@ -1314,9 +1146,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         return function(val)
             local before = pred() and true or false
             func(val)
-            if (pred() and true or false) ~= before then
-                CUI:RefreshPage(true)
-            end
+            if (pred() and true or false) ~= before then CUI:RefreshPage(true) end
         end
     end
 
@@ -1353,9 +1183,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             text = "Anchor to Cursor",
             disabled = options.disabledFn,
             disabledTooltip = options.disabledTip,
-            getValue = function()
-                return getData().anchorTo == "mouse"
-            end,
+            getValue = function() return getData().anchorTo == "mouse" end,
             setValue = function(val)
                 local old = getData().anchorTo
                 local new = val and "mouse" or "none"
@@ -1381,15 +1209,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             values = { left = "Left", right = "Right", top = "Top", bottom = "Bottom" },
             order = { "left", "right", "top", "bottom" },
             disabled = function()
-                if options.disabledFn and options.disabledFn() then
-                    return true
-                end
+                if options.disabledFn and options.disabledFn() then return true end
                 return getData().anchorTo ~= "mouse"
             end,
             disabledTooltip = "Anchor to Cursor",
-            getValue = function()
-                return getData().anchorPosition or "right"
-            end,
+            getValue = function() return getData().anchorPosition or "right" end,
             setValue = function(val)
                 getData().anchorPosition = val
                 onApply()
@@ -1428,9 +1252,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     min = -125,
                     max = 125,
                     step = 1,
-                    get = function()
-                        return getData().anchorOffsetX or 0
-                    end,
+                    get = function() return getData().anchorOffsetX or 0 end,
                     set = function(val)
                         getData().anchorOffsetX = val
                         onApply()
@@ -1442,9 +1264,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     min = -125,
                     max = 125,
                     step = 1,
-                    get = function()
-                        return getData().anchorOffsetY or 0
-                    end,
+                    get = function() return getData().anchorOffsetY or 0 end,
                     set = function(val)
                         getData().anchorOffsetY = val
                         onApply()

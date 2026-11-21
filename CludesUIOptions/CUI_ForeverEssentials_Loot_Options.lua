@@ -1,17 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end -- Forever Essentials loads on WoW Forever only
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Loot_Options.lua
 --  Builds the "Loot" page inside the Forever Essentials module: a live
 --  preview of the feed in the content header, then its settings.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 -- The preview surface in the content header. Exported so the module's
 -- getHeaderBuilder can hand it back when the page cache outlives its header.
@@ -40,42 +34,22 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
 
     CludesUI:SetContentHeader(HeaderBuilder)
 
-    local function off()
-        return not LF.Get("enabled")
-    end
-    local function itemsOff()
-        return off() or not LF.Get("items")
-    end
+    local function off() return not LF.Get("enabled") end
+    local function itemsOff() return off() or not LF.Get("items") end
     -- Auction prices count only while the tracker or an item price shows, and
     -- only with the price addon's API at hand.
-    local function auctionSource()
-        return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() ~= nil
-    end
-    local function pricesUnused()
-        return not (LF.Get("tracker") or (LF.Get("items") and LF.Get("showPrice")))
-    end
-    local function auctionOff()
-        return off() or not auctionSource() or pricesUnused()
-    end
+    local function auctionSource() return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() ~= nil end
+    local function pricesUnused() return not (LF.Get("tracker") or (LF.Get("items") and LF.Get("showPrice"))) end
+    local function auctionOff() return off() or not auctionSource() or pricesUnused() end
     local function auctionTip()
-        if off() then
-            return "Loot Feed"
-        end
-        if not auctionSource() then
-            return "This option requires Auctionator to be loaded."
-        end
+        if off() then return "Loot Feed" end
+        if not auctionSource() then return "This option requires Auctionator to be loaded." end
         return "This option requires Gold per Hour Tracker or Show Item Price to be enabled."
     end
-    local function style()
-        return LF.Get("style")
-    end
+    local function style() return LF.Get("style") end
     -- Loot Toast keeps its gold frame.
-    local function borderOff()
-        return off() or style() == "TOAST"
-    end
-    local function noBorderColor()
-        return borderOff() or LF.Get("borderSize") == 0
-    end
+    local function borderOff() return off() or style() == "TOAST" end
+    local function noBorderColor() return borderOff() or LF.Get("borderSize") == 0 end
     -- Switching a source re-registers the feed's events.
     local function ApplyLootFeed()
         LF.Apply()
@@ -87,15 +61,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     -- given.
     local function Bind(rowConf, key, apply, disabled, disabledTooltip)
         rowConf.disabled, rowConf.disabledTooltip = disabled or off, disabledTooltip or "Loot Feed"
-        rowConf.getValue = rowConf.getValue or function()
-            return LF.Get(key)
-        end
+        rowConf.getValue = rowConf.getValue or function() return LF.Get(key) end
         rowConf.setValue = rowConf.setValue
             or function(val)
                 LF.Cfg()[key] = val
-                if apply then
-                    apply()
-                end
+                if apply then apply() end
             end
         return rowConf
     end
@@ -151,9 +121,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enable Loot Feed",
         tooltip = "Shows what you loot and gain as short-lived rows that fade out.",
-        getValue = function()
-            return not off()
-        end,
+        getValue = function() return not off() end,
         setValue = function(val)
             LF.Cfg().enabled = val
             ApplyLootFeed()
@@ -165,9 +133,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         tooltip = "Shows a sample row for every enabled source.",
         disabled = off,
         disabledTooltip = "Loot Feed",
-        onClick = function()
-            LF.Preview()
-        end,
+        onClick = function() LF.Preview() end,
     })
     cursorY = cursorY - height
 
@@ -192,12 +158,8 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             },
             "barWidth",
             LF.ApplyStyle,
-            function()
-                return off() or style() == "BOX" or style() == "TOAST"
-            end,
-            function()
-                return off() and "Loot Feed" or "Style"
-            end
+            function() return off() or style() == "BOX" or style() == "TOAST" end,
+            function() return off() and "Loot Feed" or "Style" end
         )
     )
     cursorY = cursorY - height
@@ -228,7 +190,12 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             "Reputation gains and losses, with your progress in the current standing.",
             ApplyLootFeed
         ),
-        Toggle("currency", "Currencies", "Honor, badges and other currencies, with your total.", ApplyLootFeed)
+        Toggle(
+            "currency",
+            "Currencies",
+            "Honor, badges and other currencies, with your total.",
+            ApplyLootFeed
+        )
     )
     cursorY = cursorY - height
 
@@ -279,9 +246,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             values = qualityValues,
             order = qualityOrder,
             tooltip = "Items below this quality are not shown.",
-            getValue = function()
-                return tostring(LF.Get("minQuality"))
-            end,
+            getValue = function() return tostring(LF.Get("minQuality")) end,
             setValue = function(val)
                 LF.Cfg().minQuality = tonumber(val)
                 LF.RefreshPreview()
@@ -394,9 +359,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             max = 100,
             step = 1,
             tooltip = "Opacity of the row background.",
-            getValue = function()
-                return math.floor(LF.Get("bgA") * 100 + 0.5)
-            end,
+            getValue = function() return math.floor(LF.Get("bgA") * 100 + 0.5) end,
             setValue = function(val)
                 LF.Cfg().bgA = val / 100
                 LF.ApplyStyle()
@@ -404,73 +367,47 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         })
     )
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        Swatch(displayRow._rightRegion, "bg", "Background Color")
-    end
+    if not CludesUI._prebuilding then Swatch(displayRow._rightRegion, "bg", "Background Color") end
 
     local borderValues, borderOrder = CludesUI.GetBorderTextureDropdown()
     local borderRow
     borderRow, height = W:DualRow(
         hostFrame,
         cursorY,
-        Bind(
-            {
-                type = "dropdown",
-                text = "Border Style",
-                values = borderValues,
-                order = borderOrder,
-                tooltip = "Accent Bar applies the border to the icon.",
-                getValue = function()
-                    return LF.Get("borderTexture") or "solid"
-                end,
-                setValue = function(val)
-                    local c = LF.Cfg()
-                    c.borderTexture = val
-                    c.borderTextureOffset, c.borderTextureOffsetY = nil, nil
-                    c.borderTextureShiftX, c.borderTextureShiftY = nil, nil
-                    local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
-                    c.borderR, c.borderG, c.borderB, c.borderBehind = color.r, color.g, color.b, behind
-                    local size = CludesUI.GetBorderDefaultSize(nil, val)
-                    if size then
-                        c.borderSize = size
-                    end
-                    if c.borderSizePx then
-                        c.borderSizePx = false
-                    end
-                    LF.ApplyStyle()
-                    CludesUI:RefreshPage(true)
-                end,
-            },
-            nil,
-            nil,
-            borderOff,
-            function()
-                return off() and "Loot Feed" or "Style"
-            end
-        ),
+        Bind({
+            type = "dropdown",
+            text = "Border Style",
+            values = borderValues,
+            order = borderOrder,
+            tooltip = "Accent Bar applies the border to the icon.",
+            getValue = function() return LF.Get("borderTexture") or "solid" end,
+            setValue = function(val)
+                local c = LF.Cfg()
+                c.borderTexture = val
+                c.borderTextureOffset, c.borderTextureOffsetY = nil, nil
+                c.borderTextureShiftX, c.borderTextureShiftY = nil, nil
+                local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
+                c.borderR, c.borderG, c.borderB, c.borderBehind = color.r, color.g, color.b, behind
+                local size = CludesUI.GetBorderDefaultSize(nil, val)
+                if size then c.borderSize = size end
+                if c.borderSizePx then c.borderSizePx = false end
+                LF.ApplyStyle()
+                CludesUI:RefreshPage(true)
+            end,
+        }, nil, nil, borderOff, function() return off() and "Loot Feed" or "Style" end),
         CludesUI.BorderPxSliderCfg({
             trackWidth = 120,
             tooltip = "0 hides the border.",
             disabled = borderOff,
-            disabledTooltip = function()
-                return off() and "Loot Feed" or "Style"
-            end,
-            getStep = function()
-                return LF.Get("borderSize")
-            end,
+            disabledTooltip = function() return off() and "Loot Feed" or "Style" end,
+            getStep = function() return LF.Get("borderSize") end,
             setStep = function(val)
                 local c = LF.Cfg()
                 c.borderTexture, c.borderSize = LF.Get("borderTexture") or "solid", val
             end,
-            getTex = function()
-                return LF.Get("borderTexture") or "solid"
-            end,
-            getPx = function()
-                return LF.Get("borderSizePx")
-            end,
-            setPx = function(val)
-                LF.Cfg().borderSizePx = val
-            end,
+            getTex = function() return LF.Get("borderTexture") or "solid" end,
+            getPx = function() return LF.Get("borderSizePx") end,
+            setPx = function(val) LF.Cfg().borderSizePx = val end,
             apply = function()
                 LF.ApplyStyle()
                 CludesUI:RefreshPage()
@@ -480,27 +417,13 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local offsetX, offsetY = CludesUI.BorderOffsetCogRows({
-            getTex = function()
-                return LF.Get("borderTexture")
-            end,
-            getStep = function()
-                return LF.Get("borderSize")
-            end,
-            getPx = function()
-                return LF.Get("borderSizePx")
-            end,
-            getX = function()
-                return LF.Get("borderTextureOffset")
-            end,
-            setX = function(val)
-                LF.Cfg().borderTextureOffset = val
-            end,
-            getY = function()
-                return LF.Get("borderTextureOffsetY")
-            end,
-            setY = function(val)
-                LF.Cfg().borderTextureOffsetY = val
-            end,
+            getTex = function() return LF.Get("borderTexture") end,
+            getStep = function() return LF.Get("borderSize") end,
+            getPx = function() return LF.Get("borderSizePx") end,
+            getX = function() return LF.Get("borderTextureOffset") end,
+            setX = function(val) LF.Cfg().borderTextureOffset = val end,
+            getY = function() return LF.Get("borderTextureOffsetY") end,
+            setY = function(val) LF.Cfg().borderTextureOffsetY = val end,
             apply = LF.ApplyStyle,
         })
         local function Shift(key, labelText)
@@ -510,9 +433,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                 min = -10,
                 max = 10,
                 step = 1,
-                get = function()
-                    return LF.Get(key) or 0
-                end,
+                get = function() return LF.Get(key) or 0 end,
                 set = function(val)
                     LF.Cfg()[key] = val
                     LF.ApplyStyle()
@@ -534,9 +455,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Show Behind",
-                    get = function()
-                        return LF.Get("borderBehind")
-                    end,
+                    get = function() return LF.Get("borderBehind") end,
                     set = function(val)
                         LF.Cfg().borderBehind = val
                         LF.ApplyStyle()
@@ -546,23 +465,17 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Separator",
                     tooltip = "Adds a matching divider beside the icon (Box) or the accent bar (Icon Tray).",
-                    hidden = function()
-                        return style() ~= "BOX" and style() ~= "TRAY"
-                    end,
+                    hidden = function() return style() ~= "BOX" and style() ~= "TRAY" end,
                     disabled = function()
                         return LF.Get("borderSize") == 0
                             or (style() == "TRAY" and LF.Get("barWidth") == 0)
                             or not CludesUI.GetBorderCompanion(LF.Get("borderTexture"), "sepV")
                     end,
                     disabledTooltip = function()
-                        if style() == "TRAY" and LF.Get("barWidth") == 0 then
-                            return "Accent Bar Width"
-                        end
+                        if style() == "TRAY" and LF.Get("barWidth") == 0 then return "Accent Bar Width" end
                         return "This option requires a Pixels or Pixels Textured border above size 0."
                     end,
-                    get = function()
-                        return LF.Get("separator")
-                    end,
+                    get = function() return LF.Get("separator") end,
                     set = function(val)
                         LF.Cfg().separator = val
                         LF.ApplyStyle()
@@ -571,12 +484,8 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             },
         })
         Swatch(borderRow._rightRegion, "border", "Border Color", noBorderColor, function()
-            if off() then
-                return "Loot Feed"
-            end
-            if style() == "TOAST" then
-                return "Style"
-            end
+            if off() then return "Loot Feed" end
+            if style() == "TOAST" then return "Style" end
             return "Border Size"
         end)
     end
@@ -590,14 +499,10 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             "Colors item rows by item quality.",
             LF.ApplyStyle,
             function()
-                if off() or not LF.Get("items") then
-                    return true
-                end
+                if off() or not LF.Get("items") then return true end
                 return style() ~= "BAR" and style() ~= "TOAST" and LF.Get("borderSize") == 0
             end,
-            function()
-                return off() and "Loot Feed" or not LF.Get("items") and "Items" or "Border Size"
-            end
+            function() return off() and "Loot Feed" or not LF.Get("items") and "Items" or "Border Size" end
         ),
         BLANK()
     )

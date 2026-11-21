@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewFrame.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs = ipairs
@@ -29,26 +25,18 @@ local previewFrames, PvActive, PvFrames = Inner.previewFrames, Inner.PvActive, I
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local saved
-RF.dbSetters[#RF.dbSetters + 1] = function(val)
-    saved = val
-end
+RF.dbSetters[#RF.dbSetters + 1] = function(val) saved = val end
 local Pix
-RF.PPSetters[#RF.PPSetters + 1] = function(val)
-    Pix = val
-end
+RF.PPSetters[#RF.PPSetters + 1] = function(val) Pix = val end
 local containerFrame
-RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val) containerFrame = val end
 
 -- Preview frames: standalone frames NOT managed by SecureGroupHeaderTemplate.
 -- Header-managed buttons can't be shown without real units, so we create
 -- our own lightweight frames that look identical for the options preview.
 local previewGroupLabels = {} -- [1..4] FontStrings showing group numbers
 local previewContainer = nil -- standalone anchor frame for preview (doesn't move with containerFrame)
-Inner.previewContainerSetters[#Inner.previewContainerSetters + 1] = function(val)
-    previewContainer = val
-end
+Inner.previewContainerSetters[#Inner.previewContainerSetters + 1] = function(val) previewContainer = val end
 
 local function CreatePreviewFrame(index, party)
     local cfg = saved.profile
@@ -69,9 +57,7 @@ local function CreatePreviewFrame(index, party)
     local backdrop = frame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
-    if Pix then
-        Pix.DisablePixelSnap(backdrop)
-    end
+    if Pix then Pix.DisablePixelSnap(backdrop) end
 
     -- Health bar
     local health = CreateFrame("StatusBar", nil, frame)
@@ -81,9 +67,7 @@ local function CreatePreviewFrame(index, party)
     health:SetHeight(healthH)
     health:SetStatusBarTexture(ResolveHealthTexture())
     health:GetStatusBarTexture():SetHorizTile(false)
-    if Pix then
-        Pix.DisablePixelSnap(health)
-    end
+    if Pix then Pix.DisablePixelSnap(health) end
     health:SetMinMaxValues(0, 100)
     health:SetValue(100)
 
@@ -126,9 +110,7 @@ local function CreatePreviewFrame(index, party)
     -- base drawn under the striped fill. Anchored to the fill at render time.
     local bfBase = backfillBar:CreateTexture(nil, "ARTWORK", nil, 0)
     bfBase:SetColorTexture(0.776, 0.784, 1.0, 1)
-    if absorbMask then
-        bfBase:AddMaskTexture(absorbMask)
-    end
+    if absorbMask then bfBase:AddMaskTexture(absorbMask) end
     bfBase:Hide()
     backfillBar._modernBase = bfBase
     backfillBar:SetStatusBarColor(1, 1, 1, 0.3)
@@ -153,9 +135,7 @@ local function CreatePreviewFrame(index, party)
     -- Modern compound absorb base (preview) for the forward bar.
     local fwBase = forwardBar:CreateTexture(nil, "ARTWORK", nil, 0)
     fwBase:SetColorTexture(0.776, 0.784, 1.0, 1)
-    if absorbMask then
-        fwBase:AddMaskTexture(absorbMask)
-    end
+    if absorbMask then fwBase:AddMaskTexture(absorbMask) end
     fwBase:Hide()
     forwardBar._modernBase = fwBase
     forwardBar:SetStatusBarColor(1, 1, 1, 0.3)
@@ -226,9 +206,7 @@ local function CreatePreviewFrame(index, party)
         -- Black backing behind the heal-absorb texture (preview; mirrors live).
         local haBg = ha:CreateTexture(nil, "ARTWORK", nil, 1)
         haBg:SetColorTexture(0, 0, 0, 0.25)
-        if absorbMask then
-            haBg:AddMaskTexture(absorbMask)
-        end
+        if absorbMask then haBg:AddMaskTexture(absorbMask) end
         haBg:Hide()
         ha._bg = haBg
         ha:Hide()
@@ -329,9 +307,7 @@ local function CreatePreviewFrame(index, party)
         power:SetHeight(powerH)
         power:SetStatusBarTexture(ResolveHealthTexture())
         power:GetStatusBarTexture():SetHorizTile(false)
-        if Pix then
-            Pix.DisablePixelSnap(power)
-        end
+        if Pix then Pix.DisablePixelSnap(power) end
         power:SetMinMaxValues(0, 100)
         power:SetValue(100)
         local pwBg = power:CreateTexture(nil, "BACKGROUND")
@@ -342,18 +318,14 @@ local function CreatePreviewFrame(index, party)
             (cfg.powerBgColor or {}).b or 0,
             (cfg.powerBgDarkness or 70) / 100
         )
-        if Pix then
-            Pix.DisablePixelSnap(pwBg)
-        end
+        if Pix then Pix.DisablePixelSnap(pwBg) end
         frame._powerBg = pwBg
 
         -- Power border
         local pwBdr = CreateFrame("Frame", nil, frame)
         pwBdr:SetAllPoints(power)
         pwBdr:SetFrameLevel(power:GetFrameLevel() + 1)
-        if Pix then
-            Pix.CreateBorder(pwBdr, 0, 0, 0, 1, 1)
-        end
+        if Pix then Pix.CreateBorder(pwBdr, 0, 0, 0, 1, 1) end
         frame._powerBorder = pwBdr
     end
 
@@ -364,9 +336,7 @@ local function CreatePreviewFrame(index, party)
     bdrFrame:SetFrameLevel(frame:GetFrameLevel() + 8)
 
     local function PvPaintBorder()
-        if not Pix then
-            return
-        end
+        if not Pix then return end
         -- Overlay ahead of _scaledProfile: border/hover/target keys are not
         -- tier-scaled, so the effective overlay may shadow them safely.
         local cfg = mod._previewSettingsOverride
@@ -393,11 +363,15 @@ local function CreatePreviewFrame(index, party)
             if bdrFrame:GetFrameLevel() ~= lvl then
                 bdrFrame:SetFrameLevel(lvl)
                 local boxHolder = Pix.GetBorders(bdrFrame)
-                if boxHolder then
-                    boxHolder:SetFrameLevel(lvl + 1)
-                end
+                if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
             end
-            mod.RF_StockHighlight(frame, bdrFrame, cfg, hover, frame._isTarget and cfg.targetBorderEnabled ~= false)
+            mod.RF_StockHighlight(
+                frame,
+                bdrFrame,
+                cfg,
+                hover,
+                frame._isTarget and cfg.targetBorderEnabled ~= false
+            )
             return
         end
         local red, green, blue, a
@@ -438,14 +412,10 @@ local function CreatePreviewFrame(index, party)
         local boxHolder = Pix.GetBorders(bdrFrame)
         if bdrFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1) then
             bdrFrame:SetFrameLevel(lvl)
-            if boxHolder then
-                boxHolder:SetFrameLevel(lvl + 1)
-            end
+            if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
             -- Textured styles: the backdrop child too, as on live frames.
             local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[bdrFrame]
-            if edge then
-                edge:SetFrameLevel(lvl)
-            end
+            if edge then edge:SetFrameLevel(lvl) end
         end
         if (cfg.borderSize or 1) <= 0 then
             mod.ApplyHighlightBorder(bdrFrame, cfg, hlSize, red, green, blue, a, hlPx)
@@ -484,21 +454,15 @@ local function CreatePreviewFrame(index, party)
     threatFrame:SetAllPoints(frame)
     threatFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
     threatFrame:Hide()
-    if Pix then
-        Pix.CreateBorder(threatFrame, 1, 0, 0, 1, 2)
-    end
+    if Pix then Pix.CreateBorder(threatFrame, 1, 0, 0, 1, 2) end
 
     -- Click to toggle target in test mode (recolors the single border)
     frame:SetScript("OnMouseDown", function(self)
-        if not PvActive() then
-            return
-        end
+        if not PvActive() then return end
         for _, popFrame in ipairs(PvFrames()) do
             if popFrame ~= self and popFrame._isTarget then
                 popFrame._isTarget = false
-                if popFrame._ApplyBorderColor then
-                    popFrame._ApplyBorderColor()
-                end
+                if popFrame._ApplyBorderColor then popFrame._ApplyBorderColor() end
             end
         end
         frame._isTarget = true
@@ -510,9 +474,7 @@ local function CreatePreviewFrame(index, party)
     dispelBdrFrame:SetAllPoints(health)
     dispelBdrFrame:SetFrameLevel(frame:GetFrameLevel() + mod.LVL_RAISE - 1)
     dispelBdrFrame:Hide()
-    if Pix then
-        Pix.CreateBorder(dispelBdrFrame, 0.2, 0.6, 1, 1, 2)
-    end
+    if Pix then Pix.CreateBorder(dispelBdrFrame, 0.2, 0.6, 1, 1, 2) end
 
     -- Dispel overlay (texture on health bar at ARTWORK sublevel 3: above fill
     -- and above the BM health-color overlay (sublevel 2), below absorbs/text)
@@ -604,9 +566,7 @@ local function CreatePreviewFrame(index, party)
     tnb:SetHeight(PixelSnap(cfg.topNameBarHeight or 20))
     local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
     tnbBg:SetAllPoints()
-    if Pix then
-        Pix.DisablePixelSnap(tnbBg)
-    end
+    if Pix then Pix.DisablePixelSnap(tnbBg) end
     local tnbText = tnb:CreateFontString(nil, "OVERLAY")
     ApplyFont(tnbText, cfg.topNameBarTextSize or 11)
     tnbText:SetWordWrap(false)
@@ -662,9 +622,7 @@ local function CreatePreviewFrame(index, party)
         local dbdr = CreateFrame("Frame", nil, di)
         dbdr:SetAllPoints()
         dbdr:SetFrameLevel(di:GetFrameLevel() + 1)
-        if Pix then
-            Pix.CreateBorder(dbdr, 0, 0, 0, 1, 1)
-        end
+        if Pix then Pix.CreateBorder(dbdr, 0, 0, 0, 1, 1) end
         di._borderFrame = dbdr
         local countCarrier = CreateFrame("Frame", nil, di)
         countCarrier:SetAllPoints()
@@ -690,16 +648,19 @@ local function CreatePreviewFrame(index, party)
     -- frame can showcase a full wrapping layout; only a few are shown otherwise.
     frame._pvDebuffs = {}
     for index = 1, 8 do
-        frame._pvDebuffs[index] = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(cfg))
+        frame._pvDebuffs[index] =
+            MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(cfg))
     end
 
     -- Static dispel debuff icon (shown when dispel eyeball is on)
-    frame._pvDispelDebuff = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(cfg))
+    frame._pvDispelDebuff =
+        MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(cfg))
 
     -- Defensive preview icons
     frame._pvDefs = {}
     for index = 1, 4 do
-        frame._pvDefs[index] = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, cfg.defSize or 22)
+        frame._pvDefs[index] =
+            MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, cfg.defSize or 22)
     end
 
     -- Buff preview icons (test mode: configured buffs cycled across frames)
@@ -712,9 +673,7 @@ local function CreatePreviewFrame(index, party)
 end
 
 local function GetOrCreatePreviewFrame(index)
-    if not previewFrames[index] then
-        previewFrames[index] = CreatePreviewFrame(index)
-    end
+    if not previewFrames[index] then previewFrames[index] = CreatePreviewFrame(index) end
     return previewFrames[index]
 end
 

@@ -1,14 +1,10 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Options.lua  --  Settings page for the Quickdraw
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIQuickdraw"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
@@ -25,7 +21,6 @@ local MAX_PALETTES = mod.MAX_PALETTES or 16
 local MAX_SLOTS = mod.MAX_SLOTS or 12
 
 CludesUI.AtOptionsLogin(function()
-
     local db
 
     -- Through ns.Profile, not db.profile: the module converts a profile's
@@ -34,25 +29,19 @@ CludesUI.AtOptionsLogin(function()
     -- has just switched to. The db local is still kept for the reset handler.
     local function DrawDB()
         db = db or _G._CUQD_AceDB
-        if mod.Profile then
-            return mod.Profile()
-        end
+        if mod.Profile then return mod.Profile() end
         return db and db.profile
     end
 
     local function ProfileGet(key)
         local prof = DrawDB()
-        if prof then
-            return prof[key]
-        end
+        if prof then return prof[key] end
         return prof
     end
 
     local function ProfilePut(key, val)
         local prof = DrawDB()
-        if not prof then
-            return
-        end
+        if not prof then return end
         prof[key] = val
     end
 
@@ -67,9 +56,7 @@ CludesUI.AtOptionsLogin(function()
     -- Hands the edited settings to the running module.
     local function PushToModule()
         local apply = _G._CUQD_Apply
-        if apply then
-            apply()
-        end
+        if apply then apply() end
     end
 
     local function Reapply()
@@ -101,22 +88,16 @@ CludesUI.AtOptionsLogin(function()
         return count
     end
 
-    local function MenuTable(index)
-        return mod.EnsurePalette and mod.EnsurePalette(index or editingMenu)
-    end
+    local function MenuTable(index) return mod.EnsurePalette and mod.EnsurePalette(index or editingMenu) end
 
     -- A palette as stored, for getters: nothing created or compacted (getters
     -- must not write; the panel's read trace runs them).
     local function PaletteRead(index)
         local prof = DrawDB()
         local stored = prof and prof.palettes
-        if type(stored) ~= "table" then
-            return nil
-        end
+        if type(stored) ~= "table" then return nil end
         local found = stored[index or editingMenu]
-        if type(found) == "table" then
-            return found
-        end
+        if type(found) == "table" then return found end
         return nil
     end
 
@@ -126,17 +107,13 @@ CludesUI.AtOptionsLogin(function()
     HasAnyNest = function()
         local prof = DrawDB()
         local stored = prof and prof.palettes
-        if type(stored) ~= "table" then
-            return false
-        end
+        if type(stored) ~= "table" then return false end
         for i = 1, MenuCount() do
             local entries = type(stored[i]) == "table" and stored[i].slots
             if type(entries) == "table" then
                 for n = 1, #entries do
                     local entry = entries[n]
-                    if type(entry) == "table" and entry.kind == "palette" then
-                        return true
-                    end
+                    if type(entry) == "table" and entry.kind == "palette" then return true end
                 end
             end
         end
@@ -160,9 +137,7 @@ CludesUI.AtOptionsLogin(function()
     local function MenuGet(key)
         local menuT = PaletteRead(editingMenu)
         local own = menuT and menuT.appearance and menuT.appearance[key]
-        if own == nil then
-            return ProfileGet(key)
-        end
+        if own == nil then return ProfileGet(key) end
         return own
     end
 
@@ -179,18 +154,14 @@ CludesUI.AtOptionsLogin(function()
     -- the module hands a fresh palette.
     local function AutoName(index)
         local named = mod.AutoPaletteName
-        if not named then
-            return "Action Menu " .. index
-        end
+        if not named then return "Action Menu " .. index end
         return named(index)
     end
 
     -- A menu's name as the page shows it.
     local function MenuName(index)
         local menuT = PaletteRead(index)
-        if menuT and menuT.name then
-            return menuT.name
-        end
+        if menuT and menuT.name then return menuT.name end
         return AutoName(index)
     end
 
@@ -237,9 +208,7 @@ CludesUI.AtOptionsLogin(function()
     -- What the user calls the action a chord is currently bound to. The binding
     -- system stores an action string; BINDING_NAME_<action> is the label every
     -- keybind UI shows, and our own palettes declare one each.
-    local function BindingLabel(bindAction)
-        return _G["BINDING_NAME_" .. bindAction] or bindAction
-    end
+    local function BindingLabel(bindAction) return _G["BINDING_NAME_" .. bindAction] or bindAction end
 
     ---------------------------------------------------------------------------
     --  Shared keys
@@ -255,9 +224,7 @@ CludesUI.AtOptionsLogin(function()
     local function Sharers(ownerFrame)
         local result = {}
         for i = 1, MenuCount() do
-            if i ~= ownerFrame and mod.ShareOwner(i) == ownerFrame then
-                result[#result + 1] = i
-            end
+            if i ~= ownerFrame and mod.ShareOwner(i) == ownerFrame then result[#result + 1] = i end
         end
         return result
     end
@@ -266,9 +233,7 @@ CludesUI.AtOptionsLogin(function()
     -- their count, or nil when nothing shares owner's key.
     local function SharerNames(ownerFrame)
         local entries = Sharers(ownerFrame)
-        if #entries == 0 then
-            return nil
-        end
+        if #entries == 0 then return nil end
         for num = 1, #entries do
             entries[num] = MenuName(entries[num])
         end
@@ -280,32 +245,22 @@ CludesUI.AtOptionsLogin(function()
     local function HandOffKeys(ownerFrame, k1, k2)
         local entries = Sharers(ownerFrame)
         local heir = entries[1]
-        if not heir then
-            return nil
-        end
+        if not heir then return nil end
         MenuTable(heir).keyShare = nil
         for num = 2, #entries do
             MenuTable(entries[num]).keyShare = heir
         end
-        if k1 then
-            SetBinding(k1, BINDING_PREFIX .. heir)
-        end
-        if k2 then
-            SetBinding(k2, BINDING_PREFIX .. heir)
-        end
+        if k1 then SetBinding(k1, BINDING_PREFIX .. heir) end
+        if k2 then SetBinding(k2, BINDING_PREFIX .. heir) end
         return heir
     end
 
     -- May menu idx share the key owner holds? Only when idx can never load
     -- together with owner or with any menu already sharing it.
     local function CanShareWith(position, ownerFrame)
-        if not mod.PalettesExclusive(position, ownerFrame) then
-            return false
-        end
+        if not mod.PalettesExclusive(position, ownerFrame) then return false end
         for _, sv in ipairs(Sharers(ownerFrame)) do
-            if sv ~= position and not mod.PalettesExclusive(position, sv) then
-                return false
-            end
+            if sv ~= position and not mod.PalettesExclusive(position, sv) then return false end
         end
         return true
     end
@@ -314,9 +269,7 @@ CludesUI.AtOptionsLogin(function()
     local function PaletteOfAction(bindAction)
         local num = type(bindAction) == "string"
             and tonumber(bindAction:match("^" .. BINDING_PREFIX .. "(%d+)$"))
-        if num and num >= 1 and num <= MenuCount() then
-            return num
-        end
+        if num and num >= 1 and num <= MenuCount() then return num end
         return nil
     end
 
@@ -327,18 +280,12 @@ CludesUI.AtOptionsLogin(function()
     local function ShareKey(position, ownerFrame, keyChord)
         local k1, k2 = GetBindingKey(BINDING_PREFIX .. position)
         if not HandOffKeys(position, k1, k2) then
-            if k1 then
-                SetBinding(k1, nil)
-            end
-            if k2 then
-                SetBinding(k2, nil)
-            end
+            if k1 then SetBinding(k1, nil) end
+            if k2 then SetBinding(k2, nil) end
         end
         MenuTable(ownerFrame).keyShare = nil
         MenuTable(position).keyShare = ownerFrame
-        if k1 or k2 then
-            SaveBindings(GetCurrentBindingSet())
-        end
+        if k1 or k2 then SaveBindings(GetCurrentBindingSet()) end
         CludesUI.Print(
             CludesUI.COLOR_CODES.BRAND
                 .. "Action Wheel:|r "
@@ -362,9 +309,7 @@ CludesUI.AtOptionsLogin(function()
             for _, sv in ipairs(Sharers(ownerFrame)) do
                 local success = mod.PalettesExclusive(sv, ownerFrame)
                 for _, keyName in ipairs(kept) do
-                    if success and not mod.PalettesExclusive(sv, keyName) then
-                        success = false
-                    end
+                    if success and not mod.PalettesExclusive(sv, keyName) then success = false end
                 end
                 if success then
                     kept[#kept + 1] = sv
@@ -434,12 +379,8 @@ CludesUI.AtOptionsLogin(function()
             -- Unbind: this one clears every key the palette holds, which is what
             -- "unbind" means; keys menus share stay with them.
             if not HandOffKeys(pmenu, oldK1, oldK2) then
-                if oldK1 then
-                    SetBinding(oldK1, nil)
-                end
-                if oldK2 then
-                    SetBinding(oldK2, nil)
-                end
+                if oldK1 then SetBinding(oldK1, nil) end
+                if oldK2 then SetBinding(oldK2, nil) end
             end
         end
 
@@ -464,9 +405,7 @@ CludesUI.AtOptionsLogin(function()
         -- holds takes it from itself. A key held by ANOTHER palette of ours
         -- does count -- that one would be left with no way to open at all.
         local stolenFrom = keyChord and GetBindingAction(keyChord) or nil
-        if stolenFrom == "" or stolenFrom == bindAction then
-            stolenFrom = nil
-        end
+        if stolenFrom == "" or stolenFrom == bindAction then stolenFrom = nil end
 
         -- A key another menu holds is shared rather than taken when the two
         -- can never load in the same spec (Assign to Spec).
@@ -555,9 +494,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function EnsureBindWatcher()
-        if keyWatch then
-            return
-        end
+        if keyWatch then return end
         keysSeen = PaletteKeySignature()
         keyWatch = CreateFrame("Frame")
         keyWatch:RegisterEvent("UPDATE_BINDINGS")
@@ -566,9 +503,7 @@ CludesUI.AtOptionsLogin(function()
             if now ~= keysSeen then
                 keysSeen = now
                 CludesUI:InvalidatePageCache()
-                if CludesUI:IsShown() and CludesUI.RefreshPage then
-                    CludesUI:RefreshPage(true)
-                end
+                if CludesUI:IsShown() and CludesUI.RefreshPage then CludesUI:RefreshPage(true) end
             end
         end)
     end
@@ -598,16 +533,12 @@ CludesUI.AtOptionsLogin(function()
     -- as the panel's content and only PREVIEW_H tall, so the two budgets differ
     -- by a wide margin and every layout has to be measured against both.
     local function BlockSpan(vertical)
-        if vertical then
-            return PREVIEW_H * 0.5 - 24
-        end
+        if vertical then return PREVIEW_H * 0.5 - 24 end
         local wid = previewHost and previewHost:GetWidth() or 0
         -- The block is anchored on both sides, so its width is unresolved on
         -- the very first build. Layout re-runs on every Refresh, so a fallback
         -- here corrects itself rather than sticking.
-        if wid < 100 then
-            wid = 460
-        end
+        if wid < 100 then wid = 460 end
         return wid * 0.5 - 24
     end
 
@@ -629,9 +560,7 @@ CludesUI.AtOptionsLogin(function()
     -- smaller than the block allows.
     local function PreviewEntryCount(pmenu)
         local num = pmenu and #pmenu.slots or 0
-        if num < MAX_SLOTS then
-            num = num + 1
-        end
+        if num < MAX_SLOTS then num = num + 1 end
         return num
     end
 
@@ -758,20 +687,20 @@ CludesUI.AtOptionsLogin(function()
                     or (ent.kind == "panel" and "interface panel")
                     or (ent.kind == "equipmentset" and "equipment set")
                     or (ent.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
                     or (ent.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
                     or (ent.kind == "dynamicprofession" and ent.specialization and "profession specialization ability, by position on this character")
                     or (ent.kind == "dynamicprofession" and ent.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
                     or (ent.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
                     or (ent.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or ent.kind
             end
@@ -795,22 +724,16 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.ShowWidgetTooltip(wdg, textValue)
     end
 
-    local function HidePreviewTooltip()
-        CludesUI.HideWidgetTooltip()
-    end
+    local function HidePreviewTooltip() CludesUI.HideWidgetTooltip() end
 
     -- Place whatever is on the cursor. An empty cursor is not an error: a bare
     -- left-click on a slot should do nothing at all, cursor untouched.
     local function PreviewPlace(wdg)
         local pmenu = MenuTable(editingMenu)
         local ent = pmenu and mod.SlotFromCursor()
-        if not ent then
-            return
-        end
+        if not ent then return end
         if wdg.isPlaceholder then
-            if not mod.AddSlot(pmenu, ent) then
-                return
-            end
+            if not mod.AddSlot(pmenu, ent) then return end
         else
             pmenu.slots[wdg.index] = ent
         end
@@ -870,9 +793,7 @@ CludesUI.AtOptionsLogin(function()
 
         local function AddSpell(spellId, nm, glyph, rankText)
             local key = rankText and ("#" .. tostring(spellId)) or spellId
-            if type(spellId) ~= "number" or seen[key] or not nm then
-                return
-            end
+            if type(spellId) ~= "number" or seen[key] or not nm then return end
             seen[key] = true
             local record = { icon = glyph, name = nm, slot = { kind = "spell", id = spellId } }
             -- A rank row casts exactly that rank, and sorts below its spell's
@@ -924,9 +845,7 @@ CludesUI.AtOptionsLogin(function()
                                 if not rankText or rankText == "" then
                                     rankText = C_Spell.GetSpellSubtext(details.actionID)
                                 end
-                                if rankText == "" then
-                                    rankText = nil
-                                end
+                                if rankText == "" then rankText = nil end
                             end
                             -- actionID, not spellID: for a spell actionID is the
                             -- BASE id while spellID is whatever override is up
@@ -964,9 +883,7 @@ CludesUI.AtOptionsLogin(function()
         end
         -- The top rank of a spell with lower ones gets its own rank row too.
         for _, t in ipairs(tops) do
-            if ranked[t[2]] then
-                AddSpell(t[1], t[2], t[3], t[4])
-            end
+            if ranked[t[2]] then AddSpell(t[1], t[2], t[3], t[4]) end
         end
         return result
     end
@@ -984,9 +901,7 @@ CludesUI.AtOptionsLogin(function()
     local function SourceKeywords(sourceType, isFavorite)
         local result = isFavorite and (CludesUI.L("favorite"):lower() .. " ") or ""
         local labelText = sourceType and _G["BATTLE_PET_SOURCE_" .. sourceType]
-        if labelText then
-            result = result .. labelText:lower()
-        end
+        if labelText then result = result .. labelText:lower() end
         return result ~= "" and result or nil
     end
 
@@ -1122,15 +1037,11 @@ CludesUI.AtOptionsLogin(function()
         if ToyBox and ToyBox:IsVisible() then
             for _, redraw in ipairs({ "ToyBox_UpdatePages", "ToyBox_UpdateButtons" }) do
                 local fn = _G[redraw]
-                if fn then
-                    fn()
-                end
+                if fn then fn() end
             end
         end
 
-        if not success then
-            error(err, 0)
-        end
+        if not success then error(err, 0) end
     end
 
     local function ToyEntries()
@@ -1209,9 +1120,7 @@ CludesUI.AtOptionsLogin(function()
     local function SpecEntries()
         local result = {}
         local classID = select(3, UnitClass("player"))
-        if not classID or not C_SpecializationInfo then
-            return result
-        end
+        if not classID or not C_SpecializationInfo then return result end
         for i = 1, (C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0) do
             local specID, nm, _, glyph = C_SpecializationInfo.GetSpecializationInfo(i)
             if specID and nm then
@@ -1229,15 +1138,11 @@ CludesUI.AtOptionsLogin(function()
     -- Walked rather than written down so a class that gains a fourth is picked
     -- up without a code change.
     local function MaxSpecCount()
-        if not C_SpecializationInfo or not GetNumClasses then
-            return 0
-        end
+        if not C_SpecializationInfo or not GetNumClasses then return 0 end
         local most = 0
         for classID = 1, GetNumClasses() do
             local num = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
-            if num > most then
-                most = num
-            end
+            if num > most then most = num end
         end
         return most
     end
@@ -1255,9 +1160,7 @@ CludesUI.AtOptionsLogin(function()
         -- Named by the module that also RESOLVES the kind, so an older
         -- CludesUIQuickdraw beside a newer options page offers nothing
         -- rather than a kind that module could not fire.
-        if not mod.SpecPositionName then
-            return result
-        end
+        if not mod.SpecPositionName then return result end
         for i = 1, MaxSpecCount() do
             local ent = { kind = "dynamicspec", index = i }
             local glyph = mod.SlotDisplay(ent)
@@ -1285,9 +1188,7 @@ CludesUI.AtOptionsLogin(function()
     -- Hide Unavailable Actions (see Dynamic Profession in CludesUIQuickdraw).
     local function DynamicProfessionEntries()
         local result = {}
-        if not mod.ProfessionPositionName then
-            return result
-        end
+        if not mod.ProfessionPositionName then return result end
         for i = 1, 5 do
             local ent = { kind = "dynamicprofession", index = i }
             local glyph = mod.SlotDisplay(ent)
@@ -1510,17 +1411,13 @@ CludesUI.AtOptionsLogin(function()
     local ShowPickerCategories, ShowPickerCategory, ShowPickerCustom
 
     local function ClosePicker()
-        if pickerMenu then
-            pickerMenu:Hide()
-        end
+        if pickerMenu then pickerMenu:Hide() end
     end
 
     -- Returns true when a slot was actually committed.
     local function AssignEntry(record)
         local pmenu = MenuTable(editingMenu)
-        if not pmenu then
-            return false
-        end
+        if not pmenu then return false end
         -- The stored slot is a COPY: the entry belongs to the cached list, and
         -- handing that one table to two entries would alias a single saved slot
         -- into both of them.
@@ -1534,9 +1431,7 @@ CludesUI.AtOptionsLogin(function()
             -- performs (PreviewPlace). Guarded in case the slot is gone --
             -- every removal path closes the picker, but a guard is cheaper
             -- than the certainty.
-            if not pmenu.slots[pickerReplaceIndex] then
-                return false
-            end
+            if not pmenu.slots[pickerReplaceIndex] then return false end
             pmenu.slots[pickerReplaceIndex] = ent
         elseif not mod.AddSlot(pmenu, ent) then
             -- ns.AddSlot refuses a full palette. Unreachable from here -- a
@@ -1550,9 +1445,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function EnsurePickerMenu()
-        if pickerMenu then
-            return pickerMenu
-        end
+        if pickerMenu then return pickerMenu end
 
         local FONT = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local bgR = CludesUI.DD_BG_R or 0.075
@@ -1623,9 +1516,10 @@ CludesUI.AtOptionsLogin(function()
         -- its own list, everything else to the root. menu.cat is nil in both
         -- list views, so a sub-list's own Back lands at the root, which is the
         -- only place left to go.
-        dropMenu.back:SetScript("OnClick", function()
-            ShowPickerCategories(dropMenu.cat and dropMenu.cat.parent or nil)
-        end)
+        dropMenu.back:SetScript(
+            "OnClick",
+            function() ShowPickerCategories(dropMenu.cat and dropMenu.cat.parent or nil) end
+        )
 
         dropMenu.search = CreateFrame("EditBox", nil, dropMenu)
         dropMenu.search:SetHeight(22)
@@ -1646,18 +1540,12 @@ CludesUI.AtOptionsLogin(function()
         dropMenu.searchPH:SetTextColor(0.5, 0.5, 0.5, 0.6)
         dropMenu.searchPH:SetPoint("LEFT", dropMenu.search, "LEFT", 6, 0)
         dropMenu.searchPH:SetText(CludesUI.L("Search..."))
-        dropMenu.search:SetScript("OnEscapePressed", function(sv)
-            sv:ClearFocus()
-        end)
-        dropMenu.search:SetScript("OnEnterPressed", function(sv)
-            sv:ClearFocus()
-        end)
+        dropMenu.search:SetScript("OnEscapePressed", function(sv) sv:ClearFocus() end)
+        dropMenu.search:SetScript("OnEnterPressed", function(sv) sv:ClearFocus() end)
         dropMenu.search:SetScript("OnTextChanged", function(sv)
             dropMenu.searchPH:SetShown((sv:GetText() or "") == "")
             -- Re-filters the cached list; ShowPickerCategory never clears the box.
-            if dropMenu.cat then
-                ShowPickerCategory(dropMenu.cat)
-            end
+            if dropMenu.cat then ShowPickerCategory(dropMenu.cat) end
         end)
 
         dropMenu.scroll = CreateFrame("ScrollFrame", nil, dropMenu)
@@ -1710,9 +1598,7 @@ CludesUI.AtOptionsLogin(function()
 
         dropMenu.scroll:SetScript("OnMouseWheel", function(self, delta)
             local maxScroll = math.max(0, dropMenu.list:GetHeight() - self:GetHeight())
-            if maxScroll <= 0 then
-                return
-            end
+            if maxScroll <= 0 then return end
             self:SetVerticalScroll(
                 math.max(0, math.min(maxScroll, (self:GetVerticalScroll() or 0) - delta * PICK_ROW_H * 2))
             )
@@ -1724,9 +1610,7 @@ CludesUI.AtOptionsLogin(function()
         dropMenu.rows = {}
         function dropMenu:GetRow(i)
             local rw = self.rows[i]
-            if rw then
-                return rw
-            end
+            if rw then return rw end
             rw = CreateFrame("Button", nil, self.list)
             rw:SetHeight(PICK_ROW_H)
             rw:SetPoint("TOPLEFT", self.list, "TOPLEFT", 0, -(i - 1) * PICK_ROW_H)
@@ -1778,14 +1662,8 @@ CludesUI.AtOptionsLogin(function()
             boxFrame:SetMultiLine(multiline == true)
             -- Newlines are part of a macro, so a multiline box must not treat
             -- Enter as "commit"; the Add button is the only commit.
-            if not multiline then
-                boxFrame:SetScript("OnEnterPressed", function(sv)
-                    sv:ClearFocus()
-                end)
-            end
-            boxFrame:SetScript("OnEscapePressed", function(sv)
-                sv:ClearFocus()
-            end)
+            if not multiline then boxFrame:SetScript("OnEnterPressed", function(sv) sv:ClearFocus() end) end
+            boxFrame:SetScript("OnEscapePressed", function(sv) sv:ClearFocus() end)
             local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(0, 0, 0, 0.4)
@@ -1820,21 +1698,13 @@ CludesUI.AtOptionsLogin(function()
         local aTx = CludesUI.MakeFont(plusBtn, 11, nil, 1, 1, 1, 0.9)
         aTx:SetPoint("CENTER")
         aTx:SetText(CludesUI.L("Add"))
-        plusBtn:SetScript("OnEnter", function()
-            aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.35)
-        end)
-        plusBtn:SetScript("OnLeave", function()
-            aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.20)
-        end)
+        plusBtn:SetScript("OnEnter", function() aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.35) end)
+        plusBtn:SetScript("OnLeave", function() aBg:SetColorTexture(ACCENT.r, ACCENT.g, ACCENT.b, 0.20) end)
         plusBtn:SetScript("OnClick", function()
             local body = strtrim(editField:GetText() or "")
-            if body == "" then
-                return
-            end
+            if body == "" then return end
             local labelText = strtrim(nameField:GetText() or "")
-            if labelText == "" then
-                labelText = "Macro"
-            end
+            if labelText == "" then labelText = "Macro" end
             -- No icon is stored: SlotDisplay falls back to the question mark,
             -- which is what an unnamed custom macro looks like on an action bar
             -- too.
@@ -2011,14 +1881,10 @@ CludesUI.AtOptionsLogin(function()
             -- for.
             if not category.keepOrder then
                 table.sort(entries, function(lhs, rhs)
-                    if (lhs.pin or false) ~= (rhs.pin or false) then
-                        return lhs.pin == true
-                    end
+                    if (lhs.pin or false) ~= (rhs.pin or false) then return lhs.pin == true end
                     -- WoW Forever's lower ranks follow their spell's row, highest first.
                     local an, bn = lhs.sortName or lhs.name, rhs.sortName or rhs.name
-                    if an ~= bn then
-                        return an < bn
-                    end
+                    if an ~= bn then return an < bn end
                     return (lhs.rankNum or math.huge) > (rhs.rankNum or math.huge)
                 end)
             end
@@ -2044,17 +1910,13 @@ CludesUI.AtOptionsLogin(function()
                 rw.icon:SetTexture(record.icon or QUESTION_MARK)
                 -- Rows are pooled across categories, and the marker textures
                 -- take the full rect where action icons take the crop.
-                if mod.ApplyIconCrop then
-                    mod.ApplyIconCrop(rw.icon, record.icon)
-                end
+                if mod.ApplyIconCrop then mod.ApplyIconCrop(rw.icon, record.icon) end
                 rw.icon:Show()
                 rw.label:ClearAllPoints()
                 rw.label:SetPoint("LEFT", rw.icon, "RIGHT", 6, 0)
                 rw.label:SetPoint("RIGHT", rw, "RIGHT", -6, 0)
                 rw.label:SetText(CludesUI.L(record.name))
-                rw:SetScript("OnClick", function()
-                    AssignEntry(record)
-                end)
+                rw:SetScript("OnClick", function() AssignEntry(record) end)
                 rw:Show()
             end
         end
@@ -2144,12 +2006,8 @@ CludesUI.AtOptionsLogin(function()
         end
         return run
     end
-    local function TargetMarkerSlots()
-        return MarkerRun("raidtarget")
-    end
-    local function WorldMarkerSlots()
-        return MarkerRun("worldmarker")
-    end
+    local function TargetMarkerSlots() return MarkerRun("raidtarget") end
+    local function WorldMarkerSlots() return MarkerRun("worldmarker") end
 
     -- Numeric /ping aliases (1 attack, 2 warning, 3 on my way, 4 assist, 5 look):
     -- the word forms resolve through localized PING_TYPE_* globals and only match
@@ -2218,9 +2076,7 @@ CludesUI.AtOptionsLogin(function()
     local function HearthstoneSlots()
         local result, spill = {}, 0
         for _, itemId in ipairs(HEARTH_ITEMS) do
-            if C_Item.GetItemCount(itemId) > 0 then
-                result[#result + 1] = { kind = "item", id = itemId }
-            end
+            if C_Item.GetItemCount(itemId) > 0 then result[#result + 1] = { kind = "item", id = itemId } end
         end
         for _, toyID in ipairs(HEARTH_TOYS) do
             if PlayerHasToy(toyID) then
@@ -2428,12 +2284,8 @@ CludesUI.AtOptionsLogin(function()
     local function QuestItemSlots()
         local result, seen, spill = {}, {}, 0
         local function AddSpell(itemId)
-            if not itemId or seen[itemId] then
-                return
-            end
-            if not C_Item.GetItemSpell(itemId) then
-                return
-            end
+            if not itemId or seen[itemId] then return end
+            if not C_Item.GetItemSpell(itemId) then return end
             seen[itemId] = true
             if #result < MAX_SLOTS then
                 result[#result + 1] = { kind = "item", id = itemId }
@@ -2447,9 +2299,7 @@ CludesUI.AtOptionsLogin(function()
                 local itemId = details and details.itemID
                 if itemId and not seen[itemId] then
                     local classID = select(6, C_Item.GetItemInfoInstant(itemId))
-                    if classID == Enum.ItemClass.Questitem then
-                        AddSpell(itemId)
-                    end
+                    if classID == Enum.ItemClass.Questitem then AddSpell(itemId) end
                 end
             end
         end
@@ -2465,9 +2315,7 @@ CludesUI.AtOptionsLogin(function()
                 -- button's texture, not an id. GetItemInfoInstant takes a link
                 -- and hands back the itemID first.
                 local itemLink = GetQuestLogSpecialItemInfo(i)
-                if itemLink then
-                    AddSpell((C_Item.GetItemInfoInstant(itemLink)))
-                end
+                if itemLink then AddSpell((C_Item.GetItemInfoInstant(itemLink))) end
             end
         end
         return result, spill
@@ -2492,9 +2340,7 @@ CludesUI.AtOptionsLogin(function()
     -- worth least in a ring -- the Shop and Customer Support -- so a full house
     -- lands on MAX_SLOTS exactly rather than reporting an overflow every time.
     -- Both are still in the picker for anyone who wants them.
-    local function InterfacePanelSlots()
-        return mod.PanelSlots and mod.PanelSlots(false) or {}
-    end
+    local function InterfacePanelSlots() return mod.PanelSlots and mod.PanelSlots(false) or {} end
 
     local PALETTE_PRESETS = {
         { label = "Interface Panels", build = InterfacePanelSlots },
@@ -2526,9 +2372,7 @@ CludesUI.AtOptionsLogin(function()
     -- builder, so nothing here needs copying.
     local function AddPalette(preset, entryList)
         local total = MenuCount()
-        if total >= MAX_PALETTES then
-            return
-        end
+        if total >= MAX_PALETTES then return end
         ProfilePut("paletteCount", total + 1)
         local pmenu = MenuTable(total + 1)
         if pmenu then
@@ -2542,9 +2386,7 @@ CludesUI.AtOptionsLogin(function()
             -- moment it exists (renameable), so store the translated label.
             pmenu.name = (preset and CludesUI.L(preset.label)) or AutoName(total + 1)
             for _, sv in ipairs(entryList or {}) do
-                if not mod.AddSlot(pmenu, sv) then
-                    break
-                end
+                if not mod.AddSlot(pmenu, sv) then break end
             end
         end
         editingMenu = total + 1
@@ -2581,9 +2423,7 @@ CludesUI.AtOptionsLogin(function()
     -- MenuRow. Returns the menu, or nil when this click was the one that
     -- closes an already-open list on the same anchor.
     local function OpenListMenu(anchor, title)
-        if not anchor then
-            return nil
-        end
+        if not anchor then return nil end
         local dropMenu = EnsurePickerMenu()
         if dropMenu:IsShown() and pickerAnchor == anchor then
             ClosePicker()
@@ -2608,13 +2448,9 @@ CludesUI.AtOptionsLogin(function()
     -- second takes the menu over.
     local function ShowAddPaletteMenu(anchor)
         local dropMenu = OpenListMenu(anchor, "Add Action Menu")
-        if not dropMenu then
-            return
-        end
+        if not dropMenu then return end
 
-        MenuRow(dropMenu, 1, nil, CludesUI.L("Empty Action Menu"), function()
-            AddPalette(nil)
-        end)
+        MenuRow(dropMenu, 1, nil, CludesUI.L("Empty Action Menu"), function() AddPalette(nil) end)
         local num = 1
         for _, preset in ipairs(PALETTE_PRESETS) do
             local entryList, spill = preset.build()
@@ -2628,9 +2464,13 @@ CludesUI.AtOptionsLogin(function()
                 if spill and spill > 0 then
                     total = total .. " |cffd08050" .. CludesUI.Lf("%1$d did not fit", spill) .. "|r"
                 end
-                MenuRow(dropMenu, num, glyph or QUESTION_MARK, CludesUI.L(preset.label) .. total, function()
-                    AddPalette(preset, entryList)
-                end)
+                MenuRow(
+                    dropMenu,
+                    num,
+                    glyph or QUESTION_MARK,
+                    CludesUI.L(preset.label) .. total,
+                    function() AddPalette(preset, entryList) end
+                )
             end
         end
         for i = num + 1, #dropMenu.rows do
@@ -2649,9 +2489,7 @@ CludesUI.AtOptionsLogin(function()
     local function DeletePalette(index)
         local profile = DrawDB()
         local total = MenuCount()
-        if not profile or total <= 1 or index < 1 or index > total then
-            return
-        end
+        if not profile or total <= 1 or index < 1 or index > total then return end
 
         -- The keybind shift below runs SetBinding, so the same combat wall the
         -- keybind picker documents applies to the whole operation.
@@ -2681,9 +2519,7 @@ CludesUI.AtOptionsLogin(function()
         -- typed is theirs, whatever it happens to look like.
         for i = index, total - 1 do
             local pmenu = MenuTable(i)
-            if pmenu and pmenu.name == AutoName(i + 1) then
-                pmenu.name = AutoName(i)
-            end
+            if pmenu and pmenu.name == AutoName(i + 1) then pmenu.name = AutoName(i) end
         end
 
         for i = 1, total - 1 do
@@ -2715,9 +2551,7 @@ CludesUI.AtOptionsLogin(function()
         local keyList, any = {}, false
         for num = 1, MAX_PALETTES do
             keyList[num] = { GetBindingKey(BINDING_PREFIX .. num) }
-            if num >= index and keyList[num][1] then
-                any = true
-            end
+            if num >= index and keyList[num][1] then any = true end
         end
         for num = index, MAX_PALETTES do
             for _, keyName in ipairs(keyList[num]) do
@@ -2729,19 +2563,13 @@ CludesUI.AtOptionsLogin(function()
                 SetBinding(keyName, BINDING_PREFIX .. num)
             end
         end
-        if any or handed then
-            SaveBindings(GetCurrentBindingSet())
-        end
+        if any or handed then SaveBindings(GetCurrentBindingSet()) end
 
         -- Keep the editor pointed at the palette it was on, which now sits one
         -- index lower; deleting the edited palette itself falls to whichever
         -- palette took its number.
-        if editingMenu > index then
-            editingMenu = editingMenu - 1
-        end
-        if editingMenu > total - 1 then
-            editingMenu = total - 1
-        end
+        if editingMenu > index then editingMenu = editingMenu - 1 end
+        if editingMenu > total - 1 then editingMenu = total - 1 end
         RedrawPage()
     end
 
@@ -2759,9 +2587,7 @@ CludesUI.AtOptionsLogin(function()
     local MM_W, MM_X = 170, 14
 
     local function EnsureMenuMenu()
-        if mmMenu then
-            return mmMenu
-        end
+        if mmMenu then return mmMenu end
         local PPQ = CludesUI.PanelPP
         local menuFrame = CreateFrame("Frame", nil, UIParent)
         menuFrame:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -2777,21 +2603,15 @@ CludesUI.AtOptionsLogin(function()
         -- menu's own. The anchor is re-pointed per page build (m._anchor).
         menuFrame:SetScript("OnShow", function(self)
             local anchor = self._anchor
-            if anchor then
-                self:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
-            end
+            if anchor then self:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale()) end
             self:SetScript("OnUpdate", function(mm)
                 local a2 = mm._anchor
                 if (not a2 or not a2:IsMouseOver()) and not mm:IsMouseOver() then
-                    if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                        mm:Hide()
-                    end
+                    if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then mm:Hide() end
                 end
             end)
         end)
-        menuFrame:SetScript("OnHide", function(self)
-            self:SetScript("OnUpdate", nil)
-        end)
+        menuFrame:SetScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
         mmMenu = menuFrame
         return menuFrame
     end
@@ -2861,16 +2681,10 @@ CludesUI.AtOptionsLogin(function()
             xBtn:SetAlpha(a2)
             editBtn:SetAlpha(a2)
         end
-        local function OverButtons()
-            return xBtn:IsMouseOver() or editBtn:IsMouseOver()
-        end
-        rowBtn:SetScript("OnEnter", function()
-            Lit(true)
-        end)
+        local function OverButtons() return xBtn:IsMouseOver() or editBtn:IsMouseOver() end
+        rowBtn:SetScript("OnEnter", function() Lit(true) end)
         rowBtn:SetScript("OnLeave", function()
-            if not OverButtons() then
-                Lit(false)
-            end
+            if not OverButtons() then Lit(false) end
         end)
         for b, tip in pairs({ [xBtn] = "Delete", [editBtn] = "Rename" }) do
             b:SetScript("OnEnter", function(self2)
@@ -2904,9 +2718,7 @@ CludesUI.AtOptionsLogin(function()
             ),
             confirmText = "Delete",
             cancelText = "Cancel",
-            onConfirm = function()
-                DeletePalette(position)
-            end,
+            onConfirm = function() DeletePalette(position) end,
         })
     end
     local function AskRenameMenu(position)
@@ -2921,19 +2733,13 @@ CludesUI.AtOptionsLogin(function()
             cancelText = "Cancel",
             onConfirm = function(newName)
                 local target = MenuTable(position)
-                if not target then
-                    return
-                end
+                if not target then return end
                 -- Trimmed, and cut to 24 characters: the hub caption sits in
                 -- a small arc, and anything longer runs under the entries
                 -- either side. Empty goes back to the automatic name.
                 newName = strtrim(newName or "")
-                if #newName > 24 then
-                    newName = newName:sub(1, 24)
-                end
-                if newName == "" then
-                    newName = AutoName(position)
-                end
+                if #newName > 24 then newName = newName:sub(1, 24) end
+                if newName == "" then newName = AutoName(position) end
                 if newName ~= target.name then
                     target.name = newName
                     RedrawPage()
@@ -2979,12 +2785,8 @@ CludesUI.AtOptionsLogin(function()
                     RedrawPage()
                 end
             end)
-            rowBtn._xBtn:SetScript("OnClick", function()
-                AskDeleteMenu(position)
-            end)
-            rowBtn._editBtn:SetScript("OnClick", function()
-                AskRenameMenu(position)
-            end)
+            rowBtn._xBtn:SetScript("OnClick", function() AskDeleteMenu(position) end)
+            rowBtn._editBtn:SetScript("OnClick", function() AskRenameMenu(position) end)
             rowBtn:Show()
             top = top + 26
         end
@@ -2999,9 +2801,7 @@ CludesUI.AtOptionsLogin(function()
     -- Nothing during the search index prebuild: its row is a stand-in with no
     -- frame to build on, and the row's own label is what the index lists.
     local function BuildMenuSelector(region)
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         local PPQ = CludesUI.PanelPP
         local button = CreateFrame("Button", nil, region)
         -- 170x30, the exact face BuildDropdownControl gives every standard
@@ -3035,18 +2835,18 @@ CludesUI.AtOptionsLogin(function()
             brd:SetColor(sv[9], sv[10], sv[11], sv[12])
             backdrop:SetColorTexture(sv[1], sv[2], sv[3], sv[4])
         end)
-        if ProfileGet("enabled") ~= true then
-            button:SetAlpha(0.4)
-        end
+        if ProfileGet("enabled") ~= true then button:SetAlpha(0.4) end
         button:SetScript("OnClick", function()
-            if ProfileGet("enabled") ~= true then
-                return
-            end
+            if ProfileGet("enabled") ~= true then return end
             local menuFrame = EnsureMenuMenu()
             -- The same anchor only in the same dress: a page rebuild may dress
             -- this button again (page reuse), and an open menu then re-anchors
             -- to it as it would to a new button.
-            if menuFrame:IsShown() and menuFrame._anchor == button and menuFrame._anchorGen == Pool.Gen(button) then
+            if
+                menuFrame:IsShown()
+                and menuFrame._anchor == button
+                and menuFrame._anchorGen == Pool.Gen(button)
+            then
                 menuFrame:Hide()
                 return
             end
@@ -3090,9 +2890,7 @@ CludesUI.AtOptionsLogin(function()
     -- is the palette's whole input model -- key down opens, key up fires.
     local function BuildKeybindButton(region, specInfo)
         -- Nothing during the search index prebuild, as BuildMenuSelector.
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         local pmenu = editingMenu
         local bindAction = BINDING_PREFIX .. pmenu
         local plainMouse = specInfo and specInfo.plainMouse
@@ -3101,9 +2899,7 @@ CludesUI.AtOptionsLogin(function()
         -- A spec may widen the gate and name the requirement for the disabled
         -- tooltip.
         local Disabled = (specInfo and specInfo.disabled)
-            or function()
-                return ProfileGet("enabled") ~= true
-            end
+            or function() return ProfileGet("enabled") ~= true end
 
         -- Right-click means two different things on a plainMouse picker
         -- depending on whether it is armed, so it has to say which.
@@ -3116,9 +2912,7 @@ CludesUI.AtOptionsLogin(function()
             or CludesUI.L("Left-click to set a keybind.\nRight-click to unbind.")
         -- The palette's own keybind row sits under a heading that already says
         -- what the key is, but a spec-driven picker has only its label.
-        if specInfo and specInfo.intro then
-            tipText = CludesUI.L(specInfo.intro) .. "\n\n" .. tipText
-        end
+        if specInfo and specInfo.intro then tipText = CludesUI.L(specInfo.intro) .. "\n\n" .. tipText end
         -- A shared key (Assign to Spec) names the menus it is shared with.
         if not specInfo then
             local ownerFrame, nameList = mod.ShareOwner(pmenu), {}
@@ -3146,22 +2940,14 @@ CludesUI.AtOptionsLogin(function()
             -- A menu sharing a key shows the key it shares.
             get = (specInfo and specInfo.read) or function()
                 local k1, k2 = GetBindingKey(bindAction)
-                if k1 or k2 then
-                    return k1, k2
-                end
+                if k1 or k2 then return k1, k2 end
                 local ownerFrame = mod.ShareOwner(pmenu)
-                if ownerFrame then
-                    return GetBindingKey(BINDING_PREFIX .. ownerFrame)
-                end
+                if ownerFrame then return GetBindingKey(BINDING_PREFIX .. ownerFrame) end
                 return nil
             end,
-            set = (specInfo and specInfo.commit) or function(keyChord)
-                CommitKey(pmenu, keyChord)
-            end,
+            set = (specInfo and specInfo.commit) or function(keyChord) CommitKey(pmenu, keyChord) end,
             canArm = function()
-                if not InCombatLockdown() then
-                    return true
-                end
+                if not InCombatLockdown() then return true end
                 Complain("Action Wheel: keybinds can't be changed in combat.")
                 return false
             end,
@@ -3177,14 +2963,10 @@ CludesUI.AtOptionsLogin(function()
     -- Nearest widget CENTRE is the layout-agnostic form of the same question,
     -- and it also follows the strip while it slides.
     local function PreviewDropTarget()
-        if not previewWheel:IsFan() then
-            return previewWheel:HitTest()
-        end
+        if not previewWheel:IsFan() then return previewWheel:HitTest() end
 
         local isShown = previewWheel:ShownCount()
-        if isShown < 1 then
-            return nil
-        end
+        if isShown < 1 then return nil end
 
         local curX, curY = GetCursorPosition()
         local best, bestDist
@@ -3247,9 +3029,7 @@ CludesUI.AtOptionsLogin(function()
             wid:SetFrameLevel(previewWheel:GetFrame():GetFrameLevel() + 1)
         end
         dragFrom, dragging = nil, false
-        if previewHost then
-            previewHost:SetScript("OnUpdate", nil)
-        end
+        if previewHost then previewHost:SetScript("OnUpdate", nil) end
         previewWheel:SetSelection(nil)
     end
 
@@ -3259,40 +3039,30 @@ CludesUI.AtOptionsLogin(function()
             wid:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 
             wid:SetScript("OnEnter", function(self)
-                if dragging then
-                    return
-                end
+                if dragging then return end
                 -- Reuse the selection paint: hovering an entry in the panel looks
                 -- exactly like steering onto it in play.
                 previewWheel:SetSelection(self.index)
                 PreviewTooltip(self)
             end)
             wid:SetScript("OnLeave", function()
-                if dragging then
-                    return
-                end
+                if dragging then return end
                 previewWheel:SetSelection(nil)
                 HidePreviewTooltip()
             end)
 
             wid:SetScript("OnClick", function(self, btnFrame)
                 if btnFrame == "MiddleButton" then
-                    if self.isPlaceholder then
-                        return
-                    end
+                    if self.isPlaceholder then return end
                     local pmenu = MenuTable(editingMenu)
-                    if pmenu and mod.RemoveSlot(pmenu, self.index) then
-                        Reapply()
-                    end
+                    if pmenu and mod.RemoveSlot(pmenu, self.index) then Reapply() end
                     return
                 end
                 if btnFrame == "RightButton" then
                     -- The picker in replace mode: the pick lands on THIS slot
                     -- (AssignEntry). Nothing to change on the "+" -- its
                     -- left-click already opens the append picker.
-                    if self.isPlaceholder then
-                        return
-                    end
+                    if self.isPlaceholder then return end
                     TogglePicker(self, self.index)
                     return
                 end
@@ -3304,18 +3074,12 @@ CludesUI.AtOptionsLogin(function()
                 end
                 PreviewPlace(self)
             end)
-            wid:SetScript("OnReceiveDrag", function(self)
-                PreviewPlace(self)
-            end)
+            wid:SetScript("OnReceiveDrag", function(self) PreviewPlace(self) end)
 
             wid:SetScript("OnMouseDown", function(self, btnFrame)
-                if btnFrame ~= "LeftButton" or self.isPlaceholder then
-                    return
-                end
+                if btnFrame ~= "LeftButton" or self.isPlaceholder then return end
                 -- A loaded cursor means "place this here", not "reorder".
-                if GetCursorInfo() then
-                    return
-                end
+                if GetCursorInfo() then return end
                 local es = previewWheel:GetFrame():GetEffectiveScale()
                 local posX, cursorY = GetCursorPosition()
                 dragStartX, dragStartY = posX / es, cursorY / es
@@ -3326,18 +3090,12 @@ CludesUI.AtOptionsLogin(function()
             -- OnMouseUp is delivered to the frame that got OnMouseDown even when
             -- the cursor has left it, which is what makes the drop work at all.
             wid:SetScript("OnMouseUp", function(self, btnFrame)
-                if btnFrame ~= "LeftButton" or dragFrom ~= self.index then
-                    return
-                end
+                if btnFrame ~= "LeftButton" or dragFrom ~= self.index then return end
                 local from, to, moved = dragFrom, dragTarget, dragging
                 EndPreviewDrag()
-                if not moved or not to then
-                    return
-                end
+                if not moved or not to then return end
                 local pmenu = MenuTable(editingMenu)
-                if pmenu and mod.MoveSlot(pmenu, from, to) then
-                    Reapply()
-                end
+                if pmenu and mod.MoveSlot(pmenu, from, to) then Reapply() end
             end)
         end
     end
@@ -3345,9 +3103,7 @@ CludesUI.AtOptionsLogin(function()
     -- yPos is the running page offset; returns the height consumed. The
     -- search index prebuild only takes the height: the preview lists nothing.
     local function BuildPreview(hostFrame, yPos)
-        if CludesUI._prebuilding then
-            return PREVIEW_H
-        end
+        if CludesUI._prebuilding then return PREVIEW_H end
         -- PanelPP, not PP: panel-context geometry snaps to the options window's
         -- own pixel grid, which is what every other options page uses.
         local Pix = CludesUI.PanelPP
@@ -3405,27 +3161,19 @@ CludesUI.AtOptionsLogin(function()
                 if not IsShiftKeyDown() then
                     local scrollFrame = CludesUI._scrollFrame
                     local handler = scrollFrame and scrollFrame:GetScript("OnMouseWheel")
-                    if handler then
-                        handler(scrollFrame, delta)
-                    end
+                    if handler then handler(scrollFrame, delta) end
                     return
                 end
-                if ProfileGet("enabled") ~= true then
-                    return
-                end
+                if ProfileGet("enabled") ~= true then return end
                 if
                     not (previewWheel:IsFan() and not previewWheel:IsGrid() and not previewWheel:IsHoverFan())
                 then
                     return
                 end
                 local isShown = previewWheel.shownCount or 0
-                if isShown < 2 then
-                    return
-                end
+                if isShown < 2 then return end
                 local step = (delta > 0) and -1 or 1
-                if MenuGet("fanInvert") == true then
-                    step = -step
-                end
+                if MenuGet("fanInvert") == true then step = -step end
                 previewWheel:SetFanCenter((((previewWheel.fanTarget or 1) - 1 + step) % isShown) + 1)
             end)
 
@@ -3437,9 +3185,7 @@ CludesUI.AtOptionsLogin(function()
             -- A press held while the panel closes under it (Esc, or the combat
             -- auto-hide) would otherwise resume as a phantom drag on reshow.
             previewHost:SetScript("OnHide", function()
-                if dragFrom then
-                    EndPreviewDrag()
-                end
+                if dragFrom then EndPreviewDrag() end
                 -- The picker is parented to UIParent, so it does not follow the
                 -- panel down by itself. OnHide propagates from the wrapper, so
                 -- this covers closing the window and switching page alike.
@@ -3454,12 +3200,11 @@ CludesUI.AtOptionsLogin(function()
             local dimTex = size:CreateTexture(nil, "OVERLAY")
             dimTex:SetAllPoints()
             dimTex:SetColorTexture(0.062, 0.070, 0.082, 0.70)
-            size:SetScript("OnEnter", function(self)
-                CludesUI.ShowWidgetTooltip(self, "Enable the module to edit action menus.")
-            end)
-            size:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            size:SetScript(
+                "OnEnter",
+                function(self) CludesUI.ShowWidgetTooltip(self, "Enable the module to edit action menus.") end
+            )
+            size:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             previewHost._dim = size
         end
 
@@ -3524,9 +3269,7 @@ CludesUI.AtOptionsLogin(function()
         local from = mod.PaletteProfile and mod.PaletteProfile(srcIdx)
         local into = MenuTable(dstIdx)
         local wanted = mod.APPEARANCE_KEYS
-        if not (from and into and wanted) then
-            return
-        end
+        if not (from and into and wanted) then return end
         local over = into.appearance or {}
         into.appearance = over
         for key in pairs(wanted) do
@@ -3562,38 +3305,24 @@ CludesUI.AtOptionsLogin(function()
         local rebuildOnClose = false
 
         -- On WoW Forever a list row stands for a whole class: its spec IDs.
-        local function ClassSpecs(key)
-            return CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
-        end
+        local function ClassSpecs(key) return CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key) end
 
         local function IsTicked(key)
             local specs = mod.PaletteSpecs(menuIdx)
-            if key == ALL then
-                return specs == nil
-            end
-            if roles[key] then
-                return false
-            end
+            if key == ALL then return specs == nil end
+            if roles[key] then return false end
             local ids = ClassSpecs(key)
-            if not ids then
-                return specs ~= nil and specs[key] == true
-            end
-            if not specs then
-                return false
-            end
+            if not ids then return specs ~= nil and specs[key] == true end
+            if not specs then return false end
             for n = 1, #ids do
-                if not specs[ids[n]] then
-                    return false
-                end
+                if not specs[ids[n]] then return false end
             end
             return true
         end
 
         local function OnPick(key, val)
             local menuT = MenuTable(menuIdx)
-            if not menuT then
-                return
-            end
+            if not menuT then return end
             local role = roles[key]
             if key == ALL or role then
                 -- All clears the list (no list is every spec); a role row
@@ -3622,9 +3351,7 @@ CludesUI.AtOptionsLogin(function()
             end
             local broke = CheckShares()
             Reapply()
-            if refreshSpecDD then
-                refreshSpecDD()
-            end
+            if refreshSpecDD then refreshSpecDD() end
             if broke then
                 local openList = CludesUI._openDropdownMenu
                 if openList and openList:IsShown() then
@@ -3655,22 +3382,16 @@ CludesUI.AtOptionsLogin(function()
             nil,
             OnListClosed,
             {
-                disabled = function()
-                    return ProfileGet("enabled") ~= true
-                end,
+                disabled = function() return ProfileGet("enabled") ~= true end,
                 disabledTooltip = "the module",
             }
         )
         local hint = CludesUI.L("Choose the specs this action menu works in.")
         specDD:HookScript("OnEnter", function()
             local openList = CludesUI._openDropdownMenu
-            if not (openList and openList:IsShown()) then
-                CludesUI.ShowWidgetTooltip(specDD, hint)
-            end
+            if not (openList and openList:IsShown()) then CludesUI.ShowWidgetTooltip(specDD, hint) end
         end)
-        specDD:HookScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        specDD:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         CludesUI.RegisterWidgetRefresh(refreshSpecDD)
 
         return PairCaption(row, "Assign to Spec"), specDD
@@ -3687,9 +3408,7 @@ CludesUI.AtOptionsLogin(function()
         local ROW_HEIGHT = 50
         -- Bespoke controls the search index does not list: its prebuild only
         -- takes the height.
-        if CludesUI._prebuilding then
-            return ROW_HEIGHT
-        end
+        if CludesUI._prebuilding then return ROW_HEIGHT end
         local Pix = CludesUI.PanelPP
         local target = editingMenu
         local pad = CludesUI.CONTENT_PAD or 45
@@ -3717,9 +3436,7 @@ CludesUI.AtOptionsLogin(function()
                 names,
                 order,
                 -- Always the placeholder, so the dropdown itself stores nothing.
-                function()
-                    return ""
-                end,
+                function() return "" end,
                 function(srcIdx)
                     if srcIdx ~= "" then
                         CludesUI:ShowConfirmPopup({
@@ -3732,18 +3449,14 @@ CludesUI.AtOptionsLogin(function()
                             disclaimer = "This overwrites this action menu's current settings. Its actions, name, and keybind are not changed.",
                             confirmText = "Apply",
                             cancelText = "Cancel",
-                            onConfirm = function()
-                                CopyAllMenuSettings(srcIdx, target)
-                            end,
+                            onConfirm = function() CopyAllMenuSettings(srcIdx, target) end,
                         })
                     end
                 end
             )
             fromDD._ttText = "Copy every setting from another action menu to this one."
             -- Snaps the label back to the placeholder after each pick.
-            CludesUI.RegisterWidgetRefresh(function()
-                fromDD._refreshLabel()
-            end)
+            CludesUI.RegisterWidgetRefresh(function() fromDD._refreshLabel() end)
             pairList[2] = { caption, fromDD }
         end
 
@@ -3772,24 +3485,18 @@ CludesUI.AtOptionsLogin(function()
     local function BuildPage(page, hostFrame, yOffset)
         -- The search index prebuild leaves no page behind for the watcher to
         -- keep current, so the watcher waits for the first live build.
-        if not CludesUI._prebuilding then
-            EnsureBindWatcher()
-        end
+        if not CludesUI._prebuilding then EnsureBindWatcher() end
 
         local W = CludesUI.Widgets
         local cursorY = yOffset
         local _, row, height
 
-        if CludesUI.ClearContentHeader then
-            CludesUI:ClearContentHeader()
-        end
+        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         -- Not `== false`: the master switch is opt-in, so an absent key counts
         -- as off. The appearance sub-settings below stay nil-means-on.
-        local function Disabled()
-            return ProfileGet("enabled") ~= true
-        end
+        local function Disabled() return ProfileGet("enabled") ~= true end
 
         -- What this build assumed about nest presence; Refresh compares
         -- against it and escalates to a rebuild when it flips.
@@ -3803,9 +3510,7 @@ CludesUI.AtOptionsLogin(function()
         -- ns.EnsurePalette, which would CREATE the out-of-range palette and
         -- bank that junk in the profile the user has just moved to.
         local paletteCount = MenuCount()
-        if editingMenu > paletteCount then
-            editingMenu = paletteCount
-        end
+        if editingMenu > paletteCount then editingMenu = paletteCount end
 
         local centerValues = { CURSOR = "Cursor", SCREEN = "Fixed Position" }
         local centerOrder = { "CURSOR", "SCREEN" }
@@ -3829,9 +3534,7 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Enable Action Wheel",
-                getValue = function()
-                    return ProfileGet("enabled") == true
-                end,
+                getValue = function() return ProfileGet("enabled") == true end,
                 setValue = function(value)
                     ProfilePut("enabled", value)
                     RedrawPage()
@@ -3843,9 +3546,7 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "labeledButton",
                 text = "Add Action Menu",
-                disabled = function()
-                    return Disabled() or MenuCount() >= MAX_PALETTES
-                end,
+                disabled = function() return Disabled() or MenuCount() >= MAX_PALETTES end,
                 disabledTooltip = function()
                     if MenuCount() >= MAX_PALETTES then
                         return "This profile already holds " .. MAX_PALETTES .. " action menus"
@@ -3858,9 +3559,7 @@ CludesUI.AtOptionsLogin(function()
                 -- styled button invokes its handler with no arguments
                 -- (CludesUI_Widgets.lua:399), so the chooser has to reach the
                 -- frame it anchors under some other way.
-                onClick = function()
-                    ShowAddPaletteMenu(addPaletteBtn)
-                end,
+                onClick = function() ShowAddPaletteMenu(addPaletteBtn) end,
             }
         )
         addPaletteBtn = row._rightRegion and row._rightRegion._control
@@ -3901,14 +3600,10 @@ CludesUI.AtOptionsLogin(function()
         -- never set).
         local function StoredChord(field)
             local held = ProfileGet(field)
-            if type(held) == "string" and held ~= "" then
-                return held
-            end
+            if type(held) == "string" and held ~= "" then return held end
             return nil
         end
-        local function HasSelectKey()
-            return StoredChord("confirmKey") ~= nil
-        end
+        local function HasSelectKey() return StoredChord("confirmKey") ~= nil end
         row, height = W:DualRow(
             hostFrame,
             cursorY,
@@ -3918,16 +3613,12 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 text = "Toggle Menu Open",
-                disabled = function()
-                    return Disabled() or not HasSelectKey()
-                end,
+                disabled = function() return Disabled() or not HasSelectKey() end,
                 disabledTooltip = "a Toggled Menu Select Action keybind",
                 tooltip = "Keep this menu open when you let go of its keybind.\n"
                     .. "Point at an entry and press the Select Action key to use it.\n"
                     .. "Press the menu's own keybind again, or Escape, to close it.",
-                getValue = function()
-                    return MenuGet("toggleMode") == true
-                end,
+                getValue = function() return MenuGet("toggleMode") == true end,
                 setValue = function(value)
                     MenuPut("toggleMode", value)
                     Reapply()
@@ -3939,9 +3630,7 @@ CludesUI.AtOptionsLogin(function()
                 .. "open with Toggle Menu Open. One key shared by every menu, "
                 .. "claimed only while a menu is up -- a mouse button keeps "
                 .. "its normal use the rest of the time.",
-            read = function()
-                return StoredChord("confirmKey")
-            end,
+            read = function() return StoredChord("confirmKey") end,
             -- "" rather than nil for an unbind: the profile default is a string,
             -- and a nil would simply be re-merged from the defaults table.
             -- RefreshPage as well as Refresh: Toggle Menu Open beside this
@@ -3977,9 +3666,7 @@ CludesUI.AtOptionsLogin(function()
                     .. "does this as well. One key shared by every menu, claimed "
                     .. "only while a menu is up -- a mouse button keeps its normal "
                     .. "use the rest of the time.",
-                read = function()
-                    return StoredChord("cancelKey")
-                end,
+                read = function() return StoredChord("cancelKey") end,
                 commit = function(keyChord)
                     -- A menu's own key would be taken over for as long as that menu
                     -- was up, which is exactly the moment its release has to reach
@@ -4026,9 +3713,7 @@ CludesUI.AtOptionsLogin(function()
         --  them dim behind. Put lays a two-half row and moves posY past it.
         -----------------------------------------------------------------------
         local function PerMenu(spec, key, read)
-            local function fetch()
-                return read(MenuGet(key))
-            end
+            local function fetch() return read(MenuGet(key)) end
             local function store(value)
                 MenuPut(key, value)
                 Reapply()
@@ -4046,16 +3731,10 @@ CludesUI.AtOptionsLogin(function()
             return PerMenu(spec, key, read)
         end
         local function Or(fallback)
-            return function(value)
-                return value or fallback
-            end
+            return function(value) return value or fallback end
         end
-        local function OnUnlessOff(value)
-            return value ~= false
-        end
-        local function OffUnlessOn(value)
-            return value == true
-        end
+        local function OnUnlessOff(value) return value ~= false end
+        local function OffUnlessOn(value) return value == true end
         local function Put(left, right)
             local made, height = W:DualRow(hostFrame, cursorY, left, right)
             cursorY = cursorY - height
@@ -4082,9 +3761,7 @@ CludesUI.AtOptionsLogin(function()
         -- (the only way to place it: there is no drag editor and no Unlock
         -- Mode entry) sit dead until Fixed Position is picked. Their cog
         -- dims with them, so the row still says they exist.
-        local function fixedOnly()
-            return Disabled() or (MenuGet("centerMode") or "CURSOR") ~= "SCREEN"
-        end
+        local function fixedOnly() return Disabled() or (MenuGet("centerMode") or "CURSOR") ~= "SCREEN" end
         local function Offset(caption, key, reach)
             return Gated({
                 type = "slider",
@@ -4107,9 +3784,7 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "the module",
                 values = layoutValues,
                 order = layoutOrder,
-                getValue = function()
-                    return MenuGet("layout") or "ARC"
-                end,
+                getValue = function() return MenuGet("layout") or "ARC" end,
                 setValue = function(value)
                     MenuPut("layout", value)
                     RedrawPage()
@@ -4136,9 +3811,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildInlineCog(row._rightRegion, {
             title = "Fixed Position",
             disabled = fixedOnly,
-            disabledTooltip = function()
-                return Disabled() and "the module" or "Fixed Position mode"
-            end,
+            disabledTooltip = function() return Disabled() and "the module" or "Fixed Position mode" end,
             rows = {
                 Offset("X Offset", "posX", 800),
                 Offset("Y Offset", "posY", 600),
@@ -4161,9 +3834,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 1,
                     max = MAX_SLOTS,
                     step = 1,
-                    disabled = function()
-                        return Disabled() or MenuGet("gridAutoColumns") ~= false
-                    end,
+                    disabled = function() return Disabled() or MenuGet("gridAutoColumns") ~= false end,
                     requireState = "disabled",
                     disabledTooltip = "Auto Columns",
                     tooltip = CludesUI.Lf(
@@ -4199,9 +3870,7 @@ CludesUI.AtOptionsLogin(function()
                         min = -180,
                         max = 180,
                         step = 5,
-                        disabled = function()
-                            return Disabled() or (MenuGet("arcSpan") or 360) >= 360
-                        end,
+                        disabled = function() return Disabled() or (MenuGet("arcSpan") or 360) >= 360 end,
                         disabledTooltip = "an Arc Span below 360",
                     }, "arcRotation", Or(0)),
                 },
@@ -4226,9 +3895,7 @@ CludesUI.AtOptionsLogin(function()
                     step = 2,
                     disabled = Disabled,
                     disabledTooltip = "the module",
-                    getValue = function()
-                        return ((MenuGet("fanVisible") or 2) * 2) + 1
-                    end,
+                    getValue = function() return ((MenuGet("fanVisible") or 2) * 2) + 1 end,
                     setValue = function(value)
                         MenuPut("fanVisible", (value - 1) * 0.5)
                         Reapply()
@@ -4321,9 +3988,7 @@ CludesUI.AtOptionsLogin(function()
                                 order = { "PERIMETER", "HALO" },
                             },
                             "gridNestStyle",
-                            function(value)
-                                return (value == "HALO") and "HALO" or "PERIMETER"
-                            end
+                            function(value) return (value == "HALO") and "HALO" or "PERIMETER" end
                         ),
                     },
                 })
@@ -4372,12 +4037,8 @@ CludesUI.AtOptionsLogin(function()
 
             local function Swatch(read, pick, tip)
                 local sw, update = CludesUI.BuildColorSwatch(region, level, read, pick, false, 20)
-                sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, tip)
-                end)
-                sw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tip) end)
+                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 return sw, update
             end
             local function pickAccent()
@@ -4391,9 +4052,7 @@ CludesUI.AtOptionsLogin(function()
             end
             local function guarded(pick)
                 return function()
-                    if not Disabled() then
-                        pick()
-                    end
+                    if not Disabled() then pick() end
                 end
             end
 
@@ -4411,13 +4070,9 @@ CludesUI.AtOptionsLogin(function()
             -- next click opens the picker, as the window-skin pairs do.
             local openPicker = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self2, ...)
-                if Disabled() then
-                    return
-                end
+                if Disabled() then return end
                 if MenuGet("selectColorCustom") == true and MenuGet("useClassColor") ~= true then
-                    if openPicker then
-                        openPicker(self2, ...)
-                    end
+                    if openPicker then openPicker(self2, ...) end
                     return
                 end
                 MenuPut("selectColorCustom", true)
@@ -4425,9 +4080,11 @@ CludesUI.AtOptionsLogin(function()
                 Reapply()
             end)
 
-            local accentSwatch, updateAccent = Swatch(function()
-                return CludesUI.ResolveActiveAccent()
-            end, pickAccent, "Accent Color")
+            local accentSwatch, updateAccent = Swatch(
+                function() return CludesUI.ResolveActiveAccent() end,
+                pickAccent,
+                "Accent Color"
+            )
             PPQ.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
             accentSwatch:SetScript("OnClick", guarded(pickAccent))
 
@@ -4436,9 +4093,7 @@ CludesUI.AtOptionsLogin(function()
             -- is no picker behind it.
             local classSwatch, updateClass = Swatch(function()
                 local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-                if color then
-                    return color.r, color.g, color.b
-                end
+                if color then return color.r, color.g, color.b end
                 return 1, 1, 1
             end, pickClass, "Class Color")
             PPQ.Point(classSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
@@ -4534,17 +4189,13 @@ CludesUI.AtOptionsLogin(function()
             if CludesUIDB and CludesUIDB.profiles then
                 local profile = CludesUIDB.activeProfile or "Default"
                 local p = CludesUIDB.profiles[profile]
-                if p and p.addons and p.addons.CludesUIQuickdraw then
-                    wipe(p.addons.CludesUIQuickdraw)
-                end
+                if p and p.addons and p.addons.CludesUIQuickdraw then wipe(p.addons.CludesUIQuickdraw) end
             end
             local target = _G._CUQD_AceDB
             if target and target.profile and mod.DB_DEFAULTS then
                 CludesUI.Lite.DeepMergeDefaults(target.profile, mod.DB_DEFAULTS.profile)
             end
-            if _G._CUQD_Apply then
-                _G._CUQD_Apply()
-            end
+            if _G._CUQD_Apply then _G._CUQD_Apply() end
             -- The reset leaves one palette, so the editor cannot stay pointed
             -- at whichever one it was on.
             editingMenu = 1

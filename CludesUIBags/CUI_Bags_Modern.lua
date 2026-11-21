@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Modern.lua
 --  The Modern bag display (bagDisplayMode = "modern"): the Grid display with
@@ -13,9 +11,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local mod = select(2, ...)
 local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -24,13 +20,9 @@ local SetSelectedCategoryIndex = Inner.SetSelectedCategoryIndex
 local SetSelectedGroupName = Inner.SetSelectedGroupName
 
 local selectedCategoryIndex = Inner.selectedCategoryIndex
-Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
-    selectedCategoryIndex = val
-end
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val) selectedCategoryIndex = val end
 local selectedGroupName
-Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val)
-    selectedGroupName = val
-end
+Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val) selectedGroupName = val end
 
 local STRIP_H = 32 -- the chip strip under the header
 local CHIP_H = 22
@@ -38,14 +30,10 @@ local CHIP_GAP = 6
 local CHIP_PAD = 10 -- text inset each side of a chip
 local SEARCH_W = 240 -- the search box, wider than the Grid display's
 
-local function Modern()
-    return CUI_Bags and CUI_Bags.IsModernMode and CUI_Bags.IsModernMode() == true
-end
+local function Modern() return CUI_Bags and CUI_Bags.IsModernMode and CUI_Bags.IsModernMode() == true end
 
 --- Height the Modern strip adds under the header (0 in every other display).
-function mod.ModernStripH()
-    return Modern() and STRIP_H or 0
-end
+function mod.ModernStripH() return Modern() and STRIP_H or 0 end
 
 local strip
 local chips = {}
@@ -65,33 +53,25 @@ local function PaintChip(chip, on)
 end
 
 local function ChipSelected(chip)
-    if chip._groupName then
-        return selectedGroupName == chip._groupName
-    end
+    if chip._groupName then return selectedGroupName == chip._groupName end
     return not selectedGroupName and selectedCategoryIndex == chip._catIdx
 end
 
 local function OnChipClick(chip)
     SetSelectedGroupName(chip._groupName)
     SetSelectedCategoryIndex(chip._catIdx)
-    if CUI_Bags._scrollFrame then
-        CUI_Bags._scrollFrame:SetVerticalScroll(0)
-    end
+    if CUI_Bags._scrollFrame then CUI_Bags._scrollFrame:SetVerticalScroll(0) end
     CUI_Bags:RefreshInventory()
 end
 
 local function GetChip(i)
     local chip = chips[i]
-    if chip then
-        return chip
-    end
+    if chip then return chip end
     chip = CreateFrame("Button", nil, strip)
     chip:SetHeight(CHIP_H)
     chip._fill = chip:CreateTexture(nil, "BACKGROUND")
     chip._fill:SetAllPoints()
-    if CUI.PanelPP then
-        CUI.PanelPP.CreateBorder(chip, 1, 1, 1, 0.12, 1, "OVERLAY", 7)
-    end
+    if CUI.PanelPP then CUI.PanelPP.CreateBorder(chip, 1, 1, 1, 0.12, 1, "OVERLAY", 7) end
     chip._label = chip:CreateFontString(nil, "OVERLAY")
     SetBagFont(chip._label, 11)
     chip._label:SetPoint("CENTER", 0, 0)
@@ -109,9 +89,7 @@ local function GetChip(i)
 end
 
 local function EnsureStrip()
-    if strip or not CUI_Bags.Header then
-        return strip
-    end
+    if strip or not CUI_Bags.Header then return strip end
     strip = CreateFrame("Frame", nil, CUI_Bags)
     strip:SetPoint("TOPLEFT", CUI_Bags.Header, "BOTTOMLEFT", 0, 0)
     strip:SetPoint("TOPRIGHT", CUI_Bags.Header, "BOTTOMRIGHT", 0, 0)
@@ -128,9 +106,7 @@ local function EnsureStrip()
     rule:SetPoint("BOTTOMRIGHT", strip, "BOTTOMRIGHT", 0, 0)
     rule:SetColorTexture(0.15, 0.15, 0.15, 1)
     -- The wider search box: the header has room once the sidebar is gone
-    if CUI_Bags._searchBox then
-        CUI_Bags._searchBox:SetWidth(SEARCH_W)
-    end
+    if CUI_Bags._searchBox then CUI_Bags._searchBox:SetWidth(SEARCH_W) end
     return strip
 end
 
@@ -138,9 +114,7 @@ end
 --- in the categories' own order (a group once, by its name). Chips that do
 --- not fit on the strip's one row are left off; All always fits.
 function mod.BuildModernChips(categoryCounts, totalCount)
-    if not Modern() or not EnsureStrip() then
-        return
-    end
+    if not Modern() or not EnsureStrip() then return end
     local list = { { catIdx = 0, name = CUI.L("All Items"), count = totalCount } }
     local categories = CUI_CategoryManager and CUI_CategoryManager:GetCategories() or {}
     local seenGroups = {}
@@ -163,9 +137,7 @@ function mod.BuildModernChips(categoryCounts, totalCount)
             end
         elseif not category.isEquipSet then
             local n = categoryCounts and categoryCounts[ci] or 0
-            if n > 0 then
-                list[#list + 1] = { catIdx = ci, name = category.name, count = n }
-            end
+            if n > 0 then list[#list + 1] = { catIdx = ci, name = category.name, count = n } end
         end
     end
 
@@ -178,9 +150,7 @@ function mod.BuildModernChips(categoryCounts, totalCount)
         chip._groupName = record.groupName
         chip._label:SetText(record.name)
         local w = math.ceil(chip._label:GetStringWidth()) + 2 * CHIP_PAD
-        if i > 1 and x + w > room + CHIP_GAP then
-            break
-        end
+        if i > 1 and x + w > room + CHIP_GAP then break end
         chip:SetWidth(w)
         chip:ClearAllPoints()
         chip:SetPoint("LEFT", strip, "LEFT", x, 0)

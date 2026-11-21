@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then
-    return
-end -- Mythic+ Tools does not load on WoW Forever (the main file drops the block type there too)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then return end -- Mythic+ Tools does not load on WoW Forever (the main file drops the block type there too)
 -------------------------------------------------------------------------------
 --  Blocks\MythicSummary.lua - Info Bar block: the latest Mythic+ run.
 --
@@ -37,9 +33,7 @@ end
 -- Mythic+ Tools has loaded, so it exists by then).
 local function Hook()
     local store = CludesUI._MythicRuns
-    if store then
-        store.OnChanged = next(blocks) and RunsChanged or nil
-    end
+    if store then store.OnChanged = next(blocks) and RunsChanged or nil end
 end
 
 local function Runs()
@@ -54,9 +48,7 @@ end
 
 -- "+12 Ara-Kara", the level in its keystone colour as in the Run Summary.
 local function RunName(run)
-    if not run then
-        return CludesUI.L("No runs recorded yet")
-    end
+    if not run then return CludesUI.L("No runs recorded yet") end
     local level = "+" .. (run.level or 0)
     local color = C_ChallengeMode
         and C_ChallengeMode.GetKeystoneLevelRarityColor
@@ -69,22 +61,16 @@ end
 
 -- The run's time as m:ss, and its colour: green in time, red over.
 local function RunTime(run)
-    if not run.timeMS then
-        return "-", 0.6, 0.6, 0.6
-    end
+    if not run.timeMS then return "-", 0.6, 0.6, 0.6 end
     local secs = floor(run.timeMS / 1000)
     local text = format("%d:%02d", floor(secs / 60), secs % 60)
-    if run.onTime then
-        return text, 0.176, 0.796, 0.349
-    end
+    if run.onTime then return text, 0.176, 0.796, 0.349 end
     return text, 0.9, 0.3, 0.3
 end
 
 local function AskClear()
     local store = CludesUI._MythicRuns
-    if not (store and store.Clear) then
-        return
-    end
+    if not (store and store.Clear) then return end
     CludesUI:ShowConfirmPopup({
         title = "Clear Run History",
         message = "Delete every recorded Mythic+ run for this character?",
@@ -116,14 +102,10 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
         end
     end
 
-    local function AfterCombat()
-        inst:Refresh()
-    end
+    local function AfterCombat() inst:Refresh() end
 
     function inst:Refresh()
-        if self._dead then
-            return
-        end
+        if self._dead then return end
         local run = Newest()
         -- Hide When Empty: no runs, no block (the bar drops its slot). A
         -- Show/Hide waits out combat.
@@ -179,9 +161,7 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_Begin(button)
         mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", red, green, blue)
         mod.Tip_AddLine(" ")
-        if count == 0 then
-            mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6)
-        end
+        if count == 0 then mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6) end
         for i = 1, count do
             local time, tr, tg, tb = RunTime(runs[i])
             mod.Tip_AddDouble(RunName(runs[i]), time, 0.8, 0.8, 0.8, tr, tg, tb)
@@ -207,15 +187,11 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
     end)
     button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton == "RightButton" then
-            if Newest() then
-                AskClear()
-            end
+            if Newest() then AskClear() end
         elseif mouseButton == "LeftButton" then
             -- The /ov path, so a disabled Run Summary says so the same way.
             local open = SlashCmdList and SlashCmdList.CUIMPLUS
-            if open then
-                open("")
-            end
+            if open then open("") end
         end
     end)
 
@@ -233,12 +209,8 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if not contentFrame:IsShown() then
-            return 0
-        end
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if not contentFrame:IsShown() then return 0 end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 

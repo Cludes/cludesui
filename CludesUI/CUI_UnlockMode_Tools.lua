@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Tools.lua
 --  Unlock Mode tools: accent color, grid overlay, alignment guides, snap,
@@ -29,9 +27,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -------------------------------------------------------------------------------
     local function GetAccent()
         local eg = CludesUI and CludesUI.CLUDES_GREEN
-        if eg then
-            return eg.r, eg.g, eg.b
-        end
+        if eg then return eg.r, eg.g, eg.b end
         return 76 / 255, 201 / 255, 240 / 255
     end
 
@@ -39,9 +35,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     --  Grid overlay
     -------------------------------------------------------------------------------
     local function CreateGrid(hostFrame)
-        if LM.gridFrame then
-            return LM.gridFrame
-        end
+        if LM.gridFrame then return LM.gridFrame end
         -- Grid lives on its own BACKGROUND-strata frame so it renders BEHIND the
         -- real game UI elements (action bars, unit frames).
         LM.gridFrame = CreateFrame("Frame", nil, UIParent)
@@ -67,9 +61,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             local spacing = GRID_SPACING * mult
 
             -- Snap helper: round a UI coordinate to the nearest physical pixel
-            local function snap(v)
-                return floor(v / mult + 0.5) * mult
-            end
+            local function snap(v) return floor(v / mult + 0.5) * mult end
 
             local centerX = snap(wid / 2)
             local centerY = snap(hgt / 2)
@@ -235,9 +227,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             if not LM.flashlightEnabled then
                 flashFill:Hide()
                 for jdx = 1, #self._glows do
-                    if self._glows[jdx] then
-                        self._glows[jdx]:Hide()
-                    end
+                    if self._glows[jdx] then self._glows[jdx]:Hide() end
                 end
                 return
             end
@@ -339,9 +329,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
 
             for jdx = glowIdx + 1, #self._glows do
-                if self._glows[jdx] then
-                    self._glows[jdx]:Hide()
-                end
+                if self._glows[jdx] then self._glows[jdx]:Hide() end
             end
         end)
 
@@ -354,9 +342,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     local activeGuides = {}
 
     local function GetGuide(position)
-        if guidePool[position] then
-            return guidePool[position]
-        end
+        if guidePool[position] then return guidePool[position] end
         local texture = LM.unlockFrame:CreateTexture(nil, "OVERLAY", nil, 6)
         texture:SetColorTexture(1, 1, 1, 1)
         guidePool[position] = texture
@@ -371,9 +357,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     local snapHighlightElapsed = 0
 
     local function GetOrCreateSnapBorder(handle)
-        if handle._snapBrd then
-            return handle._snapBrd
-        end
+        if handle._snapBrd then return handle._snapBrd end
         local brd = CludesUI.MakeBorder(handle, 1, 1, 1, 0)
         -- Raise above the accent border
         brd._frame:SetFrameLevel(handle:GetFrameLevel() + 3)
@@ -384,12 +368,15 @@ CUI_NS.unlockParts.Tools = function(LM)
     local function DropSnapHighlight()
         if snapLitKey and handles[snapLitKey] then
             local handle = handles[snapLitKey]
-            if handle._snapBrd then
-                handle._snapBrd:SetColor(1, 1, 1, 0)
-            end
+            if handle._snapBrd then handle._snapBrd:SetColor(1, 1, 1, 0) end
             -- Restore normal overlay brightness
             if LM.darkOverlaysEnabled and handle._bg then
-                handle._bg:SetColorTexture(handle._bgR or 0.075, handle._bgG or 0.113, handle._bgB or 0.141, 0.95)
+                handle._bg:SetColorTexture(
+                    handle._bgR or 0.075,
+                    handle._bgG or 0.113,
+                    handle._bgB or 0.141,
+                    0.95
+                )
             end
         end
         snapLitKey = nil
@@ -401,15 +388,11 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
 
     local function ShowSnapHighlight(targetKey)
-        if targetKey == snapLitKey then
-            return
-        end
+        if targetKey == snapLitKey then return end
         -- Hide old highlight
         if snapLitKey and handles[snapLitKey] then
             local old = handles[snapLitKey]
-            if old._snapBrd then
-                old._snapBrd:SetColor(1, 1, 1, 0)
-            end
+            if old._snapBrd then old._snapBrd:SetColor(1, 1, 1, 0) end
             if LM.darkOverlaysEnabled and old._bg then
                 old._bg:SetColorTexture(old._bgR or 0.075, old._bgG or 0.113, old._bgB or 0.141, 0.95)
             end
@@ -431,9 +414,7 @@ CUI_NS.unlockParts.Tools = function(LM)
                 0.95
             )
         end
-        if not snapHighlightAnim then
-            snapHighlightAnim = CreateFrame("Frame")
-        end
+        if not snapHighlightAnim then snapHighlightAnim = CreateFrame("Frame") end
         snapHighlightAnim:SetScript("OnUpdate", function(self, elapsed)
             snapHighlightElapsed = snapHighlightElapsed + elapsed
             local target = handles[snapLitKey]
@@ -467,15 +448,11 @@ CUI_NS.unlockParts.Tools = function(LM)
     local prevSnap = {} -- written by SnapPosition, read by ShowAlignmentGuides
     -- Expose whether each axis has an active edge snap so OnUpdate can skip
     -- SnapForES on that axis (the unsnapped value already matches the target edge).
-    CludesUI._snapAxisLocked = function()
-        return prevSnap.lockX, prevSnap.lockY
-    end
+    CludesUI._snapAxisLocked = function() return prevSnap.lockX, prevSnap.lockY end
 
     local function ShowAlignmentGuides(dragKey)
         HideAllGuides()
-        if not prevSnap then
-            return
-        end
+        if not prevSnap then return end
 
         local accR, accG, accB = GetAccent()
         local guideIdx = 0
@@ -529,9 +506,7 @@ CUI_NS.unlockParts.Tools = function(LM)
 
     local function SnapPosition(dragKey, cx, cy, halfW, halfH)
         wipe(prevSnap)
-        if not LM.snapEnabled then
-            return cx, cy
-        end
+        if not LM.snapEnabled then return cx, cy end
 
         local dL = cx - halfW
         local dR = cx + halfW
@@ -544,9 +519,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         local dragMover = handles[dragKey]
         local perMoverTarget = dragMover and dragMover._snapTarget
         -- "_disable_" = snapping disabled for this specific mover
-        if perMoverTarget == "_disable_" then
-            return cx, cy
-        end
+        if perMoverTarget == "_disable_" then return cx, cy end
         if
             perMoverTarget
             and perMoverTarget ~= dragKey
@@ -660,12 +633,8 @@ CUI_NS.unlockParts.Tools = function(LM)
         -- Apply edge/center snap
         local snapX = cx
         local snapY = cy
-        if bestDistX < SNAP_THRESH then
-            snapX = cx - bestDX
-        end
-        if bestDistY < SNAP_THRESH then
-            snapY = cy - bestDY
-        end
+        if bestDistX < SNAP_THRESH then snapX = cx - bestDX end
+        if bestDistY < SNAP_THRESH then snapY = cy - bestDY end
 
         -- Record guide line positions for ShowAlignmentGuides
         if bestDistX < SNAP_THRESH and snapXLinePos then
@@ -687,9 +656,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -- overlay background, so the currently-selected element (the one arrow keys
     -- move) is clearly marked, like the snap-target highlight shown during drag.
     local function SetSelectionHighlight(handle, enabled)
-        if not handle then
-            return
-        end
+        if not handle then return end
         if enabled then
             if not handle._selHl then
                 local highlight = handle:CreateTexture(nil, "ARTWORK")
@@ -708,50 +675,34 @@ CUI_NS.unlockParts.Tools = function(LM)
         local accR, accG, accB = GetAccent()
         -- Selecting a mover releases any selected fallback ghost (one arrow-key
         -- target at a time)
-        if CludesUI._DeselectFallbackGhosts then
-            CludesUI._DeselectFallbackGhosts()
-        end
-        if CludesUI._DeselectOverrideGhosts then
-            CludesUI._DeselectOverrideGhosts()
-        end
+        if CludesUI._DeselectFallbackGhosts then CludesUI._DeselectFallbackGhosts() end
+        if CludesUI._DeselectOverrideGhosts then CludesUI._DeselectOverrideGhosts() end
         -- Deselect previous
         if LM.selectedMover and LM.selectedMover ~= handle then
             LM.selectedMover._selected = false
             SetSelectionHighlight(LM.selectedMover, false)
             if not LM.selectedMover._dragging and not LM.selectedMover:IsMouseOver() then
                 LM.selectedMover:SetFrameLevel(LM.selectedMover._baseLevel)
-                if not LM.darkOverlaysEnabled then
-                    LM.selectedMover:SetAlpha(MOVER_ALPHA)
-                end
+                if not LM.darkOverlaysEnabled then LM.selectedMover:SetAlpha(MOVER_ALPHA) end
                 LM.selectedMover._brd:SetColor(accR, accG, accB, 0.6)
                 -- Collapse overlay on old selection
-                if LM.selectedMover._hideOverlayText then
-                    LM.selectedMover._hideOverlayText()
-                end
+                if LM.selectedMover._hideOverlayText then LM.selectedMover._hideOverlayText() end
             end
             -- Hide action buttons on old selection
-            if LM.selectedMover._hideCogAfterDelay then
-                LM.selectedMover._hideCogAfterDelay()
-            end
+            if LM.selectedMover._hideCogAfterDelay then LM.selectedMover._hideCogAfterDelay() end
             -- Hide coordinates on old selection (keep if coords-always-on)
-            if LM.selectedMover._coordFS and not LM.coordsEnabled then
-                LM.selectedMover._coordFS:Hide()
-            end
+            if LM.selectedMover._coordFS and not LM.coordsEnabled then LM.selectedMover._coordFS:Hide() end
         end
         LM.selectedMover = handle
         if handle then
             handle._selected = true
             SetSelectionHighlight(handle, true)
             handle:SetFrameLevel(handle._raisedLevel)
-            if not LM.darkOverlaysEnabled then
-                handle:SetAlpha(MOVER_HOVER)
-            end
+            if not LM.darkOverlaysEnabled then handle:SetAlpha(MOVER_HOVER) end
             handle._brd:SetColor(1, 1, 1, 0.9)
 
             -- Update coordinates on selection (expansion is hover-only)
-            if handle.UpdateCoordText then
-                handle:UpdateCoordText()
-            end
+            if handle.UpdateCoordText then handle:UpdateCoordText() end
 
             -- Pulse the snap target if this mover has a specific one assigned
             local tgt = handle._snapTarget
@@ -771,44 +722,30 @@ CUI_NS.unlockParts.Tools = function(LM)
             if not LM.selectedMover._dragging then
                 if not LM.selectedMover:IsMouseOver() then
                     LM.selectedMover:SetFrameLevel(LM.selectedMover._baseLevel)
-                    if not LM.darkOverlaysEnabled then
-                        LM.selectedMover:SetAlpha(MOVER_ALPHA)
-                    end
+                    if not LM.darkOverlaysEnabled then LM.selectedMover:SetAlpha(MOVER_ALPHA) end
                     LM.selectedMover._brd:SetColor(accR, accG, accB, 0.6)
-                    if LM.selectedMover._hideOverlayText then
-                        LM.selectedMover._hideOverlayText()
-                    end
+                    if LM.selectedMover._hideOverlayText then LM.selectedMover._hideOverlayText() end
                 end
             end
             -- Restore settings widgets to base level
             -- Hide coordinates (keep visible if coords-always-on mode is active)
-            if LM.selectedMover._coordFS and not LM.coordsEnabled then
-                LM.selectedMover._coordFS:Hide()
-            end
+            if LM.selectedMover._coordFS and not LM.coordsEnabled then LM.selectedMover._coordFS:Hide() end
             -- Clear snap highlight
             DropSnapHighlight()
             -- Cancel select-element pick mode if this mover was the picker -- restore previous target
             if LM.selectElementPicker == LM.selectedMover then
                 LM.selectedMover._snapTarget = LM.selectedMover._preSelectTarget
                 LM.selectedMover._preSelectTarget = nil
-                if LM.selectedMover._updateSnapLabel then
-                    LM.selectedMover._updateSnapLabel()
-                end
+                if LM.selectedMover._updateSnapLabel then LM.selectedMover._updateSnapLabel() end
                 LM.selectElementPicker = nil
                 FadeOverlayForSelectElement(false)
             end
             -- Cancel width/height/anchor pick mode if this mover was the picker
-            if LM.pickModeMover == LM.selectedMover then
-                CancelPickMode()
-            end
+            if LM.pickModeMover == LM.selectedMover then CancelPickMode() end
         end
         LM.selectedMover = nil
-        if CludesUI._DeselectFallbackGhosts then
-            CludesUI._DeselectFallbackGhosts()
-        end
-        if CludesUI._DeselectOverrideGhosts then
-            CludesUI._DeselectOverrideGhosts()
-        end
+        if CludesUI._DeselectFallbackGhosts then CludesUI._DeselectFallbackGhosts() end
+        if CludesUI._DeselectOverrideGhosts then CludesUI._DeselectOverrideGhosts() end
     end
 
     -- Namespace bridge so the fallback ghost overlays (defined earlier in the
@@ -833,13 +770,9 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
         local handle = flashM
         flashM = nil
-        if not handle then
-            return
-        end
+        if not handle then return end
         handle._selFlashBrd:SetColor(flashR, flashG, flashB, 0)
-        if handle._selHl and handle._selected then
-            handle._selHl:SetAlpha(0.10)
-        end
+        if handle._selHl and handle._selected then handle._selHl:SetAlpha(0.10) end
     end
 
     local function FlashTick(self, dt)
@@ -848,24 +781,16 @@ CUI_NS.unlockParts.Tools = function(LM)
             return EndFlash()
         end
         flashT = flashT + dt
-        if flashT >= FLASH_DUR then
-            return EndFlash()
-        end
+        if flashT >= FLASH_DUR then return EndFlash() end
         local p = sin(math.pi * flashT / FLASH_PERIOD)
         p = p * p
         handle._selFlashBrd:SetColor(flashR, flashG, flashB, p)
-        if handle._selHl then
-            handle._selHl:SetAlpha(0.10 + 0.25 * p)
-        end
+        if handle._selHl then handle._selHl:SetAlpha(0.10 + 0.25 * p) end
     end
 
     local function FlashSelectHighlight(handle)
-        if not handle or not handle._brd or not handle:IsShown() then
-            return
-        end
-        if flashM and flashM ~= handle then
-            EndFlash()
-        end
+        if not handle or not handle._brd or not handle:IsShown() then return end
+        if flashM and flashM ~= handle then EndFlash() end
         if not handle._selFlashBrd then
             handle._selFlashBrd = CludesUI.MakeBorder(handle, 1, 1, 1, 0)
             Pix.SetBorderSize(handle._selFlashBrd._frame, 2)
@@ -874,9 +799,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         handle._selFlashBrd._frame:SetFrameLevel(handle:GetFrameLevel() + 4)
         flashR, flashG, flashB = GetAccent()
         flashM, flashT = handle, 0
-        if not flashFrame then
-            flashFrame = CreateFrame("Frame")
-        end
+        if not flashFrame then flashFrame = CreateFrame("Frame") end
         flashFrame:SetScript("OnUpdate", FlashTick)
         flashFrame:Show()
     end
@@ -885,7 +808,12 @@ CUI_NS.unlockParts.Tools = function(LM)
     local function ApplyDarkOverlays()
         for _, handle in pairs(handles) do
             if LM.darkOverlaysEnabled then
-                handle._bg:SetColorTexture(handle._bgR or 0.075, handle._bgG or 0.113, handle._bgB or 0.141, 0.95)
+                handle._bg:SetColorTexture(
+                    handle._bgR or 0.075,
+                    handle._bgG or 0.113,
+                    handle._bgB or 0.141,
+                    0.95
+                )
                 if handle._label then
                     handle._label:SetAlpha(1)
                     handle._label:Show()
@@ -894,35 +822,23 @@ CUI_NS.unlockParts.Tools = function(LM)
                     handle._subtitle:SetAlpha(1)
                     handle._subtitle:Show()
                 end
-                if handle._coordFS then
-                    handle._coordFS:SetAlpha(1)
-                end
+                if handle._coordFS then handle._coordFS:SetAlpha(1) end
                 -- Action row is hover-only now, don't show it here
-                if not handle._dragging then
-                    handle:SetAlpha(1)
-                end
+                if not handle._dragging then handle:SetAlpha(1) end
             else
                 handle._bg:SetColorTexture(0, 0, 0, 0)
-                if handle._label then
-                    handle._label:Hide()
-                end
-                if handle._subtitle then
-                    handle._subtitle:Hide()
-                end
+                if handle._label then handle._label:Hide() end
+                if handle._subtitle then handle._subtitle:Hide() end
                 -- When coords-always-on is active, show coords for all movers; otherwise hide
                 if handle._coordFS then
                     if LM.coordsEnabled then
-                        if handle.UpdateCoordText then
-                            handle:UpdateCoordText()
-                        end
+                        if handle.UpdateCoordText then handle:UpdateCoordText() end
                     else
                         handle._coordFS:Hide()
                     end
                 end
                 -- Hide action row text
-                if handle._hideOverlayText then
-                    handle._hideOverlayText()
-                end
+                if handle._hideOverlayText then handle._hideOverlayText() end
                 -- Restore normal alpha behavior
                 if not handle._dragging and not handle._selected and not handle:IsMouseOver() then
                     handle:SetAlpha(MOVER_ALPHA)
@@ -966,18 +882,12 @@ CUI_NS.unlockParts.Tools = function(LM)
 
     local function NudgeMover(deltaX, deltaY, targetMover, skipCollapse)
         local handle = targetMover or LM.selectedMover
-        if not handle or InCombatLockdown() then
-            return
-        end
-        if mod.IsMoverPosLocked(handle._barKey) then
-            return
-        end
+        if not handle or InCombatLockdown() then return end
+        if mod.IsMoverPosLocked(handle._barKey) then return end
 
         -- Read bar's current position, add dx/dy, reposition.
         local barFrame = LM.GetBarFrame(handle._barKey)
-        if not barFrame then
-            return
-        end
+        if not barFrame then return end
 
         -- An element that places itself (ownsPosition) moves like an unanchored one:
         -- its links are inert.
@@ -989,12 +899,8 @@ CUI_NS.unlockParts.Tools = function(LM)
             anchorInfo.offsetX = (anchorInfo.offsetX or 0) + deltaX
             anchorInfo.offsetY = (anchorInfo.offsetY or 0) + deltaY
             -- The growth-edge pin rides the same nudge on its axis.
-            if anchorInfo.edgeOffX ~= nil then
-                anchorInfo.edgeOffX = anchorInfo.edgeOffX + deltaX
-            end
-            if anchorInfo.edgeOffY ~= nil then
-                anchorInfo.edgeOffY = anchorInfo.edgeOffY + deltaY
-            end
+            if anchorInfo.edgeOffX ~= nil then anchorInfo.edgeOffX = anchorInfo.edgeOffX + deltaX end
+            if anchorInfo.edgeOffY ~= nil then anchorInfo.edgeOffY = anchorInfo.edgeOffY + deltaY end
             -- An axis held by the cross-axis screen edge takes the nudge there, or the
             -- next apply overwrites it from the untouched edge offset.
             if anchorInfo.edge and anchorInfo.edge.key then
@@ -1020,9 +926,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         else
             -- Unanchored: read current position, add dx/dy
             local pt, _, relPt, offX, offY = barFrame:GetPoint(1)
-            if not pt then
-                return
-            end
+            if not pt then return end
             pcall(function()
                 CludesUI.ClearFramePoints(barFrame)
                 CludesUI.SetFramePoint(barFrame, pt, UIParent, relPt, offX + deltaX, offY + deltaY)
@@ -1035,9 +939,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             if type(prev) ~= "table" or prev._anchored or not prev.point then
                 local elemN = registeredElements[handle._barKey]
                 prev = elemN and elemN.loadPosition and elemN.loadPosition(handle._barKey) or nil
-                if not prev then
-                    prev = LoadBarPosition(handle._barKey)
-                end
+                if not prev then prev = LoadBarPosition(handle._barKey) end
             end
             if
                 type(prev) == "table"
@@ -1064,9 +966,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         -- Same element follow-up the drag gives after each placement (main chat
         -- restores its size corner), before the mover and the anchor chain read
         -- the frame's rect.
-        if element and element.onLiveMove then
-            pcall(element.onLiveMove, handle._barKey)
-        end
+        if element and element.onLiveMove then pcall(element.onLiveMove, handle._barKey) end
         LM.hasChanges = true
 
         -- Reanchor mover to bar, inside the element's visual insets (see Sync).
@@ -1089,26 +989,20 @@ CUI_NS.unlockParts.Tools = function(LM)
             local ratio = s / uiS
             local cx = (bL + bR) * 0.5 * ratio + (nIL - nIR) * 0.5
             local cy = (bT + bB) * 0.5 * ratio - UIParent:GetHeight() + (nIB - nIT) * 0.5
-            if handle._setCenterXY then
-                handle._setCenterXY(cx, cy)
-            end
+            if handle._setCenterXY then handle._setCenterXY(cx, cy) end
         end
 
         -- Propagate to anchored children
         LM.PropagateAnchorChain(handle._barKey)
 
         -- Update coordinate readout
-        if handle.UpdateCoordText then
-            handle:UpdateCoordText()
-        end
+        if handle.UpdateCoordText then handle:UpdateCoordText() end
 
         -- Collapse the mover while nudging (arrow keys only). Typed cog edits pass
         -- skipCollapse so the open cog menu, which is anchored to the mover, does
         -- not jump or shrink while the user is typing in it.
         if not skipCollapse then
-            if handle._forceCollapse then
-                handle._forceCollapse()
-            end
+            if handle._forceCollapse then handle._forceCollapse() end
             handle._nudgeCollapsed = true
         end
     end
@@ -1148,35 +1042,23 @@ CUI_NS.unlockParts.Tools = function(LM)
                     end
                 end
             end
-            if CludesUI.LayoutCDMBar then
-                CludesUI.LayoutCDMBar(rawKey)
-            end
+            if CludesUI.LayoutCDMBar then CludesUI.LayoutCDMBar(rawKey) end
             CludesUI.RecenterBarAnchor(barId)
         elseif barId == "ERB_TotemBar" then
             local erb = CludesUI.Lite.GetAddon("CludesUIResourceBars", true)
             local tb = erb and erb.db and erb.db.profile and erb.db.profile.totemBar
-            if tb then
-                tb.growDirection = val
-            end
-            if CludesUI.LayoutTotemBar then
-                CludesUI.LayoutTotemBar()
-            end
+            if tb then tb.growDirection = val end
+            if CludesUI.LayoutTotemBar then CludesUI.LayoutTotemBar() end
             CludesUI.RecenterBarAnchor(barId)
         elseif barId == "EABR_Reminders" then
-            if CludesUI.SetAuraBuffGrowDir then
-                CludesUI.SetAuraBuffGrowDir(val)
-            end
+            if CludesUI.SetAuraBuffGrowDir then CludesUI.SetAuraBuffGrowDir(val) end
             CludesUI.RecenterBarAnchor(barId)
         elseif barId:sub(1, 4) == "PAB_" then
             local euf = CludesUI.Lite.GetAddon("CludesUIUnitFrames", true)
-            if euf and euf.SetGrowDirectionForBar then
-                euf:SetGrowDirectionForBar(barId, val)
-            end
+            if euf and euf.SetGrowDirectionForBar then euf:SetGrowDirectionForBar(barId, val) end
         else
             local eab = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
-            if eab and eab.SetGrowDirectionForBar then
-                eab:SetGrowDirectionForBar(barId, val)
-            end
+            if eab and eab.SetGrowDirectionForBar then eab:SetGrowDirectionForBar(barId, val) end
         end
 
         -- Restore the bar's visual center so it doesn't jump,
@@ -1204,7 +1086,8 @@ CUI_NS.unlockParts.Tools = function(LM)
         -- that direction comes back. Centered growth keeps no hold.
         local anchorInfo = GetAnchorInfo(barId)
         if anchorInfo and anchorInfo.target then
-            anchorInfo.refFor, anchorInfo.refX, anchorInfo.refY, anchorInfo.edgeOffX, anchorInfo.edgeOffY = nil, nil, nil, nil, nil
+            anchorInfo.refFor, anchorInfo.refX, anchorInfo.refY, anchorInfo.edgeOffX, anchorInfo.edgeOffY =
+                nil, nil, nil, nil, nil
             if CludesUI._unlockCaptureGrowPin then
                 CludesUI._unlockCaptureGrowPin(barId, anchorInfo, anchorInfo.side)
             end
@@ -1224,16 +1107,12 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
 
         -- Sync the mover to the bar's new position
-        if handles[barId] and handles[barId].Sync then
-            handles[barId]:Sync()
-        end
+        if handles[barId] and handles[barId].Sync then handles[barId]:Sync() end
     end
 
     -- Arrow key nudge: single press only, no hold-to-repeat
     local function SetupArrowKeyFrame()
-        if LM.arrowKeyFrame then
-            return
-        end
+        if LM.arrowKeyFrame then return end
         LM.arrowKeyFrame = CreateFrame("Frame", nil, UIParent)
         LM.arrowKeyFrame:SetFrameStrata("FULLSCREEN_DIALOG")
         LM.arrowKeyFrame:SetFrameLevel(500)
@@ -1242,16 +1121,12 @@ CUI_NS.unlockParts.Tools = function(LM)
         LM.arrowKeyFrame:Hide()
 
         -- Keep scrolling passing through until the cycling modifier matches.
-        LM.arrowKeyFrame:SetScript("OnShow", function(self)
-            LM.UpdateMoverMouseWheel()
-        end)
+        LM.arrowKeyFrame:SetScript("OnShow", function(self) LM.UpdateMoverMouseWheel() end)
         LM.arrowKeyFrame:SetScript("OnHide", function(self)
             self:UnregisterEvent("MODIFIER_STATE_CHANGED")
             LM.UpdateMoverMouseWheel()
         end)
-        LM.arrowKeyFrame:SetScript("OnEvent", function()
-            LM.UpdateMoverMouseWheel()
-        end)
+        LM.arrowKeyFrame:SetScript("OnEvent", function() LM.UpdateMoverMouseWheel() end)
 
         local ARROW_DIRS = {
             UP = { 0, 1 },
@@ -1261,13 +1136,9 @@ CUI_NS.unlockParts.Tools = function(LM)
         }
 
         LM.arrowKeyFrame:SetScript("OnKeyDown", function(self, barKey)
-            if not LM.isUnlocked or InCombatLockdown() then
-                return
-            end
+            if not LM.isUnlocked or InCombatLockdown() then return end
             local direction = ARROW_DIRS[barKey]
-            if not direction then
-                return
-            end
+            if not direction then return end
             -- A selected fallback ghost answers the arrow keys with the exact
             -- same step math as movers (1 physical pixel; shift = 100).
             if not LM.selectedMover and CludesUI._NudgeSelectedFallbackGhost then
@@ -1289,9 +1160,7 @@ CUI_NS.unlockParts.Tools = function(LM)
                     return
                 end
             end
-            if not LM.selectedMover then
-                return
-            end
+            if not LM.selectedMover then return end
             self:SetPropagateKeyboardInput(false)
             -- Scale by physical pixel size so each press moves exactly 1px
             local PPn = CludesUI and CludesUI.PP
@@ -1304,18 +1173,12 @@ CUI_NS.unlockParts.Tools = function(LM)
             local menuOpen = handle._menuOpen
             NudgeMover(direction[1] * step, direction[2] * step, nil, menuOpen)
             if menuOpen then
-                if handle.ReanchorToBar then
-                    handle:ReanchorToBar()
-                end
-                if handle._syncCogPos then
-                    handle._syncCogPos()
-                end
+                if handle.ReanchorToBar then handle:ReanchorToBar() end
+                if handle._syncCogPos then handle._syncCogPos() end
             end
         end)
 
-        LM.arrowKeyFrame:SetScript("OnKeyUp", function(self, barKey)
-            self:SetPropagateKeyboardInput(true)
-        end)
+        LM.arrowKeyFrame:SetScript("OnKeyUp", function(self, barKey) self:SetPropagateKeyboardInput(true) end)
     end
 
     -------------------------------------------------------------------------------
@@ -1324,17 +1187,11 @@ CUI_NS.unlockParts.Tools = function(LM)
     --  Returns w, h in UIParent-relative pixels, or nil if not applicable.
     -------------------------------------------------------------------------------
     local function GetActionBarVisualSize(barId)
-        if not ABAR or not ABAR.db then
-            return nil
-        end
+        if not ABAR or not ABAR.db then return nil end
         local details = BAR_LOOKUP[barId]
-        if not details then
-            return nil
-        end
+        if not details then return nil end
         local cfg = ABAR.db.profile.bars[lookupKey]
-        if not cfg then
-            return nil
-        end
+        if not cfg then return nil end
 
         -- Use standard button size (45x45) -- our LayoutBar uses this for MainBar
         -- and reads from the button for others.
@@ -1348,34 +1205,24 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
 
         local numVisible = cfg.overrideNumIcons or cfg.numIcons or details.count
-        if numVisible < 1 then
-            numVisible = details.count
-        end
+        if numVisible < 1 then numVisible = details.count end
         local numRows = cfg.overrideNumRows or cfg.numRows or 1
-        if numRows < 1 then
-            numRows = 1
-        end
+        if numRows < 1 then numRows = 1 end
 
         local pad = cfg.buttonPadding or 2
 
         -- Use explicit button dimensions if set
         local bwOverride = (cfg.buttonWidth and cfg.buttonWidth > 0) and cfg.buttonWidth or nil
         local bhOverride = (cfg.buttonHeight and cfg.buttonHeight > 0) and cfg.buttonHeight or nil
-        if bwOverride then
-            btnW = bwOverride
-        end
-        if bhOverride then
-            btnH = bhOverride
-        end
+        if bwOverride then btnW = bwOverride end
+        if bhOverride then btnH = bhOverride end
 
         local shape = cfg.buttonShape or "none"
         if shape ~= "none" and shape ~= "cropped" then
             btnW = btnW + (mod.SHAPE_BTN_EXPAND or 10)
             btnH = btnH + (mod.SHAPE_BTN_EXPAND or 10)
         end
-        if shape == "cropped" then
-            btnH = btnH * 0.80
-        end
+        if shape == "cropped" then btnH = btnH * 0.80 end
 
         local isVert = (cfg.orientation == "vertical")
         local stride = math.ceil(numVisible / numRows)
@@ -1399,9 +1246,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -- Sort movers by area so smaller elements render on top of larger ones.
     -- Called after all movers are created and synced.
     local function SortMoverFrameLevels()
-        if not LM.unlockFrame then
-            return
-        end
+        if not LM.unlockFrame then return end
         local BASE = LM.unlockFrame:GetFrameLevel() + 20
         -- A mover's border, labels, links and cog occupy levels through +12.
         local STEP = 16
@@ -1411,18 +1256,14 @@ CUI_NS.unlockParts.Tools = function(LM)
             sorted[#sorted + 1] = { key = barKey, mover = handle, area = area }
         end
         -- Largest area first -> lowest frame level
-        table.sort(sorted, function(lhs, rhs)
-            return lhs.area > rhs.area
-        end)
+        table.sort(sorted, function(lhs, rhs) return lhs.area > rhs.area end)
         for i, record in ipairs(sorted) do
             local lvl = BASE + i * STEP
             record.mover._baseLevel = lvl
             record.mover._raisedLevel = lvl + (#sorted + 1) * STEP
             record.mover._cycleLowered = nil
             record.mover:SetFrameLevel(lvl)
-            if record.mover._cogBtn then
-                record.mover._cogBtn:SetFrameLevel(lvl + 10)
-            end
+            if record.mover._cogBtn then record.mover._cogBtn:SetFrameLevel(lvl + 10) end
         end
         -- Leave room above hovered movers (+100) and their point handles (+40).
         LM.moverOverlayLevel = math.max(250, BASE + (2 * #sorted + 1) * STEP + 160)
@@ -1433,18 +1274,14 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
         end
         local confirm = _G.CUIConfirmDimmer
-        if confirm and confirm:IsShown() then
-            confirm:SetFrameLevel(LM.moverOverlayLevel + 100)
-        end
+        if confirm and confirm:IsShown() then confirm:SetFrameLevel(LM.moverOverlayLevel + 100) end
     end
 
     -- Menus and anchor ghosts follow the stack when late registrations re-sort it.
     function LM.SetMoverOverlayLevel(widget, off)
         off = off or 0
         LM.moverOverlays = LM.moverOverlays or {}
-        if widget._moverOverlayOffset == nil then
-            LM.moverOverlays[#LM.moverOverlays + 1] = widget
-        end
+        if widget._moverOverlayOffset == nil then LM.moverOverlays[#LM.moverOverlays + 1] = widget end
         widget._moverOverlayOffset = off
         widget:SetFrameLevel((LM.moverOverlayLevel or 250) + off)
     end
@@ -1461,23 +1298,17 @@ CUI_NS.unlockParts.Tools = function(LM)
         -- then enforced against Edit Mode via the chat module's anchor guard).
         {
             label = "Micro Menu",
-            frame = function()
-                return _G.MicroMenuContainer
-            end,
+            frame = function() return _G.MicroMenuContainer end,
         },
         {
             label = "Bags",
-            frame = function()
-                return _G.BagsBar
-            end,
+            frame = function() return _G.BagsBar end,
         },
         -- On WoW Forever only while the bar itself shows: no stand-in box over an
         -- empty spot.
         {
             label = "Encounter Bar",
-            frame = function()
-                return _G.PlayerPowerBarAlt
-            end,
+            frame = function() return _G.PlayerPowerBarAlt end,
             showAlways = CludesUI.IS_FOREVER ~= true,
             fallbackW = 240,
             fallbackH = 36,
@@ -1485,15 +1316,11 @@ CUI_NS.unlockParts.Tools = function(LM)
         },
         {
             label = "Buffs",
-            frame = function()
-                return _G.BuffFrame
-            end,
+            frame = function() return _G.BuffFrame end,
         },
         {
             label = "Debuffs",
-            frame = function()
-                return _G.DebuffFrame
-            end,
+            frame = function() return _G.DebuffFrame end,
         },
         -- Blizzard Edit Mode's default tooltip anchor. CUI permanently owns the default
         -- tooltip position (fixed anchor in CludesUIBlizzardSkin, a real draggable
@@ -1503,9 +1330,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         {
             label = "Tooltip",
             frame = function()
-                if not (CludesUIDB and CludesUIDB.customTooltips == false) then
-                    return nil
-                end
+                if not (CludesUIDB and CludesUIDB.customTooltips == false) then return nil end
                 return _G.GameTooltipDefaultContainer
             end,
             showAlways = true,
@@ -1569,9 +1394,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             hoverT = hoverT + direction * (elapsed / 0.15)
             if (direction == 1 and hoverT >= hoverTarget) or (direction == -1 and hoverT <= hoverTarget) then
                 hoverT = hoverTarget
-                if hoverT == 0 then
-                    self:Hide()
-                end
+                if hoverT == 0 then self:Hide() end
             end
             ApplyHover(hoverT)
         end)
@@ -1583,12 +1406,8 @@ CUI_NS.unlockParts.Tools = function(LM)
             animFrame:Show()
         end
         local function OnLeave()
-            if actionBtn:IsShown() and actionBtn:IsMouseOver() then
-                return
-            end
-            if shade:IsMouseOver() then
-                return
-            end
+            if actionBtn:IsShown() and actionBtn:IsMouseOver() then return end
+            if shade:IsMouseOver() then return end
             hoverTarget = 0
             shade._brd:SetColor(accR, accG, accB, 0.6)
             animFrame:Show()
@@ -1606,13 +1425,9 @@ CUI_NS.unlockParts.Tools = function(LM)
         end)
         -- Click: close unlock mode, open Blizzard Edit Mode
         actionBtn:SetScript("OnClick", function()
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             if EditModeManagerFrame then
-                mod.RequestClose(false, function()
-                    ShowUIPanel(EditModeManagerFrame)
-                end)
+                mod.RequestClose(false, function() ShowUIPanel(EditModeManagerFrame) end)
             end
         end)
         shade._forceCollapse = function()
@@ -1694,9 +1509,7 @@ CUI_NS.unlockParts.Tools = function(LM)
 
     local function HideBlizzOwnedOverlays()
         for _, shade in pairs(_blizzOwnedOverlays) do
-            if shade._forceCollapse then
-                shade._forceCollapse()
-            end
+            if shade._forceCollapse then shade._forceCollapse() end
             shade:Hide()
         end
     end

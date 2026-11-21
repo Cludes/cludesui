@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_DruidMana.lua  (WoW Forever only)
 --  Mana Bar: a druid's mana while in a form that shows rage or energy, and
@@ -25,12 +21,8 @@ local LINE_H = 3
 local holderFrame, barFrame, line, textValue
 local lastMana, ruleEnds
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local function UsesMana()
     local max = UnitPowerMax("player", MANA)
@@ -39,20 +31,14 @@ end
 
 -- Druid in a form whose bar is not mana, or Always Show for a mana user.
 local function Wanted()
-    if not (Enabled() and UsesMana()) then
-        return false
-    end
-    if CludesUI._unlockActive or Get("always") then
-        return true
-    end
+    if not (Enabled() and UsesMana()) then return false end
+    if CludesUI._unlockActive or Get("always") then return true end
     local _, class = UnitClass("player")
     return class == "DRUID" and UnitPowerType("player") ~= MANA
 end
 
 local function Build()
-    if holderFrame then
-        return holderFrame
-    end
+    if holderFrame then return holderFrame end
     holderFrame = CreateFrame("Frame", "CludesUIManaBar", UIParent)
     barFrame = CreateFrame("StatusBar", nil, holderFrame)
     barFrame:SetPoint("TOPLEFT")
@@ -76,17 +62,13 @@ local function Build()
 end
 
 local function Layout()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     holderFrame:SetSize(Get("width"), Get("height") + LINE_H + 1)
     barFrame:SetHeight(Get("height"))
 end
 
 local function UpdateMana()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     if not Wanted() then
         holderFrame:Hide()
         return
@@ -109,9 +91,7 @@ local function UpdateMana()
 end
 
 local function Tick()
-    if not (ruleEnds and line) then
-        return
-    end
+    if not (ruleEnds and line) then return end
     local leftX = ruleEnds - GetTime()
     if leftX <= 0 or not Get("fiveSecond") then
         ruleEnds = nil
@@ -134,21 +114,15 @@ local function Apply()
         eventFrame:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
         eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if not ticker then
-            ticker = C_Timer.NewTicker(0.05, Tick)
-        end
-        if not CludesUI._unlockActive then
-            F.Place(holderFrame)
-        end
+        if not ticker then ticker = C_Timer.NewTicker(0.05, Tick) end
+        if not CludesUI._unlockActive then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
         if ticker then
             ticker:Cancel()
             ticker = nil
         end
-        if holderFrame then
-            holderFrame:Hide()
-        end
+        if holderFrame then holderFrame:Hide() end
     end
     UpdateMana()
 end
@@ -167,9 +141,7 @@ F.Start(Apply, {
         end
         return holderFrame
     end,
-    size = function()
-        return Get("width"), Get("height") + LINE_H + 1
-    end,
+    size = function() return Get("width"), Get("height") + LINE_H + 1 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })

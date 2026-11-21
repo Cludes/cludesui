@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_Dialogs.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not Inner or Inner.last ~= "TooltipSkin" then
-    return
-end
+if not Inner or Inner.last ~= "TooltipSkin" then return end
 
 local GetFFD = Inner.GetFFD
 
@@ -24,30 +20,18 @@ local GetFFD = Inner.GetFFD
 do
     local _qkbSkinned = false
     local function SkinQuickKeybindFrame()
-        if _qkbSkinned then
-            return
-        end
+        if _qkbSkinned then return end
         local qkb = QuickKeybindFrame
-        if not qkb then
-            return
-        end
+        if not qkb then return end
         _qkbSkinned = true
 
         local RS = CludesUI.RESKIN
         local _PP = CludesUI and CludesUI.PP
 
-        if qkb.NineSlice then
-            qkb.NineSlice:SetAlpha(0)
-        end
-        if qkb.BG then
-            qkb.BG:SetAlpha(0)
-        end
-        if qkb.Border then
-            qkb.Border:SetAlpha(0)
-        end
-        if qkb.Bg then
-            qkb.Bg:SetAlpha(0)
-        end
+        if qkb.NineSlice then qkb.NineSlice:SetAlpha(0) end
+        if qkb.BG then qkb.BG:SetAlpha(0) end
+        if qkb.Border then qkb.Border:SetAlpha(0) end
+        if qkb.Bg then qkb.Bg:SetAlpha(0) end
         local regionList = { qkb:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
@@ -63,33 +47,19 @@ do
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
         GetFFD(backdrop).owned = true
-        if _PP and _PP.CreateBorder then
-            _PP.CreateBorder(bgFrame, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7)
-        end
+        if _PP and _PP.CreateBorder then _PP.CreateBorder(bgFrame, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7) end
 
         -- The header is a Frame with sub-textures: strip art, raise level.
         if qkb.Header then
             qkb.Header:SetFrameLevel(qkb:GetFrameLevel() + 2)
-            if qkb.Header.LeftBG then
-                qkb.Header.LeftBG:SetAlpha(0)
-            end
-            if qkb.Header.CenterBG then
-                qkb.Header.CenterBG:SetAlpha(0)
-            end
-            if qkb.Header.RightBG then
-                qkb.Header.RightBG:SetAlpha(0)
-            end
+            if qkb.Header.LeftBG then qkb.Header.LeftBG:SetAlpha(0) end
+            if qkb.Header.CenterBG then qkb.Header.CenterBG:SetAlpha(0) end
+            if qkb.Header.RightBG then qkb.Header.RightBG:SetAlpha(0) end
         end
         -- Raise the instruction/output text above our bg.
-        if qkb.InstructionText then
-            qkb.InstructionText:SetDrawLayer("OVERLAY", 6)
-        end
-        if qkb.OutputText then
-            qkb.OutputText:SetDrawLayer("OVERLAY", 6)
-        end
-        if qkb.CancelDescriptionText then
-            qkb.CancelDescriptionText:SetDrawLayer("OVERLAY", 6)
-        end
+        if qkb.InstructionText then qkb.InstructionText:SetDrawLayer("OVERLAY", 6) end
+        if qkb.OutputText then qkb.OutputText:SetDrawLayer("OVERLAY", 6) end
+        if qkb.CancelDescriptionText then qkb.CancelDescriptionText:SetDrawLayer("OVERLAY", 6) end
 
         local btnNames = { "OkayButton", "CancelButton", "DefaultsButton" }
         -- Native mode leaves button text un-recolored.
@@ -112,23 +82,15 @@ do
                         region:SetAlpha(0)
                     end
                 end
-                if button.Left then
-                    button.Left:SetAlpha(0)
-                end
-                if button.Middle then
-                    button.Middle:SetAlpha(0)
-                end
-                if button.Right then
-                    button.Right:SetAlpha(0)
-                end
+                if button.Left then button.Left:SetAlpha(0) end
+                if button.Middle then button.Middle:SetAlpha(0) end
+                if button.Right then button.Right:SetAlpha(0) end
                 -- C++ swaps these on press, so re-suppress via a SetAlpha hook.
                 for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
                     local texture = button[texKey]
                     if texture and texture.SetAlpha then
                         hooksecurefunc(texture, "SetAlpha", function(self, a)
-                            if a > 0 then
-                                self:SetAlpha(0)
-                            end
+                            if a > 0 then self:SetAlpha(0) end
                         end)
                     end
                 end
@@ -145,33 +107,23 @@ do
                 end
                 -- Accent the text; Blizzard's hover turns it white.
                 local fontStr = button:GetFontString()
-                if fontStr and useAccent then
-                    fontStr:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
-                end
+                if fontStr and useAccent then fontStr:SetTextColor(ACC.r, ACC.g, ACC.b, 1) end
             end
         end
 
         -- UseCharacterBindingsButton is a CheckButton: left functional, only its label is raised for legibility.
         if qkb.UseCharacterBindingsButton and qkb.UseCharacterBindingsButton.SetCheckedTexture then
             local cbText = qkb.UseCharacterBindingsButton.Text or qkb.UseCharacterBindingsButton.text
-            if cbText then
-                cbText:SetDrawLayer("OVERLAY", 6)
-            end
+            if cbText then cbText:SetDrawLayer("OVERLAY", 6) end
         end
     end
 
     -- Blizzard_QuickKeybind is LoadOnDemand, so the frame may not exist at login: try after login, with ADDON_LOADED as the late-load fallback.
     local _qkbHooked = false
     local function TryHookQKB()
-        if _qkbHooked then
-            return
-        end
-        if not CludesUIDB then
-            return
-        end
-        if CludesUIDB.reskinQueuePopup == false then
-            return
-        end
+        if _qkbHooked then return end
+        if not CludesUIDB then return end
+        if CludesUIDB.reskinQueuePopup == false then return end
         local qkb = QuickKeybindFrame
         if qkb then
             _qkbHooked = true
@@ -199,41 +151,25 @@ end
 do
     local function SkinPremadeInvite()
         local dialog = _G.LFGListInviteDialog
-        if not dialog then
-            return
-        end
-        if not CludesUIDB or not CludesUIDB.reskinQueuePopup then
-            return
-        end
-        if GetFFD(dialog).skinned then
-            return
-        end
+        if not dialog then return end
+        if not CludesUIDB or not CludesUIDB.reskinQueuePopup then return end
+        if GetFFD(dialog).skinned then return end
         GetFFD(dialog).skinned = true
 
         local RS = CludesUI.RESKIN
         local _PP = CludesUI and CludesUI.PP
 
         -- Border/decoration only; role icon and content are preserved.
-        if dialog.Bg then
-            dialog.Bg:SetAlpha(0)
-        end
-        if dialog.BG then
-            dialog.BG:SetAlpha(0)
-        end
-        if dialog.NineSlice then
-            dialog.NineSlice:SetAlpha(0)
-        end
-        if dialog.Border then
-            dialog.Border:SetAlpha(0)
-        end
+        if dialog.Bg then dialog.Bg:SetAlpha(0) end
+        if dialog.BG then dialog.BG:SetAlpha(0) end
+        if dialog.NineSlice then dialog.NineSlice:SetAlpha(0) end
+        if dialog.Border then dialog.Border:SetAlpha(0) end
 
         local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
         GetFFD(backdrop).owned = true
-        if _PP and _PP.CreateBorder then
-            _PP.CreateBorder(dialog, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7)
-        end
+        if _PP and _PP.CreateBorder then _PP.CreateBorder(dialog, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7) end
 
         local function _accentOn()
             -- Native mode leaves text/border un-accented.
@@ -255,24 +191,16 @@ do
                         region:SetAlpha(0)
                     end
                 end
-                if button.Left then
-                    button.Left:SetAlpha(0)
-                end
-                if button.Middle then
-                    button.Middle:SetAlpha(0)
-                end
-                if button.Right then
-                    button.Right:SetAlpha(0)
-                end
+                if button.Left then button.Left:SetAlpha(0) end
+                if button.Middle then button.Middle:SetAlpha(0) end
+                if button.Right then button.Right:SetAlpha(0) end
                 if not GetFFD(button).skinned then
                     GetFFD(button).skinned = true
                     for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
                         local texture = button[texKey]
                         if texture and texture.SetAlpha then
                             hooksecurefunc(texture, "SetAlpha", function(self, a)
-                                if a > 0 then
-                                    self:SetAlpha(0)
-                                end
+                                if a > 0 then self:SetAlpha(0) end
                             end)
                         end
                     end
@@ -296,9 +224,7 @@ do
                 local ACC = { r = er, g = eg, b = editField }
                 local useAccent = _accentOn() and ACC
                 local fontStr = button:GetFontString()
-                if fontStr and useAccent then
-                    fontStr:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
-                end
+                if fontStr and useAccent then fontStr:SetTextColor(ACC.r, ACC.g, ACC.b, 1) end
             end
         end
     end
@@ -319,41 +245,25 @@ end
 do
     local function SkinApplicationDialog()
         local dialog = _G.LFGListApplicationDialog
-        if not dialog then
-            return
-        end
-        if CludesUIDB and CludesUIDB.reskinQueuePopup == false then
-            return
-        end
-        if GetFFD(dialog).skinned then
-            return
-        end
+        if not dialog then return end
+        if CludesUIDB and CludesUIDB.reskinQueuePopup == false then return end
+        if GetFFD(dialog).skinned then return end
         GetFFD(dialog).skinned = true
 
         local RS = CludesUI.RESKIN
         local _PP = CludesUI and CludesUI.PP
 
         -- Border/decoration only; content is preserved.
-        if dialog.Bg then
-            dialog.Bg:SetAlpha(0)
-        end
-        if dialog.BG then
-            dialog.BG:SetAlpha(0)
-        end
-        if dialog.NineSlice then
-            dialog.NineSlice:SetAlpha(0)
-        end
-        if dialog.Border then
-            dialog.Border:SetAlpha(0)
-        end
+        if dialog.Bg then dialog.Bg:SetAlpha(0) end
+        if dialog.BG then dialog.BG:SetAlpha(0) end
+        if dialog.NineSlice then dialog.NineSlice:SetAlpha(0) end
+        if dialog.Border then dialog.Border:SetAlpha(0) end
 
         local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
         GetFFD(backdrop).owned = true
-        if _PP and _PP.CreateBorder then
-            _PP.CreateBorder(dialog, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7)
-        end
+        if _PP and _PP.CreateBorder then _PP.CreateBorder(dialog, 1, 1, 1, RS.BRD_ALPHA, 1, "OVERLAY", 7) end
 
         local desc = _G.LFGListApplicationDialogDescription
         if desc then
@@ -364,16 +274,12 @@ do
                     region:SetAlpha(0)
                 end
             end
-            if desc.NineSlice then
-                desc.NineSlice:SetAlpha(0)
-            end
+            if desc.NineSlice then desc.NineSlice:SetAlpha(0) end
             local descBg = desc:CreateTexture(nil, "BACKGROUND")
             descBg:SetAllPoints()
             descBg:SetColorTexture(0.06, 0.06, 0.06, 0.8)
             GetFFD(descBg).owned = true
-            if _PP and _PP.CreateBorder then
-                _PP.CreateBorder(desc, 1, 1, 1, 0.08, 1, "OVERLAY", 7)
-            end
+            if _PP and _PP.CreateBorder then _PP.CreateBorder(desc, 1, 1, 1, 0.08, 1, "OVERLAY", 7) end
         end
 
         local function _accentOn()
@@ -396,22 +302,14 @@ do
                         region:SetAlpha(0)
                     end
                 end
-                if button.Left then
-                    button.Left:SetAlpha(0)
-                end
-                if button.Middle then
-                    button.Middle:SetAlpha(0)
-                end
-                if button.Right then
-                    button.Right:SetAlpha(0)
-                end
+                if button.Left then button.Left:SetAlpha(0) end
+                if button.Middle then button.Middle:SetAlpha(0) end
+                if button.Right then button.Right:SetAlpha(0) end
                 for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
                     local texture = button[texKey]
                     if texture and texture.SetAlpha then
                         hooksecurefunc(texture, "SetAlpha", function(self, a)
-                            if a > 0 then
-                                self:SetAlpha(0)
-                            end
+                            if a > 0 then self:SetAlpha(0) end
                         end)
                     end
                 end
@@ -430,9 +328,7 @@ do
                     end
                 end
                 local fontStr = button:GetFontString()
-                if fontStr and useAccent then
-                    fontStr:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
-                end
+                if fontStr and useAccent then fontStr:SetTextColor(ACC.r, ACC.g, ACC.b, 1) end
             end
         end
     end
@@ -457,38 +353,26 @@ do
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        if not GameMenuFrame then
-            return
-        end
+        if not GameMenuFrame then return end
         -- Independent toggle, default on: this is a popup menu, not a window, so no master reskin setting (window-skins style included) governs it.
-        if CludesUIDB and CludesUIDB.reskinGameMenu == false then
-            return
-        end
+        if CludesUIDB and CludesUIDB.reskinGameMenu == false then return end
 
         local RS = CludesUI.RESKIN
 
         local regionList = { GameMenuFrame:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region and region:IsObjectType("Texture") then
-                region:SetAlpha(0)
-            end
+            if region and region:IsObjectType("Texture") then region:SetAlpha(0) end
         end
-        if GameMenuFrame.NineSlice then
-            GameMenuFrame.NineSlice:SetAlpha(0)
-        end
-        if GameMenuFrame.Border then
-            GameMenuFrame.Border:SetAlpha(0)
-        end
+        if GameMenuFrame.NineSlice then GameMenuFrame.NineSlice:SetAlpha(0) end
+        if GameMenuFrame.Border then GameMenuFrame.Border:SetAlpha(0) end
         -- Header: strip art, accent the title, nudge down.
         local header = GameMenuFrame.Header
         if header then
             local regions2 = { header:GetRegions() }
             for idx = 1, #regions2 do
                 local region = regions2[idx]
-                if region and region:IsObjectType("Texture") then
-                    region:SetAlpha(0)
-                end
+                if region and region:IsObjectType("Texture") then region:SetAlpha(0) end
             end
             local headerText = header.Text or (header.GetRegions and select(1, header:GetRegions()))
             if headerText and headerText.SetTextColor then
@@ -508,15 +392,16 @@ do
             local skinData = GetFFD(button)
             -- Blizzard's pooled buttons keep skin data in this addon's FFD; CUI's two custom
             -- Game Menu buttons are created by the parent addon and keep theirs in ITS FFD. Fall back to that store so live option changes also reach the CludesUI button.
-            if not skinData.gameMenuInset and CludesUI._GetFFD then
-                skinData = CludesUI._GetFFD(button)
-            end
-            if not skinData.gameMenuInset then
-                return
-            end
+            if not skinData.gameMenuInset and CludesUI._GetFFD then skinData = CludesUI._GetFFD(button) end
+            if not skinData.gameMenuInset then return end
             local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                 or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-            skinData.gameMenuButtonBg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
+            skinData.gameMenuButtonBg:SetColorTexture(
+                color.r,
+                color.g,
+                color.b,
+                color.a == nil and 0.8 or color.a
+            )
             CludesUI._applyBlizzardConfiguredBorder(skinData.gameMenuInset, "popupMenuButton", 1)
             local fontStr = button:GetFontString()
             -- Native mode keeps Blizzard's own gold on our dark inset.
@@ -534,45 +419,35 @@ do
             end
             -- The CUI/Unlock custom buttons are created by the PARENT addon and stored in ITS namespace FFD (CludesUI._GetFFD), not this addon's own FFD; wrong table = dead code.
             local pd = CludesUI._GetFFD(GameMenuFrame)
-            if pd and pd.cuiBtn then
-                ApplyButtonStyle(pd.cuiBtn)
-            end
-            if pd and pd.unlockBtn then
-                ApplyButtonStyle(pd.unlockBtn)
-            end
+            if pd and pd.cuiBtn then ApplyButtonStyle(pd.cuiBtn) end
+            if pd and pd.unlockBtn then ApplyButtonStyle(pd.unlockBtn) end
         end
         ApplyMenuStyle()
         GameMenuFrame:HookScript("OnShow", ApplyMenuStyle)
         hooksecurefunc(GameMenuFrame, "InitButtons", function(dropMenu)
-            if not dropMenu.buttonPool then
-                return
-            end
+            if not dropMenu.buttonPool then return end
             for menuBtn in dropMenu.buttonPool:EnumerateActive() do
                 if not GetFFD(menuBtn).skinned then
                     GetFFD(menuBtn).skinned = true
                     local regions2 = { menuBtn:GetRegions() }
                     for jdx = 1, #regions2 do
                         local region = regions2[jdx]
-                        if region and region:IsObjectType("Texture") and region ~= menuBtn:GetFontString() then
+                        if
+                            region
+                            and region:IsObjectType("Texture")
+                            and region ~= menuBtn:GetFontString()
+                        then
                             region:SetAlpha(0)
                         end
                     end
-                    if menuBtn.Left then
-                        menuBtn.Left:SetAlpha(0)
-                    end
-                    if menuBtn.Middle then
-                        menuBtn.Middle:SetAlpha(0)
-                    end
-                    if menuBtn.Right then
-                        menuBtn.Right:SetAlpha(0)
-                    end
+                    if menuBtn.Left then menuBtn.Left:SetAlpha(0) end
+                    if menuBtn.Middle then menuBtn.Middle:SetAlpha(0) end
+                    if menuBtn.Right then menuBtn.Right:SetAlpha(0) end
                     for _, texKey in ipairs({ "Left", "Middle", "Right" }) do
                         local texture = menuBtn[texKey]
                         if texture and texture.SetAlpha then
                             hooksecurefunc(texture, "SetAlpha", function(self, a)
-                                if a > 0 then
-                                    self:SetAlpha(0)
-                                end
+                                if a > 0 then self:SetAlpha(0) end
                             end)
                         end
                     end

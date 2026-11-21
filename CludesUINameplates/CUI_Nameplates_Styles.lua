@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Styles.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs, ipairs, type = pairs, ipairs, type
@@ -27,9 +23,7 @@ local Pool = CludesUI._Pool
 local defaultSet = Inner.defaults
 
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 -------------------------------------------------------------------------------
 --  Stock styles (Global Settings > Style). Blizzard Style: the stock
@@ -143,9 +137,7 @@ mod.NP_CLASSIC = {
 -- The cast icon's centre from the cast bar's LEFT, and the level's centre
 -- from the health bar's RIGHT (both plates are centred on the bar's own
 -- middle line).
-function mod.NP_ClassicIconOffset(scale)
-    return -mod.NP_CLASSIC.plateOffL * scale, 0
-end
+function mod.NP_ClassicIconOffset(scale) return -mod.NP_CLASSIC.plateOffL * scale, 0 end
 -- The level's and the elite icon's seat in the health border's plate: the
 -- plate's own centre plus the user's own offsets. Their size scales with the
 -- bar until the user sets one (0 = follow the bar).
@@ -157,16 +149,12 @@ function mod.NP_ClassicSkullOffset(scale)
 end
 function mod.NP_ClassicLevelSize(scale)
     local val = p and p.classicLevelSize
-    if val and val > 0 then
-        return val
-    end
+    if val and val > 0 then return val end
     return math.max(6, mod.NP_CLASSIC.levelFont * scale)
 end
 function mod.NP_ClassicSkullSize(scale)
     local val = p and p.classicSkullSize
-    if val and val > 0 then
-        return val
-    end
+    if val and val > 0 then return val end
     return mod.NP_CLASSIC.levelIcon * scale
 end
 -- The Classic WoW UI border's reach past the health bar's two ends, 0 on
@@ -178,9 +166,7 @@ end
 -- same way, so its room comes back here too (ns.NP_Classic has just latched
 -- the variant flag read here).
 function mod.NP_ClassicBarReserve(scale)
-    if not mod.NP_Classic() then
-        return 0, mod._npForever and mod.NP_ForeverSide() or 0
-    end
+    if not mod.NP_Classic() then return 0, mod._npForever and mod.NP_ForeverSide() or 0 end
     local C = mod.NP_CLASSIC
     scale = scale or (mod.GetHealthBarHeight and mod.GetHealthBarHeight()) or 0
     return C.health.reachL * scale, C.health.reachR * scale
@@ -193,15 +179,11 @@ end
 mod.NP_FOREVER_LVL = { w = 28, gap = 5, pad = 5, font = 10, target = { 1, 1, 1 }, focus = { 1, 0.49, 0.039 } }
 -- Whether the plates carry the box: the variant, less the profile's Show
 -- Level Box opt-out (foreverHideLevelBox; nil = shown).
-function mod.NP_ForeverBoxOn()
-    return mod.NP_Forever() and not (p and p.foreverHideLevelBox)
-end
+function mod.NP_ForeverBoxOn() return mod.NP_Forever() and not (p and p.foreverHideLevelBox) end
 -- The room the box takes right of the bar (0 off the variant, and while the
 -- box is off, so everything lays out as plain Blizzard Style).
 function mod.NP_ForeverSide()
-    if not mod.NP_ForeverBoxOn() then
-        return 0
-    end
+    if not mod.NP_ForeverBoxOn() then return 0 end
     local L = mod.NP_FOREVER_LVL
     return L.gap + L.w
 end
@@ -209,9 +191,7 @@ end
 -- element off one edge of the bar.
 function mod.NP_ClassicSide(side, key)
     local left, right = mod.NP_ClassicBarReserve(key)
-    if side == "right" then
-        return right
-    end
+    if side == "right" then return right end
     return left
 end
 -- The cast bar's layout under the health bar: its shift right, its width
@@ -244,9 +224,7 @@ end
 -- the art's own proportion, the window stretches between them. Memoized;
 -- every layout pass may call it.
 function mod.NP_SeatClassicBorder(border, barFrame, scale)
-    if border._k == scale and border._bar == barFrame then
-        return
-    end
+    if border._k == scale and border._bar == barFrame then return end
     border._k, border._bar = scale, barFrame
     local C = mod.NP_CLASSIC
     local sheet = border.sheet
@@ -270,9 +248,7 @@ end
 -- and the class icon and under the texts; a height change re-seats them.
 function mod.NP_ApplyClassicHealthArt(backing, hgt)
     local health = backing and backing.health
-    if not health then
-        return
-    end
+    if not health then return end
     local C = mod.NP_CLASSIC
     local owner = backing._classicHealthHost
     if not owner then
@@ -327,9 +303,7 @@ end
 -- secret. Every unit read is treated as possibly secret.
 function mod.NP_UpdateClassicLevel(backing)
     local fontStr, sk = backing._classicLevel, backing._classicSkull
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local unitToken = backing.unit
     if not unitToken or not UnitExists(unitToken) then
         fontStr:Hide()
@@ -349,9 +323,7 @@ function mod.NP_UpdateClassicLevel(backing)
     -- something: a unit you cannot attack is never colour-ranked.
     local red, green, blue = 1, 0.82, 0
     local canAttack = UnitCanAttack("player", unitToken)
-    if issecretvalue and issecretvalue(canAttack) then
-        canAttack = false
-    end
+    if issecretvalue and issecretvalue(canAttack) then canAttack = false end
     if canAttack and not secret and C_PlayerInfo and C_PlayerInfo.GetContentDifficultyCreatureForPlayer then
         local diff = C_PlayerInfo.GetContentDifficultyCreatureForPlayer(unitToken)
         if not (issecretvalue and issecretvalue(diff)) and GetDifficultyColor then
@@ -372,9 +344,7 @@ end
 -- its own memo).
 function mod.NP_ApplyClassicCastArt(backing, castH)
     local cast = backing and backing.cast
-    if not cast then
-        return
-    end
+    if not cast then return end
     local C = mod.NP_CLASSIC
     local k = castH or cast:GetHeight()
     local owner = backing._classicCastHost
@@ -403,9 +373,7 @@ function mod.NP_ApplyClassicCastArt(backing, castH)
     then
         return
     end
-    if backing._classicCastK == k then
-        return
-    end
+    if backing._classicCastK == k then return end
     backing._classicCastK = k
     -- Above the border art AND above the health bar, as the pool intended:
     -- the cast bar is a plain child of the plate, so the host's own level
@@ -425,9 +393,7 @@ end
 -- under Classic WoW UI instead, so none of them can squash it back.
 function mod.NP_ClassicSpark(backing, scale)
     local cast, spark = backing and backing.cast, backing and backing.castSpark
-    if not (cast and spark) then
-        return
-    end
+    if not (cast and spark) then return end
     local C = mod.NP_CLASSIC
     spark:SetTexture(C.spark)
     spark:SetSize(C.sparkSize * scale, C.sparkSize * scale)
@@ -441,9 +407,7 @@ function mod.NP_SetSparkHeight(backing, castH)
         mod.NP_ClassicSpark(backing, castH)
         return
     end
-    if backing and backing.castSpark then
-        backing.castSpark:SetHeight(castH)
-    end
+    if backing and backing.castSpark then backing.castSpark:SetHeight(castH) end
 end
 mod._npAtlasMemo = {}
 -- The style this module RENDERS this session -- "cui" | "blizzard" |
@@ -454,9 +418,7 @@ mod._npAtlasMemo = {}
 function mod.NP_Style()
     local val = mod._npStyle
     if val == nil then
-        if not p then
-            return "cui"
-        end
+        if not p then return "cui" end
         val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
         mod._npStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it: the
@@ -468,18 +430,12 @@ function mod.NP_Style()
 end
 -- Stock-art mode: true for both stock styles (the geometry, gating and
 -- chrome they share -- zoom 0 icons, no CUI icon borders, no custom border).
-function mod.NP_Blizz()
-    return mod.NP_Style() ~= "cui"
-end
-function mod.NP_Classic()
-    return mod.NP_Style() == "classic"
-end
+function mod.NP_Blizz() return mod.NP_Style() ~= "cui" end
+function mod.NP_Classic() return mod.NP_Style() == "classic" end
 -- WoW Forever variant: NP_Style() still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces. False off Forever.
 function mod.NP_Forever()
-    if mod._npStyle == nil then
-        mod.NP_Style()
-    end
+    if mod._npStyle == nil then mod.NP_Style() end
     return mod._npForever == true
 end
 -- Stock kit frame art on a plain Texture (never a mask or a status bar
@@ -487,9 +443,7 @@ end
 -- client's own under the WoW Forever variant. Each texture is painted once
 -- per session.
 function mod.NP_StockAtlas(texture, name)
-    if mod.NP_Forever() then
-        return texture:SetAtlas(name)
-    end
+    if mod.NP_Forever() then return texture:SetAtlas(name) end
     return CludesUI.StockAtlas(texture, name)
 end
 function mod.NP_AtlasOK(name)
@@ -564,9 +518,7 @@ function mod.NP_BlizzBarShadow(barFrame, hgt, mask)
     -- Bar-shape mask, seated once per mask object.
     if mask and sh._mask ~= mask then
         for index = 1, 4 do
-            if sh._mask then
-                pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask)
-            end
+            if sh._mask then pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask) end
             sh[index]:AddMaskTexture(mask)
         end
         sh._mask = mask
@@ -645,13 +597,9 @@ end
 -- size-memoized ring geometry. The engine cells get the same look through
 -- AuraKit's blizzRoundArt lane (CUI_Nameplates_AuraContainers BuildNPStyle).
 function mod.NP_ApplyBlizzIconArt(widget, iconTex, wid, hgt)
-    if not (widget and iconTex) then
-        return
-    end
+    if not (widget and iconTex) then return end
     local B = mod.NP_BLIZZ
-    if not (mod.NP_AtlasOK(B.auraMask) and mod.NP_AtlasOK(B.auraRing)) then
-        return
-    end
+    if not (mod.NP_AtlasOK(B.auraMask) and mod.NP_AtlasOK(B.auraRing)) then return end
     local ring = widget._blizzIconRing
     if not ring then
         local mask = widget:CreateMaskTexture()
@@ -684,13 +632,9 @@ end
 -- cells get theirs through AuraKit's blizzBorder lane
 -- (CUI_Nameplates_AuraContainers BuildNPStyle).
 function mod.NP_ApplyClassicIconArt(widget, wid, hgt)
-    if not widget then
-        return
-    end
+    if not widget then return end
     local atlas = mod.NP_CLASSIC.debuffBorder
-    if not mod.NP_AtlasOK(atlas) then
-        return
-    end
+    if not mod.NP_AtlasOK(atlas) then return end
     local owner = widget._classicIconHost
     local border = widget._classicIconBorder
     if not border then
@@ -720,16 +664,12 @@ end
 -- isTarget is passed by callers that already resolved it.
 function mod.NP_ApplyBlizzSelection(backing, isTarget)
     local health = backing and backing.health
-    if not health or not backing.unit then
-        return
-    end
+    if not health or not backing.unit then return end
     local B = mod.NP_BLIZZ
     local sel, desel = backing._blizzSelected, backing._blizzDeselected
     if not sel then
         local fv = mod.NP_Forever() and mod.NP_AtlasOK(B.selYellow)
-        if not ((fv or mod.NP_AtlasOK(B.selected)) and mod.NP_AtlasOK(B.deselected)) then
-            return
-        end
+        if not ((fv or mod.NP_AtlasOK(B.selected)) and mod.NP_AtlasOK(B.deselected)) then return end
         local backdrop = backing.healthBG or health
         sel = health:CreateTexture(nil, "OVERLAY", nil, 5)
         if fv then
@@ -751,20 +691,14 @@ function mod.NP_ApplyBlizzSelection(backing, isTarget)
         desel:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, -1)
         backing._blizzDeselected = desel
     end
-    if isTarget == nil then
-        isTarget = UnitIsUnit(backing.unit, "target")
-    end
+    if isTarget == nil then isTarget = UnitIsUnit(backing.unit, "target") end
     local isFocus = not isTarget and UnitIsUnit(backing.unit, "focus")
     -- State memo: a plate show with the same selection state repaints nothing.
     local status = (isTarget and "target") or (isFocus and "focus") or false
-    if backing._blizzSelState == status then
-        return
-    end
+    if backing._blizzSelState == status then return end
     backing._blizzSelState = status
     -- WoW Forever: the level box's own border follows the same state.
-    if backing._fvLevelBox then
-        mod.NP_ForeverLevelSel(backing)
-    end
+    if backing._fvLevelBox then mod.NP_ForeverLevelSel(backing) end
     if isTarget or isFocus then
         local c
         if isTarget then
@@ -806,9 +740,7 @@ end
 -- preview; the caller sizes it.
 function mod.NP_BuildForeverLevelBox(health)
     local B, L = mod.NP_BLIZZ, mod.NP_FOREVER_LVL
-    if not mod.NP_AtlasOK(B.lvlBg) then
-        return nil
-    end
+    if not mod.NP_AtlasOK(B.lvlBg) then return nil end
     local box = Pool.CreateFrame("Frame", nil, health)
     box:EnableMouse(false)
     box:SetFrameLevel(health:GetFrameLevel() + 6)
@@ -822,9 +754,7 @@ function mod.NP_BuildForeverLevelBox(health)
     fontStr:SetPoint("CENTER", box, "CENTER", 0, 0)
     box._fs = fontStr
     local sk = box:CreateTexture(nil, "OVERLAY")
-    if mod.NP_AtlasOK(B.lvlSkull) then
-        sk:SetAtlas(B.lvlSkull)
-    end
+    if mod.NP_AtlasOK(B.lvlSkull) then sk:SetAtlas(B.lvlSkull) end
     sk:SetPoint("CENTER", box, "CENTER", 0, 0)
     sk:Hide()
     box._skull = sk
@@ -847,9 +777,7 @@ end
 -- (hidden, off the field every box path tests) for a switch back.
 function mod.NP_ApplyForeverLevelBox(backing, hgt)
     local health = backing and backing.health
-    if not health then
-        return
-    end
+    if not health then return end
     local box = backing._fvLevelBox
     if p and p.foreverHideLevelBox then
         if box then
@@ -861,9 +789,7 @@ function mod.NP_ApplyForeverLevelBox(backing, hgt)
     local L = mod.NP_FOREVER_LVL
     if not box then
         box = backing._fvLevelBoxSpare or mod.NP_BuildForeverLevelBox(health)
-        if not box then
-            return
-        end
+        if not box then return end
         backing._fvLevelBox, backing._fvLevelBoxSpare = box, nil
         -- The selection state may already be set on this plate.
         mod.NP_ForeverLevelSel(backing)
@@ -887,18 +813,14 @@ end
 -- as possibly secret: a secret level is shown as it comes, in the gold.
 function mod.NP_UpdateForeverLevel(backing)
     local box = backing._fvLevelBox
-    if not box then
-        return
-    end
+    if not box then return end
     local unitToken = backing.unit
     if not unitToken or not UnitExists(unitToken) then
         box:Hide()
         return
     end
     local off = UnitIsGameObject(unitToken)
-    if issecretvalue and issecretvalue(off) then
-        off = false
-    end
+    if issecretvalue and issecretvalue(off) then off = false end
     if off then
         box:Hide()
         return
@@ -930,9 +852,7 @@ end
 function mod.NP_ForeverLevelSel(backing)
     local box = backing._fvLevelBox
     local sel = box and box._sel
-    if not sel then
-        return
-    end
+    if not sel then return end
     local status, L = backing._blizzSelState, mod.NP_FOREVER_LVL
     local c = (status == "target" and L.target) or (status == "focus" and L.focus) or nil
     if c then
@@ -947,9 +867,7 @@ end
 -- never carry one).
 function mod.NP_ForeverSweepLevels()
     for _, pl in pairs(mod.plates) do
-        if pl._fvLevelBox then
-            mod.NP_UpdateForeverLevel(pl)
-        end
+        if pl._fvLevelBox then mod.NP_UpdateForeverLevel(pl) end
     end
 end
 -- Level edges the plates' own events do not carry: a unit's level and the
@@ -958,18 +876,12 @@ end
 -- so the events bill to this module, and is armed only while the variant's
 -- box shows: enable arms it, and every full settings refresh re-checks it
 -- (Show Level Box is per profile). Returns true when the state flipped.
-if CludesUI.IS_FOREVER == true then
-    mod._npFvLevelEv = CreateFrame("Frame")
-end
+if CludesUI.IS_FOREVER == true then mod._npFvLevelEv = CreateFrame("Frame") end
 function mod.NP_ForeverWatchLevels()
     local frame = mod._npFvLevelEv
-    if not frame then
-        return false
-    end
+    if not frame then return false end
     local enabled = mod.NP_ForeverBoxOn()
-    if enabled == (mod._npFvLevelArmed == true) then
-        return false
-    end
+    if enabled == (mod._npFvLevelArmed == true) then return false end
     mod._npFvLevelArmed = enabled
     if not enabled then
         frame:UnregisterAllEvents()
@@ -977,9 +889,7 @@ function mod.NP_ForeverWatchLevels()
     end
     frame:RegisterEvent("UNIT_LEVEL")
     frame:RegisterEvent("PLAYER_LEVEL_CHANGED")
-    if frame:GetScript("OnEvent") then
-        return true
-    end
+    if frame:GetScript("OnEvent") then return true end
     frame:SetScript("OnEvent", function(_, evt, unitToken)
         if evt == "PLAYER_LEVEL_CHANGED" then
             mod.NP_ForeverSweepLevels()
@@ -987,30 +897,20 @@ function mod.NP_ForeverWatchLevels()
         end
         -- The player's own UNIT_LEVEL arrives with PLAYER_LEVEL_CHANGED
         -- (one sweep for the pair).
-        if not unitToken or unitToken == "player" then
-            return
-        end
+        if not unitToken or unitToken == "player" then return end
         local pl = mod.plates[unitToken] or (mod.friendlyPlates and mod.friendlyPlates[unitToken])
-        if pl and pl._fvLevelBox then
-            mod.NP_UpdateForeverLevel(pl)
-        end
+        if pl and pl._fvLevelBox then mod.NP_UpdateForeverLevel(pl) end
     end)
     return true
 end
 -- Cast fill per cast kind ("cast" | "channel" | "interrupted"); one field test
 -- when the style is off, memoized per plate.
 function mod.NP_SetBlizzCastFill(backing, kind)
-    if not backing._blizzCastArt then
-        return
-    end
+    if not backing._blizzCastArt then return end
     kind = kind or "cast"
-    if backing._blizzCastKind == kind then
-        return
-    end
+    if backing._blizzCastKind == kind then return end
     local atlas = mod.NP_BLIZZ[kind]
-    if not mod.NP_AtlasOK(atlas) then
-        return
-    end
+    if not mod.NP_AtlasOK(atlas) then return end
     backing._blizzCastKind = kind
     backing.cast:GetStatusBarTexture():SetAtlas(atlas)
 end
@@ -1039,9 +939,7 @@ function mod.NP_ApplyBlizzCastArt(backing)
         end
     end
     mod.NP_SetBlizzCastFill(backing, backing.isCasting and backing._blizzCastLastKind or "cast")
-    if backing._blizzCastChrome then
-        return
-    end
+    if backing._blizzCastChrome then return end
     backing._blizzCastChrome = true
     if backing.castBG and mod.NP_AtlasOK(B.castBg) then
         CludesUI.StockAtlas(backing.castBG, B.castBg)
@@ -1054,15 +952,9 @@ function mod.NP_ApplyBlizzCastArt(backing)
         backing.castSpark:SetAtlas(B.castPip)
         backing.castSpark:SetWidth(4)
     end
-    if backing.castShield and mod.NP_AtlasOK(B.shield) then
-        backing.castShield:SetAtlas(B.shield)
-    end
-    if backing.castLeftBorder then
-        backing.castLeftBorder:Hide()
-    end
-    if backing.castIcon then
-        backing.castIcon:SetTexCoord(0, 1, 0, 1)
-    end
+    if backing.castShield and mod.NP_AtlasOK(B.shield) then backing.castShield:SetAtlas(B.shield) end
+    if backing.castLeftBorder then backing.castLeftBorder:Hide() end
+    if backing.castIcon then backing.castIcon:SetTexCoord(0, 1, 0, 1) end
 end
 
 -- Health bar texture overlay tables (stored on ns to avoid local count pressure)
@@ -1095,18 +987,14 @@ mod._npStyleSlotKeys =
 -- Once per profile; the controls stay the user's afterwards.
 mod._npClassicCastKeys = { "castBgColor", "castBgAlpha", "castBarUninterruptible" }
 function mod.NP_SeedClassic(prof)
-    if not prof or prof.classicCastSeeded then
-        return
-    end
+    if not prof or prof.classicCastSeeded then return end
     prof.classicCastSeeded = true
     prof.castBgColor = { r = 0, g = 0, b = 0 }
     prof.castBgAlpha = 0.5
     prof.castBarUninterruptible = { r = 0.7, g = 0.7, b = 0.7 }
 end
 function mod.NP_SeedStock(prof)
-    if not prof or prof.stockBarTextureSeeded then
-        return
-    end
+    if not prof or prof.stockBarTextureSeeded then return end
     prof.stockBarTextureSeeded = true
     prof.healthBarTexture = "blizzard"
     prof.castBarTexture = "blizzard"
@@ -1121,18 +1009,12 @@ end
 -- looks' values are banked on the way into the variant and come back on the
 -- way out.
 function mod.NP_SeedForever(prof)
-    if not prof then
-        return
-    end
+    if not prof then return end
     if not prof.foreverLevelSlotSeeded then
         prof.foreverLevelSlotSeeded = true
         local val = prof.textSlotLeft
-        if val == nil then
-            val = defaultSet.textSlotLeft
-        end
-        if val == "level" then
-            prof.textSlotLeft = "none"
-        end
+        if val == nil then val = defaultSet.textSlotLeft end
+        if val == "level" then prof.textSlotLeft = "none" end
     end
     if not prof.foreverRareSeeded then
         prof.foreverRareSeeded = true
@@ -1142,17 +1024,13 @@ end
 
 local function NoTintFlag(saved, key)
     local val = saved and saved[key]
-    if val == nil then
-        val = defaultSet[key]
-    end
+    if val == nil then val = defaultSet[key] end
     return val
 end
 
 local function ApplyHealthBarTexture(backing)
     local health = backing.health
-    if not health then
-        return
-    end
+    if not health then return end
     local texKey = (p and p.healthBarTexture) or defaultSet.healthBarTexture or "none"
     local filePath =
         CludesUI.ResolveTexturePath(mod.healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
@@ -1161,15 +1039,11 @@ local function ApplyHealthBarTexture(backing)
     if backing.absorb and backing._absFill ~= health:GetStatusBarTexture() then
         mod.NP_LayoutAbsorbBars(backing, health, backing._absEdge)
     end
-    if backing.castTintInt then
-        mod.NP_LayoutCastTints(backing)
-    end
+    if backing.castTintInt then mod.NP_LayoutCastTints(backing) end
     -- Blizzard Style: the user's fill under the stock background art, plus
     -- the bar's inner shadow (re-sized here on every appearance pass). The
     -- classic plate is the bare fill inside its 1px edge (the border path).
-    if mod.NP_Style() == "blizzard" then
-        mod.NP_ApplyBlizzBarArt(backing)
-    end
+    if mod.NP_Style() == "blizzard" then mod.NP_ApplyBlizzBarArt(backing) end
     mod.NP_ApplyRounding(backing, "health")
 end
 mod.ApplyHealthBarTexture = ApplyHealthBarTexture
@@ -1189,18 +1063,12 @@ local HP_OPTS = { roots = HP_ROOTS, textures = HP_TEX }
 local CAST_OPTS = { roots = NO_ROOTS, textures = CAST_TEX }
 function mod.NP_ApplyRounding(backing, part, cornersOnly)
     local health = backing.health
-    if not health then
-        return
-    end
+    if not health then return end
     local radius = (not mod.NP_Blizz() and p and p.cornerRadius) or 0
-    if radius > 0 and mod.GetWrapBorderCastbar() then
-        radius = 0
-    end
+    if radius > 0 and mod.GetWrapBorderCastbar() then radius = 0 end
     local customOn = radius > 0 and mod.IsCustomBorderEnabled()
     local style = customOn and ((p and p.customBorderTexture) or defaultSet.customBorderTexture) or "solid"
-    if not CludesUI.RoundedStyleOK(style) then
-        radius = 0
-    end
+    if not CludesUI.RoundedStyleOK(style) then radius = 0 end
     -- Join Cast Bar: while a cast shows, the health bar and the cast bar under
     -- it share one outline (the cast bar's show / hide re-rounds the health
     -- bar, see the cast visibility hook).
@@ -1211,9 +1079,7 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
         if backing._npRounded then
             backing._npRounded = nil
             CludesUI.RoundCorners(backing, 0)
-            if backing.cast then
-                CludesUI.RoundCorners(backing.cast, 0)
-            end
+            if backing.cast then CludesUI.RoundCorners(backing.cast, 0) end
         end
         return
     end
@@ -1302,18 +1168,14 @@ end
 -- hidden border still takes the colour, for its next show.
 function mod.NP_BasicBorderColor(backing, red, green, blue, a)
     CludesUI.PP.SetBorderColor(backing.health, red, green, blue, a)
-    if backing._npRounded then
-        CludesUI.RoundedBorderColor(backing.health, red, green, blue, a)
-    end
+    if backing._npRounded then CludesUI.RoundedBorderColor(backing.health, red, green, blue, a) end
 end
 
 -- Cast bar texture: mirrors ApplyHealthBarTexture with the same texture set (CUI built-ins +
 -- SharedMedia, appended into ns.healthBarTextures at options-build time). On ns (local cap).
 function mod.ApplyCastBarTexture(backing)
     local cast = backing.cast
-    if not cast then
-        return
-    end
+    if not cast then return end
     -- Blizzard Style: the stock cast bar art replaces the texture. The classic
     -- cast bar is the user's texture inside its 1px edge (ApplyCastBorder).
     if mod.NP_Style() == "blizzard" then
@@ -1327,13 +1189,9 @@ function mod.ApplyCastBarTexture(backing)
     -- The uninterruptible overlay is a flat WHITE8x8 (grey tint via SetAlphaFromBoolean) that
     -- would hide the fill texture; give it the same texture so the pattern shows through. The
     -- per-cast grey SetVertexColor is re-applied on every cast start, so this is safe.
-    if backing.castBarOverlay then
-        backing.castBarOverlay:SetTexture(filePath)
-    end
+    if backing.castBarOverlay then backing.castBarOverlay:SetTexture(filePath) end
     -- A path swap mints a new fill object: it joins the rounded body.
-    if backing._npRounded then
-        mod.NP_ApplyRounding(backing, "cast")
-    end
+    if backing._npRounded then mod.NP_ApplyRounding(backing, "cast") end
 end
 -- Bar backgrounds, painted on every enemy appearance pass so a profile switch or
 -- an override reaches live plates: the Background / Cast Background colours, and
@@ -1343,15 +1201,11 @@ end
 -- repaints keep it: paint these backgrounds only through SetColorTexture
 -- (SetTexture / SetAtlas go around it). Blizzard Style draws its stock art there.
 do
-    local function PaintTinted(self, red, green, blue, a)
-        self:SetVertexColor(red, green, blue, a)
-    end
+    local function PaintTinted(self, red, green, blue, a) self:SetVertexColor(red, green, blue, a) end
     -- A background's texture path in settings s (nil = flat); the options
     -- preview shares it.
     function mod.NP_TexBgPath(cfg, cast)
-        if not (cfg and cfg[cast and "castTextureBg" or "healthTextureBg"]) then
-            return nil
-        end
+        if not (cfg and cfg[cast and "castTextureBg" or "healthTextureBg"]) then return nil end
         return CludesUI.ResolveTexturePath(
             mod.healthBarTextures,
             cfg[cast and "castBarTexture" or "healthBarTexture"] or "none",
@@ -1387,9 +1241,7 @@ do
         backdrop:SetColorTexture(color.r, color.g, color.b, a)
     end
     function mod.ApplyBarBackgrounds(backing)
-        if mod.NP_Style() == "blizzard" then
-            return
-        end
+        if mod.NP_Style() == "blizzard" then return end
         Paint(
             backing.healthBG,
             mod.NP_TexBgPath(p, false),
@@ -1439,9 +1291,7 @@ function mod.ApplyAbsorbStyle(backing)
             local fillTex = barFrame:GetStatusBarTexture()
             if fillTex then
                 fillTex:SetDrawLayer("ARTWORK", 1)
-                if mask then
-                    fillTex:AddMaskTexture(mask)
-                end
+                if mask then fillTex:AddMaskTexture(mask) end
             end
         end
     end
@@ -1456,9 +1306,7 @@ function mod.ApplyAbsorbStyle(backing)
         end
     end
     -- A new shield texture is a new fill object: it joins the rounded body.
-    if backing._npRounded then
-        mod.NP_ApplyRounding(backing, "health")
-    end
+    if backing._npRounded then mod.NP_ApplyRounding(backing, "health") end
 end
 
 -- Shield absorbs, drawn like the unit frames' and secret-safe: both bars take
@@ -1496,9 +1344,7 @@ function mod.NP_BuildAbsorbBars(ownerFrame, health, mask)
     for _, barFrame in ipairs({ ab, fw }) do
         barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
         local fillTex = barFrame:GetStatusBarTexture()
-        if fillTex and mask then
-            fillTex:AddMaskTexture(mask)
-        end
+        if fillTex and mask then fillTex:AddMaskTexture(mask) end
         barFrame:SetFrameLevel(lvl)
         barFrame:SetMinMaxValues(0, 1)
         barFrame:SetValue(0)
@@ -1555,9 +1401,7 @@ function mod.NP_LayoutAbsorbBars(ownerFrame, health, mode)
         ab:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     end
     ownerFrame._absFwOn = mode == "overlay" or fromLeft
-    if not ownerFrame._absFwOn then
-        missClip:Hide()
-    end
+    if not ownerFrame._absFwOn then missClip:Hide() end
     ownerFrame._absEdge, ownerFrame._absFill = mode, fillTex
 end
 

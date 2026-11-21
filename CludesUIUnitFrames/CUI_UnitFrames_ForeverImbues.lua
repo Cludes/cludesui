@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverImbues.lua  (WoW Forever only)
 --
@@ -33,13 +31,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, mod = ...
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 local ET, WS = Enum.ItemEnchantType, Enum.WeaponSlot
-if not (ET and ET.Imbue and WS and C_Item and C_Item.GetWeaponEnchantInfo) then
-    return
-end
+if not (ET and ET.Imbue and WS and C_Item and C_Item.GetWeaponEnchantInfo) then return end
 
 local IMBUE, TEMPORARY = ET.Imbue, ET.Temporary
 local STYLE = "playerAuraBars_buffs" -- the default Buffs bar's style key
@@ -65,9 +59,7 @@ local track = {} -- weapon slot -> { id, endTime, total }
 local cells = {} -- cell index -> { f, d, dur, binding, inv }
 local events
 
-local function Readable(val)
-    return val ~= nil and not issecretvalue(val)
-end
+local function Readable(val) return val ~= nil and not issecretvalue(val) end
 
 local function Active(e)
     return Readable(e.hasEnchant)
@@ -81,13 +73,9 @@ end
 -- what GetTemporaryEnchantmentInfo reports, on a slot the bar declared, with a
 -- duration (the engine cells hide permanent enchants).
 local function EngineEnchantID(ws)
-    if DECLARED[ws] > numDeclared then
-        return nil
-    end
+    if DECLARED[ws] > numDeclared then return nil end
     local details = C_PaperDollInfo.GetTemporaryEnchantmentInfo(INV[ws])
-    if not (details and Readable(details.hasExpirationTime) and details.hasExpirationTime) then
-        return nil
-    end
+    if not (details and Readable(details.hasExpirationTime) and details.hasExpirationTime) then return nil end
     return Readable(details.enchantID) and details.enchantID or nil
 end
 
@@ -113,9 +101,7 @@ local function Scan()
         -- The engine cell's enchant: told apart by ID, else the imbue (it takes
         -- priority in what the game reports).
         local engine, covered = (imbue or temp) and EngineEnchantID(ws), nil
-        if engine then
-            covered = (temp and temp.enchantID == engine) and temp or imbue or temp
-        end
+        if engine then covered = (temp and temp.enchantID == engine) and temp or imbue or temp end
         -- A cell here for the other one: an imbue the engine cell leaves out, or
         -- an oil or stone under the imbue it shows.
         local found
@@ -134,9 +120,7 @@ local function Scan()
             end
             -- A new imbue, or the same one cast again (its end moved out): the
             -- swipe restarts from what is left now.
-            if tbl.id ~= found.enchantID or endTime > (tbl.endTime or 0) + 1 then
-                tbl.total = leftX
-            end
+            if tbl.id ~= found.enchantID or endTime > (tbl.endTime or 0) + 1 then tbl.total = leftX end
             tbl.id, tbl.endTime = found.enchantID, endTime
             num = num + 1
             local cfg = isShown[num]
@@ -163,12 +147,8 @@ end
 local function CellEnter(self)
     local c = self.fvImbue
     local style = CUI.AuraKit.styles[STYLE]
-    if not (c and c.inv) or (style and style.noTooltips) then
-        return
-    end
-    if style and style.tooltipCombatHide and InCombatLockdown() then
-        return
-    end
+    if not (c and c.inv) or (style and style.noTooltips) then return end
+    if style and style.tooltipCombatHide and InCombatLockdown() then return end
     GameTooltip:SetOwner(
         self,
         (style and style.tooltipAnchor == "cursor") and "ANCHOR_CURSOR" or "ANCHOR_BOTTOMLEFT"
@@ -177,16 +157,12 @@ local function CellEnter(self)
     GameTooltip:Show()
 end
 
-local function CellLeave()
-    GameTooltip:Hide()
-end
+local function CellLeave() GameTooltip:Hide() end
 
 local function Cell(index, hostFrame)
     local c = cells[index]
     if c then
-        if c.f:GetParent() ~= hostFrame then
-            c.f:SetParent(hostFrame)
-        end
+        if c.f:GetParent() ~= hostFrame then c.f:SetParent(hostFrame) end
         return c
     end
     local AK = CUI.AuraKit
@@ -224,12 +200,8 @@ local function Paint(c, cfg)
     if widget then
         c.dur:SetTimeFromEnd(cfg.endTime, cfg.total)
         local fmt = AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold)
-        if fmt then
-            widget:SetFormatter(fmt)
-        end
-        if style.durationUpdateInterval then
-            widget:SetUpdateInterval(style.durationUpdateInterval)
-        end
+        if fmt then widget:SetFormatter(fmt) end
+        if style.durationUpdateInterval then widget:SetUpdateInterval(style.durationUpdateInterval) end
         local tc = style.durationColorCurve and AK.DurationTextColor(style.durationColorCurve)
         if tc then
             widget:SetTextColorCurve(tc.curve, tc.property)
@@ -244,9 +216,7 @@ local function HideFrom(first)
     for index = first, #cells do
         local c = cells[index]
         c.f:Hide()
-        if c.binding then
-            c.binding:SetEnabled(false)
-        end
+        if c.binding then c.binding:SetEnabled(false) end
     end
 end
 
@@ -254,9 +224,7 @@ end
 -- this pass: places the cells and makes room for them. `layout` is the bar's
 -- group layout (element size and spacing), `anchor` the container's point.
 function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchor)
-    if not (enabled and boxHolder and hostFrame and conf and grid and layout and anchor) then
-        return
-    end
+    if not (enabled and boxHolder and hostFrame and conf and grid and layout and anchor) then return end
     numDeclared = grid.enchSlots or 0
     Scan()
     numLaidFrom = numShown
@@ -301,20 +269,14 @@ function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchor)
 end
 
 -- Cells showing, for the bar's aura budget (BuffAuraMax).
-function mod.PAB_FvImbueCount()
-    return enabled and numLaid or 0
-end
+function mod.PAB_FvImbueCount() return enabled and numLaid or 0 end
 
 local function OnEvent()
-    if not enabled then
-        return
-    end
+    if not enabled then return end
     Scan()
     if numShown ~= numLaidFrom then
         -- A cell came or went: the bar re-lays (and this file with it).
-        if mod.PAB_ApplyLiveConfig then
-            mod.PAB_ApplyLiveConfig(true)
-        end
+        if mod.PAB_ApplyLiveConfig then mod.PAB_ApplyLiveConfig(true) end
         return
     end
     -- Same cells, new content (a re-cast, a weapon swap between imbued
@@ -327,9 +289,7 @@ end
 -- SyncEnchantEvents: the Buffs bar's weapon-enchant row on or off.
 function mod.PAB_FvImbueSync(wanted)
     wanted = wanted and true or false
-    if wanted == enabled then
-        return
-    end
+    if wanted == enabled then return end
     enabled = wanted
     if enabled then
         if not events then
@@ -340,9 +300,7 @@ function mod.PAB_FvImbueSync(wanted)
         events:RegisterEvent("WEAPON_SLOT_CHANGED")
         events:RegisterEvent("PLAYER_ENTERING_WORLD")
     else
-        if events then
-            events:UnregisterAllEvents()
-        end
+        if events then events:UnregisterAllEvents() end
         HideFrom(1)
         numLaid, numLaidFrom = 0, 0
     end

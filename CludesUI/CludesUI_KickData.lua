@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_KickData.lua
 --  The interrupts of patch 12.1.5 and what each one's cooldown is for a given
@@ -103,9 +101,7 @@ for ident, kick in pairs(COMMAND_CASTS) do
     CAST_IDS[ident] = kick
 end
 for ident, key in pairs(INTERRUPTS) do
-    if key.tracked ~= false then
-        CAST_IDS[ident] = ident
-    end
+    if key.tracked ~= false then CAST_IDS[ident] = ident end
 end
 
 -- What changes a cooldown. pct and flat apply to every use (the game applies
@@ -126,15 +122,11 @@ local MODS = {
 -- (a warlock without a demon out interrupts through it).
 local WATCHED = { [108503] = true }
 for ident, key in pairs(INTERRUPTS) do
-    if key.talent and key.tracked ~= false then
-        WATCHED[ident] = true
-    end
+    if key.talent and key.tracked ~= false then WATCHED[ident] = true end
 end
 for _, entries in pairs(MODS) do
     for idx = 1, #entries do
-        if entries[idx].talent then
-            WATCHED[entries[idx].talent] = true
-        end
+        if entries[idx].talent then WATCHED[entries[idx].talent] = true end
     end
 end
 KD.WATCHED_TALENTS = WATCHED
@@ -150,9 +142,7 @@ local DEMON_INTERRUPT = { Felhunter = 19647, Felguard = 89766, Wrathguard = 8976
 
 -- A kick spell is one of ours (or a demon command version): the spell ID it
 -- counts as, or nil.
-function KD.OwnCastKick(spellId)
-    return CAST_IDS[spellId]
-end
+function KD.OwnCastKick(spellId) return CAST_IDS[spellId] end
 
 -- Picks a class member's interrupt. class: token; specID: number or nil
 -- (unknown); role: "HEALER" or anything else, read only while the spec is
@@ -161,22 +151,14 @@ end
 -- none) and the spec the answer was read for (the class's healing spec when
 -- a healer's spec was not known), which the cooldown is read for too.
 function KD.KickSpell(class, specID, role, talents, petFamily)
-    if not specID and role == "HEALER" then
-        specID = HEALING_SPEC_OF[class]
-    end
+    if not specID and role == "HEALER" then specID = HEALING_SPEC_OF[class] end
     if class == "WARLOCK" then
         if petFamily then
             local ident = DEMON_INTERRUPT[petFamily]
-            if ident then
-                return ident, specID
-            end
+            if ident then return ident, specID end
         end
-        if talents and talents[108503] and not petFamily then
-            return 132409, specID
-        end -- Grimoire of Sacrifice, no demon out
-        if specID == 266 then
-            return 89766, specID
-        end -- Demonology: the Felguard
+        if talents and talents[108503] and not petFamily then return 132409, specID end -- Grimoire of Sacrifice, no demon out
+        if specID == 266 then return 89766, specID end -- Demonology: the Felguard
         return 19647, specID
     end
     -- An unknown spec assumes the class's main interrupt; a known one takes
@@ -204,9 +186,7 @@ end
 -- talents as above (nil = unknown: base values).
 function KD.Cooldown(spellId, specID, talents)
     local key = INTERRUPTS[spellId]
-    if not key then
-        return nil
-    end
+    if not key then return nil end
     local cd, landed = key.cd, 0
     local entries = MODS[spellId]
     if entries then
@@ -215,26 +195,16 @@ function KD.Cooldown(spellId, specID, talents)
             local m = entries[idx]
             local enabled = (m.talent and talents and talents[m.talent]) or (m.spec and specID == m.spec)
             if enabled then
-                if m.pct then
-                    pct = pct + m.pct
-                end
-                if m.flat then
-                    flat = flat + m.flat
-                end
-                if m.landed then
-                    landed = landed + m.landed
-                end
+                if m.pct then pct = pct + m.pct end
+                if m.flat then flat = flat + m.flat end
+                if m.landed then landed = landed + m.landed end
             end
         end
         cd = floor((key.cd * (1 + pct / 100) + flat) * 100 + 0.5) / 100
     end
-    if cd < 0.5 then
-        cd = 0.5
-    end
+    if cd < 0.5 then cd = 0.5 end
     local lcd = cd + landed
-    if lcd < 0.5 then
-        lcd = 0.5
-    end
+    if lcd < 0.5 then lcd = 0.5 end
     return cd, lcd
 end
 
@@ -242,9 +212,7 @@ end
 -- not known (the bars' default icon).
 function KD.ClassMainKick(class)
     for ident, key in pairs(INTERRUPTS) do
-        if key.class == class and key.main then
-            return ident
-        end
+        if key.class == class and key.main then return ident end
     end
     return nil
 end
@@ -256,9 +224,7 @@ end
 -- Spell Lock (known only while the sacrifice is up). Built once.
 local classLists
 function KD.ClassLists()
-    if classLists then
-        return classLists
-    end
+    if classLists then return classLists end
     classLists = {}
     local ids = {}
     for ident in pairs(INTERRUPTS) do
@@ -275,22 +241,16 @@ function KD.ClassLists()
     end
     for _, ident in ipairs(ids) do
         local key = INTERRUPTS[ident]
-        if not key.main and not key.sacrifice then
-            add(key.class, ident)
-        end
+        if not key.main and not key.sacrifice then add(key.class, ident) end
     end
     for _, ident in ipairs(ids) do
-        if INTERRUPTS[ident].main then
-            add(INTERRUPTS[ident].class, ident)
-        end
+        if INTERRUPTS[ident].main then add(INTERRUPTS[ident].class, ident) end
     end
     for ident, kick in pairs(COMMAND_CASTS) do
         add(INTERRUPTS[kick].class, ident)
     end
     for _, ident in ipairs(ids) do
-        if INTERRUPTS[ident].sacrifice then
-            add(INTERRUPTS[ident].class, ident)
-        end
+        if INTERRUPTS[ident].sacrifice then add(INTERRUPTS[ident].class, ident) end
     end
     return classLists
 end

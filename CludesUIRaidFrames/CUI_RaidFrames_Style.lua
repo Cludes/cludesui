@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Style.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
@@ -39,13 +35,9 @@ local ResolveHealthTexture, unitToButton = Inner.ResolveHealthTexture, Inner.uni
 local CreateAbsorbBar, UpdateAbsorb = Inner.CreateAbsorbBar, Inner.UpdateAbsorb
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local Pix
-Inner.PPSetters[#Inner.PPSetters + 1] = function(val)
-    Pix = val
-end
+Inner.PPSetters[#Inner.PPSetters + 1] = function(val) Pix = val end
 
 -------------------------------------------------------------------------------
 --  Debuff grid layout (shared by the live render and the options preview)
@@ -73,18 +65,12 @@ mod._abFlush:SetScript("OnUpdate", function(self)
         -- time: a header reassignment between mark and flush would paint the
         -- old occupant's absorb onto the new one.
         local unitToken = btnFrame:GetAttribute("unit")
-        if unitToken then
-            UpdateAbsorb(btnFrame, unitToken, nowTime)
-        end
+        if unitToken then UpdateAbsorb(btnFrame, unitToken, nowTime) end
         leftX = leftX - 1
-        if leftX <= 0 then
-            break
-        end
+        if leftX <= 0 then break end
     end
     -- Leftovers past the budget keep the frame shown for the next frame.
-    if next(dirty) == nil then
-        self:Hide()
-    end
+    if next(dirty) == nil then self:Hide() end
 end)
 function mod._MarkAbsorbDirty(btnFrame, unitToken)
     -- unit is kept for the callers' convenience; the flush re-reads the
@@ -145,9 +131,7 @@ end
 -- INDICATOR_SCALE_KEYS; 0 scales to 0, so the match sentinel survives).
 function mod.DispellableDebuffSize(cfg)
     local val = cfg.dispellableDebuffSize
-    if val and val > 0 then
-        return val
-    end
+    if val and val > 0 then return val end
     return cfg.debuffSize or 18
 end
 
@@ -162,9 +146,7 @@ function mod.DebuffGridPoint(cfg, idx0, sum, options)
     local ox = (options and options.ox) or cfg.debuffOffsetX or 0
     local oy = (options and options.oy) or cfg.debuffOffsetY or 0
     local perRow = cfg.debuffPerRow or 1
-    if perRow < 1 then
-        perRow = 1
-    end
+    if perRow < 1 then perRow = 1 end
 
     -- Icon corner anchored to the same corner of the health bar. Every position is explicit, so the default fallback is only a safety net.
     local corner = "BOTTOMLEFT"
@@ -252,9 +234,7 @@ function mod.DebuffGridPoint(cfg, idx0, sum, options)
     local centerOff = 0
     if grow == "CENTER" then
         local rowCount = (perRow <= 1) and (sum or 0) or min(perRow, max(0, (sum or 0) - row * perRow))
-        if rowCount > 0 then
-            centerOff = -((rowCount - 1) * step) / 2
-        end
+        if rowCount > 0 then centerOff = -((rowCount - 1) * step) / 2 end
     end
     local along = colour * step
     local across = row * step
@@ -285,13 +265,9 @@ do
     -- True if the cursor is over one of our visible unit buttons (direct IsMouseOver test against the registry).
     local function overOwnFrame()
         local reg = mod._cuiUnitButtons
-        if not reg then
-            return false
-        end
+        if not reg then return false end
         for button in pairs(reg) do
-            if button:IsVisible() and button:IsMouseOver() then
-                return true
-            end
+            if button:IsVisible() and button:IsMouseOver() then return true end
         end
         return false
     end
@@ -301,9 +277,7 @@ do
             endMouselook()
             return
         end
-        if inLook then
-            return
-        end
+        if inLook then return end
         local posX, posY = GetCursorPosition()
         if abs(posX - lastX) > MOVE_THRESHOLD or abs(posY - lastY) > MOVE_THRESHOLD then
             pcall(MouselookStart)
@@ -313,31 +287,19 @@ do
 
     watcher:SetScript("OnEvent", function(_, evt, btnFrame)
         if evt == "GLOBAL_MOUSE_DOWN" then
-            if btnFrame ~= "RightButton" then
-                return
-            end
-            if not (saved and saved.profile and saved.profile.freeRightClickCamera) then
-                return
-            end
-            if not overOwnFrame() then
-                return
-            end
+            if btnFrame ~= "RightButton" then return end
+            if not (saved and saved.profile and saved.profile.freeRightClickCamera) then return end
+            if not overOwnFrame() then return end
             inLook = false
             lastX, lastY = GetCursorPosition()
             watcher:SetScript("OnUpdate", onUpdate)
         elseif evt == "GLOBAL_MOUSE_UP" then
-            if btnFrame == "RightButton" then
-                endMouselook()
-            end
+            if btnFrame == "RightButton" then endMouselook() end
         elseif evt == "PLAYER_REGEN_ENABLED" then
             -- safety: never leave mouselook stuck after a combat-state change
-            if not IsMouseButtonDown(2) then
-                endMouselook()
-            end
+            if not IsMouseButtonDown(2) then endMouselook() end
         elseif evt == "PLAYER_LOGIN" then
-            if mod.FRCM_Refresh then
-                mod.FRCM_Refresh()
-            end
+            if mod.FRCM_Refresh then mod.FRCM_Refresh() end
         end
     end)
     watcher:RegisterEvent("PLAYER_LOGIN")
@@ -365,17 +327,13 @@ end
 -- (and px) is cached on the border frame so a group-wide target swap is a color write per
 -- button rather than a restyle; callers clear it when the base border returns.
 function mod.ApplyHighlightBorder(bf, cfg, size, red, green, blue, a, px)
-    if not (Pix and bf) then
-        return
-    end
+    if not (Pix and bf) then return end
     local texKey = cfg.borderTexture or "solid"
     if not size or size <= 0 then
         if bf._hlBorderSize then
             CludesUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
             -- Keep the cache when the style call bailed (still shown) so the next one retries the hide.
-            if not bf:IsShown() then
-                bf._hlBorderSize = nil
-            end
+            if not bf:IsShown() then bf._hlBorderSize = nil end
         end
         return
     end
@@ -419,30 +377,20 @@ function mod.RF_VisibleHighlight(cfg, red, green, blue)
     if math.abs(red - br) + math.abs(green - backdrop) + math.abs(blue - bb) >= 0.15 then
         return red, green, blue
     end
-    if math.abs(1 - br) + math.abs(0.82 - backdrop) + math.abs(bb) >= 0.15 then
-        return 1, 0.82, 0
-    end
+    if math.abs(1 - br) + math.abs(0.82 - backdrop) + math.abs(bb) >= 0.15 then return 1, 0.82, 0 end
     return 1, 1, 1
 end
 
 function mod.RF_ColorPowerDivider(owner, red, green, blue, a)
-    if not owner or owner._powerArtMode ~= "divider" then
-        return
-    end
+    if not owner or owner._powerArtMode ~= "divider" then return end
     owner._powerArtR, owner._powerArtG, owner._powerArtB, owner._powerArtAlpha = red, green, blue, a
     owner._powerArtTex:SetVertexColor(red, green, blue, a)
 end
 
 function mod.RF_ClearPowerBorderArt(owner)
-    if not owner or not owner._powerArtKey then
-        return
-    end
-    if owner._powerArtTex then
-        owner._powerArtTex:Hide()
-    end
-    if owner._powerArtSeam then
-        owner._powerArtSeam:Hide()
-    end
+    if not owner or not owner._powerArtKey then return end
+    if owner._powerArtTex then owner._powerArtTex:Hide() end
+    if owner._powerArtSeam then owner._powerArtSeam:Hide() end
     CludesUI.HideBorderStyle(owner)
     CludesUI.RegisterPxReapply(owner, nil)
     Pix.ShowBorder(owner)
@@ -451,9 +399,7 @@ function mod.RF_ClearPowerBorderArt(owner)
 end
 
 function mod.RF_LayoutPowerBorderArt(owner)
-    if not owner:IsShown() or not owner._powerArtKey then
-        return
-    end
+    if not owner:IsShown() or not owner._powerArtKey then return end
     if owner._powerArtMode == "border" then
         CludesUI.ApplyBorderStyle(
             owner,
@@ -478,9 +424,7 @@ function mod.RF_LayoutPowerBorderArt(owner)
     seam:SetFrameStrata(owner:GetFrameStrata())
     seam:SetFrameLevel(owner:GetParent():GetFrameLevel() + mod.LVL_TEXT - 1)
     local es = owner:GetEffectiveScale()
-    if not (es and es > 0.01) then
-        es = UIParent:GetEffectiveScale()
-    end
+    if not (es and es > 0.01) then es = UIParent:GetEffectiveScale() end
     local thick =
         CludesUI.BorderCompanionThickness(owner._powerArtKey, owner._powerArtSize, owner._powerArtPx, es)
     local realPP = CludesUI.PP
@@ -530,18 +474,15 @@ function mod.RF_ApplyPowerBorderArt(owner, cfg, force, preview, nameBar)
         return true
     end
     CludesUI.HideBorderStyle(owner)
-    if owner._powerArtTex then
-        owner._powerArtTex:Hide()
-    end
-    if owner._powerArtSeam then
-        owner._powerArtSeam:Hide()
-    end
+    if owner._powerArtTex then owner._powerArtTex:Hide() end
+    if owner._powerArtSeam then owner._powerArtSeam:Hide() end
     owner._powerArtKey, owner._powerArtMode = key, mode
     owner._powerArtEdge = (nameBar and not cfg.topNameBarBottom) and "BOTTOM" or "TOP"
     owner._powerArtSize = size
     owner._powerArtPx = CludesUI.BorderPx(cfg.borderSizePx, size, key)
     local color = cfg.borderColor
-    owner._powerArtR, owner._powerArtG, owner._powerArtB = color and color.r or 0, color and color.g or 0, color and color.b or 0
+    owner._powerArtR, owner._powerArtG, owner._powerArtB =
+        color and color.r or 0, color and color.g or 0, color and color.b or 0
     owner._powerArtAlpha = cfg.borderAlpha or 1
     owner._powerArtOffset, owner._powerArtOffsetY = cfg.borderTextureOffset, cfg.borderTextureOffsetY
     owner._powerArtShiftX, owner._powerArtShiftY = cfg.borderTextureShiftX, cfg.borderTextureShiftY
@@ -602,26 +543,20 @@ end
 local function ButtonOnEnter(self)
     local fd = GetFFD(self)
     fd._hovered = true
-    if fd.ApplyBorderColor then
-        fd.ApplyBorderColor()
-    end
+    if fd.ApplyBorderColor then fd.ApplyBorderColor() end
     -- Aura icons enable mouse and propagate motion up to this button, so entering an icon fires
     -- its OnEnter (aura tooltip) then bubbles here, clobbering it with the unit tooltip. Bail
     -- when the cursor is over one of our aura icons (stashed _tipIID).
     local foci = GetMouseFoci()
     if foci then
         for _, mf in ipairs(foci) do
-            if mf ~= self and mf._tipIID ~= nil then
-                return
-            end
+            if mf ~= self and mf._tipIID ~= nil then return end
         end
     end
     -- Unit-tooltip gating: see ns.RaidFrameTooltipAllowed. It reads through the party-aware
     -- proxy, NOT raw db.profile -- else party_<key> overrides from a custom party
     -- "Range & Tooltip" section are never seen.
-    if not mod.RaidFrameTooltipAllowed(self) then
-        return
-    end
+    if not mod.RaidFrameTooltipAllowed(self) then return end
     local u = self:GetAttribute("unit")
     if u and UnitExists(u) then
         GameTooltip_SetDefaultAnchor(GameTooltip, self)
@@ -660,9 +595,7 @@ end
 local function ButtonOnLeave(self)
     local fd = GetFFD(self)
     fd._hovered = false
-    if fd.ApplyBorderColor then
-        fd.ApplyBorderColor()
-    end
+    if fd.ApplyBorderColor then fd.ApplyBorderColor() end
     GameTooltip:Hide()
 end
 mod.RF_ButtonOnEnter, mod.RF_ButtonOnLeave = ButtonOnEnter, ButtonOnLeave
@@ -672,9 +605,7 @@ mod.RF_ButtonOnEnter, mod.RF_ButtonOnLeave = ButtonOnEnter, ButtonOnLeave
 -------------------------------------------------------------------------------
 local function StyleButton(btnFrame)
     local skinData = GetFFD(btnFrame)
-    if skinData.styled then
-        return
-    end
+    if skinData.styled then return end
     skinData.styled = true
 
     -- Register our unit buttons so the free right-click camera watcher can tell when the cursor is
@@ -710,9 +641,7 @@ local function StyleButton(btnFrame)
     backdrop:SetAllPoints()
     local bgc = cfg.customBgColor or defaultSet.customBgColor
     backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
-    if Pix then
-        Pix.DisablePixelSnap(backdrop)
-    end
+    if Pix then Pix.DisablePixelSnap(backdrop) end
     skinData.bg = backdrop
 
     -- Health bar
@@ -724,9 +653,7 @@ local function StyleButton(btnFrame)
     local texPath = ResolveHealthTexture()
     health:SetStatusBarTexture(texPath)
     health:GetStatusBarTexture():SetHorizTile(false)
-    if Pix then
-        Pix.DisablePixelSnap(health)
-    end
+    if Pix then Pix.DisablePixelSnap(health) end
     -- Fill axis + inversion. StyleButton runs before d._isParty is set, so these use
     -- the raid values; ReanchorAbsorbToFill re-resolves both against the button's real
     -- settings source each update.
@@ -762,9 +689,7 @@ local function StyleButton(btnFrame)
         power:SetHeight(powerH)
         power:SetStatusBarTexture(texPath)
         power:GetStatusBarTexture():SetHorizTile(false)
-        if Pix then
-            Pix.DisablePixelSnap(power)
-        end
+        if Pix then Pix.DisablePixelSnap(power) end
         power:SetMinMaxValues(0, 1)
         power:SetValue(1)
         -- Pre-paint tint (see the health bar note above).
@@ -777,9 +702,7 @@ local function StyleButton(btnFrame)
             (cfg.powerBgColor or {}).b or 0,
             (cfg.powerBgDarkness or 70) / 100
         )
-        if Pix then
-            Pix.DisablePixelSnap(pwBg)
-        end
+        if Pix then Pix.DisablePixelSnap(pwBg) end
         skinData.power = power
         skinData.powerBg = pwBg
 
@@ -787,9 +710,7 @@ local function StyleButton(btnFrame)
         local pwBdrFrame = CreateFrame("Frame", nil, btnFrame)
         pwBdrFrame:SetAllPoints(power)
         pwBdrFrame:SetFrameLevel(power:GetFrameLevel() + 1)
-        if Pix then
-            Pix.CreateBorder(pwBdrFrame, 0, 0, 0, 1, 1)
-        end
+        if Pix then Pix.CreateBorder(pwBdrFrame, 0, 0, 0, 1, 1) end
         skinData.powerBorderFrame = pwBdrFrame
 
         -- Start hidden; UpdateButton shows it per role (wasShown=false there plain-snaps the first fill, no interpolation).
@@ -806,9 +727,7 @@ local function StyleButton(btnFrame)
         tnb:SetHeight(PixelSnap(cfg.topNameBarHeight or 20))
         local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
         tnbBg:SetAllPoints()
-        if Pix then
-            Pix.DisablePixelSnap(tnbBg)
-        end
+        if Pix then Pix.DisablePixelSnap(tnbBg) end
         local tnbText = tnb:CreateFontString(nil, "OVERLAY")
         ApplyFont(tnbText, cfg.topNameBarTextSize or 11)
         tnbText:SetWordWrap(false)
@@ -835,9 +754,7 @@ local function StyleButton(btnFrame)
     threatFrame:SetFrameLevel(btnFrame:GetFrameLevel() + 10)
     threatFrame:Hide()
     skinData.threatFrame = threatFrame
-    if Pix then
-        Pix.CreateBorder(threatFrame, 1, 0, 0, 1, 2)
-    end
+    if Pix then Pix.CreateBorder(threatFrame, 1, 0, 0, 1, 2) end
 
     -- Party Frames kit (the stock portrait party frame, latched): built here,
     -- before every anchor closure below and before the aura containers, so
@@ -915,7 +832,8 @@ local function StyleButton(btnFrame)
         local cfg = LiveS() -- party/extra-aware (see LiveS note above)
         -- Show Behind Border: just under the base border; default: the text band.
         roleCarrier:SetFrameLevel(
-            btnFrame:GetFrameLevel() + (cfg.roleIconBehindBorder and mod.LVL_ROLE_BEHIND or (mod.LVL_AURA - 1))
+            btnFrame:GetFrameLevel()
+                + (cfg.roleIconBehindBorder and mod.LVL_ROLE_BEHIND or (mod.LVL_AURA - 1))
         )
         local health = mod.RF_AnchorHost(health, cfg) -- Uniform Icon Anchoring host swap
         roleIcon:ClearAllPoints()
@@ -970,9 +888,7 @@ local function StyleButton(btnFrame)
     leaderIcon:Hide()
     skinData.leaderIcon = leaderIcon
     -- Party Frames kit: the stock spot (re-seated by the party reload pass).
-    if skinData.kitG then
-        mod.RF_KitLeader(skinData, LiveS())
-    end
+    if skinData.kitG then mod.RF_KitLeader(skinData, LiveS()) end
 
     -- Raid marker (on marker carrier, above the border)
     local raidMarker = markerCarrier:CreateTexture(nil, "OVERLAY", nil, 2)
@@ -1095,9 +1011,7 @@ local function StyleButton(btnFrame)
     -- Highlight states bump it up, normal restores the base level. The PP container's level is
     -- fixed at creation, so it must be moved explicitly (borderFrame alone won't move it).
     local function ApplyBorderLevel(raised, cfg)
-        if not (Pix and skinData.borderFrame) then
-            return
-        end
+        if not (Pix and skinData.borderFrame) then return end
         local pl = btnFrame:GetFrameLevel()
         -- Under a stock style the CludesUI border is stood down, so Show
         -- Behind has nothing to lower (the hover border must stay on top).
@@ -1117,24 +1031,18 @@ local function StyleButton(btnFrame)
             return
         end
         skinData.borderFrame:SetFrameLevel(lvl)
-        if boxHolder then
-            boxHolder:SetFrameLevel(lvl + 1)
-        end
+        if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
         -- A textured style draws on a backdrop child levelled only at style time: carry
         -- it too, so the raise also clears the Color Custom Borders copies (base + 1).
         local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[skinData.borderFrame]
-        if edge then
-            edge:SetFrameLevel(lvl)
-        end
+        if edge then edge:SetFrameLevel(lvl) end
     end
 
     -- Recolor the single border for the current state: hover > target > aggro (Threat
     -- Borders' Color Custom Borders, flagged by ns.RF_PaintThreat) > normal. A borderless
     -- frame has nothing to recolor, so the highlight draws its own (ns.ApplyHighlightBorder).
     local function PaintBorder()
-        if not (Pix and skinData.borderFrame) then
-            return
-        end
+        if not (Pix and skinData.borderFrame) then return end
         -- Re-called long after StyleButton: resolve LIVE (see LiveS note) so party overrides and profile swaps are honored.
         local cfg = LiveS()
         if mod.RF_ButtonCompact(skinData, cfg) then
@@ -1158,7 +1066,13 @@ local function StyleButton(btnFrame)
         if skinData.stockEdge then
             local hover = skinData._hovered and cfg.hoverBorderEnabled ~= false
             ApplyBorderLevel(hover, cfg)
-            mod.RF_StockHighlight(skinData, skinData.borderFrame, cfg, hover, skinData._isTarget and cfg.targetBorderEnabled ~= false)
+            mod.RF_StockHighlight(
+                skinData,
+                skinData.borderFrame,
+                cfg,
+                hover,
+                skinData._isTarget and cfg.targetBorderEnabled ~= false
+            )
             return
         end
         local red, green, blue, a
@@ -1200,7 +1114,11 @@ local function StyleButton(btnFrame)
         then
             mod.RF_ColorPowerDivider(skinData.powerBorderFrame, red, green, blue, a)
         end
-        if cfg.topNameBarDividerMatchColor == true and skinData.topNameBar and skinData.topNameBar._divider then
+        if
+            cfg.topNameBarDividerMatchColor == true
+            and skinData.topNameBar
+            and skinData.topNameBar._divider
+        then
             mod.RF_ColorPowerDivider(skinData.topNameBar._divider, red, green, blue, a)
         end
     end
@@ -1209,9 +1127,7 @@ local function StyleButton(btnFrame)
     -- Apply border (style/size/texture/offsets via shared ApplyBorderStyle,
     -- then recolor for state). "Show Behind" lowers it below the frame; else +8.
     local function UpdateBorder()
-        if not (Pix and skinData.borderFrame) then
-            return
-        end
+        if not (Pix and skinData.borderFrame) then return end
         -- Re-called from Reload paths long after StyleButton: resolve LIVE (see LiveS note).
         local cfg = LiveS()
         local bs = cfg.borderSize or 1
@@ -1219,9 +1135,7 @@ local function StyleButton(btnFrame)
         local texKey = cfg.borderTexture or "solid"
         local pl = btnFrame:GetFrameLevel()
         local compact = mod.RF_ButtonCompact(skinData, cfg)
-        if compact or skinData._compactBorder then
-            skinData._compactBorder = compact
-        end
+        if compact or skinData._compactBorder then skinData._compactBorder = compact end
         if compact then
             CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
             PaintBorder()
@@ -1281,9 +1195,7 @@ local function StyleButton(btnFrame)
             CludesUI.RoundCorners(btnFrame, 0)
         end
     end
-    if mod.RF_Stock() and not skinData.kit then
-        mod.RF_StockBuild(btnFrame, skinData, skinData.power)
-    end
+    if mod.RF_Stock() and not skinData.kit then mod.RF_StockBuild(btnFrame, skinData, skinData.power) end
     UpdateBorder()
     skinData.UpdateBorder = UpdateBorder
 
@@ -1292,16 +1204,12 @@ local function StyleButton(btnFrame)
         -- Party Frames kit: the mana bar sits in the art's own track.
         if skinData.kit then
             mod.RF_ClearPowerBorderArt(skinData.powerBorderFrame)
-            if skinData.powerBorderFrame then
-                skinData.powerBorderFrame:Hide()
-            end
+            if skinData.powerBorderFrame then skinData.powerBorderFrame:Hide() end
             return
         end
         -- No-op while the power bar is hidden: the border frame always exists and unconditional
         -- callers must not draw over a hidden bar. UpdateButton calls this AFTER power:Show().
-        if not Pix or not skinData.powerBorderFrame then
-            return
-        end
+        if not Pix or not skinData.powerBorderFrame then return end
         if skinData.power and not skinData.power:IsShown() then
             mod.RF_ClearPowerBorderArt(skinData.powerBorderFrame)
             skinData.powerBorderFrame:Hide()
@@ -1336,18 +1244,10 @@ local function StyleButton(btnFrame)
             skinData.powerBorderFrame:Show()
             local ppC = Pix.GetBorders(skinData.powerBorderFrame)
             if ppC then
-                if ppC._bottom then
-                    ppC._bottom:SetAlpha(0)
-                end
-                if ppC._left then
-                    ppC._left:SetAlpha(0)
-                end
-                if ppC._right then
-                    ppC._right:SetAlpha(0)
-                end
-                if ppC._top then
-                    ppC._top:SetAlpha(0.2)
-                end
+                if ppC._bottom then ppC._bottom:SetAlpha(0) end
+                if ppC._left then ppC._left:SetAlpha(0) end
+                if ppC._right then ppC._right:SetAlpha(0) end
+                if ppC._top then ppC._top:SetAlpha(0.2) end
             end
             return
         end
@@ -1363,31 +1263,15 @@ local function StyleButton(btnFrame)
         local ppC = Pix.GetBorders(skinData.powerBorderFrame)
         if ppC then
             if style == "divider" then
-                if ppC._bottom then
-                    ppC._bottom:SetAlpha(0)
-                end
-                if ppC._left then
-                    ppC._left:SetAlpha(0)
-                end
-                if ppC._right then
-                    ppC._right:SetAlpha(0)
-                end
-                if ppC._top then
-                    ppC._top:SetAlpha(ba)
-                end
+                if ppC._bottom then ppC._bottom:SetAlpha(0) end
+                if ppC._left then ppC._left:SetAlpha(0) end
+                if ppC._right then ppC._right:SetAlpha(0) end
+                if ppC._top then ppC._top:SetAlpha(ba) end
             else -- "border"
-                if ppC._top then
-                    ppC._top:SetAlpha(ba)
-                end
-                if ppC._bottom then
-                    ppC._bottom:SetAlpha(ba)
-                end
-                if ppC._left then
-                    ppC._left:SetAlpha(ba)
-                end
-                if ppC._right then
-                    ppC._right:SetAlpha(ba)
-                end
+                if ppC._top then ppC._top:SetAlpha(ba) end
+                if ppC._bottom then ppC._bottom:SetAlpha(ba) end
+                if ppC._left then ppC._left:SetAlpha(ba) end
+                if ppC._right then ppC._right:SetAlpha(ba) end
             end
         end
     end
@@ -1405,9 +1289,7 @@ local function StyleButton(btnFrame)
     -- per-button signal for exactly those reassignments. HookScript (NEVER SetScript) preserves the
     -- secure header's own handlers; helpers go through ns because they are defined later.
     btnFrame:HookScript("OnAttributeChanged", function(self, name)
-        if name ~= "unit" then
-            return
-        end
+        if name ~= "unit" then return end
         local u = self:GetAttribute("unit")
         if u and UnitExists(u) then
             -- Repaint + remap the instant the header (re)assigns this button, so a late assignment
@@ -1422,9 +1304,7 @@ local function StyleButton(btnFrame)
             if skinData._isExtra then
                 -- map owned by XF_Apply
             elseif skinData._isParty then
-                if mod._partyFramesVisible then
-                    mod._partyUnitToButton[u] = self
-                end
+                if mod._partyFramesVisible then mod._partyUnitToButton[u] = self end
             elseif mod._raidFramesVisible then
                 unitToButton[u] = self
             end
@@ -1437,13 +1317,9 @@ local function StyleButton(btnFrame)
             -- (leader/role/power layout) for unchanged occupants. A secret guid
             -- (never memoized) or a cleared/unstyled button takes the full path.
             local unitGuid = UnitGUID(u)
-            if issecretvalue(unitGuid) then
-                unitGuid = nil
-            end
+            if issecretvalue(unitGuid) then unitGuid = nil end
             if unitGuid and skinData._lastGuid == unitGuid and skinData._lastUnit == u then
-                if mod.RFC_OnUnitAssigned then
-                    mod.RFC_OnUnitAssigned(self, skinData, u)
-                end
+                if mod.RFC_OnUnitAssigned then mod.RFC_OnUnitAssigned(self, skinData, u) end
                 return
             end
             -- Identity caches (class token, power type) drop on a real assignment:
@@ -1462,25 +1338,15 @@ local function StyleButton(btnFrame)
             skinData._lastGuid = skinData.styled and unitGuid or nil
             -- A ping marker belongs to the previous occupant; its pin-removed edge
             -- can no longer reach this button once the person moved.
-            if skinData.pingFrame then
-                skinData.pingFrame:Hide()
-            end
+            if skinData.pingFrame then skinData.pingFrame:Hide() end
             -- Containers first: the legacy refresh below still has restriction-era failure modes,
             -- and an error there must not starve the container of its unit assignment.
-            if mod.RFC_OnUnitAssigned then
-                mod.RFC_OnUnitAssigned(self, skinData, u)
-            end
+            if mod.RFC_OnUnitAssigned then mod.RFC_OnUnitAssigned(self, skinData, u) end
             -- Party Frames kit / party portrait: the new occupant's portrait
             -- (ahead of the legacy refresh for the same reason as the containers).
-            if skinData.kitPortrait or skinData.pt then
-                mod.RF_PtPaint(skinData, u, "UnitChanged")
-            end
-            if mod._RefreshAssignedButton then
-                mod._RefreshAssignedButton(self, u)
-            end
-            if mod._UpdateButtonRange then
-                mod._UpdateButtonRange(u, self)
-            end
+            if skinData.kitPortrait or skinData.pt then mod.RF_PtPaint(skinData, u, "UnitChanged") end
+            if mod._RefreshAssignedButton then mod._RefreshAssignedButton(self, u) end
+            if mod._UpdateButtonRange then mod._UpdateButtonRange(u, self) end
         else
             -- Cleared (button hidden by the header) or not yet resolvable: forget the
             -- painted occupant so the next assignment always takes the full path.
@@ -1490,9 +1356,7 @@ local function StyleButton(btnFrame)
 
     -- 12.1 aura containers (container shell creation is combat-legal since
     -- 68914, so this rides the deferred styling pass with the rest of the body)
-    if mod.RFC_SetupButton then
-        mod.RFC_SetupButton(btnFrame, health, skinData)
-    end
+    if mod.RFC_SetupButton then mod.RFC_SetupButton(btnFrame, health, skinData) end
 end
 
 -------------------------------------------------------------------------------
@@ -1506,9 +1370,7 @@ end
 -------------------------------------------------------------------------------
 mod._StyleButtonSecure = function(btnFrame)
     local skinData = GetFFD(btnFrame)
-    if skinData.securestyled then
-        return
-    end
+    if skinData.securestyled then return end
     skinData.securestyled = true
     local cfg = saved.profile
     -- Party buttons take the party box (their creator stamps _isParty

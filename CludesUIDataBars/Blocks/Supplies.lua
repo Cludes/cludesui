@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end
-if not CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end
+if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  Blocks\Supplies.lua - Info Bar block (WoW Forever): class resources.
 --
@@ -187,24 +183,16 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
     local function Add(res, id, amount)
         res.present = true
         res.count = res.count + amount
-        if not res.firstID or id < res.firstID then
-            res.firstID = id
-        end
-        if not counts[id] then
-            order[#order + 1] = id
-        end
+        if not res.firstID or id < res.firstID then res.firstID = id end
+        if not counts[id] then order[#order + 1] = id end
         counts[id] = (counts[id] or 0) + amount
     end
 
     -- Ammo or thrown, for a ranged class's item; nil if neither (or unknown yet).
     local function RangedKind(id)
-        if ammo.id == id then
-            return ammo
-        end
+        if ammo.id == id then return ammo end
         local _, _, _, _, _, itemClass, subclass = C_Item.GetItemInfoInstant(id)
-        if itemClass == Enum.ItemClass.Projectile then
-            return ammo
-        end
+        if itemClass == Enum.ItemClass.Projectile then return ammo end
         if itemClass == Enum.ItemClass.Weapon and subclass == Enum.ItemWeaponSubclass.Thrown then
             return thrown
         end
@@ -237,9 +225,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         local launcher = GetInventoryItemID("player", rangedSlot)
         local _, _, _, _, _, itemClass, subclass = C_Item.GetItemInfoInstant(launcher or 0)
         ammo.active = itemClass == Enum.ItemClass.Weapon and IsLauncher(subclass)
-        if launcher and not itemClass then
-            Load(launcher)
-        end
+        if launcher and not itemClass then Load(launcher) end
         rangedCount = GetInventoryItemCount("player", rangedSlot)
     end
 
@@ -275,9 +261,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
     -- Only the equipped thrown weapon counts: its durability, or its stack.
     local function CountThrown()
         local id = GetInventoryItemID("player", rangedSlot)
-        if not id or RangedKind(id) ~= thrown then
-            return
-        end
+        if not id or RangedKind(id) ~= thrown then return end
         local current, most = GetInventoryItemDurability(rangedSlot)
         if current ~= nil and most and most > 0 then
             Add(thrown, id, current)
@@ -297,13 +281,9 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         ammo.icon = id and GetInventoryItemTexture("player", ammoSlot) or nil
         ammo.count, ammo.unknown = total or 0, id ~= nil and total == nil
         if id then
-            if not counts[id] then
-                order[#order + 1] = id
-            end
+            if not counts[id] then order[#order + 1] = id end
             counts[id] = total
-            if not C_Item.GetItemNameByID(id) then
-                Load(id)
-            end
+            if not C_Item.GetItemNameByID(id) then Load(id) end
         end
     end
 
@@ -312,25 +292,15 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         wipe(counts)
         wipe(order)
         wipe(byUses)
-        if thrown then
-            thrown.id = nil
-        end
+        if thrown then thrown.id = nil end
         ResetResources()
-        if ammo then
-            ReadRangedSlots()
-        end
+        if ammo then ReadRangedSlots() end
         ScanBags()
-        if thrown then
-            CountThrown()
-        end
-        if ammo then
-            CountAmmo()
-        end
+        if thrown then CountThrown() end
+        if ammo then CountAmmo() end
         -- Data still loading for an item no longer carried is no longer waited for.
         for id in pairs(loading) do
-            if C_Item.GetItemCount(id, false, false, false, false) == 0 then
-                loading[id] = nil
-            end
+            if C_Item.GetItemCount(id, false, false, false, false) == 0 then loading[id] = nil end
         end
         -- A learned poison with none carried shows at 0, under its learned rank.
         for _, res in ipairs(resources) do
@@ -343,9 +313,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         table.sort(order)
     end
 
-    local function Name(res)
-        return (res.id and C_Item.GetItemNameByID(res.id)) or CludesUI.L(res.label)
-    end
+    local function Name(res) return (res.id and C_Item.GetItemNameByID(res.id)) or CludesUI.L(res.label) end
 
     local function ShowTooltip()
         local s = blockCfg.settings or {}
@@ -356,23 +324,15 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
             local res = byItem[id] or (ranged and RangedKind(id))
             if res and (res ~= ammo or ammo.active) and mod.ClassResourceShown(s, res.key) then
                 local name = C_Item.GetItemNameByID(id) or Name(res)
-                if byUses[id] then
-                    name = name .. " - " .. CludesUI.L("Remaining uses")
-                end
+                if byUses[id] then name = name .. " - " .. CludesUI.L("Remaining uses") end
                 local value = counts[id] == nil and "?" or tostring(counts[id])
-                if res.tooltipOnly then
-                    value = CludesUI.L(counts[id] > 0 and "Available" or "Missing")
-                end
+                if res.tooltipOnly then value = CludesUI.L(counts[id] > 0 and "Available" or "Missing") end
                 mod.Tip_AddDouble(name, value, 0.8, 0.8, 0.8, 1, 1, 1)
                 listed = listed + 1
             end
         end
-        if listed == 0 then
-            mod.Tip_AddLine(CludesUI.L("No class resources in inventory"), 0.6, 0.6, 0.6)
-        end
-        if next(loading) then
-            mod.Tip_AddLine(CludesUI.L("Loading item data..."), 0.6, 0.6, 0.6)
-        end
+        if listed == 0 then mod.Tip_AddLine(CludesUI.L("No class resources in inventory"), 0.6, 0.6, 0.6) end
+        if next(loading) then mod.Tip_AddLine(CludesUI.L("Loading item data..."), 0.6, 0.6, 0.6) end
         mod.Tip_AddLine(" ")
         mod.Tip_AddLine(CludesUI.L("Right-click to edit visible items."), 0.6, 0.6, 0.6)
         mod.Tip_Show()
@@ -392,9 +352,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
                 out[#out + 1] = res
             end
         end
-        if #out == 0 then
-            out[1] = none
-        end
+        if #out == 0 then out[1] = none end
         return out
     end
 
@@ -439,9 +397,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
             value = res.unknown and "?"
                 or (BreakUpLargeNumbers and BreakUpLargeNumbers(res.count) or tostring(res.count))
             -- With no icons the names tell the counts apart.
-            if pass.s.showLabel or pass.iconSize == 0 then
-                value = Name(res) .. ": " .. value
-            end
+            if pass.s.showLabel or pass.iconSize == 0 then value = Name(res) .. ": " .. value end
         end
         local text, iconTex = row.text, row.icon
         mod.SetFont(text, pass.fontSize, barCtx.cfg)
@@ -473,9 +429,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         else
             -- In a row, 12px between resources.
             mod.ResetInlineText(text, "LEFT")
-            if used > 1 then
-                pass.x = pass.x + 12
-            end
+            if used > 1 then pass.x = pass.x + 12 end
             if withIcon then
                 iconTex:SetPoint("LEFT", button, "LEFT", pass.x, 0)
                 pass.x = pass.x + pass.iconSize + K.ICON_GAP
@@ -519,13 +473,9 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
 
     -- A full pass (settings, the bar's layout): always draws.
     function inst:Refresh()
-        if stale then
-            Scan()
-        end
+        if stale then Scan() end
         Draw(Shown(blockCfg.settings or {}))
-        if hovered then
-            ShowTooltip()
-        end
+        if hovered then ShowTooltip() end
     end
 
     -- Hover recolours the drawn rows only (unless the counts are stale).
@@ -555,9 +505,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         Recolour()
     end)
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton ~= "RightButton" then
-            return
-        end
+        if mouseButton ~= "RightButton" then return end
         if InCombatLockdown() then
             CludesUI.PrintError("Cannot open options during combat.")
             return
@@ -565,9 +513,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         if not mod.OpenBlockSettings then
             CludesUI:EnsureLoaded() -- the settings load on demand
         end
-        if mod.OpenBlockSettings then
-            mod.OpenBlockSettings(barCtx.id, blockCfg.id, "resources")
-        end
+        if mod.OpenBlockSettings then mod.OpenBlockSettings(barCtx.id, blockCfg.id, "resources") end
     end)
 
     inst.eventFrame = K.MakeEventFrame(inst, function(_, event, arg, success)
@@ -578,28 +524,18 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         then
             return
         end
-        if event == "PLAYER_EQUIPMENT_CHANGED" and arg ~= ammoSlot and arg ~= rangedSlot then
-            return
-        end
+        if event == "PLAYER_EQUIPMENT_CHANGED" and arg ~= ammoSlot and arg ~= rangedSlot then return end
         -- Armour wears too; only an equipped thrown weapon counts durability.
-        if event == "UPDATE_INVENTORY_DURABILITY" and not (thrown and thrown.id) then
-            return
-        end
+        if event == "UPDATE_INVENTORY_DURABILITY" and not (thrown and thrown.id) then return end
         if event == "GET_ITEM_INFO_RECEIVED" then
-            if not success or (not loading[arg] and not byItem[arg] and not counts[arg]) then
-                return
-            end
+            if not success or (not loading[arg] and not byItem[arg] and not counts[arg]) then return end
             loading[arg] = nil
         end
         Scan()
         local list = Shown(blockCfg.settings or {})
-        if Fingerprint(list) ~= drawn then
-            Draw(list)
-        end
+        if Fingerprint(list) ~= drawn then Draw(list) end
         -- The tooltip also lists items the bar does not draw.
-        if hovered then
-            ShowTooltip()
-        end
+        if hovered then ShowTooltip() end
     end)
 
     function inst:Enable()
@@ -614,9 +550,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         contentFrame:Hide()
     end
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight(), 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight(), 30) end
         return max(contentFrame:GetWidth(), 24)
     end
     function inst:Destroy()

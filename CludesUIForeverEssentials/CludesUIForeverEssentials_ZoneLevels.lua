@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ZoneLevels.lua  (WoW Forever only)
 --  Show Zone Levels: on a continent map, the level range of the hovered zone
@@ -167,7 +163,8 @@ local function FishingText(base)
             red, green, blue = 0.25, 1, 0.25
         end
     end
-    return CludesUI.HexColor(red, green, blue) .. ("%s %d|r"):format(C_Spell.GetSpellName(FISHING_SPELL) or "", low)
+    return CludesUI.HexColor(red, green, blue)
+        .. ("%s %d|r"):format(C_Spell.GetSpellName(FISHING_SPELL) or "", low)
 end
 
 -- The area label's Name changed. On a continent, when it names one of its
@@ -175,9 +172,7 @@ end
 -- it names: the zone's fishing skill. Both off, Apply has hidden the text.
 local function OnLabelName(_, name)
     local levels, fishing = F.Enabled(), F.Get("fishing")
-    if not (levels or fishing) then
-        return
-    end
+    if not (levels or fishing) then return end
     local zone, onContinent
     if name and name ~= "" then
         local mapID = WorldMapFrame:GetMapID()
@@ -196,9 +191,7 @@ local function OnLabelName(_, name)
         return
     end
     textValue:SetShown(lv and true or false)
-    if lv then
-        textValue:SetText(LevelsText(lv))
-    end
+    if lv then textValue:SetText(LevelsText(lv)) end
     fishText:SetShown(base and true or false)
     if base then
         fishText:SetText(FishingText(base))
@@ -215,25 +208,19 @@ end
 local function AreaLabel()
     for provider in pairs(WorldMapFrame.dataProviders or {}) do
         local labelText = provider.Label
-        if labelText and labelText.Name and labelText.labelInfoByType then
-            return labelText
-        end
+        if labelText and labelText.Name and labelText.labelInfoByType then return labelText end
     end
 end
 
 local function Build()
     local labelText = AreaLabel()
-    if not labelText then
-        return
-    end
+    if not labelText then return end
     hooked = true
     byName = {}
     for _, entries in ipairs({ LEVELS, FISHING }) do
         for ident in pairs(entries) do
             local details = C_Map.GetMapInfo(ident)
-            if details and details.name then
-                byName[details.name] = ident
-            end
+            if details and details.name then byName[details.name] = ident end
         end
     end
     local holderFrame = CreateFrame("Frame", nil, WorldMapFrame.ScrollContainer)
@@ -266,9 +253,7 @@ local function Apply()
         return
     end
     if not any then
-        if waiter then
-            waiter:UnregisterEvent("ADDON_LOADED")
-        end
+        if waiter then waiter:UnregisterEvent("ADDON_LOADED") end
         return
     end
     if C_AddOns.IsAddOnLoaded("Blizzard_WorldMap") then
@@ -278,9 +263,7 @@ local function Apply()
     if not waiter then
         waiter = CreateFrame("Frame")
         waiter:SetScript("OnEvent", function(self, _, name)
-            if name ~= "Blizzard_WorldMap" then
-                return
-            end
+            if name ~= "Blizzard_WorldMap" then return end
             self:UnregisterEvent("ADDON_LOADED")
             Build()
         end)

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Bags.lua - Info Bar block: bag space.
 --
@@ -30,18 +28,10 @@ mod.BAGS_LOW_COLOR = LOW
 
 -- The text for each display mode, from free and total.
 local SHOW = {
-    free = function(free)
-        return tostring(free)
-    end,
-    used = function(free, total)
-        return tostring(total - free)
-    end,
-    freeTotal = function(free, total)
-        return free .. "/" .. total
-    end,
-    usedTotal = function(free, total)
-        return (total - free) .. "/" .. total
-    end,
+    free = function(free) return tostring(free) end,
+    used = function(free, total) return tostring(total - free) end,
+    freeTotal = function(free, total) return free .. "/" .. total end,
+    usedTotal = function(free, total) return (total - free) .. "/" .. total end,
 }
 
 mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
@@ -50,9 +40,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
     -- BAG_UPDATE_DELAYED: one event per batch of bag changes, not one per bag.
     inst.events = { "BAG_UPDATE_DELAYED", "PLAYER_ENTERING_WORLD" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetAllPoints()
@@ -65,9 +53,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
     -- Whether a bag's slots are counted: a general-purpose bag (family 0), or
     -- the reagent bag when the block includes it.
     local function Counted(bag)
-        if bag == REAGENT_BAG then
-            return Settings().reagent == true
-        end
+        if bag == REAGENT_BAG then return Settings().reagent == true end
         local _, family = C_Container.GetContainerNumFreeSlots(bag)
         return not family or family == 0
     end
@@ -97,7 +83,11 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
             label:SetTextColor(mod.GetAccent())
         elseif (cfg.lowThreshold or 0) > 0 and (shownFree or 0) < cfg.lowThreshold then
             local color = cfg.lowColor
-            label:SetTextColor(color and color.r or LOW[1], color and color.g or LOW[2], color and color.b or LOW[3])
+            label:SetTextColor(
+                color and color.r or LOW[1],
+                color and color.g or LOW[2],
+                color and color.b or LOW[3]
+            )
         else
             label:SetTextColor(K.BlockColorOf(blockCfg))
         end
@@ -172,9 +162,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_AddLine(" ")
         local function Row(bag)
             local size = C_Container.GetContainerNumSlots(bag) or 0
-            if size <= 0 then
-                return
-            end
+            if size <= 0 then return end
             local used = size - (C_Container.GetContainerNumFreeSlots(bag) or 0)
             local shade = Counted(bag) and 1 or 0.45
             mod.Tip_AddDouble(
@@ -191,9 +179,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         for bag = 0, LAST_BAG do
             Row(bag)
         end
-        if Settings().reagent == true then
-            Row(REAGENT_BAG)
-        end
+        if Settings().reagent == true then Row(REAGENT_BAG) end
         mod.Tip_AddLine(" ")
         mod.Tip_AddDouble(L["FREE"], free .. "/" .. total, 1, 1, 1, 1, 1, 1)
         mod.Tip_AddLine(" ")
@@ -214,18 +200,14 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         PaintText()
     end)
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton == "LeftButton" then
-            ToggleAllBags()
-        end
+        if mouseButton == "LeftButton" then ToggleAllBags() end
     end)
 
     -- Bags are counted once per event: most batches (a potion, stacking,
     -- sorting) leave the numbers as they are and draw nothing.
     inst.eventFrame = K.MakeEventFrame(inst, function(self, event)
         local free, total = Count()
-        if event == "BAG_UPDATE_DELAYED" and free == shownFree and total == shownTotal then
-            return
-        end
+        if event == "BAG_UPDATE_DELAYED" and free == shownFree and total == shownTotal then return end
         self:Refresh(free, total)
     end)
 
@@ -241,9 +223,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 40, 24)
     end
 

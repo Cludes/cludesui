@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Style.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local Pix = CludesUI.PP
@@ -23,21 +19,13 @@ local ERB, ResolveBandConfig = Inner.ERB, Inner.ResolveBandConfig
 local ResolveThresholdSpecEntry, DEFAULTS = Inner.ResolveThresholdSpecEntry, Inner.DEFAULTS
 
 local health
-Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
-    health = val
-end
+Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val) health = val end
 local primaryBar
-Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
-    primaryBar = val
-end
+Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val) primaryBar = val end
 local secondaryFrame
-Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val)
-    secondaryFrame = val
-end
+Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val) secondaryFrame = val end
 local cachedSecondary
-Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val)
-    cachedSecondary = val
-end
+Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val) cachedSecondary = val end
 
 -------------------------------------------------------------------------------
 
@@ -61,9 +49,7 @@ _G._CURB_BarTextureNames = BAR_TEXTURE_NAMES
 -- Append SharedMedia statusbar textures to both texture tables via the shared
 -- CludesUI helper. Safe to call multiple times; dupes skipped inside it.
 local function AppendSharedMediaTextures()
-    if not CludesUI.AppendSharedMediaTextures then
-        return
-    end
+    if not CludesUI.AppendSharedMediaTextures then return end
     CludesUI.AppendSharedMediaTextures(CAST_BAR_TEXTURE_NAMES, CAST_BAR_TEXTURE_ORDER, nil, CAST_BAR_TEXTURES)
     CludesUI.AppendSharedMediaTextures(BAR_TEXTURE_NAMES, BAR_TEXTURE_ORDER, nil, BAR_TEXTURES)
 end
@@ -98,31 +84,25 @@ function mod.ERB_CastStyle()
     local val = mod._erbCastStyle
     if val == nil then
         local callback = ERB.db and ERB.db.profile and ERB.db.profile.castBar
-        if not callback then
-            return "cui"
-        end
+        if not callback then return "cui" end
         val = (callback.useClassicStyle and "classic") or (callback.useBlizzardStyle and "blizzard") or "cui"
         mod._erbCastStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it.
-        mod._erbFvCast = val == "blizzard" and CludesUI.IS_FOREVER == true and callback.useForeverStyle == true
+        mod._erbFvCast = val == "blizzard"
+            and CludesUI.IS_FOREVER == true
+            and callback.useForeverStyle == true
     end
     return val
 end
 -- WoW Forever variant on the cast bar (false off Forever).
 function mod.ERB_CastForever()
-    if mod._erbCastStyle == nil then
-        mod.ERB_CastStyle()
-    end
+    if mod._erbCastStyle == nil then mod.ERB_CastStyle() end
     return mod._erbFvCast == true
 end
 -- Stock-art mode: true for both stock styles (the geometry, gating and
 -- chrome they share: CUI border off, full icon art, art child frame).
-function mod.ERB_CastBlizz()
-    return mod.ERB_CastStyle() ~= "cui"
-end
-function mod.ERB_CastClassic()
-    return mod.ERB_CastStyle() == "classic"
-end
+function mod.ERB_CastBlizz() return mod.ERB_CastStyle() ~= "cui" end
+function mod.ERB_CastClassic() return mod.ERB_CastStyle() == "classic" end
 -- The one-time stock-style seed on the cast bar profile `cb`: the "Blizzard"
 -- fill (the vanilla cast bar's own texture) as the bar texture, once per
 -- profile; the dropdown stays the user's afterwards. Run by the Style page
@@ -142,13 +122,9 @@ mod._erbBarsSlotKeys = {
     "general.classicBorderAllSepB",
 }
 -- WoW Forever: the Swing Timer's texture rides the bars' slots.
-if CludesUI.IS_FOREVER == true then
-    mod._erbBarsSlotKeys[#mod._erbBarsSlotKeys + 1] = "swingTimer.texture"
-end
+if CludesUI.IS_FOREVER == true then mod._erbBarsSlotKeys[#mod._erbBarsSlotKeys + 1] = "swingTimer.texture" end
 function mod.ERB_SeedStockCast(callback)
-    if not callback or callback.stockTextureSeeded then
-        return
-    end
+    if not callback or callback.stockTextureSeeded then return end
     callback.stockTextureSeeded = true
     callback.texture = "blizzard"
 end
@@ -168,9 +144,7 @@ function mod.ERB_SetBarTexture(profile, barId, texture)
         profile.splitTex = true
     end
     profile[barId].barTexture = texture or false
-    if not (profile.health.barTexture or profile.primary.barTexture) then
-        profile.splitTex = false
-    end
+    if not (profile.health.barTexture or profile.primary.barTexture) then profile.splitTex = false end
 end
 -- Classic WoW UI on the health, power and class resource bars, once per
 -- profile (the controls stay the user's afterwards): Border Around All on
@@ -181,9 +155,7 @@ end
 -- already switched.
 function mod.ERB_SeedStockBars(profile, styleKey)
     local g = profile and profile.general
-    if not g or styleKey ~= "classic" then
-        return
-    end
+    if not g or styleKey ~= "classic" then return end
     if not g.borderAllSeeded then
         g.borderAllSeeded = true
         if mod.ERB_BarsAnchoredTight(profile) then
@@ -191,7 +163,8 @@ function mod.ERB_SeedStockBars(profile, styleKey)
             -- One classic frame, one size: the lead bar's Border Size for all
             -- three, as the options toggle does.
             local s = mod.ERB_GroupLeadCfg(profile).stockBorderScale
-            profile.health.stockBorderScale, profile.primary.stockBorderScale, profile.secondary.stockBorderScale = s, s, s
+            profile.health.stockBorderScale, profile.primary.stockBorderScale, profile.secondary.stockBorderScale =
+                s, s, s
         end
     end
     local st = CludesUI.IS_FOREVER == true and profile.swingTimer
@@ -199,17 +172,11 @@ function mod.ERB_SeedStockBars(profile, styleKey)
         st.classicTextureSeeded = true
         st.texture = "plating"
     end
-    if g.classicTextureSeeded then
-        return
-    end
+    if g.classicTextureSeeded then return end
     g.classicTextureSeeded = true
     g.barTexture = "plating"
-    if mod.ERB_BarTexture(profile, "health") then
-        profile.health.barTexture = "plating"
-    end
-    if mod.ERB_BarTexture(profile, "primary") then
-        profile.primary.barTexture = "plating"
-    end
+    if mod.ERB_BarTexture(profile, "health") then profile.health.barTexture = "plating" end
+    if mod.ERB_BarTexture(profile, "primary") then profile.primary.barTexture = "plating" end
 end
 -- The style the health, power and class resource bars render this session,
 -- latched like the cast bar's. Blizzard Style: the personal resource
@@ -221,20 +188,16 @@ function mod.ERB_BarsStyle()
     local val = mod._erbBarsStyle
     if val == nil then
         local profile = ERB.db and ERB.db.profile
-        if not profile then
-            return "cui"
-        end
-        val = (profile.useClassicStyleBars and "classic") or (profile.useBlizzardStyleBars and "blizzard") or "cui"
+        if not profile then return "cui" end
+        val = (profile.useClassicStyleBars and "classic")
+            or (profile.useBlizzardStyleBars and "blizzard")
+            or "cui"
         mod._erbBarsStyle = val
     end
     return val
 end
-function mod.ERB_BarsBlizz()
-    return mod.ERB_BarsStyle() ~= "cui"
-end
-function mod.ERB_BarsClassic()
-    return mod.ERB_BarsStyle() == "classic"
-end
+function mod.ERB_BarsBlizz() return mod.ERB_BarsStyle() ~= "cui" end
+function mod.ERB_BarsClassic() return mod.ERB_BarsStyle() == "classic" end
 mod.ERB_BLIZZ_BAR_BG = "UI-HUD-CoolDownManager-Bar-BG"
 mod.ERB_BLIZZ_BAR_FILL = "UI-HUD-CoolDownManager-Bar"
 -- Cast bar stock art on WoW Forever: a retail name the client swapped for its
@@ -243,9 +206,7 @@ mod.ERB_BLIZZ_BAR_FILL = "UI-HUD-CoolDownManager-Bar"
 -- cast bar background takes the retail art). Plain SetAtlas on every other
 -- client.
 function mod.ERB_StockAtlas(texture, name, ...)
-    if mod.ERB_CastForever() then
-        return texture:SetAtlas(name, ...)
-    end
+    if mod.ERB_CastForever() then return texture:SetAtlas(name, ...) end
     return CludesUI.StockAtlas(texture, name, ...)
 end
 -------------------------------------------------------------------------------
@@ -272,9 +233,7 @@ mod.ERB_CLASSIC = {
 -- their reach) together.
 function mod.ERB_ClassicFrameK(conf)
     local CF = CludesUI.ClassicFrame
-    if not CF then
-        return 1
-    end
+    if not CF then return 1 end
     return CF.ScaleK(conf and conf.stockBorderScale)
 end
 -- The rim the vanilla frame draws OUTSIDE a bar's own rect, for size matching
@@ -283,9 +242,7 @@ end
 -- enter; a vertical bar turns it with the art).
 function mod.ERB_ClassicMatchPad(wid, hgt, vertical, key)
     local CF = CludesUI.ClassicFrame
-    if not CF then
-        return 0, 0
-    end
+    if not CF then return 0, 0 end
     return CF.Pad(key or 1, vertical)
 end
 -- Blizzard Style: the panel's opaque rim outside a health, power or class
@@ -302,12 +259,8 @@ function mod.ERB_BlizzMatchPad(vertical)
             or false
         mod._erbBlizzPanelArt = art
     end
-    if not art then
-        return nil
-    end
-    if vertical then
-        return 3, 2
-    end
+    if not art then return nil end
+    if vertical then return 3, 2 end
     return 2, 3
 end
 -- CludesUI look: what a bar's textured border draws OUTSIDE the bar, for
@@ -316,9 +269,7 @@ end
 -- (drawn inside the bar) or none. Screen axes: the border does not turn with
 -- a vertical bar.
 function mod.ERB_EuiBorderPad(cfg)
-    if not cfg then
-        return nil
-    end
+    if not cfg then return nil end
     local bs = cfg.borderSize or 0
     local texture = cfg.borderTexture or "solid"
     return CludesUI.BorderMatchPad(
@@ -372,9 +323,7 @@ function mod.ERB_SeparatorArt(cfg, pick, role)
     local bs = cfg and cfg.borderSize or 0
     if bs > 0 and CludesUI.GetBorderCompanion(texture, "sepSize") then
         local px = CludesUI.BorderPx(cfg.borderSizePx, bs, texture)
-        if px then
-            return filePath, math.max(1, floor(px + 0.5)) * Pix.mult / 16, size, true
-        end
+        if px then return filePath, math.max(1, floor(px + 0.5)) * Pix.mult / 16, size, true end
         local EM = CludesUI.BORDER_EDGE_MAP
         return filePath, (EM[bs] or EM[1]) / 16, size, false
     end
@@ -419,9 +368,7 @@ do
             barFrame._erbSep = owner
         end
         mod.ERB_AnchorBorderHost(owner, barFrame)
-        if level then
-            owner:SetFrameLevel(level)
-        end
+        if level then owner:SetFrameLevel(level) end
         owner._erbC, owner._erbHOn = c, hOn and true or false
         if gaps > 0 then
             -- Gap midpoints along the pip layout's own axis (one reused table).
@@ -451,9 +398,7 @@ end -- POOL block
 -- across the bar with its top edge 2 x f above the midpoint.
 function mod.ERB_SepPlace(owner)
     local c = owner._erbC
-    if not c then
-        return false
-    end
+    if not c then return false end
     local es = owner:GetEffectiveScale()
     local red, green, blue, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
     local exact = false
@@ -484,9 +429,7 @@ function mod.ERB_SepPlace(owner)
     if num > 0 then
         local vert, rev, mids = owner._erbVert, owner._erbRev, owner._erbMids
         local filePath, frame, size, ex = mod.ERB_SeparatorArt(c, c.edgeSepArt, vert and "sepH" or "sepV")
-        if ex then
-            exact = true
-        end
+        if ex then exact = true end
         local th, lead = Pix.SnapForES(size * frame, es), 2 * frame
         if not pool then
             pool = {}
@@ -544,18 +487,14 @@ end
 function mod.ERB_ClassSeps(sp, slots, total, isVertical, isReversed)
     local frame = secondaryFrame
     if not (sp.edgeSep and mod.ERB_Textured(sp) and not mod.ERB_BarsBlizz() and not mod._erbArtOn) then
-        if frame._erbSep then
-            mod.ERB_Separators(frame, sp, false)
-        end
+        if frame._erbSep then mod.ERB_Separators(frame, sp, false) end
         return
     end
     local lvl = 7
     local pw = cachedSecondary.power
     if cachedSecondary.type ~= "runes" and pw ~= "WHIRLWIND_STACKS" and pw ~= "SWEEPING_STRIKES" then
         local bandOn, bands = ResolveBandConfig(sp, ResolveThresholdSpecEntry(sp))
-        if bandOn then
-            lvl = min(14, max(7, #bands + 3))
-        end
+        if bandOn then lvl = min(14, max(7, #bands + 3)) end
     end
     mod.ERB_Separators(
         frame,
@@ -573,13 +512,9 @@ end
 -- ns.ERB_PowerSepLayer.
 function mod.ERB_PowerSep(pp)
     local pb = primaryBar
-    if not pb then
-        return
-    end
+    if not pb then return end
     local on = pp.edgeSep and pp.enabled ~= false and mod.ERB_Textured(pp) and not mod.ERB_BarsBlizz()
-    if not (on or pb._erbSep) then
-        return
-    end
+    if not (on or pb._erbSep) then return end
     mod.ERB_Separators(pb, pp, on and true or false)
     mod.ERB_PowerSepLayer()
 end
@@ -590,22 +525,14 @@ end
 function mod.ERB_PowerSepLayer()
     local pb = primaryBar
     local owner = pb and pb._erbSep
-    if not (owner and owner:IsShown()) then
-        return
-    end
+    if not (owner and owner:IsShown()) then return end
     local bf = pb._border._frame
     local strata = bf:GetFrameStrata()
     local lvl = bf:GetFrameLevel() + 2
     local cbf = secondaryFrame and secondaryFrame._barBorder and secondaryFrame._barBorder._frame
-    if cbf and cbf:GetFrameStrata() == strata then
-        lvl = max(lvl, cbf:GetFrameLevel() + 2)
-    end
-    if owner:GetFrameStrata() ~= strata then
-        owner:SetFrameStrata(strata)
-    end
-    if owner:GetFrameLevel() ~= lvl then
-        owner:SetFrameLevel(lvl)
-    end
+    if cbf and cbf:GetFrameStrata() == strata then lvl = max(lvl, cbf:GetFrameLevel() + 2) end
+    if owner:GetFrameStrata() ~= strata then owner:SetFrameStrata(strata) end
+    if owner:GetFrameLevel() ~= lvl then owner:SetFrameLevel(lvl) end
 end
 -- Draw Above GCD Bar: while on, with the GCD bar enabled and a textured power
 -- style (no stock style), the power border rises over the GCD bar. Cover 18 is
@@ -618,13 +545,9 @@ end
 -- strata back once; one compare when it was never on.
 function mod.ERB_PowerLift(pp)
     local pb = primaryBar
-    if not (pb and (pp.borderAboveGCD or pb._erbGcdCover or pb._erbLiftStrata)) then
-        return
-    end
+    if not (pb and (pp.borderAboveGCD or pb._erbGcdCover or pb._erbLiftStrata)) then return end
     local bf = pb._border and pb._border._frame
-    if not bf then
-        return
-    end
+    if not bf then return end
     local gb = ERB.db.profile.gcdBar
     local on = (pp.borderAboveGCD and gb and gb.enabled and mod.ERB_Textured(pp) and not mod.ERB_BarsBlizz())
             and true
@@ -634,29 +557,19 @@ function mod.ERB_PowerLift(pp)
         local gs, sequence = gb.frameStrata or "MEDIUM", CludesUI.FRAME_STRATA_ORDER_FULL
         local gr, br = 0, 0
         for index = 1, #sequence do
-            if sequence[index] == gs then
-                gr = index
-            end
-            if sequence[index] == strata then
-                br = index
-            end
+            if sequence[index] == gs then gr = index end
+            if sequence[index] == strata then br = index end
         end
-        if gr > br then
-            strata = gs
-        end
+        if gr > br then strata = gs end
     end
     if bf:GetFrameStrata() ~= strata then
         bf:SetFrameStrata(strata)
         local edges = Pix.GetBorders(bf)
-        if edges then
-            edges:SetFrameStrata(strata)
-        end
+        if edges then edges:SetFrameStrata(strata) end
     end
     pb._erbLiftStrata = (strata ~= pb:GetFrameStrata()) or nil
     pb._erbGcdCover = on and 18 or nil
-    if on then
-        pb:RaiseBorderAbove(18, pp.borderBehind)
-    end
+    if on then pb:RaiseBorderAbove(18, pp.borderBehind) end
 end
 -- Draw Above Other Bars: the class resource slot 5 levels above the highest
 -- health / power / GCD border that shares its strata (the health and power
@@ -671,39 +584,25 @@ function mod.ERB_ClassRaise(sp)
     if sp.raiseLevel then
         local strata, topY = frame:GetFrameStrata(), 0
         local hb = health and health._border and health._border._frame
-        if hb and hb:GetFrameStrata() == strata then
-            topY = hb:GetFrameLevel()
-        end
+        if hb and hb:GetFrameStrata() == strata then topY = hb:GetFrameLevel() end
         local pbf = primaryBar and primaryBar._border and primaryBar._border._frame
-        if pbf and pbf:GetFrameStrata() == strata then
-            topY = max(topY, pbf:GetFrameLevel())
-        end
+        if pbf and pbf:GetFrameStrata() == strata then topY = max(topY, pbf:GetFrameLevel()) end
         local gb = ERB.db.profile.gcdBar
-        if gb and gb.enabled and (gb.frameStrata or "MEDIUM") == strata then
-            topY = max(topY, 20)
-        end
+        if gb and gb.enabled and (gb.frameStrata or "MEDIUM") == strata then topY = max(topY, 20) end
         wanted = max(10, topY + 5)
     end
-    if frame:GetFrameLevel() ~= wanted then
-        frame:SetFrameLevel(wanted)
-    end
+    if frame:GetFrameLevel() ~= wanted then frame:SetFrameLevel(wanted) end
     frame._erbRaised = sp.raiseLevel and true or nil
-    if mod.ERB_BlizzArtLevel then
-        mod.ERB_BlizzArtLevel(frame)
-    end
+    if mod.ERB_BlizzArtLevel then mod.ERB_BlizzArtLevel(frame) end
 end
 -- End of ERB:ApplyAll, after its strata pass: re-asserts the layering that
 -- pass (it re-strata's every bar's children) could undo. Inert unless Draw
 -- Above GCD Bar, Draw Above Other Bars or a power Bottom Separator is in use.
 function mod.ERB_ReassertLayers()
     local p = ERB.db.profile
-    if primaryBar then
-        mod.ERB_PowerLift(_G._CURB_ResolvePowerCfg(p) or DEFAULTS.profile.primary)
-    end
+    if primaryBar then mod.ERB_PowerLift(_G._CURB_ResolvePowerCfg(p) or DEFAULTS.profile.primary) end
     local sp = _G._CURB_ResolveSecondaryCfg(p) or DEFAULTS.profile.secondary
-    if secondaryFrame and (sp.raiseLevel or secondaryFrame._erbRaised) then
-        mod.ERB_ClassRaise(sp)
-    end
+    if secondaryFrame and (sp.raiseLevel or secondaryFrame._erbRaised) then mod.ERB_ClassRaise(sp) end
     mod.ERB_PowerSepLayer()
 end
 -- Background on individual pips: pip and rune resources whose pips carry their
@@ -745,8 +644,14 @@ end
 -- keeps a stale one) and the UI-scale re-place dropped. Two compares while it
 -- was never on. The state is kept on our own texture.
 function mod.ERB_CastDividerArt(texture, show, iconTex, onRight, cfg, stock)
-    if show and cfg.iconDividerArt and not stock and CludesUI.GetBorderCompanion(cfg.borderTexture, "sepV") then
-        texture._erbArt, texture._erbIcon, texture._erbRight, texture._erbC = true, iconTex, onRight and true or false, cfg
+    if
+        show
+        and cfg.iconDividerArt
+        and not stock
+        and CludesUI.GetBorderCompanion(cfg.borderTexture, "sepV")
+    then
+        texture._erbArt, texture._erbIcon, texture._erbRight, texture._erbC =
+            true, iconTex, onRight and true or false, cfg
         CludesUI.RegisterPxReapply(
             texture,
             mod.ERB_PlaceDividerArt(texture, iconTex, onRight, cfg) and mod.ERB_DividerReapply or nil
@@ -788,13 +693,9 @@ mod._erbPadKeys =
 -- the sheet's own pixels). Memoized on the rect, scale and orientation;
 -- every layout pass re-runs it.
 function mod.ERB_SeatClassicChrome(texture, rect, thick, vertical, key)
-    if not (texture and rect) then
-        return
-    end
+    if not (texture and rect) then return end
     local CF = CludesUI.ClassicFrame
-    if not CF then
-        return
-    end
+    if not CF then return end
     -- `tex` is the handle the callers own: the nine-slice pieces ride its
     -- parent on its layer, created once, and the handle itself draws nothing.
     local p = texture._classicPieces
@@ -818,9 +719,7 @@ end
 do
     local POOL = CludesUI._Pool -- read as in ns.ERB_Separators' block
     function mod.ERB_ApplyClassicBarChrome(owner, rect, fw, fh, vertical, key)
-        if not owner then
-            return
-        end
+        if not owner then return end
         rect = rect or owner
         local af = owner._classicArt
         if not af then
@@ -847,9 +746,7 @@ do
                 or false
         end
         local wid, hgt = fw or rect:GetWidth(), fh or rect:GetHeight()
-        if issecretvalue and (issecretvalue(wid) or issecretvalue(hgt)) then
-            return
-        end
+        if issecretvalue and (issecretvalue(wid) or issecretvalue(hgt)) then return end
         mod.ERB_SeatClassicChrome(af._tex, rect, vertical and wid or hgt, vertical, key)
     end
 end -- POOL block
@@ -867,9 +764,7 @@ end -- POOL block
 -- stay 1px round the fill; a vertical bar's turned copy is a texcoord cut
 -- and stretches).
 function mod.ERB_ApplyBlizzBarChrome(owner, rect, fw, fh, vertical, key)
-    if not owner then
-        return
-    end
+    if not owner then return end
     rect = rect or owner
     -- Classic WoW UI takes the vanilla frame instead: no panel, mask or bevel.
     if mod.ERB_BarsClassic() then

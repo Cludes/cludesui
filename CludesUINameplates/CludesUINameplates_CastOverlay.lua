@@ -1,11 +1,7 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local addon, mod = ...
 
-if not mod then
-    return
-end
+if not mod then return end
 
 -- Casts In Front of Nameplates (castOverlayEnabled, default off).
 --
@@ -48,9 +44,7 @@ local function GetLift(backing)
         lift:SetIgnoreParentScale(true)
         lift:SetSize(1, 1)
         lift:EnableMouse(false)
-        if lift.EnableMouseMotion then
-            lift:EnableMouseMotion(false)
-        end
+        if lift.EnableMouseMotion then lift:EnableMouseMotion(false) end
         backing._castLift = lift
     end
     return lift
@@ -64,9 +58,7 @@ end
 -- via the appearance generation counter.
 function mod.RefreshCastOverlay(backing)
     local cast = backing and backing.cast
-    if not cast then
-        return
-    end
+    if not cast then return end
     if Enabled() then
         local lift = GetLift(backing)
         if cast:GetParent() ~= lift then
@@ -77,15 +69,11 @@ function mod.RefreshCastOverlay(backing)
             -- cast border (a strata-inheriting child of the cast bar) rides up to
             -- HIGH with the lift -- leaving MEDIUM text behind it. Lift the text to
             -- the same strata; its level 900 keeps it above the border there.
-            if backing.castTextFrame then
-                backing.castTextFrame:SetFrameStrata(LIFT_STRATA)
-            end
+            if backing.castTextFrame then backing.castTextFrame:SetFrameStrata(LIFT_STRATA) end
             backing._castOverlayLifted = true
             -- The strata change just reset the custom spell icon border's (a cast bar
             -- child, when it exists): re-seat it above the icon.
-            if backing._castIconBorder or cast._iconSeam then
-                mod.ApplyCastIconBorder(backing)
-            end
+            if backing._castIconBorder or cast._iconSeam then mod.ApplyCastIconBorder(backing) end
         end
         local s = backing:GetEffectiveScale()
         if backing._castLiftScale ~= s then
@@ -95,13 +83,9 @@ function mod.RefreshCastOverlay(backing)
     elseif backing._castOverlayLifted then
         cast:SetParent(backing)
         cast:SetFrameStrata(backing:GetFrameStrata())
-        if backing.castTextFrame then
-            backing.castTextFrame:SetFrameStrata("MEDIUM")
-        end
+        if backing.castTextFrame then backing.castTextFrame:SetFrameStrata("MEDIUM") end
         backing._castOverlayLifted = nil
         backing._castLiftScale = nil
-        if backing._castIconBorder or cast._iconSeam then
-            mod.ApplyCastIconBorder(backing)
-        end
+        if backing._castIconBorder or cast._iconSeam then mod.ApplyCastIconBorder(backing) end
     end
 end

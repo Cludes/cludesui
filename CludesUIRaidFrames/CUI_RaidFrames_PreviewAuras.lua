@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewAuras.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -29,13 +25,9 @@ local previewClassTokens, previewFrames = Inner.previewClassTokens, Inner.previe
 
 -- Shared state from the raid-frame and preview chains.
 local saved
-RF.dbSetters[#RF.dbSetters + 1] = function(val)
-    saved = val
-end
+RF.dbSetters[#RF.dbSetters + 1] = function(val) saved = val end
 local previewActive = false
-Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val)
-    previewActive = val
-end
+Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val) previewActive = val end
 
 -------------------------------------------------------------------------------
 --  Preview aura cycling system
@@ -48,12 +40,8 @@ local pvAuraTicker = nil
 -- raid preview (previewFrames / previewActive) and the party preview
 -- (ns._partyPvFrames / ns._partyPvActive). Keying off ns._partyPvActive at call
 -- time lets one code path drive whichever preview is currently on screen.
-local function PvFrames()
-    return (mod._partyPvActive and mod._partyPvFrames) or previewFrames
-end
-local function PvActive()
-    return previewActive or mod._partyPvActive
-end
+local function PvFrames() return (mod._partyPvActive and mod._partyPvFrames) or previewFrames end
+local function PvActive() return previewActive or mod._partyPvActive end
 -- Party preview reads party-scaled / party-prefixed settings so aura icons match
 -- the party frames (size, position, colors); raid preview reads the live profile
 -- through the real-preview effective overlay (below) so an open panel's view
@@ -63,9 +51,7 @@ local function PreviewCfg()
 end
 -- Class tokens for icon selection: ApplyPartyPreviewData hands the party tokens
 -- to ApplyPreviewData only, so the ticker must resolve them itself.
-local function PvClassTokens()
-    return (mod._partyPvActive and mod._partyPvCT) or previewClassTokens
-end
+local function PvClassTokens() return (mod._partyPvActive and mod._partyPvCT) or previewClassTokens end
 
 -------------------------------------------------------------------------------
 --  Real-preview effective-value overlay: while the options panel holds a
@@ -88,9 +74,7 @@ do
             if shade ~= nil then
                 local val = shade[key]
                 if val ~= nil then
-                    if val == CludesUI.SPECOV_NIL then
-                        return nil
-                    end
+                    if val == CludesUI.SPECOV_NIL then return nil end
                     return val
                 end
             end
@@ -100,13 +84,9 @@ do
     -- Segment-key resolution mirrors the value system's live walk: prefer
     -- the string key when the table holds it, else numeric.
     local function SegKey(tbl, seg)
-        if tbl[seg] ~= nil then
-            return seg
-        end
+        if tbl[seg] ~= nil then return seg end
         local num = tonumber(seg)
-        if num ~= nil and tbl[num] ~= nil then
-            return num
-        end
+        if num ~= nil and tbl[num] ~= nil then return num end
         return seg
     end
 
@@ -121,13 +101,9 @@ do
         if not flat then
             mod._pvOverlay = nil
             mod._pvOverlayProxy = nil
-            if mod._RefreshProxyModes then
-                mod._RefreshProxyModes()
-            end
+            if mod._RefreshProxyModes then mod._RefreshProxyModes() end
             mod._pvOverlaySrc = nil
-            if mod._UpdatePvModeChrome then
-                mod._UpdatePvModeChrome()
-            end
+            if mod._UpdatePvModeChrome then mod._UpdatePvModeChrome() end
             return
         end
         local NIL_SENT = CludesUI.SPECOV_NIL
@@ -178,24 +154,16 @@ do
             end
         end
         mod._pvOverlay = overlayFrame
-        if not proxy then
-            proxy = setmetatable({}, proxyMT)
-        end
+        if not proxy then proxy = setmetatable({}, proxyMT) end
         mod._pvOverlayProxy = proxy
-        if mod._RefreshProxyModes then
-            mod._RefreshProxyModes()
-        end
+        if mod._RefreshProxyModes then mod._RefreshProxyModes() end
         mod._pvOverlaySrc = { spec = specSrc, cond = condSrc }
-        if mod._UpdatePvModeChrome then
-            mod._UpdatePvModeChrome()
-        end
+        if mod._UpdatePvModeChrome then mod._UpdatePvModeChrome() end
     end
 
     -- The preview-path settings accessor: overlay proxy while a view swap
     -- is active in real preview mode, else the live profile itself.
-    function mod.PvEffectiveProfile()
-        return mod._pvOverlayProxy or saved.profile
-    end
+    function mod.PvEffectiveProfile() return mod._pvOverlayProxy or saved.profile end
 
     -- Session unlock-layer element lookup: while an override session with a
     -- CUSTOM unlock mode is being edited in real preview mode, the preview
@@ -204,9 +172,7 @@ do
     -- (live positioning, today's behavior). Anchored containers resolve to
     -- their recorded bookkeeping coordinates, not a live anchor chain.
     function mod._PvSessionElem(key)
-        if saved.profile.previewMode ~= "real" then
-            return nil
-        end
+        if saved.profile.previewMode ~= "real" then return nil end
         local layer, base
         local sfn = CludesUI.SpecOverrides_EditSessionUnlockLayer
         if sfn then
@@ -223,20 +189,14 @@ do
                 layer, base = CludesUI.SpecOverrides_EffectiveUnlockLayer()
             end
         end
-        if not layer then
-            return nil
-        end
+        if not layer then return nil end
         local e = layer.elems and layer.elems[key]
-        if not e and base and base ~= layer then
-            e = base.elems and base.elems[key]
-        end
+        if not e and base and base ~= layer then e = base.elems and base.elems[key] end
         return e
     end
 end
 
-local function PvAuraGetGroup(index)
-    return math.ceil(index / 5)
-end
+local function PvAuraGetGroup(index) return math.ceil(index / 5) end
 
 -- Pick a random icon for the given type and frame index
 local function PvAuraPickIcon(auraType, frameIndex)
@@ -259,9 +219,7 @@ local function PvAuraPickIcon(auraType, frameIndex)
                 pool[#pool + 1] = ic
             end
         end
-        if #pool == 0 then
-            return nil
-        end
+        if #pool == 0 then return nil end
         return pool[math.random(#pool)]
     else
         return mod._PV_DEBUFF_ICONS[math.random(#mod._PV_DEBUFF_ICONS)]
@@ -294,9 +252,7 @@ local function PvAuraAnchor(iconTex, frame, auraType, slot, totalShown)
     spc = PixelSnap(s2.defSpacing or 1)
     local spacing = sz + spc
     local centerOff = 0
-    if grow == "CENTER" and totalShown > 0 then
-        centerOff = -((totalShown - 1) * spacing) / 2
-    end
+    if grow == "CENTER" and totalShown > 0 then centerOff = -((totalShown - 1) * spacing) / 2 end
     iconTex:SetSize(sz, sz)
     iconTex:ClearAllPoints()
     if slot == 0 then
@@ -344,14 +300,10 @@ end
 -- Apply a fake aura to a preview frame slot
 local function PvAuraApply(frameIndex, auraType, slotIndex)
     local frame = PvFrames()[frameIndex]
-    if not frame or not frame._health then
-        return
-    end
+    if not frame or not frame._health then return end
     local pool = auraType == "def" and frame._pvDefs or frame._pvDebuffs
     local iconTex = pool and pool[slotIndex]
-    if not iconTex then
-        return
-    end
+    if not iconTex then return end
 
     local texture = PvAuraPickIcon(auraType, frameIndex)
     if not texture then
@@ -395,7 +347,8 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
 
         -- Style the built-in countdown text via GetCountdownFontString
         if showDurText and dtColor then
-            local cdText = iconTex._cooldown.GetCountdownFontString and iconTex._cooldown:GetCountdownFontString()
+            local cdText = iconTex._cooldown.GetCountdownFontString
+                and iconTex._cooldown:GetCountdownFontString()
             if cdText then
                 local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
                 CludesUI.ApplyIconTextFont(cdText, fontFile, dtSize, "raidFrames")
@@ -414,9 +367,7 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
     end
 
     -- Stacks text (debuffs only: show "2" on exactly one random debuff)
-    if iconTex._count then
-        iconTex._count:SetText("")
-    end
+    if iconTex._count then iconTex._count:SetText("") end
 
     iconTex:Show()
 
@@ -465,32 +416,22 @@ local function PvAuraPickFrame(set, auraType, minSlot)
                     break
                 end
             end
-            if not hasType then
-                candidates[#candidates + 1] = index
-            end
+            if not hasType then candidates[#candidates + 1] = index end
         end
     end
-    if #candidates == 0 then
-        return nil
-    end
+    if #candidates == 0 then return nil end
     return candidates[math.random(#candidates)]
 end
 
 -- Re-anchor all visible icons on a frame for CENTER growth
 local function PvReanchorAuras(frameIndex, auraType)
     local frame = PvFrames()[frameIndex]
-    if not frame then
-        return
-    end
+    if not frame then return end
     local pool = auraType == "def" and frame._pvDefs or frame._pvDebuffs
-    if not pool then
-        return
-    end
+    if not pool then return end
     local isShown = 0
     for _, ic in ipairs(pool) do
-        if ic:IsShown() then
-            isShown = isShown + 1
-        end
+        if ic:IsShown() then isShown = isShown + 1 end
     end
     local slotIdx = 0
     for _, ic in ipairs(pool) do
@@ -502,9 +443,7 @@ local function PvReanchorAuras(frameIndex, auraType)
 end
 
 local function PvAuraTick()
-    if not PvActive() then
-        return
-    end
+    if not PvActive() then return end
     local nowTime = GetTime()
     local s2 = PreviewCfg()
     local wantDef = mod._defensivesPreviewVisible and (s2.showDefensives or s2.showExternals)
@@ -524,9 +463,7 @@ local function PvAuraTick()
                 -- Re-spawn on the same frame/slot (overwrites this same key, so the
                 -- group count stays put and no new player is chosen). If it held the
                 -- stacks marker, drop it so the stacks pass re-applies the count text.
-                if mod._pvActiveAuras._stackKey == key then
-                    mod._pvActiveAuras._stackKey = nil
-                end
+                if mod._pvActiveAuras._stackKey == key then mod._pvActiveAuras._stackKey = nil end
                 PvAuraApply(details.frameIndex, details.auraType, details.slot)
                 PvReanchorAuras(details.frameIndex, details.auraType)
             else
@@ -536,17 +473,11 @@ local function PvAuraTick()
                     local ic = pool and pool[details.slot]
                     if ic then
                         ic:Hide()
-                        if ic._cooldown then
-                            ic._cooldown:Clear()
-                        end
-                        if ic._count then
-                            ic._count:SetText("")
-                        end
+                        if ic._cooldown then ic._cooldown:Clear() end
+                        if ic._count then ic._count:SetText("") end
                     end
                 end
-                if mod._pvActiveAuras._stackKey == key then
-                    mod._pvActiveAuras._stackKey = nil
-                end
+                if mod._pvActiveAuras._stackKey == key then mod._pvActiveAuras._stackKey = nil end
                 mod._pvActiveAuras[key] = nil
             end
         end
@@ -571,9 +502,7 @@ local function PvAuraTick()
                 local frame = popFrame[fi]
                 if frame and frame._pvDebuffs and frame._pvDebuffs[1] then
                     frame._pvDebuffs[1]:Hide()
-                    if frame._pvDebuffs[1]._cooldown then
-                        frame._pvDebuffs[1]._cooldown:Clear()
-                    end
+                    if frame._pvDebuffs[1]._cooldown then frame._pvDebuffs[1]._cooldown:Clear() end
                     -- Re-pack remaining debuffs so a surviving slot-2+ icon shifts
                     -- into the vacated first position immediately, instead of only
                     -- when that icon itself refreshes.
@@ -665,9 +594,7 @@ local function PvAuraTick()
                         end
                     end
                 end
-                if changed then
-                    PvReanchorAuras(1, "db")
-                end
+                if changed then PvReanchorAuras(1, "db") end
             end
         end
     end
@@ -679,9 +606,7 @@ local function PvAuraTick()
     for set = 1, 4 do
         while wantDef and PvAuraCountInGroup(set, "def") < defTarget do
             local fi = PvAuraPickFrame(set, "def")
-            if not fi then
-                break
-            end
+            if not fi then break end
             PvAuraApply(fi, "def", 1)
             PvReanchorAuras(fi, "def")
         end
@@ -766,17 +691,13 @@ local function StopPvAuraTicker()
         if frame._pvDebuffs then
             for _, ic in ipairs(frame._pvDebuffs) do
                 ic:Hide()
-                if ic._cooldown then
-                    ic._cooldown:Clear()
-                end
+                if ic._cooldown then ic._cooldown:Clear() end
             end
         end
         if frame._pvDefs then
             for _, ic in ipairs(frame._pvDefs) do
                 ic:Hide()
-                if ic._cooldown then
-                    ic._cooldown:Clear()
-                end
+                if ic._cooldown then ic._cooldown:Clear() end
             end
         end
     end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Apply.lua
 --
@@ -11,9 +9,7 @@ local _, mod = ...
 local Inner = mod._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -48,13 +44,9 @@ mod.Rescale = function()
     for _, wid in ipairs(_windows) do
         wid._barCacheKey = nil
         wid.Refresh()
-        if wid.sourceOpen and wid.RefreshBreakdown then
-            wid.RefreshBreakdown()
-        end
+        if wid.sourceOpen and wid.RefreshBreakdown then wid.RefreshBreakdown() end
     end
-    if mod.ApplySpellHistory then
-        mod.ApplySpellHistory()
-    end
+    if mod.ApplySpellHistory then mod.ApplySpellHistory() end
 end
 -- Called by the core right after PP.SetUIScale, alongside the other modules' re-apply hooks
 _G._CUDM_Rescale = mod.Rescale
@@ -95,14 +87,10 @@ mod.ApplyBorder = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
             for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyBorder then
-                    barFrame.ApplyBorder()
-                end
+                if barFrame.ApplyBorder then barFrame.ApplyBorder() end
             end
         end
-        if wid.stickyPlayer and wid.stickyPlayer.ApplyBorder then
-            wid.stickyPlayer.ApplyBorder()
-        end
+        if wid.stickyPlayer and wid.stickyPlayer.ApplyBorder then wid.stickyPlayer.ApplyBorder() end
         mod.DMRefreshRowDecor(wid)
     end
 end
@@ -111,14 +99,10 @@ mod.ApplyBarBg = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
             for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyBg then
-                    barFrame.ApplyBg()
-                end
+                if barFrame.ApplyBg then barFrame.ApplyBg() end
             end
         end
-        if wid.stickyPlayer and wid.stickyPlayer.ApplyBg then
-            wid.stickyPlayer.ApplyBg()
-        end
+        if wid.stickyPlayer and wid.stickyPlayer.ApplyBg then wid.stickyPlayer.ApplyBg() end
     end
 end
 
@@ -126,14 +110,10 @@ mod.ApplyBarTextOffsets = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
             for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyTextOffsets then
-                    barFrame.ApplyTextOffsets()
-                end
+                if barFrame.ApplyTextOffsets then barFrame.ApplyTextOffsets() end
             end
         end
-        if wid.stickyPlayer and wid.stickyPlayer.ApplyTextOffsets then
-            wid.stickyPlayer.ApplyTextOffsets()
-        end
+        if wid.stickyPlayer and wid.stickyPlayer.ApplyTextOffsets then wid.stickyPlayer.ApplyTextOffsets() end
     end
 end
 
@@ -149,9 +129,7 @@ mod.ApplyBackground = function()
         end
     end
     -- Under Classic WoW UI the header tint is shaded from the window colour.
-    if mod.DMClassic() then
-        mod.ApplyHeader()
-    end
+    if mod.DMClassic() then mod.ApplyHeader() end
 end
 
 mod.ApplyWindowBorder = function()
@@ -181,14 +159,26 @@ mod.ApplyWindowBorder = function()
             end
             target:SetPoint("BOTTOMRIGHT", wid.frame, "BOTTOMRIGHT", offsetX, -offsetY)
             -- Offsets are represented by the target geometry itself, which also makes them work for the solid four-strip border implementation
-            CUI.ApplyBorderStyle(target, size, red, green, blue, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
-            if conf.hdrBottomSeparator or wid._headerSeparator then
-                mod.DMApplyHeaderSeparator(wid)
-            end
+            CUI.ApplyBorderStyle(
+                target,
+                size,
+                red,
+                green,
+                blue,
+                a,
+                texture,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                px
+            )
+            if conf.hdrBottomSeparator or wid._headerSeparator then mod.DMApplyHeaderSeparator(wid) end
             -- The row decorations read no window border setting but its level.
-            if relayered then
-                mod.DMRefreshRowDecor(wid)
-            end
+            if relayered then mod.DMRefreshRowDecor(wid) end
         end
     end
     -- Border reach counts in size matching (each window's getMatchPad reads
@@ -222,9 +212,7 @@ mod.ApplyHeader = function()
     for _, wid in ipairs(_windows) do
         if wid.header then
             wid.header:SetHeight(hdrH)
-            if wid.header._hdrBg then
-                mod.DMPaintHeaderBg(wid.header._hdrBg, hR, hG, hB, hA)
-            end
+            if wid.header._hdrBg then mod.DMPaintHeaderBg(wid.header._hdrBg, hR, hG, hB, hA) end
             if
                 wid.header._bottomBorder
                 and not mod.DMClassicSeparator(wid.header._bottomBorder, PhysicalPixels(1))
@@ -253,9 +241,7 @@ mod.ApplyHeader = function()
             wid.titleText:ClearAllPoints()
             wid.titleText:SetPoint("LEFT", wid.header, "LEFT", 6 + txOX, txOY + mod.DMHdrLift(conf.hdrHeight))
         end
-        if wid.timerText then
-            SetDMFont(wid.timerText, hdrFS)
-        end
+        if wid.timerText then SetDMFont(wid.timerText, hdrFS) end
         LayoutHeaderButtons(wid, conf, iconSz)
         -- Close icon is 2px larger than other icons
         if wid._closeIconTex then
@@ -266,9 +252,7 @@ mod.ApplyHeader = function()
 
         ApplyHeaderButtonsHoverVisibility(wid, conf)
         wid._fitFull = nil
-        if wid.FitTitle then
-            wid.FitTitle()
-        end
+        if wid.FitTitle then wid.FitTitle() end
     end
     mod.ApplyWindowBorder()
 end
@@ -287,9 +271,7 @@ mod.ApplyIconColor = function()
     for _, wid in ipairs(_windows) do
         for _, iconTex in ipairs(wid.hdrIcons) do
             -- Stock-style art carries its own colours.
-            if not iconTex._hdrArt then
-                iconTex:SetVertexColor(red, green, blue, ICON_ALPHA)
-            end
+            if not iconTex._hdrArt then iconTex:SetVertexColor(red, green, blue, ICON_ALPHA) end
         end
     end
 end
@@ -298,14 +280,10 @@ mod.ApplyIconBorder = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
             for _, barFrame in ipairs(wid.rowPool) do
-                if barFrame.ApplyIconBorder then
-                    barFrame.ApplyIconBorder()
-                end
+                if barFrame.ApplyIconBorder then barFrame.ApplyIconBorder() end
             end
         end
-        if wid.stickyPlayer and wid.stickyPlayer.ApplyIconBorder then
-            wid.stickyPlayer.ApplyIconBorder()
-        end
+        if wid.stickyPlayer and wid.stickyPlayer.ApplyIconBorder then wid.stickyPlayer.ApplyIconBorder() end
     end
 end
 

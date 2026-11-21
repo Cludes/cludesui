@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Options.lua: registers the Nameplates module with CludesUI.
 --  All get/set calls go to ns.db.profile (centralized store); does NOT touch nameplate rendering logic.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUINameplates"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The options page frame pool (CludesUI_FramePool.lua): frames made under a
 -- pooled page or header part are handed back to its next build.
@@ -17,22 +13,16 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 local PoolGen, PoolKeep = CludesUI._Pool.Gen, CludesUI._Pool.Keep
 
 -- Body-text preview flag, already slug-gated at the source (GetFontOutlineFlag).
-local function GetNPOptOutline()
-    return CludesUI.GetFontOutlineFlag("nameplates")
-end
+local function GetNPOptOutline() return CludesUI.GetFontOutlineFlag("nameplates") end
 
 -- Rows the Blizzard kit replaces but the classic plate leaves to the user
 -- (bar background, cast bar texture, cast background and colours, the
 -- border wrap): gated only while Blizzard Style renders, live under Classic
 -- WoW UI. ns fields so the page builders gain no upvalue; the gate returns
 -- cfg for inline use like BlizzStyle.Gate.
-function mod.NP_BlizzOnly()
-    return CludesUI.BlizzStyle.Active("nameplates") == "blizzard"
-end
+function mod.NP_BlizzOnly() return CludesUI.BlizzStyle.Active("nameplates") == "blizzard" end
 function mod.NP_BlizzOnlyGate(rowConf)
-    if mod.NP_BlizzOnly() then
-        return CludesUI.BlizzStyle.Gate("nameplates", rowConf)
-    end
+    if mod.NP_BlizzOnly() then return CludesUI.BlizzStyle.Gate("nameplates", rowConf) end
     return rowConf
 end
 
@@ -73,12 +63,8 @@ CludesUI.AtOptionsLogin(function()
     local GetDebuffTextColor = mod.GetDebuffTextColor
     local BAR_W = mod.BAR_W
     local plates = mod.plates
-    local GetNPOutline = mod.GetNPOutline or function()
-        return "OUTLINE, SLUG"
-    end
-    local GetNPUseShadow = mod.GetNPUseShadow or function()
-        return false
-    end
+    local GetNPOutline = mod.GetNPOutline or function() return "OUTLINE, SLUG" end
+    local GetNPUseShadow = mod.GetNPUseShadow or function() return false end
 
     local pcall = pcall
     local pairs = pairs
@@ -95,15 +81,11 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  DB helper reads from the centralized profile via ns.db
     ---------------------------------------------------------------------------
-    local function PlatesProfile()
-        return mod.db and mod.db.profile
-    end
+    local function PlatesProfile() return mod.db and mod.db.profile end
 
     local function DBVal(key)
         local saved = PlatesProfile()
-        if saved and saved[key] ~= nil then
-            return saved[key]
-        end
+        if saved and saved[key] ~= nil then return saved[key] end
         return defaultSet[key]
     end
 
@@ -145,18 +127,14 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function RefreshAllPlates()
         -- Color Casting Enemies repaints its tint colors (its swatches, Modify Out of Combat).
-        if mod.NP_CastTintsDirty then
-            mod.NP_CastTintsDirty()
-        end
+        if mod.NP_CastTintsDirty then mod.NP_CastTintsDirty() end
         for _, backing in pairs(plates) do
             backing:UpdateHealth()
         end
     end
 
     local function RefreshAllAuras()
-        if mod.NPC_ReloadAll then
-            mod.NPC_ReloadAll()
-        end
+        if mod.NPC_ReloadAll then mod.NPC_ReloadAll() end
     end
 
     ---------------------------------------------------------------------------
@@ -176,17 +154,13 @@ CludesUI.AtOptionsLogin(function()
         local texNames = mod.healthBarTextureNames or {}
         local texOrder2 = mod.healthBarTextureOrder or {}
         for _, key in ipairs(texOrder2) do
-            if key ~= "---" then
-                hbtValues[key] = texNames[key] or key
-            end
+            if key ~= "---" then hbtValues[key] = texNames[key] or key end
             hbtOrder[#hbtOrder + 1] = key
         end
         local texLookup = mod.healthBarTextures or {}
         hbtValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return texLookup[key]
-            end,
+            background = function(key) return texLookup[key] end,
         }
     end
 
@@ -203,9 +177,7 @@ CludesUI.AtOptionsLogin(function()
     local _displayHeaderBuilder -- stored for page cache re-use
     local _headerBaseH = 0 -- header height WITHOUT hint (for cache restore)
 
-    local function IsPreviewHintDismissed()
-        return CludesUIDB and CludesUIDB.previewHintDismissed
-    end
+    local function IsPreviewHintDismissed() return CludesUIDB and CludesUIDB.previewHintDismissed end
 
     -- Raid marker hidden by default, toggled via eye icon; optState fields so both the preview and the Display page can access them.
     optionState.showRaidMarkerPreview = false
@@ -232,9 +204,7 @@ CludesUI.AtOptionsLogin(function()
     -- updates it when it shows again.
     local function UpdatePreview()
         local preview = optionState.activePreview
-        if preview and preview.Update and preview:IsVisible() then
-            preview:Update()
-        end
+        if preview and preview.Update and preview:IsVisible() then preview:Update() end
     end
 
     -- Refresh the preview every time the panel is reopened
@@ -275,13 +245,9 @@ CludesUI.AtOptionsLogin(function()
             },
             caps = { mode = true, params = true, bg = true },
             defaultColor = CludesUI.Glows.DEFAULT_COLOR,
-            isOff = function()
-                return DBVal("dispelGlow") ~= true
-            end,
+            isOff = function() return DBVal("dispelGlow") ~= true end,
             -- Color by Type replaces the swatch color on every group.
-            colorDisabled = function()
-                return DBVal("dispelGlowUseTypeColor") == true
-            end,
+            colorDisabled = function() return DBVal("dispelGlowUseTypeColor") == true end,
             colorDisabledTooltip = "Color by Type (Magic/Enrage)",
             onChange = RefreshAuraGlows,
             get = function(f)
@@ -314,9 +280,7 @@ CludesUI.AtOptionsLogin(function()
                 {
                     type = "toggle",
                     label = "Color by Type (Magic/Enrage)",
-                    get = function()
-                        return DBVal("dispelGlowUseTypeColor") or false
-                    end,
+                    get = function() return DBVal("dispelGlowUseTypeColor") or false end,
                     set = function(value)
                         PlatesProfile().dispelGlowUseTypeColor = value
                         RefreshAuraGlows()
@@ -328,9 +292,7 @@ CludesUI.AtOptionsLogin(function()
         -- The cast bar glows (flat <prefix>* keys, on/off in <prefix>): the cast bar is a
         -- bar host (no Shape). An edit reaches the casts already showing.
         local function RefreshCastGlows()
-            if mod.NP_RefreshCastGlows then
-                mod.NP_RefreshCastGlows()
-            end
+            if mod.NP_RefreshCastGlows then mod.NP_RefreshCastGlows() end
         end
         local function CastBarGlowDesc(prefixText)
             local keyName = CludesUI.Glows.FlatKeys(prefixText)
@@ -339,9 +301,7 @@ CludesUI.AtOptionsLogin(function()
                 host = "bar",
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = defaultSet[keyName.color],
-                isOff = function()
-                    return DBVal(prefixText) ~= true
-                end,
+                isOff = function() return DBVal(prefixText) ~= true end,
                 onChange = RefreshCastGlows,
                 get = function(f)
                     local profile = PlatesProfile()
@@ -389,9 +349,7 @@ CludesUI.AtOptionsLogin(function()
             },
             caps = { mode = true, params = true, bg = true },
             defaultColor = defaultSet.pandemicGlowColor,
-            isOff = function()
-                return DBVal("pandemicGlow") ~= true
-            end,
+            isOff = function() return DBVal("pandemicGlow") ~= true end,
             onChange = RefreshAuraGlows,
             get = function(f)
                 local profile = PlatesProfile()
@@ -554,9 +512,7 @@ CludesUI.AtOptionsLogin(function()
                 local ignored = key == "factionSlot" and saved.classificationIncludeFaction
                 if not ignored and (saved[key] or defaultSet[key]) == place then
                     -- "Debuffs + CC" is a VIEW over the debuff slot: same position key + the debuffIncludeCC flag.
-                    if key == "debuffSlot" and saved.debuffIncludeCC then
-                        return "debuffsccs"
-                    end
+                    if key == "debuffSlot" and saved.debuffIncludeCC then return "debuffsccs" end
                     -- "Rare/Quest + Faction" is a VIEW over the classification slot + classificationIncludeFaction.
                     if key == "classificationSlot" and saved.classificationIncludeFaction then
                         return "classfaction"
@@ -575,13 +531,9 @@ CludesUI.AtOptionsLogin(function()
                 -- Clear: find whatever element is at this position and move it to "none"
                 local saved = PlatesProfile()
                 for _, key in ipairs(slotKeys) do
-                    if (saved[key] or defaultSet[key]) == place then
-                        saved[key] = "none"
-                    end
+                    if (saved[key] or defaultSet[key]) == place then saved[key] = "none" end
                 end
-                if mod.NP_GetQuestTextSlot(saved) == place then
-                    saved.questTextSlot = "none"
-                end
+                if mod.NP_GetQuestTextSlot(saved) == place then saved.questTextSlot = "none" end
                 return
             end
             -- "Debuffs + CC" rides the debuff slot key; the two entries differ only by debuffIncludeCC.
@@ -602,9 +554,7 @@ CludesUI.AtOptionsLogin(function()
                 PlatesProfile().classificationIncludeFaction = false
             end
             local key = elementToKey[element]
-            if not key then
-                return
-            end
+            if not key then return end
             local saved = PlatesProfile()
             -- Clear old holder of this position (set to "none"), no swapping
             for _, otherKey in ipairs(slotKeys) do
@@ -631,12 +581,8 @@ CludesUI.AtOptionsLogin(function()
                 backing:UpdateRaidIcon()
                 backing:UpdateClassification()
                 -- Rare/Quest + Faction: the classification pass already ran it.
-                if not DBVal("classificationIncludeFaction") then
-                    backing:UpdateFaction()
-                end
-                if mod.ApplySlotStrata then
-                    mod.ApplySlotStrata(backing)
-                end
+                if not DBVal("classificationIncludeFaction") then backing:UpdateFaction() end
+                if mod.ApplySlotStrata then mod.ApplySlotStrata(backing) end
             end
             mod.NP_RefreshFriendlyFaction()
             UpdatePreview()
@@ -683,21 +629,15 @@ CludesUI.AtOptionsLogin(function()
             local saved = PlatesProfile()
             local key = kind .. "DurationText" .. suffix
             local oldKey = "auraDurationText" .. suffix
-            if saved and saved[key] ~= nil then
-                return saved[key]
-            end
-            if saved and saved[oldKey] ~= nil then
-                return saved[oldKey]
-            end
+            if saved and saved[key] ~= nil then return saved[key] end
+            if saved and saved[oldKey] ~= nil then return saved[oldKey] end
             return defaultSet[oldKey]
         end
 
         -- Aura duration and stack text draw through the aura containers' style
         -- pass, which a settings edit re-runs (fingerprint-guarded).
         local function LiveApplyAuraText()
-            if mod.NPC_ReloadAll then
-                mod.NPC_ReloadAll()
-            end
+            if mod.NPC_ReloadAll then mod.NPC_ReloadAll() end
         end
 
         local atFallback = DBVal("auraTextPosition") or defaultSet.auraTextPosition
@@ -732,18 +672,14 @@ CludesUI.AtOptionsLogin(function()
         -- The search pre-build indexes rows only. The click navigation below
         -- rewires the live preview's hit overlays, which a hidden build of
         -- this page must leave alone.
-        if CludesUI._prebuilding then
-            return math.abs(cursorY)
-        end
+        if CludesUI._prebuilding then return math.abs(cursorY) end
 
         -----------------------------------------------------------------------
         --  CLICK NAVIGATION: glow, scroll, mapping, hit overlays
         -----------------------------------------------------------------------
         local PlaySettingGlow = CludesUI.MakeSettingGlow({
             color = CludesUI.CLUDES_GREEN,
-            thickness = function()
-                return Pix.Scale(2)
-            end,
+            thickness = function() return Pix.Scale(2) end,
             noSnap = true,
         })
 
@@ -755,13 +691,9 @@ CludesUI.AtOptionsLogin(function()
         local function FindCorePosForElement(element)
             local saved = PlatesProfile()
             local key = elementToKey[element]
-            if not key then
-                return nil
-            end
+            if not key then return nil end
             local place = saved[key] or defaultSet[key]
-            if place == "none" then
-                return nil
-            end
+            if place == "none" then return nil end
             return place
         end
 
@@ -769,9 +701,7 @@ CludesUI.AtOptionsLogin(function()
         local function FindTextSlotForElement(element)
             local saved = PlatesProfile()
             for _, key in ipairs(textSlotKeys) do
-                if (saved[key] or defaultSet[key]) == element then
-                    return key
-                end
+                if (saved[key] or defaultSet[key]) == element then return key end
             end
             return nil
         end
@@ -779,13 +709,9 @@ CludesUI.AtOptionsLogin(function()
         -- Resolve a dynamic click mapping to the Core Positions row of a position
         -- (the first row while the element sits in none)
         local function ResolveCorePos(place)
-            if not place or place == "none" then
-                return { section = coreHeader, target = coreRow1 }
-            end
+            if not place or place == "none" then return { section = coreHeader, target = coreRow1 } end
             local details = context.corePosToRegion[place]
-            if not details then
-                return { section = coreHeader, target = coreRow1 }
-            end
+            if not details then return { section = coreHeader, target = coreRow1 } end
             return {
                 section = coreHeader,
                 target = details[1],
@@ -793,9 +719,7 @@ CludesUI.AtOptionsLogin(function()
             }
         end
         -- The same for the slot holding an icon element
-        local function ResolveCoreMapping(element)
-            return ResolveCorePos(FindCorePosForElement(element))
-        end
+        local function ResolveCoreMapping(element) return ResolveCorePos(FindCorePosForElement(element)) end
 
         local clickMappings = {
             debuffDuration = { section = generalTextHeader, target = auraDurPosRow, slotSide = "left" },
@@ -822,39 +746,23 @@ CludesUI.AtOptionsLogin(function()
             -- exists only on that style, so this resolves to nothing elsewhere.
             classicLevel = function()
                 local row = hostFrame._classicPlateRow
-                if not row then
-                    return nil
-                end
+                if not row then return nil end
                 return { section = styleHeader, target = row, slotSide = "left" }
             end,
             -- WoW Forever: the level box, whose row exists only under that
             -- variant.
             foreverLevelBox = function()
                 local row = hostFrame._foreverBoxRow
-                if not row then
-                    return nil
-                end
+                if not row then return nil end
                 return { section = styleHeader, target = row, slotSide = "left" }
             end,
-            debuffIcon = function()
-                return ResolveCoreMapping("debuffs")
-            end,
-            buffIcon = function()
-                return ResolveCoreMapping("buffs")
-            end,
-            ccIcon = function()
-                return ResolveCoreMapping("ccs")
-            end,
-            raidMarker = function()
-                return ResolveCoreMapping("raidmarker")
-            end,
-            classIcon = function()
-                return ResolveCoreMapping("classification")
-            end,
+            debuffIcon = function() return ResolveCoreMapping("debuffs") end,
+            buffIcon = function() return ResolveCoreMapping("buffs") end,
+            ccIcon = function() return ResolveCoreMapping("ccs") end,
+            raidMarker = function() return ResolveCoreMapping("raidmarker") end,
+            classIcon = function() return ResolveCoreMapping("classification") end,
             -- The Quest Objective Text's effective slot.
-            questText = function()
-                return ResolveCorePos(mod.NP_GetQuestTextSlot(PlatesProfile()))
-            end,
+            questText = function() return ResolveCorePos(mod.NP_GetQuestTextSlot(PlatesProfile())) end,
             -- Combined with Rare/Quest, the badge's settings live on that row.
             factionIcon = function()
                 if PlatesProfile().classificationIncludeFaction then
@@ -867,13 +775,9 @@ CludesUI.AtOptionsLogin(function()
                 local slot = FindTextSlotForElement("enemyName")
                     or FindTextSlotForElement("levelName")
                     or FindTextSlotForElement("nameLevel")
-                if not slot then
-                    return { section = coreTextHeader, target = textFirstRow }
-                end
+                if not slot then return { section = coreTextHeader, target = textFirstRow } end
                 local details = textSlotToRow[slot]
-                if not details then
-                    return { section = coreTextHeader, target = textFirstRow }
-                end
+                if not details then return { section = coreTextHeader, target = textFirstRow } end
                 return {
                     section = coreTextHeader,
                     target = details.row,
@@ -887,13 +791,9 @@ CludesUI.AtOptionsLogin(function()
                     or FindTextSlotForElement("healthNumPct")
                     or FindTextSlotForElement("healthPctNumDash")
                     or FindTextSlotForElement("healthNumPctDash")
-                if not slot then
-                    return { section = coreTextHeader, target = textFirstRow }
-                end
+                if not slot then return { section = coreTextHeader, target = textFirstRow } end
                 local details = textSlotToRow[slot]
-                if not details then
-                    return { section = coreTextHeader, target = textFirstRow }
-                end
+                if not details then return { section = coreTextHeader, target = textFirstRow } end
                 return {
                     section = coreTextHeader,
                     target = details.row,
@@ -905,9 +805,7 @@ CludesUI.AtOptionsLogin(function()
         for _, slotKey in ipairs(mod.textSlotKeys) do
             dynamicMappings["custom_" .. slotKey] = function()
                 local details = textSlotToRow[slotKey]
-                if not details then
-                    return { section = coreTextHeader, target = textFirstRow }
-                end
+                if not details then return { section = coreTextHeader, target = textFirstRow } end
                 return {
                     section = coreTextHeader,
                     target = details.row,
@@ -923,9 +821,7 @@ CludesUI.AtOptionsLogin(function()
         }) do
             dynamicMappings[mapKey] = function()
                 local details = textSlotToRow[FindTextSlotForElement(element) or ""]
-                if not details then
-                    return { section = coreTextHeader, target = textFirstRow }
-                end
+                if not details then return { section = coreTextHeader, target = textFirstRow } end
                 return {
                     section = coreTextHeader,
                     target = details.row,
@@ -939,40 +835,28 @@ CludesUI.AtOptionsLogin(function()
             -- Check dynamic mappings (icon/text elements assigned to Core Positions)
             if not m then
                 local resolver = dynamicMappings[key]
-                if resolver then
-                    m = resolver()
-                end
+                if resolver then m = resolver() end
             end
-            if not m or not m.section or not m.target then
-                return
-            end
+            if not m or not m.section or not m.target then return end
 
             -- Header grows by 29 but shrinks by 39 (kept as shipped).
             CludesUI.DismissPreviewHint(optionState._previewHintFS, _headerBaseH, 29, 17)
 
             local scrollFrame = CludesUI._scrollFrame
-            if not scrollFrame then
-                return
-            end
+            if not scrollFrame then return end
             local _, _, _, _, headerY = m.section:GetPoint(1)
-            if not headerY then
-                return
-            end
+            if not headerY then return end
             local scrollPos = math.max(0, math.abs(headerY) - 40)
             CludesUI.SmoothScrollTo(scrollPos)
             local glowTarget = m.target
             if m.slotSide and m.target then
                 local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-                if regionFrame then
-                    glowTarget = regionFrame
-                end
+                if regionFrame then glowTarget = regionFrame end
             end
             -- A page built again before the glow plays dressed the row anew: no glow.
             local glowGen = PoolGen(glowTarget)
             C_Timer.After(0.15, function()
-                if PoolGen(glowTarget) ~= glowGen then
-                    return
-                end
+                if PoolGen(glowTarget) ~= glowGen then return end
                 PlaySettingGlow(glowTarget)
             end)
         end
@@ -980,9 +864,7 @@ CludesUI.AtOptionsLogin(function()
         -- Hit overlay factory for preview elements. opts (optional): hlAnchor = frame to draw the highlight around (instead of btn); hlBehindText = true draws it on a child frame at icon level+1 (text lives at icon level+2).
         local function SnapPreview(val)
             local s = optionState.activePreview and optionState.activePreview:GetEffectiveScale() or 1
-            if s <= 0 then
-                s = 1
-            end
+            if s <= 0 then s = 1 end
             return math.floor(val * s + 0.5) / s
         end
         -- Every build of this page runs right after its header built the preview
@@ -1018,8 +900,12 @@ CludesUI.AtOptionsLogin(function()
                     if preview._ccs[i] then
                         CreateHitOverlay(preview._ccs[i], "ccIcon", false, iconLevel, iconHlOpts)
                         if preview._ccs[i].durationText then
-                            local shade =
-                                CreateHitOverlay(preview._ccs[i].durationText, "ccDuration", true, textOnIconLevel)
+                            local shade = CreateHitOverlay(
+                                preview._ccs[i].durationText,
+                                "ccDuration",
+                                true,
+                                textOnIconLevel
+                            )
                             textOverlays[#textOverlays + 1] = shade
                         end
                     end
@@ -1055,8 +941,12 @@ CludesUI.AtOptionsLogin(function()
                             textOverlays[#textOverlays + 1] = shade
                         end
                         if preview._debuffs[i].stackText then
-                            local shade =
-                                CreateHitOverlay(preview._debuffs[i].stackText, "auraStack", true, textOnIconLevel)
+                            local shade = CreateHitOverlay(
+                                preview._debuffs[i].stackText,
+                                "auraStack",
+                                true,
+                                textOnIconLevel
+                            )
                             textOverlays[#textOverlays + 1] = shade
                         end
                     end
@@ -1073,34 +963,40 @@ CludesUI.AtOptionsLogin(function()
                     iconOv:SetAllPoints(preview._castIconFrame)
                     iconOv:SetFrameLevel(castOverlayLevel)
                     iconOv:RegisterForClicks("LeftButtonDown")
-                    local ioBrd = CludesUI.PP.CreateBorder(iconOv, classColor.r, classColor.g, classColor.b, 1, 2, "OVERLAY", 7)
+                    local ioBrd = CludesUI.PP.CreateBorder(
+                        iconOv,
+                        classColor.r,
+                        classColor.g,
+                        classColor.b,
+                        1,
+                        2,
+                        "OVERLAY",
+                        7
+                    )
                     ioBrd:Hide()
-                    iconOv:SetScript("OnEnter", function()
-                        ioBrd:Show()
-                    end)
-                    iconOv:SetScript("OnLeave", function()
-                        ioBrd:Hide()
-                    end)
-                    iconOv:SetScript("OnMouseDown", function()
-                        NavigateToSetting("castIcon")
-                    end)
+                    iconOv:SetScript("OnEnter", function() ioBrd:Show() end)
+                    iconOv:SetScript("OnLeave", function() ioBrd:Hide() end)
+                    iconOv:SetScript("OnMouseDown", function() NavigateToSetting("castIcon") end)
                 end
                 -- Cast bar overlay (bar only, not icon)
                 local castOverlay = CreateFrame("Button", nil, preview._cast:GetParent())
                 castOverlay:SetAllPoints(preview._cast)
                 castOverlay:SetFrameLevel(castOverlayLevel)
                 castOverlay:RegisterForClicks("LeftButtonDown")
-                local coBrd = CludesUI.PP.CreateBorder(castOverlay, classColor.r, classColor.g, classColor.b, 1, 2, "OVERLAY", 7)
+                local coBrd = CludesUI.PP.CreateBorder(
+                    castOverlay,
+                    classColor.r,
+                    classColor.g,
+                    classColor.b,
+                    1,
+                    2,
+                    "OVERLAY",
+                    7
+                )
                 coBrd:Hide()
-                castOverlay:SetScript("OnEnter", function()
-                    coBrd:Show()
-                end)
-                castOverlay:SetScript("OnLeave", function()
-                    coBrd:Hide()
-                end)
-                castOverlay:SetScript("OnMouseDown", function()
-                    NavigateToSetting("castBar")
-                end)
+                castOverlay:SetScript("OnEnter", function() coBrd:Show() end)
+                castOverlay:SetScript("OnLeave", function() coBrd:Hide() end)
+                castOverlay:SetScript("OnMouseDown", function() NavigateToSetting("castBar") end)
             end
             -- Cast spell name and target text (above the cast bar overlay)
             local castTextLevel = (castOverlayLevel or 30) + 5
@@ -1157,28 +1053,20 @@ CludesUI.AtOptionsLogin(function()
                 textOverlays[#textOverlays + 1] = shade
             end
             -- WoW Forever: the level box (its child, so it hides with it)
-            if preview._fvLevelBox then
-                CreateHitOverlay(preview._fvLevelBox, "foreverLevelBox")
-            end
+            if preview._fvLevelBox then CreateHitOverlay(preview._fvLevelBox, "foreverLevelBox") end
             -- Health bar
-            if preview._health then
-                CreateHitOverlay(preview._health, "healthBar")
-            end
+            if preview._health then CreateHitOverlay(preview._health, "healthBar") end
             -- Raid marker
             local raidOverlay
             if preview._raidFrame then
                 raidOverlay = CreateHitOverlay(preview._raidFrame, "raidMarker")
-                if not optionState.showRaidMarkerPreview then
-                    raidOverlay:Hide()
-                end
+                if not optionState.showRaidMarkerPreview then raidOverlay:Hide() end
             end
             -- Rare/elite icon
             local classOverlay
             if preview._classIcon then
                 classOverlay = CreateHitOverlay(preview._classIcon, "classIcon")
-                if not optionState.showClassificationPreview then
-                    classOverlay:Hide()
-                end
+                if not optionState.showClassificationPreview then classOverlay:Hide() end
             end
             -- Faction badge: shown and hidden with the badge by the preview update.
             if preview._factionIcon then
@@ -1186,18 +1074,14 @@ CludesUI.AtOptionsLogin(function()
                 preview._factionOverlay:SetShown(preview._factionIcon:IsShown())
             end
             -- Quest Objective Text sample (its child, so it shows and hides with it)
-            if preview._questTextFrame then
-                CreateHitOverlay(preview._questTextFrame, "questText")
-            end
+            if preview._questTextFrame then CreateHitOverlay(preview._questTextFrame, "questText") end
             -- Class resource pips wrapper button spanning all visible pips
             local cpOverlay
             if preview._cpPips then
                 local firstVis, lastVis
                 for i = 1, preview._cpMax do
                     if preview._cpPips[i] and preview._cpPips[i]:IsShown() then
-                        if not firstVis then
-                            firstVis = preview._cpPips[i]
-                        end
+                        if not firstVis then firstVis = preview._cpPips[i] end
                         lastVis = preview._cpPips[i]
                     end
                 end
@@ -1250,15 +1134,9 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end
                     HideCPHL()
-                    cpBtn:SetScript("OnEnter", function()
-                        ShowCPHL()
-                    end)
-                    cpBtn:SetScript("OnLeave", function()
-                        HideCPHL()
-                    end)
-                    cpBtn:SetScript("OnMouseDown", function()
-                        NavigateToSetting("classResource")
-                    end)
+                    cpBtn:SetScript("OnEnter", function() ShowCPHL() end)
+                    cpBtn:SetScript("OnLeave", function() HideCPHL() end)
+                    cpBtn:SetScript("OnMouseDown", function() NavigateToSetting("classResource") end)
                     cpOverlay = cpBtn
                     -- Disable hover/click when class resource setting is off
                     local function UpdateCPOverlay()
@@ -1338,19 +1216,11 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end
                 HideAHL()
-                arrowBtn:SetScript("OnEnter", function()
-                    ShowAHL()
-                end)
-                arrowBtn:SetScript("OnLeave", function()
-                    HideAHL()
-                end)
-                arrowBtn:SetScript("OnMouseDown", function()
-                    NavigateToSetting("targetArrows")
-                end)
+                arrowBtn:SetScript("OnEnter", function() ShowAHL() end)
+                arrowBtn:SetScript("OnLeave", function() HideAHL() end)
+                arrowBtn:SetScript("OnMouseDown", function() NavigateToSetting("targetArrows") end)
                 -- Only show when arrows are visible
-                if not preview._arrows.left:IsShown() then
-                    arrowBtn:Hide()
-                end
+                if not preview._arrows.left:IsShown() then arrowBtn:Hide() end
                 arrowOverlay = arrowBtn
             end
             preview._arrowOverlay = arrowOverlay
@@ -1370,9 +1240,7 @@ CludesUI.AtOptionsLogin(function()
     local castIconIdx = 0
     local function NextCastIcon()
         castIconIdx = castIconIdx + 1
-        if castIconIdx > #castIconPool then
-            castIconIdx = 1
-        end
+        if castIconIdx > #castIconPool then castIconIdx = 1 end
         return castIconPool[castIconIdx]
     end
 
@@ -1414,26 +1282,16 @@ CludesUI.AtOptionsLogin(function()
         -- again for a later build, this proxy and its bar are that build's no more.
         local rowGen = PoolGen(parentRow)
         local function BuiltRow()
-            if real and PoolGen(parentRow) == rowGen then
-                return real
-            end
+            if real and PoolGen(parentRow) == rowGen then return real end
         end
         local function BuildRowOnce()
-            if PoolGen(parentRow) ~= rowGen then
-                return nil
-            end
-            if real then
-                return real
-            end
+            if PoolGen(parentRow) ~= rowGen then return nil end
+            if real then return real end
             real = mod.NPO_MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
-            if _disabled and real._health then
-                real._health:SetAlpha(0.3)
-            end
+            if _disabled and real._health then real._health:SetAlpha(0.3) end
             return real
         end
-        proxy.GetFrame = function()
-            return BuildRowOnce()
-        end
+        proxy.GetFrame = function() return BuildRowOnce() end
         proxy.UpdateColor = function()
             local r = BuildRowOnce()
             if r and r.UpdateColor then
@@ -1449,44 +1307,30 @@ CludesUI.AtOptionsLogin(function()
         end
         proxy.UpdateOverlay = function()
             local r = BuildRowOnce()
-            if r and r.UpdateOverlay then
-                r.UpdateOverlay()
-            end
+            if r and r.UpdateOverlay then r.UpdateOverlay() end
         end
         proxy.RefreshBorderStyle = function()
             local r = BuiltRow()
-            if r and r.RefreshBorderStyle then
-                r.RefreshBorderStyle()
-            end
+            if r and r.RefreshBorderStyle then r.RefreshBorderStyle() end
         end
         proxy.RefreshBorderColor = function()
             local r = BuiltRow()
-            if r and r.RefreshBorderColor then
-                r.RefreshBorderColor()
-            end
+            if r and r.RefreshBorderColor then r.RefreshBorderColor() end
         end
         proxy.Randomize = function()
             local r = BuiltRow()
-            if r and r.Randomize then
-                r.Randomize()
-            end
+            if r and r.Randomize then r.Randomize() end
         end
         proxy.RefreshHealthText = function()
             local r = BuiltRow()
-            if r and r.RefreshHealthText then
-                r.RefreshHealthText()
-            end
+            if r and r.RefreshHealthText then r.RefreshHealthText() end
         end
         proxy.SetDisabled = function(off)
             _disabled = off
             local r = BuiltRow()
-            if r and r._health then
-                r._health:SetAlpha(off and 0.3 or 1)
-            end
+            if r and r._health then r._health:SetAlpha(off and 0.3 or 1) end
         end
-        proxy.SetColorOverride = function(func)
-            _colorOverrideFn = func
-        end
+        proxy.SetColorOverride = function(func) _colorOverrideFn = func end
         parentRow:HookScript("OnShow", function()
             if not real then
                 BuildRowOnce()
@@ -1499,17 +1343,11 @@ CludesUI.AtOptionsLogin(function()
                         break
                     end
                 end
-                if not listed then
-                    entries[#entries + 1] = real
-                end
+                if not listed then entries[#entries + 1] = real end
             end
-            if real and real._health then
-                real._health:SetAlpha(_disabled and 0.3 or 1)
-            end
+            if real and real._health then real._health:SetAlpha(_disabled and 0.3 or 1) end
         end)
-        if parentRow:IsVisible() then
-            BuildRowOnce()
-        end
+        if parentRow:IsVisible() then BuildRowOnce() end
         local slot = colorType .. ":" .. tostring(colorKey)
         local position = _colorPreviewSlot[slot]
         if not position then
@@ -1532,14 +1370,10 @@ CludesUI.AtOptionsLogin(function()
             label = "Textured Background",
             tooltip = cast and "Draws the bar texture on the cast bar background too."
                 or "Draws the bar texture on the health bar background too.",
-            disabled = function()
-                return (DBVal(texKey) or "none") == "none"
-            end,
+            disabled = function() return (DBVal(texKey) or "none") == "none" end,
             disabledTooltip = cast and "This option requires a Cast Bar Texture other than None."
                 or "This option requires a Bar Texture other than None.",
-            get = function()
-                return DBVal(key) == true
-            end,
+            get = function() return DBVal(key) == true end,
             set = function(value)
                 PlatesProfile()[key] = value and true or false
                 apply()
@@ -1601,15 +1435,11 @@ CludesUI.AtOptionsLogin(function()
     local npOptSpecFrame = CreateFrame("Frame")
     npOptSpecFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     npOptSpecFrame:SetScript("OnEvent", function(_, _, unitToken)
-        if unitToken ~= "player" then
-            return
-        end
+        if unitToken ~= "player" then return end
         -- Only invalidate + rebuild when the panel is open; invalidating while closed destroys all cached pages, causing a blank panel on next open.
         if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
             CludesUI:InvalidatePageCache()
-            C_Timer.After(0.2, function()
-                CludesUI:RefreshPage(true)
-            end)
+            C_Timer.After(0.2, function() CludesUI:RefreshPage(true) end)
         elseif
             CludesUI:GetActiveModule() == "CludesUINameplates"
             and CludesUI:GetActivePage() == PAGE_DISPLAY
@@ -1635,9 +1465,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end,
         getHeaderBuilder = function(pageName)
-            if pageName == PAGE_DISPLAY then
-                return _displayHeaderBuilder
-            end
+            if pageName == PAGE_DISPLAY then return _displayHeaderBuilder end
             return nil -- General and Colors have no content header
         end,
         onPageCacheRestore = function(pageName)
@@ -1658,9 +1486,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 -- Re-evaluate Set as Default button visibility (cache restore blanket-shows all children, which can ghost the button).
                 local pState = CludesUI._presetState and CludesUI._presetState[""]
-                if pState and pState.UpdateDefaultBtnState then
-                    pState.UpdateDefaultBtnState()
-                end
+                if pState and pState.UpdateDefaultBtnState then pState.UpdateDefaultBtnState() end
                 -- Randomize preview values when switching TO this tab
                 RandomizePreviewValues()
                 -- Refresh the preview after cache restore
@@ -1683,9 +1509,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             elseif pageName == PAGE_COLORS then
                 -- Refresh all color preview bars (colors from DB)
-                if optionState._colorPreviewRefreshAll then
-                    optionState._colorPreviewRefreshAll()
-                end
+                if optionState._colorPreviewRefreshAll then optionState._colorPreviewRefreshAll() end
             end
         end,
         onReset = function()
@@ -1714,21 +1538,11 @@ CludesUI.AtOptionsLogin(function()
                     old._color_presets = pC
                     old._color_presetOrder = oC
                 end
-                if cD then
-                    old._customPreset = cD
-                end
-                if cC then
-                    old._color_customPreset = cC
-                end
-                if sA and next(sA) then
-                    old._specAssignments = sA
-                end
-                if sCA and next(sCA) then
-                    old._color_specAssignments = sCA
-                end
-                if sDP then
-                    old._specDefaultPreset = sDP
-                end
+                if cD then old._customPreset = cD end
+                if cC then old._color_customPreset = cC end
+                if sA and next(sA) then old._specAssignments = sA end
+                if sCA and next(sCA) then old._color_specAssignments = sCA end
+                if sDP then old._specDefaultPreset = sDP end
                 -- Explicitly activate CludesUI for both preset systems
                 old._activePreset = "cludesui"
                 old._color_activePreset = "cludesui"
@@ -1771,21 +1585,11 @@ CludesUI.AtOptionsLogin(function()
                     _db._color_presets = pC
                     _db._color_presetOrder = oC
                 end
-                if cD then
-                    _db._customPreset = cD
-                end
-                if cC then
-                    _db._color_customPreset = cC
-                end
-                if sA and next(sA) then
-                    _db._specAssignments = sA
-                end
-                if sCA and next(sCA) then
-                    _db._color_specAssignments = sCA
-                end
-                if sDP then
-                    _db._specDefaultPreset = sDP
-                end
+                if cD then _db._customPreset = cD end
+                if cC then _db._color_customPreset = cC end
+                if sA and next(sA) then _db._specAssignments = sA end
+                if sCA and next(sCA) then _db._color_specAssignments = sCA end
+                if sDP then _db._specDefaultPreset = sDP end
                 _db._activePreset = "cludesui"
                 _db._color_activePreset = "cludesui"
             end

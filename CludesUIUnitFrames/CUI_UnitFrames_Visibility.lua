@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Visibility.lua
 --
@@ -14,9 +12,7 @@ local _, mod = ...
 local Inner = mod._internals
 local frameList = Inner.frames
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Effective whole-frame alpha for a unit frame. When "Fade Out of Combat" is enabled
 -- and the player is out of combat, shows at oocAlpha; otherwise full opacity (off by
@@ -25,9 +21,7 @@ end
 -- the fade. Combat state comes from the caller (the visibility loop's event-tracked
 -- _ufInCombat, which leads InCombatLockdown() on regen events). On ns: the pass calls it.
 function mod.ResolveFrameAlpha(cfg, inCombat)
-    if cfg and cfg.oocFadeEnabled and not inCombat then
-        return cfg.oocAlpha or 0.5
-    end
+    if cfg and cfg.oocFadeEnabled and not inCombat then return cfg.oocAlpha or 0.5 end
     return 1
 end
 
@@ -38,52 +32,32 @@ end
 -- leads because it did in the pass too (it re-forced 0 at the end of the chain); returning
 -- hoverGated false with it stops a hover from revealing what an option lane has hidden.
 function mod.ResolveVisResting(cfg, widget, ext, hiddenByOpts, inCombat)
-    if hiddenByOpts then
-        return 0, false
-    end
+    if hiddenByOpts then return 0, false end
     local shownAlpha = mod.ResolveFrameAlpha(cfg, inCombat)
-    if ext == "mouseover" then
-        return 0, true
-    end
+    if ext == "mouseover" then return 0, true end
     if ext ~= nil then
         -- Driver registered: it owns hiding, so alpha only carries the ooc fade.
-        if widget and widget._cuiVisDriver then
-            return shownAlpha, false
-        end
+        if widget and widget._cuiVisDriver then return shownAlpha, false end
         return ext and shownAlpha or 0, false
     end
     local vis = cfg.barVisibility or "always"
     -- Never rides the alpha too, not just the Show/Hide bucket: that bucket is
     -- lockdown-gated, so a Never picked in combat would otherwise leave the frame at
     -- full alpha until PLAYER_REGEN_ENABLED. An override reaches the ext block above.
-    if vis == "never" then
-        return 0, false
-    end
-    if vis == "in_combat" then
-        return inCombat and shownAlpha or 0, false
-    end
-    if vis == "out_of_combat" then
-        return (not inCombat) and shownAlpha or 0, false
-    end
+    if vis == "never" then return 0, false end
+    if vis == "in_combat" then return inCombat and shownAlpha or 0, false end
+    if vis == "out_of_combat" then return (not inCombat) and shownAlpha or 0, false end
     if cfg.showWhenHealthMissing then
-        if vis == "in_raid" then
-            return IsInRaid() and shownAlpha or 0, false
-        end
-        if vis == "in_party" then
-            return (IsInGroup() and not IsInRaid()) and shownAlpha or 0, false
-        end
-        if vis == "solo" then
-            return (not IsInGroup()) and shownAlpha or 0, false
-        end
+        if vis == "in_raid" then return IsInRaid() and shownAlpha or 0, false end
+        if vis == "in_party" then return (IsInGroup() and not IsInRaid()) and shownAlpha or 0, false end
+        if vis == "solo" then return (not IsInGroup()) and shownAlpha or 0, false end
     end
     if vis == "mouseover" then
         -- Legacy single mouseover: a configured "Hide if" override that is NOT currently
         -- triggering counts as a positive show, so the frame does not require hover
         -- (fixes "dismount in combat keeps frame hidden" / "hide if no target inverted").
         local hasAnyHideOpt = CludesUI.VisHasAnyOption(cfg)
-        if hasAnyHideOpt then
-            return shownAlpha, false
-        end
+        if hasAnyHideOpt then return shownAlpha, false end
         return 0, true
     end
     return shownAlpha, false
@@ -105,12 +79,8 @@ end
 --- the hover state itself, and without this the frame would rest at alpha 0 with no
 --- handler willing to reveal it again.
 function mod.VisMouseoverWired(cfg)
-    if not cfg then
-        return false
-    end
-    if (cfg.barVisibility or "always") == "mouseover" then
-        return true
-    end
+    if not cfg then return false end
+    if (cfg.barVisibility or "always") == "mouseover" then return true end
     return (CludesUI.VisOverrideValue(cfg)) == "mouseover"
 end
 
@@ -118,16 +88,10 @@ end
 -- (UnitHealthPercent returns secrets): hand it directly to alpha setters, never
 -- use it as a Lua condition. Those frames' GetAlpha then reads secret too.
 function mod.HealthVisibilityEnabled(cfg, widget)
-    if not cfg or not cfg.showWhenHealthMissing or not widget then
-        return false
-    end
+    if not cfg or not cfg.showWhenHealthMissing or not widget then return false end
     local unitToken = widget._cuiUnit
-    if unitToken ~= "player" and unitToken ~= "target" and unitToken ~= "focus" then
-        return false
-    end
-    if mod.VisUnitDisabled(saved.profile, unitToken) then
-        return false
-    end
+    if unitToken ~= "player" and unitToken ~= "target" and unitToken ~= "focus" then return false end
+    if mod.VisUnitDisabled(saved.profile, unitToken) then return false end
     local override = CludesUI.VisOverrideValue(cfg)
     return (override or cfg.barVisibility or "always") ~= "never"
 end
@@ -137,17 +101,13 @@ end
 -- painted, and _healthVisLive says whether the reveal currently applies.
 function mod.HealthVisibilityAlpha(s, widget, baseAlpha, hoverGated, inCombat)
     if not mod.HealthVisibilityEnabled(s, widget) then
-        if widget then
-            widget._healthVisLive = nil
-        end
+        if widget then widget._healthVisLive = nil end
         return baseAlpha
     end
     widget._healthVisLive = true
     -- A visibility refresh must preserve an active mouseover reveal. Keep
     -- this decision on clean UI state, before evaluating the health curve.
-    if hoverGated and widget._healthVisHovered then
-        baseAlpha = mod.ResolveFrameAlpha(s, inCombat)
-    end
+    if hoverGated and widget._healthVisHovered then baseAlpha = mod.ResolveFrameAlpha(s, inCombat) end
     if not widget._healthVisCurve then
         widget._healthVisCurve = C_CurveUtil.CreateCurve()
         widget._healthVisCurve:SetType(Enum.LuaCurveType.Step)
@@ -167,15 +127,11 @@ end
 -- and re-derives nothing (this runs on every UNIT_HEALTH in combat).
 function mod.UpdateHealthVisibilityUnit(unitToken)
     local widget = frameList[unitToken]
-    if not (widget and widget._healthVisLive and widget._healthVisCurve) then
-        return
-    end
+    if not (widget and widget._healthVisLive and widget._healthVisCurve) then return end
     local alpha = UnitHealthPercent(unitToken, false, widget._healthVisCurve);
     (widget._visWrap or widget):SetAlpha(alpha)
     local model = widget.Portrait and widget.Portrait.backdrop and widget.Portrait.backdrop._3d
-    if model then
-        mod.UF_SetModelAlpha(model, alpha)
-    end
+    if model then mod.UF_SetModelAlpha(model, alpha) end
     local mini = mod.UF_MINI_OF and frameList[mod.UF_MINI_OF[unitToken]]
     if mini and not (unitToken == "player" and saved.profile.pet and saved.profile.pet.alwaysShow) then
         mini:SetAlpha(alpha)
@@ -189,54 +145,36 @@ function mod.SyncHealthVisibilityEvents()
     local mask = (player and 1 or 0) + (target and 2 or 0) + (focus and 4 or 0)
     local eventFrame = mod.healthVisibilityEvents
     if not eventFrame then
-        if mask == 0 then
-            return
-        end
+        if mask == 0 then return end
         eventFrame = CreateFrame("Frame")
         eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
-            if evt == "PLAYER_FOCUS_CHANGED" then
-                unitToken = "focus"
-            end
+            if evt == "PLAYER_FOCUS_CHANGED" then unitToken = "focus" end
             mod.UpdateHealthVisibilityUnit(unitToken)
         end)
         mod.healthVisibilityEvents = eventFrame
     end
-    if eventFrame.mask == mask then
-        return
-    end
+    if eventFrame.mask == mask then return end
     eventFrame.mask = mask
     eventFrame:UnregisterAllEvents()
     if mask ~= 0 then
         local units = eventFrame.units or {}
         eventFrame.units = units
         wipe(units)
-        if player then
-            units[#units + 1] = "player"
-        end
-        if target then
-            units[#units + 1] = "target"
-        end
-        if focus then
-            units[#units + 1] = "focus"
-        end
+        if player then units[#units + 1] = "player" end
+        if target then units[#units + 1] = "target" end
+        if focus then units[#units + 1] = "focus" end
         eventFrame:RegisterUnitEvent("UNIT_HEALTH", unpack(units))
         eventFrame:RegisterUnitEvent("UNIT_MAXHEALTH", unpack(units))
-        if focus then
-            eventFrame:RegisterEvent("PLAYER_FOCUS_CHANGED")
-        end
+        if focus then eventFrame:RegisterEvent("PLAYER_FOCUS_CHANGED") end
     end
 end
 
 local function UnitFrame_OnEnter(self)
     local unitToken = self._cuiUnit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     local unitKey = unitToken:match("^boss%d$") and "boss" or unitToken
     local cfg = saved and saved.profile and saved.profile[unitKey]
-    if cfg and cfg.showWhenHealthMissing then
-        self._healthVisHovered = true
-    end
+    if cfg and cfg.showWhenHealthMissing then self._healthVisHovered = true end
     if mod.VisMouseoverWired(cfg) then
         -- Reveal only what is actually hover-gated right now. Under Any the frame may
         -- already be shown on another passing disjunct, in which case there is nothing to
@@ -245,15 +183,11 @@ local function UnitFrame_OnEnter(self)
         local _, hoverGated = mod.ResolveVisRestingLive(cfg, self)
         if hoverGated then
             local a = mod.ResolveFrameAlpha(cfg, InCombatLockdown())
-            if cfg.showWhenHealthMissing then
-                a = mod.HealthVisibilityAlpha(cfg, self, a)
-            end
+            if cfg.showWhenHealthMissing then a = mod.HealthVisibilityAlpha(cfg, self, a) end
             (self._visWrap or self):SetAlpha(a)
             -- 3D models don't inherit parent alpha: reveal the portrait too
             local bd3d = self.Portrait and self.Portrait.backdrop and self.Portrait.backdrop._3d
-            if bd3d then
-                mod.UF_SetModelAlpha(bd3d, a)
-            end
+            if bd3d then mod.UF_SetModelAlpha(bd3d, a) end
             -- Mini-frame inheritance: the companion frame reveals with us.
             -- Always Show Pet Frame opts the pet out (it is already visible
             -- and must not pick up the player's fade alpha).
@@ -267,12 +201,8 @@ local function UnitFrame_OnEnter(self)
         local showTooltip = not cfg or cfg.showUnitTooltip ~= false
         if showTooltip then
             GameTooltip_SetDefaultAnchor(GameTooltip, self)
-            if GameTooltip:SetUnit(unitToken) then
-                GameTooltip:Show()
-            end
-            if self._tooltipTicker then
-                self._tooltipTicker:Cancel()
-            end
+            if GameTooltip:SetUnit(unitToken) then GameTooltip:Show() end
+            if self._tooltipTicker then self._tooltipTicker:Cancel() end
             self._tooltipTicker = C_Timer.NewTicker(0.5, function()
                 if not self:IsMouseOver() then
                     if self._tooltipTicker then
@@ -282,9 +212,7 @@ local function UnitFrame_OnEnter(self)
                     return
                 end
                 GameTooltip_SetDefaultAnchor(GameTooltip, self)
-                if GameTooltip:SetUnit(self._cuiUnit) then
-                    GameTooltip:Show()
-                end
+                if GameTooltip:SetUnit(self._cuiUnit) then GameTooltip:Show() end
             end)
         end
     end
@@ -293,9 +221,7 @@ end
 local function UnitFrame_OnLeave(self)
     self._healthVisHovered = nil
     local unitToken = self._cuiUnit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     local unitKey = unitToken:match("^boss%d$") and "boss" or unitToken
     local cfg = saved and saved.profile and saved.profile[unitKey]
     if mod.VisMouseoverWired(cfg) then
@@ -311,9 +237,7 @@ local function UnitFrame_OnLeave(self)
         (self._visWrap or self):SetAlpha(leaveAlpha)
         -- 3D models don't inherit parent alpha: hide/dim the portrait too
         local bd3d = self.Portrait and self.Portrait.backdrop and self.Portrait.backdrop._3d
-        if bd3d then
-            mod.UF_SetModelAlpha(bd3d, leaveAlpha)
-        end
+        if bd3d then mod.UF_SetModelAlpha(bd3d, leaveAlpha) end
         -- Mini-frame inheritance: the companion frame hides/dims with us.
         -- Always Show Pet Frame opts the pet out (a leave alpha of 0 would
         -- hide a pet frame that must stay visible).
@@ -326,9 +250,7 @@ local function UnitFrame_OnLeave(self)
         self._tooltipTicker:Cancel()
         self._tooltipTicker = nil
     end
-    if GameTooltip and GameTooltip:IsOwned(self) then
-        GameTooltip:Hide()
-    end
+    if GameTooltip and GameTooltip:IsOwned(self) then GameTooltip:Hide() end
 end
 
 Inner.UnitFrame_OnEnter = UnitFrame_OnEnter

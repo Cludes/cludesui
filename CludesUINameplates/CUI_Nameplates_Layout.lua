@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Layout.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs, type = ipairs, type
@@ -29,29 +25,17 @@ local GetTime = GetTime
 local BAR_W, defaultSet = Inner.BAR_W, Inner.defaults
 
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
-local function GetNameplateYOffset()
-    return (p and p.nameplateYOffset) or defaultSet.nameplateYOffset
-end
+local function GetNameplateYOffset() return (p and p.nameplateYOffset) or defaultSet.nameplateYOffset end
 mod.GetNameplateYOffset = GetNameplateYOffset
-local function GetStackSpacingScale()
-    return (p and p.stackSpacingScale) or defaultSet.stackSpacingScale
-end
+local function GetStackSpacingScale() return (p and p.stackSpacingScale) or defaultSet.stackSpacingScale end
 mod.GetStackSpacingScale = GetStackSpacingScale
-local function GetCastScale()
-    return (p and p.castScale) or defaultSet.castScale
-end
+local function GetCastScale() return (p and p.castScale) or defaultSet.castScale end
 mod.GetCastScale = GetCastScale
-local function GetTargetScale()
-    return (p and p.targetScale) or defaultSet.targetScale
-end
+local function GetTargetScale() return (p and p.targetScale) or defaultSet.targetScale end
 mod.GetTargetScale = GetTargetScale
-local function GetHealthBarHeight()
-    return (p and p.healthBarHeight) or defaultSet.healthBarHeight
-end
+local function GetHealthBarHeight() return (p and p.healthBarHeight) or defaultSet.healthBarHeight end
 mod.GetHealthBarHeight = GetHealthBarHeight
 local function GetFriendlyHealthBarHeight()
     return (p and p.friendlyHealthBarHeight) or defaultSet.friendlyHealthBarHeight
@@ -86,9 +70,7 @@ local PANDEMIC_GLOW_STYLES = mod.NP_GLOW_VIEW.list
 mod.PANDEMIC_GLOW_STYLES = PANDEMIC_GLOW_STYLES
 -- Exposed cross-addon (e.g. CDM "Apply Pandemic Glow to all" sync) so styles translate by NAME,
 -- never raw index: this list omits "Custom Shape Glow", so the same index differs per side.
-if CludesUI then
-    CludesUI.NameplatePandemicGlowStyles = PANDEMIC_GLOW_STYLES
-end
+if CludesUI then CludesUI.NameplatePandemicGlowStyles = PANDEMIC_GLOW_STYLES end
 
 -- PANDEMIC_GLOW_STYLES index -> shared CludesUI.Glows.STYLES index.
 mod.NP_TO_SHARED_GLOW = mod.NP_GLOW_VIEW.toShared
@@ -101,37 +83,25 @@ mod.NP_TO_SHARED_GLOW = mod.NP_GLOW_VIEW.toShared
 -- "Apply Pandemic Glow to all" sync.
 local function PandemicStyleOf(np)
     local pick = np and np.pandemicGlowPick
-    if type(pick) == "number" then
-        return pick
-    end
+    if type(pick) == "number" then return pick end
     local old = np and np.pandemicGlowStyle
-    if type(old) ~= "number" or old == 1 then
-        return CludesUI.Glows.PANDEMIC_BORDER
-    end
+    if type(old) ~= "number" or old == 1 then return CludesUI.Glows.PANDEMIC_BORDER end
     return old
 end
 CludesUI.NameplatePandemicStyle = PandemicStyleOf
-local function GetPandemicGlowStyle()
-    return PandemicStyleOf(p)
-end
+local function GetPandemicGlowStyle() return PandemicStyleOf(p) end
 mod.GetPandemicGlowStyle = GetPandemicGlowStyle
-local function GetPandemicGlowLines()
-    return (p and p.pandemicGlowLines) or defaultSet.pandemicGlowLines
-end
+local function GetPandemicGlowLines() return (p and p.pandemicGlowLines) or defaultSet.pandemicGlowLines end
 mod.GetPandemicGlowLines = GetPandemicGlowLines
 local function GetPandemicGlowThickness()
     return (p and p.pandemicGlowThickness) or defaultSet.pandemicGlowThickness
 end
 mod.GetPandemicGlowThickness = GetPandemicGlowThickness
-local function GetPandemicGlowSpeed()
-    return (p and p.pandemicGlowSpeed) or defaultSet.pandemicGlowSpeed
-end
+local function GetPandemicGlowSpeed() return (p and p.pandemicGlowSpeed) or defaultSet.pandemicGlowSpeed end
 mod.GetPandemicGlowSpeed = GetPandemicGlowSpeed
 function mod.GetPandemicGlow()
     local val = p and p.pandemicGlow
-    if val == nil then
-        val = defaultSet.pandemicGlow
-    end
+    if val == nil then val = defaultSet.pandemicGlow end
     return val == true
 end
 -- Full render spec for the pandemic glow (live debuff glow and its preview).
@@ -167,20 +137,14 @@ do
     -- Capability picks the buff row's candidate filter, so a change has to
     -- rebuild the containers, not merely repaint them.
     AKd.OnOffensiveDispelChange(function()
-        if mod.NPC_ReloadAll then
-            mod.NPC_ReloadAll()
-        end
+        if mod.NPC_ReloadAll then mod.NPC_ReloadAll() end
     end)
 
     -- canDispelMagic, canDispelEnrage. Consumed by the buff row to pick its
     -- candidate filter and by the glow gate.
-    mod.GetOffensiveDispelTypes = function()
-        return AKd.OffensiveDispelTypes()
-    end
+    mod.GetOffensiveDispelTypes = function() return AKd.OffensiveDispelTypes() end
 
-    mod.GetDispelGlow = function()
-        return (p and p.dispelGlow) or defaultSet.dispelGlow
-    end
+    mod.GetDispelGlow = function() return (p and p.dispelGlow) or defaultSet.dispelGlow end
     mod.GetDispelGlowStyle = function()
         -- The same view as the Pandemic Glow's: dispelGlowPick holds a style
         -- picked from 9.6 on; without one, the key from before 9.6 with its
@@ -189,9 +153,7 @@ do
         local raw = p and p.dispelGlowPick
         if raw == nil then
             raw = p and p.dispelGlowStyle
-            if raw == nil or raw == 2 then
-                return CludesUI.Glows.PANDEMIC_BORDER
-            end
+            if raw == nil or raw == 2 then return CludesUI.Glows.PANDEMIC_BORDER end
         end
         -- Out-of-range picks read (and render) as Action Button Glow; Blizzard
         -- Border and Blizzard Pandemic Border sit outside the view.
@@ -217,18 +179,14 @@ do
     }
     function mod.GetDispelGlowUseTypeColor()
         local val = p and p.dispelGlowUseTypeColor
-        if val == nil then
-            val = defaultSet.dispelGlowUseTypeColor
-        end
+        if val == nil then val = defaultSet.dispelGlowUseTypeColor end
         return val == true
     end
     -- dispelType is "magic", "enrage", or nil for the undifferentiated row.
     mod.GetDispelGlowColor = function(dispelType)
         if dispelType and mod.GetDispelGlowUseTypeColor() then
             local color = TYPE_COLOR[dispelType]
-            if color then
-                return color.r, color.g, color.b
-            end
+            if color then return color.r, color.g, color.b end
         end
         -- Never customized = "default": no tint request (nil), the suite's
         -- default look (gold). An explicit swatch pick is stored and honored.
@@ -266,9 +224,7 @@ do
     -- keeps Blizzard's own stealable art. Per-type colours always tint.
     mod.GetDispelBorderColor = function(dispelType)
         local red, green, blue = mod.GetDispelGlowColor(dispelType)
-        if dispelType and mod.GetDispelGlowUseTypeColor() then
-            return red, green, blue
-        end
+        if dispelType and mod.GetDispelGlowUseTypeColor() then return red, green, blue end
         local skinData = defaultSet.dispelGlowColor
         if red == nil or (skinData and red == skinData.r and green == skinData.g and blue == skinData.b) then
             return nil, nil, nil
@@ -276,52 +232,36 @@ do
         return red, green, blue
     end
 end
-local function GetCastBarHeight()
-    return (p and p.castBarHeight) or defaultSet.castBarHeight
-end
+local function GetCastBarHeight() return (p and p.castBarHeight) or defaultSet.castBarHeight end
 mod.GetCastBarHeight = GetCastBarHeight
-local function GetFocusCastHeight()
-    return (p and p.focusCastHeight) or defaultSet.focusCastHeight
-end
+local function GetFocusCastHeight() return (p and p.focusCastHeight) or defaultSet.focusCastHeight end
 mod.GetFocusCastHeight = GetFocusCastHeight
 local function GetShowCastIcon()
-    if p and p.showCastIcon ~= nil then
-        return p.showCastIcon
-    end
+    if p and p.showCastIcon ~= nil then return p.showCastIcon end
     return defaultSet.showCastIcon
 end
 mod.GetShowCastIcon = GetShowCastIcon
-local function GetCastIconScale()
-    return (p and p.castIconScale) or defaultSet.castIconScale
-end
+local function GetCastIconScale() return (p and p.castIconScale) or defaultSet.castIconScale end
 mod.GetCastIconScale = GetCastIconScale
 -- "Make Icon Part of the Bar": bar shifts right and narrows by the icon width so the icon
 -- (anchored to the bar's left edge) sits inside the footprint instead of hanging off it.
 function mod.GetCastIconInWidth()
-    if p and p.castbarIconInWidth ~= nil then
-        return p.castbarIconInWidth
-    end
+    if p and p.castbarIconInWidth ~= nil then return p.castbarIconInWidth end
     return defaultSet.castbarIconInWidth
 end
 -- "Icon on Right": place the cast spell icon on the right of the bars.
 function mod.GetCastIconOnRight()
-    if p and p.castIconOnRight ~= nil then
-        return p.castIconOnRight
-    end
+    if p and p.castIconOnRight ~= nil then return p.castIconOnRight end
     return defaultSet.castIconOnRight
 end
 -- "Full Sized": icon is a square the combined height of the health + cast bar,
 -- flush from the top of the health bar to the bottom of the cast bar.
 function mod.GetCastIconFullSize()
-    if p and p.castIconFullSize ~= nil then
-        return p.castIconFullSize
-    end
+    if p and p.castIconFullSize ~= nil then return p.castIconFullSize end
     return defaultSet.castIconFullSize
 end
 local function GetHideEnemyNameWhileCasting()
-    if p and p.hideEnemyNameWhileCasting ~= nil then
-        return p.hideEnemyNameWhileCasting
-    end
+    if p and p.hideEnemyNameWhileCasting ~= nil then return p.hideEnemyNameWhileCasting end
     return defaultSet.hideEnemyNameWhileCasting
 end
 
@@ -347,9 +287,7 @@ function mod.LayoutCastBar(backing, footprintW, castH)
         offsetY = offsetY + drop
     elseif GetShowCastIcon() and mod.GetCastIconInWidth() and not mod.GetCastIconFullSize() then
         iconW = castH * (GetCastIconScale() or 1)
-        if not mod.GetCastIconOnRight() then
-            shiftX = iconW
-        end
+        if not mod.GetCastIconOnRight() then shiftX = iconW end
     end
     backing.cast:ClearAllPoints()
     backing.cast:SetSize(math.max(1, wid - iconW), castH)
@@ -369,9 +307,7 @@ function mod.LayoutCastBar(backing, footprintW, castH)
     if mod._npBottomUsed and backing.AnchorBottomTexts and backing.cast:IsShown() then
         backing:AnchorBottomTexts()
     end
-    if classic then
-        mod.NP_ApplyClassicCastArt(backing, castH)
-    end
+    if classic then mod.NP_ApplyClassicCastArt(backing, castH) end
 end
 
 -- Size + anchor the cast spell icon; always square. Normal: cast-bar height, hangs off the
@@ -429,23 +365,17 @@ end
 -- icon (a cast-bar child rendered only during a cast): its reserve is gated on the cast bar
 -- being shown; a settings-only query (no plate) assumes the space is reserved.
 function mod.GetCastIconReserve(backing)
-    if not GetShowCastIcon() then
-        return 0, nil
-    end
+    if not GetShowCastIcon() then return 0, nil end
     -- Classic WoW UI seats the icon inside the cast border's own plate, which
     -- ns.NP_ClassicBarReserve already accounts for, so a stored Icon on Right
     -- or Full Sized reserves a gap nothing occupies there.
-    if mod.NP_Classic() then
-        return 0, nil
-    end
+    if mod.NP_Classic() then return 0, nil end
     local onRight = mod.GetCastIconOnRight()
     local edgeSide = onRight and "right" or "left"
     if mod.GetCastIconFullSize() then
         -- Reserve the full-size icon's footprint only while visible (cast bar up), so side
         -- elements sit flush against the bar when idle instead of shoved out by a phantom gap.
-        if backing and backing.cast and not backing.cast:IsShown() then
-            return 0, edgeSide
-        end
+        if backing and backing.cast and not backing.cast:IsShown() then return 0, edgeSide end
         return GetHealthBarHeight() + GetCastBarHeight(), edgeSide
     end
     if onRight and not mod.GetCastIconInWidth() then
@@ -467,13 +397,9 @@ end
 -- bar's bottom: the icon's width while it shows there (a cast is up) and the two meet, else 0,
 -- so an element its slot's Y offset moved clear of the icon stays put.
 function mod.NP_FullIconPush(backing, edgeSide, y0, y1)
-    if not mod.GetCastIconFullSize() then
-        return 0
-    end
+    if not mod.GetCastIconFullSize() then return 0 end
     local res, iconSide = mod.GetCastIconReserve(backing)
-    if res <= 0 or iconSide ~= edgeSide then
-        return 0
-    end
+    if res <= 0 or iconSide ~= edgeSide then return 0 end
     if mod.NP_MeetsFullIcon(y0, y1, GetHealthBarHeight(), backing._castDrop or -GetCastBarHeight()) then
         return res
     end
@@ -496,9 +422,7 @@ function mod.NP_SideIconPush(backing, edgeSide, posY, sz)
     return push + mod.NP_ClassicSide(edgeSide)
 end
 local function GetKickTickEnabled()
-    if p and p.kickTickEnabled ~= nil then
-        return p.kickTickEnabled
-    end
+    if p and p.kickTickEnabled ~= nil then return p.kickTickEnabled end
     return true
 end
 mod.GetKickTickEnabled = GetKickTickEnabled
@@ -520,75 +444,47 @@ local function GetAuraSpacing(part)
     return (p and p.auraSpacing) or defaultSet.auraSpacing
 end
 mod.GetAuraSpacing = GetAuraSpacing
-local function GetDebuffYOffset()
-    return (p and p.debuffYOffset) or defaultSet.debuffYOffset
-end
+local function GetDebuffYOffset() return (p and p.debuffYOffset) or defaultSet.debuffYOffset end
 mod.GetDebuffYOffset = GetDebuffYOffset
-local function GetSideAuraXOffset()
-    return (p and p.sideAuraXOffset) or defaultSet.sideAuraXOffset
-end
+local function GetSideAuraXOffset() return (p and p.sideAuraXOffset) or defaultSet.sideAuraXOffset end
 mod.GetSideAuraXOffset = GetSideAuraXOffset
-local function GetRaidMarkerPos()
-    return (p and p.raidMarkerPos) or defaultSet.raidMarkerPos
-end
+local function GetRaidMarkerPos() return (p and p.raidMarkerPos) or defaultSet.raidMarkerPos end
 mod.GetRaidMarkerPos = GetRaidMarkerPos
 -- Core Positions element sizes: ns.NP_ElementSize (below, beside the slot getters).
-local function GetRaidMarkerSize()
-    return mod.NP_ElementSize("raidmarker")
-end
+local function GetRaidMarkerSize() return mod.NP_ElementSize("raidmarker") end
 mod.GetRaidMarkerSize = GetRaidMarkerSize
-local function GetRaidMarkerYOffset()
-    return 0
-end
+local function GetRaidMarkerYOffset() return 0 end
 mod.GetRaidMarkerYOffset = GetRaidMarkerYOffset
-local function GetClassificationSlot()
-    return (p and p.classificationSlot) or defaultSet.classificationSlot
-end
+local function GetClassificationSlot() return (p and p.classificationSlot) or defaultSet.classificationSlot end
 mod.GetClassificationSlot = GetClassificationSlot
 -- The Elite/Rare Indicator's size (the quest icon has its own: ns.NP_ElementSize("quest")).
-local function GetRareEliteIconSize()
-    return mod.NP_ElementSize("rare")
-end
+local function GetRareEliteIconSize() return mod.NP_ElementSize("rare") end
 mod.GetRareEliteIconSize = GetRareEliteIconSize
 -- Faction badge slot and size. With "Rare/Quest + Faction" the badge rides the
 -- classification slot.
 function mod.NP_GetFactionSlot()
-    if p and p.classificationIncludeFaction then
-        return GetClassificationSlot()
-    end
+    if p and p.classificationIncludeFaction then return GetClassificationSlot() end
     return (p and p.factionSlot) or defaultSet.factionSlot
 end
-function mod.NP_GetFactionIconSize()
-    return mod.NP_ElementSize("faction")
-end
-function mod.NP_GetFactionStyle()
-    return (p and p.factionStyle) or defaultSet.factionStyle
-end
+function mod.NP_GetFactionIconSize() return mod.NP_ElementSize("faction") end
+function mod.NP_GetFactionStyle() return (p and p.factionStyle) or defaultSet.factionStyle end
 -- Which faction badge a unit gets: its faction ("Horde"/"Alliance", drawn with
 -- CludesUI.SetFactionArt in the Icon Style) and whether to dim it, or nil for none.
 -- Neutral units and unreadable (secret) values show nothing; an unreadable PvP flag
 -- counts as flagged, so nothing is hidden or greyed on a guess. Faction NPCs count
 -- unless Players Only is on. Art matches Blizzard's Forever target frame badge.
 function mod.NP_FactionBadge(unitToken)
-    if not unitToken or mod.NP_GetFactionSlot() == "none" then
-        return nil
-    end
+    if not unitToken or mod.NP_GetFactionSlot() == "none" then return nil end
     -- Both toggles default off, so an unset key reads the same as its default.
     if p and p.factionPlayersOnly then
         local isPlayer = UnitIsPlayer(unitToken)
-        if issecretvalue(isPlayer) or not isPlayer then
-            return nil
-        end
+        if issecretvalue(isPlayer) or not isPlayer then return nil end
     end
     local fac = UnitFactionGroup(unitToken)
-    if issecretvalue(fac) or (fac ~= "Horde" and fac ~= "Alliance") then
-        return nil
-    end
+    if issecretvalue(fac) or (fac ~= "Horde" and fac ~= "Alliance") then return nil end
     if p and p.factionOppositeOnly then
         local mine = UnitFactionGroup("player")
-        if issecretvalue(mine) then
-            return nil
-        end
+        if issecretvalue(mine) then return nil end
         -- Mercenary mode: the player fights for the other faction.
         if UnitIsMercenary("player") then
             if mine == "Horde" then
@@ -597,25 +493,19 @@ function mod.NP_FactionBadge(unitToken)
                 mine = "Horde"
             end
         end
-        if mine == fac then
-            return nil
-        end
+        if mine == fac then return nil end
     end
     local dim = false
     local pvpMode = (p and p.factionPvP) or defaultSet.factionPvP
     if pvpMode ~= "ignore" then
         local pvp = UnitIsPVP(unitToken)
         local unflagged = not issecretvalue(pvp) and not pvp
-        if unflagged and pvpMode == "only" then
-            return nil
-        end
+        if unflagged and pvpMode == "only" then return nil end
         dim = unflagged and pvpMode == "dim"
     end
     return fac, dim
 end
-local function GetNameYOffset()
-    return (p and p.nameYOffset) or defaultSet.nameYOffset
-end
+local function GetNameYOffset() return (p and p.nameYOffset) or defaultSet.nameYOffset end
 mod.GetNameYOffset = GetNameYOffset
 local textSlots = {
     "textSlotTop",
@@ -631,16 +521,12 @@ mod.textSlotKeys = textSlots
 -- The slots that share the bar's line for the name-width estimate.
 mod._npBarTextKeys = { "textSlotRight", "textSlotLeft", "textSlotCenter" }
 
-local function GetTextSlot(slotName)
-    return (p and p[slotName]) or defaultSet[slotName]
-end
+local function GetTextSlot(slotName) return (p and p[slotName]) or defaultSet[slotName] end
 mod.GetTextSlot = GetTextSlot
 
 local function FindSlotForElement(part)
     for _, layoutKey in ipairs(textSlots) do
-        if GetTextSlot(layoutKey) == part then
-            return layoutKey
-        end
+        if GetTextSlot(layoutKey) == part then return layoutKey end
     end
     return nil
 end
@@ -655,9 +541,7 @@ local COMBO_HEALTH_ELEMENTS = {
     healthNumPctDash = true,
     healthNumMax = true, -- current / max number; no percent
 }
-local function IsComboHealthText(part)
-    return COMBO_HEALTH_ELEMENTS[part] == true
-end
+local function IsComboHealthText(part) return COMBO_HEALTH_ELEMENTS[part] == true end
 mod.IsComboHealthText = IsComboHealthText
 
 local function SetCombinedHealthText(fontStr, part, pctText, numText, maxText)
@@ -706,17 +590,13 @@ do
         }
         PARTS[text] = { ln = PLAIN.ln, nl = PLAIN.nl, diff = false }
     end
-    function mod.IsNameElement(part)
-        return NAME_FAMILY[part] == true
-    end
+    function mod.IsNameElement(part) return NAME_FAMILY[part] == true end
     -- Slot currently holding a name-family element (nil when none is slotted).
     -- db: a profile to read instead of the live one.
     function mod.FindNameSlot(saved)
         saved = saved or p
         for _, layoutKey in ipairs(textSlots) do
-            if NAME_FAMILY[(saved and saved[layoutKey]) or defaultSet[layoutKey]] then
-                return layoutKey
-            end
+            if NAME_FAMILY[(saved and saved[layoutKey]) or defaultSet[layoutKey]] then return layoutKey end
         end
         return nil
     end
@@ -731,23 +611,13 @@ do
     function mod.NP_SlotColorMode(slotName, saved)
         saved = saved or p or defaultSet
         local k = SK[slotName]
-        if not k then
-            return "custom"
-        end
+        if not k then return "custom" end
         local el = saved[slotName] or defaultSet[slotName]
         local m = saved[k.mode]
-        if m == "class" or m == "custom" then
-            return m
-        end
-        if m == "level" then
-            return (el ~= "targetOfTarget") and "level" or "custom"
-        end
-        if el == "level" and saved.levelDifficultyColor == true then
-            return "level"
-        end
-        if saved[k.class] == true then
-            return "class"
-        end
+        if m == "class" or m == "custom" then return m end
+        if m == "level" then return (el ~= "targetOfTarget") and "level" or "custom" end
+        if el == "level" and saved.levelDifficultyColor == true then return "level" end
+        if saved[k.class] == true then return "class" end
         if
             saved.enemyNameTextReactionColor == true
             and NAME_FAMILY[el]
@@ -763,16 +633,10 @@ do
     function mod.NP_SlotLevelDiff(slotName, saved)
         saved = saved or p or defaultSet
         local k = SK[slotName]
-        if not k then
-            return false
-        end
-        if saved[k.lvlOn] == true then
-            return false
-        end
+        if not k then return false end
+        if saved[k.lvlOn] == true then return false end
         local val = saved[k.diff]
-        if val ~= nil then
-            return val == true
-        end
+        if val ~= nil then return val == true end
         return saved.levelDifficultyColor == true
     end
     -- A combo part's stored colour (part "name" or "level"), falling back to the slot
@@ -780,13 +644,9 @@ do
     function mod.NP_SlotPartColor(slotName, part, saved)
         saved = saved or p or defaultSet
         local k = SK[slotName]
-        if not k then
-            return 1, 1, 1
-        end
+        if not k then return 1, 1, 1 end
         local color = saved[part == "level" and k.lvl or k.name] or saved[k.color] or defaultSet[k.color]
-        if color then
-            return color.r, color.g, color.b
-        end
+        if color then return color.r, color.g, color.b end
         return 1, 1, 1
     end
     -- Materializes every slot's combo format strings: a part with a custom colour is
@@ -814,9 +674,7 @@ do
     -- options preview's stand-in mob, ranked as attackable like a hostile mob.
     -- friendly: rank friendly units by difficulty whatever levelDifficultyColorFriendly says.
     local function LevelRGB(unitToken, level, friendly)
-        if level < 0 then
-            return CludesUI.GetLevelDifficultyColor(-1)
-        end
+        if level < 0 then return CludesUI.GetLevelDifficultyColor(-1) end
         return CludesUI.GetLevelColor(
             unitToken,
             level,
@@ -826,9 +684,7 @@ do
     -- The unit's level difficulty colour, r, g, b; nil while its level cannot be read.
     function mod.NP_UnitLevelColor(unitToken)
         local level = UnitEffectiveLevel(unitToken)
-        if type(level) ~= "number" or (issecretvalue and issecretvalue(level)) then
-            return nil
-        end
+        if type(level) ~= "number" or (issecretvalue and issecretvalue(level)) then return nil end
         return LevelRGB(unitToken, level)
     end
     -- Display string for the unit's EFFECTIVE level (so scaling/Chromie time read as the game
@@ -838,9 +694,7 @@ do
     -- plates' Color Level by Difficulty); any other value returns it plain.
     function mod.GetUnitLevelText(unitToken, color)
         local level = UnitEffectiveLevel(unitToken)
-        if type(level) ~= "number" or (issecretvalue and issecretvalue(level)) then
-            return "??"
-        end
+        if type(level) ~= "number" or (issecretvalue and issecretvalue(level)) then return "??" end
         -- Forever: a hidden player level the PvP feature knows.
         if level < 0 and CludesUI.KnownHiddenLevel then
             level = CludesUI.KnownHiddenLevel(unitToken) or level
@@ -889,12 +743,8 @@ do
         function mod.NP_FormatName(name, slotName, unitToken)
             local layoutKey = slotName and NAME_FORMAT_KEYS[slotName]
             local modeName = layoutKey and p and p[layoutKey]
-            if modeName then
-                modeName = CludesUI.UnitNameFormat(modeName, unitToken)
-            end
-            if modeName then
-                return short(name, modeName)
-            end
+            if modeName then modeName = CludesUI.UnitNameFormat(modeName, unitToken) end
+            if modeName then return short(name, modeName) end
             return name
         end
     end
@@ -915,9 +765,7 @@ local healthTextWidths = {
     level = 24, -- standalone level: "70" / "??"
     targetOfTarget = 60,
 }
-local function EstimateHealthTextWidth(part)
-    return (healthTextWidths[part] or 0) + HEALTH_TEXT_PADDING
-end
+local function EstimateHealthTextWidth(part) return (healthTextWidths[part] or 0) + HEALTH_TEXT_PADDING end
 mod.EstimateHealthTextWidth = EstimateHealthTextWidth
 
 -- Custom text (element "custom"): any slot may show one, each with its own template
@@ -937,9 +785,7 @@ do
     -- The unit's name as the name slot writes it (the slot's Name Format).
     local function Name(unit, slotName)
         local name = CludesUI.WithSurname(UnitName(unit))
-        if type(name) == "nil" then
-            return ""
-        end
+        if type(name) == "nil" then return "" end
         return mod.NP_FormatName(name, slotName, unit)
     end
     -- Tag modifiers shape the plain name. They do not also apply the slot's Name Format.
@@ -947,13 +793,9 @@ do
     -- your first name alone (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
     local function Shaped(modeName)
         return function(unit)
-            if modeName == "last" and CludesUI.OwnSurnameHidden(unit) then
-                return ""
-            end
+            if modeName == "last" and CludesUI.OwnSurnameHidden(unit) then return "" end
             local name = CludesUI.WithSurname(UnitName(unit))
-            if type(name) == "nil" then
-                return ""
-            end
+            if type(name) == "nil" then return "" end
             return CludesUI.ShortName(name, modeName)
         end
     end
@@ -965,45 +807,29 @@ do
                 tu = unit .. "target"
                 mod._npToTUnits[unit] = tu
             end
-            if not UnitExists(tu) then
-                return ""
-            end
+            if not UnitExists(tu) then return "" end
             return piece(tu)
         end
     end
     local P = {
         ["hp"] = function(unit)
-            if UnitIsDeadOrGhost(unit) then
-                return CludesUI.L("DEAD")
-            end
+            if UnitIsDeadOrGhost(unit) then return CludesUI.L("DEAD") end
             return scrollFrame("%d", UnitHealth(unit) or 0)
         end,
         ["hp:abr"] = function(unit)
-            if UnitIsDeadOrGhost(unit) then
-                return CludesUI.L("DEAD")
-            end
+            if UnitIsDeadOrGhost(unit) then return CludesUI.L("DEAD") end
             return mod.AbbreviateValue(UnitHealth(unit) or 0, "health")
         end,
-        ["hp:max"] = function(unit)
-            return scrollFrame("%d", UnitHealthMax(unit) or 0)
-        end,
-        ["hp:max:abr"] = function(unit)
-            return mod.AbbreviateValue(UnitHealthMax(unit) or 0, "maxHealth")
-        end,
+        ["hp:max"] = function(unit) return scrollFrame("%d", UnitHealthMax(unit) or 0) end,
+        ["hp:max:abr"] = function(unit) return mod.AbbreviateValue(UnitHealthMax(unit) or 0, "maxHealth") end,
         ["hp:pct"] = function(unit)
-            if UnitIsDeadOrGhost(unit) then
-                return "0"
-            end
+            if UnitIsDeadOrGhost(unit) then return "0" end
             return scrollFrame("%d", UnitHealthPercent(unit, true, CurveConstants.ScaleTo100) or 0)
         end,
-        ["absorb"] = function(unit)
-            return C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(unit) or 0)
-        end,
+        ["absorb"] = function(unit) return C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(unit) or 0) end,
         ["absorb:abr"] = function(unit)
             local val = UnitGetTotalAbsorbs(unit) or 0
-            if IsZeroValue(val) then
-                return ""
-            end
+            if IsZeroValue(val) then return "" end
             return mod.AbbreviateValue(val, "absorb")
         end,
         ["name"] = Name,
@@ -1016,17 +842,13 @@ do
                 tu = unit .. "target"
                 mod._npToTUnits[unit] = tu
             end
-            if not UnitExists(tu) then
-                return ""
-            end
+            if not UnitExists(tu) then return "" end
             return Name(tu, slotName)
         end,
         ["target:first"] = TargetShaped("first"),
         ["target:last"] = TargetShaped("last"),
         ["target:abbr"] = TargetShaped("abbr"),
-        ["level"] = function(unit)
-            return mod.GetUnitLevelText(unit)
-        end,
+        ["level"] = function(unit) return mod.GetUnitLevelText(unit) end,
     }
     local CAT = TT.Bind(TT.UNIT, P)
     mod.NP_TextTags = CAT
@@ -1043,9 +865,7 @@ do
     -- empty. Built once per parse result.
     function mod.NP_CustomCompiled(slotName, saved)
         local parsed = mod.NP_CustomParse(slotName, saved)
-        if not parsed then
-            return nil
-        end
+        if not parsed then return nil end
         local c = compiled[parsed]
         if not c then
             local keyList = parsed.keys
@@ -1070,16 +890,12 @@ do
         fontStr:SetFormattedText(cfg.fmt, unpack(args, 1, num))
         -- An empty Top text (no target, no shield) keeps its line: the top aura row
         -- and the range text anchor to it. GetText reads nil while empty.
-        if slotName == "textSlotTop" and not fontStr:GetText() then
-            fontStr:SetText(" ")
-        end
+        if slotName == "textSlotTop" and not fontStr:GetText() then fontStr:SetText(" ") end
     end
     -- Estimated width of a slot's custom text, 0 while empty. db: as NP_CustomParse.
     function mod.NP_CustomWidth(slotName, saved)
         local parsed = mod.NP_CustomParse(slotName, saved)
-        if not parsed then
-            return 0
-        end
+        if not parsed then return 0 end
         return TT.EstimateWidth(CAT, parsed) + HEALTH_TEXT_PADDING
     end
     -- The bar width left to a name-like text in a bar slot: the bar minus the estimated
@@ -1123,13 +939,9 @@ do
     function mod.NP_TopCornerLift(place, saved)
         saved = saved or p
         local layoutKey = CORNER_KEY[place]
-        if not layoutKey then
-            return 0
-        end
+        if not layoutKey then return 0 end
         local el = (saved and saved[layoutKey]) or defaultSet[layoutKey]
-        if not mod.NP_ElementFSKey(el, layoutKey) then
-            return 0
-        end
+        if not mod.NP_ElementFSKey(el, layoutKey) then return 0 end
         local size = (saved and saved[layoutKey .. "Size"]) or defaultSet[layoutKey .. "Size"] or 10
         local posY = (saved and saved[layoutKey .. "YOffset"]) or 0
         local nameY = (saved and saved.nameYOffset) or defaultSet.nameYOffset or 0
@@ -1140,12 +952,8 @@ do
     function mod.NP_TopCornerTextWidth(layoutKey, saved)
         saved = saved or p
         local el = (saved and saved[layoutKey]) or defaultSet[layoutKey]
-        if el == "custom" then
-            return mod.NP_CustomWidth(layoutKey, saved)
-        end
-        if not mod.NP_ElementFSKey(el, layoutKey) or mod.IsNameElement(el) then
-            return 0
-        end
+        if el == "custom" then return mod.NP_CustomWidth(layoutKey, saved) end
+        if not mod.NP_ElementFSKey(el, layoutKey) or mod.IsNameElement(el) then return 0 end
         return EstimateHealthTextWidth(el)
     end
 end
@@ -1153,9 +961,7 @@ end
 -- Y offset for plate content relative to the nameplate frame. Always 0: the Blizzard nameplate
 -- frame grows from its CENTER, not its base, so a taller SetNamePlateSize enlarges the hitbox
 -- evenly above AND below the unit; anchoring content at the frame center needs no compensation.
-local function GetHitboxYShift()
-    return 0
-end
+local function GetHitboxYShift() return 0 end
 mod.GetHitboxYShift = GetHitboxYShift
 -- Slot-based size/offset getters. Key strings memoized per posKey (closed set of six literals,
 -- lazy-filled) so these hot getters allocate nothing; VALUES still read live so profile swaps cannot stale.
@@ -1238,77 +1044,51 @@ do
     end
     local function HideQuest(skinData)
         local val = skinData and skinData.classificationHideQuest
-        if val == nil then
-            val = defaultSet.classificationHideQuest
-        end
+        if val == nil then val = defaultSet.classificationHideQuest end
         return val and true or false
     end
     -- Quest Objective Text read from the legacy Replace Quest Icon with Objective key: no
     -- questTextSlot yet, Replace on and the Quest Indicator on in a slot. The text then
     -- takes the indicator's slot and the indicator reads off.
     local function Legacy(skinData)
-        if skinData and skinData.questTextSlot ~= nil then
-            return false
-        end
+        if skinData and skinData.questTextSlot ~= nil then return false end
         local region = skinData and skinData.replaceQuestIconWithObjective
-        if region == nil then
-            region = defaultSet.replaceQuestIconWithObjective
-        end
-        if region ~= true or ClassSlot(skinData) == "none" then
-            return false
-        end
+        if region == nil then region = defaultSet.replaceQuestIconWithObjective end
+        if region ~= true or ClassSlot(skinData) == "none" then return false end
         return not HideQuest(skinData)
     end
     local function QuestTextSlot(skinData)
         local val = skinData and skinData.questTextSlot
-        if val ~= nil then
-            return val
-        end
-        if Legacy(skinData) then
-            return ClassSlot(skinData)
-        end
+        if val ~= nil then return val end
+        if Legacy(skinData) then return ClassSlot(skinData) end
         return "none"
     end
     local function ElementSlot(elem, skinData)
-        if elem == "questtext" then
-            return QuestTextSlot(skinData)
-        end
+        if elem == "questtext" then return QuestTextSlot(skinData) end
         if elem == "faction" and skinData and skinData.classificationIncludeFaction then
             return ClassSlot(skinData)
         end
         local layoutKey = SLOT_KEY[elem]
-        if not layoutKey then
-            return "none"
-        end
+        if not layoutKey then return "none" end
         return (skinData and skinData[layoutKey]) or defaultSet[layoutKey]
     end
 
-    function mod.NP_LegacyQuestText(saved)
-        return Legacy(saved or p)
-    end
-    function mod.NP_GetQuestTextSlot(saved)
-        return QuestTextSlot(saved or p)
-    end
+    function mod.NP_LegacyQuestText(saved) return Legacy(saved or p) end
+    function mod.NP_GetQuestTextSlot(saved) return QuestTextSlot(saved or p) end
     -- The Quest Indicator half of the Rare/Quest element is on.
     function mod.NP_QuestIconOn(saved)
         local skinData = saved or p
-        if ClassSlot(skinData) == "none" or HideQuest(skinData) then
-            return false
-        end
+        if ClassSlot(skinData) == "none" or HideQuest(skinData) then return false end
         return not Legacy(skinData)
     end
-    function mod.NP_ElementSlot(elem, saved)
-        return ElementSlot(elem, saved or p)
-    end
+    function mod.NP_ElementSlot(elem, saved) return ElementSlot(elem, saved or p) end
     -- An element's size: its own key, else the size of slot pos (default: its own slot),
     -- else that slot's default; while the slot is None, the element's own fallback.
     function mod.NP_ElementSize(elem, saved, place)
         local skinData = saved or p
         local layoutKey = SIZE_KEY[elem]
         local val = layoutKey and skinData and skinData[layoutKey]
-        if type(val) == "number" then
-            return val
-        end
+        if type(val) == "number" then return val end
         place = place or ElementSlot(elem, skinData)
         if not place or place == "none" then
             local nk = NONE_KEY[elem]
@@ -1324,9 +1104,7 @@ do
         local val = layoutKey and skinData and skinData[layoutKey]
         if val == nil then
             val = skinData and skinData.classificationShowInInstances
-            if val == nil then
-                val = defaultSet.classificationShowInInstances
-            end
+            if val == nil then val = defaultSet.classificationShowInInstances end
         end
         return val and true or false
     end
@@ -1339,28 +1117,18 @@ do
     -- value, and a profile read through the legacy key unchecks the Quest Indicator too.
     -- The legacy key is never read for the profile again.
     function mod.NP_MaterializeQuestText(saved)
-        if not saved or saved.questTextSlot ~= nil then
-            return
-        end
+        if not saved or saved.questTextSlot ~= nil then return end
         local legacy = Legacy(saved)
         saved.questTextSlot = legacy and ClassSlot(saved) or "none"
-        if legacy then
-            saved.classificationHideQuest = true
-        end
+        if legacy then saved.classificationHideQuest = true end
     end
 end
 
-local function GetDebuffIconSize()
-    return mod.NP_ElementSize("debuffs")
-end
+local function GetDebuffIconSize() return mod.NP_ElementSize("debuffs") end
 mod.GetDebuffIconSize = GetDebuffIconSize
-local function GetBuffIconSize()
-    return mod.NP_ElementSize("buffs")
-end
+local function GetBuffIconSize() return mod.NP_ElementSize("buffs") end
 mod.GetBuffIconSize = GetBuffIconSize
-local function GetCCIconSize()
-    return mod.NP_ElementSize("ccs")
-end
+local function GetCCIconSize() return mod.NP_ElementSize("ccs") end
 mod.GetCCIconSize = GetCCIconSize
 -- Cropped aura icons (mirrors Unit Frames "Cropped Icons"). On: icon frame goes rectangular
 -- (height = 80% of width), texture trimmed top/bottom so artwork is never squished; horizontal
@@ -1382,9 +1150,7 @@ do
             on = (p and p.ccCropIcons) or defaultSet.ccCropIcons
             percent = p and p.ccCropPercent
         end
-        if not on then
-            return false
-        end
+        if not on then return false end
         percent = tonumber(percent) or 10
         if percent < 5 then
             percent = 5
@@ -1405,9 +1171,7 @@ do
     -- Texcoord trim. Cropped scales the vertical span to the rectangle's aspect
     -- so the texture keeps its proportions; uncropped is the original square zoom.
     function mod.SetAuraIconCrop(iconTex, cropped, wid, hgt)
-        if not iconTex then
-            return
-        end
+        if not iconTex then return end
         -- Stock styles draw the whole icon (zoom 0), as the engine cells do.
         local z = mod.NP_Blizz() and 0 or AURA_ZOOM
         if cropped and wid and hgt and wid > 0 then
@@ -1421,9 +1185,7 @@ do
     end
 end
 local function GetTargetGlowStyle()
-    if p and p.targetGlowStyle then
-        return p.targetGlowStyle
-    end
+    if p and p.targetGlowStyle then return p.targetGlowStyle end
     return defaultSet.targetGlowStyle
 end
 mod.GetTargetGlowStyle = GetTargetGlowStyle
@@ -1435,38 +1197,24 @@ mod.GetTargetGlowStyle = GetTargetGlowStyle
 -- Color and Border Size read off there whatever the profile holds (the saved
 -- choices stay for the other styles).
 function mod.GetTargetGlowCludesUI()
-    if mod.NP_Forever() then
-        return false
-    end
-    if p and p.targetGlowCludesUI ~= nil then
-        return p.targetGlowCludesUI
-    end
+    if mod.NP_Forever() then return false end
+    if p and p.targetGlowCludesUI ~= nil then return p.targetGlowCludesUI end
     local style = (p and p.targetGlowStyle) or defaultSet.targetGlowStyle
     return style == "cludesui" or style == "vibrant"
 end
 function mod.GetTargetGlowBorderColor()
-    if mod.NP_Forever() then
-        return false
-    end
-    if p and p.targetGlowBorderColor ~= nil then
-        return p.targetGlowBorderColor
-    end
+    if mod.NP_Forever() then return false end
+    if p and p.targetGlowBorderColor ~= nil then return p.targetGlowBorderColor end
     local style = (p and p.targetGlowStyle) or defaultSet.targetGlowStyle
     return style == "vibrant"
 end
 function mod.GetTargetGlowHighlight()
-    if p and p.targetGlowHighlight ~= nil then
-        return p.targetGlowHighlight
-    end
+    if p and p.targetGlowHighlight ~= nil then return p.targetGlowHighlight end
     return false -- no legacy equivalent
 end
 function mod.GetTargetGlowBorderSize()
-    if mod.NP_Forever() then
-        return false
-    end
-    if p and p.targetGlowBorderSize ~= nil then
-        return p.targetGlowBorderSize
-    end
+    if mod.NP_Forever() then return false end
+    if p and p.targetGlowBorderSize ~= nil then return p.targetGlowBorderSize end
     return false -- no legacy equivalent
 end
 -- nil until the effect's first enable snapshots the user's current border size (options side);
@@ -1475,17 +1223,11 @@ function mod.GetTargetBorderSizeValue()
     local val = p and p.targetBorderSizeValue
     return val
 end
-function mod.GetTargetBorderColor()
-    return (p and p.targetBorderColor) or defaultSet.targetBorderColor
-end
-function mod.GetTargetGlowColor()
-    return (p and p.targetGlowColor) or defaultSet.targetGlowColor
-end
+function mod.GetTargetBorderColor() return (p and p.targetBorderColor) or defaultSet.targetBorderColor end
+function mod.GetTargetGlowColor() return (p and p.targetGlowColor) or defaultSet.targetGlowColor end
 function mod.GetTargetGlowAlpha()
     local a = p and p.targetGlowAlpha
-    if a == nil then
-        return defaultSet.targetGlowAlpha
-    end
+    if a == nil then return defaultSet.targetGlowAlpha end
     return a
 end
 function mod.GetTargetHighlightColor()
@@ -1493,9 +1235,7 @@ function mod.GetTargetHighlightColor()
 end
 function mod.GetTargetHighlightAlpha()
     local a = p and p.targetHighlightAlpha
-    if a == nil then
-        return defaultSet.targetHighlightAlpha
-    end
+    if a == nil then return defaultSet.targetHighlightAlpha end
     return a
 end
 -- Hover Effect (mirrors the Target Effect model, user-directed 2026-08-16).
@@ -1504,37 +1244,21 @@ end
 -- profile renders EXACTLY the old flat hover highlight (including the alpha
 -- 0 = invisible case) until other channels are opted in. New-channel colors
 -- start from the target effect's defaults.
-function mod.GetHoverGlowCludesUI()
-    return (p and p.hoverGlowCludesUI) == true
-end
-function mod.GetHoverGlowBorderColor()
-    return (p and p.hoverGlowBorderColor) == true
-end
+function mod.GetHoverGlowCludesUI() return (p and p.hoverGlowCludesUI) == true end
+function mod.GetHoverGlowBorderColor() return (p and p.hoverGlowBorderColor) == true end
 function mod.GetHoverGlowHighlight()
-    if p and p.hoverGlowHighlight ~= nil then
-        return p.hoverGlowHighlight == true
-    end
+    if p and p.hoverGlowHighlight ~= nil then return p.hoverGlowHighlight == true end
     return true
 end
-function mod.GetHoverGlowBorderSize()
-    return (p and p.hoverGlowBorderSize) == true
-end
+function mod.GetHoverGlowBorderSize() return (p and p.hoverGlowBorderSize) == true end
 -- nil until the effect's first enable snapshots the user's current border
 -- size (options side); nil = applies nothing.
-function mod.GetHoverBorderSizeValue()
-    return p and p.hoverBorderSizeValue
-end
-function mod.GetHoverBorderColor()
-    return (p and p.hoverBorderColor) or defaultSet.targetBorderColor
-end
-function mod.GetHoverGlowColor()
-    return (p and p.hoverGlowColor) or defaultSet.targetGlowColor
-end
+function mod.GetHoverBorderSizeValue() return p and p.hoverBorderSizeValue end
+function mod.GetHoverBorderColor() return (p and p.hoverBorderColor) or defaultSet.targetBorderColor end
+function mod.GetHoverGlowColor() return (p and p.hoverGlowColor) or defaultSet.targetGlowColor end
 function mod.GetHoverGlowAlpha()
     local a = p and p.hoverGlowAlpha
-    if a == nil then
-        return defaultSet.targetGlowAlpha
-    end
+    if a == nil then return defaultSet.targetGlowAlpha end
     return a
 end
 local function GetShowTargetGlow()
@@ -1542,32 +1266,18 @@ local function GetShowTargetGlow()
 end
 mod.GetShowTargetGlow = GetShowTargetGlow
 local function GetShowClassPower()
-    if p and p.showClassPower ~= nil then
-        return p.showClassPower
-    end
+    if p and p.showClassPower ~= nil then return p.showClassPower end
     return defaultSet.showClassPower
 end
 mod.GetShowClassPower = GetShowClassPower
 -- On ns, not file locals (Lua's 200-local limit); callers use ns.GetClassPower*().
-mod.GetClassPowerPos = function()
-    return (p and p.classPowerPos) or defaultSet.classPowerPos
-end
-mod.GetClassPowerYOffset = function()
-    return (p and p.classPowerYOffset) or defaultSet.classPowerYOffset
-end
-mod.GetClassPowerXOffset = function()
-    return (p and p.classPowerXOffset) or defaultSet.classPowerXOffset
-end
-mod.GetClassPowerScale = function()
-    return (p and p.classPowerScale) or defaultSet.classPowerScale
-end
-mod.GetClassPowerGap = function()
-    return (p and p.classPowerGap) or defaultSet.classPowerGap
-end
+mod.GetClassPowerPos = function() return (p and p.classPowerPos) or defaultSet.classPowerPos end
+mod.GetClassPowerYOffset = function() return (p and p.classPowerYOffset) or defaultSet.classPowerYOffset end
+mod.GetClassPowerXOffset = function() return (p and p.classPowerXOffset) or defaultSet.classPowerXOffset end
+mod.GetClassPowerScale = function() return (p and p.classPowerScale) or defaultSet.classPowerScale end
+mod.GetClassPowerGap = function() return (p and p.classPowerGap) or defaultSet.classPowerGap end
 local function GetClassPowerClassColors()
-    if p and p.classPowerClassColors ~= nil then
-        return p.classPowerClassColors
-    end
+    if p and p.classPowerClassColors ~= nil then return p.classPowerClassColors end
     return defaultSet.classPowerClassColors
 end
 mod.GetClassPowerClassColors = GetClassPowerClassColors
@@ -1585,14 +1295,10 @@ mod.GetClassPowerEmptyColor = function()
     return color
 end
 -- On ns, not file locals (Lua's 200 main-chunk local limit).
-function mod.GetClassPowerShape()
-    return (p and p.classPowerShape) or defaultSet.classPowerShape
-end
+function mod.GetClassPowerShape() return (p and p.classPowerShape) or defaultSet.classPowerShape end
 function mod.GetClassPowerBorder()
     local val = p and p.classPowerBorder
-    if val == nil then
-        return defaultSet.classPowerBorder
-    end
+    if val == nil then return defaultSet.classPowerBorder end
     return val
 end
 function mod.GetClassPowerBorderColor()
@@ -1605,13 +1311,9 @@ local function IsBorderEnabled()
     -- The stock styles carry their own art instead of an CUI border: the
     -- stock background art (Blizzard Style), the vanilla border sheets
     -- (Classic WoW UI, ns.NP_ApplyClassicHealthArt).
-    if mod.NP_Blizz() then
-        return false
-    end
+    if mod.NP_Blizz() then return false end
     local val = p and p.showBorder
-    if val == nil then
-        return defaultSet.showBorder
-    end
+    if val == nil then return defaultSet.showBorder end
     return val
 end
 mod.IsBorderEnabled = IsBorderEnabled
@@ -1622,9 +1324,7 @@ function mod.GetIconBorderEnabled(kind)
     -- Stock styles: the stock cast icon has no border, and the aura items
     -- carry the rounded ring overlay (Blizzard) or the stock dispel-type
     -- border (classic) instead of a 1px border.
-    if mod.NP_Blizz() then
-        return false
-    end
+    if mod.NP_Blizz() then return false end
     local layoutKey
     if kind == "cast" then
         layoutKey = "hideCastIconBorder"
@@ -1638,21 +1338,15 @@ function mod.GetIconBorderEnabled(kind)
     local val = p and p[layoutKey]
     if val == nil then
         val = defaultSet[layoutKey]
-        if val == nil then
-            return true
-        end -- no default at all: border shown
+        if val == nil then return true end -- no default at all: border shown
     end
     return not val
 end
 function mod.ApplyFrameIconBorder(widget, enabled, adjustIconInset)
     local Pix = CludesUI and CludesUI.PP
-    if not (widget and Pix and Pix.GetBorders and Pix.GetBorders(widget)) then
-        return
-    end
+    if not (widget and Pix and Pix.GetBorders and Pix.GetBorders(widget)) then return end
     if enabled then
-        if Pix.ShowBorder then
-            Pix.ShowBorder(widget)
-        end
+        if Pix.ShowBorder then Pix.ShowBorder(widget) end
     elseif Pix.HideBorder then
         Pix.HideBorder(widget)
     end
@@ -1748,7 +1442,16 @@ function mod.NP_LayoutCastIconSeparator(seamTex)
     local t, es = seamTex._tex, seamTex:GetEffectiveScale()
     seamTex._es = es
     if CludesUI.GetBorderCompanion(seamTex._key, "sepV") then
-        CludesUI.PlaceBorderDividerV(t, seamTex, seamTex._right, false, seamTex._key, seamTex._size, seamTex._px, es)
+        CludesUI.PlaceBorderDividerV(
+            t,
+            seamTex,
+            seamTex._right,
+            false,
+            seamTex._key,
+            seamTex._size,
+            seamTex._px,
+            es
+        )
         return
     end
     local onePixel = es > 0 and Pix.perfect / es or Pix.mult
@@ -1775,9 +1478,7 @@ end
 -- target) is a plain tint. Off, this is the 1px edge call plus the opt-in gates.
 function mod.ApplyCastIconBorder(backing)
     local iconTex = backing and backing.castIconFrame
-    if not iconTex then
-        return
-    end
+    if not iconTex then return end
     if (p and p.castIconSeparator) or backing.cast._iconSeam then
         mod.NP_ApplyCastIconSeparator(
             backing.cast,
@@ -1821,7 +1522,8 @@ function mod.ApplyCastIconBorder(backing)
         red, green, blue, a = color.r, color.g, color.b, 1
     else
         local color = p.customBorderColor or defaultSet.customBorderColor
-        red, green, blue, a = color.r, color.g, color.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
+        red, green, blue, a =
+            color.r, color.g, color.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
     end
     local strata = backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
     local level = iconTex:GetFrameLevel() + 3
@@ -1871,9 +1573,7 @@ function mod.ApplyCastIconBorder(backing)
 end
 local function GetBorderColor()
     -- Classic WoW UI: the plate's edge is always black.
-    if mod.NP_Classic() then
-        return 0, 0, 0
-    end
+    if mod.NP_Classic() then return 0, 0, 0 end
     local color = (p and p.borderColor) or defaultSet.borderColor
     return color.r, color.g, color.b
 end
@@ -1881,16 +1581,12 @@ mod.GetBorderColor = GetBorderColor
 -- Health border size: the classic plate's fixed 1px edge, else the profile's
 -- Border Size. Friendly plates mirror it.
 function mod.NP_BorderSize()
-    if mod.NP_Classic() then
-        return 1
-    end
+    if mod.NP_Classic() then return 1 end
     return (p and p.borderSize) or defaultSet.borderSize
 end
 -- Cast bar border colour: black under Classic WoW UI, else the profile's.
 function mod.NP_CastBorderColor()
-    if mod.NP_Classic() then
-        return 0, 0, 0
-    end
+    if mod.NP_Classic() then return 0, 0, 0 end
     local color = (p and p.castBorderColor) or defaultSet.castBorderColor
     return color.r, color.g, color.b
 end
@@ -1898,9 +1594,7 @@ end
 -- cast show/hide, so it must stay a trivial table lookup.
 function mod.GetWrapBorderCastbar()
     local val = p and p.wrapBorderCastbar
-    if val == nil then
-        return defaultSet.wrapBorderCastbar
-    end
+    if val == nil then return defaultSet.wrapBorderCastbar end
     return val
 end
 local function GetAuraSlots()
@@ -1914,13 +1608,9 @@ mod.GetAuraSlots = GetAuraSlots
 -- Raise Strata: per-slot Core Positions toggle. On, the element in that slot is bumped
 -- MEDIUM -> HIGH so it renders above the rest of the plate. On ns (local budget).
 function mod.GetSlotRaiseStrata(placeKey)
-    if not placeKey or placeKey == "none" then
-        return false
-    end
+    if not placeKey or placeKey == "none" then return false end
     local layoutKey = placeKey .. "SlotRaiseStrata"
-    if p and p[layoutKey] ~= nil then
-        return p[layoutKey]
-    end
+    if p and p[layoutKey] ~= nil then return p[layoutKey] end
     return defaultSet[layoutKey] or false
 end
 
@@ -1928,21 +1618,11 @@ end
 -- strata; HIGH lifts that element above the flattened text/aura/indicator tiers, and its
 -- children inherit it. The aura containers apply their own (AnchorNPContainer).
 function mod.ApplySlotStrata(backing)
-    if not backing then
-        return
-    end
-    local function StrataFor(slotRec)
-        return mod.GetSlotRaiseStrata(slotRec) and "HIGH" or "MEDIUM"
-    end
-    if backing.raidFrame then
-        backing.raidFrame:SetFrameStrata(StrataFor(GetRaidMarkerPos()))
-    end
-    if backing.classFrame then
-        backing.classFrame:SetFrameStrata(StrataFor(GetClassificationSlot()))
-    end
-    if backing.factionFrame then
-        backing.factionFrame:SetFrameStrata(StrataFor(mod.NP_GetFactionSlot()))
-    end
+    if not backing then return end
+    local function StrataFor(slotRec) return mod.GetSlotRaiseStrata(slotRec) and "HIGH" or "MEDIUM" end
+    if backing.raidFrame then backing.raidFrame:SetFrameStrata(StrataFor(GetRaidMarkerPos())) end
+    if backing.classFrame then backing.classFrame:SetFrameStrata(StrataFor(GetClassificationSlot())) end
+    if backing.factionFrame then backing.factionFrame:SetFrameStrata(StrataFor(mod.NP_GetFactionSlot())) end
     if backing.questTextFrame then
         backing.questTextFrame:SetFrameStrata(StrataFor(mod.NP_GetQuestTextSlot()))
     end
@@ -1977,9 +1657,7 @@ do
     -------------------------------------------------------------------------------
     local function StopDispelGlow(slotRec)
         local dataGroup = slotRec.dispelGlow
-        if not dataGroup or not dataGroup.active then
-            return
-        end
+        if not dataGroup or not dataGroup.active then return end
         dataGroup.active = false
         _G_Glows.StopAllGlows(dataGroup.wrapper)
         dataGroup.wrapper:Hide()
@@ -1989,7 +1667,14 @@ do
     -- engine path as the live purge glow, so the preview is the live look.
     local function DrawDispelGlow(dataGroup)
         mod.GetDispelGlowSpec(dataGroup.type, dataGroup.spec)
-        _G_Glows.StartSpecGlow(dataGroup.wrapper, dataGroup.spec, dataGroup.sz, dataGroup.h, "engine", _G_Glows.PANEL_EXTRA)
+        _G_Glows.StartSpecGlow(
+            dataGroup.wrapper,
+            dataGroup.spec,
+            dataGroup.sz,
+            dataGroup.h,
+            "engine",
+            _G_Glows.PANEL_EXTRA
+        )
     end
 
     -- Preview only: the live nameplate glow runs through CludesUI.Glows on the
@@ -2010,14 +1695,10 @@ do
             dataGroup = { wrapper = holder, active = false, spec = {} }
             slotRec.dispelGlow = dataGroup
             holder:SetScript("OnShow", function()
-                if dataGroup.active then
-                    DrawDispelGlow(dataGroup)
-                end
+                if dataGroup.active then DrawDispelGlow(dataGroup) end
             end)
             holder:SetScript("OnHide", function(self)
-                if dataGroup.active then
-                    _G_Glows.StopAllGlows(self)
-                end
+                if dataGroup.active then _G_Glows.StopAllGlows(self) end
             end)
         end
         local sz = slotSize or 26
@@ -2054,27 +1735,17 @@ local auraSlotToDBKey = {
 }
 local function GetAuraSlotOffsets(slotName)
     local dbKey = auraSlotToDBKey[slotName]
-    if not dbKey then
-        return 0, 0
-    end
+    if not dbKey then return 0, 0 end
     local place = (p and p[dbKey]) or defaultSet[dbKey]
-    if not place or place == "none" then
-        return 0, 0
-    end
+    if not place or place == "none" then return 0, 0 end
     return GetSlotOffsets(place)
 end
 -- 12.1 aura containers read layout inputs through these.
 mod.GetAuraSlotOffsets = GetAuraSlotOffsets
-function mod.NP_GetProfile()
-    return p
-end
-function mod.NP_GetDefaults()
-    return defaultSet
-end
+function mod.NP_GetProfile() return p end
+function mod.NP_GetDefaults() return defaultSet end
 function mod.NP_ClassPowerTopPush(backing)
-    if GetClassPowerTopPush then
-        return GetClassPowerTopPush(backing) or 0
-    end
+    if GetClassPowerTopPush then return GetClassPowerTopPush(backing) or 0 end
     return 0
 end
 
@@ -2094,9 +1765,7 @@ mod.GetTextSlotSize = GetTextSlotSize
 -- Get color for a text slot key (e.g. "textSlotTop")
 local function GetTextSlotColor(slotName)
     local color = (p and p[slotName .. "Color"]) or defaultSet[slotName .. "Color"]
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 1, 1, 1
 end
 
@@ -2114,9 +1783,7 @@ mod.SlotTextHost = function(self, slotName, strata)
         frame:SetFrameStrata(strata)
         return frame
     end
-    if strata == "MEDIUM" then
-        return self.healthTextFrame
-    end
+    if strata == "MEDIUM" then return self.healthTextFrame end
     local hosts = self._slotTextHosts
     if not hosts then
         hosts = {}
@@ -2137,17 +1804,13 @@ mod.DEFAULT_CAST_LOCKOUT_DURATION = 4
 mod.CAST_LOCKOUT_ICON = "Interface\\Icons\\Ability_Kick"
 
 function mod.ShowCastLockoutAsCrowdControl()
-    if p and p.showCastLockoutAsCrowdControl ~= nil then
-        return p.showCastLockoutAsCrowdControl
-    end
+    if p and p.showCastLockoutAsCrowdControl ~= nil then return p.showCastLockoutAsCrowdControl end
     return defaultSet.showCastLockoutAsCrowdControl
 end
 
 function mod.GetActiveCastLockout(backing)
     local lockout = backing._castLockout
-    if not lockout then
-        return nil
-    end
+    if not lockout then return nil end
     if not mod.ShowCastLockoutAsCrowdControl() or lockout.expires <= GetTime() then
         backing._castLockout = nil
         return nil
@@ -2160,13 +1823,9 @@ end
 -- its own cast icon push (as its Update* placed it) and its slot's X offset. w: its width
 -- (default sz; the Quest Objective Text is as wide as its text).
 local function ArrowSideReach(backing, edgeSide, posY, sz, xOff, ah, wid)
-    if math.abs(posY) >= (sz + ah) / 2 then
-        return 0
-    end
+    if math.abs(posY) >= (sz + ah) / 2 then return 0 end
     local reach = GetSideAuraXOffset() + mod.NP_SideIconPush(backing, edgeSide, posY, sz) + (wid or sz)
-    if edgeSide == "left" then
-        return reach - xOff
-    end
+    if edgeSide == "left" then return reach - xOff end
     return reach + xOff
 end
 
@@ -2179,9 +1838,7 @@ mod.NP_SideGuests = {}
 function mod.NP_AddSideGuest(func)
     local entries = mod.NP_SideGuests
     for i = 1, #entries do
-        if entries[i] == func then
-            return
-        end
+        if entries[i] == func then return end
     end
     entries[#entries + 1] = func
 end
@@ -2208,9 +1865,7 @@ local function PlaceArrow(backing, arrow, edgeSide, extent, aw, ah)
     local guest, gy
     for i = 1, #guests do
         guest, gy = guests[i](backing, edgeSide, a0, a1)
-        if guest then
-            break
-        end
+        if guest then break end
     end
     local row, ry, rh
     if not guest and mod.NPC_SideRow then
@@ -2219,9 +1874,7 @@ local function PlaceArrow(backing, arrow, edgeSide, extent, aw, ah)
     arrow:ClearAllPoints()
     if guest then
         local edge = (edgeSide == "left") and "LEFT" or "RIGHT"
-        if edgeSide == "left" then
-            posX = -posX
-        end
+        if edgeSide == "left" then posX = -posX end
         gy = gy or 0
         Pix.Point(arrow, "TOP", guest, edge, posX, ah / 2 - gy)
         Pix.Point(arrow, "BOTTOM", guest, edge, posX, -ah / 2 - gy)
@@ -2232,9 +1885,7 @@ local function PlaceArrow(backing, arrow, edgeSide, extent, aw, ah)
         end
         local cy = barHeight / 2 - ry
         local corner = (edgeSide == "left") and "BOTTOMLEFT" or "BOTTOMRIGHT"
-        if edgeSide == "left" then
-            posX = -posX
-        end
+        if edgeSide == "left" then posX = -posX end
         Pix.Point(arrow, "TOP", row, corner, posX, cy + ah / 2)
         Pix.Point(arrow, "BOTTOM", row, corner, posX, cy - ah / 2)
     else
@@ -2255,12 +1906,8 @@ end
 -- icons (raid marker, classification, faction, Quest Objective Text) and a side aura row. An
 -- element its slot's Y offset moved clear of the arrows (above or below them) is passed over.
 local function PositionArrowsOutsideAuras(backing)
-    if not backing.leftArrow then
-        return
-    end
-    if not backing.leftArrow:IsShown() then
-        return
-    end
+    if not backing.leftArrow then return end
+    if not backing.leftArrow:IsShown() then return end
     local arrowStyle = mod.ResolveTargetArrowStyle(p)
     local sc = (p and p.targetArrowScale) or 1.0
     local aw = math.floor(((arrowStyle and arrowStyle.w) or 16) * sc + 0.5)
@@ -2351,7 +1998,5 @@ Inner.IsBorderEnabled, Inner.IsComboHealthText = IsBorderEnabled, IsComboHealthT
 Inner.PANDEMIC_GLOW_STYLES = PANDEMIC_GLOW_STYLES
 Inner.PositionArrowsOutsideAuras = PositionArrowsOutsideAuras
 Inner.SetCombinedHealthText = SetCombinedHealthText
-Inner.SetClassPowerTopPush = function(frame)
-    GetClassPowerTopPush = frame
-end
+Inner.SetClassPowerTopPush = function(frame) GetClassPowerTopPush = frame end
 Inner.broken = false

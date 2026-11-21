@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_TargetedSpellBars.lua
 --  Targeted Spell Bars (Mythic+ Tools): one movable group of cast bars, one per
@@ -31,9 +29,7 @@ end
 --------------------------------------------------------------------------------
 -- A bar's target text names a player, so the bar texts take a font family
 -- (Cyrillic, Korean and Chinese names draw); no plain SetFont may reach them after it.
-local function SetFSFont(fontStr, size)
-    CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "mythicTimer")
-end
+local function SetFSFont(fontStr, size) CludesUI.ApplyModuleFontFamily(fontStr, nil, size, "mythicTimer") end
 
 --------------------------------------------------------------------------------
 --  Shared engines consumed read-only (core addon, loaded before this module).
@@ -106,9 +102,7 @@ local SyncWhereActive
 --  module's own SetPoint).
 --------------------------------------------------------------------------------
 local function PlaceContainer()
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
     local conf = Cfg()
     local place = conf and conf.pos
     boxHolder:ClearAllPoints()
@@ -120,9 +114,7 @@ local function PlaceContainer()
 end
 
 local function MakeContainer()
-    if boxHolder then
-        return boxHolder
-    end
+    if boxHolder then return boxHolder end
     boxHolder = CreateFrame("Frame", nil, UIParent)
     boxHolder:SetSize(240, 20)
     PlaceContainer()
@@ -243,9 +235,7 @@ local function AnchorName(holderFrame, conf, markerShown, hasTarget)
         local timerReserve = (conf.showTimer ~= false) and ((conf.timerSize or 10) * 2.2) or 0
         nameWidth = math.max(shared, (wid - hgt) - 8 - markerReserve - timerReserve)
     end
-    if nameWidth < 1 then
-        nameWidth = 1
-    end
+    if nameWidth < 1 then nameWidth = 1 end
     holderFrame.name:SetWidth(nameWidth)
 end
 
@@ -296,34 +286,24 @@ local function StyleBar(holderFrame, conf)
     ) or "Interface\\Buttons\\WHITE8x8"
     holderFrame.sb:SetStatusBarTexture(texPath)
     local pp = CludesUI.PP
-    if pp and pp.DisablePixelSnap then
-        pp.DisablePixelSnap(holderFrame.sb:GetStatusBarTexture())
-    end
+    if pp and pp.DisablePixelSnap then pp.DisablePixelSnap(holderFrame.sb:GetStatusBarTexture()) end
     local color = conf.barColor
-    if color then
-        holderFrame.sb:SetStatusBarColor(color.r, color.g, color.b)
-    end
+    if color then holderFrame.sb:SetStatusBarColor(color.r, color.g, color.b) end
 
     -- Fill texture re-mint: SetStatusBarTexture creates a NEW texture object
     -- every call, so the uninterruptible overlay must be re-pinned to it.
     holderFrame.overlay:ClearAllPoints()
     holderFrame.overlay:SetAllPoints(holderFrame.sb:GetStatusBarTexture())
     local un = conf.uninterruptible
-    if un then
-        holderFrame.overlay:SetVertexColor(un.r, un.g, un.b)
-    end
+    if un then holderFrame.overlay:SetVertexColor(un.r, un.g, un.b) end
 
     -- Solid black border on the holder; size 0 removes it. The Border Size
     -- slider stores coordinate units (px * PP.mult) while PP borders take
     -- physical pixels, so convert here: the bar draws the number the slider
     -- shows, and the icon divider below follows the same count.
     local bsz = conf.borderSize
-    if bsz == nil then
-        bsz = 1
-    end
-    if pp and pp.ToPixels then
-        bsz = pp.ToPixels(bsz)
-    end
+    if bsz == nil then bsz = 1 end
+    if pp and pp.ToPixels then bsz = pp.ToPixels(bsz) end
     if pp and pp.CreateBorder then
         if bsz > 0 then
             if not holderFrame._tsbBorder then
@@ -332,9 +312,7 @@ local function StyleBar(holderFrame, conf)
             elseif pp.UpdateBorder then
                 pp.UpdateBorder(holderFrame, bsz)
             end
-            if pp.ShowBorder then
-                pp.ShowBorder(holderFrame)
-            end
+            if pp.ShowBorder then pp.ShowBorder(holderFrame) end
         elseif holderFrame._tsbBorder and pp.HideBorder then
             pp.HideBorder(holderFrame)
         end
@@ -408,9 +386,7 @@ end
 
 local function Reflow()
     local conf = Cfg()
-    if not conf then
-        return
-    end
+    if not conf then return end
     for i = 1, #isShown do
         PositionBar(isShown[i].bar, i, conf)
     end
@@ -424,9 +400,7 @@ end
 --  Shape pick renders as Modern WoW Glow.
 --------------------------------------------------------------------------------
 local function EnsureGlowOverlay(holderFrame)
-    if holderFrame._glow then
-        return holderFrame._glow
-    end
+    if holderFrame._glow then return holderFrame._glow end
     local shade = CreateFrame("Frame", nil, holderFrame.sb)
     shade:SetAllPoints(holderFrame.sb)
     shade:SetFrameLevel(holderFrame.sb:GetFrameLevel() + 5)
@@ -458,12 +432,8 @@ local function StartImportantGlowAnim(holderFrame, conf)
     specInfo.bg = (conf.importantGlowBackground == true) or nil
     specInfo.bgR, specInfo.bgG, specInfo.bgB = bgc and bgc.r, bgc and bgc.g, bgc and bgc.b
     local pW, pH = holderFrame.sb:GetWidth(), holderFrame.sb:GetHeight()
-    if pW < 5 then
-        pW = 100
-    end
-    if pH < 5 then
-        pH = 14
-    end
+    if pW < 5 then pW = 100 end
+    if pH < 5 then pH = 14 end
     -- Restarts only on a real style/color/param/size change, never per cast event.
     Glows.StartSpecGlow(shade, specInfo, pW, pH, "engine")
     holderFrame._glowActive = true
@@ -513,13 +483,9 @@ end
 -- shared per-call tint helper).
 local function KickOffCooldown()
     local kick = GetActiveKickSpell and GetActiveKickSpell()
-    if not (kick and C_Spell and C_Spell.GetSpellCooldownDuration) then
-        return nil
-    end
+    if not (kick and C_Spell and C_Spell.GetSpellCooldownDuration) then return nil end
     local cd = C_Spell.GetSpellCooldownDuration(kick)
-    if not (cd and cd.IsZero) then
-        return nil
-    end
+    if not (cd and cd.IsZero) then return nil end
     return cd:IsZero()
 end
 
@@ -533,9 +499,7 @@ local function ApplyCastColor(e, conf, offCd)
     local ev = C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean
     if conf.importantEnabled and ev then
         local imp = e._important
-        if type(imp) == "nil" then
-            imp = false
-        end
+        if type(imp) == "nil" then imp = false end
         local ic = conf.importantColor or { r = 1, g = 0.2, b = 0.2 }
         impScratch.r = ev(imp, ic.r, base.r)
         impScratch.g = ev(imp, ic.g, base.g)
@@ -583,9 +547,7 @@ local function ApplyRaidMarker(e, conf)
         end
     else
         local tc = RAID_MARKER_TEXCOORDS[position]
-        if tc then
-            holderFrame.marker:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
-        end
+        if tc then holderFrame.marker:SetTexCoord(tc[1], tc[2], tc[3], tc[4]) end
     end
     holderFrame.marker:Show()
     AnchorName(holderFrame, conf, true, holderFrame.target:IsShown())
@@ -633,19 +595,13 @@ local function GetDurationObj(e)
     local kind = e.durKind
     if kind == "cast" then
         local skinData = UnitCastingDuration(e.unit)
-        if skinData then
-            return skinData
-        end
+        if skinData then return skinData end
     elseif kind == "empowered" then
         local skinData = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(e.unit, true)
-        if skinData then
-            return skinData
-        end
+        if skinData then return skinData end
     elseif kind == "channel" then
         local skinData = UnitChannelDuration and UnitChannelDuration(e.unit)
-        if skinData then
-            return skinData
-        end
+        if skinData then return skinData end
     end
     return UnitCastingDuration(e.unit)
         or (UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(e.unit, true))
@@ -662,9 +618,7 @@ end
 --------------------------------------------------------------------------------
 local function TimerBody()
     local num = #isShown
-    if num == 0 then
-        return false
-    end
+    if num == 0 then return false end
     local conf = Cfg()
     local showTimer = UnitCastingDuration and conf and conf.showTimer ~= false
     if showTimer then
@@ -691,18 +645,12 @@ local function TimerBody()
             -- One cooldown read per pass, not per bar. Plain assignment: the
             -- flag can be SECRET, and `x and flag or y` would boolean-test it.
             local offCd
-            if wantColor then
-                offCd = KickOffCooldown()
-            end
+            if wantColor then offCd = KickOffCooldown() end
             for i = 1, num do
                 local e = isShown[i]
                 if not e.preview then
-                    if wantColor then
-                        ApplyCastColor(e, conf, offCd)
-                    end
-                    if wantRange then
-                        ApplyRangeAlpha(e, conf)
-                    end
+                    if wantColor then ApplyCastColor(e, conf, offCd) end
+                    if wantRange then ApplyRangeAlpha(e, conf) end
                 end
             end
         end
@@ -717,9 +665,7 @@ local function ArmTimerTicker()
     -- the timer text, or one of the polling features.
     local needed = conf
         and (conf.showTimer ~= false or conf.oorEnabled or (GetActiveKickSpell and GetActiveKickSpell()))
-    if not needed then
-        return
-    end
+    if not needed then return end
     if not timerTicker and CludesUI.Tick and CludesUI.Tick.NewAnimTicker then
         timerTicker = CludesUI.Tick.NewAnimTicker(MakeContainer(), TimerBody, 0.1)
     end
@@ -734,20 +680,14 @@ end
 --------------------------------------------------------------------------------
 local function ArmFill(e, isChannel)
     local scrollBar = e.bar.sb
-    if not (UnitCastingDuration and scrollBar.SetTimerDuration) then
-        return
-    end
+    if not (UnitCastingDuration and scrollBar.SetTimerDuration) then return end
     local dur, isEmp
     if isChannel then
         if UnitEmpoweredChannelDuration then
             dur = UnitEmpoweredChannelDuration(e.unit, true)
-            if dur then
-                isEmp = true
-            end
+            if dur then isEmp = true end
         end
-        if not dur then
-            dur = UnitChannelDuration(e.unit)
-        end
+        if not dur then dur = UnitChannelDuration(e.unit) end
         if dur then
             scrollBar:SetReverseFill(false)
             -- Empowered channels build forward; normal channels drain.
@@ -813,9 +753,7 @@ end
 
 local function Release(unitToken)
     local entry = unitEntry[unitToken]
-    if not entry then
-        return
-    end
+    if not entry then return end
     unitEntry[unitToken] = nil
     for i = 1, #isShown do
         if isShown[i] == entry then
@@ -841,9 +779,7 @@ end
 -- OPENS (the cast shows) rather than ever branching on the secret.
 local function IsTrackableUnit(unitToken)
     local success, att = pcall(UnitCanAttack, "player", unitToken)
-    if success and not (issecretvalue and issecretvalue(att)) and att == false then
-        return false
-    end
+    if success and not (issecretvalue and issecretvalue(att)) and att == false then return false end
     return true
 end
 
@@ -851,9 +787,7 @@ local PromoteWaiting -- forward: StartCast <-> PromoteWaiting recursion
 
 local function StartCast(unitToken)
     local conf = Cfg()
-    if not conf then
-        return
-    end
+    if not conf then return end
     local name, _, texture, _, _, _, _, kickProtected, castSpellID = UnitCastingInfo(unitToken)
     local isChannel = false
     if type(name) == "nil" then
@@ -862,14 +796,10 @@ local function StartCast(unitToken)
     end
     if type(name) == "nil" then
         Release(unitToken)
-        if PromoteWaiting then
-            PromoteWaiting()
-        end
+        if PromoteWaiting then PromoteWaiting() end
         return
     end
-    if not IsTrackableUnit(unitToken) then
-        return
-    end
+    if not IsTrackableUnit(unitToken) then return end
 
     local entry = unitEntry[unitToken]
     local isNew = false
@@ -886,24 +816,18 @@ local function StartCast(unitToken)
     end
     -- O3: a bar only needs a full restyle once per settings generation, not on
     -- every cast -- new/reused-from-pool bars never carry the current stamp.
-    if isNew or entry.bar._styleGen ~= styleGen then
-        StyleBar(entry.bar, conf)
-    end
+    if isNew or entry.bar._styleGen ~= styleGen then StyleBar(entry.bar, conf) end
     entry.isChannel = isChannel
     entry.preview = nil
 
-    if type(kickProtected) == "nil" then
-        kickProtected = false
-    end
+    if type(kickProtected) == "nil" then kickProtected = false end
     entry._kickProtected = kickProtected
     -- Important flag may be SECRET: stored raw, fed only to color curves and
     -- SetAlphaFromBoolean, never branched on directly.
     entry._important = false
     if C_Spell and C_Spell.IsSpellImportant then
         local impOK, imp = pcall(C_Spell.IsSpellImportant, castSpellID or 0)
-        if impOK then
-            entry._important = imp
-        end
+        if impOK then entry._important = imp end
     end
 
     -- Icon and name MUST describe the SAME cast: both come from this
@@ -927,9 +851,7 @@ local function StartCast(unitToken)
     -- re-truncate an already-laid-out FontString.
     PaintTarget(entry, conf)
     ApplyRaidMarker(entry, conf)
-    if conf.showSpellName ~= false then
-        entry.bar.name:SetText(name)
-    end
+    if conf.showSpellName ~= false then entry.bar.name:SetText(name) end
     ApplyCastColor(entry, conf)
     ApplyImportantGlow(entry, conf)
     entry.bar.timer:SetText("")
@@ -944,28 +866,18 @@ end
 -- with nothing ever dropped, every release is a free no-op instead of a full
 -- plate walk.
 PromoteWaiting = function()
-    if not anyCastDropped then
-        return
-    end
+    if not anyCastDropped then return end
     local conf = Cfg()
-    if not conf then
-        return
-    end
-    if #isShown >= (conf.maxBars or 5) then
-        return
-    end
+    if not conf then return end
+    if #isShown >= (conf.maxBars or 5) then return end
     anyCastDropped = false
     for unitToken in pairs(plateUnits) do
         if not unitEntry[unitToken] then
             local nm = UnitCastingInfo(unitToken)
-            if type(nm) == "nil" then
-                nm = UnitChannelInfo(unitToken)
-            end
+            if type(nm) == "nil" then nm = UnitChannelInfo(unitToken) end
             if type(nm) ~= "nil" then
                 StartCast(unitToken)
-                if #isShown >= (conf.maxBars or 5) then
-                    return
-                end
+                if #isShown >= (conf.maxBars or 5) then return end
             end
         end
     end
@@ -975,13 +887,9 @@ end
 -- Port of the TargetFocusBars KickProtectionChanged pattern.
 local function RefreshKickProtection(unitToken)
     local conf = Cfg()
-    if not conf then
-        return
-    end
+    if not conf then return end
     local entry = unitEntry[unitToken]
-    if not entry then
-        return
-    end
+    if not entry then return end
     local kickProtected
     local sName, _, _, _, _, _, _, kp = UnitCastingInfo(unitToken)
     if type(sName) ~= "nil" then
@@ -989,28 +897,20 @@ local function RefreshKickProtection(unitToken)
     else
         local cName
         cName, _, _, _, _, _, kp = UnitChannelInfo(unitToken)
-        if type(cName) == "nil" then
-            return
-        end
+        if type(cName) == "nil" then return end
         kickProtected = kp
     end
-    if type(kickProtected) == "nil" then
-        kickProtected = false
-    end
+    if type(kickProtected) == "nil" then kickProtected = false end
     entry._kickProtected = kickProtected
     ApplyCastColor(entry, conf)
 end
 
 local function RefreshAllRaidMarkers()
     local conf = Cfg()
-    if not conf then
-        return
-    end
+    if not conf then return end
     for i = 1, #isShown do
         local e = isShown[i]
-        if not e.preview then
-            ApplyRaidMarker(e, conf)
-        end
+        if not e.preview then ApplyRaidMarker(e, conf) end
     end
 end
 
@@ -1053,57 +953,37 @@ evt:SetScript("OnEvent", function(_, event, unitToken)
     -- which left every already-visible caster untracked until its plate was
     -- removed and re-added.
     if event == "NAME_PLATE_UNIT_ADDED" then
-        if not unitToken then
-            return
-        end
+        if not unitToken then return end
         plateUnits[unitToken] = true
-        if not isActive or previewOn then
-            return
-        end
+        if not isActive or previewOn then return end
         -- Probe the delta: only this plate, only if it is mid-cast.
         local nm = UnitCastingInfo(unitToken)
-        if type(nm) == "nil" then
-            nm = UnitChannelInfo(unitToken)
-        end
-        if type(nm) ~= "nil" then
-            StartCast(unitToken)
-        end
+        if type(nm) == "nil" then nm = UnitChannelInfo(unitToken) end
+        if type(nm) ~= "nil" then StartCast(unitToken) end
         return
     end
     if event == "NAME_PLATE_UNIT_REMOVED" then
-        if not unitToken then
-            return
-        end
+        if not unitToken then return end
         plateUnits[unitToken] = nil
-        if not isActive or previewOn then
-            return
-        end
+        if not isActive or previewOn then return end
         Release(unitToken)
         PromoteWaiting()
         return
     end
-    if previewOn then
-        return
-    end
+    if previewOn then return end
     if event == "RAID_TARGET_UPDATE" then
         RefreshAllRaidMarkers()
         return
     end
     -- Spellcast family: nameplate units only.
-    if not unitToken or not plateUnits[unitToken] then
-        return
-    end
+    if not unitToken or not plateUnits[unitToken] then return end
     if START_EVENTS[event] then
         StartCast(unitToken)
     elseif UPDATE_EVENTS[event] then
         local entry = unitEntry[unitToken]
-        if entry then
-            ArmFill(entry, entry.isChannel)
-        end
+        if entry then ArmFill(entry, entry.isChannel) end
     elseif PROBE_EVENTS[event] then
-        if unitEntry[unitToken] then
-            StartCast(unitToken)
-        end
+        if unitEntry[unitToken] then StartCast(unitToken) end
     elseif RELEASE_EVENTS[event] then
         Release(unitToken)
         PromoteWaiting()
@@ -1134,9 +1014,7 @@ local CAST_EVENTS = {
 
 -- RAID_TARGET_UPDATE only while the marker feature is on (zero cost otherwise).
 local function SyncMarkerEvent(conf)
-    if not isActive then
-        return
-    end
+    if not isActive then return end
     if conf and conf.showRaidMarker then
         evt:RegisterEvent("RAID_TARGET_UPDATE")
     else
@@ -1163,9 +1041,7 @@ end
 local plateRoster = false
 local function SetPlateRosterActive(on)
     on = on and true or false
-    if on == plateRoster then
-        return
-    end
+    if on == plateRoster then return end
     plateRoster = on
     if on then
         for i = 1, #PLATE_EVENTS do
@@ -1189,25 +1065,17 @@ local NAMEPLATE_TOKENS = mod.NAMEPLATE_TOKENS
 local function SeedFromLivePlates()
     for i = 1, #NAMEPLATE_TOKENS do
         local u = NAMEPLATE_TOKENS[i]
-        if UnitExists(u) then
-            plateUnits[u] = true
-        end
+        if UnitExists(u) then plateUnits[u] = true end
     end
     for unitToken in pairs(plateUnits) do
         local nm = UnitCastingInfo(unitToken)
-        if type(nm) == "nil" then
-            nm = UnitChannelInfo(unitToken)
-        end
-        if type(nm) ~= "nil" then
-            StartCast(unitToken)
-        end
+        if type(nm) == "nil" then nm = UnitChannelInfo(unitToken) end
+        if type(nm) ~= "nil" then StartCast(unitToken) end
     end
 end
 
 local function Activate()
-    if isActive then
-        return
-    end
+    if isActive then return end
     isActive = true
     MakeContainer()
     for i = 1, #CAST_EVENTS do
@@ -1218,9 +1086,7 @@ local function Activate()
 end
 
 local function Deactivate()
-    if not isActive then
-        return
-    end
+    if not isActive then return end
     isActive = false
     -- Cast traffic only: the plate roster stays registered so a later
     -- mid-combat Activate() already knows every plate on screen.
@@ -1235,18 +1101,14 @@ SyncWhereActive = function()
     local conf = Cfg()
     -- Feature off: nothing runs, and a lingering preview goes down with it.
     if not (conf and conf.enabled == true) then
-        if isActive then
-            Deactivate()
-        end
+        if isActive then Deactivate() end
         previewOn = false
         return
     end
     -- The preview owns the display while it runs: the unlock mover must show
     -- sample bars wherever the player stands, including content the Where to
     -- Show filter excludes. Leaving it re-applies the gate.
-    if previewOn then
-        return
-    end
+    if previewOn then return end
     local wanted = MTWhere.Shows(conf.whereToShow, WHERE_KEYS)
     if wanted and not isActive then
         Activate()
@@ -1282,9 +1144,7 @@ local function PaintSampleRow(e, conf, sample, slot, anchor)
             -- Class token only: UnitClassBase also returns the class ID, which
             -- would land in GetClassColor's optional tint color argument.
             local colour = C_ClassColor.GetClassColor((UnitClassBase("player")))
-            if colour then
-                e.bar.target:SetTextColor(colour:GetRGB())
-            end
+            if colour then e.bar.target:SetTextColor(colour:GetRGB()) end
         elseif tc then
             e.bar.target:SetTextColor(tc.r, tc.g, tc.b, 1)
         end
@@ -1298,9 +1158,7 @@ local function PaintSampleRow(e, conf, sample, slot, anchor)
     -- Raid marker sample: static, non-secret index.
     if conf.showRaidMarker and sample.marker then
         local tc = RAID_MARKER_TEXCOORDS[sample.marker]
-        if tc then
-            e.bar.marker:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
-        end
+        if tc then e.bar.marker:SetTexCoord(tc[1], tc[2], tc[3], tc[4]) end
         e.bar.marker:Show()
         AnchorName(e.bar, conf, true, hasTarget)
     else
@@ -1309,9 +1167,7 @@ local function PaintSampleRow(e, conf, sample, slot, anchor)
     end
     -- Name sized/anchored above; SetWidth after SetText does not reliably
     -- re-truncate an already-laid-out FontString.
-    if conf.showSpellName ~= false then
-        e.bar.name:SetText(sample.name)
-    end
+    if conf.showSpellName ~= false then e.bar.name:SetText(sample.name) end
     e.bar.timer:SetText(conf.showTimer ~= false and sample.timer or "")
     e.bar.sb:SetValue(sample.fill)
 
@@ -1323,9 +1179,7 @@ local function PaintSampleRow(e, conf, sample, slot, anchor)
     else
         e.bar.overlay:SetAlpha(0)
         local color = conf.barColor
-        if color then
-            e.bar.sb:GetStatusBarTexture():SetVertexColor(color.r, color.g, color.b)
-        end
+        if color then e.bar.sb:GetStatusBarTexture():SetVertexColor(color.r, color.g, color.b) end
     end
 
     -- Important sample: tint and/or glow, both driven by a plain (never
@@ -1346,9 +1200,7 @@ end
 
 local function ShowPreview()
     local conf = Cfg()
-    if not conf then
-        return
-    end
+    if not conf then return end
     ReleaseAll()
     MakeContainer()
     local rowList = math.min(#PREVIEW_ROWS, conf.maxBars or 5)
@@ -1372,12 +1224,8 @@ local sampleEntry = { unit = "sample", preview = true }
 -- in the host's units); nil before the settings exist.
 function mod.TSB_PaintSample(owner)
     local conf = Cfg()
-    if not conf then
-        return nil
-    end
-    if not sampleBar then
-        sampleBar = BuildBar(owner)
-    end
+    if not conf then return nil end
+    if not sampleBar then sampleBar = BuildBar(owner) end
     sampleEntry.bar = sampleBar
     sampleBar:SetParent(owner)
     sampleBar._styleGen = nil
@@ -1394,15 +1242,11 @@ function mod.TSB_SetPreview(on)
         -- The gate was held open while the preview ran: re-apply it before
         -- reseeding, so leaving the preview lands on the real content state.
         SyncWhereActive()
-        if isActive then
-            SeedFromLivePlates()
-        end
+        if isActive then SeedFromLivePlates() end
     end
 end
 
-function mod.TSB_IsPreview()
-    return previewOn
-end
+function mod.TSB_IsPreview() return previewOn end
 
 --------------------------------------------------------------------------------
 --  Refresh: the one entry point for enable/disable + live restyle. Options
@@ -1417,9 +1261,7 @@ function mod.TSB_Refresh()
     end
     SetPlateRosterActive(conf and conf.enabled == true)
     SyncWhereActive()
-    if not conf then
-        return
-    end
+    if not conf then return end
     SyncMarkerEvent(conf)
     styleGen = styleGen + 1 -- O3: invalidate every bar's cached style stamp
     if boxHolder then
@@ -1480,26 +1322,20 @@ local function RegisterUnlock()
                 local conf = Cfg()
                 return not (conf and conf.enabled == true)
             end,
-            getFrame = function()
-                return MakeContainer()
-            end,
+            getFrame = function() return MakeContainer() end,
             getSize = function()
                 local conf = Cfg()
                 return (conf and conf.width) or 240, (conf and conf.height) or 20
             end,
             setWidth = function(_, wid)
                 local conf = Cfg()
-                if not conf then
-                    return
-                end
+                if not conf then return end
                 conf.width = math.floor(wid + 0.5)
                 mod.TSB_Refresh()
             end,
             setHeight = function(_, hgt)
                 local conf = Cfg()
-                if not conf then
-                    return
-                end
+                if not conf then return end
                 conf.height = math.floor(hgt + 0.5)
                 mod.TSB_Refresh()
             end,
@@ -1507,46 +1343,32 @@ local function RegisterUnlock()
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
                 local conf = Cfg()
-                if not (conf and posX and posY) then
-                    return
-                end
+                if not (conf and posX and posY) then return end
                 conf.pos = { centerX = posX, centerY = posY }
-                if not CludesUI._unlockActive then
-                    PlaceContainer()
-                end
+                if not CludesUI._unlockActive then PlaceContainer() end
             end,
             loadPos = function()
                 local conf = Cfg()
                 local place = conf and conf.pos
-                if not (place and place.centerX and place.centerY) then
-                    return nil
-                end
+                if not (place and place.centerX and place.centerY) then return nil end
                 return { point = "CENTER", relPoint = "CENTER", x = place.centerX, y = place.centerY }
             end,
             clearPos = function()
                 local conf = Cfg()
-                if conf then
-                    conf.pos = nil
-                end
+                if conf then conf.pos = nil end
             end,
-            applyPos = function()
-                PlaceContainer()
-            end,
+            applyPos = function() PlaceContainer() end,
         }),
     }, "CludesUIMythicTimer")
 
     if CludesUI.RegisterUnlockModeListener then
         CludesUI:RegisterUnlockModeListener("EMT_TargetedSpellBars", function(unlockActive)
             local conf = Cfg()
-            if not (conf and conf.enabled == true) then
-                return
-            end
+            if not (conf and conf.enabled == true) then return end
             -- Sample bars while placing; back to live content on exit.
             mod.TSB_SetPreview(unlockActive == true)
             local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EMT_TargetedSpellBars")
-            if not anchored then
-                PlaceContainer()
-            end
+            if not anchored then PlaceContainer() end
         end)
     end
 end
@@ -1556,9 +1378,7 @@ end
 --------------------------------------------------------------------------------
 function mod.TSB_OnEnable(database)
     saved = database
-    if not saved then
-        return
-    end
+    if not saved then return end
     RegisterUnlock()
     mod.TSB_Refresh()
 end

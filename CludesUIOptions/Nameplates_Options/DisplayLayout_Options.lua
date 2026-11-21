@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Nameplates_Options\DisplayLayout_Options.lua
 --  Nameplates options: the Style, Core Positions and Core Text Positions
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  helpers come from ns._NPO_OptEnv, the per-build slot helpers from ctx.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUINameplates"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The options page frame pool (CludesUI_FramePool.lua): frames made under a
 -- pooled page part are handed back to the page's next build.
@@ -136,12 +132,8 @@ function mod.NPO_EditCustomText(slotKey, onSave)
         color = color and { r = color.r, g = color.g, b = color.b },
         onSave = onSave,
         tagNotes = { hp = CludesUI.L("shows DEAD") },
-        get = function()
-            return environ.DB()[key]
-        end,
-        set = function(txt)
-            environ.DB()[key] = txt
-        end,
+        get = function() return environ.DB()[key] end,
+        set = function(txt) environ.DB()[key] = txt end,
     })
 end
 
@@ -151,16 +143,12 @@ end
 function mod.NPO_CustomTextValues(values, getValue, edit)
     return CludesUI.TextTags.MenuValues(values, edit, {
         removeKey = "none",
-        selected = function()
-            return getValue() == "custom"
-        end,
+        selected = function() return getValue() == "custom" end,
     })
 end
 
 -- A position shows a text while its element is a KNOWN one.
-function mod.NPO_TextSlotShown(slotKey)
-    return KNOWN[mod._NPO_OptEnv.DBVal(slotKey)] == true
-end
+function mod.NPO_TextSlotShown(slotKey) return KNOWN[mod._NPO_OptEnv.DBVal(slotKey)] == true end
 
 -- The texts' structure: each position's element and, for a shown text, its
 -- colour mode (which decides its Core Text Coloring controls). Taken at each
@@ -174,9 +162,7 @@ function mod.NPO_TextStructureFP()
         local key = POS_ORDER[idx]
         local el = DBVal(key)
         parts[#parts + 1] = tostring(el)
-        if KNOWN[el] then
-            parts[#parts + 1] = mod.NP_SlotColorMode(key, saved)
-        end
+        if KNOWN[el] then parts[#parts + 1] = mod.NP_SlotColorMode(key, saved) end
     end
     return table.concat(parts, "\31")
 end
@@ -189,9 +175,7 @@ local cogPopup, cogPopupOwner, cogPopupOwnerGen
 
 -- The cog that opened the popup, while it is still the dress that opened it.
 local function LiveCogOwner()
-    if cogPopupOwner and PoolGen(cogPopupOwner) == cogPopupOwnerGen then
-        return cogPopupOwner
-    end
+    if cogPopupOwner and PoolGen(cogPopupOwner) == cogPopupOwnerGen then return cogPopupOwner end
 end
 
 -- True once the cog that opened the popup no longer stands for it: a later
@@ -202,13 +186,9 @@ end
 -- generation and never closes here.
 local function CogOwnerGone()
     local ownerFrame = cogPopupOwner
-    if not ownerFrame then
-        return false
-    end
+    if not ownerFrame then return false end
     local g = PoolGen(ownerFrame)
-    if g == nil and cogPopupOwnerGen == nil then
-        return false
-    end
+    if g == nil and cogPopupOwnerGen == nil then return false end
     return g ~= cogPopupOwnerGen or not ownerFrame:IsVisible()
 end
 
@@ -242,12 +222,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     local function RefreshAllTextures()
         mod.RefreshAllSettings()
         for _, backing in pairs(mod.friendlyPlates or {}) do
-            if mod.ApplyHealthBarTexture then
-                mod.ApplyHealthBarTexture(backing)
-            end
-            if mod.ApplyCastBarTexture then
-                mod.ApplyCastBarTexture(backing)
-            end
+            if mod.ApplyHealthBarTexture then mod.ApplyHealthBarTexture(backing) end
+            if mod.ApplyCastBarTexture then mod.ApplyCastBarTexture(backing) end
         end
     end
 
@@ -263,13 +239,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             values = { none = "None", basic = "Basic", custom = "Custom" },
             order = { "none", "basic", "custom" },
             getValue = function()
-                if DBVal("customBorderEnabled") then
-                    return "custom"
-                end
+                if DBVal("customBorderEnabled") then return "custom" end
                 local scrollBar = DBVal("showBorder")
-                if scrollBar == nil then
-                    scrollBar = defaultSet.showBorder
-                end
+                if scrollBar == nil then scrollBar = defaultSet.showBorder end
                 return scrollBar and "basic" or "none"
             end,
             setValue = function(val)
@@ -297,20 +269,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             step = 1,
             -- Only Basic uses this size (None has no border; Custom uses its own Custom Border Size below).
             disabled = function()
-                if DBVal("customBorderEnabled") then
-                    return true
-                end
+                if DBVal("customBorderEnabled") then return true end
                 local val = DBVal("showBorder")
-                if val == nil then
-                    return not defaultSet.showBorder
-                end
+                if val == nil then return not defaultSet.showBorder end
                 return not val
             end,
             disabledTooltip = "This option is only used by the Basic border.",
             rawTooltip = true,
-            getValue = function()
-                return DBVal("borderSize") or defaultSet.borderSize
-            end,
+            getValue = function() return DBVal("borderSize") or defaultSet.borderSize end,
             setValue = function(val)
                 DB().borderSize = val
                 mod.RefreshBorder()
@@ -327,12 +293,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             title = "Corner Radius",
             tip = "Corner Radius",
             disabled = function()
-                if CludesUI.BlizzStyle.Get("nameplates") then
-                    return true
-                end
-                if DBVal("wrapBorderCastbar") == true then
-                    return true
-                end
+                if CludesUI.BlizzStyle.Get("nameplates") then return true end
+                if DBVal("wrapBorderCastbar") == true then return true end
                 return DBVal("customBorderEnabled")
                     and not CludesUI.RoundedStyleOK(
                         DBVal("customBorderTexture") or defaultSet.customBorderTexture
@@ -342,9 +304,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 if CludesUI.BlizzStyle.Get("nameplates") then
                     return CludesUI.BlizzStyle.Label("nameplates")
                 end
-                if DBVal("wrapBorderCastbar") == true then
-                    return "Wrap Around Castbar"
-                end
+                if DBVal("wrapBorderCastbar") == true then return "Wrap Around Castbar" end
                 return "This option requires the Solid, Glow or Shadow border style."
             end,
             requireState = "disabled",
@@ -356,9 +316,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         min = 0,
                         max = CludesUI.ROUNDED_MAX_RADIUS,
                         step = 1,
-                        get = function()
-                            return DBVal("cornerRadius") or 0
-                        end,
+                        get = function() return DBVal("cornerRadius") or 0 end,
                         set = function(val)
                             DB().cornerRadius = val
                             mod.RefreshBorder()
@@ -366,9 +324,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             UpdatePreview()
                         end,
                     },
-                }, function()
-                    return DBVal("cornerMask")
-                end, function(val)
+                }, function() return DBVal("cornerMask") end, function(val)
                     DB().cornerMask = val
                     mod.RefreshBorder()
                     mod.RefreshCastBorder()
@@ -376,9 +332,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end),
                 "Join Cast Bar",
                 "While a cast shows, rounds the health bar and the cast bar under it as one shape.",
-                function()
-                    return DBVal("cornerJoinCast")
-                end,
+                function() return DBVal("cornerJoinCast") end,
                 function(val)
                     DB().cornerJoinCast = val
                     mod.RefreshBorder()
@@ -396,16 +350,10 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             -- Neither stock style has an CUI border to wrap: Blizzard Style
             -- draws the stock background art, Classic WoW UI the vanilla
             -- border sheets, and both stand the CUI borders down.
-            if mod.NP_Blizz() then
-                return true
-            end
-            if DBVal("customBorderEnabled") then
-                return false
-            end
+            if mod.NP_Blizz() then return true end
+            if DBVal("customBorderEnabled") then return false end
             local val = DBVal("showBorder")
-            if val == nil then
-                val = defaultSet.showBorder
-            end
+            if val == nil then val = defaultSet.showBorder end
             return not val
         end
         local wrapRows = {
@@ -413,18 +361,12 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 type = "toggle",
                 label = "Wrap Around Castbar",
                 -- Classic WoW UI draws the vanilla borders: nothing to wrap.
-                disabled = function()
-                    return CludesUI.BlizzStyle.Active("nameplates") == "classic"
-                end,
-                disabledTooltip = function()
-                    return CludesUI.BlizzStyle.Label("nameplates")
-                end,
+                disabled = function() return CludesUI.BlizzStyle.Active("nameplates") == "classic" end,
+                disabledTooltip = function() return CludesUI.BlizzStyle.Label("nameplates") end,
                 requireState = "disabled",
                 get = function()
                     local val = DBVal("wrapBorderCastbar")
-                    if val == nil then
-                        return defaultSet.wrapBorderCastbar
-                    end
+                    if val == nil then return defaultSet.wrapBorderCastbar end
                     return val
                 end,
                 set = function(val)
@@ -457,17 +399,11 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end,
                 -- Wrap off: the standard requirement line; wrap on: the style is the lock.
                 disabledTooltip = function()
-                    if DBVal("wrapBorderCastbar") ~= true then
-                        return "Wrap Around Castbar"
-                    end
+                    if DBVal("wrapBorderCastbar") ~= true then return "Wrap Around Castbar" end
                     return "This option requires the Pixels or Pixels Textured border style."
                 end,
-                rawTooltip = function()
-                    return DBVal("wrapBorderCastbar") == true
-                end,
-                get = function()
-                    return DBVal("wrapBorderSeam") == true
-                end,
+                rawTooltip = function() return DBVal("wrapBorderCastbar") == true end,
+                get = function() return DBVal("wrapBorderSeam") == true end,
                 set = function(val)
                     DB().wrapBorderSeam = val
                     mod.ApplyBorderWrapToAll()
@@ -488,16 +424,10 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local leftRegion = borderStyleRow._leftRegion
         local function isBorderOff()
             -- Off for None and Custom (standard border/color is inert then) -- only Basic uses it.
-            if CludesUI.BlizzStyle.Get("nameplates") then
-                return true
-            end
-            if DBVal("customBorderEnabled") then
-                return true
-            end
+            if CludesUI.BlizzStyle.Get("nameplates") then return true end
+            if DBVal("customBorderEnabled") then return true end
             local val = DBVal("showBorder")
-            if val == nil then
-                return not defaultSet.showBorder
-            end
+            if val == nil then return not defaultSet.showBorder end
             return not val
         end
         local borderColorGet = function()
@@ -544,9 +474,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             max = 40,
             step = 1,
             tooltip = "Size of the level in the border's plate. 0 follows the bar height.",
-            getValue = function()
-                return DBVal("classicLevelSize") or 0
-            end,
+            getValue = function() return DBVal("classicLevelSize") or 0 end,
             setValue = function(val)
                 DB().classicLevelSize = val
                 mod.RefreshAllSettings()
@@ -559,9 +487,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             max = 40,
             step = 1,
             tooltip = "Size of the icon that replaces the level on a boss. 0 follows the bar height.",
-            getValue = function()
-                return DBVal("classicSkullSize") or 0
-            end,
+            getValue = function() return DBVal("classicSkullSize") or 0 end,
             setValue = function(val)
                 DB().classicSkullSize = val
                 mod.RefreshAllSettings()
@@ -583,9 +509,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return DBVal(xKey) or 0
-                            end,
+                            get = function() return DBVal(xKey) or 0 end,
                             set = function(val)
                                 DB()[xKey] = val
                                 mod.RefreshAllSettings()
@@ -598,9 +522,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return DBVal(yKey) or 0
-                            end,
+                            get = function() return DBVal(yKey) or 0 end,
                             set = function(val)
                                 DB()[yKey] = val
                                 mod.RefreshAllSettings()
@@ -634,9 +556,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 text = "Custom Border Style",
                 values = cbTexValues,
                 order = cbTexOrder,
-                getValue = function()
-                    return DBVal("customBorderTexture") or defaultSet.customBorderTexture
-                end,
+                getValue = function() return DBVal("customBorderTexture") or defaultSet.customBorderTexture end,
                 setValue = function(val)
                     DB().customBorderTexture = val
                     DB().customBorderOffset = nil
@@ -648,12 +568,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     DB().customBorderAlpha = 1
                     DB().customBorderBehind = _bbehind
                     local defSz = CludesUI.GetBorderDefaultSize("nameplates", val)
-                    if defSz then
-                        DB().customBorderSize = defSz
-                    end
-                    if DB().customBorderSizePx then
-                        DB().customBorderSizePx = false
-                    end
+                    if defSz then DB().customBorderSize = defSz end
+                    if DB().customBorderSizePx then DB().customBorderSizePx = false end
                     mod.RefreshBorder()
                     UpdatePreview()
                     -- Full rebuild: the Width/Height Offset row below exists only for a textured style.
@@ -666,21 +582,11 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     -- Narrower track: the slot also carries the colour swatch and the Icon Borders cog.
                     text = "Custom Border Size",
                     trackWidth = 120,
-                    getStep = function()
-                        return DBVal("customBorderSize") or defaultSet.customBorderSize
-                    end,
-                    setStep = function(step)
-                        DB().customBorderSize = step
-                    end,
-                    getTex = function()
-                        return DBVal("customBorderTexture") or defaultSet.customBorderTexture
-                    end,
-                    getPx = function()
-                        return DB() and DB().customBorderSizePx
-                    end,
-                    setPx = function(val)
-                        DB().customBorderSizePx = val
-                    end,
+                    getStep = function() return DBVal("customBorderSize") or defaultSet.customBorderSize end,
+                    setStep = function(step) DB().customBorderSize = step end,
+                    getTex = function() return DBVal("customBorderTexture") or defaultSet.customBorderTexture end,
+                    getPx = function() return DB() and DB().customBorderSizePx end,
+                    setPx = function(val) DB().customBorderSizePx = val end,
                     apply = function()
                         mod.RefreshBorder()
                         UpdatePreview()
@@ -697,30 +603,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             if cbTexNow and cbTexNow ~= "" and cbTexNow ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "nameplates",
-                    getTex = function()
-                        return DBVal("customBorderTexture") or defaultSet.customBorderTexture
-                    end,
-                    getStep = function()
-                        return DBVal("customBorderSize") or defaultSet.customBorderSize
-                    end,
-                    getSizeKey = function()
-                        return DBVal("customBorderSize") or defaultSet.customBorderSize
-                    end,
-                    getPx = function()
-                        return DB() and DB().customBorderSizePx
-                    end,
-                    getX = function()
-                        return DB() and DB().customBorderOffset
-                    end,
-                    setX = function(val)
-                        DB().customBorderOffset = val
-                    end,
-                    getY = function()
-                        return DB() and DB().customBorderOffsetY
-                    end,
-                    setY = function(val)
-                        DB().customBorderOffsetY = val
-                    end,
+                    getTex = function() return DBVal("customBorderTexture") or defaultSet.customBorderTexture end,
+                    getStep = function() return DBVal("customBorderSize") or defaultSet.customBorderSize end,
+                    getSizeKey = function() return DBVal("customBorderSize") or defaultSet.customBorderSize end,
+                    getPx = function() return DB() and DB().customBorderSizePx end,
+                    getX = function() return DB() and DB().customBorderOffset end,
+                    setX = function(val) DB().customBorderOffset = val end,
+                    getY = function() return DB() and DB().customBorderOffsetY end,
+                    setY = function(val) DB().customBorderOffsetY = val end,
                     apply = function()
                         mod.RefreshBorder()
                         UpdatePreview()
@@ -756,9 +646,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         step = 1,
                         get = function()
                             local val = DB() and DB().customBorderShiftX
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local texture = DBVal("customBorderTexture") or defaultSet.customBorderTexture
                             local sz = DBVal("customBorderSize") or defaultSet.customBorderSize
                             local _, _, dsx = CludesUI.GetBorderDefaults("nameplates", texture, sz)
@@ -778,9 +666,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         step = 1,
                         get = function()
                             local val = DB() and DB().customBorderShiftY
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local texture = DBVal("customBorderTexture") or defaultSet.customBorderTexture
                             local sz = DBVal("customBorderSize") or defaultSet.customBorderSize
                             local _, _, _, dsy = CludesUI.GetBorderDefaults("nameplates", texture, sz)
@@ -797,9 +683,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "Show Behind",
                         get = function()
                             local val = DBVal("customBorderBehind")
-                            if val == nil then
-                                return defaultSet.customBorderBehind
-                            end
+                            if val == nil then return defaultSet.customBorderBehind end
                             return val
                         end,
                         set = function(val)
@@ -833,9 +717,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         disabledTooltip = "This option requires at least one aura type to show its border.",
                         rawTooltip = true,
-                        get = function()
-                            return DBVal("auraIconCustomBorder") == true
-                        end,
+                        get = function() return DBVal("auraIconCustomBorder") == true end,
                         set = function(val)
                             DB().auraIconCustomBorder = val
                             -- Fingerprint-gated aura restyle (the cast-lockout icon included).
@@ -859,9 +741,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             return "This option requires the spell icon and its border to be shown."
                         end,
                         rawTooltip = true,
-                        get = function()
-                            return DBVal("castIconCustomBorder") == true
-                        end,
+                        get = function() return DBVal("castIconCustomBorder") == true end,
                         set = function(val)
                             DB().castIconCustomBorder = val
                             -- Re-applies every plate's appearance (pooled plates too), which
@@ -874,14 +754,10 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Vertical Separator",
                         tooltip = "Draws a divider between the integrated spell icon and the cast bar using the custom border appearance.",
-                        disabled = function()
-                            return not mod.NP_CanShowCastIconSeparator(DB())
-                        end,
+                        disabled = function() return not mod.NP_CanShowCastIconSeparator(DB()) end,
                         disabledTooltip = "Requires Make Icon Part of the Bar, a shown non-full-sized icon, and a Solid or Pixels border with size above 0.",
                         rawTooltip = true,
-                        get = function()
-                            return DBVal("castIconSeparator") == true
-                        end,
+                        get = function() return DBVal("castIconSeparator") == true end,
                         set = function(val)
                             DB().castIconSeparator = val
                             mod.RefreshAllSettings()
@@ -897,13 +773,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local rightRegion = customBorderRow._rightRegion
             local cbColGet = function()
                 local color = (DB() and DB().customBorderColor) or defaultSet.customBorderColor
-                return color.r, color.g, color.b, (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
+                return color.r,
+                    color.g,
+                    color.b,
+                    (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
             end
             local cbColSet = function(red, green, blue, a)
                 DB().customBorderColor = { r = red, g = green, b = blue }
-                if a ~= nil then
-                    DB().customBorderAlpha = a
-                end
+                if a ~= nil then DB().customBorderAlpha = a end
                 mod.RefreshBorderColor()
                 UpdatePreview()
             end
@@ -917,9 +794,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             )
             Pix.Point(cbSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
             rightRegion._lastInline = cbSwatch
-            CludesUI.RegisterWidgetRefresh(function()
-                cbUpdateSwatch()
-            end)
+            CludesUI.RegisterWidgetRefresh(function() cbUpdateSwatch() end)
         end
     end
 
@@ -969,9 +844,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         absorbStyleValues._menuOpts = {
             itemHeight = 28,
             background = function(key)
-                if not key or key == "---" then
-                    return nil
-                end
+                if not key or key == "---" then return nil end
                 return mod.NP_ABSORB_STYLE_TEX[key] or mod.ResolveOverlayTexPath(key)
             end,
         }
@@ -986,9 +859,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             min = 0,
             max = 100,
             step = 1,
-            getValue = function()
-                return math.floor(((DBVal("bgAlpha") or defaultSet.bgAlpha) * 100) + 0.5)
-            end,
+            getValue = function() return math.floor(((DBVal("bgAlpha") or defaultSet.bgAlpha) * 100) + 0.5) end,
             setValue = function(val)
                 DB().bgAlpha = val / 100
                 local color = (DB() and DB().bgColor) or defaultSet.bgColor
@@ -1003,9 +874,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = "Absorb Style",
             values = absorbStyleValues,
             order = absorbStyleOrder,
-            getValue = function()
-                return DBVal("absorbStyle") or "blizzard"
-            end,
+            getValue = function() return DBVal("absorbStyle") or "blizzard" end,
             setValue = function(val)
                 DB().absorbStyle = val
                 -- Selecting a style sets opacity to that style's default (Blizzard/Stripes 80%, Clean 30%); slider tweaks from there.
@@ -1033,16 +902,18 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
             UpdatePreview()
         end
-        local cbSwatch, cbUpdateSwatch =
-            CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, cbColorGet, cbColorSet, nil, 20)
+        local cbSwatch, cbUpdateSwatch = CludesUI.BuildColorSwatch(
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
+            cbColorGet,
+            cbColorSet,
+            nil,
+            20
+        )
         Pix.Point(cbSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
         leftRegion._lastInline = cbSwatch
-        CludesUI.RegisterWidgetRefresh(function()
-            cbUpdateSwatch()
-        end)
-        if mod.NP_BlizzOnly() then
-            CludesUI.BlizzStyle.BlockInline("nameplates", cbSwatch)
-        end
+        CludesUI.RegisterWidgetRefresh(function() cbUpdateSwatch() end)
+        if mod.NP_BlizzOnly() then CludesUI.BlizzStyle.BlockInline("nameplates", cbSwatch) end
     end
 
     -- Inline "Absorb Settings" cog on the Absorb Style region (right of Row 2)
@@ -1059,14 +930,10 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     step = 1,
                     get = function()
                         local val = DBVal("absorbAlpha")
-                        if val then
-                            return val
-                        end
+                        if val then return val end
                         -- Untouched profiles: show the active style's default.
                         local style = DBVal("absorbStyle") or "blizzard"
-                        if style == "clean" then
-                            return DBVal("absorbCleanAlpha") or 30
-                        end
+                        if style == "clean" then return DBVal("absorbCleanAlpha") or 30 end
                         return math.floor(((mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8) * 100) + 0.5)
                     end,
                     set = function(val)
@@ -1090,9 +957,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         left = "From Left Edge",
                     },
                     order = { "overlay", "overlayReverse", "right", "left" },
-                    get = function()
-                        return DBVal("absorbEdgeMode") or "overlay"
-                    end,
+                    get = function() return DBVal("absorbEdgeMode") or "overlay" end,
                     set = function(val)
                         DB().absorbEdgeMode = val
                         mod.ApplyAbsorbStyleAll()
@@ -1119,9 +984,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, acColorGet, acColorSet, nil, 20)
         Pix.Point(acSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = acSwatch
-        local function absorbColorOff()
-            return (DBVal("absorbStyle") or "blizzard") == "blizzard"
-        end
+        local function absorbColorOff() return (DBVal("absorbStyle") or "blizzard") == "blizzard" end
         CludesUI.RegisterWidgetRefresh(function()
             local off = absorbColorOff()
             acSwatch:SetAlpha(off and 0.15 or 1)
@@ -1159,12 +1022,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             RefreshAbsorbEye()
             UpdatePreview()
         end)
-        eyeButton:SetScript("OnEnter", function(self)
-            CludesUI.SetGlyphAlpha(self, 0.7)
-        end)
-        eyeButton:SetScript("OnLeave", function(self)
-            CludesUI.SetGlyphAlpha(self, 0.4)
-        end)
+        eyeButton:SetScript("OnEnter", function(self) CludesUI.SetGlyphAlpha(self, 0.7) end)
+        eyeButton:SetScript("OnLeave", function(self) CludesUI.SetGlyphAlpha(self, 0.4) end)
     end
 
     -- Row 3: Bar Texture | Cast Bar Texture -- share the same texture set (CUI built-ins + SharedMedia) and resolve identically; Bar Texture drives the health bar, Cast Bar Texture drives the cast bar.
@@ -1179,9 +1038,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = "Bar Texture",
             values = hbtValues,
             order = hbtOrder,
-            getValue = function()
-                return DBVal("healthBarTexture") or "none"
-            end,
+            getValue = function() return DBVal("healthBarTexture") or "none" end,
             setValue = function(val)
                 DB().healthBarTexture = val
                 RefreshAllTextures()
@@ -1193,9 +1050,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = "Cast Bar Texture",
             values = hbtValues,
             order = hbtOrder,
-            getValue = function()
-                return DBVal("castBarTexture") or "none"
-            end,
+            getValue = function() return DBVal("castBarTexture") or "none" end,
             setValue = function(val)
                 DB().castBarTexture = val
                 RefreshAllTextures()
@@ -1214,9 +1069,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local blizz = mod.NP_BlizzOnly()
         local function TexBgCog(region, kind)
             CludesUI.BuildInlineCog(region, {
-                disabled = blizz and function()
-                    return true
-                end or nil,
+                disabled = blizz and function() return true end or nil,
                 disabledTooltip = blizz and CludesUI.BlizzStyle.Label("nameplates") or nil,
                 requireState = blizz and "disabled" or nil,
                 title = "Texture Settings",
@@ -1238,9 +1091,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             type = "toggle",
             text = "Show Level Box",
             tooltip = "Shows the level box right of the health bar; with it off, Left Text can show the level instead.",
-            getValue = function()
-                return not DBVal("foreverHideLevelBox")
-            end,
+            getValue = function() return not DBVal("foreverHideLevelBox") end,
             setValue = function(val)
                 DB().foreverHideLevelBox = (not val) or nil
                 mod.RefreshAllSettings()
@@ -1306,9 +1157,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- Core Positions rows call this to move it.
     if not CludesUI._prebuilding then
         optionState.RefreshCoreEyes = function()
-            if _refreshCoreEyePos then
-                _refreshCoreEyePos()
-            end
+            if _refreshCoreEyePos then _refreshCoreEyePos() end
         end
     end
 
@@ -1350,28 +1199,20 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     }
 
     local function CoreHas(place, keyName)
-        if keyName == "debuffs" then
-            return DBVal("debuffSlot") == place
-        end
-        if keyName == "buffs" then
-            return DBVal("buffSlot") == place
-        end
+        if keyName == "debuffs" then return DBVal("debuffSlot") == place end
+        if keyName == "buffs" then return DBVal("buffSlot") == place end
         if keyName == "ccs" then
             return DBVal("ccSlot") == place
                 or (DBVal("debuffIncludeCC") == true and DBVal("debuffSlot") == place)
         end
-        if keyName == "raidmarker" then
-            return DBVal("raidMarkerPos") == place
-        end
+        if keyName == "raidmarker" then return DBVal("raidMarkerPos") == place end
         if keyName == "rare" then
             return DBVal("classificationSlot") == place and not DBVal("classificationHideRare")
         end
         if keyName == "quest" then
             return DBVal("classificationSlot") == place and mod.NP_QuestIconOn(DB())
         end
-        if keyName == "questtext" then
-            return mod.NP_GetQuestTextSlot(DB()) == place
-        end
+        if keyName == "questtext" then return mod.NP_GetQuestTextSlot(DB()) == place end
         if keyName == "faction" then
             -- While Rare/Quest + Faction is on, a leftover faction slot is ignored.
             if DBVal("classificationIncludeFaction") == true then
@@ -1413,9 +1254,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- The default order saves as unset.
     local function CoreSaveOrder(place, keyList)
         local s = table.concat(keyList, ",")
-        if s == table.concat(CORE_ORDER, ",") then
-            s = nil
-        end
+        if s == table.concat(CORE_ORDER, ",") then s = nil end
         DB()[place .. "SlotOrder"] = s
     end
 
@@ -1438,9 +1277,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 elseif merged and old ~= place then
                     -- Leaving a Debuffs + CC slot: CC stays there on its own
                     -- unless it already has a slot elsewhere.
-                    if old ~= "none" and DBVal("ccSlot") == "none" then
-                        saved.ccSlot = old
-                    end
+                    if old ~= "none" and DBVal("ccSlot") == "none" then saved.ccSlot = old end
                     merged = false
                 end
                 saved.debuffSlot = place
@@ -1462,12 +1299,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     saved.ccSlot = place
                 end
             else
-                if DBVal("debuffSlot") == place then
-                    saved.debuffIncludeCC = false
-                end
-                if DBVal("ccSlot") == place then
-                    saved.ccSlot = "none"
-                end
+                if DBVal("debuffSlot") == place then saved.debuffIncludeCC = false end
+                if DBVal("ccSlot") == place then saved.ccSlot = "none" end
             end
         elseif keyName == "buffs" then
             if val then
@@ -1490,14 +1323,10 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     -- Moving: a Faction badge riding along stays behind on its own.
                     if DBVal("classificationIncludeFaction") == true then
                         saved.classificationIncludeFaction = false
-                        if old ~= "none" then
-                            saved.factionSlot = old
-                        end
+                        if old ~= "none" then saved.factionSlot = old end
                     end
                     -- Brought back from None: only the half that was checked.
-                    if old == "none" then
-                        saved[otherKey] = true
-                    end
+                    if old == "none" then saved[otherKey] = true end
                     saved.classificationSlot = place
                     -- Faction already here on its own joins them.
                     if DBVal("factionSlot") == place then
@@ -1529,12 +1358,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     saved.factionSlot = place
                 end
             else
-                if DBVal("classificationSlot") == place then
-                    saved.classificationIncludeFaction = false
-                end
-                if DBVal("factionSlot") == place then
-                    saved.factionSlot = "none"
-                end
+                if DBVal("classificationSlot") == place then saved.classificationIncludeFaction = false end
+                if DBVal("factionSlot") == place then saved.factionSlot = "none" end
             end
         elseif keyName == "questtext" then
             if val then
@@ -1548,9 +1373,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     local function InstallCoreCB(region, place)
         local control = region._control
         local ddW = control and control:GetWidth() or 0
-        if ddW < 50 then
-            ddW = 170
-        end
+        if ddW < 50 then ddW = 170 end
         -- The rows in the slot's saved order, so the button's label reads in
         -- that order before the list is first opened.
         local itemList = {}
@@ -1564,9 +1387,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             ddW,
             region:GetFrameLevel() + 2,
             itemList,
-            function(keyName)
-                return CoreHas(place, keyName)
-            end,
+            function(keyName) return CoreHas(place, keyName) end,
             function(keyName, val)
                 CoreSet(place, keyName, val)
                 -- The quest scan's caches are built for the quest elements
@@ -1579,9 +1400,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end,
             {
                 grip = true,
-                openOrder = function()
-                    return CoreOrderKeys(place)
-                end,
+                openOrder = function() return CoreOrderKeys(place) end,
                 setOrder = function(sequence)
                     CoreSaveOrder(place, sequence)
                     RefreshAllSlots()
@@ -1605,12 +1424,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
 
     -- Slot-based offsets: pos .. "SlotXOffset" / "SlotYOffset"
 
-    local function CorePosXGet(place)
-        return DBVal(place .. "SlotXOffset") or 0
-    end
-    local function CorePosYGet(place)
-        return DBVal(place .. "SlotYOffset") or 0
-    end
+    local function CorePosXGet(place) return DBVal(place .. "SlotXOffset") or 0 end
+    local function CorePosYGet(place) return DBVal(place .. "SlotYOffset") or 0 end
     local function CorePosXSet(place, val)
         DB()[place .. "SlotXOffset"] = val
         RefreshAllSlots()
@@ -1624,9 +1439,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- its halves unchecked does not).
     local function CorePosOffDisabled(place)
         for idx = 1, #CORE_ORDER do
-            if CoreHas(place, CORE_ORDER[idx]) then
-                return false
-            end
+            if CoreHas(place, CORE_ORDER[idx]) then return false end
         end
         return true
     end
@@ -1644,9 +1457,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     --  The Core Text Positions cogs below and the cast text and class
     --  resource cogs of DisplayBars_Options.lua open it.
     -------------------------------------------------------------------
-    local function CogPopupOpen(button)
-        return LiveCogOwner() == button and cogPopup:IsShown()
-    end
+    local function CogPopupOpen(button) return LiveCogOwner() == button and cogPopup:IsShown() end
 
     -- opts = { title, xGet, xSet, yGet, ySet,
     --   sizeGet, sizeSet, sizeMin, sizeMax, sizeStep, sizeLabel, sizeFirst (Size heads the rows),
@@ -1725,21 +1536,15 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             for _, txt in ipairs(labelTexts) do
                 tmpFS:SetText(CludesUI.L(txt))
                 local wid = tmpFS:GetStringWidth()
-                if wid > maxLblW then
-                    maxLblW = wid
-                end
+                if wid > maxLblW then maxLblW = wid end
             end
             tmpFS:Hide()
-            if maxLblW < 10 then
-                maxLblW = 28
-            end
+            if maxLblW < 10 then maxLblW = 28 end
 
             local SLIDER_LEFT = SIDE_PAD + maxLblW + LABEL_SLIDER_GAP
             local SLIDER_W = math.max(80, 260 - SLIDER_LEFT - SLIDER_INPUT_GAP - INPUT_W - SIDE_PAD)
             local POPUP_W = SLIDER_LEFT + SLIDER_W + SLIDER_INPUT_GAP + INPUT_W + SIDE_PAD
-            if POPUP_W < 180 then
-                POPUP_W = 180
-            end
+            if POPUP_W < 180 then POPUP_W = 180 end
             popFrame:SetSize(POPUP_W, popFrame:GetHeight())
 
             -- X slider row
@@ -1760,13 +1565,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 -300,
                 300,
                 1,
-                function()
-                    return popFrame._xGet and popFrame._xGet() or 0
-                end,
+                function() return popFrame._xGet and popFrame._xGet() or 0 end,
                 function(val)
-                    if popFrame._xSet then
-                        popFrame._xSet(val)
-                    end
+                    if popFrame._xSet then popFrame._xSet(val) end
                 end,
                 true
             )
@@ -1796,13 +1597,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 -300,
                 300,
                 1,
-                function()
-                    return popFrame._yGet and popFrame._yGet() or 0
-                end,
+                function() return popFrame._yGet and popFrame._yGet() or 0 end,
                 function(val)
-                    if popFrame._ySet then
-                        popFrame._ySet(val)
-                    end
+                    if popFrame._ySet then popFrame._ySet(val) end
                 end,
                 true
             )
@@ -1836,18 +1633,19 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             wHover:SetAllPoints(wLabel)
             wHover:EnableMouse(true)
             wHover:Hide()
-            wHover:SetScript("OnEnter", function(self)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    CludesUI.L(
-                        "Maximum width the text can fill before it truncates, as a percentage of the bar."
-                    ),
-                    { width = 230 }
-                )
-            end)
-            wHover:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            wHover:SetScript(
+                "OnEnter",
+                function(self)
+                    CludesUI.ShowWidgetTooltip(
+                        self,
+                        CludesUI.L(
+                            "Maximum width the text can fill before it truncates, as a percentage of the bar."
+                        ),
+                        { width = 230 }
+                    )
+                end
+            )
+            wHover:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             popFrame._wHover = wHover
             local wTrack, wValBox = BuildSliderCore(
                 popFrame,
@@ -1861,13 +1659,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 10,
                 150,
                 1,
-                function()
-                    return popFrame._wGet and popFrame._wGet() or 0
-                end,
+                function() return popFrame._wGet and popFrame._wGet() or 0 end,
                 function(val)
-                    if popFrame._wSet then
-                        popFrame._wSet(val)
-                    end
+                    if popFrame._wSet then popFrame._wSet(val) end
                 end,
                 true
             )
@@ -1908,18 +1702,16 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local nameFormatDD
             popFrame._NameFormatDD = function()
                 if not nameFormatDD then
-                    local values, sequence, getValue, setValue = CludesUI.NameFormatMenu(function()
-                        return popFrame._dd2Get and popFrame._dd2Get() or ""
-                    end, function(val)
-                        if popFrame._dd2Set then
-                            popFrame._dd2Set(val)
-                        end
-                    end, {
-                        onSaved = function()
-                            nameFormatDD._refreshLabel()
+                    local values, sequence, getValue, setValue = CludesUI.NameFormatMenu(
+                        function() return popFrame._dd2Get and popFrame._dd2Get() or "" end,
+                        function(val)
+                            if popFrame._dd2Set then popFrame._dd2Set(val) end
                         end,
-                        enemies = true,
-                    })
+                        {
+                            onSaved = function() nameFormatDD._refreshLabel() end,
+                            enemies = true,
+                        }
+                    )
                     nameFormatDD = CludesUI.BuildDropdownControl(
                         popFrame,
                         CludesUI.NAME_FORMAT_MENU_W,
@@ -1944,13 +1736,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local tToggle, _, tToggleSnap = CludesUI.BuildToggleControl(
                 popFrame,
                 popFrame:GetFrameLevel() + 5,
-                function()
-                    return popFrame._toggleGet and popFrame._toggleGet() or false
-                end,
+                function() return popFrame._toggleGet and popFrame._toggleGet() or false end,
                 function(val)
-                    if popFrame._toggleSet then
-                        popFrame._toggleSet(val)
-                    end
+                    if popFrame._toggleSet then popFrame._toggleSet(val) end
                 end,
                 { sizeRatio = 0.8, noAnim = true }
             )
@@ -1974,13 +1762,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 popFrame:GetFrameLevel() + 6,
                 CludesUI.FRAME_STRATA_LABELS,
                 CludesUI.FRAME_STRATA_ORDER_BASE,
-                function()
-                    return popFrame._strataGetFn and popFrame._strataGetFn() or "MEDIUM"
-                end,
+                function() return popFrame._strataGetFn and popFrame._strataGetFn() or "MEDIUM" end,
                 function(val)
-                    if popFrame._strataSetFn then
-                        popFrame._strataSetFn(val)
-                    end
+                    if popFrame._strataSetFn then popFrame._strataSetFn(val) end
                 end
             )
             stDD:SetScale(DD_SCALE)
@@ -2000,27 +1784,24 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             wrapHover:SetAllPoints(wrapLabel)
             wrapHover:EnableMouse(true)
             wrapHover:Hide()
-            wrapHover:SetScript("OnEnter", function(self)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    CludesUI.L("Lets long text wrap onto a second line instead of being cut off."),
-                    { width = 230 }
-                )
-            end)
-            wrapHover:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            wrapHover:SetScript(
+                "OnEnter",
+                function(self)
+                    CludesUI.ShowWidgetTooltip(
+                        self,
+                        CludesUI.L("Lets long text wrap onto a second line instead of being cut off."),
+                        { width = 230 }
+                    )
+                end
+            )
+            wrapHover:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             popFrame._wrapHover = wrapHover
             local wrapToggle, _, wrapToggleSnap = CludesUI.BuildToggleControl(
                 popFrame,
                 popFrame:GetFrameLevel() + 5,
-                function()
-                    return popFrame._wrapGet and popFrame._wrapGet() or false
-                end,
+                function() return popFrame._wrapGet and popFrame._wrapGet() or false end,
                 function(val)
-                    if popFrame._wrapSet then
-                        popFrame._wrapSet(val)
-                    end
+                    if popFrame._wrapSet then popFrame._wrapSet(val) end
                 end,
                 { sizeRatio = 0.8, noAnim = true }
             )
@@ -2078,16 +1859,12 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 cogPopupOwner, cogPopupOwnerGen = nil, nil
                 -- Every cog that opens this popup is a BuildInlineCog: its own
                 -- state pass dims it again.
-                if ownerFrame and ownerFrame._cuiCogState then
-                    ownerFrame._cuiCogState()
-                end
+                if ownerFrame and ownerFrame._cuiCogState then ownerFrame._cuiCogState() end
             end)
 
             if CludesUI._mainFrame then
                 CludesUI._mainFrame:HookScript("OnHide", function()
-                    if popFrame:IsShown() then
-                        popFrame:Hide()
-                    end
+                    if popFrame:IsShown() then popFrame:Hide() end
                 end)
             end
 
@@ -2121,9 +1898,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         cogPopup._titleFS:SetText(CludesUI.L(options.title))
         local prevOwner = LiveCogOwner()
         cogPopupOwner, cogPopupOwnerGen = anchorBtn, PoolGen(anchorBtn)
-        if prevOwner and prevOwner._cuiCogState then
-            prevOwner._cuiCogState()
-        end
+        if prevOwner and prevOwner._cuiCogState then prevOwner._cuiCogState() end
 
         -- Show/hide size row and adjust height
         local hasSize = options.sizeGet ~= nil
@@ -2141,12 +1916,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 or cogPopup._curMax ~= options.sizeMax
                 or cogPopup._curStep ~= sStep
             then
-                if cogPopup._sTrack then
-                    cogPopup._sTrack:Hide()
-                end
-                if cogPopup._sValBox then
-                    cogPopup._sValBox:Hide()
-                end
+                if cogPopup._sTrack then cogPopup._sTrack:Hide() end
+                if cogPopup._sValBox then cogPopup._sValBox:Hide() end
                 local sliders = cogPopup._sSliders
                 if not sliders then
                     sliders = {}
@@ -2173,13 +1944,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         options.sizeMin,
                         options.sizeMax,
                         sStep,
-                        function()
-                            return cogPopup._sGet and cogPopup._sGet() or 0
-                        end,
+                        function() return cogPopup._sGet and cogPopup._sGet() or 0 end,
                         function(val)
-                            if cogPopup._sSet then
-                                cogPopup._sSet(val)
-                            end
+                            if cogPopup._sSet then cogPopup._sSet(val) end
                         end,
                         true
                     )
@@ -2207,20 +1974,12 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogPopup._sSet = options.sizeSet
             cogPopup._sLabel:SetText(CludesUI.L(options.sizeLabel or "Size"))
             cogPopup._sLabel:Show()
-            if cogPopup._sTrack then
-                cogPopup._sTrack:Show()
-            end
-            if cogPopup._sValBox then
-                cogPopup._sValBox:Show()
-            end
+            if cogPopup._sTrack then cogPopup._sTrack:Show() end
+            if cogPopup._sValBox then cogPopup._sValBox:Show() end
         else
             cogPopup._sLabel:Hide()
-            if cogPopup._sTrack then
-                cogPopup._sTrack:Hide()
-            end
-            if cogPopup._sValBox then
-                cogPopup._sValBox:Hide()
-            end
+            if cogPopup._sTrack then cogPopup._sTrack:Hide() end
+            if cogPopup._sValBox then cogPopup._sValBox:Hide() end
         end
 
         -- Show/hide width % row
@@ -2230,18 +1989,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogPopup._wLabel:Show()
             cogPopup._wTrack:Show()
             cogPopup._wValBox:Show()
-            if cogPopup._wHover then
-                cogPopup._wHover:Show()
-            end
+            if cogPopup._wHover then cogPopup._wHover:Show() end
         else
             cogPopup._wGet = nil
             cogPopup._wSet = nil
             cogPopup._wLabel:Hide()
             cogPopup._wTrack:Hide()
             cogPopup._wValBox:Hide()
-            if cogPopup._wHover then
-                cogPopup._wHover:Hide()
-            end
+            if cogPopup._wHover then cogPopup._wHover:Hide() end
         end
 
         -- Show/hide toggle row
@@ -2251,9 +2006,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogPopup._tLabel:SetText(CludesUI.L(options.toggleLabel or ""))
             cogPopup._tLabel:Show()
             cogPopup._tToggle:Show()
-            if cogPopup._toggleSnap then
-                cogPopup._toggleSnap()
-            end
+            if cogPopup._toggleSnap then cogPopup._toggleSnap() end
         else
             cogPopup._toggleGet = nil
             cogPopup._toggleSet = nil
@@ -2267,20 +2020,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogPopup._wrapSet = options.wrapSet
             cogPopup._wrapLabel:Show()
             cogPopup._wrapToggle:Show()
-            if cogPopup._wrapToggleSnap then
-                cogPopup._wrapToggleSnap()
-            end
-            if cogPopup._wrapHover then
-                cogPopup._wrapHover:Show()
-            end
+            if cogPopup._wrapToggleSnap then cogPopup._wrapToggleSnap() end
+            if cogPopup._wrapHover then cogPopup._wrapHover:Show() end
         else
             cogPopup._wrapGet = nil
             cogPopup._wrapSet = nil
             cogPopup._wrapLabel:Hide()
             cogPopup._wrapToggle:Hide()
-            if cogPopup._wrapHover then
-                cogPopup._wrapHover:Hide()
-            end
+            if cogPopup._wrapHover then cogPopup._wrapHover:Hide() end
         end
 
         -- Show/hide the Name Format dropdown row
@@ -2300,9 +2047,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogPopup._dd2Get = nil
             cogPopup._dd2Set = nil
             cogPopup._d2Label:Hide()
-            if cogPopup._d2DD then
-                cogPopup._d2DD:Hide()
-            end
+            if cogPopup._d2DD then cogPopup._d2DD:Hide() end
         end
 
         -- Show/hide Strata row (standard strata dropdown, its own row)
@@ -2320,9 +2065,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogPopup._strataGetFn = nil
             cogPopup._strataSetFn = nil
             cogPopup._stLabel:Hide()
-            if cogPopup._stDD then
-                cogPopup._stDD:Hide()
-            end
+            if cogPopup._stDD then cogPopup._stDD:Hide() end
         end
 
         -- Row order: cogs passing sizeFirst put Size at the top; others keep X, Y, Size. The toggle, Strata, Wrap and Name Format rows follow the slider rows in that order, Width % last.
@@ -2331,9 +2074,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local SH, SLEFT, SPAD = p._SLIDER_H, p._SLIDER_LEFT, p._SIDE_PAD
             local TRH = p._TOGGLE_ROW_H
             local DS = p._DD_SCALE or 1
-            local function rowTop(idx)
-                return p._ROW0 - (idx - 1) * p._ROW_STEP
-            end
+            local function rowTop(idx) return p._ROW0 - (idx - 1) * p._ROW_STEP end
             local function anchorRow(labelFS, track, valBox, ry)
                 labelFS:ClearAllPoints()
                 labelFS:SetPoint("LEFT", p, "TOPLEFT", SPAD, ry - SH / 2)
@@ -2355,9 +2096,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             else
                 seq[#seq + 1] = { p._xLabel, p._xTrack, p._xValBox }
                 seq[#seq + 1] = { p._yLabel, p._yTrack, p._yValBox }
-                if hasSize then
-                    seq[#seq + 1] = { p._sLabel, p._sTrack, p._sValBox }
-                end
+                if hasSize then seq[#seq + 1] = { p._sLabel, p._sTrack, p._sValBox } end
             end
             for idx, r in ipairs(seq) do
                 anchorRow(r[1], r[2], r[3], rowTop(idx))
@@ -2411,25 +2150,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 + rowH -- X
                 + gap
                 + rowH -- Y
-            if hasSize then
-                height = height + gap + rowH
-            end
-            if hasWidth then
-                height = height + gap + rowH
-            end
+            if hasSize then height = height + gap + rowH end
+            if hasWidth then height = height + gap + rowH end
             -- The toggle, Wrap, Name Format and Strata rows each occupy their own row.
-            if hasToggle then
-                height = height + gap + p._TOGGLE_ROW_H
-            end
-            if hasWrap then
-                height = height + gap + p._TOGGLE_ROW_H
-            end
-            if hasDropdown2 then
-                height = height + gap + p._TOGGLE_ROW_H
-            end
-            if hasStrata then
-                height = height + gap + p._TOGGLE_ROW_H
-            end
+            if hasToggle then height = height + gap + p._TOGGLE_ROW_H end
+            if hasWrap then height = height + gap + p._TOGGLE_ROW_H end
+            if hasDropdown2 then height = height + gap + p._TOGGLE_ROW_H end
+            if hasStrata then height = height + gap + p._TOGGLE_ROW_H end
             height = height + p._TOP_PAD
             cogPopup:SetHeight(height)
         end
@@ -2454,9 +2181,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             self:SetAlpha(t)
             self:ClearAllPoints()
             self:SetPoint("BOTTOM", anchorBtn, "TOP", 0, 6 + (-8 * (1 - t)))
-            if t >= 1 then
-                self:SetScript("OnUpdate", self._clickOutside)
-            end
+            if t >= 1 then self:SetScript("OnUpdate", self._clickOutside) end
         end)
 
         CludesUI:RefreshPage()
@@ -2473,46 +2198,32 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     }
     local function ShowFilterPopup(kind)
         local root = mod.NPF_Root and mod.NPF_Root()
-        if not root then
-            return
-        end
+        if not root then return end
         -- List side + Show All availability: only debuffs has Show All; dcc is always CC+Default, cc is always CC.
         local side = (kind == "cc") and "cc" or "debuff"
         -- Any-caster OPT-OUTS for INCLUDED entries: default is Only My Casts (npincmine); flagged ids ride npinc.
-        local function AnyMap()
-            return mod.NPF_IncludeAny and mod.NPF_IncludeAny(side)
-        end
+        local function AnyMap() return mod.NPF_IncludeAny and mod.NPF_IncludeAny(side) end
         local function Reload()
-            if mod.NPC_ReloadAll then
-                mod.NPC_ReloadAll()
-            end
+            if mod.NPC_ReloadAll then mod.NPC_ReloadAll() end
         end
         CludesUI.ShowTrackedAurasPopup({
             eyebrow = CludesUI.L("NAMEPLATE AURA FILTERS"),
             title = NPF_KIND_TITLES[kind] or "Filters",
             fontPath = (CludesUI.GetFontPath("nameplates")) or DBVal("font"),
-            includeGet = function()
-                return mod.NPF_Include and mod.NPF_Include(side)
-            end,
-            excludeGet = function()
-                return mod.NPF_Exclude and mod.NPF_Exclude(side)
-            end,
+            includeGet = function() return mod.NPF_Include and mod.NPF_Include(side) end,
+            excludeGet = function() return mod.NPF_Exclude and mod.NPF_Exclude(side) end,
             includePrompt = CludesUI.L("Enter the spell ID to always show on nameplates."),
             excludePrompt = CludesUI.L("Enter the spell ID to exclude from nameplates."),
             includeMine = { anyGet = AnyMap },
             -- Fresh adds default to Only My Casts; a spell migrating to the exclude list drops any stale flag.
             onAdd = function(ident)
                 local am = AnyMap()
-                if am then
-                    am[ident] = nil
-                end
+                if am then am[ident] = nil end
             end,
             onChanged = Reload,
             showAll = (kind == "debuffs") and {
                 label = CludesUI.L("Show All Debuffs"),
-                get = function()
-                    return root.debuffs and root.debuffs.all
-                end,
+                get = function() return root.debuffs and root.debuffs.all end,
                 set = function(val)
                     root.debuffs = root.debuffs or {}
                     root.debuffs.all = val
@@ -2573,9 +2284,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local keyList = CoreOrderKeys(place)
         for idx = 1, #keyList do
             local a = CoreCog.AURA[keyList[idx]]
-            if a and DBVal(a.slot) == place then
-                return keyList[idx]
-            end
+            if a and DBVal(a.slot) == place then return keyList[idx] end
         end
         return "debuffs"
     end
@@ -2583,9 +2292,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- read from the slot's first aura row.
     function CoreCog.AuraGet(place, field)
         local keyName = CoreCog.FirstAura(place)
-        if field == "size" then
-            return mod.NP_ElementSize(keyName, DB())
-        end
+        if field == "size" then return mod.NP_ElementSize(keyName, DB()) end
         return DBVal(CoreCog.AURA[keyName][field])
     end
     -- Written to every aura row the slot holds.
@@ -2611,9 +2318,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             UpdatePreview()
         end
         local function Lacks(keyName)
-            return function()
-                return not CoreHas(posKey, keyName)
-            end
+            return function() return not CoreHas(posKey, keyName) end
         end
         local function SizeRow(elem)
             local key = mod.NP_CORE_SIZE_KEY[elem]
@@ -2623,9 +2328,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 min = 10,
                 max = 50,
                 step = 1,
-                get = function()
-                    return mod.NP_ElementSize(elem, DB())
-                end,
+                get = function() return mod.NP_ElementSize(elem, DB()) end,
                 set = function(val)
                     DB()[key] = val
                     redraw()
@@ -2640,9 +2343,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 type = "toggle",
                 label = "Show In Instances",
                 tooltip = "Also shows inside dungeons, raids and other instances.",
-                get = function()
-                    return mod.NP_ShowInInstances(kind, DB())
-                end,
+                get = function() return mod.NP_ShowInInstances(kind, DB()) end,
                 set = function(val)
                     DB()[key] = val and true or false
                     mod.RefreshQuestObjective()
@@ -2658,12 +2359,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 min = -300,
                 max = 300,
                 step = 1,
-                get = function()
-                    return CorePosXGet(posKey)
-                end,
-                set = function(val)
-                    CorePosXSet(posKey, val)
-                end,
+                get = function() return CorePosXGet(posKey) end,
+                set = function(val) CorePosXSet(posKey, val) end,
             },
             {
                 type = "slider",
@@ -2671,12 +2368,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 min = -300,
                 max = 300,
                 step = 1,
-                get = function()
-                    return CorePosYGet(posKey)
-                end,
-                set = function(val)
-                    CorePosYSet(posKey, val)
-                end,
+                get = function() return CorePosYGet(posKey) end,
+                set = function(val) CorePosYSet(posKey, val) end,
             },
         }
         local grow = CoreCog.GROW[posKey]
@@ -2687,9 +2380,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 label = "Grow",
                 values = grow.values,
                 order = grow.order,
-                get = function()
-                    return DBVal(growthKey)
-                end,
+                get = function() return DBVal(growthKey) end,
                 set = function(val)
                     DB()[growthKey] = val
                     redraw()
@@ -2706,12 +2397,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             max = 20,
             step = 1,
             tooltip = "Space between the elements sharing this slot. Follows the slot's Spacing until you change it.",
-            hidden = function()
-                return mod.NP_CoreMemberCount(posKey) < 2
-            end,
-            get = function()
-                return mod.NP_CoreElementSpacing(posKey)
-            end,
+            hidden = function() return mod.NP_CoreMemberCount(posKey) < 2 end,
+            get = function() return mod.NP_CoreElementSpacing(posKey) end,
             set = function(val)
                 DB()[esKey] = val
                 redraw()
@@ -2724,9 +2411,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             type = "toggle",
             label = "Raise Strata",
             tooltip = "Renders this slot's element above the rest of the nameplate.",
-            get = function()
-                return DBVal(rsKey) and true or false
-            end,
+            get = function() return DBVal(rsKey) and true or false end,
             set = function(val)
                 DB()[rsKey] = val and true or false
                 redraw()
@@ -2751,9 +2436,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         min = 10,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return CoreCog.AuraGet(posKey, "size")
-                        end,
+                        get = function() return CoreCog.AuraGet(posKey, "size") end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "size", val)
                             redraw()
@@ -2765,9 +2448,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         min = -5,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return CoreCog.AuraGet(posKey, "spacing")
-                        end,
+                        get = function() return CoreCog.AuraGet(posKey, "spacing") end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "spacing", val)
                             redraw()
@@ -2777,12 +2458,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     {
                         type = "toggle",
                         label = "Hide Border",
-                        hidden = function()
-                            return CludesUI.BlizzStyle.Get("nameplates") and true or false
-                        end,
-                        get = function()
-                            return CoreCog.AuraGet(posKey, "border") == true
-                        end,
+                        hidden = function() return CludesUI.BlizzStyle.Get("nameplates") and true or false end,
+                        get = function() return CoreCog.AuraGet(posKey, "border") == true end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "border", val and true or false)
                             -- The live slot borders only catch up through a full settings pass.
@@ -2793,9 +2470,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     {
                         type = "toggle",
                         label = "Cropped Icons",
-                        get = function()
-                            return CoreCog.AuraGet(posKey, "crop") == true
-                        end,
+                        get = function() return CoreCog.AuraGet(posKey, "crop") == true end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "crop", val and true or false)
                             redraw()
@@ -2809,13 +2484,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         max = 25,
                         step = 1,
                         tooltip = "How much is trimmed from the icon's top and bottom, as a percentage per side. 10% is the classic cropped look.",
-                        disabled = function()
-                            return CoreCog.AuraGet(posKey, "crop") ~= true
-                        end,
+                        disabled = function() return CoreCog.AuraGet(posKey, "crop") ~= true end,
                         disabledTooltip = "Cropped Icons",
-                        get = function()
-                            return CoreCog.AuraGet(posKey, "cropPct") or 10
-                        end,
+                        get = function() return CoreCog.AuraGet(posKey, "cropPct") or 10 end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "cropPct", val)
                             redraw()
@@ -2842,9 +2513,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Objective Type Icon",
                         tooltip = "Shows a sword for kill objectives, a bag for item objectives, and the generic quest icon when the type cannot be matched exactly.",
-                        get = function()
-                            return DBVal("showQuestObjectiveTypeIcon") == true
-                        end,
+                        get = function() return DBVal("showQuestObjectiveTypeIcon") == true end,
                         set = function(val)
                             DB().showQuestObjectiveTypeIcon = val
                             mod.RefreshQuestObjective()
@@ -2857,12 +2526,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         min = 50,
                         max = 200,
                         step = 5,
-                        hidden = function()
-                            return DBVal("showQuestObjectiveTypeIcon") ~= true
-                        end,
-                        get = function()
-                            return DBVal("questObjectiveTypeIconScale") or 100
-                        end,
+                        hidden = function() return DBVal("showQuestObjectiveTypeIcon") ~= true end,
+                        get = function() return DBVal("questObjectiveTypeIconScale") or 100 end,
                         set = function(val)
                             DB().questObjectiveTypeIconScale = val
                             redraw()
@@ -2875,9 +2540,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         max = 24,
                         step = 1,
                         tooltip = "Size of the quest progress text.",
-                        get = function()
-                            return mod.NP_QuestTextSize(DB())
-                        end,
+                        get = function() return mod.NP_QuestTextSize(DB()) end,
                         set = function(val)
                             DB().questObjectiveTextSize = val
                             mod.RefreshQuestObjective()
@@ -2897,9 +2560,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "PvP Flag",
                         values = CoreCog.PVP_VALUES,
                         order = CoreCog.PVP_ORDER,
-                        get = function()
-                            return DBVal("factionPvP")
-                        end,
+                        get = function() return DBVal("factionPvP") end,
                         set = function(val)
                             DB().factionPvP = val
                             redraw()
@@ -2910,9 +2571,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         label = "Icon Style",
                         values = CoreCog.STYLE_VALUES,
                         order = CludesUI.FACTION_ART_ORDER,
-                        get = function()
-                            return DBVal("factionStyle")
-                        end,
+                        get = function() return DBVal("factionStyle") end,
                         set = function(val)
                             DB().factionStyle = val
                             redraw()
@@ -2921,9 +2580,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     {
                         type = "toggle",
                         label = "Opposite Faction Only",
-                        get = function()
-                            return DBVal("factionOppositeOnly") == true
-                        end,
+                        get = function() return DBVal("factionOppositeOnly") == true end,
                         set = function(val)
                             DB().factionOppositeOnly = val and true or false
                             redraw()
@@ -2933,9 +2590,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Players Only",
                         tooltip = "Hide the faction badge on faction NPCs such as guards.",
-                        get = function()
-                            return DBVal("factionPlayersOnly") == true
-                        end,
+                        get = function() return DBVal("factionPlayersOnly") == true end,
                         set = function(val)
                             DB().factionPlayersOnly = val and true or false
                             redraw()
@@ -2952,9 +2607,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local button = CludesUI.BuildInlineCog(region, {
             anchorTo = region._control,
             title = CludesUI.Lf("%1$s Slot Settings", CludesUI.L(slotLabel)),
-            disabled = function()
-                return CorePosOffDisabled(posKey)
-            end,
+            disabled = function() return CorePosOffDisabled(posKey) end,
             disabledTooltip = DISABLED_TIP,
             rawTooltip = true,
             sections = CoreCog.Sections(posKey),
@@ -2978,9 +2631,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         CludesUI.RegAccent({
             type = "callback",
             obj = lfs,
-            fn = function(red, green, blue)
-                lfs:SetTextColor(red, green, blue)
-            end,
+            fn = function(red, green, blue) lfs:SetTextColor(red, green, blue) end,
         })
         lfs:SetAlpha(0.85)
         lfs:SetPoint("CENTER")
@@ -3008,17 +2659,11 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 itemLink:SetSize(lfs:GetStringWidth() + 6, 16)
             end
         end
-        itemLink:SetScript("OnEnter", function()
-            lfs:SetAlpha(1)
-        end)
-        itemLink:SetScript("OnLeave", function()
-            lfs:SetAlpha(0.85)
-        end)
+        itemLink:SetScript("OnEnter", function() lfs:SetAlpha(1) end)
+        itemLink:SetScript("OnLeave", function() lfs:SetAlpha(0.85) end)
         itemLink:SetScript("OnClick", function()
             local keyName = LinkKind()
-            if keyName then
-                ShowFilterPopup(keyName)
-            end
+            if keyName then ShowFilterPopup(keyName) end
         end)
         CludesUI.RegisterWidgetRefresh(UpdLink)
         UpdLink()
@@ -3033,15 +2678,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "Top",
         values = coreElementValues,
         order = coreElementOrder,
-        getValue = function()
-            return GetElementAtPosition("top")
-        end,
-        setValue = function(val)
-            CoreSingleSet("top", val)
-        end,
-        disabled = function()
-            return CorePosOffDisabled("top")
-        end,
+        getValue = function() return GetElementAtPosition("top") end,
+        setValue = function(val) CoreSingleSet("top", val) end,
+        disabled = function() return CorePosOffDisabled("top") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -3050,15 +2689,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "Right",
         values = coreElementValues,
         order = coreElementOrder,
-        getValue = function()
-            return GetElementAtPosition("right")
-        end,
-        setValue = function(val)
-            CoreSingleSet("right", val)
-        end,
-        disabled = function()
-            return CorePosOffDisabled("right")
-        end,
+        getValue = function() return GetElementAtPosition("right") end,
+        setValue = function(val) CoreSingleSet("right", val) end,
+        disabled = function() return CorePosOffDisabled("right") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -3077,15 +2710,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "Left",
         values = coreElementValues,
         order = coreElementOrder,
-        getValue = function()
-            return GetElementAtPosition("left")
-        end,
-        setValue = function(val)
-            CoreSingleSet("left", val)
-        end,
-        disabled = function()
-            return CorePosOffDisabled("left")
-        end,
+        getValue = function() return GetElementAtPosition("left") end,
+        setValue = function(val) CoreSingleSet("left", val) end,
+        disabled = function() return CorePosOffDisabled("left") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -3094,15 +2721,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "Top Right",
         values = coreElementValues,
         order = coreElementOrder,
-        getValue = function()
-            return GetElementAtPosition("topright")
-        end,
-        setValue = function(val)
-            CoreSingleSet("topright", val)
-        end,
-        disabled = function()
-            return CorePosOffDisabled("topright")
-        end,
+        getValue = function() return GetElementAtPosition("topright") end,
+        setValue = function(val) CoreSingleSet("topright", val) end,
+        disabled = function() return CorePosOffDisabled("topright") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -3121,15 +2742,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "Top Left",
         values = coreElementValues,
         order = coreElementOrder,
-        getValue = function()
-            return GetElementAtPosition("topleft")
-        end,
-        setValue = function(val)
-            CoreSingleSet("topleft", val)
-        end,
-        disabled = function()
-            return CorePosOffDisabled("topleft")
-        end,
+        getValue = function() return GetElementAtPosition("topleft") end,
+        setValue = function(val) CoreSingleSet("topleft", val) end,
+        disabled = function() return CorePosOffDisabled("topleft") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -3138,15 +2753,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "Bottom",
         values = coreElementValues,
         order = coreElementOrder,
-        getValue = function()
-            return GetElementAtPosition("bottom")
-        end,
-        setValue = function(val)
-            CoreSingleSet("bottom", val)
-        end,
-        disabled = function()
-            return CorePosOffDisabled("bottom")
-        end,
+        getValue = function() return GetElementAtPosition("bottom") end,
+        setValue = function(val) CoreSingleSet("bottom", val) end,
+        disabled = function() return CorePosOffDisabled("bottom") end,
         disabledTooltip = "This option requires an aura or indicator to be assigned",
         rawTooltip = true,
         labelOnlyDisabled = true,
@@ -3175,9 +2784,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- its width, so the eye would sit far left).
     local function EyeAnchor(region)
         local itemLink = region._coreLink
-        if itemLink and itemLink:IsShown() then
-            return itemLink
-        end
+        if itemLink and itemLink:IsShown() then return itemLink end
         return region._coreCogBtn or region._control
     end
 
@@ -3200,9 +2807,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 or optionState.showClassificationPreview
                 or optionState.showQuestTextPreview
         end
-        local function RefreshIcon()
-            eyeTex:SetTexture(PreviewShown() and EYE_INVISIBLE or EYE_VISIBLE)
-        end
+        local function RefreshIcon() eyeTex:SetTexture(PreviewShown() and EYE_INVISIBLE or EYE_VISIBLE) end
         RefreshIcon()
         eyeButton:SetScript("OnClick", function()
             local show = not PreviewShown()
@@ -3329,12 +2934,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     end
 
     -- Text slot X/Y offset helpers (parallel to CorePosXGet etc.)
-    local function TextPosXGet(slotKey)
-        return DBVal(slotKey .. "XOffset") or 0
-    end
-    local function TextPosYGet(slotKey)
-        return DBVal(slotKey .. "YOffset") or 0
-    end
+    local function TextPosXGet(slotKey) return DBVal(slotKey .. "XOffset") or 0 end
+    local function TextPosYGet(slotKey) return DBVal(slotKey .. "YOffset") or 0 end
     local function TextPosXSet(slotKey, val)
         DB()[slotKey .. "XOffset"] = val
         TextOffsetRefresh()
@@ -3343,9 +2944,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         DB()[slotKey .. "YOffset"] = val
         TextOffsetRefresh()
     end
-    local function TextPosDisabled(slotKey)
-        return DBVal(slotKey) == "none"
-    end
+    local function TextPosDisabled(slotKey) return DBVal(slotKey) == "none" end
 
     local TEXT_DISABLED_TIP = "This option requires a text to be assigned"
 
@@ -3354,38 +2953,22 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- The shared boxed cog; its click opens this page's popup (OpenCog below).
         local OpenCog
         local button = CludesUI.BuildInlineCog(region, {
-            disabled = function()
-                return TextPosDisabled(slotKey)
-            end,
+            disabled = function() return TextPosDisabled(slotKey) end,
             disabledTooltip = TEXT_DISABLED_TIP,
             rawTooltip = true,
             isOpen = CogPopupOpen,
-            show = function(self)
-                OpenCog(self)
-            end,
+            show = function(self) OpenCog(self) end,
         })
         OpenCog = function(self)
-            if TextPosDisabled(slotKey) then
-                return
-            end
+            if TextPosDisabled(slotKey) then return end
             local sizeKey = slotKey .. "Size"
             local cogOpts = {
                 title = CludesUI.Lf("%1$s Settings", CludesUI.L(slotLabel)),
-                xGet = function()
-                    return TextPosXGet(slotKey)
-                end,
-                xSet = function(val)
-                    TextPosXSet(slotKey, val)
-                end,
-                yGet = function()
-                    return TextPosYGet(slotKey)
-                end,
-                ySet = function(val)
-                    TextPosYSet(slotKey, val)
-                end,
-                sizeGet = function()
-                    return DBVal(sizeKey) or defaultSet[sizeKey]
-                end,
+                xGet = function() return TextPosXGet(slotKey) end,
+                xSet = function(val) TextPosXSet(slotKey, val) end,
+                yGet = function() return TextPosYGet(slotKey) end,
+                ySet = function(val) TextPosYSet(slotKey, val) end,
+                sizeGet = function() return DBVal(sizeKey) or defaultSet[sizeKey] end,
                 sizeSet = function(val)
                     DB()[sizeKey] = val
                     TextOffsetRefresh()
@@ -3410,9 +2993,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end
-                    cogOpts.wrapGet = function()
-                        return DBVal("enemyNameWrap") == true
-                    end
+                    cogOpts.wrapGet = function() return DBVal("enemyNameWrap") == true end
                     cogOpts.wrapSet = function(val)
                         DB().enemyNameWrap = val
                         mod.RefreshAllSettings()
@@ -3423,17 +3004,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 if not cornerSlot then
                     local widthKey = slotKey .. "WidthPct"
                     local wrapKey = slotKey .. "Wrap"
-                    cogOpts.widthGet = function()
-                        return DBVal(widthKey) or 100
-                    end
+                    cogOpts.widthGet = function() return DBVal(widthKey) or 100 end
                     cogOpts.widthSet = function(val)
                         DB()[widthKey] = val
                         mod.RefreshAllSettings()
                         UpdatePreview()
                     end
-                    cogOpts.wrapGet = function()
-                        return DBVal(wrapKey) == true
-                    end
+                    cogOpts.wrapGet = function() return DBVal(wrapKey) == true end
                     cogOpts.wrapSet = function(val)
                         DB()[wrapKey] = val
                         mod.RefreshAllSettings()
@@ -3441,9 +3018,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     end
                 end
                 cogOpts.toggleLabel = "Show % Decimal"
-                cogOpts.toggleGet = function()
-                    return DBVal(slotKey .. "PctDecimal") == true
-                end
+                cogOpts.toggleGet = function() return DBVal(slotKey .. "PctDecimal") == true end
                 cogOpts.toggleSet = function(val)
                     DB()[slotKey .. "PctDecimal"] = val
                     mod.RefreshAllSettings()
@@ -3473,9 +3048,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     cogOpts.dropdown2Tooltip =
                         "First Name and Last Name only change players' names; Abbreviated and Character Count change every name."
                 end
-                cogOpts.dropdown2Get = function()
-                    return DBVal(nfKey) or "full"
-                end
+                cogOpts.dropdown2Get = function() return DBVal(nfKey) or "full" end
                 cogOpts.dropdown2Set = function(val)
                     DB()[nfKey] = (val ~= "full") and val or nil
                     mod.RefreshAllSettings()
@@ -3484,9 +3057,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end
             -- Per-slot strata (partner request): standard strata dropdown,
             -- defaulting to the shared text tier's MEDIUM.
-            cogOpts.strataGet = function()
-                return DBVal(slotKey .. "Strata") or "MEDIUM"
-            end
+            cogOpts.strataGet = function() return DBVal(slotKey .. "Strata") or "MEDIUM" end
             cogOpts.strataSet = function(val)
                 DB()[slotKey .. "Strata"] = val
                 mod.RefreshAllSettings()
@@ -3505,46 +3076,32 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- position keeps its other settings) and its cog holds Size, offsets and
     -- the rest. Every check runs at click time, so a menu that outlived a
     -- change writes nothing stale; each structure change rebuilds the page.
-    local function IsAssigned(slotKey)
-        return KNOWN[DBVal(slotKey)] == true
-    end
-    local function IsFree(slotKey)
-        return not IsAssigned(slotKey)
-    end
+    local function IsAssigned(slotKey) return KNOWN[DBVal(slotKey)] == true end
+    local function IsFree(slotKey) return not IsAssigned(slotKey) end
 
     -- Add Text Slot's text: the first of ADD_ORDER whose font string no shown
     -- text uses, so adding never takes one off (nil when every one is used).
     local function FontStringUsed(fsKey)
         for idx = 1, #POS_ORDER do
             local s = POS_ORDER[idx]
-            if IsAssigned(s) and mod.NP_ElementFSKey(DBVal(s)) == fsKey then
-                return true
-            end
+            if IsAssigned(s) and mod.NP_ElementFSKey(DBVal(s)) == fsKey then return true end
         end
         return false
     end
     local function AddCandidate()
         for idx = 1, #ADD_ORDER do
             local el = ADD_ORDER[idx]
-            if not FontStringUsed(mod.NP_ElementFSKey(el)) then
-                return el
-            end
+            if not FontStringUsed(mod.NP_ElementFSKey(el)) then return el end
         end
     end
     -- Why Add Text Slot is greyed (nil while a text can be added).
     local function AddBlocked()
         local full = true
         for idx = 1, #POS_ORDER do
-            if IsFree(POS_ORDER[idx]) then
-                full = false
-            end
+            if IsFree(POS_ORDER[idx]) then full = false end
         end
-        if full then
-            return "Every text position is full."
-        end
-        if not AddCandidate() then
-            return "Every text is already shown."
-        end
+        if full then return "Every text position is full." end
+        if not AddCandidate() then return "Every text is already shown." end
     end
     -- Adds AddCandidate's text at the free position P, exactly as picking that
     -- element in an empty slot (TextSlotSetValue rebuilds the page, where the
@@ -3568,9 +3125,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- keys are replaced; S keeps its other keys, unused. A cell gone stale
     -- since its menu opened only resyncs the page.
     local function MoveText(S, T)
-        if S == T then
-            return
-        end
+        if S == T then return end
         if not IsAssigned(S) or not IsFree(T) then
             CludesUI:RefreshPage(true)
             return
@@ -3584,34 +3139,24 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local suf = MOVE_OFFSETS[idx]
             local sDef = defaultSet[S .. suf] or 0
             local sv = saved[S .. suf]
-            if sv == nil then
-                sv = sDef
-            end
+            if sv == nil then sv = sDef end
             local val = (defaultSet[T .. suf] or 0) + (sv - sDef)
-            if saved[T .. suf] ~= val then
-                saved[T .. suf] = val
-            end
+            if saved[T .. suf] ~= val then saved[T .. suf] = val end
         end
         for idx = 1, #MOVE_RAW do
             local suf = MOVE_RAW[idx]
             -- The template moves only with Custom; otherwise T keeps its own.
             if suf ~= "CustomFormat" or el == "custom" then
                 local val = saved[S .. suf]
-                if type(val) == "table" then
-                    val = CopyTable(val)
-                end
+                if type(val) == "table" then val = CopyTable(val) end
                 saved[T .. suf] = val
             end
         end
-        if size ~= tSize then
-            saved[T .. "Size"] = size
-        end
+        if size ~= tSize then saved[T .. "Size"] = size end
         saved[T] = el
         saved[S] = "none"
         saved[T .. "ColorMode"] = nil
-        if mod.NP_SlotColorMode(T, saved) ~= mode then
-            saved[T .. "ColorMode"] = mode
-        end
+        if mod.NP_SlotColorMode(T, saved) ~= mode then saved[T .. "ColorMode"] = mode end
         mod.RefreshAllSettings()
         UpdatePreview()
         -- The moved text's new cell reports the write to Spec Overrides.
@@ -3632,25 +3177,15 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- every item greyed on a cell gone stale.
     local function MoveDisabled(S)
         return function(val)
-            if not IsAssigned(S) then
-                return true
-            end
-            if val == S then
-                return nil
-            end
-            if IsAssigned(val) then
-                return true
-            end
-            if val == "textSlotLeft" or val == "textSlotRight" then
-                return COMBO_VS_CENTER_NAME(DBVal(S))
-            end
+            if not IsAssigned(S) then return true end
+            if val == S then return nil end
+            if IsAssigned(val) then return true end
+            if val == "textSlotLeft" or val == "textSlotRight" then return COMBO_VS_CENTER_NAME(DBVal(S)) end
         end
     end
 
     local function TextCellCfg(cfg)
-        local function readValue()
-            return DBVal(cfg.key)
-        end
+        local function readValue() return DBVal(cfg.key) end
         -- Custom opens its popup; a saved template selects it (the new cell reports
         -- the write to Spec Overrides, as Add Text Slot does).
         local values = mod.NPO_CustomTextValues(textElementValues, readValue, function()
@@ -3666,10 +3201,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             values = values,
             order = textElementOrder,
             getValue = readValue,
-            setValue = function(val)
-                TextSlotSetValue(cfg.key, val)
-            end,
-            disabledValues = (cfg.key == "textSlotLeft" or cfg.key == "textSlotRight") and COMBO_VS_CENTER_NAME
+            setValue = function(val) TextSlotSetValue(cfg.key, val) end,
+            disabledValues = (cfg.key == "textSlotLeft" or cfg.key == "textSlotRight")
+                    and COMBO_VS_CENTER_NAME
                 or nil,
         }
     end
@@ -3679,34 +3213,22 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         text = "+ Add Text Slot",
         width = 220,
         onClick = function()
-            if addOpen then
-                addOpen()
-            end
+            if addOpen then addOpen() end
         end,
-        disabled = function()
-            return AddBlocked() ~= nil
-        end,
-        disabledTooltip = function()
-            return AddBlocked()
-        end,
+        disabled = function() return AddBlocked() ~= nil end,
+        disabledTooltip = function() return AddBlocked() end,
         rawTooltip = true,
     }
 
     local cells = {}
     for idx = 1, #mod.NPO_TEXT_SLOTS do
         local cfg = mod.NPO_TEXT_SLOTS[idx]
-        if IsAssigned(cfg.key) then
-            cells[#cells + 1] = cfg
-        end
+        if IsAssigned(cfg.key) then cells[#cells + 1] = cfg end
     end
     cells[#cells + 1] = addCfg
     local function CellCfg(c)
-        if c == nil then
-            return CludesUI.BlankRowCfg()
-        end
-        if c == addCfg then
-            return addCfg
-        end
+        if c == nil then return CludesUI.BlankRowCfg() end
+        if c == addCfg then return addCfg end
         return TextCellCfg(c)
     end
     -- After its row: a text cell is recorded for the preview's click
@@ -3715,9 +3237,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- Spec Overrides report.
     local textSlotCells, textFirstRow = {}, nil
     local function FinishCell(row, side, cfg)
-        if cfg == nil then
-            return
-        end
+        if cfg == nil then return end
         textFirstRow = textFirstRow or row
         local region = row[side]
         if cfg == addCfg then
@@ -3728,27 +3248,19 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     values = POS_VALUES,
                     setValue = AddText,
                     itemDisabled = function(val)
-                        if IsAssigned(val) or not AddCandidate() then
-                            return true
-                        end
+                        if IsAssigned(val) or not AddCandidate() then return true end
                     end,
                 })
             end
             return
         end
         textSlotCells[cfg.key] = { row = row, side = side }
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         CludesUI.BuildRowLabelMenu(region, {
             order = POS_ORDER,
             values = POS_VALUES,
-            getValue = function()
-                return cfg.key
-            end,
-            setValue = function(val)
-                MoveText(cfg.key, val)
-            end,
+            getValue = function() return cfg.key end,
+            setValue = function(val) MoveText(cfg.key, val) end,
             itemDisabled = MoveDisabled(cfg.key),
             tooltip = "Choose this text's slot position.",
         })
@@ -3758,13 +3270,16 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         -- switch back to.
         local fk = cfg.key .. "CustomFormat"
         if DBVal(cfg.key) == "custom" or type(DBVal(fk)) == "string" then
-            CludesUI.TextTags.AddFormatAccessor(region, cfg.label, function()
-                return DBVal(fk)
-            end, function(val)
-                DB()[fk] = val
-                mod.RefreshAllSettings()
-                UpdatePreview()
-            end)
+            CludesUI.TextTags.AddFormatAccessor(
+                region,
+                cfg.label,
+                function() return DBVal(fk) end,
+                function(val)
+                    DB()[fk] = val
+                    mod.RefreshAllSettings()
+                    UpdatePreview()
+                end
+            )
         end
         if optionState._npNotifySlot == cfg.key then
             optionState._npNotifySlot = nil
@@ -3786,9 +3301,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
 
     cursorY = mod.NPO_BuildCoreTextColoring(hostFrame, cursorY, W)
     -- The structure this build shows, for the cached page's restore check.
-    if not CludesUI._prebuilding then
-        optionState._npTextFP = mod.NPO_TextStructureFP()
-    end
+    if not CludesUI._prebuilding then optionState._npTextFP = mod.NPO_TextStructureFP() end
 
     return cursorY,
         styleHeader,

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIActionBars.lua  Custom Action Bars
 --  Own secure action bar frames AND buttons (EABButton/ActionBarButtonTemplate),
@@ -89,19 +87,17 @@ do -- Count text visibility
     local function HiddenKind(cfg, actionSlot)
         local CA = C_ActionBar
         -- Never secret (none of the three carries a secrecy flag).
-        if CA.IsItemAction(actionSlot) or CA.IsConsumableAction(actionSlot) or CA.IsStackableAction(actionSlot) then
-            if cfg.hideItemCount then
-                return "hide"
-            end
+        if
+            CA.IsItemAction(actionSlot)
+            or CA.IsConsumableAction(actionSlot)
+            or CA.IsStackableAction(actionSlot)
+        then
+            if cfg.hideItemCount then return "hide" end
             return nil
         end
         local hideCharges, hideStacks = cfg.hideChargeCount, cfg.hideStackCount
-        if hideCharges and hideStacks then
-            return "hide"
-        end
-        if not (hideCharges or hideStacks) then
-            return nil
-        end
+        if hideCharges and hideStacks then return "hide" end
+        if not (hideCharges or hideStacks) then return nil end
         -- maxCharges is never secret; the use count is while cooldowns are
         -- restricted.
         local chargeInfo = CA.GetActionCharges(actionSlot)
@@ -110,30 +106,28 @@ do -- Count text visibility
             chargeInfo = nil
         end
         local macroText = chargeInfo and chargeInfo.maxCharges
-        if not (type(macroText) == "number" and not (issecretvalue and issecretvalue(macroText)) and macroText > 1) then
-            if hideStacks then
-                return "hide"
-            end
+        if
+            not (
+                type(macroText) == "number"
+                and not (issecretvalue and issecretvalue(macroText))
+                and macroText > 1
+            )
+        then
+            if hideStacks then return "hide" end
             return nil, nil, chargeInfo
         end
         local uc = CA.GetActionUseCount(actionSlot)
         if issecretvalue and issecretvalue(uc) then
             -- Telling the stacks from the charges needs the secret: Charges
             -- hidden rides it as the alpha, Stacks hidden fails open.
-            if hideCharges then
-                return "gate", uc
-            end
+            if hideCharges then return "gate", uc end
             return nil, nil, chargeInfo
         end
         if type(uc) == "number" and uc > 0 then
-            if hideStacks then
-                return "hide"
-            end
+            if hideStacks then return "hide" end
             return nil, nil, chargeInfo
         end
-        if hideCharges then
-            return "hide"
-        end
+        if hideCharges then return "hide" end
         return nil, nil, chargeInfo
     end
 
@@ -182,7 +176,8 @@ do -- Count text visibility
             -- would hide a real count. SetAlpha accepts secret numbers
             -- (AllowedWhenTainted), so the same write runs in and out of instanced combat;
             -- a secret count writes through with the memo dirtied, never stored/compared.
-            local chargeInfo = chargeInfo or (C_ActionBar.GetActionCharges and C_ActionBar.GetActionCharges(actionSlot))
+            local chargeInfo = chargeInfo
+                or (C_ActionBar.GetActionCharges and C_ActionBar.GetActionCharges(actionSlot))
             local macroText = chargeInfo and chargeInfo.maxCharges
             if macroText ~= nil and not (issecretvalue and issecretvalue(macroText)) and macroText > 1 then
                 local cooldownCount = chargeInfo.currentCharges
@@ -225,9 +220,7 @@ do -- Count text visibility
                 or (IsStackableAction and IsStackableAction(actionSlot))
             then
                 local c = GetActionCount and GetActionCount(actionSlot)
-                if c ~= nil and not (issecretvalue and issecretvalue(c)) and c == 0 then
-                    a = 0
-                end
+                if c ~= nil and not (issecretvalue and issecretvalue(c)) and c == 0 then a = 0 end
             end
         end
         if frameData._zeroCountAlpha ~= a then
@@ -285,9 +278,7 @@ local EFD = mod.EFD
 function mod._eabParked(button)
     local skinData = mod._eabFD[button]
     local p = skinData and skinData.parkA0
-    if p == 2 then
-        return not button:IsShown()
-    end
+    if p == 2 then return not button:IsShown() end
     return p == 1
 end
 
@@ -305,9 +296,7 @@ end
 -- classic. Stock-mode sites ask `~= "cui"`, kit sites ask `== "classic"`.
 function mod.AB_Style()
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return "cui"
-    end
+    if not profile then return "cui" end
     return (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
 end
 
@@ -317,13 +306,9 @@ end
 -- with the Blizzard flag, adds the Forever-only pieces. A LIVE read like
 -- AB_Style; false on every other client.
 function mod.AB_Forever()
-    if CludesUI.IS_FOREVER ~= true then
-        return false
-    end
+    if CludesUI.IS_FOREVER ~= true then return false end
     local profile = ABAR.db and ABAR.db.profile
-    if not (profile and profile.useForeverStyle == true) then
-        return false
-    end
+    if not (profile and profile.useForeverStyle == true) then return false end
     return mod.AB_Style() == "blizzard"
 end
 
@@ -332,15 +317,11 @@ end
 -- Action Bar 1 follows the profile-wide foreverHideBarBg (shown unless it is
 -- set), every other bar is off.
 function mod.AB_ForeverBg(key)
-    if not mod.AB_Forever() then
-        return false
-    end
+    if not mod.AB_Forever() then return false end
     local profile = ABAR.db.profile
     local cfg = profile.bars and profile.bars[key]
     local val = cfg and cfg.foreverBarBg
-    if val == nil then
-        val = key == "MainBar" and profile.foreverHideBarBg ~= true
-    end
+    if val == nil then val = key == "MainBar" and profile.foreverHideBarBg ~= true end
     return val and true or false
 end
 
@@ -348,9 +329,7 @@ end
 -- where the Forever client swaps the name), native under the WoW Forever
 -- look. Plain SetAtlas on retail.
 function mod.AB_StockAtlas(texture, label, ...)
-    if mod.AB_Forever() then
-        return texture:SetAtlas(label, ...)
-    end
+    if mod.AB_Forever() then return texture:SetAtlas(label, ...) end
     return CludesUI.StockAtlas(texture, label, ...)
 end
 
@@ -360,9 +339,7 @@ end
 -- the CludesUI-style setting holds. Icon Size itself applies in every
 -- style (stock buttons scale their native art to it).
 function mod.AB_LayoutShape(cfg)
-    if mod.AB_Style() ~= "cui" then
-        return "none"
-    end
+    if mod.AB_Style() ~= "cui" then return "none" end
     return (cfg and cfg.buttonShape) or "none"
 end
 local RegisterStateDriver = RegisterStateDriver
@@ -535,9 +512,7 @@ local EXTRA_BARS = {
 -- to Blizzard.
 if CludesUI.IS_FOREVER then
     for index = #EXTRA_BARS, 1, -1 do
-        if EXTRA_BARS[index].key == "ExtraActionButton" then
-            table.remove(EXTRA_BARS, index)
-        end
+        if EXTRA_BARS[index].key == "ExtraActionButton" then table.remove(EXTRA_BARS, index) end
     end
 end
 
@@ -559,9 +534,7 @@ end
 
 -- Expose AB bar keys immediately so unlock mode's ApplyAnchorPosition can gate
 -- edge logic to CDM/AB without waiting for deferred RegisterWithUnlockMode.
-if not CludesUI._abBarKeys then
-    CludesUI._abBarKeys = {}
-end
+if not CludesUI._abBarKeys then CludesUI._abBarKeys = {} end
 for _, details in ipairs(BAR_CONFIG) do
     CludesUI._abBarKeys[details.key] = true
 end
@@ -585,9 +558,7 @@ end
 
 local DATA_BAR = {}
 for _, details in ipairs(EXTRA_BARS) do
-    if details.isDataBar then
-        DATA_BAR[details.key] = true
-    end
+    if details.isDataBar then DATA_BAR[details.key] = true end
 end
 
 mod.BAR_DROPDOWN_VALUES = BAR_DROPDOWN_VALUES
@@ -599,9 +570,7 @@ mod.ALL_BARS = ALL_BARS
 mod.EXTRA_BARS = EXTRA_BARS
 
 function ABAR.VisibilityCompat.ApplyMode(prefs, modeName)
-    if not prefs then
-        return "always"
-    end
+    if not prefs then return "always" end
 
     modeName = modeName or "always"
     prefs.barVisibility = modeName
@@ -610,9 +579,7 @@ function ABAR.VisibilityCompat.ApplyMode(prefs, modeName)
     local wasMouseover = prefs.mouseoverEnabled
     prefs.mouseoverEnabled = (modeName == "mouseover")
     if modeName == "mouseover" then
-        if not prefs._savedBarAlpha then
-            prefs._savedBarAlpha = prefs.mouseoverAlpha or 1
-        end
+        if not prefs._savedBarAlpha then prefs._savedBarAlpha = prefs.mouseoverAlpha or 1 end
         prefs.mouseoverAlpha = 0
     elseif wasMouseover and prefs._savedBarAlpha then
         prefs.mouseoverAlpha = prefs._savedBarAlpha
@@ -625,24 +592,12 @@ function ABAR.VisibilityCompat.ApplyMode(prefs, modeName)
 end
 
 function ABAR.VisibilityCompat.Normalize(prefs)
-    if not prefs then
-        return "always"
-    end
-    if prefs.barVisibility then
-        return ABAR.VisibilityCompat.ApplyMode(prefs, prefs.barVisibility)
-    end
-    if prefs.alwaysHidden then
-        return ABAR.VisibilityCompat.ApplyMode(prefs, "never")
-    end
-    if prefs.mouseoverEnabled then
-        return ABAR.VisibilityCompat.ApplyMode(prefs, "mouseover")
-    end
-    if prefs.combatShowEnabled then
-        return ABAR.VisibilityCompat.ApplyMode(prefs, "in_combat")
-    end
-    if prefs.combatHideEnabled then
-        return ABAR.VisibilityCompat.ApplyMode(prefs, "out_of_combat")
-    end
+    if not prefs then return "always" end
+    if prefs.barVisibility then return ABAR.VisibilityCompat.ApplyMode(prefs, prefs.barVisibility) end
+    if prefs.alwaysHidden then return ABAR.VisibilityCompat.ApplyMode(prefs, "never") end
+    if prefs.mouseoverEnabled then return ABAR.VisibilityCompat.ApplyMode(prefs, "mouseover") end
+    if prefs.combatShowEnabled then return ABAR.VisibilityCompat.ApplyMode(prefs, "in_combat") end
+    if prefs.combatHideEnabled then return ABAR.VisibilityCompat.ApplyMode(prefs, "out_of_combat") end
     return ABAR.VisibilityCompat.ApplyMode(prefs, "always")
 end
 
@@ -651,20 +606,14 @@ end
 -- an Always bar with a Never override is. Raw alwaysHidden/barVisibility reads stay
 -- correct only where the SHARED value is meant (sync copies, the setter itself).
 function ABAR.VisibilityCompat.IsNever(cfg)
-    if not cfg then
-        return false
-    end
+    if not cfg then return false end
     local shade = CludesUI.VisOverrideValue(cfg)
-    if shade then
-        return shade == "never"
-    end
+    if shade then return shade == "never" end
     return (cfg.alwaysHidden or cfg.barVisibility == "never") and true or false
 end
 
 function ABAR.VisibilityCompat.Copy(dst, source, dstNoGroupModes)
-    if not dst or not source then
-        return
-    end
+    if not dst or not source then return end
 
     local modeName = ABAR.VisibilityCompat.Normalize(source)
     ABAR.VisibilityCompat.ApplyMode(dst, modeName)
@@ -1024,9 +973,7 @@ for _, details in ipairs(EXTRA_BARS) do
     end
 end
 -- House Favor bar ships opt-in: hidden until the user turns it on.
-if defaultSet.profile.bars.FavorBar then
-    defaultSet.profile.bars.FavorBar.alwaysHidden = true
-end
+if defaultSet.profile.bars.FavorBar then defaultSet.profile.bars.FavorBar.alwaysHidden = true end
 
 -- Blizzard data bar override (let Blizzard control XP + Rep via Edit Mode). WoW
 -- Forever keeps Blizzard's own bars by default (the per-client default rule).
@@ -1043,12 +990,8 @@ mod.defaults = defaultSet
 --  Utility helpers
 -------------------------------------------------------------------------------
 local function SafeEnableMouse(widget, enable)
-    if not widget then
-        return
-    end
-    if widget.IsProtected and widget:IsProtected() and InCombatLockdown() then
-        return
-    end
+    if not widget then return end
+    if widget.IsProtected and widget:IsProtected() and InCombatLockdown() then return end
     if widget.SetMouseClickEnabled then
         widget:SetMouseClickEnabled(enable)
         widget:SetMouseMotionEnabled(enable)
@@ -1060,12 +1003,8 @@ end
 -- Like SafeEnableMouse but only mouse motion (OnEnter/OnLeave); keeps
 -- click-through so clicks pass to frames behind.
 local function SafeEnableMouseMotionOnly(widget, enable)
-    if not widget then
-        return
-    end
-    if widget.IsProtected and widget:IsProtected() and InCombatLockdown() then
-        return
-    end
+    if not widget then return end
+    if widget.IsProtected and widget:IsProtected() and InCombatLockdown() then return end
     if widget.SetMouseClickEnabled then
         widget:SetMouseClickEnabled(false)
         widget:SetMouseMotionEnabled(enable)
@@ -1090,9 +1029,7 @@ local _fadeAlpha = {}
 function mod.AB_FadeTwin(widget, a)
     local tw = mod._abFadeTwin
     local hgt = tw and tw[widget]
-    if hgt then
-        hgt:SetAlpha(a)
-    end
+    if hgt then hgt:SetAlpha(a) end
 end
 
 -- The one fader for every fade target: a shared OnUpdate queue.
@@ -1123,14 +1060,10 @@ local function _ExtraFadeOnUpdate(_, elapsed)
         end
         if tw then
             local hgt = tw[widget]
-            if hgt then
-                hgt:SetAlpha(a)
-            end
+            if hgt then hgt:SetAlpha(a) end
         end
     end
-    if not anyActive then
-        _extraFadeFrame:SetScript("OnUpdate", nil)
-    end
+    if not anyActive then _extraFadeFrame:SetScript("OnUpdate", nil) end
 end
 
 -- Drag visibility state (file-scope so ApplyAll can reset strata on spec change)
@@ -1157,16 +1090,12 @@ local _gridState = {
 -- into showFns/hideFns at their own definition sites.
 function mod.EABQueueGrid(show)
     _gridState.want = show
-    if _gridState.settlePending then
-        return
-    end
+    if _gridState.settlePending then return end
     _gridState.settlePending = true
     C_Timer_After(0.05, function()
         _gridState.settlePending = false
         local wanted = _gridState.want
-        if wanted == _gridState.shown then
-            return
-        end
+        if wanted == _gridState.shown then return end
         local entries = wanted and _gridState.showFns or _gridState.hideFns
         for index = 1, #entries do
             entries[index]()
@@ -1176,9 +1105,7 @@ end
 local _quickKeybindState = { open = false, closePending = false, art = {}, FinishClose = nil }
 
 local function ShouldQuickKeybindSurfaceBar(cfg)
-    if not _quickKeybindState.open or not cfg or cfg.enabled == false then
-        return false
-    end
+    if not _quickKeybindState.open or not cfg or cfg.enabled == false then return false end
 
     -- Surfaces bars hidden by transient runtime rules, but explicit "Never" wins.
     -- Hide Bar When Using Gamepad is not a Never: its verdict (EAB._padHide) is
@@ -1196,9 +1123,7 @@ local function FadeTo(widget, toAlpha, duration)
         return
     end
     local existing = _extraFadeQueue[widget]
-    if existing and existing.toAlpha == toAlpha then
-        return
-    end
+    if existing and existing.toAlpha == toAlpha then return end
     _extraFadeQueue[widget] = {
         fromAlpha = current,
         toAlpha = toAlpha,
@@ -1223,9 +1148,7 @@ end
 -- reports both writes here, so a later fade still starts where the frame
 -- really is. Frames this addon never wrote stay untracked.
 function CludesUI._EABNoteAlpha(widget, a)
-    if _fadeAlpha[widget] ~= nil then
-        _fadeAlpha[widget] = a
-    end
+    if _fadeAlpha[widget] ~= nil then _fadeAlpha[widget] = a end
 end
 
 -- Resolve borderThickness dropdown to actual pixel values. The ONE size source
@@ -1237,9 +1160,7 @@ end
 local function ResolveBorderThickness(cfg)
     local thickness = cfg.borderThickness or "thin"
     local record = mod.BORDER_THICKNESS[thickness]
-    if not record then
-        record = mod.BORDER_THICKNESS["thin"]
-    end
+    if not record then record = mod.BORDER_THICKNESS["thin"] end
     local shapeKey = cfg.buttonShape or "none"
     if shapeKey ~= "none" and shapeKey ~= "cropped" then
         if thickness == "thin" and cfg.shapeBorderSize and cfg.shapeBorderSize ~= record.shape then
@@ -1255,15 +1176,11 @@ mod.ResolveBorderThickness = ResolveBorderThickness
 
 -- Condense keybind text (CTRL-2 C2, Mouse Button 4 M4, etc.)
 local function FormatHotkeyText(textValue)
-    if not textValue or textValue == "" then
-        return ""
-    end
+    if not textValue or textValue == "" then return "" end
     -- Gamepad binds resolve to glyph markup (no atlas name matches a substitution
     -- below); keyboard binds keep the raw tokens the substitutions are written against.
     local resolved = GetBindingText(textValue, 1)
-    if resolved and resolved:find("|A:", 1, true) then
-        textValue = resolved
-    end
+    if resolved and resolved:find("|A:", 1, true) then textValue = resolved end
     textValue = textValue:gsub("CTRL%-", "C")
     textValue = textValue:gsub("ALT%-", "A")
     textValue = textValue:gsub("SHIFT%-", "S")
@@ -1286,14 +1203,10 @@ end
 
 -- Check if a button has an action assigned
 local function ButtonHasAction(button, prefixText)
-    if not button then
-        return false
-    end
+    if not button then return false end
     if button.HasAction then
         local success, has = pcall(button.HasAction, button)
-        if success then
-            return has
-        end
+        if success then return has end
     end
     return button.icon and button.icon:IsShown() and button.icon:GetTexture() ~= nil
 end
@@ -1305,9 +1218,7 @@ mod.ButtonHasAction = ButtonHasAction
 -- shown again until combat ends (the buttons are secure), so a pet called in
 -- combat would bring back an empty bar.
 function mod.AB_EmptySlot(button, details)
-    if details.isPetBar and not PetHasActionBar() then
-        return false
-    end
+    if details.isPetBar and not PetHasActionBar() then return false end
     return not ButtonHasAction(button, details.blizzBtnPrefix)
 end
 
@@ -1318,12 +1229,16 @@ end
 -- GetAttribute("action"), never btn.action (protected -- reading it in combat taints).
 -- Clears when no active duration resolves so a stale swipe is never left behind.
 local function ForceCooldownPaint(button)
-    if not button then
-        return
-    end
+    if not button then return end
     local cooldown = button.cooldown
     local actionSlot = button:GetAttribute("action")
-    if cooldown and actionSlot and HasAction(actionSlot) and C_ActionBar and C_ActionBar.GetActionCooldown then
+    if
+        cooldown
+        and actionSlot
+        and HasAction(actionSlot)
+        and C_ActionBar
+        and C_ActionBar.GetActionCooldown
+    then
         local cdInfo = C_ActionBar.GetActionCooldown(actionSlot)
         local durObj = cdInfo
             and cdInfo.isActive
@@ -1349,13 +1264,9 @@ mod.ForceCooldownPaint = ForceCooldownPaint
 -- NeverSecret and the duration object carries the timing: no secret is read.
 -- On ns, not a local.
 mod.PaintAssistCooldown = function(button, spellId)
-    if not spellId then
-        return ForceCooldownPaint(button)
-    end
+    if not spellId then return ForceCooldownPaint(button) end
     local cooldown = button and button.cooldown
-    if not cooldown then
-        return
-    end
+    if not cooldown then return end
     local details = C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(spellId)
     local durObj = details
         and details.isActive

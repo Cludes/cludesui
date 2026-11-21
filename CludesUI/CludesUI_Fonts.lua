@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Fonts.lua
 --  Font tables and LSM registration, font resolution cache and per-module
@@ -125,9 +123,7 @@ do
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if LSM then
         for label, fontFile in pairs(CUI.FONT_FILES) do
-            if fontFile then
-                LSM:Register(LSM.MediaType.FONT, label, MEDIA_PATH .. "fonts\\" .. fontFile)
-            end
+            if fontFile then LSM:Register(LSM.MediaType.FONT, label, MEDIA_PATH .. "fonts\\" .. fontFile) end
         end
         -- Snapshot all currently registered SM fonts into the path lookup
         local smFonts = LSM:HashTable("font")
@@ -140,13 +136,9 @@ do
         -- Listen for late-registered fonts from other addons
         LSM.RegisterCallback(CUI, "LibSharedMedia_Registered", function(_, mediatype, key)
             if mediatype == "font" then
-                if not CUI._smFontPaths then
-                    CUI._smFontPaths = {}
-                end
+                if not CUI._smFontPaths then CUI._smFontPaths = {} end
                 local filePath = LSM:Fetch("font", key)
-                if filePath then
-                    CUI._smFontPaths[key] = filePath
-                end
+                if filePath then CUI._smFontPaths[key] = filePath end
                 CUI.InvalidateFontCache()
             end
         end)
@@ -184,9 +176,7 @@ function CUI.GetBlizzardFontPath()
     return CUI._clientFontPath or _G.STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
 end
 
-function CUI.InvalidateFontCache()
-    CUI._fontCacheDirty = true
-end
+function CUI.InvalidateFontCache() CUI._fontCacheDirty = true end
 
 --- Returns the cache, cleared first if a font setting changed since last use.
 function CUI._FontCacheReady()
@@ -204,17 +194,14 @@ end
 
 -- Get the fonts DB table (lazy-init)
 function CUI.GetFontsDB()
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     if not CludesUIDB.fonts then
         CludesUIDB.fonts = {
             -- Cyrillic locales seed the system glyph font, not Expressway: the FONT_CYRILLIC
             -- faces do render ruRU correctly, but they stay an explicit opt-in so a fresh
             -- install looks exactly like every prior version. Existing installs are pinned
             -- by the ru_cyrillic_font_optin_v1 migration.
-            global = (CUI.LOCALE_SCRIPT == "cyrillic") and CUI.SYSTEM_FONT_KEY
-                or CUI.DEFAULT_FONT_NAME,
+            global = (CUI.LOCALE_SCRIPT == "cyrillic") and CUI.SYSTEM_FONT_KEY or CUI.DEFAULT_FONT_NAME,
             outlineMode = "shadow",
         }
     end
@@ -227,13 +214,9 @@ local function ResolveFontName(faceName)
     -- Blizzard Default: the client's own standard UI font. Handled before the
     -- glyph-restriction branch because STANDARD_TEXT_FONT is already
     -- locale-aware (the engine picks the right face per client language).
-    if faceName == CUI.BLIZZARD_FONT_KEY then
-        return CUI.GetBlizzardFontPath()
-    end
+    if faceName == CUI.BLIZZARD_FONT_KEY then return CUI.GetBlizzardFontPath() end
     -- Explicit Expressway override: bypasses the glyph-restriction mapping below.
-    if faceName == CUI.EXPRESSWAY_FORCED_KEY then
-        return MEDIA_PATH .. "fonts\\Expressway.TTF"
-    end
+    if faceName == CUI.EXPRESSWAY_FORCED_KEY then return MEDIA_PATH .. "fonts\\Expressway.TTF" end
     -- Glyph-restricted locales (CJK, Cyrillic): bundled fonts without coverage for the
     -- script, and the System Default sentinel, map to the system glyph font. Only an
     -- external SharedMedia font (or a FONT_CYRILLIC face in ruRU, handled first) may
@@ -245,22 +228,16 @@ local function ResolveFontName(faceName)
         -- Gated on LOCALE_SCRIPT, not on the fallback alone: CJK has no bundled coverage.
         if CUI.LOCALE_SCRIPT == "cyrillic" and faceName and CUI.FONT_CYRILLIC[faceName] then
             local cyrFile = CUI.FONT_FILES[faceName]
-            if cyrFile then
-                return MEDIA_PATH .. "fonts\\" .. cyrFile
-            end
+            if cyrFile then return MEDIA_PATH .. "fonts\\" .. cyrFile end
         end
         if faceName and not CUI.FONT_FILES[faceName] and not CUI.FONT_BLIZZARD[faceName] then
             local smPath = CUI._smFontPaths and CUI._smFontPaths[faceName]
-            if smPath then
-                return smPath
-            end
+            if smPath then return smPath end
             local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
             if LSM and LSM:IsValid("font", faceName) then
                 local fetched = LSM:Fetch("font", faceName)
                 if fetched then
-                    if not CUI._smFontPaths then
-                        CUI._smFontPaths = {}
-                    end
+                    if not CUI._smFontPaths then CUI._smFontPaths = {} end
                     CUI._smFontPaths[faceName] = fetched
                     return fetched
                 end
@@ -269,27 +246,19 @@ local function ResolveFontName(faceName)
         return CUI.LOCALE_FONT_FALLBACK
     end
     local bliz = CUI.FONT_BLIZZARD[faceName]
-    if bliz then
-        return bliz
-    end
+    if bliz then return bliz end
     local fontFile = CUI.FONT_FILES[faceName]
-    if fontFile then
-        return MEDIA_PATH .. "fonts\\" .. fontFile
-    end
+    if fontFile then return MEDIA_PATH .. "fonts\\" .. fontFile end
     -- SharedMedia fonts: path from _smFontPaths (populated at init)
     local smPath = CUI._smFontPaths and CUI._smFontPaths[faceName]
-    if smPath then
-        return smPath
-    end
+    if smPath then return smPath end
     -- LSM fallback for late-loading SM addons not yet in _smFontPaths
     if faceName then
         local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
         if LSM then
             local fetched = LSM:Fetch("font", faceName)
             if fetched then
-                if not CUI._smFontPaths then
-                    CUI._smFontPaths = {}
-                end
+                if not CUI._smFontPaths then CUI._smFontPaths = {} end
                 CUI._smFontPaths[faceName] = fetched
                 return fetched
             end
@@ -305,21 +274,15 @@ CUI.ResolveFontName = ResolveFontName
 -- for the client), or a FONT_CYRILLIC face on ruRU.
 function CUI.CombatTextFontCoversLocale(key)
     local locale = GetLocale()
-    if not CUI.LocaleGlyphFont(locale) or key:match("^smf:") then
-        return true
-    end
+    if not CUI.LocaleGlyphFont(locale) or key:match("^smf:") then return true end
     if locale == "ruRU" then
         for label, fontFile in pairs(CUI.FONT_FILES) do
-            if CUI.FONT_CYRILLIC[label] and key == MEDIA_PATH .. "fonts\\" .. fontFile then
-                return true
-            end
+            if CUI.FONT_CYRILLIC[label] and key == MEDIA_PATH .. "fonts\\" .. fontFile then return true end
         end
     end
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     for _, filePath in pairs(LSM and LSM:HashTable("font") or {}) do
-        if filePath == key then
-            return true
-        end
+        if filePath == key then return true end
     end
     return false
 end
@@ -353,14 +316,10 @@ CUI._moduleFontCacheVer = 0
 
 -- Resolve an addonKey to a moduleFonts entry (nil = global). Cached per-key, zero-alloc.
 function CUI.GetModuleFontEntry(moduleKey)
-    if not moduleKey then
-        return nil
-    end
+    if not moduleKey then return nil end
     local saved = CUI.GetFontsDB()
     local mfList = saved.moduleFonts
-    if not mfList or #mfList == 0 then
-        return nil
-    end
+    if not mfList or #mfList == 0 then return nil end
 
     local cache = CUI._moduleFontCache
     local ver = #mfList
@@ -370,9 +329,7 @@ function CUI.GetModuleFontEntry(moduleKey)
     end
 
     local cached = cache[moduleKey]
-    if cached ~= nil then
-        return cached ~= false and cached or nil
-    end
+    if cached ~= nil then return cached ~= false and cached or nil end
 
     local folder = CUI._addonKeyToFolder[moduleKey] or moduleKey
 
@@ -391,9 +348,7 @@ function CUI.GetFontPath(moduleKey)
     local c = CUI._FontCacheReady().path
     local k = moduleKey or CUI._FONT_KEY_GLOBAL
     local matched = c[k]
-    if matched then
-        return matched
-    end
+    if matched then return matched end
 
     local saved = CUI.GetFontsDB()
     local overrideFont = CUI.GetModuleFontEntry(moduleKey)
@@ -412,9 +367,7 @@ function CUI.GetFontName(moduleKey)
     local c = CUI._FontCacheReady().name
     local k = moduleKey or CUI._FONT_KEY_GLOBAL
     local matched = c[k]
-    if matched then
-        return matched
-    end
+    if matched then return matched end
 
     local saved = CUI.GetFontsDB()
     local overrideFont = CUI.GetModuleFontEntry(moduleKey)
@@ -436,9 +389,7 @@ function CUI.GetFontOutlineFlag(moduleKey)
     local k = moduleKey or CUI._FONT_KEY_GLOBAL
     -- "" (no outline) is a legitimate result and truthy in Lua, so a presence test is a correct cache hit.
     local matched = c[k]
-    if matched then
-        return matched
-    end
+    if matched then return matched end
 
     local saved = CUI.GetFontsDB()
     local overrideFont = CUI.GetModuleFontEntry(moduleKey)
@@ -475,15 +426,11 @@ end
 function CUI.IsSlugDisabled()
     local c = CUI._FontCacheReady()
     -- Cached value is a boolean, so nil is the only safe "not yet computed".
-    if c.slug ~= nil then
-        return c.slug
-    end
+    if c.slug ~= nil then return c.slug end
 
     local fontsDB = CUI.GetFontsDB()
     local val = fontsDB and fontsDB.neverShowSlug
-    if val == nil then
-        val = CludesUIDB and CludesUIDB.neverShowSlug
-    end
+    if val == nil then val = CludesUIDB and CludesUIDB.neverShowSlug end
     val = (val == true)
     c.slug = val
     return val
@@ -492,18 +439,14 @@ end
 -- Strip the SLUG token from a font outline flag:
 -- "OUTLINE, SLUG" -> "OUTLINE", "THICKOUTLINE, SLUG" -> "THICKOUTLINE", "" -> "".
 function CUI.StripSlugFlag(outlineFlag)
-    if not outlineFlag or outlineFlag == "" then
-        return outlineFlag or ""
-    end
+    if not outlineFlag or outlineFlag == "" then return outlineFlag or "" end
     return (outlineFlag:gsub("%s*,%s*SLUG", ""))
 end
 
 -- Central gate: strips SLUG from `flag` when "Never Show Slug" is on. Use at EVERY point
 -- a slug outline flag is produced (outline helpers, hardcoded icon-text literals).
 function CUI.SlugFlag(outlineFlag)
-    if CUI.IsSlugDisabled() then
-        return CUI.StripSlugFlag(outlineFlag)
-    end
+    if CUI.IsSlugDisabled() then return CUI.StripSlugFlag(outlineFlag) end
     return outlineFlag
 end
 
@@ -536,9 +479,7 @@ do
     noShadowObj:SetShadowOffset(0, 0)
     -- Prime a FontString so its drop shadow renders. Call BEFORE SetFont.
     function CUI.PrimeFontShadow(fontStr, useShadow)
-        if not (fontStr and fontStr.SetFontObject) then
-            return
-        end
+        if not (fontStr and fontStr.SetFontObject) then return end
         fontStr:SetFontObject(useShadow and shadowObj or noShadowObj)
     end
 end
@@ -581,9 +522,7 @@ CUI._FONT_CLIENT_ALPHABET = ({
 -- On a Russian client the russian member keeps the path, as every text in Russian draws with it.
 CUI._FONT_CLIENT_RU = (GetLocale() == "ruRU")
 -- The alphabet the client's own language draws with.
-CUI._FONT_CLIENT_OWN = CUI._FONT_CLIENT_ALPHABET
-    or (CUI._FONT_CLIENT_RU and "russian")
-    or "roman"
+CUI._FONT_CLIENT_OWN = CUI._FONT_CLIENT_ALPHABET or (CUI._FONT_CLIENT_RU and "russian") or "roman"
 CUI._FONT_CYR_FILE = "Fonts\\FRIZQT___CYR.TTF"
 -- path -> size -> flags ("" for none) -> shadow (true / false) -> family, or false
 -- when the client has no families or the creation failed (never retried).
@@ -599,14 +538,10 @@ CUI._fontFaceDone = {} -- the members one SetFontObjectFace call has set (reused
 -- True when `path` draws the full Russian alphabet: a FONT_CYRILLIC face's file,
 -- Blizzard's Cyrillic Friz, or any path on a Russian client. Cached per path.
 function CUI._FontPathCyrillic(filePath)
-    if type(filePath) ~= "string" then
-        return false
-    end
+    if type(filePath) ~= "string" then return false end
     local c = CUI._fontPathCyr
     local matched = c[filePath]
-    if matched ~= nil then
-        return matched
-    end
+    if matched ~= nil then return matched end
     local accepted = CUI._FONT_CLIENT_RU
     if not accepted then
         local low = filePath:lower():gsub("/", "\\")
@@ -629,12 +564,8 @@ end
 -- Whether a member of `alphabet` takes the face `path` (else it keeps a stock face):
 -- roman always, russian when the path draws Russian, the client's own CJK alphabet.
 function CUI._FontMemberTakesPath(alphabet, filePath)
-    if alphabet == "roman" or alphabet == CUI._FONT_CLIENT_ALPHABET then
-        return true
-    end
-    if alphabet == "russian" then
-        return CUI._FontPathCyrillic(filePath)
-    end
+    if alphabet == "roman" or alphabet == CUI._FONT_CLIENT_ALPHABET then return true end
+    if alphabet == "russian" then return CUI._FontPathCyrillic(filePath) end
     return false
 end
 
@@ -645,9 +576,7 @@ end
 function CUI._FontPathLoads(filePath)
     local c = CUI._fontPathOK
     local matched = c[filePath]
-    if matched ~= nil then
-        return matched
-    end
+    if matched ~= nil then return matched end
     local probe = CUI._fontProbe
     if not probe then
         local holderFrame = CreateFrame("Frame")
@@ -674,9 +603,7 @@ CUI._fontFamPending = {}
 function CUI._FontRetryArm(filePath)
     CUI._fontPathPending[filePath] = true
     local frame = CUI._fontRetryFrame
-    if frame then
-        return
-    end
+    if frame then return end
     frame = CreateFrame("Frame")
     CUI._fontRetryFrame = frame
     frame:RegisterEvent("PLAYER_LOGIN")
@@ -715,9 +642,7 @@ function CUI._FontFamiliesTakePath(filePath)
             for a = 1, #alphabetList do
                 local memberKey = CUI._FontMemberTakesPath(alphabetList[a], filePath)
                     and entry.fam:GetFontObjectForAlphabet(alphabetList[a])
-                if memberKey then
-                    pcall(memberKey.SetFont, memberKey, filePath, entry.size, entry.flags)
-                end
+                if memberKey then pcall(memberKey.SetFont, memberKey, filePath, entry.size, entry.flags) end
             end
             pcall(entry.fam.SetFont, entry.fam, filePath, entry.size, entry.flags)
             table.remove(entries, idx)
@@ -750,9 +675,7 @@ end
 -- Builds and caches the family for one key. A path the client cannot load takes the
 -- client's standard font.
 function CUI._BuildFontFamily(filePath, size, outlineFlags, shadow)
-    if type(filePath) ~= "string" or type(size) ~= "number" or not (size > 0) then
-        return nil
-    end
+    if type(filePath) ~= "string" or type(size) ~= "number" or not (size > 0) then return nil end
     local cache = CUI._fontFamilies
     local bySize = cache[filePath]
     if not bySize then
@@ -775,9 +698,7 @@ function CUI._BuildFontFamily(filePath, size, outlineFlags, shadow)
         return nil
     end
     local fontFace = filePath
-    if not CUI._FontPathLoads(filePath) then
-        fontFace = CUI.GetBlizzardFontPath()
-    end
+    if not CUI._FontPathLoads(filePath) then fontFace = CUI.GetBlizzardFontPath() end
     local alphabetList = CUI._FONT_ALPHABETS
     local members = {}
     for idx = 1, #alphabetList do
@@ -794,9 +715,7 @@ function CUI._BuildFontFamily(filePath, size, outlineFlags, shadow)
     end
     CUI._fontFamilyCount = CUI._fontFamilyCount + 1
     local success, fam = pcall(create, "CUIFontFamily" .. CUI._fontFamilyCount, members)
-    if success and fam then
-        success = pcall(CUI._DressFontFamily, fam, shadow)
-    end
+    if success and fam then success = pcall(CUI._DressFontFamily, fam, shadow) end
     if not (success and fam) then
         byShadow[shadow] = false
         return nil
@@ -818,19 +737,13 @@ function CUI.GetFontFamily(filePath, size, outlineFlags, shadow)
     -- Scaled texts (raid and party auto-resize, size offsets) hand fractional sizes:
     -- families are kept per quarter point, so a slider drag reuses a few of them (a
     -- font object is never freed), at most an eighth of a point off.
-    if type(size) == "number" then
-        size = math.floor(size * 4 + 0.5) / 4
-    end
+    if type(size) == "number" then size = math.floor(size * 4 + 0.5) / 4 end
     local tbl = CUI._fontFamilies[filePath]
     tbl = tbl and tbl[size]
     tbl = tbl and tbl[outlineFlags]
     local fam = tbl and tbl[shadow]
-    if fam then
-        return fam
-    end
-    if fam == false then
-        return nil
-    end
+    if fam then return fam end
+    if fam == false then return nil end
     return CUI._BuildFontFamily(filePath, size, outlineFlags, shadow)
 end
 
@@ -839,9 +752,7 @@ end
 -- of ours keeps the string's justification and text colour, which a template object
 -- may have given it. With no family: PrimeFontShadow, then a plain SetFont.
 function CUI.SetFontFamily(fontStr, filePath, size, outlineFlags, shadow)
-    if not (fontStr and fontStr.SetFontObject) then
-        return
-    end
+    if not (fontStr and fontStr.SetFontObject) then return end
     local fam = CUI.GetFontFamily(filePath, size, outlineFlags, shadow)
     if not fam then
         CUI.PrimeFontShadow(fontStr, shadow)
@@ -849,9 +760,7 @@ function CUI.SetFontFamily(fontStr, filePath, size, outlineFlags, shadow)
         return
     end
     local current = fontStr:GetFontObject()
-    if current == fam then
-        return
-    end
+    if current == fam then return end
     if current and CUI._fontFamilySet[current] then
         fontStr:SetFontObject(fam)
         return
@@ -861,15 +770,9 @@ function CUI.SetFontFamily(fontStr, filePath, size, outlineFlags, shadow)
     local justifyH, justifyV = fontStr:GetJustifyH(), fontStr:GetJustifyV()
     local red, green, blue, a = fontStr:GetTextColor()
     fontStr:SetFontObject(fam)
-    if type(justifyH) == "string" then
-        fontStr:SetJustifyH(justifyH)
-    end
-    if type(justifyV) == "string" then
-        fontStr:SetJustifyV(justifyV)
-    end
-    if type(red) == "number" then
-        fontStr:SetTextColor(red, green, blue, a)
-    end
+    if type(justifyH) == "string" then fontStr:SetJustifyH(justifyH) end
+    if type(justifyV) == "string" then fontStr:SetJustifyV(justifyV) end
+    if type(red) == "number" then fontStr:SetTextColor(red, green, blue, a) end
 end
 
 -- True when a font object is a family: its roman and russian alphabets have
@@ -877,9 +780,7 @@ end
 function CUI._FontObjectIsFamily(object)
     local c = CUI._fontObjIsFamily
     local matched = c[object]
-    if matched ~= nil then
-        return matched
-    end
+    if matched ~= nil then return matched end
     local accepted = false
     if object.GetFontObjectForAlphabet then
         local okR, roman = pcall(object.GetFontObjectForAlphabet, object, "roman")
@@ -895,18 +796,12 @@ end
 -- A member already in `done` is skipped, so a member several alphabets or objects
 -- share changes once (a scale never compounds).
 function CUI._SetFontMemberFace(memberKey, filePath, size, outlineFlags, scale, done)
-    if done[memberKey] then
-        return
-    end
+    if done[memberKey] then return end
     done[memberKey] = true
     local fontFace, msize, mflags = memberKey:GetFont()
-    if not msize or msize <= 0 then
-        return
-    end
+    if not msize or msize <= 0 then return end
     fontFace = filePath or fontFace
-    if not fontFace then
-        return
-    end
+    if not fontFace then return end
     pcall(memberKey.SetFont, memberKey, fontFace, size or msize * (scale or 1), outlineFlags or mflags or "")
 end
 
@@ -920,9 +815,7 @@ function CUI._FontObjectFaceInto(object, filePath, size, outlineFlags, scale, do
             local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabet)
             if success and memberKey then
                 local fontFace = filePath
-                if fontFace and not CUI._FontMemberTakesPath(alphabet, fontFace) then
-                    fontFace = nil
-                end
+                if fontFace and not CUI._FontMemberTakesPath(alphabet, fontFace) then fontFace = nil end
                 CUI._SetFontMemberFace(memberKey, fontFace, size, outlineFlags, scale, done)
             end
         end
@@ -944,9 +837,7 @@ end
 -- default 1) and `flags` (nil: each member's own) go to every member. A plain object
 -- takes the same on itself.
 function CUI.SetFontObjectFace(object, filePath, size, outlineFlags, scale)
-    if not (object and type(object) == "table" and object.GetFont and object.SetFont) then
-        return
-    end
+    if not (object and type(object) == "table" and object.GetFont and object.SetFont) then return end
     local done = CUI._fontFaceDone
     wipe(done)
     CUI._FontObjectFaceInto(object, filePath, size, outlineFlags, scale, done)
@@ -955,9 +846,7 @@ end
 -- Each member's (or a plain object's) face, size and flags, and a family's own
 -- font, for RestoreFontObject.
 function CUI.SnapshotFontObject(object)
-    if not (object and type(object) == "table" and object.GetFont) then
-        return nil
-    end
+    if not (object and type(object) == "table" and object.GetFont) then return nil end
     local snap = {}
     if CUI._FontObjectIsFamily(object) then
         local ownFace, ownSize, ownFlags = object:GetFont()
@@ -985,9 +874,7 @@ end
 
 -- Puts back what SnapshotFontObject read.
 function CUI.RestoreFontObject(object, snap)
-    if not (object and type(object) == "table" and object.SetFont and snap) then
-        return
-    end
+    if not (object and type(object) == "table" and object.SetFont and snap) then return end
     if snap.plain then
         CUI._RestoreFontMember(object, snap.plain)
         return
@@ -998,9 +885,7 @@ function CUI.RestoreFontObject(object, snap)
         local s = snap[alphabetList[idx]]
         if s then
             local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabetList[idx])
-            if success and memberKey then
-                CUI._RestoreFontMember(memberKey, s)
-            end
+            if success and memberKey then CUI._RestoreFontMember(memberKey, s) end
         end
     end
 end
@@ -1020,9 +905,7 @@ function CUI.ApplyGlobalFontToGameText()
     local saved = CUI.GetFontsDB()
     -- Zero cost while fully off: both settings absent (scale 100 stores nil)
     -- means two table reads and out -- nothing computed, nothing enumerated.
-    if not saved.applyToAllGameText and not saved.gameTextScale then
-        return
-    end
+    if not saved.applyToAllGameText and not saved.gameTextScale then return end
     local scale = tonumber(saved.gameTextScale) or 100
     if scale < 75 then
         scale = 75
@@ -1034,13 +917,9 @@ function CUI.ApplyGlobalFontToGameText()
     local filePath
     if swapFont then
         filePath = ResolveFontName(saved.global or CUI.DEFAULT_FONT_NAME)
-        if not filePath then
-            swapFont = false
-        end
+        if not filePath then swapFont = false end
     end
-    if not swapFont and scale == 1 then
-        return
-    end
+    if not swapFont and scale == 1 then return end
 
     if swapFont then
         -- The client's own font, before the first swap replaces it (Blizzard Default).
@@ -1071,9 +950,7 @@ function CUI.ApplyGlobalFontToGameText()
             if object.GetFontObjectForAlphabet then
                 for a = 1, #alphabetList do
                     local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabetList[a])
-                    if success and memberKey then
-                        done[memberKey] = true
-                    end
+                    if success and memberKey then done[memberKey] = true end
                 end
             end
         end
@@ -1099,19 +976,13 @@ function CUI.ApplyGlobalFontToGameText()
         and EventUtil.ContinueOnAddOnLoaded
     then
         EventUtil.ContinueOnAddOnLoaded("Blizzard_GroupFinder", function()
-            if not LFGListCategorySelection_AddButton then
-                return
-            end
+            if not LFGListCategorySelection_AddButton then return end
             hooksecurefunc("LFGListCategorySelection_AddButton", function(cs, idx)
                 local b = cs and type(cs.CategoryButtons) == "table" and cs.CategoryButtons[idx]
                 local labelText = b and b.Label
-                if not (labelText and labelText.GetFont) then
-                    return
-                end
+                if not (labelText and labelText.GetFont) then return end
                 local fontFace, size, outlineFlags = labelText:GetFont() -- not in an and-chain, that keeps only face
-                if fontFace == old and size then
-                    labelText:SetFont(filePath, size, outlineFlags or "")
-                end
+                if fontFace == old and size then labelText:SetFont(filePath, size, outlineFlags or "") end
             end)
         end)
     end
@@ -1127,9 +998,7 @@ function CUI.ApplyModuleFontFailsafe()
     local IsLoaded = C_AddOns and C_AddOns.IsAddOnLoaded
     local GetPath = CUI.GetFontPath
     local GetOutline = CUI.GetFontOutlineFlag
-    if not IsLoaded or not GetPath then
-        return
-    end
+    if not IsLoaded or not GetPath then return end
 
     -- Face + outline swap preserving each object's native SIZE (per-frame styling owns size).
     -- The outline matches what each area's per-frame styling applies (chat, questTracker,
@@ -1139,9 +1008,7 @@ function CUI.ApplyModuleFontFailsafe()
     -- A family changes member by member (SetFontObjectFace): the members whose script the
     -- face lacks keep their own faces. Our own families are skipped.
     local function swapFont(object, filePath, outline)
-        if not object or type(object) ~= "table" or CUI._fontFamilySet[object] then
-            return
-        end
+        if not object or type(object) ~= "table" or CUI._fontFamilySet[object] then return end
         CUI.SetFontObjectFace(object, filePath or _G.STANDARD_TEXT_FONT, nil, outline, nil)
     end
 
@@ -1182,9 +1049,7 @@ function CUI.GetIconTextOutlineFlag(moduleKey)
     local c = CUI._FontCacheReady().icon
     local k = moduleKey or CUI._FONT_KEY_GLOBAL
     local matched = c[k]
-    if matched then
-        return matched
-    end
+    if matched then return matched end
 
     -- Per-profile (rides profile export); the account-global table is the read-time fallback.
     local fontsDB = CUI.GetFontsDB()
@@ -1204,9 +1069,7 @@ end
 -- Applies the icon-text outline flag AND the matching shadow in one call. Checked -> "OUTLINE,
 -- SLUG", no shadow; unchecked -> the user's outline choice, and when that resolves to "" (Drop Shadow/None) a drop shadow is applied for legibility.
 function CUI.ApplyIconTextFont(fontStr, fontFile, size, moduleKey)
-    if not (fontStr and fontStr.SetFont) then
-        return
-    end
+    if not (fontStr and fontStr.SetFont) then return end
     local outlineFlag = CUI.GetIconTextOutlineFlag(moduleKey)
     -- Prime the shadow FontObject before SetFont (see PrimeFontShadow).
     CUI.PrimeFontShadow(fontStr, outlineFlag == "")
@@ -1216,9 +1079,7 @@ end
 -- Body text in a module's font: fontPath/flags default to the module's (nil key = global)
 -- font and outline; a "" flag (Drop Shadow/None) gets the drop shadow.
 function CUI.ApplyModuleFont(fontStr, fontFile, size, moduleKey, outlineFlags)
-    if not (fontStr and fontStr.SetFont) then
-        return
-    end
+    if not (fontStr and fontStr.SetFont) then return end
     outlineFlags = outlineFlags or CUI.GetFontOutlineFlag(moduleKey)
     CUI.PrimeFontShadow(fontStr, outlineFlags == "")
     fontStr:SetFont(fontFile or CUI.GetFontPath(moduleKey), size, outlineFlags)
@@ -1228,9 +1089,7 @@ end
 -- (the module's font and outline; a "" flag gets the drop shadow) as a font family
 -- (SetFontFamily). Once a string has a family, no ApplyModuleFont may reach it.
 function CUI.ApplyModuleFontFamily(fontStr, fontFile, size, moduleKey, outlineFlags)
-    if not (fontStr and fontStr.SetFont) then
-        return
-    end
+    if not (fontStr and fontStr.SetFont) then return end
     outlineFlags = outlineFlags or CUI.GetFontOutlineFlag(moduleKey)
     CUI.SetFontFamily(fontStr, fontFile or CUI.GetFontPath(moduleKey), size, outlineFlags, outlineFlags == "")
 end
@@ -1249,9 +1108,7 @@ function CUI.BuildFontDropdownData()
             },
         }
         local sequence = { "__global", CUI.SYSTEM_FONT_KEY, CUI.EXPRESSWAY_FORCED_KEY }
-        if CUI.AppendExternalSharedMediaFonts then
-            CUI.AppendExternalSharedMediaFonts(values, sequence)
-        end
+        if CUI.AppendExternalSharedMediaFonts then CUI.AppendExternalSharedMediaFonts(values, sequence) end
         return values, sequence
     end
     -- "Blizzard Default" sits right under the inherit entry on unrestricted
@@ -1277,8 +1134,6 @@ function CUI.BuildFontDropdownData()
             sequence[#sequence + 1] = label
         end
     end
-    if CUI.AppendSharedMediaFonts then
-        CUI.AppendSharedMediaFonts(values, sequence, { keyByName = true })
-    end
+    if CUI.AppendSharedMediaFonts then CUI.AppendSharedMediaFonts(values, sequence, { keyByName = true }) end
     return values, sequence
 end

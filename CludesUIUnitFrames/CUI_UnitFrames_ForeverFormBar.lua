@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ForeverFormBar.lua  (WoW Forever only, druids only)
 --
@@ -28,13 +26,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, mod = ...
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 local _, playerClass = UnitClass("player")
-if playerClass ~= "DRUID" then
-    return
-end
+if playerClass ~= "DRUID" then return end
 
 local MANA = (Enum and Enum.PowerType and Enum.PowerType.Mana) or 0
 local WHITE = "Interface\\Buttons\\WHITE8X8"
@@ -55,43 +49,36 @@ local Secret = CUI.IsSecret
 -- The bar while it shows, else nil: the bottom-anchored player auras reserve
 -- the space it takes under the frame (CUI_UnitFrames_AuraContainers.lua).
 function mod.UF_ForeverFormBarShown()
-    if FormState.shown then
-        return FormState.bar
-    end
+    if FormState.shown then return FormState.bar end
 end
 
 -- One re-anchor of the player auras on the next frame (a no-op unless they
 -- are bottom-anchored).
 local function RequestReanchor()
-    if CUI.UF_RequestResourceReanchor then
-        CUI.UF_RequestResourceReanchor()
-    end
+    if CUI.UF_RequestResourceReanchor then CUI.UF_RequestResourceReanchor() end
 end
 
 -- The form text's own setting; unset follows the power bar's.
 local function FormSetting(cfg, key, base, def)
     local val = cfg[key]
-    if val == nil then
-        val = cfg[base]
-    end
-    if val == nil then
-        val = def
-    end
+    if val == nil then val = cfg[base] end
+    if val == nil then val = def end
     return val
 end
 
 local function Paint()
     local barFrame, pt = FormState.bar, FormState.pt
-    if not (barFrame and pt) then
-        return
-    end
+    if not (barFrame and pt) then return end
     barFrame:SetMinMaxValues(0, UnitPowerMax("player", pt))
     barFrame:SetValue(UnitPower("player", pt))
     local mode = FormState.text
     if mode == "cur" then
         barFrame.text:SetFormattedText("%d", UnitPower("player", pt))
     elseif mode == "pct" then
-        barFrame.text:SetFormattedText(FormState.fmtPct, UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100))
+        barFrame.text:SetFormattedText(
+            FormState.fmtPct,
+            UnitPowerPercent("player", pt, true, CurveConstants.ScaleTo100)
+        )
     elseif mode == "curmax" then
         barFrame.text:SetFormattedText("%d / %d", UnitPower("player", pt), UnitPowerMax("player", pt))
     elseif mode == "both" then
@@ -112,9 +99,7 @@ local function Color()
         red, green, blue = details.r, details.g, details.b
     end
     local op = s.powerBarOpacity or 100
-    if op <= 1.0 then
-        op = op * 100
-    end
+    if op <= 1.0 then op = op * 100 end
     barFrame:SetStatusBarColor(red, green, blue, op / 100)
     -- Form Text Color: power-coloured takes the form's colour, else custom or
     -- white. Neither set follows the power bar's Text Color.
@@ -143,9 +128,7 @@ local function Color()
 end
 
 local function SetLive(enabled)
-    if FormState.live == enabled then
-        return
-    end
+    if FormState.live == enabled then return end
     FormState.live = enabled
     if enabled then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
@@ -161,14 +144,10 @@ end
 -- shown bar may have moved.
 local function SyncFormBar(laidOut)
     local barFrame = FormState.bar
-    if not barFrame then
-        return
-    end
+    if not barFrame then return end
     local pt, token = UnitPowerType("player")
     if Secret(pt) or Secret(token) then
-        if laidOut and FormState.shown then
-            RequestReanchor()
-        end
+        if laidOut and FormState.shown then RequestReanchor() end
         return
     end
     local show = FormState.on and pt ~= MANA
@@ -310,27 +289,28 @@ end
 -- frame: the player frame; power: its power bar; s: the player settings.
 function mod.UF_ForeverFormBar(widget, power, cfg)
     local shade = cfg and cfg.powerTypeOverride
-    FormState.on = (power and shade and shade.foreverDruid and cfg.foreverFormBar and mod.UF_PowerBarDraws(cfg)) and true
+    FormState.on = (
+        power
+        and shade
+        and shade.foreverDruid
+        and cfg.foreverFormBar
+        and mod.UF_PowerBarDraws(cfg)
+    )
+            and true
         or false
     if not FormState.on then
         evf:UnregisterAllEvents()
         FormState.live = false
-        if FormState.bar then
-            FormState.bar:Hide()
-        end
+        if FormState.bar then FormState.bar:Hide() end
         if FormState.shown then
             FormState.shown = false
             RequestReanchor()
         end
         return
     end
-    if not FormState.bar then
-        Build(widget)
-    end
+    if not FormState.bar then Build(widget) end
     local barFrame = FormState.bar
-    if barFrame:GetParent() ~= widget then
-        barFrame:SetParent(widget)
-    end
+    if barFrame:GetParent() ~= widget then barFrame:SetParent(widget) end
     -- The power bar's strata (a detached one can sit higher) and a level over it.
     barFrame:SetFrameStrata(power:GetFrameStrata())
     barFrame:SetFrameLevel(power:GetFrameLevel() + 1)
@@ -346,9 +326,7 @@ end
 -- The form bar's own options re-apply only this bar: a full frame reload per
 -- slider step visibly rebuilds the player frame.
 function mod.UF_ForeverFormBarRelayout()
-    if not (FormState.on and FormState.bar) then
-        return
-    end
+    if not (FormState.on and FormState.bar) then return end
     Layout(FormState.frame, FormState.power, FormState.settings)
     StyleText(FormState.settings)
     SyncFormBar(true)

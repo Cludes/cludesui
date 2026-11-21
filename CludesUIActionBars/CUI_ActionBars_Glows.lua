@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Glows.lua
 --
@@ -53,16 +51,19 @@ mod.PROC_START_TYPES = PROC_START_TYPES
 local _G_Glows = CludesUI.Glows
 mod.Glows = _G_Glows
 
-local function StopAllProceduralGlows(glowHolder)
-    _G_Glows.StopAllGlows(glowHolder)
-end
+local function StopAllProceduralGlows(glowHolder) _G_Glows.StopAllGlows(glowHolder) end
 
 local _procState = { hooked = false, active = {} }
 
 local function UpdateFlipbook(button)
     local regionFrame = button.SpellActivationAlert
     local frameData = EFD(button)
-    if regionFrame and frameData.shapeMask and frameData.shapeApplied and not EFD(regionFrame).shapeMasked then
+    if
+        regionFrame
+        and frameData.shapeMask
+        and frameData.shapeApplied
+        and not EFD(regionFrame).shapeMasked
+    then
         for _, texture in ipairs({ regionFrame:GetRegions() }) do
             if texture and texture.AddMaskTexture then
                 pcall(texture.AddMaskTexture, texture, frameData.shapeMask)
@@ -72,9 +73,7 @@ local function UpdateFlipbook(button)
     end
 
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return
-    end
+    if not profile then return end
 
     -- Size from profile settings, not btn:GetWidth(): on initial login the
     -- frame may not be sized by LayoutBar yet and GetWidth returns the
@@ -85,9 +84,7 @@ local function UpdateFlipbook(button)
         local barKey = frameData.barKey
         if not barKey then
             local bi = buttonToBar[button]
-            if bi then
-                barKey = bi.barKey
-            end
+            if bi then barKey = bi.barKey end
         end
         local resolved
         if barKey and profile.bars and profile.bars[barKey] then
@@ -102,9 +99,7 @@ local function UpdateFlipbook(button)
                 wid = wid + SHAPE_BTN_EXPAND
                 hgt = hgt + SHAPE_BTN_EXPAND
             end
-            if shape == "cropped" then
-                hgt = hgt * 0.80
-            end
+            if shape == "cropped" then hgt = hgt * 0.80 end
             _ufBtnW, _ufBtnH = wid, hgt
             resolved = true
         end
@@ -129,9 +124,7 @@ local function UpdateFlipbook(button)
             glowHolder:SetAlpha(1)
             glowHolder:Show()
             _G_Glows.StartGlow(glowHolder, 6, _ufBtnW, 1, 0.788, 0.137, nil, _ufBtnH)
-            if regionFrame then
-                regionFrame:SetAlpha(0)
-            end
+            if regionFrame then regionFrame:SetAlpha(0) end
             frameData.customizedFlipbook = true
             return
         end
@@ -142,16 +135,15 @@ local function UpdateFlipbook(button)
     -- Custom. The options getter reads the same rule.
     local color = profile.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
     local cr, cg, callback = _G_Glows.ResolveColor(
-        profile.procGlowUseClassColor and "class" or (profile.procGlowColorMode == "default" and "default" or "custom"),
+        profile.procGlowUseClassColor and "class"
+            or (profile.procGlowColorMode == "default" and "default" or "custom"),
         color.r,
         color.g,
         color.b
     )
 
     local loopIdx = profile.procGlowType or 1
-    if loopIdx < 1 or loopIdx > #LOOP_GLOW_TYPES then
-        loopIdx = 1
-    end
+    if loopIdx < 1 or loopIdx > #LOOP_GLOW_TYPES then loopIdx = 1 end
     -- Force Shape Glow for custom shapes regardless of user selection
     if frameData.shapeMask and frameData.shapeApplied then
         for si, record in ipairs(LOOP_GLOW_TYPES) do
@@ -164,10 +156,7 @@ local function UpdateFlipbook(button)
     local loopRec = LOOP_GLOW_TYPES[loopIdx]
     -- Default mode (nil color): the drawn engines use the suite gold; FlipBooks
     -- keep the atlas's own untinted look.
-    if
-        cr == nil
-        and (loopRec.procedural or loopRec.buttonGlow or loopRec.autocast or loopRec.shapeGlow)
-    then
+    if cr == nil and (loopRec.procedural or loopRec.buttonGlow or loopRec.autocast or loopRec.shapeGlow) then
         local skinData = _G_Glows.DEFAULT_COLOR
         cr, cg, callback = skinData.r, skinData.g, skinData.b
     end
@@ -182,9 +171,7 @@ local function UpdateFlipbook(button)
 
     local holderData = EFD(glowHolder)
     if frameData.shapeMask and frameData.shapeApplied and frameData.shapeMaskPath then
-        if not holderData.ownMask then
-            holderData.ownMask = glowHolder:CreateMaskTexture()
-        end
+        if not holderData.ownMask then holderData.ownMask = glowHolder:CreateMaskTexture() end
         holderData.ownMask:ClearAllPoints()
         Pix.Point(holderData.ownMask, "TOPLEFT", button, "TOPLEFT", 1, -1)
         Pix.Point(holderData.ownMask, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
@@ -197,9 +184,7 @@ local function UpdateFlipbook(button)
     if loopRec.procedural or loopRec.buttonGlow or loopRec.autocast or loopRec.shapeGlow then
         frameData.customizedFlipbook = true
         -- Suppress Blizzard's native flipbook visuals (hide textures, not durations)
-        if regionFrame then
-            regionFrame:SetAlpha(0)
-        end
+        if regionFrame then regionFrame:SetAlpha(0) end
 
         StopAllProceduralGlows(glowHolder)
         glowHolder:Show()
@@ -212,9 +197,7 @@ local function UpdateFlipbook(button)
             local period = profile.procGlowSpeed or 4
             local lineLen = floor((buttonW + buttonH) * (2 / N - 0.1))
             lineLen = min(lineLen, min(buttonW, buttonH))
-            if lineLen < 1 then
-                lineLen = 1
-            end
+            if lineLen < 1 then lineLen = 1 end
             -- No fallback table per proc: an unset background color reads as black.
             local bgOn, bgc = profile.procGlowBackground, profile.procGlowBackgroundColor
             _G_Glows.StartProceduralAnts(
@@ -247,23 +230,17 @@ local function UpdateFlipbook(button)
                 anchorFrame = button,
             })
         end
-        if holderData.ownMask then
-            MaskFrameTextures(glowHolder, holderData.ownMask)
-        end
+        if holderData.ownMask then MaskFrameTextures(glowHolder, holderData.ownMask) end
     else
         -- FlipBook styles render on our own wrapper (SetAllPoints on btn) so the
         -- glow matches button size with no scale math; Blizzard's is suppressed.
         frameData.customizedFlipbook = true
-        if regionFrame then
-            regionFrame:SetAlpha(0)
-        end
+        if regionFrame then regionFrame:SetAlpha(0) end
 
         _G_Glows.StopAllGlows(glowHolder)
         glowHolder:Show()
         _G_Glows.StartFlipBookGlow(glowHolder, _ufBtnW, loopRec, cr, cg, callback, _ufBtnH)
-        if holderData.ownMask then
-            MaskFrameTextures(glowHolder, holderData.ownMask)
-        end
+        if holderData.ownMask then MaskFrameTextures(glowHolder, holderData.ownMask) end
     end
 
     if regionFrame and frameData.shapeMask and frameData.shapeApplied then
@@ -276,9 +253,7 @@ end
 -- Stored on _procState rather than as a file-level local.
 _procState.GetButtonSpellID = function(button)
     local slot = GetButtonActionSlot(button)
-    if not slot or not HasAction or not HasAction(slot) then
-        return nil
-    end
+    if not slot or not HasAction or not HasAction(slot) then return nil end
     local actionType, ident, subType = GetActionInfo(slot)
     if actionType == "spell" then
         return ident
@@ -291,9 +266,7 @@ _procState.GetButtonSpellID = function(button)
         local macroName = GetActionText(slot)
         local macroIdx = macroName and GetMacroIndexByName(macroName)
         if macroIdx and macroIdx > 0 then
-            if GetMacroItem and GetMacroItem(macroIdx) then
-                return nil
-            end
+            if GetMacroItem and GetMacroItem(macroIdx) then return nil end
             return GetMacroSpell(macroIdx)
         end
     end
@@ -303,15 +276,11 @@ end
 -- Proc glow via SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE events.
 -- Loops all buttons to find matches by spellID.
 function ABAR:HookProcGlow()
-    if _procState.hooked then
-        return
-    end
+    if _procState.hooked then return end
     _procState.hooked = true
 
     -- Stock art (Blizzard or Classic): the native glow shows on its own.
-    local function IsBlizzStyle()
-        return mod.AB_Style() ~= "cui"
-    end
+    local function IsBlizzStyle() return mod.AB_Style() ~= "cui" end
 
     local function ShowGlow(button)
         _procState.active[button] = true
@@ -339,15 +308,11 @@ function ABAR:HookProcGlow()
     local function UpdateOverlayGlow(button)
         local spellId = GetButtonSpellID(button)
         if not spellId then
-            if _procState.active[button] then
-                HideGlow(button)
-            end
+            if _procState.active[button] then HideGlow(button) end
             return
         end
         local ISO = C_SpellActivationOverlay and C_SpellActivationOverlay.IsSpellOverlayed
-        if not ISO then
-            return
-        end
+        if not ISO then return end
         if ISO(spellId) then
             ShowGlow(button)
         elseif _procState.active[button] then
@@ -373,9 +338,7 @@ function ABAR:HookProcGlow()
         -- Clear glows that no longer match, add new ones
         for button in pairs(_procState.active) do
             local ident = GetButtonSpellID(button)
-            if not ident or not C_SpellActivationOverlay.IsSpellOverlayed(ident) then
-                HideGlow(button)
-            end
+            if not ident or not C_SpellActivationOverlay.IsSpellOverlayed(ident) then HideGlow(button) end
         end
         local blizz = IsBlizzStyle()
         for _, details in ipairs(BAR_CONFIG) do
@@ -434,9 +397,7 @@ function ABAR:HookProcGlow()
                     or not ident
                     or not C_SpellActivationOverlay.IsSpellOverlayed(ident)
                 then
-                    if not toHide then
-                        toHide = {}
-                    end
+                    if not toHide then toHide = {} end
                     toHide[#toHide + 1] = button
                 end
             end
@@ -456,9 +417,7 @@ function ABAR:HookProcGlow()
                     for _, button in ipairs(buttonList) do
                         if button and (EFD(button).squared or blizz2) then
                             local ident = GetButtonSpellID(button)
-                            if ident and ident == arg1 then
-                                ShowGlow(button)
-                            end
+                            if ident and ident == arg1 then ShowGlow(button) end
                         end
                     end
                 end
@@ -514,16 +473,12 @@ do
     local _assistInCombat = false
     local _assistHookInstalled = false
 
-    local function AssistCVarOn()
-        return GetCVarBool and GetCVarBool("assistedCombatHighlight")
-    end
+    local function AssistCVarOn() return GetCVarBool and GetCVarBool("assistedCombatHighlight") end
 
     local function AssistCreate(button)
         local success, assistHighlight =
             pcall(CreateFrame, "Frame", nil, button, "ActionBarButtonAssistedCombatHighlightTemplate")
-        if not success or not assistHighlight then
-            return nil
-        end
+        if not success or not assistHighlight then return nil end
         assistHighlight:SetPoint("CENTER")
         -- Above the cooldown swipe, border frame, glowOverlay (+6) and proc
         -- alerts -- same margin the CDM twin uses.
@@ -585,13 +540,15 @@ do
 
         local holderData = EFD(glowHolder)
         if frameData.shapeMask and frameData.shapeApplied and frameData.shapeMaskPath then
-            if not holderData.ownMask then
-                holderData.ownMask = glowHolder:CreateMaskTexture()
-            end
+            if not holderData.ownMask then holderData.ownMask = glowHolder:CreateMaskTexture() end
             holderData.ownMask:ClearAllPoints()
             Pix.Point(holderData.ownMask, "TOPLEFT", button, "TOPLEFT", 1, -1)
             Pix.Point(holderData.ownMask, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -1, 1)
-            holderData.ownMask:SetTexture(frameData.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            holderData.ownMask:SetTexture(
+                frameData.shapeMaskPath,
+                "CLAMPTOBLACKADDITIVE",
+                "CLAMPTOBLACKADDITIVE"
+            )
             holderData.ownMask:Show()
         elseif holderData.ownMask then
             holderData.ownMask:Hide()
@@ -600,13 +557,20 @@ do
         _G_Glows.StopAllGlows(glowHolder)
         glowHolder:Show()
 
-        _G_Glows.StartSpecGlow(glowHolder, { style = loopIdx, r = cr, g = cg, b = callback }, buttonW, buttonH, "icon", {
-            maskWith = holderData.ownMask and holderData.ownMask:IsShown() and holderData.ownMask or nil,
-            maskPath = frameData.shapeMaskPath or SHAPE_MASKS[frameData.shapeName or ""],
-            borderPath = SHAPE_BORDERS[frameData.shapeName or ""],
-            shapeMask = frameData.shapeMask,
-            anchorFrame = button,
-        })
+        _G_Glows.StartSpecGlow(
+            glowHolder,
+            { style = loopIdx, r = cr, g = cg, b = callback },
+            buttonW,
+            buttonH,
+            "icon",
+            {
+                maskWith = holderData.ownMask and holderData.ownMask:IsShown() and holderData.ownMask or nil,
+                maskPath = frameData.shapeMaskPath or SHAPE_MASKS[frameData.shapeName or ""],
+                borderPath = SHAPE_BORDERS[frameData.shapeName or ""],
+                shapeMask = frameData.shapeMask,
+                anchorFrame = button,
+            }
+        )
         return true
     end
 
@@ -616,9 +580,7 @@ do
     -- overlay stays up.
     mod._AssistRingHide = function(button)
         local assistHighlight = EFD(button).assistHL
-        if not assistHighlight then
-            return
-        end
+        if not assistHighlight then return end
         if assistHighlight.Flipbook and assistHighlight.Flipbook.Anim then
             assistHighlight.Flipbook.Anim:Stop()
         end
@@ -637,9 +599,7 @@ do
         local frameData = EFD(button)
         local shade = frameData.assistOverlay
         if not look or look == 1 then
-            if shade then
-                shade:Hide()
-            end
+            if shade then shade:Hide() end
             return
         end
         local profile = ABAR.db and ABAR.db.profile
@@ -686,7 +646,8 @@ do
         -- removed before the new one goes on. Applied to the tint texture
         -- directly rather than via MaskFrameTextures: that walks GetRegions(),
         -- which here would also hand the mask to our own roundMask region.
-        local wanted = (frameData.shapeMask and frameData.shapeApplied) and frameData.shapeMask or shade.roundMask
+        local wanted = (frameData.shapeMask and frameData.shapeApplied) and frameData.shapeMask
+            or shade.roundMask
         if overlayData.shapeMasked ~= wanted then
             if overlayData.shapeMasked then
                 pcall(shade.tex.RemoveMaskTexture, shade.tex, overlayData.shapeMasked)
@@ -715,9 +676,7 @@ do
         mod._AssistRingHide(button)
         mod._AssistOverlay(button)
         local bf = button.AssistedCombatHighlightFrame
-        if bf then
-            bf:SetAlpha(1)
-        end
+        if bf then bf:SetAlpha(1) end
     end
 
     -- Scale that makes the 45px template art cover the button plus the user's
@@ -732,9 +691,7 @@ do
         local profile = ABAR.db and ABAR.db.profile
         local outset = (profile and profile.assistGlowOutset) or 0
         local s = (wid + outset * 2) / 45
-        if s < 0.05 then
-            s = 0.05
-        end
+        if s < 0.05 then s = 0.05 end
         return s
     end
 
@@ -764,9 +721,7 @@ do
                 ringData.fitW, ringData.fitH = nil, nil
                 ringTex:SetSize(ringData.origW, ringData.origH)
                 local fb = ringTex.Flipbook
-                if fb and ringData.fbW then
-                    fb:SetSize(ringData.fbW, ringData.fbH)
-                end
+                if fb and ringData.fbW then fb:SetSize(ringData.fbW, ringData.fbH) end
             end
             return false
         end
@@ -781,15 +736,9 @@ do
         local outset = profile.assistGlowOutset or 0
         local wid = button:GetWidth() + outset * 2
         local hgt = button:GetHeight() + outset * 2 - mod._ASSIST_CROP_TRIM
-        if wid < 1 then
-            wid = 1
-        end
-        if hgt < 1 then
-            hgt = 1
-        end
-        if ringTex:GetScale() ~= 1 then
-            ringTex:SetScale(1)
-        end
+        if wid < 1 then wid = 1 end
+        if hgt < 1 then hgt = 1 end
+        if ringTex:GetScale() ~= 1 then ringTex:SetScale(1) end
         if ringData.fitW ~= wid or ringData.fitH ~= hgt then
             ringData.fitW, ringData.fitH = wid, hgt
             ringTex:SetSize(wid, hgt)
@@ -822,18 +771,12 @@ do
                 end
             end
             local shade = frameData.assistOverlay
-            if shade and shade:IsShown() then
-                mod._AssistOverlay(button)
-            end
+            if shade and shade:IsShown() then mod._AssistOverlay(button) end
             local assistHighlight = frameData.assistHL
-            if assistHighlight and assistHighlight:IsShown() then
-                mod._AssistRingHide(button)
-            end
+            if assistHighlight and assistHighlight:IsShown() then mod._AssistRingHide(button) end
 
             local bf = button.AssistedCombatHighlightFrame
-            if bf then
-                bf:SetAlpha(0)
-            end
+            if bf then bf:SetAlpha(0) end
 
             local cr, cg, callback = mod._AssistCustomGlowColor()
             local buttonW, buttonH = button:GetWidth() or 45, button:GetHeight() or 45
@@ -873,16 +816,12 @@ do
             frameData.assistCustomW, frameData.assistCustomH = nil, nil
             frameData.assistCustomR, frameData.assistCustomG, frameData.assistCustomB = nil, nil, nil
             local bf = button.AssistedCombatHighlightFrame
-            if bf then
-                bf:SetAlpha(1)
-            end
+            if bf then bf:SetAlpha(1) end
         end
 
         local look = (profile and profile.assistGlowStyle) or 1
         -- A custom glow runs in combat only: outside it, Blizzard's frozen ring.
-        if customKind > 0 or look == 0 then
-            look = 1
-        end
+        if customKind > 0 or look == 0 then look = 1 end
 
         mod._AssistOverlay(button, look)
 
@@ -898,9 +837,7 @@ do
             bf:SetAlpha(look == 2 and 0 or 1)
             if frameData.squared and not mod._AssistFit(button, bf, frameData.cropped) then
                 local s = mod._AssistScale(button)
-                if bf:GetScale() ~= s then
-                    bf:SetScale(s)
-                end
+                if bf:GetScale() ~= s then bf:SetScale(s) end
             end
             return
         end
@@ -913,9 +850,7 @@ do
         local assistHighlight = frameData.assistHL
         if not assistHighlight then
             assistHighlight = AssistCreate(button)
-            if not assistHighlight then
-                return
-            end
+            if not assistHighlight then return end
             frameData.assistHL = assistHighlight
         end
         if not mod._AssistFit(button, assistHighlight, frameData.cropped) then
@@ -939,12 +874,8 @@ do
     -- (see ForceCooldownPaint); btn.action is a derived mirror.
     local function ButtonSpell(button)
         local action = button.GetAttribute and button:GetAttribute("action")
-        if action == nil then
-            action = button.action
-        end
-        if action == nil then
-            return nil
-        end
+        if action == nil then action = button.action end
+        if action == nil then return nil end
         local atype, ident, subType = GetActionInfo(action)
         if atype == "spell" and subType ~= "assistedcombat" then
             return ident
@@ -999,9 +930,7 @@ do
             end
         end
         for button in pairs(_assistGlowed) do
-            if not newSet[button] then
-                AssistHide(button)
-            end
+            if not newSet[button] then AssistHide(button) end
         end
         _assistGlowed = newSet
     end
@@ -1017,9 +946,7 @@ do
     local _assistRescanPending = false
     local _assistLastScan = 0
     local function QueueAssistRescan()
-        if _assistRescanPending then
-            return
-        end
+        if _assistRescanPending then return end
         _assistRescanPending = true
         local timePassed = GetTime() - _assistLastScan
         local delay = (timePassed >= 0.15) and 0 or (0.15 - timePassed)
@@ -1044,19 +971,20 @@ do
         local profile = ABAR.db and ABAR.db.profile
         local repaint = changed and ((profile and profile.assistGlowType) or 0) > 0
         for button in pairs(_assistGlowed) do
-            if repaint then
-                AssistShow(button)
-            end
+            if repaint then AssistShow(button) end
             local assistHighlight = EFD(button).assistHL
-            if assistHighlight and assistHighlight:IsShown() and assistHighlight.Flipbook and assistHighlight.Flipbook.Anim then
+            if
+                assistHighlight
+                and assistHighlight:IsShown()
+                and assistHighlight.Flipbook
+                and assistHighlight.Flipbook.Anim
+            then
                 if _assistInCombat then
                     if not assistHighlight.Flipbook.Anim:IsPlaying() then
                         assistHighlight.Flipbook.Anim:Play()
                     end
                 else
-                    if assistHighlight.Flipbook.Anim:IsPlaying() then
-                        assistHighlight.Flipbook.Anim:Stop()
-                    end
+                    if assistHighlight.Flipbook.Anim:IsPlaying() then assistHighlight.Flipbook.Anim:Stop() end
                 end
             end
         end
@@ -1066,28 +994,32 @@ do
     end
 
     local function InstallAssistHook()
-        if _assistHookInstalled then
-            return
-        end
+        if _assistHookInstalled then return end
         _assistHookInstalled = true
         SyncAssistCombat()
         if EventRegistry and EventRegistry.RegisterCallback then
             -- No hooksecurefunc on UpdateAllAssistedHighlightFramesForSpell:
             -- the manager calls it then fires this event right after, so a
             -- hook would run the full walk twice per suggestion change.
-            EventRegistry:RegisterCallback("AssistedCombatManager.OnAssistedHighlightSpellChange", function()
-                QueueAssistRescan()
-            end, "EAB_AssistHighlight")
+            EventRegistry:RegisterCallback(
+                "AssistedCombatManager.OnAssistedHighlightSpellChange",
+                function() QueueAssistRescan() end,
+                "EAB_AssistHighlight"
+            )
             -- Fires when the assistedCombatHighlight CVar is toggled at runtime.
-            EventRegistry:RegisterCallback("AssistedCombatManager.OnSetUseAssistedHighlight", function()
-                QueueAssistRescan()
-            end, "EAB_AssistHighlight_CVar")
+            EventRegistry:RegisterCallback(
+                "AssistedCombatManager.OnSetUseAssistedHighlight",
+                function() QueueAssistRescan() end,
+                "EAB_AssistHighlight_CVar"
+            )
             -- Page swaps / drags / hover re-candidacy: the suggestion may not
             -- change, but which button holds it (or whether Blizzard shows its
             -- own frame on a hovered button) does. Same signal Blizzard uses.
-            EventRegistry:RegisterCallback("ActionButton.OnActionChanged", function()
-                QueueAssistRescan()
-            end, "EAB_AssistHighlight_Action")
+            EventRegistry:RegisterCallback(
+                "ActionButton.OnActionChanged",
+                function() QueueAssistRescan() end,
+                "EAB_AssistHighlight_Action"
+            )
         end
         local castFrame = mod.TakeShell()
         castFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1112,9 +1044,7 @@ function ABAR:RefreshProcGlows()
         if buttonList then
             for index = 1, #buttonList do
                 local button = buttonList[index]
-                if button and _procState.active[button] then
-                    UpdateFlipbook(button)
-                end
+                if button and _procState.active[button] then UpdateFlipbook(button) end
             end
         end
     end
@@ -1137,9 +1067,7 @@ function ABAR:ScanExistingProcs()
                     if not overlayed and spellId and ISO then
                         if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                             local ovr = C_SpellBook.FindSpellOverrideByID(spellId)
-                            if ovr and ovr > 0 and ovr ~= spellId then
-                                overlayed = ISO(ovr)
-                            end
+                            if ovr and ovr > 0 and ovr ~= spellId then overlayed = ISO(ovr) end
                         end
                         if not overlayed and C_Spell and C_Spell.GetBaseSpell then
                             local baseLevel = C_Spell.GetBaseSpell(spellId)
@@ -1164,9 +1092,7 @@ local EDGE_TEXTURE = "Interface\\AddOns\\CludesUIActionBars\\Media\\edge.png"
 local function GetClassColor()
     local _, class = UnitClass("player")
     local color = RAID_CLASS_COLORS[class]
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 1, 1, 1
 end
 
@@ -1181,49 +1107,27 @@ local function ResolveCooldownEdgeColor(profile)
 end
 
 local function ApplySingleCooldownEdge(cooldownFrame, edgeSize, cr, cg, callback, ca)
-    if not cooldownFrame then
-        return
-    end
-    if cooldownFrame:IsForbidden() then
-        return
-    end
-    if cooldownFrame.SetEdgeTexture then
-        cooldownFrame:SetEdgeTexture(EDGE_TEXTURE)
-    end
-    if cooldownFrame.SetEdgeScale then
-        cooldownFrame:SetEdgeScale(edgeSize)
-    end
-    if cooldownFrame.SetEdgeColor then
-        cooldownFrame:SetEdgeColor(cr, cg, callback, ca)
-    end
+    if not cooldownFrame then return end
+    if cooldownFrame:IsForbidden() then return end
+    if cooldownFrame.SetEdgeTexture then cooldownFrame:SetEdgeTexture(EDGE_TEXTURE) end
+    if cooldownFrame.SetEdgeScale then cooldownFrame:SetEdgeScale(edgeSize) end
+    if cooldownFrame.SetEdgeColor then cooldownFrame:SetEdgeColor(cr, cg, callback, ca) end
 end
 
 -- After applying edge cosmetics, enforce shape-based edge visibility. Must be called
 -- after ApplySingleCooldownEdge since SetEdgeTexture may re-enable drawing.
 local function EnforceShapeEdgeSingle(cd, edgeScale, useCircular)
-    if not cd or cd:IsForbidden() then
-        return
-    end
-    if cd.SetEdgeTexture then
-        pcall(cd.SetEdgeTexture, cd, EDGE_TEXTURE)
-    end
-    if cd.SetUseCircularEdge then
-        pcall(cd.SetUseCircularEdge, cd, useCircular)
-    end
-    if cd.SetEdgeScale then
-        pcall(cd.SetEdgeScale, cd, edgeScale)
-    end
+    if not cd or cd:IsForbidden() then return end
+    if cd.SetEdgeTexture then pcall(cd.SetEdgeTexture, cd, EDGE_TEXTURE) end
+    if cd.SetUseCircularEdge then pcall(cd.SetUseCircularEdge, cd, useCircular) end
+    if cd.SetEdgeScale then pcall(cd.SetEdgeScale, cd, edgeScale) end
 end
 
 local function EnforceShapeEdge(button)
     local efd = EFD(button)
-    if not button or not efd.shapeApplied then
-        return
-    end
+    if not button or not efd.shapeApplied then return end
     local shapeName = efd.shapeName
-    if not shapeName then
-        return
-    end
+    if not shapeName then return end
     local edgeScale = SHAPE_EDGE_SCALES[shapeName] or 0.60
     local useCircular = (shapeName ~= "square" and shapeName ~= "csquare")
     EnforceShapeEdgeSingle(button.cooldown, edgeScale, useCircular)
@@ -1236,9 +1140,7 @@ local function ApplyButtonCooldownEdge(button, edgeSize, cr, cg, callback, ca)
     local efd = EFD(button)
     local sn = efd.shapeApplied and efd.shapeName
     local sz = edgeSize
-    if sn and sn ~= "square" and sn ~= "csquare" then
-        sz = 1.0
-    end
+    if sn and sn ~= "square" and sn ~= "csquare" then sz = 1.0 end
     ApplySingleCooldownEdge(button.cooldown, sz, cr, cg, callback, ca)
     ApplySingleCooldownEdge(button.chargeCooldown, sz, cr, cg, callback, ca)
     EnforceShapeEdge(button)
@@ -1269,9 +1171,7 @@ local function _FlushCDPatch()
             local sz = baseSz
             local buttonData = EFD(button)
             local sn = buttonData.shapeApplied and buttonData.shapeName
-            if sn and sn ~= "square" and sn ~= "csquare" then
-                sz = 1.0
-            end
+            if sn and sn ~= "square" and sn ~= "csquare" then sz = 1.0 end
             ApplySingleCooldownEdge(cooldownFrame, sz, cr, cg, callback, ca)
             if buttonData.shapeMaskPath and buttonData.shapeApplied then
                 local mask = buttonData.shapeMask
@@ -1292,20 +1192,14 @@ local function _FlushCDPatch()
 end
 
 local function HookButtonCooldownEdge(button)
-    if not button or not EFD(button).squared then
-        return
-    end
-    if EFD(button).cdEdgeHooked then
-        return
-    end
+    if not button or not EFD(button).squared then return end
+    if EFD(button).cdEdgeHooked then return end
     EFD(button).cdEdgeHooked = true
 
     local function OnSetCooldown(cooldownFrame)
         -- Cooldown edge patch (skip if edge was already applied to this frame)
         if cooldownFrame and not EFD(cooldownFrame).edgeDone then
-            if not _cdEdge.pending[cooldownFrame] then
-                _cdEdge.pendingCount = _cdEdge.pendingCount + 1
-            end
+            if not _cdEdge.pending[cooldownFrame] then _cdEdge.pendingCount = _cdEdge.pendingCount + 1 end
             _cdEdge.pending[cooldownFrame] = button
             if not _cdEdge.timerScheduled then
                 _cdEdge.timerScheduled = true
@@ -1373,9 +1267,7 @@ function EAB_VTABLE.CooldownFonts.FlushPatch()
 end
 
 function EAB_VTABLE.CooldownFonts.HookButton(button)
-    if not button or EFD(button).cdFontsHooked then
-        return
-    end
+    if not button or EFD(button).cdFontsHooked then return end
     EFD(button).cdFontsHooked = true
     -- Piggybacks on HookButtonCooldownEdge rather than a second hooksecurefunc
     -- on the same SetCooldown: that hook already fires on every SetCooldown and
@@ -1383,27 +1275,21 @@ function EAB_VTABLE.CooldownFonts.HookButton(button)
 end
 
 local function HookCooldownEdge()
-    if _cdEdge.hooked then
-        return
-    end
+    if _cdEdge.hooked then return end
     _cdEdge.hooked = true
     for _, details in ipairs(BAR_CONFIG) do
         local buttonList = barButtons[details.key]
         if buttonList then
             for index = 1, #buttonList do
                 local button = buttonList[index]
-                if button and EFD(button).squared then
-                    HookButtonCooldownEdge(button)
-                end
+                if button and EFD(button).squared then HookButtonCooldownEdge(button) end
             end
         end
     end
 end
 
 function ABAR:ApplyCooldownEdge()
-    if not self.db.profile.squareIcons then
-        return
-    end
+    if not self.db.profile.squareIcons then return end
     HookCooldownEdge()
     local profile = self.db.profile
     local cr, cg, callback, ca = ResolveCooldownEdgeColor(profile)
@@ -1415,12 +1301,8 @@ function ABAR:ApplyCooldownEdge()
                 local button = buttonList[index]
                 if button and EFD(button).squared then
                     -- Clear edge cache so the hook re-applies on next cooldown
-                    if button.cooldown then
-                        EFD(button.cooldown).edgeDone = nil
-                    end
-                    if button.chargeCooldown then
-                        EFD(button.chargeCooldown).edgeDone = nil
-                    end
+                    if button.cooldown then EFD(button.cooldown).edgeDone = nil end
+                    if button.chargeCooldown then EFD(button.chargeCooldown).edgeDone = nil end
                     ApplyButtonCooldownEdge(button, sz, cr, cg, callback, ca)
                 end
             end
@@ -1434,9 +1316,7 @@ function EAB_VTABLE.CooldownFonts.HookAll()
         if buttonList then
             for index = 1, #buttonList do
                 local button = buttonList[index]
-                if button then
-                    EAB_VTABLE.CooldownFonts.HookButton(button)
-                end
+                if button then EAB_VTABLE.CooldownFonts.HookButton(button) end
             end
         end
     end
@@ -1493,12 +1373,8 @@ end
 -- current by every pass that can change it while the option is on).
 function ABAR:GetCheckedAlpha(barId)
     local profile = self.db.profile
-    if profile.showCastHighlight == false then
-        return 0
-    end
-    if barId and profile.castHighlightBorder and mod._ixElig[barId] then
-        return 0
-    end
+    if profile.showCastHighlight == false then return 0 end
+    if barId and profile.castHighlightBorder and mod._ixElig[barId] then return 0 end
     return 1
 end
 
@@ -1515,9 +1391,7 @@ function ABAR:ApplyCheckedTextures()
             local a = self:GetCheckedAlpha(details.key)
             for index = 1, #buttonList do
                 local button = buttonList[index]
-                if button and button.CheckedTexture then
-                    button.CheckedTexture:SetAlpha(a)
-                end
+                if button and button.CheckedTexture then button.CheckedTexture:SetAlpha(a) end
                 if button then
                     if ixBar then
                         mod._ixRole(button, s, "ixCast", true)

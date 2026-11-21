@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Nameplates_Options\CoreTextColoring_Options.lua
 --  Nameplates options: the Core Text Coloring section of the Display page,
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  text slots from ns.NPO_TEXT_SLOTS and ns.NPO_TextSlotShown.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUINameplates"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local environ = mod._NPO_OptEnv
@@ -24,13 +20,9 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local isShown = {}
     local slots = mod.NPO_TEXT_SLOTS
     for idx = 1, #slots do
-        if mod.NPO_TextSlotShown(slots[idx].key) then
-            isShown[#isShown + 1] = slots[idx]
-        end
+        if mod.NPO_TextSlotShown(slots[idx].key) then isShown[#isShown + 1] = slots[idx] end
     end
-    if #isShown == 0 then
-        return cursorY
-    end
+    if #isShown == 0 then return cursorY end
 
     local _, height = W:SectionHeader(hostFrame, "CORE TEXT COLORING", cursorY)
     cursorY = cursorY - height
@@ -50,9 +42,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local COLOR_MODE_ORDER_LEVEL = { "custom", "class", "level" }
     local function TextColoringCfg(slotKey, labelText)
         local el = DBVal(slotKey)
-        if el == "none" then
-            return CludesUI.BlankRowCfg()
-        end
+        if el == "none" then return CludesUI.BlankRowCfg() end
         local values, sequence
         if el == "targetOfTarget" then
             values, sequence = { custom = "Custom", class = "Class" }, COLOR_MODE_ORDER
@@ -65,18 +55,14 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
             text = labelText,
             values = values,
             order = sequence,
-            getValue = function()
-                return mod.NP_SlotColorMode(slotKey, DB())
-            end,
+            getValue = function() return mod.NP_SlotColorMode(slotKey, DB()) end,
             -- The mode is saved only when the pick differs from what the slot derives
             -- with none saved, so picking the derived value pins nothing. Rebuild: the
             -- shared NPC swatches exist only on a Hostility / Class half.
             setValue = function(val)
                 local saved = DB()
                 saved[slotKey .. "ColorMode"] = nil
-                if mod.NP_SlotColorMode(slotKey, saved) ~= val then
-                    saved[slotKey .. "ColorMode"] = val
-                end
+                if mod.NP_SlotColorMode(slotKey, saved) ~= val then saved[slotKey .. "ColorMode"] = val end
                 mod.RefreshAllSettings()
                 UpdatePreview()
                 CludesUI:RefreshPage(true)
@@ -97,15 +83,11 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local npcSwatchUpdates = {} -- the shared NPC swatches of every row, repainted together
     local function MakeTextColoringInline(row, regionKey, slotKey, title)
         local el = DBVal(slotKey)
-        if el == "none" then
-            return
-        end
+        if el == "none" then return end
         local region = row[regionKey]
         local colorKey = slotKey .. "Color"
         local isToT = el == "targetOfTarget"
-        local function Mode()
-            return mod.NP_SlotColorMode(slotKey, DB())
-        end
+        local function Mode() return mod.NP_SlotColorMode(slotKey, DB()) end
         local function ApplyColoring()
             mod.RefreshAllSettings()
             UpdatePreview()
@@ -131,9 +113,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "toggle",
                         label = "Custom Name Color",
-                        get = function()
-                            return DBVal(nameOnKey) == true
-                        end,
+                        get = function() return DBVal(nameOnKey) == true end,
                         set = function(val)
                             DB()[nameOnKey] = val
                             ApplyColoring()
@@ -142,12 +122,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "colorpicker",
                         label = "Name Color",
-                        hidden = function()
-                            return DBVal(nameOnKey) ~= true
-                        end,
-                        get = function()
-                            return PartColor(nameColorKey)
-                        end,
+                        hidden = function() return DBVal(nameOnKey) ~= true end,
+                        get = function() return PartColor(nameColorKey) end,
                         set = function(red, green, blue)
                             DB()[nameColorKey] = { r = red, g = green, b = blue }
                             ApplyColoring()
@@ -156,26 +132,18 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "toggle",
                         label = "Custom Level Color",
-                        get = function()
-                            return DBVal(lvlOnKey) == true
-                        end,
+                        get = function() return DBVal(lvlOnKey) == true end,
                         set = function(val)
                             DB()[lvlOnKey] = val
-                            if val then
-                                DB()[diffKey] = false
-                            end
+                            if val then DB()[diffKey] = false end
                             ApplyColoring()
                         end,
                     },
                     {
                         type = "colorpicker",
                         label = "Level Color",
-                        hidden = function()
-                            return DBVal(lvlOnKey) ~= true
-                        end,
-                        get = function()
-                            return PartColor(lvlColorKey)
-                        end,
+                        hidden = function() return DBVal(lvlOnKey) ~= true end,
+                        get = function() return PartColor(lvlColorKey) end,
                         set = function(red, green, blue)
                             DB()[lvlColorKey] = { r = red, g = green, b = blue }
                             ApplyColoring()
@@ -186,17 +154,11 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     {
                         type = "toggle",
                         label = "Level Difficulty Color",
-                        hidden = function()
-                            return Mode() == "level"
-                        end,
-                        get = function()
-                            return mod.NP_SlotLevelDiff(slotKey, DB())
-                        end,
+                        hidden = function() return Mode() == "level" end,
+                        get = function() return mod.NP_SlotLevelDiff(slotKey, DB()) end,
                         set = function(val)
                             DB()[diffKey] = val
-                            if val then
-                                DB()[lvlOnKey] = false
-                            end
+                            if val then DB()[lvlOnKey] = false end
                             ApplyColoring()
                         end,
                     },
@@ -223,9 +185,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                 CludesUI.ShowWidgetTooltip(custom, CludesUI.L("Custom Color"))
             end
         end)
-        custom:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        custom:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
 
         -- Hostility / Class: Tapped / Neutral / Hostile left to right, Hostile in
         -- the custom swatch's place.
@@ -255,12 +215,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                 )
                 Pix.Point(sw, "RIGHT", prev, "LEFT", prevGap, 0)
                 prev, prevGap = sw, -8
-                sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, tipText)
-                end)
-                sw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                sw:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, tipText) end)
+                sw:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 npc[#npc + 1] = sw
                 npcUpd[#npcUpd + 1] = upd
                 npcSwatchUpdates[#npcSwatchUpdates + 1] = upd
@@ -304,9 +260,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         )
         if not CludesUI._prebuilding then
             MakeTextColoringInline(row, "_leftRegion", l.key, l.coloring)
-            if r then
-                MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring)
-            end
+            if r then MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring) end
         end
         cursorY = cursorY - rowH
     end

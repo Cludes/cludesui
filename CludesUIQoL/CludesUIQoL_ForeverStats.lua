@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIQoL_ForeverStats.lua
 --  WoW Forever has none of retail's ratings, so its Secondary Stats block
@@ -23,22 +19,16 @@ local function Sum(...)
     local sum = 0
     for index = 1, select("#", ...) do
         local val = select(index, ...)
-        if issecretvalue(val) then
-            return nil
-        end
+        if issecretvalue(val) then return nil end
         sum = sum + (val or 0)
     end
     return sum
 end
 local function SchoolPower(index)
-    return function()
-        return GetSpellBonusDamage(index)
-    end
+    return function() return GetSpellBonusDamage(index) end
 end
 local function Resist(index)
-    return function()
-        return (select(2, UnitResistance("player", index)))
-    end
+    return function() return (select(2, UnitResistance("player", index))) end
 end
 
 local NUM, PCT = "%.0f", "%.2f%%"
@@ -52,26 +42,40 @@ local GROUPS = {
     {
         title = "Offensive",
         stats = {
-            StatRow("ap", "Attack Power", "AP", HUE.ap, NUM, function()
-                return Sum(UnitAttackPower("player"))
-            end, true),
-            StatRow("rap", "Ranged AP", "RAP", HUE.ap, NUM, function()
-                return Sum(UnitRangedAttackPower("player"))
-            end),
+            StatRow(
+                "ap",
+                "Attack Power",
+                "AP",
+                HUE.ap,
+                NUM,
+                function() return Sum(UnitAttackPower("player")) end,
+                true
+            ),
+            StatRow(
+                "rap",
+                "Ranged AP",
+                "RAP",
+                HUE.ap,
+                NUM,
+                function() return Sum(UnitRangedAttackPower("player")) end
+            ),
             StatRow("mcrit", "Melee Crit", "M.Crit", HUE.crit, PCT, GetCritChance),
             StatRow("rcrit", "Ranged Crit", "R.Crit", HUE.crit, PCT, GetRangedCritChance),
             StatRow("mhaste", "Melee Haste", "M.Haste", HUE.haste, PCT, GetMeleeHaste),
             -- Base and ammo haste, as the character pane adds them.
-            StatRow("rhaste", "Ranged Haste", "R.Haste", HUE.haste, PCT, function()
-                return Sum(GetRangedHaste())
-            end),
+            StatRow(
+                "rhaste",
+                "Ranged Haste",
+                "R.Haste",
+                HUE.haste,
+                PCT,
+                function() return Sum(GetRangedHaste()) end
+            ),
             StatRow("mhit", "Melee Hit", "Hit", HUE.hit, PCT, GetHitModifier),
             -- Off-hand hit, as the character pane shows it ("?" on a client
             -- without the getter).
             StatRow("ohit", "Off-hand Hit", "OH Hit", HUE.hit, PCT, function()
-                if GetOffhandHitModifier then
-                    return GetOffhandHitModifier()
-                end
+                if GetOffhandHitModifier then return GetOffhandHitModifier() end
             end),
         },
     },
@@ -83,20 +87,21 @@ local GROUPS = {
                 local best = 0
                 for index = 2, 7 do
                     local val = GetSpellBonusDamage(index)
-                    if issecretvalue(val) then
-                        return nil
-                    end
-                    if val > best then
-                        best = val
-                    end
+                    if issecretvalue(val) then return nil end
+                    if val > best then best = val end
                 end
                 return best
             end),
             StatRow("healing", "Healing Power", "Heal", HUE.healing, NUM, GetSpellBonusHealing),
             StatRow("scrit", "Spell Crit", "S.Crit", HUE.crit, PCT, GetSpellCritChance),
-            StatRow("shaste", "Spell Haste", "S.Haste", HUE.haste, PCT, function()
-                return UnitSpellHaste("player")
-            end),
+            StatRow(
+                "shaste",
+                "Spell Haste",
+                "S.Haste",
+                HUE.haste,
+                PCT,
+                function() return UnitSpellHaste("player") end
+            ),
             StatRow("shit", "Spell Hit", "S.Hit", HUE.hit, PCT, GetSpellHitModifier),
             StatRow("spen", "Spell Pen", "S.Pen", HUE.spen, NUM, GetSpellPenetration),
         },
@@ -115,12 +120,22 @@ local GROUPS = {
     {
         title = "Defensive",
         stats = {
-            StatRow("armor", "Armor", "Armor", HUE.armor, NUM, function()
-                return (select(2, UnitArmor("player")))
-            end),
-            StatRow("defense", "Defense", "Def", HUE.armor, NUM, function()
-                return Sum(UnitDefenseSkill("player"))
-            end),
+            StatRow(
+                "armor",
+                "Armor",
+                "Armor",
+                HUE.armor,
+                NUM,
+                function() return (select(2, UnitArmor("player"))) end
+            ),
+            StatRow(
+                "defense",
+                "Defense",
+                "Def",
+                HUE.armor,
+                NUM,
+                function() return Sum(UnitDefenseSkill("player")) end
+            ),
             StatRow("dodge", "Dodge", "Dodge", HUE.avoid, PCT, GetDodgeChance),
             StatRow("parry", "Parry", "Parry", HUE.avoid, PCT, GetParryChance),
             StatRow("block", "Block", "Block", HUE.avoid, PCT, GetBlockChance),
@@ -143,24 +158,18 @@ local GROUPS = {
         stats = {
             StatRow("mp5", "Mana Regen", "MP5", HUE.mp5, NUM, function()
                 local regen = GetManaRegen()
-                if issecretvalue(regen) then
-                    return nil
-                end
+                if issecretvalue(regen) then return nil end
                 return floor(regen * 5)
             end, true),
             StatRow("hp5", "Health Regen", "HP5", HUE.hp5, NUM, function()
                 local regen = GetHealthRegen()
-                if issecretvalue(regen) then
-                    return nil
-                end
+                if issecretvalue(regen) then return nil end
                 return floor(regen * 5)
             end, true),
             -- Run speed against the base 7 yards a second.
             StatRow("movespeed", "Movement Speed", "MS", HUE.speed, "%.0f%%", function()
                 local run = select(2, GetUnitSpeed("player"))
-                if issecretvalue(run) then
-                    return nil
-                end
+                if issecretvalue(run) then return nil end
                 return floor(run / 7 * 100 + 0.5)
             end, true),
         },
@@ -174,9 +183,7 @@ for _, group in ipairs(GROUPS) do
     for _, s in ipairs(group.stats) do
         byKey[s.key] = s
         sequence[#sequence + 1] = s.key
-        if not s.on then
-            hidden[s.key] = true
-        end
+        if not s.on then hidden[s.key] = true end
     end
 end
 

@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 
 -- ── Constants (shared with all modules via ns.K) ───────────────────────────
 mod.K = {
@@ -159,9 +157,7 @@ mod.isTestMode = false
 -- db.profile is re-pointed by the profile system, so always read it here.
 local profileDB
 function mod.DB()
-    if not profileDB then
-        profileDB = CludesUI.Lite.NewDB("CludesUITankDB", { profile = {} })
-    end
+    if not profileDB then profileDB = CludesUI.Lite.NewDB("CludesUITankDB", { profile = {} }) end
     return profileDB.profile
 end
 
@@ -182,39 +178,29 @@ function mod.CalculateScaleFactor()
 end
 
 function mod.FindCoTank()
-    if mod.isTestMode then
-        return "player"
-    end
+    if mod.isTestMode then return "player" end
     local groupType = IsInRaid() and "raid" or (IsInGroup() and "party")
-    if not groupType then
-        return nil
-    end
+    if not groupType then return nil end
     local total = GetNumGroupMembers()
     -- Prefer pinned tank if set
     local pinned = mod.DB().pinnedTank
     if pinned then
         for idx = 1, total do
             local unitToken = groupType .. idx
-            if UnitExists(unitToken) and UnitName(unitToken) == pinned then
-                return unitToken
-            end
+            if UnitExists(unitToken) and UnitName(unitToken) == pinned then return unitToken end
         end
         -- pinned player not in group; fall through to auto-detect
     end
     for idx = 1, total do
         local unitToken = groupType .. idx
         if UnitExists(unitToken) and not UnitIsUnit(unitToken, "player") then
-            if UnitGroupRolesAssigned(unitToken) == "TANK" then
-                return unitToken
-            end
+            if UnitGroupRolesAssigned(unitToken) == "TANK" then return unitToken end
         end
     end
     return nil
 end
 
-function mod.Print(msg)
-    print("|cff4cc9f0Tank Kit:|r " .. tostring(msg))
-end
+function mod.Print(msg) print("|cff4cc9f0Tank Kit:|r " .. tostring(msg)) end
 
 -- Points the frame at the co-tank while the player is tanking alongside one,
 -- and hides it otherwise. Test mode owns the unit ("player") until it is
@@ -222,9 +208,7 @@ end
 -- testing solo usually means no TANK role, which used to hide the frame the
 -- moment the first fight ended.
 function mod.AssignCoTank(widget)
-    if mod.isTestMode then
-        return
-    end
+    if mod.isTestMode then return end
     local myRole = UnitGroupRolesAssigned("player")
     local currentTank = mod.FindCoTank()
     if myRole == "TANK" and currentTank then
@@ -242,9 +226,7 @@ end
 -- the preview icons, so its test mode showed no mock debuffs. Returns false
 -- in combat, where changing a secure frame's unit or visibility is blocked.
 function mod.SetTestMode(enabled)
-    if InCombatLockdown() then
-        return false
-    end
+    if InCombatLockdown() then return false end
     mod.isTestMode = enabled and true or false
     local widget = CoTankAuras
     if widget then
@@ -295,9 +277,7 @@ end
 local function InitializeFrame()
     mod.DB()
 
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
 
     local K = mod.K
 
@@ -370,27 +350,19 @@ local function InitializeFrame()
     mod.MigratePrivateAuraRow()
 
     -- Click-through
-    if saved.clickThrough then
-        widget:EnableMouse(false)
-    end
+    if saved.clickThrough then widget:EnableMouse(false) end
 
     -- Frame scripts
     widget:SetScript("OnAttributeChanged", widget.OnAttributeChanged)
-    widget:SetScript("OnSizeChanged", function(s, wid, hgt)
-        s:OnSizeChangedHandler(wid, hgt)
-    end)
+    widget:SetScript("OnSizeChanged", function(s, wid, hgt) s:OnSizeChangedHandler(wid, hgt) end)
     widget:SetScript("OnEvent", widget.UpdateVisuals)
     widget:SetScript("OnShow", function(self)
         self:UpdateHealthBarColor()
         self:AttachPrivateAnchors()
     end)
-    widget:SetScript("OnHide", function(self)
-        self:CleanupPrivateAnchors()
-    end)
+    widget:SetScript("OnHide", function(self) self:CleanupPrivateAnchors() end)
     widget:SetScript("OnMouseUp", function(self, button)
-        if button == "RightButton" and not InCombatLockdown() then
-            mod.Options:Open()
-        end
+        if button == "RightButton" and not InCombatLockdown() then mod.Options:Open() end
     end)
     -- Placed with CludesUI Layout Mode (modules/externals.lua registers it).
 
@@ -403,9 +375,7 @@ local function InitializeFrame()
     manager:RegisterEvent("PLAYER_REGEN_ENABLED")
     manager:RegisterEvent("PLAYER_ENTERING_WORLD")
     local function OnGroupEvent(evt)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         -- Anything the secrecy rules blocked mid-fight gets replayed here:
         -- aura sound registration, and restyling of AuraButtons that were
         -- forbidden while auras were secret.
@@ -413,9 +383,7 @@ local function InitializeFrame()
             mod.Alert:FlushPendingAuraSounds()
             mod.FlushPendingRestyle()
         end
-        if not widget.anchorFrames then
-            widget:CreatePrivateAnchorContainers()
-        end
+        if not widget.anchorFrames then widget:CreatePrivateAnchorContainers() end
         mod.AssignCoTank(widget)
         -- Retry the AuraContainers in case an earlier attempt could not create them.
         mod.CreateDebuffAuraContainer(widget)
@@ -427,9 +395,7 @@ local function InitializeFrame()
         widget:RefreshDebuffLayout()
         widget:RefreshDefensiveLayout()
     end
-    manager:SetScript("OnEvent", function(_, evt)
-        OnGroupEvent(evt)
-    end)
+    manager:SetScript("OnEvent", function(_, evt) OnGroupEvent(evt) end)
 
     -- Clique support
     _G["ClickCastFrames"] = _G["ClickCastFrames"] or {}
@@ -441,9 +407,7 @@ local function InitializeFrame()
 
     -- Started late because the addon loaded in combat: the login events that
     -- normally assign the co-tank have already fired, so run that pass now.
-    if IsLoggedIn() then
-        OnGroupEvent("PLAYER_REGEN_ENABLED")
-    end
+    if IsLoggedIn() then OnGroupEvent("PLAYER_REGEN_ENABLED") end
 end
 
 -- ── Bootstrap ──────────────────────────────────────────────────────────────
@@ -451,9 +415,7 @@ local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
 loader:SetScript("OnEvent", function(self, evt, name)
     if evt == "ADDON_LOADED" then
-        if name ~= addonName then
-            return
-        end
+        if name ~= addonName then return end
         self:UnregisterEvent("ADDON_LOADED")
         -- The frame is secure and AuraContainers cannot be created in combat,
         -- so a reload or reconnect mid-pull waits for combat to end. Before
@@ -466,9 +428,7 @@ loader:SetScript("OnEvent", function(self, evt, name)
         self:UnregisterEvent("PLAYER_REGEN_ENABLED")
     end
     local success, err = pcall(InitializeFrame)
-    if not success then
-        print("|cffff4040Tank Kit load error:|r " .. tostring(err))
-    end
+    if not success then print("|cffff4040Tank Kit load error:|r " .. tostring(err)) end
 end)
 
 -- ── Slash Commands ─────────────────────────────────────────────────────────
@@ -557,9 +517,7 @@ local function handleSlashCommand(msg)
             mod.Print("|cffff4040Cannot reset during combat.|r")
             return
         end
-        if CoTankAuras then
-            mod.ResetPosition(CoTankAuras)
-        end
+        if CoTankAuras then mod.ResetPosition(CoTankAuras) end
         mod.Print("Position reset.")
         return
     end
@@ -571,9 +529,7 @@ local function handleSlashCommand(msg)
             return
         end
         CludesUI:EnsureUnlockCore()
-        if CludesUI._openUnlockMode then
-            CludesUI._openUnlockMode()
-        end
+        if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
         return
     end
 
@@ -609,7 +565,5 @@ SLASH_COTANKAURAS1 = "/ctank"
 SLASH_COTANKAURAS2 = "/tankkit"
 SlashCmdList["COTANKAURAS"] = function(msg)
     local success, err = pcall(handleSlashCommand, msg)
-    if not success then
-        mod.Print("|cffff4040Error: " .. tostring(err) .. "|r")
-    end
+    if not success then mod.Print("|cffff4040Error: " .. tostring(err) .. "|r") end
 end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Options.lua
 --  Registers the Forever Essentials sidebar addon (WoW Forever only) with its
@@ -13,9 +11,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- Page names are DEEP-LINK IDENTIFIERS: every NavigateToElementSettings tuple
 -- and What's New nav carries them as strings and fails SILENTLY on a mismatch.
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 local PAGE_GENERAL = "General"
 local PAGE_TRAVEL = "Travel"
@@ -46,7 +42,6 @@ end
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 CludesUI.AtLogin(function()
-
     CludesUI:RegisterModule("CludesUIForeverEssentials", {
         title = "Forever Tools",
         description = "Essential tools for WoW Forever.",
@@ -120,15 +115,9 @@ CludesUI.AtLogin(function()
         -- The Travel, Threat, Loot and Macros headers live in the content header; declaring a
         -- page's builder makes a cached page whose header was dropped rebuild with it.
         getHeaderBuilder = function(page)
-            if page == PAGE_TRAVEL then
-                return _G._CUI_TravelHeaderBuilder
-            end
-            if page == PAGE_THREAT then
-                return _G._CUI_ThreatHeaderBuilder
-            end
-            if page == PAGE_LOOT then
-                return _G._CUI_LootHeaderBuilder
-            end
+            if page == PAGE_TRAVEL then return _G._CUI_TravelHeaderBuilder end
+            if page == PAGE_THREAT then return _G._CUI_ThreatHeaderBuilder end
+            if page == PAGE_LOOT then return _G._CUI_LootHeaderBuilder end
             if page == PAGE_MACROS and CludesUI._MacroManager.Enabled() then
                 return _G._CUI_MacrosHeaderBuilder
             end
@@ -152,9 +141,7 @@ CludesUI.AtLogin(function()
                 CludesUIDB.questRewards = nil
                 CludesUIDB.zoneLevels = nil
                 -- The per-character favorites are the player's picks: only the switch resets.
-                if CludesUIDB.petSummon then
-                    CludesUIDB.petSummon.enabled = nil
-                end
+                if CludesUIDB.petSummon then CludesUIDB.petSummon.enabled = nil end
                 -- The CVars a session holds stay recorded, so Apply can give them back.
                 local fi = CludesUIDB.fishing
                 CludesUIDB.fishing = fi and fi.held and { held = fi.held } or nil
@@ -190,42 +177,18 @@ CludesUI.AtLogin(function()
                 LF.ApplyStyle()
                 LF.ApplyPosition()
             end
-            if CludesUI._SpellUprank then
-                CludesUI._SpellUprank.Apply()
-            end
-            if CludesUI._JunkItems then
-                CludesUI._JunkItems.Apply()
-            end
-            if CludesUI._ActiveForm then
-                CludesUI._ActiveForm.Apply()
-            end
-            if CludesUI._ClassicSpellbook then
-                CludesUI._ClassicSpellbook.Apply()
-            end
-            if CludesUI._ClassicTalents then
-                CludesUI._ClassicTalents.Apply()
-            end
-            if CludesUI._QuestRewards then
-                CludesUI._QuestRewards.Apply()
-            end
-            if CludesUI._ZoneLevels then
-                CludesUI._ZoneLevels.Apply()
-            end
-            if CludesUI._PetSummon then
-                CludesUI._PetSummon.Apply()
-            end
-            if CludesUI._Fishing then
-                CludesUI._Fishing.Apply()
-            end
-            if CludesUI._MapTravel then
-                CludesUI._MapTravel.Apply()
-            end
-            if CludesUI._MapFade then
-                CludesUI._MapFade.Apply()
-            end
-            if CludesUI._GatherSkill then
-                CludesUI._GatherSkill.Apply()
-            end
+            if CludesUI._SpellUprank then CludesUI._SpellUprank.Apply() end
+            if CludesUI._JunkItems then CludesUI._JunkItems.Apply() end
+            if CludesUI._ActiveForm then CludesUI._ActiveForm.Apply() end
+            if CludesUI._ClassicSpellbook then CludesUI._ClassicSpellbook.Apply() end
+            if CludesUI._ClassicTalents then CludesUI._ClassicTalents.Apply() end
+            if CludesUI._QuestRewards then CludesUI._QuestRewards.Apply() end
+            if CludesUI._ZoneLevels then CludesUI._ZoneLevels.Apply() end
+            if CludesUI._PetSummon then CludesUI._PetSummon.Apply() end
+            if CludesUI._Fishing then CludesUI._Fishing.Apply() end
+            if CludesUI._MapTravel then CludesUI._MapTravel.Apply() end
+            if CludesUI._MapFade then CludesUI._MapFade.Apply() end
+            if CludesUI._GatherSkill then CludesUI._GatherSkill.Apply() end
             CludesUI:InvalidatePageCache()
         end,
     })

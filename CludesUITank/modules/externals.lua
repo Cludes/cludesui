@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 -------------------------------------------------------------------------------
 --  externals.lua -- Tank Kit: "Externals on You" and the Layout Mode movers.
 --
@@ -33,31 +31,21 @@ local anchor -- the row's frame; Layout Mode moves this
 local boxHolder -- the AuraContainer inside it
 local rejected = false -- the game refused the filter: do not retry
 
-local function DB()
-    return mod.DB()
-end
+local function DB() return mod.DB() end
 
 function mod.ExternalsEnabled()
     local val = DB().extEnabled
     return val == nil or val == true
 end
 
-local function Count()
-    return mod.SettingNumber("extCount", EXT_DEFAULT_COUNT)
-end
-local function Size()
-    return mod.SettingNumber("extSize", EXT_DEFAULT_SIZE)
-end
-local function Gap()
-    return mod.SettingNumber("extSpacing", K.DEBUFF_SPACING)
-end
+local function Count() return mod.SettingNumber("extCount", EXT_DEFAULT_COUNT) end
+local function Size() return mod.SettingNumber("extSize", EXT_DEFAULT_SIZE) end
+local function Gap() return mod.SettingNumber("extSpacing", K.DEBUFF_SPACING) end
 
 --- True while the player's current spec is a tank spec.
 function mod.PlayerIsTankSpec()
     local specInfo = GetSpecialization and GetSpecialization()
-    if not specInfo then
-        return false
-    end
+    if not specInfo then return false end
     return GetSpecializationRole(specInfo) == "TANK"
 end
 
@@ -67,9 +55,7 @@ local function RowSize()
 end
 
 local function ApplyAnchorPosition()
-    if not anchor or InCombatLockdown() then
-        return
-    end
+    if not anchor or InCombatLockdown() then return end
     local p = DB().extPos
     anchor:ClearAllPoints()
     if p then
@@ -80,21 +66,15 @@ local function ApplyAnchorPosition()
 end
 
 local function ApplyAnchorSize()
-    if not anchor or InCombatLockdown() then
-        return
-    end
+    if not anchor or InCombatLockdown() then return end
     anchor:SetSize(RowSize())
 end
 
 --- Builds the row. AuraContainers cannot be created in combat, so this runs
 --- from the out-of-combat init and retries after combat.
 function mod.CreateExternals()
-    if anchor or rejected or InCombatLockdown() then
-        return
-    end
-    if not mod.HasAuraContainers() then
-        return
-    end
+    if anchor or rejected or InCombatLockdown() then return end
+    if not mod.HasAuraContainers() then return end
 
     anchor = CreateFrame("Frame", "CludesUITankExternals", UIParent)
     anchor:SetFrameStrata("MEDIUM")
@@ -111,9 +91,7 @@ function mod.CreateExternals()
     if not success or not c then
         success, c = pcall(CreateFrame, "AuraContainer", nil, anchor, "CustomAuraContainerTemplate")
     end
-    if not success or not c then
-        return
-    end
+    if not success or not c then return end
     c:SetSize(Size(), Size())
     c:SetFlowLayoutAxis(AnchorUtil.FlowLayoutAxis.Horizontal)
     c:SetFlowLayoutAnchorPoint("TOPLEFT")
@@ -125,9 +103,7 @@ function mod.CreateExternals()
         maxFrameCount = math.max(Count(), 0),
         sortMethod = AuraContainerSortMethod.Default,
         sortDirection = AuraContainerSortDirection.Normal,
-        initializeFrame = function(button)
-            mod.StyleAuraButton(button, "external")
-        end,
+        initializeFrame = function(button) mod.StyleAuraButton(button, "external") end,
         layout = {
             elementSpacing = Gap(),
             lineSpacing = Gap(),
@@ -147,9 +123,7 @@ end
 
 --- Turns the row on or off and applies count, size and gap.
 function mod.RefreshExternals()
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
     local live = mod.ExternalsEnabled() and Count() > 0 and mod.PlayerIsTankSpec() and not mod.IsInEditMode()
     pcall(boxHolder.SetAuraGroupMaxFrameCount, boxHolder, "externals", math.max(Count(), 0))
     pcall(boxHolder.SetAuraGroupLayout, boxHolder, "externals", {
@@ -158,9 +132,7 @@ function mod.RefreshExternals()
         elementWidth = Size(),
         elementHeight = Size(),
     })
-    if live then
-        boxHolder:SetUnit("player")
-    end
+    if live then boxHolder:SetUnit("player") end
     boxHolder:SetEnabled(live)
     if not InCombatLockdown() then
         boxHolder:SetShown(live)
@@ -179,9 +151,7 @@ local function RegisterLayoutMode()
     end
     local MK = CludesUI.MakeUnlockElement
     local widget = _G.CoTankAuras
-    if not widget then
-        return
-    end
+    if not widget then return end
     registered = true
 
     local function Reposition(key)
@@ -196,9 +166,7 @@ local function RegisterLayoutMode()
             label = "Co-Tank",
             group = "Tank Kit",
             order = 650,
-            getFrame = function()
-                return widget
-            end,
+            getFrame = function() return widget end,
             getSize = function()
                 return mod.SettingNumber("frameWidth", K.DEFAULT_WIDTH),
                     mod.SettingNumber("frameHeight", K.DEFAULT_HEIGHT)
@@ -215,9 +183,7 @@ local function RegisterLayoutMode()
             setHeight = function(_, hgt)
                 hgt = math.max(K.MIN_HEIGHT, math.min(K.MAX_HEIGHT, math.floor(hgt + 0.5)))
                 DB().frameHeight = hgt
-                if not InCombatLockdown() then
-                    widget:SetHeight(hgt)
-                end
+                if not InCombatLockdown() then widget:SetHeight(hgt) end
                 mod.RefreshAuraContainerLayout(widget)
                 mod.RestyleAuraButtons()
                 Reposition("TANK_CoTank")
@@ -242,9 +208,7 @@ local function RegisterLayoutMode()
                 local saved = DB()
                 saved.point, saved.relPoint, saved.x, saved.y = nil, nil, nil, nil
             end,
-            applyPos = function()
-                mod.ApplyPosition(widget)
-            end,
+            applyPos = function() mod.ApplyPosition(widget) end,
         }),
         MK({
             key = "TANK_Externals",
@@ -252,18 +216,12 @@ local function RegisterLayoutMode()
             group = "Tank Kit",
             order = 651,
             noAnchorTarget = true, -- its width follows the icon count
-            isHidden = function()
-                return not mod.ExternalsEnabled() or Count() == 0
-            end,
+            isHidden = function() return not mod.ExternalsEnabled() or Count() == 0 end,
             getFrame = function()
-                if not anchor then
-                    mod.CreateExternals()
-                end
+                if not anchor then mod.CreateExternals() end
                 return anchor
             end,
-            getSize = function()
-                return RowSize()
-            end,
+            getSize = function() return RowSize() end,
             setWidth = function() end,
             setHeight = function(_, hgt)
                 DB().extSize = math.max(EXT_MIN_SIZE, math.min(EXT_MAX_SIZE, math.floor(hgt + 0.5)))
@@ -273,12 +231,8 @@ local function RegisterLayoutMode()
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 DB().extPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
-            loadPos = function()
-                return DB().extPos
-            end,
-            clearPos = function()
-                DB().extPos = nil
-            end,
+            loadPos = function() return DB().extPos end,
+            clearPos = function() DB().extPos = nil end,
             applyPos = ApplyAnchorPosition,
         }),
     }, addonName)
@@ -292,9 +246,7 @@ events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent", function(_, evt, unitToken)
-    if evt == "PLAYER_SPECIALIZATION_CHANGED" and unitToken and unitToken ~= "player" then
-        return
-    end
+    if evt == "PLAYER_SPECIALIZATION_CHANGED" and unitToken and unitToken ~= "player" then return end
     if not InCombatLockdown() then
         mod.CreateExternals()
         RegisterLayoutMode()

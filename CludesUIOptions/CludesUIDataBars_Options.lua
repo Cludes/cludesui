@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIDataBars_Options.lua
 --  The "DataBars" options page for the multi-bar engine.
@@ -20,9 +18,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 
 local ADDON_NAME = "CludesUIDataBars"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local PAGE_DATABARS = "Info Bar"
 
@@ -46,12 +42,11 @@ CludesUI.AtOptionsLogin(function()
         cover:SetAllPoints()
         cover:SetFrameLevel(swatch:GetFrameLevel() + level)
         cover:EnableMouse(true)
-        cover:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(gateName))
-        end)
-        cover:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        cover:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(gateName)) end
+        )
+        cover:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         return cover
     end
 
@@ -64,9 +59,7 @@ CludesUI.AtOptionsLogin(function()
         menu:SetFrameStrata("FULLSCREEN_DIALOG")
         menu:SetFrameLevel(300)
         menu:SetClampedToScreen(true)
-        if width then
-            menu:SetWidth(width)
-        end
+        if width then menu:SetWidth(width) end
         menu:Hide()
         local backdrop = menu:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -80,13 +73,15 @@ CludesUI.AtOptionsLogin(function()
     -- hiding clears it.
     local function CloseOnOutsideClick(menu)
         menu._closeOutside = function(frame)
-            if not frame:IsMouseOver() and not frame._anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+            if
+                not frame:IsMouseOver()
+                and not frame._anchor:IsMouseOver()
+                and IsMouseButtonDown("LeftButton")
+            then
                 frame:Hide()
             end
         end
-        menu:HookScript("OnHide", function(m)
-            m:SetScript("OnUpdate", nil)
-        end)
+        menu:HookScript("OnHide", function(m) m:SetScript("OnUpdate", nil) end)
     end
 
     -- The live form: dimmed and covered while isOn() is false, at liveAlpha()
@@ -159,9 +154,7 @@ CludesUI.AtOptionsLogin(function()
     -- bar: no preview segment and no settings section. The entry stays in the
     -- bar's saved list untouched, so the profile still carries it back to
     -- the other client.
-    local function BlockHidden(block)
-        return not mod.BlockFactories[block.type]
-    end
+    local function BlockHidden(block) return not mod.BlockFactories[block.type] end
 
     -- Typical content extents (real-bar px) for auto-fit blocks that have no
     -- live instance yet; the preview scales these into strip space.
@@ -194,25 +187,17 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Profile helpers
     ---------------------------------------------------------------------------
-    local function Profile()
-        return mod.GetProfile()
-    end
+    local function Profile() return mod.GetProfile() end
 
     -- Selected bar, validated (falls back to the first bar).
     local function SelectedBar()
         local profile = Profile()
-        if not profile then
-            return nil
-        end
+        if not profile then return nil end
         local barList = profile.bars
-        if #barList == 0 then
-            return nil
-        end
+        if #barList == 0 then return nil end
         if profile.selectedBarId then
             local bar = mod.GetBar(profile.selectedBarId)
-            if bar then
-                return bar
-            end
+            if bar then return bar end
         end
         profile.selectedBarId = barList[1].id
         return barList[1]
@@ -220,14 +205,10 @@ CludesUI.AtOptionsLogin(function()
 
     local function ResolvedBarLength(rowConf)
         if rowConf.lengthMode == "full" then
-            if rowConf.orientation == "V" then
-                return UIParent:GetHeight()
-            end
+            if rowConf.orientation == "V" then return UIParent:GetHeight() end
             return UIParent:GetWidth()
         end
-        if rowConf.length then
-            return rowConf.length
-        end
+        if rowConf.length then return rowConf.length end
         return 400
     end
 
@@ -235,9 +216,7 @@ CludesUI.AtOptionsLogin(function()
     -- page build sets the header itself (zero bars = NO content header at
     -- all: the page falls back to the full-body starting screen, template
     -- cards, same as first open), so one forced refresh builds both.
-    local function FullRefresh()
-        CludesUI:RefreshPage(true)
-    end
+    local function FullRefresh() CludesUI:RefreshPage(true) end
 
     -- Header-only change (template card strip open/close): the header is
     -- built again in place (under page reuse, on its kept root).
@@ -262,9 +241,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function PromptRenameBar(rowConf)
         local oldName = rowConf.name
-        if oldName == nil then
-            oldName = ""
-        end
+        if oldName == nil then oldName = "" end
         CludesUI:ShowInputPopup({
             title = "Rename DataBar",
             message = Lf('Enter a new name for "%1$s":', oldName),
@@ -277,9 +254,7 @@ CludesUI.AtOptionsLogin(function()
                 else
                     newName = ""
                 end
-                if newName == "" or newName == oldName then
-                    return
-                end
+                if newName == "" or newName == oldName then return end
                 mod.RenameBar(rowConf.id, newName)
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
                 FullRefresh()
@@ -289,9 +264,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function PromptDeleteBar(rowConf)
         local delName = rowConf.name
-        if delName == nil then
-            delName = ""
-        end
+        if delName == nil then delName = "" end
         CludesUI:ShowConfirmPopup({
             title = "Delete DataBar",
             message = Lf('Are you sure you want to delete "%1$s"?', delName),
@@ -301,18 +274,14 @@ CludesUI.AtOptionsLogin(function()
                 mod.DeleteBar(rowConf.id)
                 local profile = Profile()
                 local barList = mod.BarsInOrder()
-                if profile and barList[1] then
-                    profile.selectedBarId = barList[1].id
-                end
+                if profile and barList[1] then profile.selectedBarId = barList[1].id end
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
                 FullRefresh()
                 -- The rebuilt page (possibly the zero-bar empty state) can
                 -- be shorter than the old scroll offset, which leaves the
                 -- viewport past the content = blank page. Always return to
                 -- the top after a delete.
-                if CludesUI.SmoothScrollTo then
-                    CludesUI.SmoothScrollTo(0)
-                end
+                if CludesUI.SmoothScrollTo then CludesUI.SmoothScrollTo(0) end
             end,
         })
     end
@@ -403,9 +372,7 @@ CludesUI.AtOptionsLogin(function()
             titleFs:SetAlpha(0.9)
             cIcon:SetAlpha(0.6)
         end)
-        cardFrame:SetScript("OnClick", function()
-            CreateBarFromTemplate(def.key)
-        end)
+        cardFrame:SetScript("OnClick", function() CreateBarFromTemplate(def.key) end)
         return cardFrame
     end
 
@@ -426,23 +393,17 @@ CludesUI.AtOptionsLogin(function()
     local _edbPopout
     local function PreviewPopoutAllowed()
         -- Folded to the mini window counts as closed (the page is off screen).
-        if not (CludesUI:IsShown()) or CludesUI._panelCollapsed then
-            return false
-        end
+        if not (CludesUI:IsShown()) or CludesUI._panelCollapsed then return false end
         -- nil = mid-build (page state not stamped yet); only a definite
         -- mismatch blocks, mirroring the TBB popout gate.
         local am = CludesUI:GetActiveModule()
         local ap = CludesUI:GetActivePage()
-        if am and ap and (am ~= "CludesUIDataBars" or ap ~= PAGE_DATABARS) then
-            return false
-        end
+        if am and ap and (am ~= "CludesUIDataBars" or ap ~= PAGE_DATABARS) then return false end
         return true
     end
 
     local function GetPreviewPopout()
-        if _edbPopout then
-            return _edbPopout
-        end
+        if _edbPopout then return _edbPopout end
         local popout = CreateFrame("Frame", nil, UIParent)
         popout:SetFrameStrata("FULLSCREEN_DIALOG")
         popout:SetFrameLevel(10)
@@ -468,13 +429,9 @@ CludesUI.AtOptionsLogin(function()
         local acc = 0
         popout:SetScript("OnUpdate", function(self, elapsed)
             acc = acc + elapsed
-            if acc < 0.25 then
-                return
-            end
+            if acc < 0.25 then return end
             acc = 0
-            if not PreviewPopoutAllowed() then
-                self:Hide()
-            end
+            if not PreviewPopoutAllowed() then self:Hide() end
         end)
         _edbPopout = popout
         return popout
@@ -484,42 +441,28 @@ CludesUI.AtOptionsLogin(function()
     -- and comes back with it while a vertical bar is still the one selected (the
     -- header's own condition for showing it).
     CludesUI:RegisterOnCollapse(function(enabled)
-        if not _edbPopout then
-            return
-        end
+        if not _edbPopout then return end
         if enabled then
             _edbPopout:Hide()
         elseif _edbPopout._strip and PreviewPopoutAllowed() then
             local rowConf = SelectedBar()
-            if rowConf and rowConf.orientation == "V" then
-                _edbPopout:Show()
-            end
+            if rowConf and rowConf.orientation == "V" then _edbPopout:Show() end
         end
     end)
 
     _edbHeaderBuilder = function(heading, hdrW)
         local PAD = CludesUI.CONTENT_PAD
-        if not PAD then
-            PAD = 10
-        end
+        if not PAD then PAD = 10 end
         local DropStyle = CludesUI.DD_STYLE
         local EGc = CludesUI.CLUDES_GREEN
         local tDimR = CludesUI.TEXT_DIM_R
-        if tDimR == nil then
-            tDimR = 0.7
-        end
+        if tDimR == nil then tDimR = 0.7 end
         local tDimG = CludesUI.TEXT_DIM_G
-        if tDimG == nil then
-            tDimG = 0.7
-        end
+        if tDimG == nil then tDimG = 0.7 end
         local tDimB = CludesUI.TEXT_DIM_B
-        if tDimB == nil then
-            tDimB = 0.7
-        end
+        if tDimB == nil then tDimB = 0.7 end
         local tDimA = CludesUI.TEXT_DIM_A
-        if tDimA == nil then
-            tDimA = 0.85
-        end
+        if tDimA == nil then tDimA = 0.85 end
         local rowY = -8
 
         local rowConf = SelectedBar()
@@ -550,9 +493,7 @@ CludesUI.AtOptionsLogin(function()
         dropCaption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
         if rowConf then
             local nm = rowConf.name
-            if nm == nil then
-                nm = ""
-            end
+            if nm == nil then nm = "" end
             dropCaption:SetText(nm)
         else
             dropCaption:SetText(L("No Info Bar"))
@@ -568,9 +509,7 @@ CludesUI.AtOptionsLogin(function()
             local selA = DropStyle.ITEM_SEL_A
             local dropMenu = _edbMenus.bar
             if dropMenu then
-                if dropMenu:IsShown() then
-                    dropMenu:Hide()
-                end
+                if dropMenu:IsShown() then dropMenu:Hide() end
             else
                 dropMenu = MenuShell()
                 dropMenu._rows = {}
@@ -653,16 +592,12 @@ CludesUI.AtOptionsLogin(function()
                         editBtn:SetAlpha(1)
                     end)
                     entry:SetScript("OnLeave", function()
-                        if not (delBtn:IsMouseOver() or editBtn:IsMouseOver()) then
-                            Rest()
-                        end
+                        if not (delBtn:IsMouseOver() or editBtn:IsMouseOver()) then Rest() end
                     end)
                     entry:SetScript("OnClick", function()
                         dropMenu:Hide()
                         local profile = Profile()
-                        if profile then
-                            profile.selectedBarId = entry._bar.id
-                        end
+                        if profile then profile.selectedBarId = entry._bar.id end
                         FullRefresh()
                     end)
                     return entry
@@ -762,17 +697,13 @@ CludesUI.AtOptionsLogin(function()
         dropdownBtn:SetScript("OnEnter", function()
             dropCaption:SetTextColor(1, 1, 1, 1)
             local brdHA = DropStyle.BRD_HA
-            if brdHA == nil then
-                brdHA = 0.30
-            end
+            if brdHA == nil then brdHA = 0.30 end
             ddBrd:SetColor(1, 1, 1, brdHA)
             ddBg:SetColorTexture(DropStyle.BG_R, DropStyle.BG_G, DropStyle.BG_B, DropStyle.BG_HA)
         end)
         dropdownBtn:SetScript("OnLeave", function()
             local ddMenu = _edbMenus.bar
-            if ddMenu and ddMenu:IsShown() then
-                return
-            end
+            if ddMenu and ddMenu:IsShown() then return end
             dropCaption:SetTextColor(1, 1, 1, DropStyle.TXT_A)
             ddBrd:SetColor(1, 1, 1, DropStyle.BRD_A)
             ddBg:SetColorTexture(DropStyle.BG_R, DropStyle.BG_G, DropStyle.BG_B, DropStyle.BG_A)
@@ -786,9 +717,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end)
         dropdownBtn:HookScript("OnHide", function()
-            if _edbMenus.bar then
-                _edbMenus.bar:Hide()
-            end
+            if _edbMenus.bar then _edbMenus.bar:Hide() end
         end)
 
         -- "+ New Bar" (toggles the template card strip)
@@ -854,13 +783,9 @@ CludesUI.AtOptionsLogin(function()
             stripLen = STRIP_V_LEN
             local scrollFrame = CludesUI._scrollFrame
             local sfH = scrollFrame and scrollFrame:GetHeight()
-            if sfH and sfH > 260 then
-                stripLen = math.min(520, sfH - 150)
-            end
+            if sfH and sfH > 260 then stripLen = math.min(520, sfH - 150) end
         else
-            if _edbPopout then
-                _edbPopout:Hide()
-            end
+            if _edbPopout then _edbPopout:Hide() end
             stripLen = hdrW - PAD * 2 - (STRIP_H_THICK + 8) -- room for the + tile
             stripThick = STRIP_H_THICK
         end
@@ -906,9 +831,7 @@ CludesUI.AtOptionsLogin(function()
         -- reorder commit works in the bar's own order) but draw nothing.
         local nShown = nBlocks
         for i = 1, nBlocks do
-            if BlockHidden(blocks[i]) then
-                nShown = nShown - 1
-            end
+            if BlockHidden(blocks[i]) then nShown = nShown - 1 end
         end
 
         if nShown == 0 then
@@ -938,24 +861,18 @@ CludesUI.AtOptionsLogin(function()
             hb:Hide()
             button._brd = hb
             button:SetScript("OnEnter", function(s2)
-                if dragIdx then
-                    return
-                end
+                if dragIdx then return end
                 s2._brd:Show()
                 -- Hovering a preview segment lights the real bar's block
                 -- the same way hovering its Width % setting does.
                 _edbSegHoverId = block.id
-                if mod.SetBlockEditHighlight then
-                    mod.SetBlockEditHighlight(rowConf.id, block.id)
-                end
+                if mod.SetBlockEditHighlight then mod.SetBlockEditHighlight(rowConf.id, block.id) end
             end)
             button:SetScript("OnLeave", function(s2)
                 s2._brd:Hide()
                 if _edbSegHoverId == block.id then
                     _edbSegHoverId = nil
-                    if mod.SetBlockEditHighlight then
-                        mod.SetBlockEditHighlight(nil, nil)
-                    end
+                    if mod.SetBlockEditHighlight then mod.SetBlockEditHighlight(nil, nil) end
                 end
             end)
 
@@ -982,9 +899,7 @@ CludesUI.AtOptionsLogin(function()
 
             segBtns[i] = button
             shareFSs[i] = shareFS
-            if BlockHidden(block) then
-                button:Hide()
-            end
+            if BlockHidden(block) then button:Hide() end
         end
 
         -- Hovering a block's settings section washes its preview segment.
@@ -1015,19 +930,13 @@ CludesUI.AtOptionsLogin(function()
         local lastSegs
         local function LayoutStrip()
             local barUsable = ResolvedBarLength(rowConf) - 2 * mod.EDGE_PAD
-            if barUsable < 1 then
-                barUsable = 1
-            end
+            if barUsable < 1 then barUsable = 1 end
             local scale = stripUsable / barUsable
             local function measure(bc)
                 -- Zero, as the live bar measures a block with no instance.
-                if BlockHidden(bc) then
-                    return 0
-                end
+                if BlockHidden(bc) then return 0 end
                 local wid = mod.GetLiveAutoLength(rowConf.id, bc.id)
-                if not wid or wid <= 0 then
-                    wid = EST_LEN[bc.type] or 80
-                end
+                if not wid or wid <= 0 then wid = EST_LEN[bc.type] or 80 end
                 return wid
             end
             -- Solve in REAL bar px (Auto Sized extents and gaps are real pixels), then
@@ -1064,9 +973,7 @@ CludesUI.AtOptionsLogin(function()
             for i = 1, #segs do
                 local segment = segs[i]
                 local px = segment.px
-                if px < 1 then
-                    px = 1
-                end
+                if px < 1 then px = 1 end
                 local cursor = segment.pos
                 local button = segBtns[i]
                 if button then
@@ -1127,9 +1034,7 @@ CludesUI.AtOptionsLogin(function()
         local NUDGE = 6
         local animTicker
         local function EnsureAnimTicker()
-            if animTicker then
-                return
-            end
+            if animTicker then return end
             -- A strip of the page pool that a newer header build dressed again
             -- holds that build's segments: the ticker ends with this build.
             local gen = Pool.Gen(barStrip)
@@ -1170,25 +1075,17 @@ CludesUI.AtOptionsLogin(function()
         local function CursorStripPos()
             local curX, curY = GetCursorPosition()
             local es = barStrip:GetEffectiveScale()
-            if not es or es == 0 then
-                es = 1
-            end
-            if isVertical then
-                return (barStrip:GetTop() or 0) - curY / es
-            end
+            if not es or es == 0 then es = 1 end
+            if isVertical then return (barStrip:GetTop() or 0) - curY / es end
             return curX / es - (barStrip:GetLeft() or 0)
         end
 
         local function ComputeInsertIdx()
-            if not lastSegs then
-                return nil
-            end
+            if not lastSegs then return nil end
             -- Before the first segment whose middle lies past the cursor.
             local place = CursorStripPos()
             for keyName, segment in ipairs(lastSegs) do
-                if place < (segment.pos or 0) + (segment.px or 0) / 2 then
-                    return keyName
-                end
+                if place < (segment.pos or 0) + (segment.px or 0) / 2 then return keyName end
             end
             return #lastSegs + 1
         end
@@ -1197,25 +1094,19 @@ CludesUI.AtOptionsLogin(function()
         -- between the target boundary and the dragged segment: the move
         -- would change nothing on screen and only shift a hidden entry.
         local function IsNoopDrop(from, to)
-            if to == from or to == from + 1 then
-                return true
-            end
+            if to == from or to == from + 1 then return true end
             local lo, hi = to, from - 1
             if to > from then
                 lo, hi = from + 1, to - 1
             end
             for keyName = lo, hi do
-                if not BlockHidden(blocks[keyName]) then
-                    return false
-                end
+                if not BlockHidden(blocks[keyName]) then return false end
             end
             return true
         end
 
         local function UpdateDragVisuals()
-            if not dragIdx or not lastSegs then
-                return
-            end
+            if not dragIdx or not lastSegs then return end
             local targetIdx = ComputeInsertIdx()
             -- Boundaries adjoining the dragged segment are a no-op drop.
             local noop = IsNoopDrop(dragIdx, targetIdx)
@@ -1260,9 +1151,7 @@ CludesUI.AtOptionsLogin(function()
         -- stays in place dimmed to 0.3.
         local dragShadow
         local function EnsureDragGhost()
-            if dragShadow then
-                return dragShadow
-            end
+            if dragShadow then return dragShadow end
             -- One kept ghost for the session (Pool.Kept on UIParent): the first
             -- drag of each header build dresses it again.
             dragShadow = Pool.Kept(_edbKeep, "dragGhost", "Frame", UIParent)
@@ -1285,23 +1174,15 @@ CludesUI.AtOptionsLogin(function()
             local from = dragIdx
             dragIdx = nil
             dragEndTime = GetTime()
-            if dragShadow then
-                dragShadow:Hide()
-            end
+            if dragShadow then dragShadow:Hide() end
             dropLine:Hide()
-            if from and segBtns[from] then
-                segBtns[from]:SetAlpha(1)
-            end
+            if from and segBtns[from] then segBtns[from]:SetAlpha(1) end
             for keyName = 1, #segBtns do
                 segBtns[keyName]._tgtOff = 0
             end
             local targetIdx = ComputeInsertIdx()
-            if not (from and targetIdx) then
-                return
-            end
-            if IsNoopDrop(from, targetIdx) then
-                return
-            end
+            if not (from and targetIdx) then return end
+            if IsNoopDrop(from, targetIdx) then return end
             mod.MoveBlockTo(rowConf.id, blocks[from].id, targetIdx)
             -- Full refresh: the preview strip lives in the content header,
             -- which a plain RefreshPage never rebuilds.
@@ -1311,17 +1192,13 @@ CludesUI.AtOptionsLogin(function()
         local function BeginDrag(fromIdx)
             dragIdx = fromIdx
             local scrollBar = segBtns[fromIdx]
-            if scrollBar._brd then
-                scrollBar._brd:Hide()
-            end
+            if scrollBar._brd then scrollBar._brd:Hide() end
             scrollBar:SetAlpha(0.3)
             -- The ghost: the segment's size (at least 24 long; a squashed
             -- one takes the strip's thickness) and its type label.
             local ghost = EnsureDragGhost()
             local gw, gh = scrollBar:GetSize()
-            if not gh or gh < 12 then
-                gh = stripThick
-            end
+            if not gh or gh < 12 then gh = stripThick end
             ghost:SetSize(math.max(gw or 0, 24), gh)
             local kind = blocks[fromIdx].type
             ghost._lbl:SetText(L(TYPE_LABEL[kind] or kind))
@@ -1351,9 +1228,7 @@ CludesUI.AtOptionsLogin(function()
         local function ShowSegmentMenu(anchorBtn, blockId)
             local dropMenu = _edbMenus.seg
             if dropMenu then
-                if dropMenu:IsShown() then
-                    dropMenu:Hide()
-                end
+                if dropMenu:IsShown() then dropMenu:Hide() end
             else
                 local ROW_H2 = 24
                 dropMenu = MenuShell(150)
@@ -1382,9 +1257,7 @@ CludesUI.AtOptionsLogin(function()
                     FullRefresh()
                     -- The page just lost a whole section; a bottom-scrolled view
                     -- would be left staring at blank space.
-                    if CludesUI.SmoothScrollTo then
-                        CludesUI.SmoothScrollTo(0)
-                    end
+                    if CludesUI.SmoothScrollTo then CludesUI.SmoothScrollTo(0) end
                 end)
                 dropMenu:SetHeight(-rowY + 3)
                 -- Click-away dismiss. The opening right-button is STILL DOWN on
@@ -1393,9 +1266,7 @@ CludesUI.AtOptionsLogin(function()
                 -- itself instantly.
                 dropMenu:SetScript("OnUpdate", function(frame)
                     if frame._openGuard then
-                        if not IsMouseButtonDown("RightButton") then
-                            frame._openGuard = nil
-                        end
+                        if not IsMouseButtonDown("RightButton") then frame._openGuard = nil end
                         return
                     end
                     if
@@ -1428,24 +1299,16 @@ CludesUI.AtOptionsLogin(function()
                 -- The dragEndTime guard swallows the release-click of a
                 -- drag; a press that never crossed the 3px threshold is a
                 -- TRUE click (drag starts never fire OnClick at all).
-                if GetTime() - dragEndTime < 0.2 then
-                    return
-                end
+                if GetTime() - dragEndTime < 0.2 then return end
                 if mbtn == "RightButton" then
                     ShowSegmentMenu(scrollBar, segBlockId)
                 elseif mbtn == "LeftButton" then
-                    if _edbNavigateFn then
-                        _edbNavigateFn("block:" .. segBlockId)
-                    end
+                    if _edbNavigateFn then _edbNavigateFn("block:" .. segBlockId) end
                 end
             end)
             segBtn:SetScript("OnMouseDown", function(scrollBar, mbtn)
-                if mbtn ~= "LeftButton" then
-                    return
-                end
-                if dragIdx then
-                    return
-                end
+                if mbtn ~= "LeftButton" then return end
+                if dragIdx then return end
                 local curX, curY = GetCursorPosition()
                 scrollBar._pendX, scrollBar._pendY = curX, curY
                 scrollBar:SetScript("OnUpdate", function(s3)
@@ -1551,9 +1414,7 @@ CludesUI.AtOptionsLogin(function()
                                 navKey = navKey .. ":" .. typeKey
                             end
                             C_Timer.After(0.05, function()
-                                if _edbNavigateFn then
-                                    _edbNavigateFn(navKey)
-                                end
+                                if _edbNavigateFn then _edbNavigateFn(navKey) end
                             end)
                         end
                     end)
@@ -1583,9 +1444,7 @@ CludesUI.AtOptionsLogin(function()
                 -- already-on-bar dim cue never applies to them. Broker blocks
                 -- repeat for the same reason: one per plugin is the normal setup,
                 -- so a second one is not the accident the dim cue warns about.
-                if typeKey == "spacer" or typeKey == "ldb" then
-                    onBar = false
-                end
+                if typeKey == "spacer" or typeKey == "ldb" then onBar = false end
                 local baseA = tDimA
                 local hoverA = 1
                 if onBar then
@@ -1615,9 +1474,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.HideWidgetTooltip()
         end)
         addButton:HookScript("OnHide", function()
-            if _edbMenus.add then
-                _edbMenus.add:Hide()
-            end
+            if _edbMenus.add then _edbMenus.add:Hide() end
         end)
 
         if isVertical then
@@ -1666,9 +1523,7 @@ CludesUI.AtOptionsLogin(function()
         local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
 
         local function GlowTargetOf(m)
-            if not m.slotSide then
-                return m.target
-            end
+            if not m.slotSide then return m.target end
             local regionFrame
             if m.slotSide == "left" then
                 regionFrame = m.target._leftRegion
@@ -1680,17 +1535,11 @@ CludesUI.AtOptionsLogin(function()
 
         local function NavigateToSetting(barKey)
             local targets = hostFrame._edbClickTargets
-            if not targets then
-                return
-            end
+            if not targets then return end
             local m = targets[barKey]
-            if not m or not m.section or not m.target then
-                return
-            end
+            if not m or not m.section or not m.target then return end
             local _, _, _, _, headerY = m.section:GetPoint(1)
-            if not headerY then
-                return
-            end
+            if not headerY then return end
             CludesUI.SmoothScrollTo(math.max(0, math.abs(headerY) - 40))
             local glowTarget = GlowTargetOf(m)
             if m.holdWhile then
@@ -1700,9 +1549,7 @@ CludesUI.AtOptionsLogin(function()
             -- then belongs to a newer build (which re-arms its own glow).
             local gen = Pool.Gen(glowTarget)
             C_Timer.After(0.15, function()
-                if Pool.Gen(glowTarget) ~= gen or Pool.IsIdle(glowTarget) then
-                    return
-                end
+                if Pool.Gen(glowTarget) ~= gen or Pool.IsIdle(glowTarget) then return end
                 PlaySettingGlow(glowTarget, m.holdWhile)
             end)
         end
@@ -1719,16 +1566,12 @@ CludesUI.AtOptionsLogin(function()
         -- dead until the next rebuild. Covering that means driving this from
         -- onPageCacheRestore too, the way _edbStripRelayout is.
         local function RearmHeldGlow()
-            if not _edbHeldGlowKey then
-                return
-            end
+            if not _edbHeldGlowKey then return end
             local targets = hostFrame._edbClickTargets
             local m = targets and targets[_edbHeldGlowKey]
             -- Absent from this build (another bar is selected): keep the key so
             -- coming back re-arms. Only a satisfied predicate retires it.
-            if not (m and m.section and m.target and m.holdWhile) then
-                return
-            end
+            if not (m and m.section and m.target and m.holdWhile) then return end
             if not m.holdWhile() then
                 _edbHeldGlowKey = nil
                 return
@@ -1749,14 +1592,10 @@ CludesUI.AtOptionsLogin(function()
         -- global-search pre-build: its targets belong to an off-screen
         -- wrapper. (SetContentHeader itself is stubbed out during pre-builds
         -- by the search module, so that call needs no guard.)
-        if not CludesUI._prebuilding then
-            _edbNavigateFn = NavigateToSetting
-        end
+        if not CludesUI._prebuilding then _edbNavigateFn = NavigateToSetting end
 
         local profile = Profile()
-        if not profile then
-            return math.abs(cursorY)
-        end
+        if not profile then return math.abs(cursorY) end
         local rowConf = SelectedBar()
 
         -- Bar selected -> editor chrome; zero bars -> no header, the body
@@ -1772,9 +1611,7 @@ CludesUI.AtOptionsLogin(function()
         -------------------------------------------------------------------
         if not rowConf then
             local PADC = CludesUI.CONTENT_PAD
-            if not PADC then
-                PADC = 10
-            end
+            if not PADC then PADC = 10 end
             local hostW = hostFrame:GetWidth() - PADC * 2
             local gap = 12
             local cw = floor((hostW - gap) / 2)
@@ -1808,9 +1645,7 @@ CludesUI.AtOptionsLogin(function()
             rowConf.theme = skinName
         end
 
-        local function ApplyBar()
-            mod.ApplyBar(barId)
-        end
+        local function ApplyBar() mod.ApplyBar(barId) end
 
         -- Sizing mode: centered segmented two-button toggle (the shared
         -- segmented control), in its OWN space between
@@ -1829,13 +1664,9 @@ CludesUI.AtOptionsLogin(function()
                 width = BTN_W * 2,
                 square = true,
                 height = BTN_H,
-                getChecked = function(barKey)
-                    return mod.BarSizingMode(rowConf) == barKey
-                end,
+                getChecked = function(barKey) return mod.BarSizingMode(rowConf) == barKey end,
                 onToggle = function(barKey)
-                    if mod.BarSizingMode(rowConf) == barKey then
-                        return
-                    end
+                    if mod.BarSizingMode(rowConf) == barKey then return end
                     rowConf.sizingMode = barKey
                     mod.ApplyBar(barId)
                     FullRefresh()
@@ -1867,9 +1698,7 @@ CludesUI.AtOptionsLogin(function()
             hostFrame,
             cursorY,
             {
-                getStore = function()
-                    return mod.GetBar(barId)
-                end,
+                getStore = function() return mod.GetBar(barId) end,
                 legacyKey = "visibility",
                 caps = mod.EDB_VIS_CAPS,
                 onChanged = function()
@@ -1878,9 +1707,7 @@ CludesUI.AtOptionsLogin(function()
                     mod.ApplyBar(barId)
                     mod.UpdateAllBarVisibility()
                 end,
-                onOptionChanged = function()
-                    mod.UpdateAllBarVisibility()
-                end,
+                onOptionChanged = function() mod.UpdateAllBarVisibility() end,
             },
             -- Hide Border moved up from the section's old trailing half-row into the slot
             -- the Visibility Options dropdown left behind, so neither row is half empty.
@@ -1888,9 +1715,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Hide Border",
                 tooltip = "Hide the 1-pixel outline around the bar.",
-                getValue = function()
-                    return rowConf.hideBorder == true
-                end,
+                getValue = function() return rowConf.hideBorder == true end,
                 setValue = function(val)
                     rowConf.hideBorder = val and true or false
                     mod.ApplyTheme(barId)
@@ -1920,9 +1745,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(val)
                             local c = mod.GetBar(barId)
-                            if not c then
-                                return
-                            end
+                            if not c then return end
                             c.barStrata = val
                             mod.ApplyBar(barId)
                         end,
@@ -1940,9 +1763,7 @@ CludesUI.AtOptionsLogin(function()
             values = { H = "Horizontal", V = "Vertical" },
             order = { "H", "V" },
             getValue = function()
-                if rowConf.orientation == "V" then
-                    return "V"
-                end
+                if rowConf.orientation == "V" then return "V" end
                 return "H"
             end,
             setValue = function(val)
@@ -1965,9 +1786,7 @@ CludesUI.AtOptionsLogin(function()
             values = { cui = "CludesUI", modern = "Modern" },
             order = { "cui", "modern" },
             getValue = function()
-                if skinName.style == "modern" then
-                    return "modern"
-                end
+                if skinName.style == "modern" then return "modern" end
                 return "cui"
             end,
             setValue = function(val)
@@ -1988,9 +1807,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         CludesUI.BuildInlineCog(themeRow._rightRegion, {
             title = "CludesUI Background",
-            disabled = function()
-                return skinName.style ~= "cui"
-            end,
+            disabled = function() return skinName.style ~= "cui" end,
             disabledTooltip = "the CludesUI theme",
             rows = {
                 {
@@ -2001,9 +1818,7 @@ CludesUI.AtOptionsLogin(function()
                     step = 1,
                     get = function()
                         local a = skinName.cuiAlpha
-                        if a == nil then
-                            a = 0.5
-                        end
+                        if a == nil then a = 0.5 end
                         return floor(a * 100 + 0.5)
                     end,
                     set = function(val)
@@ -2037,9 +1852,7 @@ CludesUI.AtOptionsLogin(function()
             local texLookup = mod.barTextures or {}
             btValues._menuOpts = {
                 itemHeight = 28,
-                background = function(barKey)
-                    return texLookup[barKey]
-                end,
+                background = function(barKey) return texLookup[barKey] end,
             }
             return btValues, btOrder
         end
@@ -2050,20 +1863,14 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Background texture for this bar, tinted by the bar's color and opacity.",
             -- Textures are a Modern-style feature; the CludesUI style
             -- always renders its own untextured art stack.
-            disabled = function()
-                return (skinName and skinName.style) ~= "modern"
-            end,
+            disabled = function() return (skinName and skinName.style) ~= "modern" end,
             disabledTooltip = "Modern Background Style is required.",
             values = btValues,
             order = btOrder,
-            getValue = function()
-                return rowConf.barTexture or "none"
-            end,
+            getValue = function() return rowConf.barTexture or "none" end,
             setValue = function(val)
                 rowConf.barTexture = val
-                if mod.ApplyTheme then
-                    mod.ApplyTheme(barId)
-                end
+                if mod.ApplyTheme then mod.ApplyTheme(barId) end
                 ApplyBar()
             end,
         }
@@ -2076,9 +1883,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Scales every text element on this bar.",
             getValue = function()
                 local val = rowConf.fontScale
-                if val == nil then
-                    val = 100
-                end
+                if val == nil then val = 100 end
                 return val
             end,
             setValue = function(val)
@@ -2091,9 +1896,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Hover Highlight Blocks",
             tooltip = "Shows a faint white wash over each block on mouseover.",
-            getValue = function()
-                return rowConf.hoverHighlight == true
-            end,
+            getValue = function() return rowConf.hoverHighlight == true end,
             setValue = function(val)
                 rowConf.hoverHighlight = val and true or false
                 ApplyBar()
@@ -2113,15 +1916,11 @@ CludesUI.AtOptionsLogin(function()
                 if skinName.style == "modern" then
                     local color = skinName.modernColor
                     local a = color and color.a
-                    if a == nil then
-                        a = 0.95
-                    end
+                    if a == nil then a = 0.95 end
                     return floor(a * 100 + 0.5)
                 end
                 local a = skinName.cuiOpacity
-                if a == nil then
-                    a = 1
-                end
+                if a == nil then a = 1 end
                 return floor(a * 100 + 0.5)
             end,
             setValue = function(val)
@@ -2147,21 +1946,13 @@ CludesUI.AtOptionsLogin(function()
             local region = opacityRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, opacityRow:GetFrameLevel() + 3, function()
                 local color = skinName.modernColor
-                if not color then
-                    return 0.067, 0.067, 0.067
-                end
+                if not color then return 0.067, 0.067, 0.067 end
                 local red = color.r
-                if red == nil then
-                    red = 0.067
-                end
+                if red == nil then red = 0.067 end
                 local green = color.g
-                if green == nil then
-                    green = 0.067
-                end
+                if green == nil then green = 0.067 end
                 local b2 = color.b
-                if b2 == nil then
-                    b2 = 0.067
-                end
+                if b2 == nil then b2 = 0.067 end
                 return red, green, b2
             end, function(red, green, blue)
                 local color = skinName.modernColor
@@ -2197,9 +1988,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = fullLabel,
             tooltip = "Sizes the bar to the full screen extent along its axis.",
-            getValue = function()
-                return rowConf.lengthMode == "full"
-            end,
+            getValue = function() return rowConf.lengthMode == "full" end,
             setValue = function(val)
                 if val then
                     rowConf.lengthMode = "full"
@@ -2207,9 +1996,7 @@ CludesUI.AtOptionsLogin(function()
                     rowConf.lengthMode = "custom"
                 end
                 mod.ApplyBar(barId)
-                if _edbStripRelayout then
-                    _edbStripRelayout()
-                end
+                if _edbStripRelayout then _edbStripRelayout() end
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2219,22 +2006,16 @@ CludesUI.AtOptionsLogin(function()
             values = { none = "None", bottom = "Bottom", top = "Top", left = "Left", right = "Right" },
             order = { "none", "bottom", "top", "left", "right" },
             itemDisabled = function(val)
-                if isVertical then
-                    return val == "bottom" or val == "top"
-                end
+                if isVertical then return val == "bottom" or val == "top" end
                 return val == "left" or val == "right"
             end,
             itemDisabledTooltip = function(val)
-                if val == "bottom" or val == "top" then
-                    return "Not available for vertical bars"
-                end
+                if val == "bottom" or val == "top" then return "Not available for vertical bars" end
                 return "Not available for horizontal bars"
             end,
             getValue = function()
                 local val = rowConf.snapEdge
-                if val == nil then
-                    val = "none"
-                end
+                if val == nil then val = "none" end
                 return val
             end,
             setValue = function(val)
@@ -2252,24 +2033,18 @@ CludesUI.AtOptionsLogin(function()
             max = 3000,
             step = 10,
             tooltip = "Size of the bar along its block axis in pixels.",
-            disabled = function()
-                return rowConf.lengthMode == "full"
-            end,
+            disabled = function() return rowConf.lengthMode == "full" end,
             disabledTooltip = CludesUI.Lf("Disabled while %1$s is enabled.", CludesUI.L(fullLabel)),
             rawTooltip = true,
             getValue = function()
                 local val = rowConf.length
-                if val == nil then
-                    val = 400
-                end
+                if val == nil then val = 400 end
                 return val
             end,
             setValue = function(val)
                 rowConf.length = val
                 mod.ApplyBar(barId)
-                if _edbStripRelayout then
-                    _edbStripRelayout()
-                end
+                if _edbStripRelayout then _edbStripRelayout() end
             end,
         }, {
             type = "slider",
@@ -2280,9 +2055,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Size of the bar across its block axis in pixels.",
             getValue = function()
                 local val = rowConf.thickness
-                if val == nil then
-                    val = 30
-                end
+                if val == nil then val = 30 end
                 return val
             end,
             setValue = function(val)
@@ -2308,9 +2081,7 @@ CludesUI.AtOptionsLogin(function()
             -- bar order.
             local isShown = {}
             for i = 1, #blocks do
-                if not BlockHidden(blocks[i]) then
-                    isShown[#isShown + 1] = blocks[i]
-                end
+                if not BlockHidden(blocks[i]) then isShown[#isShown + 1] = blocks[i] end
             end
             blocks = isShown
         end
@@ -2327,9 +2098,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             local function SFieldOr(barKey, default)
-                return function()
-                    return cfg[barKey] or default
-                end
+                return function() return cfg[barKey] or default end
             end
             if not cfg then
                 cfg = {}
@@ -2337,9 +2106,7 @@ CludesUI.AtOptionsLogin(function()
             end
             local isSpacer = block.type == "spacer"
             local typeLabel = TYPE_LABEL[block.type]
-            if not typeLabel then
-                typeLabel = block.type
-            end
+            if not typeLabel then typeLabel = block.type end
 
             local secHdr
             secHdr, height = W:SectionHeader(hostFrame, string.upper(CludesUI.L(typeLabel)), cursorY)
@@ -2373,9 +2140,7 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(val)
                         block.contentGapL = val
                         ApplyBar()
-                        if _edbStripRelayout then
-                            _edbStripRelayout()
-                        end
+                        if _edbStripRelayout then _edbStripRelayout() end
                     end,
                 }, {
                     type = "slider",
@@ -2391,9 +2156,7 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(val)
                         block.contentGapR = val
                         ApplyBar()
-                        if _edbStripRelayout then
-                            _edbStripRelayout()
-                        end
+                        if _edbStripRelayout then _edbStripRelayout() end
                     end,
                 })
                 cursorY = cursorY - height
@@ -2404,14 +2167,10 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Set as 'Fill Remaining Space' Block",
                     tooltip = "Stretches this block to absorb the space the sized blocks leave over; exactly one block per bar fills.",
-                    disabled = function()
-                        return mod.EnsureFillBlock(rowConf) == blockId
-                    end,
+                    disabled = function() return mod.EnsureFillBlock(rowConf) == blockId end,
                     disabledTooltip = "This block is already the 'Fill Remaining Space' block. Check another block to move the role.",
                     rawTooltip = true,
-                    getValue = function()
-                        return mod.EnsureFillBlock(rowConf) == blockId
-                    end,
+                    getValue = function() return mod.EnsureFillBlock(rowConf) == blockId end,
                     setValue = function(val)
                         if val then
                             mod.SetFillBlock(barId, blockId)
@@ -2422,9 +2181,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Force Centered",
                     tooltip = "Pins this block's content to the exact center of the bar; blocks before it pack left, blocks after pack right. Combined with Fill Remaining, the block also absorbs the leftover space around the center.",
-                    getValue = function()
-                        return rowConf.centerBlockId == blockId
-                    end,
+                    getValue = function() return rowConf.centerBlockId == blockId end,
                     setValue = function(val)
                         if val then
                             mod.SetCenterBlock(barId, blockId)
@@ -2435,9 +2192,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 })
                 cursorY = cursorY - height
-                if not sizingRow then
-                    sizingRow = fillRow
-                end
+                if not sizingRow then sizingRow = fillRow end
             end
 
             -- The sizing rows drive the hover highlight (auto mode only;
@@ -2472,9 +2227,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Enable Text",
                         tooltip = "Shows the online friend and guild counters.",
-                        getValue = function()
-                            return cfg.hideSocialText ~= true
-                        end,
+                        getValue = function() return cfg.hideSocialText ~= true end,
                         setValue = function(val)
                             cfg.hideSocialText = not val
                             ApplyBar()
@@ -2489,18 +2242,14 @@ CludesUI.AtOptionsLogin(function()
                         order = { "LEFT", "CENTER", "RIGHT" },
                         getValue = function()
                             local a = block.align
-                            if a == nil then
-                                a = "CENTER"
-                            end
+                            if a == nil then a = "CENTER" end
                             return a
                         end,
                         setValue = function(val)
                             block.align = val
                             -- XP / Rep: a picked alignment also places the bar's
                             -- label (unset keeps the label left, as it always was).
-                            if block.type == "xprep" then
-                                block.labelAlign = val
-                            end
+                            if block.type == "xprep" then block.labelAlign = val end
                             ApplyBar()
                         end,
                     }
@@ -2515,9 +2264,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Scales this block's content as a group inside its slot.",
                     getValue = function()
                         local val = block.scale
-                        if val == nil then
-                            val = 100
-                        end
+                        if val == nil then val = 100 end
                         return val
                     end,
                     setValue = function(val)
@@ -2540,16 +2287,12 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = block.textXOff
-                                    if val == nil then
-                                        val = 0
-                                    end
+                                    if val == nil then val = 0 end
                                     return val
                                 end,
                                 set = function(val)
                                     block.textXOff = val
-                                    if mod.ReflowBlocks then
-                                        mod.ReflowBlocks(barId)
-                                    end
+                                    if mod.ReflowBlocks then mod.ReflowBlocks(barId) end
                                 end,
                             },
                             {
@@ -2560,16 +2303,12 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = block.textYOff
-                                    if val == nil then
-                                        val = 0
-                                    end
+                                    if val == nil then val = 0 end
                                     return val
                                 end,
                                 set = function(val)
                                     block.textYOff = val
-                                    if mod.ReflowBlocks then
-                                        mod.ReflowBlocks(barId)
-                                    end
+                                    if mod.ReflowBlocks then mod.ReflowBlocks(barId) end
                                 end,
                             },
                         },
@@ -2588,9 +2327,7 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = block.xOff
-                                    if val == nil then
-                                        val = 0
-                                    end
+                                    if val == nil then val = 0 end
                                     return val
                                 end,
                                 set = function(val)
@@ -2606,9 +2343,7 @@ CludesUI.AtOptionsLogin(function()
                                 step = 1,
                                 get = function()
                                     local val = block.yOff
-                                    if val == nil then
-                                        val = 0
-                                    end
+                                    if val == nil then val = 0 end
                                     return val
                                 end,
                                 set = function(val)
@@ -2628,9 +2363,7 @@ CludesUI.AtOptionsLogin(function()
             -- SETTINGS now.) Colors apply during block re-render, so force a full
             -- reflow (a plain apply skips blocks whose width did not change).
             local function ReflowBar()
-                if mod.ReflowBlocks then
-                    mod.ReflowBlocks(barId)
-                end
+                if mod.ReflowBlocks then mod.ReflowBlocks(barId) end
             end
             local colorCfg = {
                 type = "multiSwatch",
@@ -2641,9 +2374,7 @@ CludesUI.AtOptionsLogin(function()
                         hasAlpha = false,
                         getValue = function()
                             local color = block.color
-                            if color then
-                                return color.r or 1, color.g or 1, color.b or 1
-                            end
+                            if color then return color.r or 1, color.g or 1, color.b or 1 end
                             return 1, 1, 1
                         end,
                         setValue = function(red, green, blue)
@@ -2658,9 +2389,7 @@ CludesUI.AtOptionsLogin(function()
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
+                            if self._eabOrigClick then self._eabOrigClick(self) end
                         end,
                         refreshAlpha = function()
                             return (block.useClassColor or block.useAccentColor) and 0.3 or 1
@@ -2672,9 +2401,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             local _, class = UnitClass("player")
                             local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                            if classColor then
-                                return classColor.r, classColor.g, classColor.b
-                            end
+                            if classColor then return classColor.r, classColor.g, classColor.b end
                             return 1, 1, 1
                         end,
                         setValue = function() end,
@@ -2684,16 +2411,12 @@ CludesUI.AtOptionsLogin(function()
                             ReflowBar()
                             CludesUI:RefreshPage()
                         end,
-                        refreshAlpha = function()
-                            return block.useClassColor and 1 or 0.3
-                        end,
+                        refreshAlpha = function() return block.useClassColor and 1 or 0.3 end,
                     },
                     {
                         tooltip = "Accent Color",
                         hasAlpha = false,
-                        getValue = function()
-                            return mod.GetAccent()
-                        end,
+                        getValue = function() return mod.GetAccent() end,
                         setValue = function() end,
                         onClick = function()
                             block.useAccentColor = true
@@ -2701,9 +2424,7 @@ CludesUI.AtOptionsLogin(function()
                             ReflowBar()
                             CludesUI:RefreshPage()
                         end,
-                        refreshAlpha = function()
-                            return block.useAccentColor and 1 or 0.3
-                        end,
+                        refreshAlpha = function() return block.useAccentColor and 1 or 0.3 end,
                     },
                 },
             }
@@ -2716,18 +2437,14 @@ CludesUI.AtOptionsLogin(function()
             -- the flag is set).
             local function ModeSwatch(flag, tip, getValue, opts)
                 opts = opts or {}
-                local function Flag()
-                    return block[flag]
-                end
+                local function Flag() return block[flag] end
                 local off, on = opts.off or Flag, opts.on or Flag
                 local sw = colorCfg.swatches
                 local customClick, customAlpha = sw[1].onClick, sw[1].refreshAlpha
                 sw[1].onClick = function(self)
                     if off() then
                         block[flag] = nil
-                        if opts.toCustom then
-                            opts.toCustom()
-                        end
+                        if opts.toCustom then opts.toCustom() end
                         ReflowBar()
                         CludesUI:RefreshPage()
                         return
@@ -2735,9 +2452,7 @@ CludesUI.AtOptionsLogin(function()
                     customClick(self)
                 end
                 sw[1].refreshAlpha = function()
-                    if off() then
-                        return 0.3
-                    end
+                    if off() then return 0.3 end
                     return customAlpha()
                 end
                 for i = 2, 3 do
@@ -2759,9 +2474,7 @@ CludesUI.AtOptionsLogin(function()
                         ReflowBar()
                         CludesUI:RefreshPage()
                     end,
-                    refreshAlpha = function()
-                        return on() and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return on() and 1 or 0.3 end,
                 }
             end
             -- Gold: "Coin Colored" -- white numbers, coin-tinted g/s/c
@@ -2769,9 +2482,7 @@ CludesUI.AtOptionsLogin(function()
             -- one-shot).
             if block.type == "gold" then
                 -- E2AC7A -- matches DENOMINATIONS' gold letter (user-set).
-                ModeSwatch("useCoinColor", "Coin Colored", function()
-                    return 0.886, 0.675, 0.478
-                end)
+                ModeSwatch("useCoinColor", "Coin Colored", function() return 0.886, 0.675, 0.478 end)
             end
             -- Crests: "Crest Colors" -- each amount tinted with its own tier
             -- colour. Unlike Gold's coin mode this is the nothing-stored
@@ -2781,22 +2492,16 @@ CludesUI.AtOptionsLogin(function()
             if block.type == "crests" then
                 -- Myth gold: the top crest, and the most recognizable of the
                 -- five as a single preview swatch.
-                ModeSwatch("useCrestColor", "Crest Colors", function()
-                    return 1, 0.82, 0
-                end, {
+                ModeSwatch("useCrestColor", "Crest Colors", function() return 1, 0.82, 0 end, {
                     off = function()
                         return mod.CrestColorMode(block) or block.useClassColor or block.useAccentColor
                     end,
                     toCustom = function()
                         block.useClassColor = nil
                         block.useAccentColor = nil
-                        if block.color == nil then
-                            block.color = { r = 1, g = 1, b = 1 }
-                        end
+                        if block.color == nil then block.color = { r = 1, g = 1, b = 1 } end
                     end,
-                    on = function()
-                        return mod.CrestColorMode(block)
-                    end,
+                    on = function() return mod.CrestColorMode(block) end,
                 })
             end
             -- State-driven: Durability gets the red->green gradient its
@@ -2811,9 +2516,11 @@ CludesUI.AtOptionsLogin(function()
                 ilvl = "Band",
             }
             if DYNAMIC_TEXT_BLOCKS[block.type] then
-                ModeSwatch("useDynamicColor", DYNAMIC_TEXT_BLOCKS[block.type], function()
-                    return mod.BlockTextDynamic(block.type)
-                end)
+                ModeSwatch(
+                    "useDynamicColor",
+                    DYNAMIC_TEXT_BLOCKS[block.type],
+                    function() return mod.BlockTextDynamic(block.type) end
+                )
             end
             local bgRow
             local bgRightCfg
@@ -2826,14 +2533,10 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Block Background",
                 tooltip = "Tints this block's slot with its own color.",
-                getValue = function()
-                    return block.bg ~= nil
-                end,
+                getValue = function() return block.bg ~= nil end,
                 setValue = function(val)
                     if val then
-                        if not block.bg then
-                            block.bg = { r = 0, g = 0, b = 0, a = 0.5 }
-                        end
+                        if not block.bg then block.bg = { r = 0, g = 0, b = 0, a = 0.5 } end
                     else
                         block.bg = nil
                     end
@@ -2850,25 +2553,15 @@ CludesUI.AtOptionsLogin(function()
                     bgRow:GetFrameLevel() + 3,
                     function()
                         local color = block.bg
-                        if not color then
-                            return 0, 0, 0, 0.5
-                        end
+                        if not color then return 0, 0, 0, 0.5 end
                         local red = color.r
-                        if red == nil then
-                            red = 0
-                        end
+                        if red == nil then red = 0 end
                         local green = color.g
-                        if green == nil then
-                            green = 0
-                        end
+                        if green == nil then green = 0 end
                         local b2 = color.b
-                        if b2 == nil then
-                            b2 = 0
-                        end
+                        if b2 == nil then b2 = 0 end
                         local a = color.a
-                        if a == nil then
-                            a = 0.5
-                        end
+                        if a == nil then a = 0.5 end
                         return red, green, b2, a
                     end,
                     function(red, green, blue, a)
@@ -2879,9 +2572,13 @@ CludesUI.AtOptionsLogin(function()
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
-                GatedSwatch(colorSwatch, updateSwatch, "Enable Block Background", 10, function()
-                    return block.bg
-                end)
+                GatedSwatch(
+                    colorSwatch,
+                    updateSwatch,
+                    "Enable Block Background",
+                    10,
+                    function() return block.bg end
+                )
             end
 
             -- Toggle row for a setting whose default is ON: nil has to read as
@@ -2892,9 +2589,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = labelText,
                     tooltip = tipText,
-                    getValue = function()
-                        return cfg[barKey] ~= false
-                    end,
+                    getValue = function() return cfg[barKey] ~= false end,
                     setValue = function(val)
                         cfg[barKey] = val and true or false
                         ApplyBar()
@@ -2931,7 +2626,9 @@ CludesUI.AtOptionsLogin(function()
             }
             if ICON_COLOR_BLOCKS[block.type] then
                 local function IconFlagsOff()
-                    return not block.useIconClassColor and not block.useIconAccentColor and not block.useIconDefaultColor
+                    return not block.useIconClassColor
+                        and not block.useIconAccentColor
+                        and not block.useIconDefaultColor
                 end
                 local iconColorCfg = {
                     type = "multiSwatch",
@@ -2942,9 +2639,7 @@ CludesUI.AtOptionsLogin(function()
                             hasAlpha = false,
                             getValue = function()
                                 local color = block.iconColor
-                                if color then
-                                    return color.r or 1, color.g or 1, color.b or 1
-                                end
+                                if color then return color.r or 1, color.g or 1, color.b or 1 end
                                 return mod.BlockIconDefault(block.type, cfg)
                             end,
                             setValue = function(red, green, blue)
@@ -2970,9 +2665,7 @@ CludesUI.AtOptionsLogin(function()
                                     CludesUI:RefreshPage()
                                     return
                                 end
-                                if self._eabOrigClick then
-                                    self._eabOrigClick(self)
-                                end
+                                if self._eabOrigClick then self._eabOrigClick(self) end
                             end,
                             refreshAlpha = function()
                                 return (IconFlagsOff() and block.iconColor ~= nil) and 1 or 0.3
@@ -2984,9 +2677,7 @@ CludesUI.AtOptionsLogin(function()
                             getValue = function()
                                 local _, class = UnitClass("player")
                                 local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                                if classColor then
-                                    return classColor.r, classColor.g, classColor.b
-                                end
+                                if classColor then return classColor.r, classColor.g, classColor.b end
                                 return 1, 1, 1
                             end,
                             setValue = function() end,
@@ -2997,16 +2688,12 @@ CludesUI.AtOptionsLogin(function()
                                 ReflowBar()
                                 CludesUI:RefreshPage()
                             end,
-                            refreshAlpha = function()
-                                return block.useIconClassColor and 1 or 0.3
-                            end,
+                            refreshAlpha = function() return block.useIconClassColor and 1 or 0.3 end,
                         },
                         {
                             tooltip = "Accent Color",
                             hasAlpha = false,
-                            getValue = function()
-                                return mod.GetAccent()
-                            end,
+                            getValue = function() return mod.GetAccent() end,
                             setValue = function() end,
                             onClick = function()
                                 block.useIconAccentColor = true
@@ -3015,16 +2702,12 @@ CludesUI.AtOptionsLogin(function()
                                 ReflowBar()
                                 CludesUI:RefreshPage()
                             end,
-                            refreshAlpha = function()
-                                return block.useIconAccentColor and 1 or 0.3
-                            end,
+                            refreshAlpha = function() return block.useIconAccentColor and 1 or 0.3 end,
                         },
                         {
                             tooltip = "Default",
                             hasAlpha = false,
-                            getValue = function()
-                                return mod.BlockIconDefault(block.type, cfg)
-                            end,
+                            getValue = function() return mod.BlockIconDefault(block.type, cfg) end,
                             setValue = function() end,
                             onClick = function()
                                 -- Mode switch only -- the stored custom color stays
@@ -3036,7 +2719,9 @@ CludesUI.AtOptionsLogin(function()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
-                                return (block.useIconDefaultColor or (IconFlagsOff() and block.iconColor == nil))
+                                return (
+                                    block.useIconDefaultColor or (IconFlagsOff() and block.iconColor == nil)
+                                )
                                         and 1
                                     or 0.3
                             end,
@@ -3055,9 +2740,7 @@ CludesUI.AtOptionsLogin(function()
                     -- too -- both render class color.
                     iconColorCfg.swatches[4] = nil
                     iconColorCfg.swatches[2].refreshAlpha = function()
-                        if block.useIconClassColor or block.useIconDefaultColor then
-                            return 1
-                        end
+                        if block.useIconClassColor or block.useIconDefaultColor then return 1 end
                         return (IconFlagsOff() and block.iconColor == nil) and 1 or 0.3
                     end
                 end
@@ -3067,9 +2750,7 @@ CludesUI.AtOptionsLogin(function()
                     -- reads as selected in the nothing-stored state too.
                     iconColorCfg.swatches[4] = nil
                     iconColorCfg.swatches[3].refreshAlpha = function()
-                        if block.useIconAccentColor then
-                            return 1
-                        end
+                        if block.useIconAccentColor then return 1 end
                         return (IconFlagsOff() and block.iconColor == nil) and 1 or 0.3
                     end
                 end
@@ -3083,9 +2764,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show M+ Portals",
                         tooltip = "Show the Mythic+ teleport section in the tooltip. Ready rows are click-to-teleport.",
-                        getValue = function()
-                            return cfg.clickableTeleports ~= false
-                        end,
+                        getValue = function() return cfg.clickableTeleports ~= false end,
                         setValue = function(val)
                             cfg.clickableTeleports = val and true or false
                             ApplyBar()
@@ -3099,9 +2778,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show Icon",
                         tooltip = "Shows the audio icon next to the volume bar.",
-                        getValue = function()
-                            return cfg.showIcon ~= false
-                        end,
+                        getValue = function() return cfg.showIcon ~= false end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
                             ApplyBar()
@@ -3115,9 +2792,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show Icon",
                         tooltip = "Shows the profession icons next to the text.",
-                        getValue = function()
-                            return cfg.showIcon ~= false
-                        end,
+                        getValue = function() return cfg.showIcon ~= false end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
                             ApplyBar()
@@ -3131,9 +2806,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show Icon",
                         tooltip = "Shows the spec icon next to the text.",
-                        getValue = function()
-                            return cfg.showIcon ~= false
-                        end,
+                        getValue = function() return cfg.showIcon ~= false end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
                             ApplyBar()
@@ -3157,9 +2830,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show Icon",
                         tooltip = "Shows the icon next to the durability readout.",
-                        getValue = function()
-                            return cfg.showIcon == true
-                        end,
+                        getValue = function() return cfg.showIcon == true end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
                             ApplyBar()
@@ -3182,9 +2853,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "none", "short", "long", "icon" },
                         getValue = function()
                             local profile = cfg.prefix
-                            if profile == nil then
-                                profile = "short"
-                            end
+                            if profile == nil then profile = "short" end
                             return profile
                         end,
                         setValue = SFieldThen("prefix"),
@@ -3195,9 +2864,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show Silver and Copper",
                         tooltip = "Shows silver and copper, not just gold.",
-                        getValue = function()
-                            return cfg.showSmall == true
-                        end,
+                        getValue = function() return cfg.showSmall == true end,
                         setValue = function(val)
                             cfg.showSmall = val and true or false
                             ApplyBar()
@@ -3219,9 +2886,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = labelText,
                     tooltip = tipText,
-                    getValue = function()
-                        return cfg[barKey] == true
-                    end,
+                    getValue = function() return cfg[barKey] == true end,
                     setValue = function(val)
                         cfg[barKey] = val and true or false
                         ApplyBar()
@@ -3260,9 +2925,7 @@ CludesUI.AtOptionsLogin(function()
                         text = "Local Time",
                         tooltip = "Local computer time instead of server time.",
                         getValue = function()
-                            if cfg.localTime == nil then
-                                return GetCVar("timeMgrUseLocalTime") == "1"
-                            end
+                            if cfg.localTime == nil then return GetCVar("timeMgrUseLocalTime") == "1" end
                             return cfg.localTime == true
                         end,
                         setValue = function(val)
@@ -3275,9 +2938,7 @@ CludesUI.AtOptionsLogin(function()
                         text = "24 Hour Clock",
                         tooltip = "Use 24-hour time.",
                         getValue = function()
-                            if cfg.twentyFour == nil then
-                                return GetCVar("timeMgrUseMilitaryTime") == "1"
-                            end
+                            if cfg.twentyFour == nil then return GetCVar("timeMgrUseMilitaryTime") == "1" end
                             return cfg.twentyFour == true
                         end,
                         setValue = function(val)
@@ -3308,9 +2969,7 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Which latency to show: home, world, or both side by side.",
                         values = { home = "Home", world = "World", both = "Both" },
                         order = { "home", "world", "both" },
-                        getValue = function()
-                            return mod.LatencyMode(cfg)
-                        end,
+                        getValue = function() return mod.LatencyMode(cfg) end,
                         setValue = SFieldThen("latencyMode"),
                     },
                     -- Not MkToggle: the inline icon-color swatches below key
@@ -3320,9 +2979,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         text = "Show Icon",
                         tooltip = "Shows a house or globe icon marking which latency each value is.",
-                        getValue = function()
-                            return cfg.showIcon == true
-                        end,
+                        getValue = function() return cfg.showIcon == true end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
                             ApplyBar()
@@ -3340,9 +2997,7 @@ CludesUI.AtOptionsLogin(function()
                 -- reading the field directly would leave the control enabled on a block
                 -- that IS the fill -- the very case this guards.
                 local function WidthInert()
-                    if mod.BarSizingMode(rowConf) ~= "auto" then
-                        return true
-                    end
+                    if mod.BarSizingMode(rowConf) ~= "auto" then return true end
                     return mod.EnsureFillBlock(rowConf) == blockId
                 end
                 local INERT_TIP =
@@ -3356,9 +3011,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "auto", "manual" },
                         disabled = WidthInert,
                         disabledTooltip = INERT_TIP,
-                        getValue = function()
-                            return mod.LocationWidthMode(cfg)
-                        end,
+                        getValue = function() return mod.LocationWidthMode(cfg) end,
                         setValue = function(val)
                             cfg.widthMode = val
                             -- Every switch to Manual re-arms the pulse, whether
@@ -3389,25 +3042,19 @@ CludesUI.AtOptionsLogin(function()
                         step = 5,
                         tooltip = "How wide the block stays, whatever the zone is called.",
                         disabled = function()
-                            if WidthInert() then
-                                return true
-                            end
+                            if WidthInert() then return true end
                             return mod.LocationWidthMode(cfg) ~= "manual"
                         end,
                         -- Two reasons to be disabled, two different sentences:
                         -- a fixed "Manual width is required." would be plainly
                         -- wrong on an Even Split bar.
                         disabledTooltip = function()
-                            if WidthInert() then
-                                return INERT_TIP
-                            end
+                            if WidthInert() then return INERT_TIP end
                             return "Manual width is required."
                         end,
                         getValue = function()
                             local val = cfg.maxWidth
-                            if val == nil then
-                                val = mod.LOC_MAX_WIDTH_DEFAULT
-                            end
+                            if val == nil then val = mod.LOC_MAX_WIDTH_DEFAULT end
                             return val
                         end,
                         setValue = function(val)
@@ -3433,9 +3080,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { 0, 1, 2 },
                         getValue = function()
                             local profile = cfg.precision
-                            if profile == nil then
-                                profile = 0
-                            end
+                            if profile == nil then profile = 0 end
                             return profile
                         end,
                         setValue = SFieldThen("precision"),
@@ -3465,9 +3110,7 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Which sections the gold tooltip shows.",
                         values = { __placeholder = "..." },
                         order = { "__placeholder" },
-                        getValue = function()
-                            return "__placeholder"
-                        end,
+                        getValue = function() return "__placeholder" end,
                         setValue = function() end,
                     },
                     ToggleRow(
@@ -3482,12 +3125,8 @@ CludesUI.AtOptionsLogin(function()
                         text = "Gold Tracking and History",
                         noCapture = true,
                         tooltip = "Track and display gold amounts from all your characters on hover.",
-                        getValue = function()
-                            return CludesUI.GetGoldLedger().IsTracking()
-                        end,
-                        setValue = function(val)
-                            CludesUI.GetGoldLedger().SetTracking(val)
-                        end,
+                        getValue = function() return CludesUI.GetGoldLedger().IsTracking() end,
+                        setValue = function(val) CludesUI.GetGoldLedger().SetTracking(val) end,
                     },
                 }
                 -- Force English Units: only where the effective locale actually
@@ -3520,9 +3159,7 @@ CludesUI.AtOptionsLogin(function()
                         text = "Text Display",
                         values = { off = "Off", values = "Values", percentage = "Percentage" },
                         order = { "off", "values", "percentage" },
-                        getValue = function()
-                            return mod.GetXPRepTextDisplay(cfg)
-                        end,
+                        getValue = function() return mod.GetXPRepTextDisplay(cfg) end,
                         setValue = SFieldThen("textDisplay"),
                     },
                     {
@@ -3532,9 +3169,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "context", "plain" },
                         getValue = SFieldOr("textFormat", "context"),
                         setValue = SFieldThen("textFormat"),
-                        disabled = function()
-                            return mod.GetXPRepTextDisplay(cfg) == "off"
-                        end,
+                        disabled = function() return mod.GetXPRepTextDisplay(cfg) == "off" end,
                     },
                     {
                         type = "dropdown",
@@ -3544,9 +3179,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "auto", "xp", "rep" },
                         getValue = function()
                             local m = cfg.mode
-                            if m == nil then
-                                m = "auto"
-                            end
+                            if m == nil then m = "auto" end
                             return m
                         end,
                         setValue = SFieldThen("mode"),
@@ -3558,14 +3191,10 @@ CludesUI.AtOptionsLogin(function()
                     ToggleRow("Uppercase Text", "useUppercase", "Renders the spec text in uppercase."),
                 }
             elseif block.type == "travel" then
-                local function ChoiceOf(button)
-                    return mod.TravelClickChoice(cfg, button)
-                end
+                local function ChoiceOf(button) return mod.TravelClickChoice(cfg, button) end
                 -- Houses arrive asynchronously: the page refresh lists them (the refill below).
                 mod.TravelRequestHouseList(function()
-                    if CludesUI:GetActiveModule() == "CludesUIDataBars" then
-                        CludesUI:RefreshPage()
-                    end
+                    if CludesUI:GetActiveModule() == "CludesUIDataBars" then CludesUI:RefreshPage() end
                 end)
                 -- Fills values / order in place: a built dropdown keeps reading these tables.
                 local function BuildClickValues(button, values, sequence)
@@ -3601,9 +3230,7 @@ CludesUI.AtOptionsLogin(function()
                         local entries, curInGroup = {}, false
                         if group.ids and group.usable then
                             for _, ident in ipairs(group.ids) do
-                                if ident == current then
-                                    curInGroup = true
-                                end
+                                if ident == current then curInGroup = true end
                                 if group.usable(ident) and ident ~= current then
                                     entries[#entries + 1] = ident
                                 end
@@ -3620,9 +3247,7 @@ CludesUI.AtOptionsLogin(function()
                             for _, ident in ipairs(entries) do
                                 nameList[ident] = mod.TravelEntryName(ident) or ("Item " .. ident)
                             end
-                            table.sort(entries, function(a, z)
-                                return nameList[a] < nameList[z]
-                            end)
+                            table.sort(entries, function(a, z) return nameList[a] < nameList[z] end)
                             sequence[#sequence + 1] = group.key
                             for _, ident in ipairs(entries) do
                                 values[ident] = nameList[ident]
@@ -3660,15 +3285,11 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = CLICK_TIPS[button],
                         values = vals,
                         order = ord,
-                        getValue = function()
-                            return ChoiceOf(button)
-                        end,
+                        getValue = function() return ChoiceOf(button) end,
                         setValue = function(val)
                             cfg[CLICK_KEYS[button]] = val
                             -- Mirrored for old readers/exports of the legacy boolean.
-                            if button == 1 then
-                                cfg.randomizeHs = (val == "random")
-                            end
+                            if button == 1 then cfg.randomizeHs = (val == "random") end
                             ApplyBar()
                             CludesUI:RefreshPage()
                         end,
@@ -3679,24 +3300,18 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "What the bar shows for this click.",
                         values = TEXT_VALUES,
                         order = TEXT_ORDER,
-                        getValue = function()
-                            return mod.TravelClickTextMode(cfg, button)
-                        end,
+                        getValue = function() return mod.TravelClickTextMode(cfg, button) end,
                         setValue = function(val)
                             cfg[TEXT_KEYS[button]] = val
                             ApplyBar()
                         end,
-                        disabled = function()
-                            return ChoiceOf(button) == "none"
-                        end,
+                        disabled = function() return ChoiceOf(button) == "none" end,
                         disabledTooltip = "Set this click to something other than None.",
                         rawTooltip = true,
                     }
                 end
                 -- Last, so each click keeps its choice and text on one row.
-                if travelIconCfg then
-                    typeRowList[#typeRowList + 1] = travelIconCfg
-                end
+                if travelIconCfg then typeRowList[#typeRowList + 1] = travelIconCfg end
                 typeRowList[#typeRowList + 1] = ToggleRow(
                     "Show Other Characters",
                     "altHearths",
@@ -3708,16 +3323,12 @@ CludesUI.AtOptionsLogin(function()
                     local clickDD, listGen = travelClickDD, mod.TravelHouseListGen()
                     CludesUI.RegisterWidgetRefresh(function()
                         local gen = mod.TravelHouseListGen()
-                        if gen == listGen then
-                            return
-                        end
+                        if gen == listGen then return end
                         listGen = gen
                         for button = 1, 3 do
                             BuildClickValues(button, clickVals[button], clickOrd[button])
                             local dropdown = clickDD[button]
-                            if dropdown and dropdown._invalidateMenu then
-                                dropdown._invalidateMenu()
-                            end
+                            if dropdown and dropdown._invalidateMenu then dropdown._invalidateMenu() end
                         end
                     end)
                 end
@@ -3740,9 +3351,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "LEFT", "CENTER", "RIGHT" },
                         getValue = function()
                             local a = block.align
-                            if a == nil then
-                                a = "CENTER"
-                            end
+                            if a == nil then a = "CENTER" end
                             return a
                         end,
                         setValue = function(val)
@@ -3765,9 +3374,7 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Gap between the main menu button and the icon row.",
                         getValue = function()
                             local val = cfg.mainMenuSpacing
-                            if val == nil then
-                                val = 4
-                            end
+                            if val == nil then val = 4 end
                             return val
                         end,
                         setValue = SFieldThen("mainMenuSpacing"),
@@ -3782,9 +3389,7 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Gap between the micro menu icons.",
                         getValue = function()
                             local val = cfg.iconSpacing
-                            if val == nil then
-                                val = 2
-                            end
+                            if val == nil then val = 2 end
                             return val
                         end,
                         setValue = SFieldThen("iconSpacing"),
@@ -3799,9 +3404,7 @@ CludesUI.AtOptionsLogin(function()
                         text = "Visible Items",
                         values = { __placeholder = "..." },
                         order = { "__placeholder" },
-                        getValue = function()
-                            return "__placeholder"
-                        end,
+                        getValue = function() return "__placeholder" end,
                         setValue = function() end,
                     },
                     ToggleRow("Show Label", "showLabel"),
@@ -3821,9 +3424,7 @@ CludesUI.AtOptionsLogin(function()
                         order = cOrder,
                         getValue = function()
                             local ident = cfg.currencyId
-                            if ident == nil then
-                                ident = 0
-                            end
+                            if ident == nil then ident = 0 end
                             return ident
                         end,
                         setValue = function(val)
@@ -3853,9 +3454,7 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Which of the season's crests this block shows.",
                         values = { __placeholder = "..." },
                         order = { "__placeholder" },
-                        getValue = function()
-                            return "__placeholder"
-                        end,
+                        getValue = function() return "__placeholder" end,
                         setValue = function() end,
                     },
                     {
@@ -3871,9 +3470,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "slash", "line", "dash", "space" },
                         getValue = function()
                             local val = cfg.separator
-                            if val == nil then
-                                val = "slash"
-                            end
+                            if val == nil then val = "slash" end
                             return val
                         end,
                         setValue = SFieldThen("separator"),
@@ -3899,9 +3496,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { asc = "Lowest First", desc = "Highest First" },
                         order = { "asc", "desc" },
                         getValue = function()
-                            if cfg.reverse == true then
-                                return "desc"
-                            end
+                            if cfg.reverse == true then return "desc" end
                             return "asc"
                         end,
                         setValue = function(val)
@@ -3946,9 +3541,7 @@ CludesUI.AtOptionsLogin(function()
                             cfg.lowThreshold = val
                             ApplyBar()
                             -- Swatch enable state flips only when crossing zero.
-                            if wasOn ~= (val > 0) then
-                                CludesUI:RefreshPage()
-                            end
+                            if wasOn ~= (val > 0) then CludesUI:RefreshPage() end
                         end,
                     },
                 }
@@ -3979,9 +3572,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { "equipped", "total", "both" },
                         getValue = function()
                             local val = cfg.value
-                            if val == nil then
-                                val = "equipped"
-                            end
+                            if val == nil then val = "equipped" end
                             return val
                         end,
                         setValue = SFieldThen("value"),
@@ -3994,9 +3585,7 @@ CludesUI.AtOptionsLogin(function()
                         order = { 0, 1, 2 },
                         getValue = function()
                             local profile = cfg.precision
-                            if profile == nil then
-                                profile = 0
-                            end
+                            if profile == nil then profile = 0 end
                             return profile
                         end,
                         setValue = SFieldThen("precision"),
@@ -4089,12 +3678,8 @@ CludesUI.AtOptionsLogin(function()
                     order = { "custom", "wow" },
                     -- Item Level shows its icon only as the "Icon" prefix.
                     disabled = function()
-                        if block.type == "ilvl" then
-                            return cfg.prefix ~= "icon"
-                        end
-                        if block.type == "gold" then
-                            return cfg.showIcons == false
-                        end
+                        if block.type == "ilvl" then return cfg.prefix ~= "icon" end
+                        if block.type == "gold" then return cfg.showIcons == false end
                         return cfg.showIcon == false
                     end,
                     disabledTooltip = block.type == "ilvl" and "Prefix: Icon" or "Show Icon",
@@ -4106,15 +3691,11 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage(true)
                     end,
                 }
-                if block.type ~= "micromenu" then
-                    typeRowList[#typeRowList + 1] = iconStyleCfg
-                end
+                if block.type ~= "micromenu" then typeRowList[#typeRowList + 1] = iconStyleCfg end
             end
             for keyName = 1, #typeRowList, 2 do
                 local rightCfg = typeRowList[keyName + 1]
-                if not rightCfg then
-                    rightCfg = { type = "label", text = "" }
-                end
+                if not rightCfg then rightCfg = { type = "label", text = "" } end
                 row, height = W:DualRow(hostFrame, cursorY, typeRowList[keyName], rightCfg)
                 cursorY = cursorY - height
                 -- Travel: the first three rows hold the click dropdowns on their left.
@@ -4123,17 +3704,13 @@ CludesUI.AtOptionsLogin(function()
                 end
                 if block.type == "supplies" and keyName == 1 and not CludesUI._prebuilding then
                     local regionFrame = row._leftRegion
-                    if regionFrame._control then
-                        regionFrame._control:Hide()
-                    end
+                    if regionFrame._control then regionFrame._control:Hide() end
                     local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
                         regionFrame,
                         210,
                         regionFrame:GetFrameLevel() + 2,
                         mod.ClassResourceChoices,
-                        function(barKey)
-                            return mod.ClassResourceShown(cfg, barKey)
-                        end,
+                        function(barKey) return mod.ClassResourceShown(cfg, barKey) end,
                         function(barKey, value)
                             cfg.hiddenItems = cfg.hiddenItems or {}
                             cfg.hiddenItems[barKey] = not value
@@ -4146,30 +3723,20 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI.PanelPP.Point(dropdown, "RIGHT", regionFrame, "RIGHT", -20, 0)
                     regionFrame._control = dropdown
                     regionFrame._lastInline = nil
-                    if refresh then
-                        CludesUI.RegisterWidgetRefresh(refresh)
-                    end
+                    if refresh then CludesUI.RegisterWidgetRefresh(refresh) end
                     hostFrame._edbClickTargets["block:" .. blockId .. ":resources"] =
                         { section = secHdr, target = row, slotSide = "left" }
                 end
                 -- Latency: the Show Icon toggle rides this row's right slot and
                 -- carries the inline icon-color swatches built after the loop.
-                if block.type == "ms" and keyName == 1 then
-                    msIconRow = row
-                end
+                if block.type == "ms" and keyName == 1 then msIconRow = row end
                 -- Gold: Show Tooltip Data rides the Coin Icons row's right slot.
-                if block.type == "gold" and keyName == 3 then
-                    goldTipRow = row
-                end
+                if block.type == "gold" and keyName == 3 then goldTipRow = row end
                 -- Crests: the Crests Shown checklist heads the type rows, so
                 -- its placeholder is this row's LEFT slot.
-                if block.type == "crests" and keyName == 1 then
-                    crestListRow = row
-                end
+                if block.type == "crests" and keyName == 1 then crestListRow = row end
                 -- Bags: Low Space Warning heads the second row (left slot).
-                if block.type == "bags" and keyName == 3 then
-                    bagsLowRow = row
-                end
+                if block.type == "bags" and keyName == 3 then bagsLowRow = row end
                 -- Deep-link target for an unconfigured currency block: clicking
                 -- its "Select a currency" placeholder on the live bar lands on
                 -- the picker itself, not just the section (ns.OpenBlockSettings).
@@ -4181,9 +3748,7 @@ CludesUI.AtOptionsLogin(function()
                         target = row,
                         slotSide = "left",
                         -- Pulse until the player actually picks one.
-                        holdWhile = function()
-                            return cfg.currencyId == nil
-                        end,
+                        holdWhile = function() return cfg.currencyId == nil end,
                     }
                 end
                 -- Same contract for the location block's Max Width: switching
@@ -4199,9 +3764,7 @@ CludesUI.AtOptionsLogin(function()
                         section = secHdr,
                         target = row,
                         slotSide = "left",
-                        holdWhile = function()
-                            return cfg.source == nil
-                        end,
+                        holdWhile = function() return cfg.source == nil end,
                     }
                 end
                 if block.type == "location" and keyName == 1 then
@@ -4209,9 +3772,7 @@ CludesUI.AtOptionsLogin(function()
                         section = secHdr,
                         target = row,
                         slotSide = "right",
-                        holdWhile = function()
-                            return _edbWidthPulse[block] == true
-                        end,
+                        holdWhile = function() return _edbWidthPulse[block] == true end,
                     }
                 end
             end
@@ -4225,11 +3786,11 @@ CludesUI.AtOptionsLogin(function()
             if msIconRow and not CludesUI._prebuilding then
                 local region = msIconRow._rightRegion
                 local anchor = region._control
-                local function IconOn()
-                    return cfg.showIcon == true
-                end
+                local function IconOn() return cfg.showIcon == true end
                 local function FlagsOff()
-                    return not block.useIconClassColor and not block.useIconAccentColor and not block.useIconDefaultColor
+                    return not block.useIconClassColor
+                        and not block.useIconAccentColor
+                        and not block.useIconDefaultColor
                 end
                 local function ClearFlags()
                     block.useIconClassColor = nil
@@ -4242,27 +3803,21 @@ CludesUI.AtOptionsLogin(function()
                 local specs = {
                     {
                         tip = "Accent Color",
-                        get = function()
-                            return mod.GetAccent()
-                        end,
+                        get = function() return mod.GetAccent() end,
                         click = function()
                             ClearFlags()
                             block.useIconAccentColor = true
                             ReflowBar()
                             CludesUI:RefreshPage()
                         end,
-                        on = function()
-                            return block.useIconAccentColor == true
-                        end,
+                        on = function() return block.useIconAccentColor == true end,
                     },
                     {
                         tip = "Class Colored",
                         get = function()
                             local _, class = UnitClass("player")
                             local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                            if classColor then
-                                return classColor.r, classColor.g, classColor.b
-                            end
+                            if classColor then return classColor.r, classColor.g, classColor.b end
                             return 1, 1, 1
                         end,
                         click = function()
@@ -4271,17 +3826,13 @@ CludesUI.AtOptionsLogin(function()
                             ReflowBar()
                             CludesUI:RefreshPage()
                         end,
-                        on = function()
-                            return block.useIconClassColor == true
-                        end,
+                        on = function() return block.useIconClassColor == true end,
                     },
                     {
                         tip = "Custom Color",
                         get = function()
                             local color = block.iconColor
-                            if color then
-                                return color.r or 1, color.g or 1, color.b or 1
-                            end
+                            if color then return color.r or 1, color.g or 1, color.b or 1 end
                             return 1, 1, 1
                         end,
                         set = function(red, green, blue)
@@ -4298,9 +3849,7 @@ CludesUI.AtOptionsLogin(function()
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if self._eabOrigClick then
-                                self._eabOrigClick(self)
-                            end
+                            if self._eabOrigClick then self._eabOrigClick(self) end
                         end,
                         on = FlagsOff,
                     },
@@ -4320,23 +3869,25 @@ CludesUI.AtOptionsLogin(function()
                         20
                     )
                     colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
-                    colorSwatch:SetScript("OnClick", function(self)
-                        sp.click(self)
-                    end)
-                    colorSwatch:HookScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(colorSwatch, sp.tip)
-                    end)
-                    colorSwatch:HookScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
+                    colorSwatch:SetScript("OnClick", function(self) sp.click(self) end)
+                    colorSwatch:HookScript(
+                        "OnEnter",
+                        function() CludesUI.ShowWidgetTooltip(colorSwatch, sp.tip) end
+                    )
+                    colorSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                     Pix.Point(colorSwatch, "RIGHT", anchor, "LEFT", -8, 0)
                     anchor = colorSwatch
 
                     -- Blocking overlay while Show Icon is off: the icons are
                     -- not drawn, so their color is not editable.
-                    GatedSwatch(colorSwatch, updateSwatch, "Show Icon", 10, IconOn, function()
-                        return sp.on() and 1 or 0.3
-                    end)
+                    GatedSwatch(
+                        colorSwatch,
+                        updateSwatch,
+                        "Show Icon",
+                        10,
+                        IconOn,
+                        function() return sp.on() and 1 or 0.3 end
+                    )
                 end
                 region._lastInline = anchor
             end
@@ -4351,9 +3902,7 @@ CludesUI.AtOptionsLogin(function()
                     function()
                         local d = mod.BAGS_LOW_COLOR
                         local color = cfg.lowColor
-                        if color then
-                            return color.r or d[1], color.g or d[2], color.b or d[3]
-                        end
+                        if color then return color.r or d[1], color.g or d[2], color.b or d[3] end
                         return d[1], d[2], d[3]
                     end,
                     function(red, green, blue)
@@ -4364,9 +3913,13 @@ CludesUI.AtOptionsLogin(function()
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
-                GatedSwatch(colorSwatch, updateSwatch, "Low Space Warning", 5, function()
-                    return (cfg.lowThreshold or 0) > 0
-                end)
+                GatedSwatch(
+                    colorSwatch,
+                    updateSwatch,
+                    "Low Space Warning",
+                    5,
+                    function() return (cfg.lowThreshold or 0) > 0 end
+                )
                 region._lastInline = colorSwatch
             end
 
@@ -4383,17 +3936,13 @@ CludesUI.AtOptionsLogin(function()
                 }
                 if not CludesUI._prebuilding then
                     local rightRegion = goldTipRow._rightRegion
-                    if rightRegion._control then
-                        rightRegion._control:Hide()
-                    end
+                    if rightRegion._control then rightRegion._control:Hide() end
                     local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                         rightRegion,
                         210,
                         rightRegion:GetFrameLevel() + 2,
                         GOLD_TIP_ELEMENTS,
-                        function(keyName)
-                            return cfg[keyName] ~= false
-                        end,
+                        function(keyName) return cfg[keyName] ~= false end,
                         function(keyName, val)
                             if val then
                                 cfg[keyName] = true
@@ -4405,9 +3954,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI.PanelPP.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
                     rightRegion._control = checkDrop
                     rightRegion._lastInline = nil
-                    if cbDDRefresh then
-                        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-                    end
+                    if cbDDRefresh then CludesUI.RegisterWidgetRefresh(cbDDRefresh) end
                 end
             end
 
@@ -4427,9 +3974,7 @@ CludesUI.AtOptionsLogin(function()
                         local name
                         if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
                             local details = C_CurrencyInfo.GetCurrencyInfo(c.id)
-                            if details then
-                                name = details.name
-                            end
+                            if details then name = details.name end
                         end
                         result[i] = { key = c.key, label = name or ("#" .. c.id) }
                     end
@@ -4437,17 +3982,13 @@ CludesUI.AtOptionsLogin(function()
                 end
                 if not CludesUI._prebuilding then
                     local leftRegion = crestListRow._leftRegion
-                    if leftRegion._control then
-                        leftRegion._control:Hide()
-                    end
+                    if leftRegion._control then leftRegion._control:Hide() end
                     local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                         leftRegion,
                         210,
                         leftRegion:GetFrameLevel() + 2,
                         CrestElements,
-                        function(keyName)
-                            return cfg[keyName] ~= false
-                        end,
+                        function(keyName) return cfg[keyName] ~= false end,
                         function(keyName, val)
                             if val then
                                 cfg[keyName] = true
@@ -4460,9 +4001,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
                     leftRegion._control = checkDrop
                     leftRegion._lastInline = nil
-                    if cbDDRefresh then
-                        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-                    end
+                    if cbDDRefresh then CludesUI.RegisterWidgetRefresh(cbDDRefresh) end
                 end
             end
 
@@ -4505,17 +4044,13 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Which micro menu buttons this block shows, and their order.",
                     values = { __placeholder = "..." },
                     order = { "__placeholder" },
-                    getValue = function()
-                        return "__placeholder"
-                    end,
+                    getValue = function() return "__placeholder" end,
                     setValue = function() end,
                 }, iconStyleCfg or CludesUI.BlankRowCfg())
                 cursorY = cursorY - height
                 do
                     local leftRegion = mmRow._leftRegion
-                    if leftRegion._control then
-                        leftRegion._control:Hide()
-                    end
+                    if leftRegion._control then leftRegion._control:Hide() end
                     -- Rows follow the block's saved button order.
                     local labels, itemList = {}, {}
                     for _, el in ipairs(MM_ELEMENTS) do
@@ -4531,9 +4066,7 @@ CludesUI.AtOptionsLogin(function()
                         210,
                         leftRegion:GetFrameLevel() + 2,
                         itemList,
-                        function(keyName)
-                            return mod.MicroMenuButtonOn(cfg, keyName)
-                        end,
+                        function(keyName) return mod.MicroMenuButtonOn(cfg, keyName) end,
                         function(keyName, val)
                             if val then
                                 cfg[keyName] = true
@@ -4552,9 +4085,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
                     leftRegion._control = checkDrop
                     leftRegion._lastInline = nil
-                    if cbDDRefresh then
-                        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-                    end
+                    if cbDDRefresh then CludesUI.RegisterWidgetRefresh(cbDDRefresh) end
                 end
 
                 local notesRow
@@ -4562,9 +4093,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Show Guild Notes",
                     tooltip = "Shows each online member's public note after their name in the Guild tooltip.",
-                    getValue = function()
-                        return cfg.showGuildNotes == true
-                    end,
+                    getValue = function() return cfg.showGuildNotes == true end,
                     setValue = function(val)
                         cfg.showGuildNotes = val and true or false
                         ApplyBar()
@@ -4579,9 +4108,7 @@ CludesUI.AtOptionsLogin(function()
                         notesRow:GetFrameLevel() + 3,
                         function()
                             local color = cfg.guildNoteColor
-                            if not color then
-                                return 0.925, 0.839, 0.447
-                            end
+                            if not color then return 0.925, 0.839, 0.447 end
                             return color.r or 0.925, color.g or 0.839, color.b or 0.447
                         end,
                         function(red, green, blue)
@@ -4593,9 +4120,13 @@ CludesUI.AtOptionsLogin(function()
                     )
                     Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
                     region._lastInline = colorSwatch
-                    GatedSwatch(colorSwatch, updateSwatch, "Show Guild Notes", 10, function()
-                        return cfg.showGuildNotes == true
-                    end)
+                    GatedSwatch(
+                        colorSwatch,
+                        updateSwatch,
+                        "Show Guild Notes",
+                        10,
+                        function() return cfg.showGuildNotes == true end
+                    )
                 end
             end
 
@@ -4613,13 +4144,9 @@ CludesUI.AtOptionsLogin(function()
             local acc = 0
             local curHL
             local function SetHL(ident)
-                if ident == curHL then
-                    return
-                end
+                if ident == curHL then return end
                 curHL = ident
-                if _edbSegHighlightFn then
-                    _edbSegHighlightFn(ident)
-                end
+                if _edbSegHighlightFn then _edbSegHighlightFn(ident) end
                 if mod.SetBlockEditHighlight then
                     if ident then
                         mod.SetBlockEditHighlight(barId, ident)
@@ -4632,9 +4159,7 @@ CludesUI.AtOptionsLogin(function()
             end
             watcher:SetScript("OnUpdate", function(_, elapsed)
                 acc = acc + elapsed
-                if acc < 0.1 then
-                    return
-                end
+                if acc < 0.1 then return end
                 acc = 0
                 if not hostFrame:GetTop() or not hostFrame:IsMouseOver() then
                     SetHL(nil)
@@ -4659,9 +4184,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 SetHL(hit)
             end)
-            watcher:HookScript("OnHide", function()
-                SetHL(nil)
-            end)
+            watcher:HookScript("OnHide", function() SetHL(nil) end)
         end
 
         -- Adding blocks lives in the preview strip's "+" tile only -- no body section.
@@ -4676,9 +4199,7 @@ CludesUI.AtOptionsLogin(function()
             -- that build's rows, and that build re-arms on its own.
             local gen = Pool.Gen(hostFrame)
             C_Timer.After(0.05, function()
-                if Pool.Gen(hostFrame) ~= gen then
-                    return
-                end
+                if Pool.Gen(hostFrame) ~= gen then return end
                 RearmHeldGlow()
             end)
         end
@@ -4701,17 +4222,13 @@ CludesUI.AtOptionsLogin(function()
         local barKey = "block:" .. blockId .. ":" .. settingKey
         CludesUI:NavigateToElementSettings("CludesUIDataBars", PAGE_DATABARS, nil, function()
             local profile = Profile()
-            if profile then
-                profile.selectedBarId = barId
-            end
+            if profile then profile.selectedBarId = barId end
         end)
         -- The click-target map belongs to the page build the call above kicks
         -- off; resolve the scroll target once it has repopulated (same settle
         -- delay NavigateToElementSettings uses for its own section lookup).
         C_Timer.After(0.05, function()
-            if _edbNavigateFn then
-                _edbNavigateFn(barKey)
-            end
+            if _edbNavigateFn then _edbNavigateFn(barKey) end
         end)
     end
 
@@ -4724,14 +4241,10 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     function mod.OnBarLaidOut(barId)
         local host = _edbPreviewHost
-        if barId ~= _edbStripBarId or not (_edbStripRelayout and host and host:IsVisible()) then
-            return
-        end
+        if barId ~= _edbStripBarId or not (_edbStripRelayout and host and host:IsVisible()) then return end
         -- A reorder drag (the strip's only OnUpdate) owns the segment
         -- positions until it ends.
-        if host:GetScript("OnUpdate") then
-            return
-        end
+        if host:GetScript("OnUpdate") then return end
         _edbStripRelayout()
     end
 
@@ -4742,29 +4255,22 @@ CludesUI.AtOptionsLogin(function()
         title = "Info Bar",
         description = "User-created info bars: clock, gold, XP, micro menu and more.",
         pages = { PAGE_DATABARS },
-        buildPage = function(page, hostFrame, yOffset)
-            return BuildDataBarsPage(page, hostFrame, yOffset)
-        end,
+        buildPage = function(page, hostFrame, yOffset) return BuildDataBarsPage(page, hostFrame, yOffset) end,
         getHeaderBuilder = function(page)
-            if page == PAGE_DATABARS then
-                return _edbHeaderBuilder
-            end
+            if page == PAGE_DATABARS then return _edbHeaderBuilder end
             return nil
         end,
         onPageCacheRestore = function(page)
             -- Bars can be resized/width-matched via unlock mode between
             -- visits; re-solve the restored preview from the live cfg.
-            if page == PAGE_DATABARS and _edbStripRelayout then
-                _edbStripRelayout()
-            end
+            if page == PAGE_DATABARS and _edbStripRelayout then _edbStripRelayout() end
         end,
         -- Reset CUI Module Settings' question names the one bar this reset touches.
         resetMessage = function()
             local p = mod.GetProfile()
-            local rowConf = p and ((p.selectedBarId and mod.GetBar(p.selectedBarId)) or (p.bars and p.bars[1]))
-            if not (rowConf and rowConf.name) then
-                return nil
-            end
+            local rowConf = p
+                and ((p.selectedBarId and mod.GetBar(p.selectedBarId)) or (p.bars and p.bars[1]))
+            if not (rowConf and rowConf.name) then return nil end
             return CludesUI.Lf(
                 "Are you sure you want to reset the data bar selected on the Data Bars page (%1$s) to its default look? Its blocks are kept. This will reload your UI.",
                 rowConf.name
@@ -4775,19 +4281,11 @@ CludesUI.AtOptionsLogin(function()
             -- keeps its id, name and blocks. Never wipes the bar list.
             -- (Reset CUI Module Settings confirms and reloads for us.)
             local p = mod.GetProfile()
-            if not p then
-                return
-            end
+            if not p then return end
             local rowConf = nil
-            if p.selectedBarId then
-                rowConf = mod.GetBar(p.selectedBarId)
-            end
-            if not rowConf then
-                rowConf = p.bars[1]
-            end
-            if not rowConf then
-                return
-            end
+            if p.selectedBarId then rowConf = mod.GetBar(p.selectedBarId) end
+            if not rowConf then rowConf = p.bars[1] end
+            if not rowConf then return end
             rowConf.orientation = "H"
             rowConf.lengthMode = "custom"
             rowConf.length = 400

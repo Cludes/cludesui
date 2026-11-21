@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Totem.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local UnitClass, InCombatLockdown = UnitClass, InCombatLockdown
@@ -21,9 +17,7 @@ local ERB, GetRBFont, _totemBorderOverlays = Inner.ERB, Inner.GetRBFont, Inner._
 local SetTotemBarFrame = Inner.SetTotemBarFrame
 
 local totemBarFrame
-Inner.totemBarFrameSetters[#Inner.totemBarFrameSetters + 1] = function(val)
-    totemBarFrame = val
-end
+Inner.totemBarFrameSetters[#Inner.totemBarFrameSetters + 1] = function(val) totemBarFrame = val end
 
 local _totemHooked = false
 local _totemOrigParent
@@ -31,9 +25,7 @@ local _totemOrigStrata
 
 -- Totem Bar: reparents Blizzard TotemFrame, repositions buttons in a clean
 -- row, adds overlay border frames (our own frames, never written to Blizzard).
-local function TotemCfg()
-    return ERB.db and ERB.db.profile and ERB.db.profile.totemBar
-end
+local function TotemCfg() return ERB.db and ERB.db.profile and ERB.db.profile.totemBar end
 
 -- Effective totem-bar grow direction, clamped to the CURRENT orientation. Horizontal:
 -- RIGHT (default, left-anchored/grows-right) / LEFT (fixed right edge, grows left) /
@@ -49,13 +41,9 @@ function CludesUI.GetTotemGrowDir()
     local vertical = tb and tb.orientation == "VERTICAL"
     local direction = (tb and tb.growDirection or (vertical and "DOWN" or "RIGHT")):upper()
     if vertical then
-        if direction ~= "UP" and direction ~= "DOWN" and direction ~= "CENTER" then
-            direction = "DOWN"
-        end
+        if direction ~= "UP" and direction ~= "DOWN" and direction ~= "CENTER" then direction = "DOWN" end
     else
-        if direction ~= "LEFT" and direction ~= "RIGHT" and direction ~= "CENTER" then
-            direction = "RIGHT"
-        end
+        if direction ~= "LEFT" and direction ~= "RIGHT" and direction ~= "CENTER" then direction = "RIGHT" end
     end
     return direction, vertical
 end
@@ -69,9 +57,7 @@ local _totemActiveSet = {} -- reusable set for O(1) cleanup lookups
 -- value, giving a clean number with no "s" suffix in place of Blizzard's "Xs"
 -- Duration text (which is a protected secret value we cannot read or rewrite).
 local function GetCooldownNumberFS(cd)
-    if not (cd and cd.GetRegions) then
-        return nil
-    end
+    if not (cd and cd.GetRegions) then return nil end
     for _, regionFrame in ipairs({ cd:GetRegions() }) do
         if regionFrame.GetObjectType and regionFrame:GetObjectType() == "FontString" then
             return regionFrame
@@ -81,19 +67,13 @@ local function GetCooldownNumberFS(cd)
 end
 
 local function PlaceTotemBar()
-    if not totemBarFrame or not TotemFrame then
-        return
-    end
+    if not totemBarFrame or not TotemFrame then return end
     local tb = TotemCfg()
-    if not tb or not tb.enabledClasses then
-        return
-    end
+    if not tb or not tb.enabledClasses then return end
 
     local spacing = tb.spacing or 2
     local Pix = CludesUI and CludesUI.PP
-    if Pix and Pix.Snap then
-        spacing = Pix.Snap(spacing)
-    end
+    if Pix and Pix.Snap then spacing = Pix.Snap(spacing) end
     local iconSize = tb.iconSize or 30
     local vertical = (tb.orientation == "VERTICAL")
 
@@ -203,9 +183,7 @@ local function PlaceTotemBar()
         end
 
         -- Hide Blizzard's circular border
-        if button.Border then
-            button.Border:Hide()
-        end
+        if button.Border then button.Border:Hide() end
 
         -- Make Icon frame fill the entire button
         if button.Icon then
@@ -225,21 +203,13 @@ local function PlaceTotemBar()
         -- it stays cropped to the old circular shape.
         if button.Icon and button.Icon.Cooldown then
             local cd = button.Icon.Cooldown
-            if button.Icon.TextureMask then
-                pcall(cd.RemoveMaskTexture, cd, button.Icon.TextureMask)
-            end
-            if cd.SetSwipeTexture then
-                pcall(cd.SetSwipeTexture, cd, "")
-            end
-            if cd.SetUseCircularEdge then
-                pcall(cd.SetUseCircularEdge, cd, false)
-            end
+            if button.Icon.TextureMask then pcall(cd.RemoveMaskTexture, cd, button.Icon.TextureMask) end
+            if cd.SetSwipeTexture then pcall(cd.SetSwipeTexture, cd, "") end
+            if cd.SetUseCircularEdge then pcall(cd.SetUseCircularEdge, cd, false) end
             -- Resetting the swipe texture above drops whatever darkness the old
             -- circular swipe had, so pin it explicitly for a defined, consistent
             -- look (matches the standard cooldown swipe darkness used elsewhere).
-            if cd.SetSwipeColor then
-                pcall(cd.SetSwipeColor, cd, 0, 0, 0, 0.8)
-            end
+            if cd.SetSwipeColor then pcall(cd.SetSwipeColor, cd, 0, 0, 0, 0.8) end
         end
 
         -- Apply icon zoom crop
@@ -302,9 +272,7 @@ local function PlaceTotemBar()
 
     -- Hide overlays for buttons no longer active (O(n) via set lookup)
     for button, overlayFrame in pairs(_totemBorderOverlays) do
-        if not _totemActiveSet[button] then
-            overlayFrame:Hide()
-        end
+        if not _totemActiveSet[button] then overlayFrame:Hide() end
     end
 
     local maxButtons = 5
@@ -322,9 +290,7 @@ CludesUI.LayoutTotemBar = PlaceTotemBar
 
 local function BuildTotemBar()
     local tb = TotemCfg()
-    if not tb then
-        return
-    end
+    if not tb then return end
 
     -- enabledClasses nil = disabled; table with class keys = enabled for those classes
     local ec = tb.enabledClasses
@@ -332,17 +298,13 @@ local function BuildTotemBar()
     local isActive = ec and class and ec[class]
 
     if not isActive then
-        if totemBarFrame then
-            CludesUI.SetElementVisibility(totemBarFrame, false)
-        end
+        if totemBarFrame then CludesUI.SetElementVisibility(totemBarFrame, false) end
         -- Restore TotemFrame to original parent and strata
         if TotemFrame and _totemOrigParent and not InCombatLockdown() then
             TotemFrame:SetParent(_totemOrigParent)
             TotemFrame:ClearAllPoints()
             TotemFrame:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 155)
-            if _totemOrigStrata then
-                TotemFrame:SetFrameStrata(_totemOrigStrata)
-            end
+            if _totemOrigStrata then TotemFrame:SetFrameStrata(_totemOrigStrata) end
         end
         return
     end
@@ -354,9 +316,7 @@ local function BuildTotemBar()
         totemBarFrame:SetFrameLevel(15)
         totemBarFrame:SetSize(120, 30)
         -- Re-register unlock elements so unlock mode picks up the new frame
-        if _G._CURB_RegisterUnlock then
-            _G._CURB_RegisterUnlock()
-        end
+        if _G._CURB_RegisterUnlock then _G._CURB_RegisterUnlock() end
     end
 
     -- Save original parent/strata for restore on disable
@@ -420,16 +380,12 @@ local function BuildTotemBar()
         _totemHooked = true
         local function OnTotemsChanged()
             local cfg = TotemCfg()
-            if cfg and cfg.enabledClasses then
-                PlaceTotemBar()
-            end
+            if cfg and cfg.enabledClasses then PlaceTotemBar() end
         end
         hooksecurefunc(TotemFrame, "Update", OnTotemsChanged)
         TotemFrame:HookScript("OnShow", OnTotemsChanged)
         if TotemButtonMixin then
-            hooksecurefunc(TotemButtonMixin, "OnLoad", function()
-                C_Timer.After(0, OnTotemsChanged)
-            end)
+            hooksecurefunc(TotemButtonMixin, "OnLoad", function() C_Timer.After(0, OnTotemsChanged) end)
         end
     end
 

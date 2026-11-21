@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUINameplates_Faction.lua
 --  Faction badge (Horde/Alliance) on friendly nameplates. Enemy plates carry it
@@ -34,9 +32,7 @@ end
 -- the friendly plate builds (point+size regions drift inside plate subtrees).
 local function ArrowTo(fp, anchor)
     local la = fp.leftArrow
-    if not la or fp._facArrowTo == anchor then
-        return
-    end
+    if not la or fp._facArrowTo == anchor then return end
     fp._facArrowTo = anchor
     -- The width we set, never la:GetWidth(): the arrow hangs off the name, and a
     -- secret name (restricted content) makes its measured width secret.
@@ -52,9 +48,7 @@ end
 -- full-plate mode and is released before its unit becomes an enemy plate.
 local function Refresh(fp)
     local nameplate, unitToken = fp.nameplate, fp.unit
-    if not (nameplate and unitToken) then
-        return
-    end
+    if not (nameplate and unitToken) then return end
     local widget = badges[nameplate]
     local atlas, size
     -- Slot None: no unit queries, only a badge left up from before is hidden.
@@ -63,12 +57,8 @@ local function Refresh(fp)
     end
     local fontStr = fp.name
     if not (atlas and fontStr) then
-        if widget then
-            widget:Hide()
-        end
-        if fontStr then
-            ArrowTo(fp, fontStr)
-        end
+        if widget then widget:Hide() end
+        if fontStr then ArrowTo(fp, fontStr) end
         return
     end
     widget = widget or GetBadge(nameplate)
@@ -100,12 +90,8 @@ mod.NP_FriendlyFactionRefresh = Refresh
 -- unit promoted to an enemy plate, which draws its own badge.
 function mod.NP_FriendlyFactionHide(fp)
     local widget = fp.nameplate and badges[fp.nameplate]
-    if widget then
-        widget:Hide()
-    end
-    if fp.name then
-        ArrowTo(fp, fp.name)
-    end
+    if widget then widget:Hide() end
+    if fp.name then ArrowTo(fp, fp.name) end
 end
 
 -- Every friendly full plate: runs after a settings change or profile switch.

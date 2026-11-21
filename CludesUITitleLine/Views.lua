@@ -2,9 +2,7 @@
 -- surfaces, ink and spacing as the graph.
 
 local _, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 local C = mod.COLORS
 
 local Views = {}
@@ -31,27 +29,17 @@ local function Kit(panelFrame)
                 fontStr:SetJustifyH("LEFT")
                 return fontStr
             end),
-            fill = ui.Pool(function()
-                return panelFrame:CreateTexture(nil, "BACKGROUND")
-            end),
-            mark = ui.Pool(function()
-                return panelFrame:CreateTexture(nil, "ARTWORK")
-            end),
-            line = ui.Pool(function()
-                return panelFrame:CreateTexture(nil, "OVERLAY")
-            end),
+            fill = ui.Pool(function() return panelFrame:CreateTexture(nil, "BACKGROUND") end),
+            mark = ui.Pool(function() return panelFrame:CreateTexture(nil, "ARTWORK") end),
+            line = ui.Pool(function() return panelFrame:CreateTexture(nil, "OVERLAY") end),
             -- Clickable rows (guildmates' names open their keys).
             hit = ui.Pool(function()
                 local widget = CreateFrame("Button", nil, panelFrame)
                 widget.glow = widget:CreateTexture(nil, "BACKGROUND")
                 widget.glow:SetAllPoints()
                 ui.Color(widget.glow, C.ink, 0)
-                widget:SetScript("OnEnter", function(self)
-                    ui.Color(self.glow, C.ink, 0.05)
-                end)
-                widget:SetScript("OnLeave", function(self)
-                    ui.Color(self.glow, C.ink, 0)
-                end)
+                widget:SetScript("OnEnter", function(self) ui.Color(self.glow, C.ink, 0.05) end)
+                widget:SetScript("OnLeave", function(self) ui.Color(self.glow, C.ink, 0) end)
                 return widget
             end),
         }
@@ -99,9 +87,7 @@ end
 -- each title as one key level timed in every dungeon.
 function Views.keys(panelFrame, context)
     panelFrame.scroll = nil
-    if panelFrame.bar then
-        panelFrame.bar:Hide()
-    end
+    if panelFrame.bar then panelFrame.bar:Hide() end
     local kit, wid = Kit(panelFrame), mod.UI.PANEL_W
     local goals, rowList = mod.Targets(context.maps, context.myRuns, context.summary.tiers)
     if #rowList == 0 then
@@ -151,9 +137,7 @@ function Views.keys(panelFrame, context)
     end
     lo, hi = math.max(0, lo - 2), hi + 2
     local X0, X1 = 230, wid - 90
-    local function LX(level)
-        return X0 + (level - lo) / (hi - lo) * (X1 - X0)
-    end
+    local function LX(level) return X0 + (level - lo) / (hi - lo) * (X1 - X0) end
 
     local topY = posY
     for _, r in ipairs(rowList) do
@@ -212,9 +196,7 @@ local GUILD_STATES = {
 local SCROLL_STEP = 3 -- rows per wheel notch
 local BAR_W = 4
 
-local function Clamp(st)
-    st.offset = math.max(0, math.min(st.offset, math.max(0, #st.entries - st.capacity)))
-end
+local function Clamp(st) st.offset = math.max(0, math.min(st.offset, math.max(0, #st.entries - st.capacity))) end
 
 local function DrawGuild(panelFrame)
     local scroll = panelFrame.scroll
@@ -252,9 +234,7 @@ local function DrawGuild(panelFrame)
                 hit:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", 0, posY + 3)
                 hit:SetSize(right + 4, ROW_H)
                 hit.member = m
-                hit:SetScript("OnClick", function(self)
-                    Views.OpenCard(panelFrame, self.member)
-                end)
+                hit:SetScript("OnClick", function(self) Views.OpenCard(panelFrame, self.member) end)
             end
         end
         posY = posY - ROW_H
@@ -284,53 +264,37 @@ end
 -- Move the list by `rows`, redrawing only if it actually moved.
 local function ScrollBy(panelFrame, rowList)
     local scroll = panelFrame.scroll
-    if not scroll then
-        return
-    end
+    if not scroll then return end
     local before = scroll.offset
     scroll.offset = scroll.offset + rowList
     Clamp(scroll)
-    if scroll.offset ~= before then
-        DrawGuild(panelFrame)
-    end
+    if scroll.offset ~= before then DrawGuild(panelFrame) end
 end
 
 -- Wheel and scroll bar handlers, attached to the panel once.
 local function SetUpScrolling(panelFrame)
-    if panelFrame.bar then
-        return
-    end
+    if panelFrame.bar then return end
     panelFrame:EnableMouseWheel(true)
-    panelFrame:SetScript("OnMouseWheel", function(_, delta)
-        ScrollBy(panelFrame, -delta * SCROLL_STEP)
-    end)
+    panelFrame:SetScript("OnMouseWheel", function(_, delta) ScrollBy(panelFrame, -delta * SCROLL_STEP) end)
     -- Leaving the Guild view forgets the position, so it reopens on you,
     -- and closes any open card.
     panelFrame:SetScript("OnHide", function()
         panelFrame.scroll = nil
-        if panelFrame.card then
-            panelFrame.card:Hide()
-        end
+        if panelFrame.card then panelFrame.card:Hide() end
     end)
 
     local bar = CreateFrame("Button", nil, panelFrame)
     bar.fill = bar:CreateTexture(nil, "ARTWORK")
     bar.fill:SetAllPoints()
     mod.UI.Color(bar.fill, C.ink2, 0.45)
-    bar:SetScript("OnEnter", function()
-        mod.UI.Color(bar.fill, C.ink2, 0.8)
-    end)
+    bar:SetScript("OnEnter", function() mod.UI.Color(bar.fill, C.ink2, 0.8) end)
     bar:SetScript("OnLeave", function()
-        if not bar.dragging then
-            mod.UI.Color(bar.fill, C.ink2, 0.45)
-        end
+        if not bar.dragging then mod.UI.Color(bar.fill, C.ink2, 0.45) end
     end)
     -- Dragging: rows follow the cursor at the track's scale.
     bar:SetScript("OnMouseDown", function(self)
         local scroll = panelFrame.scroll
-        if not scroll or self.travel <= 0 then
-            return
-        end
+        if not scroll or self.travel <= 0 then return end
         local _, posY = GetCursorPosition()
         self.dragging, self.startY, self.startOffset = true, posY / self:GetEffectiveScale(), scroll.offset
         self:SetScript("OnUpdate", function()
@@ -343,9 +307,7 @@ local function SetUpScrolling(panelFrame)
     bar:SetScript("OnMouseUp", function(self)
         self.dragging = false
         self:SetScript("OnUpdate", nil)
-        if not self:IsMouseOver() then
-            mod.UI.Color(self.fill, C.ink2, 0.45)
-        end
+        if not self:IsMouseOver() then mod.UI.Color(self.fill, C.ink2, 0.45) end
     end)
     bar:Hide()
     panelFrame.bar = bar
@@ -356,9 +318,7 @@ end
 local CARD_ROWS = 8
 
 local function SetUpCard(panelFrame)
-    if panelFrame.card then
-        return panelFrame.card
-    end
+    if panelFrame.card then return panelFrame.card end
     local ui = mod.UI
     local cardFrame = CreateFrame("Frame", nil, panelFrame)
     cardFrame:SetFrameLevel(panelFrame:GetFrameLevel() + 20)
@@ -391,17 +351,13 @@ local function SetUpCard(panelFrame)
 end
 
 local function Ago(at, nowTime)
-    if not at then
-        return nil
-    end
+    if not at then return nil end
     return nowTime - at < 120 and "just now" or mod.DateText(at)
 end
 
 local function DrawCard(panelFrame)
     local cardFrame, m = panelFrame.card, panelFrame.cardFor
-    if not cardFrame or not m or not cardFrame:IsShown() then
-        return
-    end
+    if not cardFrame or not m or not cardFrame:IsShown() then return end
     local ui, kit = mod.UI, cardFrame.kit
     for _, p in pairs(kit) do
         p:Reset()
@@ -431,9 +387,7 @@ local function DrawCard(panelFrame)
     local sub
     if source == "shared" then
         sub = ("%s rating, from their TitleLine %s"):format(mod.Fmt(m.score), Ago(payload.at, nowTime))
-        if (payload.count or 0) > 0 then
-            sub = sub .. (", %d keys this season"):format(payload.count)
-        end
+        if (payload.count or 0) > 0 then sub = sub .. (", %d keys this season"):format(payload.count) end
     elseif source == "grouped" then
         sub = ("%s rating. Keys as of when you grouped, %s"):format(
             mod.Fmt(m.score),
@@ -442,9 +396,7 @@ local function DrawCard(panelFrame)
     else
         sub = mod.Fmt(m.score) .. " rating"
     end
-    if asking == "asking" then
-        sub = sub .. ". Asking their TitleLine..."
-    end
+    if asking == "asking" then sub = sub .. ". Asking their TitleLine..." end
     textValue("small", C.muted, 14, -36, sub)
 
     if not payload then
@@ -471,9 +423,7 @@ local function DrawCard(panelFrame)
     for _, map in ipairs(context.maps) do
         rowList[#rowList + 1] = byMap[map] or { map = map }
     end
-    table.sort(rowList, function(lhs, rhs)
-        return (lhs.level or 0) > (rhs.level or 0)
-    end)
+    table.sort(rowList, function(lhs, rhs) return (lhs.level or 0) > (rhs.level or 0) end)
 
     local NAME, BEST, SCORE, WHEN = 14, 300, 470, wid
     local posY = -66
@@ -513,9 +463,7 @@ function Views.OpenCard(panelFrame, m)
     cardFrame:Show()
     if m.online and mod.Share.AskState(m.key) ~= "asking" and mod.Share.Ask(m.key) then
         -- Redraw when an unanswered ask times out into "no answer".
-        C_Timer.After(16, function()
-            DrawCard(panelFrame)
-        end)
+        C_Timer.After(16, function() DrawCard(panelFrame) end)
     end
     DrawCard(panelFrame)
 end
@@ -523,9 +471,7 @@ end
 -- A reply arrived: redraw the card if it is that player's.
 function Views.OnShared(sender)
     local panelFrame = Views.guildPanel
-    if panelFrame and panelFrame.cardFor and panelFrame.cardFor.key == sender then
-        DrawCard(panelFrame)
-    end
+    if panelFrame and panelFrame.cardFor and panelFrame.cardFor.key == sender then DrawCard(panelFrame) end
 end
 
 function Views.guild(panelFrame, context)
@@ -546,16 +492,12 @@ function Views.guild(panelFrame, context)
     for _, tier in ipairs(tiers) do
         lines[#lines + 1] = tier
     end
-    table.sort(lines, function(lhs, rhs)
-        return lhs.lineNow > rhs.lineNow
-    end)
+    table.sort(lines, function(lhs, rhs) return lhs.lineNow > rhs.lineNow end)
     local counts = {}
     for _, s in ipairs(lines) do
         local num = 0
         for _, m in ipairs(members) do
-            if m.score >= s.lineNow then
-                num = num + 1
-            end
+            if m.score >= s.lineNow then num = num + 1 end
         end
         counts[#counts + 1] = ("%d above %s"):format(num, s.tier.short)
     end
@@ -567,9 +509,7 @@ function Views.guild(panelFrame, context)
             li = li + 1
         end
         entries[#entries + 1] = { member = m, rank = rank }
-        if m.isSelf then
-            selfAt = #entries
-        end
+        if m.isSelf then selfAt = #entries end
     end
     while lines[li] do
         entries[#entries + 1] = { line = lines[li] }
@@ -593,8 +533,6 @@ function Views.guild(panelFrame, context)
     end
     st.top = Para(panelFrame, 0, st.header) - 8
     st.capacity = math.max(1, math.floor((mod.UI.PANEL_H + st.top) / ROW_H))
-    if fresh and selfAt then
-        st.offset = selfAt - math.ceil(st.capacity / 2)
-    end
+    if fresh and selfAt then st.offset = selfAt - math.ceil(st.capacity / 2) end
     DrawGuild(panelFrame)
 end

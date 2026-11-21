@@ -1,4 +1,4 @@
-﻿if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_RaidFrames_BuffManager2.lua
 -- 12.1 Buff Manager v2: the spell -> filter -> indicator model.
 -- FILTERS are named spell sets: presets ship with the addon (rename/delete
@@ -49,7 +49,9 @@ local OTHER_IDS = CUI.BUFF_PRESET_OTHER_IDS
 local OTHER_ONLY_PRESETS = {}
 do
     local offered = {}
-    for idx = 1, #PRESET_FILTERS do offered[PRESET_FILTERS[idx].key] = true end
+    for idx = 1, #PRESET_FILTERS do
+        offered[PRESET_FILTERS[idx].key] = true
+    end
     local other = CUI.BUFF_PRESET_OTHER_FILTERS
     for idx = 1, #other do
         if not offered[other[idx].key] then OTHER_ONLY_PRESETS[other[idx].key] = true end
@@ -88,7 +90,9 @@ for _, spells in pairs(DEFAULT_FILTER_SPELLS) do
         if details.class then
             SPELL_CLASS[ident] = details.class
             if details.alts then
-                for idx = 1, #details.alts do SPELL_CLASS[details.alts[idx]] = details.class end
+                for idx = 1, #details.alts do
+                    SPELL_CLASS[details.alts[idx]] = details.class
+                end
             end
         end
     end
@@ -102,7 +106,9 @@ mod.BM2_SpellClass = SPELL_CLASS
 if CUI.IS_FOREVER == true then
     local ap = {}
     for ident, alts in pairs(PRESET_ALTS) do
-        for idx = 1, #alts do ap[alts[idx]] = ident end
+        for idx = 1, #alts do
+            ap[alts[idx]] = ident
+        end
     end
     mod.BM2_ForeverAltPrimary = ap
 end
@@ -111,10 +117,14 @@ end
 function mod.BM2_AllPresetSpells()
     local set = {}
     for _, spells in pairs(DEFAULT_FILTER_SPELLS) do
-        for ident in pairs(spells) do set[ident] = true end
+        for ident in pairs(spells) do
+            set[ident] = true
+        end
     end
     local result = {}
-    for ident in pairs(set) do result[#result + 1] = ident end
+    for ident in pairs(set) do
+        result[#result + 1] = ident
+    end
     table.sort(result)
     return result
 end
@@ -122,9 +132,7 @@ end
 -------------------------------------------------------------------------------
 -- Storage
 -------------------------------------------------------------------------------
-local function P()
-    return mod.db and mod.db.profile
-end
+local function P() return mod.db and mod.db.profile end
 
 -------------------------------------------------------------------------------
 -- One-shot legacy import (only while the profile has no bm2 store): legacy
@@ -135,7 +143,9 @@ end
 local function LegacyCopy(v)
     if type(v) ~= "table" then return v end
     local tbl = {}
-    for key, posX in pairs(v) do tbl[key] = LegacyCopy(posX) end
+    for key, posX in pairs(v) do
+        tbl[key] = LegacyCopy(posX)
+    end
     return tbl
 end
 
@@ -144,7 +154,9 @@ local function SameSpellSet(a, b)
     a, b = a or {}, b or {}
     if #a ~= #b then return false end
     local set = {}
-    for idx = 1, #a do set[a[idx]] = true end
+    for idx = 1, #a do
+        set[a[idx]] = true
+    end
     for idx = 1, #b do
         if not set[b[idx]] then return false end
     end
@@ -287,7 +299,10 @@ local function Store()
     -- legacy one-shot below never runs on that client.
     if FVBW and not (b and b.fvBuffWipe) then
         local nb = FVBW.ClearBM(profile)
-        if nb then b = nb; mod.BM2_Invalidate() end
+        if nb then
+            b = nb
+            mod.BM2_Invalidate()
+        end
     end
     if not b then
         b = { filters = { nextId = 1, list = {} }, specs = {}, seeded = {} }
@@ -347,9 +362,13 @@ function _G._CURF_BM2ApplyLayer(layer)
         end
     end
     wipe(store.specs)
-    for key, val in pairs(layer.bm2.specs or {}) do store.specs[key] = LegacyCopy(val) end
+    for key, val in pairs(layer.bm2.specs or {}) do
+        store.specs[key] = LegacyCopy(val)
+    end
     wipe(store.seeded)
-    for key, val in pairs(layer.bm2.seeded or {}) do store.seeded[key] = val end
+    for key, val in pairs(layer.bm2.seeded or {}) do
+        store.seeded[key] = val
+    end
     -- WoW Forever: the starter seed reads which layer live now holds
     -- (CludesUI_Migration.lua).
     if FVBW then FVBW.Painted(layer) end
@@ -358,9 +377,7 @@ end
 
 -- Resolution cache generation: any filter/indicator edit bumps it.
 local gen = 1
-function mod.BM2_Invalidate()
-    gen = gen + 1
-end
+function mod.BM2_Invalidate() gen = gen + 1 end
 
 -------------------------------------------------------------------------------
 -- Filter registry
@@ -380,8 +397,7 @@ local function FilterStore()
         local def = PRESET_FILTERS[idx]
         local f = FindPreset(store, def.key)
         if not f then
-            f = { id = store.filters.nextId, name = def.name, preset = def.key,
-                spells = {}, custom = {} }
+            f = { id = store.filters.nextId, name = def.name, preset = def.key, spells = {}, custom = {} }
             store.filters.nextId = store.filters.nextId + 1
             store.filters.list[#store.filters.list + 1] = f
         end
@@ -404,8 +420,7 @@ local function FilterStore()
         -- is legal in 5.1.
         local other = OTHER_IDS[def.key]
         for ident in pairs(f.spells) do
-            if not (curated and curated[ident]) and not f.custom[ident]
-                and not (other and other[ident]) then
+            if not (curated and curated[ident]) and not f.custom[ident] and not (other and other[ident]) then
                 f.spells[ident] = nil
             end
         end
@@ -413,9 +428,7 @@ local function FilterStore()
     -- WoW Forever: the starter seed, decided once per store now that the
     -- preset filters exist ("fvBmSeed" is its frozen mark,
     -- CludesUI_Migration.lua). A marked store costs one field read.
-    if FVBW and store.fvBmSeed == nil and FVBW.SeedStarter(P(), store) then
-        mod.BM2_Invalidate()
-    end
+    if FVBW and store.fvBmSeed == nil and FVBW.SeedStarter(P(), store) then mod.BM2_Invalidate() end
     return store
 end
 
@@ -510,7 +523,10 @@ function mod.BM2_SquareFilterColors(ind)
         -- direct color sits under a rank alternate (WoW Forever).
         if not (ap and sc) then return nil end
         for ident in pairs(sc) do
-            if ap[ident] then merged = {}; break end
+            if ap[ident] then
+                merged = {}
+                break
+            end
         end
         if not merged then return nil end
     end
@@ -536,8 +552,7 @@ end
 function mod.BM2_AddFilter(name)
     local store = Store()
     if not store then return nil end
-    local f = { id = store.filters.nextId, name = name or "New Filter",
-        spells = {}, custom = {} }
+    local f = { id = store.filters.nextId, name = name or "New Filter", spells = {}, custom = {} }
     store.filters.nextId = store.filters.nextId + 1
     store.filters.list[#store.filters.list + 1] = f
     mod.BM2_Invalidate()
@@ -556,9 +571,7 @@ function mod.BM2_DeleteFilter(ident)
     if not store then return end
     for idx = #store.filters.list, 1, -1 do
         local f = store.filters.list[idx]
-        if f.id == ident and not f.preset then
-            table.remove(store.filters.list, idx)
-        end
+        if f.id == ident and not f.preset then table.remove(store.filters.list, idx) end
     end
     for _, specInfo in pairs(store.specs) do
         for jdx = 1, #specInfo.inds do
@@ -614,9 +627,7 @@ function mod.BM2_AddCustomSpell(filterId, spellId, typed)
         -- Already present: only a typed id not yet marked, and not one the
         -- filter's preset curates, changes anything.
         local curated = f.preset and DEFAULT_FILTER_SPELLS[f.preset]
-        if not mark or (curated and curated[spellId]) or (f.exact and f.exact[spellId]) then
-            return false
-        end
+        if not mark or (curated and curated[spellId]) or (f.exact and f.exact[spellId]) then return false end
     else
         f.custom[spellId] = true
         f.spells[spellId] = true
@@ -640,10 +651,7 @@ end
 function mod.BM2_ForeverSpecID(token)
     if not CUI._SO_BmForkSeeded then CUI._SO_SeedForkSpec(false) end
     local fk = CUI.SpecOverrides_BmForkSpecID
-    if fk and not CUI._bmSessionGid
-       and (token == nil or token == CUI.SpecClassOf(fk)) then
-        return fk
-    end
+    if fk and not CUI._bmSessionGid and (token == nil or token == CUI.SpecClassOf(fk)) then return fk end
     return CUI.ForeverClassSpec(token)
 end
 -- The bucket a class row edits: the healer key of a healer spec, else the
@@ -699,14 +707,24 @@ local function SeedSpecBucket(b, specKey)
     local specInfo = b.specs[specKey]
     -- Id namespace offset: the legacy page's own global id counter is synced
     -- from LEGACY storage only, so v2 ids start far above its reachable range.
-    if not specInfo then specInfo = { nextId = 1000001, inds = {} }; b.specs[specKey] = specInfo end
+    if not specInfo then
+        specInfo = { nextId = 1000001, inds = {} }
+        b.specs[specKey] = specInfo
+    end
 
     -- Additive union buckets ("allspecs", the role groups "tanks"/"dps"/
     -- "healers", per-spec "spec<ID>") start EMPTY: nothing renders from them
     -- until the user builds something there, so existing setups are
     -- untouched by their arrival.
-    if specKey == "allspecs" or specKey == "tanks" or specKey == "dps"
-        or specKey == "healers" or specKey:match("^spec%d") then return end
+    if
+        specKey == "allspecs"
+        or specKey == "tanks"
+        or specKey == "dps"
+        or specKey == "healers"
+        or specKey:match("^spec%d")
+    then
+        return
+    end
 
     -- Resolved only for healer-key seeds (below the group early-return so
     -- group buckets never pay the scan, and so a caller that reached here
@@ -714,13 +732,17 @@ local function SeedSpecBucket(b, specKey)
     local popFrame = PresetIdsByKey(b)
 
     local g1 = {
-        id = specInfo.nextId, enabled = true, type = "icon",
+        id = specInfo.nextId,
+        enabled = true,
+        type = "icon",
         name = "Defensives & Utility",
         -- Any-caster: externals/raid CDs are cast BY others.
         ownOnly = false,
         filters = {},
         spells = {},
-        position = "CENTER", growDirection = "CENTER", size = 18,
+        position = "CENTER",
+        growDirection = "CENTER",
+        size = 18,
     }
     if popFrame.defensives then g1.filters[popFrame.defensives] = true end
     if popFrame.raidcds then g1.filters[popFrame.raidcds] = true end
@@ -732,23 +754,35 @@ local function SeedSpecBucket(b, specKey)
     -- Healing-buff corners are healer-only and default own-only (the healer's
     -- OWN HoTs); the shared nonhealer bucket seeds group 1 alone.
     if specKey ~= "nonhealer" then
-        local g2 = { id = specInfo.nextId, enabled = true, type = "icon",
-            name = "Core Healing Buffs", ownOnly = true,
-            filters = {}, spells = {},
-            position = "TOPLEFT", growDirection = "RIGHT", size = 18 }
-        if popFrame.coreheals then
-            g2.filters[popFrame.coreheals] = true
-        end
+        local g2 = {
+            id = specInfo.nextId,
+            enabled = true,
+            type = "icon",
+            name = "Core Healing Buffs",
+            ownOnly = true,
+            filters = {},
+            spells = {},
+            position = "TOPLEFT",
+            growDirection = "RIGHT",
+            size = 18,
+        }
+        if popFrame.coreheals then g2.filters[popFrame.coreheals] = true end
         specInfo.nextId = specInfo.nextId + 1
         specInfo.inds[#specInfo.inds + 1] = g2
 
-        local g3 = { id = specInfo.nextId, enabled = true, type = "icon",
-            name = "Lesser Healing Buffs", ownOnly = true,
-            filters = {}, spells = {},
-            position = "TOPRIGHT", growDirection = "LEFT", size = 18 }
-        if popFrame.lesserheals then
-            g3.filters[popFrame.lesserheals] = true
-        end
+        local g3 = {
+            id = specInfo.nextId,
+            enabled = true,
+            type = "icon",
+            name = "Lesser Healing Buffs",
+            ownOnly = true,
+            filters = {},
+            spells = {},
+            position = "TOPRIGHT",
+            growDirection = "LEFT",
+            size = 18,
+        }
+        if popFrame.lesserheals then g3.filters[popFrame.lesserheals] = true end
         specInfo.nextId = specInfo.nextId + 1
         specInfo.inds[#specInfo.inds + 1] = g3
     end
@@ -788,9 +822,7 @@ function mod.BM2_SpecInds(key)
             end
             -- Seed-name heal: rewrite only the untouched old group-1 name,
             -- never a user's own rename.
-            if ind.name == "Defensive & Support CDs" then
-                ind.name = "Defensives & Utility"
-            end
+            if ind.name == "Defensive & Support CDs" then ind.name = "Defensives & Utility" end
         end
     end
     return specInfo and specInfo.inds or nil, specKey
@@ -872,10 +904,18 @@ function mod.BM2_AddIndicator(indType, key)
     -- Growth must match the position the way the Position dropdown derives it
     -- (TOPLEFT -> RIGHT): CENTER growth centers the run ON the anchor, so a
     -- corner + CENTER hangs half the icons off the frame (preview and live).
-    local ind = { id = specInfo.nextId, enabled = true, type = indType or "icon",
-        name = "New Indicator", filters = {}, spells = {},
+    local ind = {
+        id = specInfo.nextId,
+        enabled = true,
+        type = indType or "icon",
+        name = "New Indicator",
+        filters = {},
+        spells = {},
         ownOnly = false,
-        position = "TOPLEFT", growDirection = "RIGHT", size = 18 }
+        position = "TOPLEFT",
+        growDirection = "RIGHT",
+        size = 18,
+    }
     specInfo.nextId = specInfo.nextId + 1
     specInfo.inds[#specInfo.inds + 1] = ind
     mod.BM2_Invalidate()
@@ -932,7 +972,9 @@ function mod.BM2_ResolveSpellsOwn(ind)
     local typed
     if not ap and ind.exactSpells then
         typed = {}
-        for ident in pairs(ind.exactSpells) do typed[ident] = true end
+        for ident in pairs(ind.exactSpells) do
+            typed[ident] = true
+        end
     end
     local function Add(ident, own)
         local current = set[ident]
@@ -986,8 +1028,9 @@ function mod.BM2_ResolveSpellsOwn(ind)
             if f then
                 for ident, on in pairs(f.spells) do
                     local k = (ap and ap[ident]) or ident
-                    if on and not (direct and direct[k])
-                        and not OtherClientSpell(f, ident) then set[k] = nil end
+                    if on and not (direct and direct[k]) and not OtherClientSpell(f, ident) then
+                        set[k] = nil
+                    end
                 end
             end
         end
@@ -997,7 +1040,9 @@ function mod.BM2_ResolveSpellsOwn(ind)
     -- talent/rank id. Alt ids ride the engine include maps instead
     -- (BmIncludeMap consults BM2_PresetAlts) so they still match their slot.
     local result = {}
-    for ident in pairs(set) do result[#result + 1] = ident end
+    for ident in pairs(set) do
+        result[#result + 1] = ident
+    end
     table.sort(result)
     local exact
     if typed then
@@ -1035,19 +1080,23 @@ end
 -- editor's and the New Indicator popup's): onID(id) takes each number
 -- confirmed in its popup.
 function mod.BM2_SpellIdAction(onID)
-    return { isTopAction = true, label = "Custom Spell ID", onClick = function()
-        CUI:ShowInputPopup({
-            title = CUI.L("Add Spell ID"),
-            message = CUI.L("Enter the spell ID to track on this indicator."),
-            placeholder = CUI.L("Spell ID"),
-            confirmText = CUI.L("Add"),
-            cancelText = CUI.L("Cancel"),
-            onConfirm = function(textValue)
-                local ident = tonumber(textValue or "")
-                if ident and ident > 0 then onID(ident) end
-            end,
-        })
-    end }
+    return {
+        isTopAction = true,
+        label = "Custom Spell ID",
+        onClick = function()
+            CUI:ShowInputPopup({
+                title = CUI.L("Add Spell ID"),
+                message = CUI.L("Enter the spell ID to track on this indicator."),
+                placeholder = CUI.L("Spell ID"),
+                confirmText = CUI.L("Add"),
+                cancelText = CUI.L("Cancel"),
+                onConfirm = function(textValue)
+                    local ident = tonumber(textValue or "")
+                    if ident and ident > 0 then onID(ident) end
+                end,
+            })
+        end,
+    }
 end
 
 -- Preferred DISPLAY spell (sidebar tile icon etc.): a resolved spell the
@@ -1111,7 +1160,10 @@ function mod.BM2_EffectiveShowIn(ind, entries)
             if tid == nil then break end
             local nxt
             for jdx = 1, #entries do
-                if entries[jdx].id == tid then nxt = entries[jdx]; break end
+                if entries[jdx].id == tid then
+                    nxt = entries[jdx]
+                    break
+                end
             end
             if not nxt or nxt == ind then break end
             source = nxt
@@ -1139,9 +1191,7 @@ function mod.BM2_SpecIndicators(frameKind)
     -- WoW Forever: no role groups there, All Non Healers/Aug included -- an
     -- untracked class renders its own bucket and All Specs only.
     if CUI.IS_FOREVER and not tracked then inds = nil end
-    if specID and not tracked then
-        ownInds = mod.BM2_SpecInds("spec" .. specID)
-    end
+    if specID and not tracked then ownInds = mod.BM2_SpecInds("spec" .. specID) end
     allInds = mod.BM2_SpecInds("allspecs")
     local roleKey = specID and mod.BM_RoleBucketForSpecID and mod.BM_RoleBucketForSpecID(specID) or nil
     if roleKey then roleInds = mod.BM2_SpecInds(roleKey) end
@@ -1161,14 +1211,17 @@ function mod.BM2_SpecIndicators(frameKind)
     -- indicator itself is untouched for every other spec.
     local function AppendEntries(entries, idOffset, groupKey, bucket)
         if not entries then return end
-        local views  -- this bucket's stable views, fetched on first use
+        local views -- this bucket's stable views, fetched on first use
         for idx = 1, #entries do
             local ind = entries[idx]
             local drop = groupKey and inhDis and inhDis[groupKey .. ":" .. ind.id]
             if not drop and frameKind then
                 local showIn = mod.BM2_EffectiveShowIn(ind, entries)
-                if showIn == "raid" then drop = frameKind == "party"
-                elseif showIn == "party" then drop = frameKind ~= "party" end
+                if showIn == "raid" then
+                    drop = frameKind == "party"
+                elseif showIn == "party" then
+                    drop = frameKind ~= "party"
+                end
             end
             local resolved, exact
             if not drop then
@@ -1178,13 +1231,23 @@ function mod.BM2_SpecIndicators(frameKind)
             if resolved and #resolved > 0 then
                 if not views then
                     views = bm2ViewCache[bucket or "?"]
-                    if not views then views = {}; bm2ViewCache[bucket or "?"] = views end
+                    if not views then
+                        views = {}
+                        bm2ViewCache[bucket or "?"] = views
+                    end
                 end
                 local viewKey = ind.id or ("x" .. idx)
                 local v = views[viewKey]
-                if not v then v = {}; views[viewKey] = v end
-                for key in pairs(v) do v[key] = nil end
-                for key, val in pairs(ind) do v[key] = val end
+                if not v then
+                    v = {}
+                    views[viewKey] = v
+                end
+                for key in pairs(v) do
+                    v[key] = nil
+                end
+                for key, val in pairs(ind) do
+                    v[key] = val
+                end
                 v.spells = resolved
                 -- Exact ids, which match their own aura alone (nil = every id
                 -- keeps its curated family; BmIncludeMap reads it).
@@ -1223,22 +1286,20 @@ end
 -- a copy lands new spell content here.
 -------------------------------------------------------------------------------
 CUI._BM2FilterBridge = {
-    Filters        = function() return mod.BM2_Filters() end,
-    GetFilter      = function(ident) return mod.BM2_GetFilter(ident) end,
-    AddFilter      = function(name) return mod.BM2_AddFilter(name) end,
-    SetSpellState  = function(ident, spellId, status) return mod.BM2_SetSpellState(ident, spellId, status) end,
+    Filters = function() return mod.BM2_Filters() end,
+    GetFilter = function(ident) return mod.BM2_GetFilter(ident) end,
+    AddFilter = function(name) return mod.BM2_AddFilter(name) end,
+    SetSpellState = function(ident, spellId, status) return mod.BM2_SetSpellState(ident, spellId, status) end,
     AddCustomSpell = function(ident, spellId) return mod.BM2_AddCustomSpell(ident, spellId) end,
     -- True for an id typed into filter f: it tracks that aura alone here,
     -- so a copy does not fan it out to its alternates.
-    SpellExact     = function(f, ident) return CUI.IS_FOREVER ~= true and FilterExact(f, ident) end,
-    PresetAlts     = function() return mod.BM2_PresetAlts end,
-    CuratedSpells  = function(presetKey) return presetKey and DEFAULT_FILTER_SPELLS[presetKey] or nil end,
+    SpellExact = function(f, ident) return CUI.IS_FOREVER ~= true and FilterExact(f, ident) end,
+    PresetAlts = function() return mod.BM2_PresetAlts end,
+    CuratedSpells = function(presetKey) return presetKey and DEFAULT_FILTER_SPELLS[presetKey] or nil end,
     -- True for an id a preset filter keeps only for the other client.
     OtherClientSpell = OtherClientSpell,
-    Refresh        = function()
+    Refresh = function()
         if mod.BM2_Invalidate then mod.BM2_Invalidate() end
         if mod.ReloadFrames then mod.ReloadFrames() end
     end,
 }
-
-

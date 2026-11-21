@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Paint.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor, min, max, abs = math.floor, math.min, math.max, math.abs
@@ -63,9 +59,7 @@ end
 -- world markers, the cycling pair -- carry an icon of their own that no
 -- conditional can move.
 local function HasLiveIcon(slot)
-    if slot == nil then
-        return false
-    end
+    if slot == nil then return false end
     return slot.kind == "macro" or slot.kind == "dynamicrez"
 end
 
@@ -161,9 +155,7 @@ local function PaintCell(
     -- Through the view because PaintCell is not a method and the pip needs one
     -- (see MarkerPip). Every open repaints every cell, so this is the reading
     -- that matters; the event below only keeps a menu left open honest.
-    if wid.view then
-        wid.view:MarkerPip(wid, slot, iconSize)
-    end
+    if wid.view then wid.view:MarkerPip(wid, slot, iconSize) end
 
     ApplySlotVisual(wid, false)
 end
@@ -177,9 +169,7 @@ function PaletteView:Layout(paletteIndex)
     -- palette, so the index it was pointed at last says nothing about the
     -- appearance being laid out here.
     local p, palette = PA(paletteIndex), EnsurePalette(paletteIndex)
-    if not p or not palette then
-        return
-    end
+    if not p or not palette then return end
 
     local options = self.opts
     -- Everything the steering passes read that is NOT the cursor is rewritten
@@ -293,15 +283,11 @@ function PaletteView:Layout(paletteIndex)
     -- removed; a showLabels key left in stored profiles is never read).
     local showLabels = false
     local showCooldowns = options.showCooldowns
-    if showCooldowns == nil then
-        showCooldowns = p.showCooldowns
-    end
+    if showCooldowns == nil then showCooldowns = p.showCooldowns end
     -- ~= false, not == true: on by default, so a profile that has never seen
     -- the key gets the tint.
     local showUsability = options.showUsability
-    if showUsability == nil then
-        showUsability = p.showUsability ~= false
-    end
+    if showUsability == nil then showUsability = p.showUsability ~= false end
 
     -- The cells whose icon can move under them, collected as they are painted
     -- so an open with none of them leaves an empty list and AdvanceLiveIcons
@@ -372,15 +358,9 @@ function PaletteView:Layout(paletteIndex)
         -- slots, not palette.slots: the same list the cell was just painted
         -- from. Once Hide Unavailable Actions filters anything the two part
         -- company, and testing the stored array would collect the wrong cells.
-        if HasLiveIcon(slots[index]) then
-            liveCells[#liveCells + 1] = index
-        end
-        if mod.WarmSlot(slots[index]) then
-            pending[#pending + 1] = index
-        end
-        if showUsability and HasMountTint(slots[index]) then
-            mountCells[#mountCells + 1] = index
-        end
+        if HasLiveIcon(slots[index]) then liveCells[#liveCells + 1] = index end
+        if mod.WarmSlot(slots[index]) then pending[#pending + 1] = index end
+        if showUsability and HasMountTint(slots[index]) then mountCells[#mountCells + 1] = index end
         wid:Show()
     end
 
@@ -419,12 +399,8 @@ function PaletteView:Layout(paletteIndex)
                     claim.icon,
                     showUsability
                 )
-                if HasLiveIcon(claim.slots[jdx]) then
-                    liveCells[#liveCells + 1] = cells
-                end
-                if mod.WarmSlot(claim.slots[jdx]) then
-                    pending[#pending + 1] = cells
-                end
+                if HasLiveIcon(claim.slots[jdx]) then liveCells[#liveCells + 1] = cells end
+                if mod.WarmSlot(claim.slots[jdx]) then pending[#pending + 1] = cells end
                 if showUsability and HasMountTint(claim.slots[jdx]) then
                     mountCells[#mountCells + 1] = cells
                 end
@@ -553,9 +529,7 @@ function PaletteView:Layout(paletteIndex)
         local es = hub.logo:GetEffectiveScale()
         if es and es > 0 then
             sz = floor(sz * es + 0.5) / es
-            if sz < 1 then
-                sz = 1
-            end
+            if sz < 1 then sz = 1 end
         end
         hub.logo:SetSize(sz, sz)
         -- Tinted like the connector line (SelectColor), at full alpha in the
@@ -628,9 +602,7 @@ end
 -- ceiling of 200 locals and had no room for another name.
 function PaletteView:MarkerPip(wid, slot, iconSize)
     local pip = wid.markerPip
-    if not pip then
-        return
-    end
+    if not pip then return end
     -- Live menus only: the pip reads REAL marker state, which is noise on the
     -- options preview and the editor -- those show arrangement, not the
     -- battlefield. Hidden rather than skipped, so a reused widget never
@@ -698,9 +670,7 @@ end
 -- times a pull.
 function PaletteView:RefreshMarkerPips()
     local num = self.cellCount
-    if not num then
-        return
-    end
+    if not num then return end
     for index = 1, num do
         local wid = self.widgets[index]
         if wid then
@@ -717,13 +687,9 @@ end
 
 function PaletteView:AdvanceLiveIcons()
     local cells = self._liveCells
-    if not cells or #cells == 0 then
-        return
-    end
+    if not cells or #cells == 0 then return end
     local status = IconState()
-    if status == self._liveState then
-        return
-    end
+    if status == self._liveState then return end
     self._liveState = status
 
     for key = 1, #cells do
@@ -744,9 +710,7 @@ end
 -- up. Only a cell whose tint changed is repainted.
 function PaletteView:RefreshMountTints()
     local cells = self._mountCells
-    if not cells or #cells == 0 then
-        return
-    end
+    if not cells or #cells == 0 then return end
     for key = 1, #cells do
         local index = cells[key]
         local wid = self.widgets[index]
@@ -774,9 +738,7 @@ end
 -- the session has the data -- costs one length test a frame.
 function PaletteView:AdvancePendingIcons()
     local cells = self._pendingCells
-    if not cells or #cells == 0 then
-        return
-    end
+    if not cells or #cells == 0 then return end
     for key = #cells, 1, -1 do
         local index = cells[key]
         local slot = self:CellSlot(index)
@@ -796,17 +758,13 @@ end
 -- Every cell past shownCount is somebody's child; the palette's own entries map
 -- straight through.
 function PaletteView:CellSlot(index)
-    if not index then
-        return nil
-    end
+    if not index then return nil end
     -- ReadPalette, not EnsurePalette: this is reached from every selection
     -- change, i.e. every time the cursor crosses an entry boundary during a
     -- hold, and compacting the slot array there would allocate and write into
     -- the profile for a pure read.
     local palette = ReadPalette(self.paletteIndex)
-    if not palette then
-        return nil
-    end
+    if not palette then return nil end
     if index <= self.shownCount then
         -- The list this drawing was laid out from (Layout), which is the
         -- usable view on a live menu -- indexing the stored array here would
@@ -846,9 +804,7 @@ end
 -- so its nests follow eqdArmed: ground where a nest is merely closed answers
 -- nothing, on screen and at the release alike.
 function PaletteView:NestsFollowSelection()
-    if self.opts.interactive == true then
-        return true
-    end
+    if self.opts.interactive == true then return true end
     if self:IsFan() and not self:IsPointerLayout() then
         local profile = self:P()
         return (profile and profile.fanMouseSelect) == false
@@ -861,9 +817,7 @@ end
 -- without the selection having moved at all.
 function PaletteView:RepaintEntry(index)
     local wid = index and self.widgets[index]
-    if wid then
-        ApplySlotVisual(wid, index == self.selection, index == self._armedParent)
-    end
+    if wid then ApplySlotVisual(wid, index == self.selection, index == self._armedParent) end
 end
 
 -- Which nest is open. One at a time -- every nest drawn at once would bury the
@@ -887,15 +841,17 @@ end
 -- answer -- see NestsFollowSelection.
 function PaletteView:UpdateNestShown(index)
     local claims = self.claims
-    if not claims then
-        return
-    end
+    if not claims then return end
 
     -- The claim the selection is standing on or inside.
     local touched
     for key = 1, #claims do
         local claim = claims[key]
-        if index and claim.base and (index == claim.parent or (index > claim.base and index <= claim.base + claim.n)) then
+        if
+            index
+            and claim.base
+            and (index == claim.parent or (index > claim.base and index <= claim.base + claim.n))
+        then
             touched = claim
         end
     end
@@ -909,9 +865,7 @@ function PaletteView:UpdateNestShown(index)
         if self:IsFan() and not self:IsPointerLayout() then
             -- The hover strip. A parent the window has culled has no drawn
             -- nest to hold open.
-            if open and not self:FanSlotOffset(open.parent) then
-                open = nil
-            end
+            if open and not self:FanSlotOffset(open.parent) then open = nil end
         end
     end
 
@@ -926,9 +880,7 @@ function PaletteView:UpdateNestShown(index)
         self:RepaintEntry(armedParent)
     end
 
-    if self._openClaim == open then
-        return
-    end
+    if self._openClaim == open then return end
     self._openClaim = open
 
     for key = 1, #claims do
@@ -937,9 +889,7 @@ function PaletteView:UpdateNestShown(index)
         for jdx = 1, claim.n do
             local wid = claim.base and self.widgets[claim.base + jdx]
             if wid then
-                if shownNest then
-                    wid:SetAlpha(1)
-                end
+                if shownNest then wid:SetAlpha(1) end
                 wid:SetShown(shownNest)
             end
         end
@@ -954,9 +904,7 @@ function PaletteView:SetSelection(index)
     -- follow that. UpdateNestShown makes its own decision about whether there
     -- is anything left to draw.
     self:UpdateNestShown(index)
-    if self.selection == index then
-        return
-    end
+    if self.selection == index then return end
 
     local widgets = self.widgets
     if self.selection and widgets[self.selection] then

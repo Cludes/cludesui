@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_RaidFrames_ManagerPages.lua
 -- 12.1 redesigned manager options: the Debuff Manager page (sidebar of
 -- tiles with the undeletable Base Icons tile first) plus the Buff Manager v2
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- legacy mode/preset keys are never written.
 
 local mod = CludesUI._ModuleNS["CludesUIRaidFrames"] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 local CUI = _G.CludesUI
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
@@ -87,21 +83,13 @@ local TIP_VALUES = {
 }
 local TIP_ORDER = { "hidden", "shown", "cursor", "modifier", "combat" }
 local function TipModeKey(val)
-    if val == false then
-        return "shown"
-    end
-    if val == "cursor" or val == "combat" or val == "modifier" then
-        return val
-    end
+    if val == false then return "shown" end
+    if val == "cursor" or val == "combat" or val == "modifier" then return val end
     return "hidden"
 end
 local function TipModeStore(keyName)
-    if keyName == "shown" then
-        return false
-    end
-    if keyName == "hidden" then
-        return true
-    end
+    if keyName == "shown" then return false end
+    if keyName == "hidden" then return true end
     return keyName
 end
 
@@ -116,17 +104,13 @@ local dmSpecSel = "allspecs"
 -- Inherited-tile selection ({ group, id }); wins over dmSel while set.
 local inheritSel = nil
 
-local function Loc(s)
-    return CUI.L(s) or s
-end
+local function Loc(s) return CUI.L(s) or s end
 
 -- The managers share the unit-frame aura border controls and size/offset helpers.
 function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disabled, dispel)
     local function Val(keyName, fallback)
         local val = get(keyName)
-        if val ~= nil then
-            return val
-        end
+        if val ~= nil then return val end
         return fallback
     end
     local values, sequence = CUI.GetBorderTextureDropdown()
@@ -141,9 +125,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
             disabled = disabled,
             disabledTooltip = "Hide Icons",
             requireState = "disabled",
-            getValue = function()
-                return Val("Texture", "solid")
-            end,
+            getValue = function() return Val("Texture", "solid") end,
             setValue = function(val)
                 local color = CUI.GetBorderStyleSelectDefaults(val)
                 set("Texture", val)
@@ -153,9 +135,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
                 set("TextureShiftY", nil)
                 set("Color", color)
                 local size = CUI.GetBorderDefaultSize("unitframes", val)
-                if size then
-                    set("Size", size)
-                end
+                if size then set("Size", size) end
                 set("SizePx", false)
                 apply()
                 CUI:RefreshPage(true)
@@ -166,21 +146,11 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
             disabled = disabled,
             disabledTooltip = "Hide Icons",
             requireState = "disabled",
-            getStep = function()
-                return Val("Size", 1)
-            end,
-            setStep = function(val)
-                set("Size", val)
-            end,
-            getTex = function()
-                return Val("Texture", "solid")
-            end,
-            getPx = function()
-                return get("SizePx")
-            end,
-            setPx = function(val)
-                set("SizePx", val)
-            end,
+            getStep = function() return Val("Size", 1) end,
+            setStep = function(val) set("Size", val) end,
+            getTex = function() return Val("Texture", "solid") end,
+            getPx = function() return get("SizePx") end,
+            setPx = function(val) set("SizePx", val) end,
             apply = apply,
         })
     )
@@ -210,9 +180,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
                 step = 1,
                 get = function()
                     local val = get("TextureShift" .. axis)
-                    if val ~= nil then
-                        return val
-                    end
+                    if val ~= nil then return val end
                     local _, _, sx, sy =
                         CUI.GetBorderDefaults("unitframes", Val("Texture", "solid"), Val("Size", 1))
                     return idx == 1 and sx or sy
@@ -225,30 +193,14 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
         end
         local offX, offY = CUI.BorderOffsetCogRows({
             addonKey = "unitframes",
-            getTex = function()
-                return Val("Texture", "solid")
-            end,
-            getStep = function()
-                return Val("Size", 1)
-            end,
-            getSizeKey = function()
-                return Val("Size", 1)
-            end,
-            getPx = function()
-                return get("SizePx")
-            end,
-            getX = function()
-                return get("TextureOffset")
-            end,
-            setX = function(val)
-                set("TextureOffset", val)
-            end,
-            getY = function()
-                return get("TextureOffsetY")
-            end,
-            setY = function(val)
-                set("TextureOffsetY", val)
-            end,
+            getTex = function() return Val("Texture", "solid") end,
+            getStep = function() return Val("Size", 1) end,
+            getSizeKey = function() return Val("Size", 1) end,
+            getPx = function() return get("SizePx") end,
+            getX = function() return get("TextureOffset") end,
+            setX = function(val) set("TextureOffset", val) end,
+            getY = function() return get("TextureOffsetY") end,
+            setY = function(val) set("TextureOffsetY", val) end,
             apply = apply,
         })
         rowList[#rowList + 1] = offX
@@ -257,9 +209,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
             rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Textured Dispel Ring",
-                get = function()
-                    return Val("DispelTextured", false)
-                end,
+                get = function() return Val("DispelTextured", false) end,
                 set = function(val)
                     set("DispelTextured", val)
                     apply()
@@ -291,14 +241,10 @@ local function GetPvCDSeed(idx)
 end
 
 local function ApplyDebuffManager()
-    if mod.ReloadFrames then
-        mod.ReloadFrames()
-    end
+    if mod.ReloadFrames then mod.ReloadFrames() end
     -- Live preview parity with the BM page: every setting change re-renders
     -- the page's preview band immediately.
-    if mod.DMP_RefreshPreview then
-        mod.DMP_RefreshPreview()
-    end
+    if mod.DMP_RefreshPreview then mod.DMP_RefreshPreview() end
 end
 -- After a change: the frames re-applied and the page built again.
 local function ApplyAndRedraw()
@@ -326,9 +272,7 @@ local function TileGlowDesc(tbl, onChange)
             -- The tile keeps its color under t.color, the rest under glow*.
             elseif f == "color" then
                 local color = tbl.color
-                if color then
-                    return color.r, color.g, color.b
-                end
+                if color then return color.r, color.g, color.b end
             end
             return CUI.GlowOptions.FlatGet(tbl, "glow", f)
         end,
@@ -348,15 +292,11 @@ local function TileGlowDesc(tbl, onChange)
     }
 end
 
-local function DmProfile()
-    return mod.db and mod.db.profile
-end
+local function DmProfile() return mod.db and mod.db.profile end
 
 local function DmTable()
     local profile = DmProfile()
-    if not profile then
-        return nil
-    end
+    if not profile then return nil end
     local dmConf = profile.dmDebuff
     if not dmConf then
         dmConf = {}
@@ -373,28 +313,18 @@ local function TileSubtitle(tbl)
     -- Every tile type routes via the catch-all flavor plus the checked filter set;
     -- Match All joins the filters the way they combine.
     local nameList = {}
-    if tbl.all == true then
-        nameList[#nameList + 1] = Loc("All Debuffs")
-    end
-    if tbl.hasDuration == true then
-        nameList[#nameList + 1] = Loc("Has Duration")
-    end
+    if tbl.all == true then nameList[#nameList + 1] = Loc("All Debuffs") end
+    if tbl.hasDuration == true then nameList[#nameList + 1] = Loc("Has Duration") end
     local cats = {}
     if tbl.claim then
         for _, category in ipairs(CAT_ORDER) do
-            if tbl.claim[category] then
-                cats[#cats + 1] = Loc(CAT_VALUES[category])
-            end
+            if tbl.claim[category] then cats[#cats + 1] = Loc(CAT_VALUES[category]) end
         end
         for _, category in ipairs(LESS_CAT_ORDER) do
-            if tbl.claim[category] then
-                cats[#cats + 1] = Loc(LESS_CAT_VALUES[category])
-            end
+            if tbl.claim[category] then cats[#cats + 1] = Loc(LESS_CAT_VALUES[category]) end
         end
     end
-    if #nameList == 0 and #cats == 0 then
-        return Loc("No filters routed")
-    end
+    if #nameList == 0 and #cats == 0 then return Loc("No filters routed") end
     if #cats > 0 then
         nameList[#nameList + 1] = table.concat(cats, mod.DM_TileMatchOn(tbl) and " & " or ", ")
     end
@@ -402,19 +332,13 @@ local function TileSubtitle(tbl)
 end
 
 -- An indicator's display name, as its sidebar row titles it.
-local function TileName(tbl)
-    return tbl.name or Loc(TYPE_NAMES[tbl.type] or tbl.type)
-end
+local function TileName(tbl) return tbl.name or Loc(TYPE_NAMES[tbl.type] or tbl.type) end
 
 -- The category a Filters row edits: the two dispel rows and the two
 -- Non-Player rows are flavors of one category each.
 local function RowCat(keyName)
-    if keyName == "dispel_you" or keyName == "dispel_typed" then
-        return "dispel"
-    end
-    if keyName == "anyplayer" then
-        return "nonplayer"
-    end
+    if keyName == "dispel_you" or keyName == "dispel_typed" then return "dispel" end
+    if keyName == "anyplayer" then return "nonplayer" end
     return keyName
 end
 
@@ -461,9 +385,7 @@ local TILE_FILTER_ITEMS = {
 -- the full two-lane build below instead.
 local function BuildFilterCBDropdown(region, claimKey, dmConf)
     local Pix = CUI.PP or CUI.PanelPP
-    if region._control then
-        region._control:Hide()
-    end
+    if region._control then region._control:Hide() end
     local checkDrop = CUI.BuildVisOptsCBDropdown(
         region,
         190,
@@ -606,19 +528,13 @@ local function DmSetLane(show, ownerFrame, dmConf, keyName, val, negated)
         ownerFrame.neg[category] = true
         show[category] = nil
     else
-        if not negated then
-            show[category] = val and true or nil
-        end
+        if not negated then show[category] = val and true or nil end
         if (negated or val) and ownerFrame.neg then
             ownerFrame.neg[category] = nil
-            if not next(ownerFrame.neg) then
-                ownerFrame.neg = nil
-            end
+            if not next(ownerFrame.neg) then ownerFrame.neg = nil end
         end
     end
-    if val and modeKey then
-        dmConf[modeKey] = mode
-    end
+    if val and modeKey then dmConf[modeKey] = mode end
 end
 -- Match Mode rows (a radio pair over t.match, nil = Match Any = the union),
 -- locked while the tile's All Debuffs shows everything, spliced in after Has
@@ -626,9 +542,7 @@ end
 local TILE_MATCH_ANY = "__tMatchAny"
 local TILE_MATCH_ALL = "__tMatchAll"
 local function TileLaneItems(tbl)
-    local function Locked()
-        return tbl.all == true
-    end
+    local function Locked() return tbl.all == true end
     local lockTip = CUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
     local itemList = {}
     for idx = 1, #TILE_LANE_ITEMS do
@@ -666,18 +580,12 @@ end
 -- once per page build (an edit elsewhere rebuilds the page); hinted rows are
 -- copies, never the shared TILE_LANE_ITEMS rows.
 local function WithOwnerHints(itemList, tbl)
-    if tbl.type ~= "icons" and tbl.type ~= "square" then
-        return itemList
-    end
+    if tbl.type ~= "icons" and tbl.type ~= "square" then return itemList end
     local claims, claimsAll, place = mod.DM_ClaimOwners(dmSpecSel)
     local mine = place[tbl]
-    if not mine then
-        return itemList
-    end
+    if not mine then return itemList end
     local function Earlier(ownerFrame)
-        if ownerFrame and place[ownerFrame] < mine then
-            return ownerFrame
-        end
+        if ownerFrame and place[ownerFrame] < mine then return ownerFrame end
     end
     local result = {}
     for idx = 1, #itemList do
@@ -691,13 +599,9 @@ local function WithOwnerHints(itemList, tbl)
         if ownerFrame then
             local row = CopyTable(it)
             if it.key == TILE_CA_ALL then
-                row.dimFn = function()
-                    return true
-                end
+                row.dimFn = function() return true end
             else
-                row.dimFn = function()
-                    return not mod.DM_TileMatchOn(tbl)
-                end
+                row.dimFn = function() return not mod.DM_TileMatchOn(tbl) end
             end
             row.dimTooltip = CUI.Lf("Shown by %1$s, which comes first.", TileName(ownerFrame))
             result[#result + 1] = row
@@ -709,16 +613,10 @@ local function WithOwnerHints(itemList, tbl)
 end
 local function BuildTileFiltersDD(region, tbl, dmConf)
     local Pix = CUI.PP or CUI.PanelPP
-    if region._control then
-        region._control:Hide()
-    end
-    if not tbl.claim then
-        tbl.claim = {}
-    end
+    if region._control then region._control:Hide() end
+    if not tbl.claim then tbl.claim = {} end
     local claimKey = tbl.claim
-    local function NegHas(category)
-        return tbl.neg ~= nil and tbl.neg[category] == true
-    end
+    local function NegHas(category) return tbl.neg ~= nil and tbl.neg[category] == true end
     local warnClosed
     local checkDrop, cbRefresh = CUI.BuildVisOptsCBDropdown(
         region,
@@ -726,42 +624,24 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
         region:GetFrameLevel() + 2,
         WithOwnerHints(TileLaneItems(tbl), tbl),
         function(keyName, negated)
-            if keyName == TILE_MATCH_ALL then
-                return tbl.match == "all"
-            end
-            if keyName == TILE_MATCH_ANY then
-                return tbl.match ~= "all"
-            end
-            if keyName == TILE_CA_ALL then
-                return tbl.all == true
-            end
-            if keyName == TILE_CA_DUR then
-                return tbl.hasDuration == true
-            end
+            if keyName == TILE_MATCH_ALL then return tbl.match == "all" end
+            if keyName == TILE_MATCH_ANY then return tbl.match ~= "all" end
+            if keyName == TILE_CA_ALL then return tbl.all == true end
+            if keyName == TILE_CA_DUR then return tbl.hasDuration == true end
             if keyName == "dispel_you" then
-                if negated then
-                    return NegHas("dispel") and dmConf.dispelMode ~= "typed"
-                end
+                if negated then return NegHas("dispel") and dmConf.dispelMode ~= "typed" end
                 return (claimKey.dispel and true or false) and dmConf.dispelMode ~= "typed"
             elseif keyName == "dispel_typed" then
-                if negated then
-                    return NegHas("dispel") and dmConf.dispelMode == "typed"
-                end
+                if negated then return NegHas("dispel") and dmConf.dispelMode == "typed" end
                 return (claimKey.dispel and true or false) and dmConf.dispelMode == "typed"
             end
             -- Two flavors of ONE nonplayer category (global dm.nonplayerMode).
             if keyName == "nonplayer" or keyName == "anyplayer" then
-                if (dmConf.nonplayerMode == "any") ~= (keyName == "anyplayer") then
-                    return false
-                end
-                if negated then
-                    return NegHas("nonplayer")
-                end
+                if (dmConf.nonplayerMode == "any") ~= (keyName == "anyplayer") then return false end
+                if negated then return NegHas("nonplayer") end
                 return claimKey.nonplayer and true or false
             end
-            if negated then
-                return NegHas(keyName)
-            end
+            if negated then return NegHas(keyName) end
             return claimKey[keyName] and true or false
         end,
         function(keyName, val, negated)
@@ -797,32 +677,24 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
         nil,
         nil,
         function()
-            if warnClosed then
-                warnClosed()
-            end
+            if warnClosed then warnClosed() end
         end,
         -- The summary joins picks the way they combine (Base Icons parity).
         {
-            separatorFn = function()
-                return mod.DM_TileMatchOn(tbl) and " & " or ", "
-            end,
+            separatorFn = function() return mod.DM_TileMatchOn(tbl) and " & " or ", " end,
         }
     )
     CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
     region._control = checkDrop
     region._lastInline = nil
-    if cbRefresh then
-        CUI.RegisterWidgetRefresh(cbRefresh)
-    end
+    if cbRefresh then CUI.RegisterWidgetRefresh(cbRefresh) end
     -- Match All picks that can never match together show nothing here (the
     -- runtime's own test); an ordinary empty tile keeps its quiet subtitle.
     warnClosed = CUI.AttachEmptyFilterWarn(
         region,
         checkDrop,
         CUI.L("These filters can never match together."),
-        function()
-            return not mod.DM_TileMatchEmpty(tbl)
-        end
+        function() return not mod.DM_TileMatchEmpty(tbl) end
     )
 end
 local function BuildFxEffects(widget, sy, effectOwner)
@@ -845,9 +717,7 @@ local function BuildFxEffects(widget, sy, effectOwner)
         apply = ApplyDebuffManager,
         -- The SAME filter dropdown as Assigned Debuffs / tile panes
         -- (shared items incl. the split dispel entries + tooltips).
-        filters = function(region, e)
-            BuildFilterCBDropdown(region, e.filters, DmTable() or {})
-        end,
+        filters = function(region, e) BuildFilterCBDropdown(region, e.filters, DmTable() or {}) end,
         addEntry = function()
             effectOwner.fxList = effectOwner.fxList or {}
             effectOwner.fxList[#effectOwner.fxList + 1] = { filters = {} }
@@ -861,18 +731,10 @@ end
 -- a just-picked anchor (BM parity): icons flow INTO the frame from the anchored edge;
 -- the user can still override the growth afterwards.
 local function DmDefaultGrow(place)
-    if place == "right" or place == "topright" or place == "bottomright" then
-        return "LEFT"
-    end
-    if place == "left" or place == "topleft" or place == "bottomleft" then
-        return "RIGHT"
-    end
-    if place == "top" then
-        return "DOWN"
-    end
-    if place == "bottom" then
-        return "UP"
-    end
+    if place == "right" or place == "topright" or place == "bottomright" then return "LEFT" end
+    if place == "left" or place == "topleft" or place == "bottomleft" then return "RIGHT" end
+    if place == "top" then return "DOWN" end
+    if place == "bottom" then return "UP" end
     return "CENTER"
 end
 
@@ -889,14 +751,10 @@ local function BuildBaseDetailDM(widget, fontFile)
         end
     end
     local function PFieldOr(filterKey, default)
-        return function()
-            return profile[filterKey] or default
-        end
+        return function() return profile[filterKey] or default end
     end
     local dmConf = DmTable()
-    if not (W and profile and dmConf) then
-        return 0
-    end
+    if not (W and profile and dmConf) then return 0 end
     widget._showRowDivider = true
     local sy, hh = 0, 0
     -- A local _: the global _ would hold the last row, and through it the page.
@@ -920,32 +778,26 @@ local function BuildBaseDetailDM(widget, fontFile)
             text = "Filters",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         },
-        CUI.MaxDurationDropdown(function()
-            return dmConf.maxDurSec
-        end, function(val)
-            dmConf.maxDurSec = val
-        end, ApplyDebuffManager)
+        CUI.MaxDurationDropdown(
+            function() return dmConf.maxDurSec end,
+            function(val) dmConf.maxDurSec = val end,
+            ApplyDebuffManager
+        )
     )
     sy = sy - hh
     do
         local PPl = CUI.PP or CUI.PanelPP
         local region = safRow._leftRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         local DM_ALL_KEY = "__all"
         local DM_DUR_KEY = "__hasDuration"
         local DM_HIDE_EXH = "__hideExhaustion"
         local DM_MATCH_ANY = "__matchAny"
         local DM_MATCH_ALL = "__matchAll"
-        local function AllOn()
-            return dmConf.all ~= false
-        end
+        local function AllOn() return dmConf.all ~= false end
         local matchLockTip = CUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
         local FILTER_ITEMS = {
             {
@@ -965,9 +817,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                 key = DM_HIDE_EXH,
                 label = "Hide Exhaustion",
                 tooltip = "Hides Sated, Exhaustion, Temporal Displacement and the other Bloodlust lockout debuffs.",
-                excludeFromSummaryFn = function()
-                    return true
-                end,
+                excludeFromSummaryFn = function() return true end,
             },
             -- Match Mode: modifier rows (out of the summary and the count), a
             -- radio pair over dm.match (nil = Match Any = the union). Locked
@@ -1126,9 +976,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                 "All Debuffs is selected, so every debuff already shows. Use the red Hide box to exclude these instead."
             )
             for idx = 1, #FILTER_ITEMS do
-                if FILTER_ITEMS[idx].dual then
-                    FILTER_ITEMS[idx].showLockedTooltip = lockedTip
-                end
+                if FILTER_ITEMS[idx].dual then FILTER_ITEMS[idx].showLockedTooltip = lockedTip end
             end
         end
         -- Each debuff shows in one place: a category an indicator shows is
@@ -1140,16 +988,12 @@ local function BuildBaseDetailDM(widget, fontFile)
                 local it = FILTER_ITEMS[idx]
                 local ownerFrame = it.dual and claims[RowCat(it.key)]
                 if ownerFrame then
-                    it.dimFn = function()
-                        return true
-                    end
+                    it.dimFn = function() return true end
                     it.dimTooltip = CUI.Lf("Shown by %1$s instead.", TileName(ownerFrame))
                 end
             end
         end
-        local function NegHas(category)
-            return dmConf.neg ~= nil and dmConf.neg[category] == true
-        end
+        local function NegHas(category) return dmConf.neg ~= nil and dmConf.neg[category] == true end
         -- One of the grid's content sources (with All Debuffs and enabled
         -- claiming tiles -- see DmHasContent).
         local function AnyShowCat()
@@ -1182,13 +1026,9 @@ local function BuildBaseDetailDM(widget, fontFile)
         -- as an empty base (the runtime's own test, ns.DM_MatchEmpty).
         local warnClosed
         local function DmHasContent()
-            if AllOn() then
-                return true
-            end
+            if AllOn() then return true end
             if AnyShowCat() then
-                if not (mod.DM_MatchEmpty and mod.DM_MatchEmpty(dmConf)) then
-                    return true
-                end
+                if not (mod.DM_MatchEmpty and mod.DM_MatchEmpty(dmConf)) then return true end
             elseif dmConf.hasDuration == true then
                 return true
             end
@@ -1197,19 +1037,13 @@ local function BuildBaseDetailDM(widget, fontFile)
                 for idx = 1, #tiles do
                     local tbl = tiles[idx]
                     if tbl.enabled then
-                        if tbl.all == true then
-                            return true
-                        end
+                        if tbl.all == true then return true end
                         -- A Match All indicator whose picks can never match shows nothing.
                         if not mod.DM_TileMatchEmpty(tbl) then
-                            if tbl.hasDuration == true then
-                                return true
-                            end
+                            if tbl.hasDuration == true then return true end
                             if tbl.claim then
                                 for _, on in pairs(tbl.claim) do
-                                    if on then
-                                        return true
-                                    end
+                                    if on then return true end
                                 end
                             end
                         end
@@ -1224,45 +1058,25 @@ local function BuildBaseDetailDM(widget, fontFile)
             region:GetFrameLevel() + 2,
             FILTER_ITEMS,
             function(keyName, negated)
-                if keyName == DM_ALL_KEY then
-                    return AllOn()
-                end
-                if keyName == DM_DUR_KEY then
-                    return dmConf.hasDuration == true
-                end
-                if keyName == DM_HIDE_EXH then
-                    return profile.hideLustDebuff ~= false
-                end
-                if keyName == DM_MATCH_ALL then
-                    return dmConf.match == "all"
-                end
-                if keyName == DM_MATCH_ANY then
-                    return dmConf.match ~= "all"
-                end
+                if keyName == DM_ALL_KEY then return AllOn() end
+                if keyName == DM_DUR_KEY then return dmConf.hasDuration == true end
+                if keyName == DM_HIDE_EXH then return profile.hideLustDebuff ~= false end
+                if keyName == DM_MATCH_ALL then return dmConf.match == "all" end
+                if keyName == DM_MATCH_ANY then return dmConf.match ~= "all" end
                 if keyName == "dispel_you" then
-                    if negated then
-                        return NegHas("dispel") and dmConf.dispelMode ~= "typed"
-                    end
+                    if negated then return NegHas("dispel") and dmConf.dispelMode ~= "typed" end
                     return dmConf.dispel == true and dmConf.dispelMode ~= "typed"
                 elseif keyName == "dispel_typed" then
-                    if negated then
-                        return NegHas("dispel") and dmConf.dispelMode == "typed"
-                    end
+                    if negated then return NegHas("dispel") and dmConf.dispelMode == "typed" end
                     return dmConf.dispel == true and dmConf.dispelMode == "typed"
                 end
                 -- Two flavors of ONE nonplayer category (dm.nonplayerMode).
                 if keyName == "nonplayer" or keyName == "anyplayer" then
-                    if (dmConf.nonplayerMode == "any") ~= (keyName == "anyplayer") then
-                        return false
-                    end
-                    if negated then
-                        return NegHas("nonplayer")
-                    end
+                    if (dmConf.nonplayerMode == "any") ~= (keyName == "anyplayer") then return false end
+                    if negated then return NegHas("nonplayer") end
                     return dmConf.nonplayer == true
                 end
-                if negated then
-                    return NegHas(keyName)
-                end
+                if negated then return NegHas(keyName) end
                 return dmConf[keyName] == true
             end,
             function(keyName, val, negated)
@@ -1307,24 +1121,18 @@ local function BuildBaseDetailDM(widget, fontFile)
             nil,
             nil,
             function()
-                if warnClosed then
-                    warnClosed()
-                end
+                if warnClosed then warnClosed() end
             end,
             -- The summary joins picks the way they combine; Match Any (and
             -- the locked state under All Debuffs) keeps the plain list.
             {
-                separatorFn = function()
-                    return (dmConf.match == "all" and not AllOn()) and " & " or ", "
-                end,
+                separatorFn = function() return (dmConf.match == "all" and not AllOn()) and " & " or ", " end,
             }
         )
         CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
-        if cbRefresh then
-            CUI.RegisterWidgetRefresh(cbRefresh)
-        end
+        if cbRefresh then CUI.RegisterWidgetRefresh(cbRefresh) end
         warnClosed = CUI.AttachEmptyFilterWarn(
             region,
             checkDrop,
@@ -1460,27 +1268,28 @@ local function BuildBaseDetailDM(widget, fontFile)
     _, hh = W:SectionHeader(widget, "DISPLAY", sy)
     sy = sy - hh
 
-    sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(keyName)
-        return profile["debuffBorder" .. keyName]
-    end, function(keyName, val)
-        profile["debuffBorder" .. keyName] = val
-    end, ApplyDebuffManager, nil, true)
+    sy = mod.RFO_AuraBorderSettings(
+        widget,
+        sy,
+        W,
+        function(keyName) return profile["debuffBorder" .. keyName] end,
+        function(keyName, val) profile["debuffBorder" .. keyName] = val end,
+        ApplyDebuffManager,
+        nil,
+        true
+    )
 
     -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
     local dtRow
     dtRow, hh = W:DualRow(widget, sy, {
         type = "toggle",
         text = "Show Duration Text",
-        getValue = function()
-            return profile.debuffShowDurText and true or false
-        end,
+        getValue = function() return profile.debuffShowDurText and true or false end,
         setValue = PFieldThen("debuffShowDurText"),
     }, {
         type = "toggle",
         text = "Show Stacks",
-        getValue = function()
-            return profile.debuffShowStacks ~= false
-        end,
+        getValue = function() return profile.debuffShowStacks ~= false end,
         setValue = PFieldThen("debuffShowStacks"),
     })
     sy = sy - hh
@@ -1584,9 +1393,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         text = "Tooltips",
         values = TIP_VALUES,
         order = TIP_ORDER,
-        getValue = function()
-            return TipModeKey(profile.debuffHideTooltips)
-        end,
+        getValue = function() return TipModeKey(profile.debuffHideTooltips) end,
         setValue = function(keyName)
             profile.debuffHideTooltips = TipModeStore(keyName)
             ApplyDebuffManager()
@@ -1595,9 +1402,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     }, {
         type = "toggle",
         text = "Show Duration Swipe",
-        getValue = function()
-            return profile.debuffShowSwipe ~= false
-        end,
+        getValue = function() return profile.debuffShowSwipe ~= false end,
         setValue = PFieldThen("debuffShowSwipe"),
     })
     sy = sy - hh
@@ -1608,9 +1413,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     -- tooltips will always show (the runtime degrades to plain Shown).
     do
         local leftRegion = tipRow._leftRegion
-        local function tipOff()
-            return TipModeKey(profile.debuffHideTooltips) ~= "modifier"
-        end
+        local function tipOff() return TipModeKey(profile.debuffHideTooltips) ~= "modifier" end
         local tipModBtn = CUI.BuildInlineCog(leftRegion, {
             gap = 9,
             disabled = tipOff,
@@ -1641,16 +1444,17 @@ local function BuildBaseDetailDM(widget, fontFile)
                     )
                 end
             end)
-            tipModBtn:HookScript("OnLeave", function()
-                CUI.HideWidgetTooltip()
-            end)
+            tipModBtn:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 
             -- Persistent red bubble above the cog while Shown on Modifier is
             -- selected with no key picked (the standard empty-selection warning);
             -- the hover tooltip above keeps the explanation.
-            CUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, Loc("Select a Modifier"), function()
-                return tipOff() or (profile.debuffTooltipModifier or "none") ~= "none"
-            end)
+            CUI.AttachEmptyFilterWarn(
+                leftRegion,
+                tipModBtn,
+                Loc("Select a Modifier"),
+                function() return tipOff() or (profile.debuffTooltipModifier or "none") ~= "none" end
+            )
         end
     end
 
@@ -1661,14 +1465,10 @@ end
 local function BuildTileDetail(widget, fontFile, tbl)
     -- Row accessors over t: a key read (or its default) and written.
     local function TFieldOr(filterKey, default)
-        return function()
-            return tbl[filterKey] or default
-        end
+        return function() return tbl[filterKey] or default end
     end
     local W = CUI.Widgets
-    if not W then
-        return 0
-    end
+    if not W then return 0 end
     widget._showRowDivider = true
     local sy, hh = 0, 0
     -- A local _: the global _ would hold the last row, and through it the page.
@@ -1680,9 +1480,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
     end
     -- Row setters over TSet: the key written with the row's value.
     local function TSetRow(filterKey)
-        return function(value)
-            TSet(filterKey, value)
-        end
+        return function(value) TSet(filterKey, value) end
     end
 
     if tbl.type == "icons" or tbl.type == "square" then
@@ -1693,27 +1491,23 @@ local function BuildTileDetail(widget, fontFile, tbl)
         local dmConf = DmTable() or {}
         local function TEff(filterKey, baseKey, default)
             local val = tbl[filterKey]
-            if filterKey == "borderSizePx" and val == nil and (tbl.borderSize ~= nil or tbl.borderTexture ~= nil) then
+            if
+                filterKey == "borderSizePx"
+                and val == nil
+                and (tbl.borderSize ~= nil or tbl.borderTexture ~= nil)
+            then
                 return false
             end
-            if val == nil then
-                val = profile[baseKey]
-            end
-            if val == nil then
-                val = default
-            end
+            if val == nil then val = profile[baseKey] end
+            if val == nil then val = default end
             return val
         end
         local function TBoolOn(filterKey, baseKey) -- base default ON
-            if tbl[filterKey] ~= nil then
-                return tbl[filterKey] and true or false
-            end
+            if tbl[filterKey] ~= nil then return tbl[filterKey] and true or false end
             return profile[baseKey] ~= false
         end
         local function TBoolOff(filterKey, baseKey) -- base default OFF
-            if tbl[filterKey] ~= nil then
-                return tbl[filterKey] and true or false
-            end
+            if tbl[filterKey] ~= nil then return tbl[filterKey] and true or false end
             return profile[baseKey] and true or false
         end
 
@@ -1729,16 +1523,14 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 text = "Filters",
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
-                getValue = function()
-                    return "__placeholder"
-                end,
+                getValue = function() return "__placeholder" end,
                 setValue = function() end,
             },
-            CUI.MaxDurationDropdown(function()
-                return tbl.maxDurSec
-            end, function(val)
-                tbl.maxDurSec = val
-            end, ApplyDebuffManager)
+            CUI.MaxDurationDropdown(
+                function() return tbl.maxDurSec end,
+                function(val) tbl.maxDurSec = val end,
+                ApplyDebuffManager
+            )
         )
         sy = sy - hh
         BuildTileFiltersDD(fRow._leftRegion, tbl, dmConf)
@@ -1779,9 +1571,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = 0,
                         max = 0.20,
                         step = 0.01,
-                        get = function()
-                            return TEff("iconZoom", "debuffIconZoom", 0.08)
-                        end,
+                        get = function() return TEff("iconZoom", "debuffIconZoom", 0.08) end,
                         set = TSetRow("iconZoom"),
                     },
                 },
@@ -1867,32 +1657,29 @@ local function BuildTileDetail(widget, fontFile, tbl)
         _, hh = W:SectionHeader(widget, "DISPLAY", sy)
         sy = sy - hh
 
-        sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(keyName)
-            return TEff("border" .. keyName, "debuffBorder" .. keyName)
-        end, function(keyName, val)
-            tbl["border" .. keyName] = val
-        end, ApplyDebuffManager, nil, true)
+        sy = mod.RFO_AuraBorderSettings(
+            widget,
+            sy,
+            W,
+            function(keyName) return TEff("border" .. keyName, "debuffBorder" .. keyName) end,
+            function(keyName, val) tbl["border" .. keyName] = val end,
+            ApplyDebuffManager,
+            nil,
+            true
+        )
 
         -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
         local dtRow
         dtRow, hh = W:DualRow(widget, sy, {
             type = "toggle",
             text = "Show Duration Text",
-            getValue = function()
-                return TBoolOff("showDurText", "debuffShowDurText")
-            end,
-            setValue = function(val)
-                TSet("showDurText", val and true or false)
-            end,
+            getValue = function() return TBoolOff("showDurText", "debuffShowDurText") end,
+            setValue = function(val) TSet("showDurText", val and true or false) end,
         }, {
             type = "toggle",
             text = "Show Stacks",
-            getValue = function()
-                return TBoolOn("showStacks", "debuffShowStacks")
-            end,
-            setValue = function(val)
-                TSet("showStacks", val and true or false)
-            end,
+            getValue = function() return TBoolOn("showStacks", "debuffShowStacks") end,
+            setValue = function(val) TSet("showStacks", val and true or false) end,
         })
         sy = sy - hh
         do
@@ -1906,9 +1693,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = 6,
                         max = 26,
                         step = 1,
-                        get = function()
-                            return TEff("durTextSize", "debuffDurTextSize", 10)
-                        end,
+                        get = function() return TEff("durTextSize", "debuffDurTextSize", 10) end,
                         set = TSetRow("durTextSize"),
                     },
                     {
@@ -1917,9 +1702,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return TEff("durTextOffsetX", "debuffDurTextOffsetX", 0)
-                        end,
+                        get = function() return TEff("durTextOffsetX", "debuffDurTextOffsetX", 0) end,
                         set = TSetRow("durTextOffsetX"),
                     },
                     {
@@ -1928,9 +1711,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return TEff("durTextOffsetY", "debuffDurTextOffsetY", 0)
-                        end,
+                        get = function() return TEff("durTextOffsetY", "debuffDurTextOffsetY", 0) end,
                         set = TSetRow("durTextOffsetY"),
                     },
                 },
@@ -1957,9 +1738,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = 6,
                         max = 26,
                         step = 1,
-                        get = function()
-                            return TEff("stacksTextSize", "debuffStacksTextSize", 11)
-                        end,
+                        get = function() return TEff("stacksTextSize", "debuffStacksTextSize", 11) end,
                         set = TSetRow("stacksTextSize"),
                     },
                     {
@@ -1968,9 +1747,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return TEff("stacksOffsetX", "debuffStacksOffsetX", 0)
-                        end,
+                        get = function() return TEff("stacksOffsetX", "debuffStacksOffsetX", 0) end,
                         set = TSetRow("stacksOffsetX"),
                     },
                     {
@@ -1979,9 +1756,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return TEff("stacksOffsetY", "debuffStacksOffsetY", 0)
-                        end,
+                        get = function() return TEff("stacksOffsetY", "debuffStacksOffsetY", 0) end,
                         set = TSetRow("stacksOffsetY"),
                     },
                 },
@@ -2006,23 +1781,15 @@ local function BuildTileDetail(widget, fontFile, tbl)
             order = TIP_ORDER,
             getValue = function()
                 local val = tbl.hideTooltips
-                if val == nil then
-                    val = profile.debuffHideTooltips
-                end
+                if val == nil then val = profile.debuffHideTooltips end
                 return TipModeKey(val)
             end,
-            setValue = function(keyName)
-                TSet("hideTooltips", TipModeStore(keyName))
-            end,
+            setValue = function(keyName) TSet("hideTooltips", TipModeStore(keyName)) end,
         }, {
             type = "toggle",
             text = "Show Duration Swipe",
-            getValue = function()
-                return TBoolOn("showSwipe", "debuffShowSwipe")
-            end,
-            setValue = function(val)
-                TSet("showSwipe", val and true or false)
-            end,
+            getValue = function() return TBoolOn("showSwipe", "debuffShowSwipe") end,
+            setValue = function(val) TSet("showSwipe", val and true or false) end,
         })
         sy = sy - hh
 
@@ -2054,9 +1821,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
     -- Frame Glow: shared glow controls over the tile's own keys (always on: no None).
     local GO = CUI.GlowOptions
     local glowDesc
-    if tbl.type == "glow" then
-        glowDesc = TileGlowDesc(tbl, ApplyDebuffManager)
-    end
+    if tbl.type == "glow" then glowDesc = TileGlowDesc(tbl, ApplyDebuffManager) end
     local catRow
     catRow, hh = W:DualRow(
         widget,
@@ -2066,9 +1831,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             text = "Filters",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         },
         glowDesc and GO.DropdownSpec(glowDesc, "Glow")
@@ -2169,9 +1932,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             type = "toggle",
             text = "Reverse Fill",
             getValue = TFieldOr("reverseFill", false),
-            setValue = function(val)
-                TSet("reverseFill", val and true or false)
-            end,
+            setValue = function(val) TSet("reverseFill", val and true or false) end,
         }, { type = "label", text = "" })
         sy = sy - hh
 
@@ -2185,9 +1946,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             min = 5,
             max = 200,
             step = 1,
-            disabled = function()
-                return tbl.barFullWidth
-            end,
+            disabled = function() return tbl.barFullWidth end,
             disabledTooltip = isVert and "Full Height Bar" or "Full Width Bar",
             requireState = "disabled",
             getValue = TFieldOr("width", 60),
@@ -2198,9 +1957,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             min = 1,
             max = 100,
             step = 1,
-            disabled = function()
-                return tbl.barFullHeight
-            end,
+            disabled = function() return tbl.barFullHeight end,
             disabledTooltip = isVert and "Full Width Bar" or "Full Height Bar",
             requireState = "disabled",
             getValue = TFieldOr("height", 5),
@@ -2284,11 +2041,11 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 getValue = TFieldOr("opacity", 45),
                 setValue = TSetRow("opacity"),
             },
-            CUI.MaxDurationDropdown(function()
-                return tbl.maxDurSec
-            end, function(val)
-                tbl.maxDurSec = val
-            end, ApplyDebuffManager)
+            CUI.MaxDurationDropdown(
+                function() return tbl.maxDurSec end,
+                function(val) tbl.maxDurSec = val end,
+                ApplyDebuffManager
+            )
         )
         sy = sy - hh
     elseif tbl.type == "glow" then
@@ -2297,11 +2054,11 @@ local function BuildTileDetail(widget, fontFile, tbl)
         _, hh = W:DualRow(
             widget,
             sy,
-            CUI.MaxDurationDropdown(function()
-                return tbl.maxDurSec
-            end, function(val)
-                tbl.maxDurSec = val
-            end, ApplyDebuffManager),
+            CUI.MaxDurationDropdown(
+                function() return tbl.maxDurSec end,
+                function(val) tbl.maxDurSec = val end,
+                ApplyDebuffManager
+            ),
             CUI.BlankRowCfg()
         )
         sy = sy - hh
@@ -2340,9 +2097,7 @@ local function TileFaceTexture(tbl)
 end
 
 local function DmPvEnter(self)
-    if not self._dmSel then
-        return
-    end
+    if not self._dmSel then return end
     if self._hoverBdr then
         local lPP = CUI.PanelPP or CUI.PP
         if lPP then
@@ -2354,15 +2109,11 @@ local function DmPvEnter(self)
 end
 
 local function DmPvLeave(self)
-    if self._hoverBdr then
-        self._hoverBdr:Hide()
-    end
+    if self._hoverBdr then self._hoverBdr:Hide() end
 end
 
 local function DmPvClick(self)
-    if not self._dmSel then
-        return
-    end
+    if not self._dmSel then return end
     local ident = self._dmSel
     -- An id outside the edited bucket belongs to an INHERITED group tile
     -- (concrete spec views union them into the preview): select its
@@ -2410,14 +2161,10 @@ end
 
 function mod.DMP_RefreshPreview()
     local preview = mod._dmPreviewFrame
-    if not (preview and preview._health and preview:IsShown()) then
-        return
-    end
+    if not (preview and preview._health and preview:IsShown()) then return end
     -- Party style: the replica's party view (scaled base grid, kit keys).
     local profile = preview._bmPvS or DmProfile()
-    if not profile then
-        return
-    end
+    if not profile then return end
     -- Tile icon sizes live in dmDebuff, outside the proxy's scaled keys: live
     -- party frames scale them by the party indicator scale, so does this.
     local tileScale = preview._bmPvS and (mod._partyIndicatorScale or 1) or 1
@@ -2469,31 +2216,21 @@ function mod.DMP_RefreshPreview()
             tile._cooldown:SetCooldown(0, 0)
             tile._cooldown:Hide()
         end
-        if tile._hoverBdr then
-            tile._hoverBdr:Hide()
-        end
+        if tile._hoverBdr then tile._hoverBdr:Hide() end
         tile._dmSel = nil
         tile:Hide()
     end
     for idx = 1, #shapes do
         local tile = shapes[idx]
-        if tile._hoverBdr then
-            tile._hoverBdr:Hide()
-        end
+        if tile._hoverBdr then tile._hoverBdr:Hide() end
         tile._dmSel = nil
         tile:Hide()
     end
-    if preview._dmHC then
-        preview._dmHC:Hide()
-    end
+    if preview._dmHC then preview._dmHC:Hide() end
     if preview._dmGlow then
         if Glows then
-            if Glows.StopAnimatedAnts then
-                Glows.StopAnimatedAnts(preview._dmGlow)
-            end
-            if preview._dmGlow._cuiGlowActive and Glows.StopGlow then
-                Glows.StopGlow(preview._dmGlow)
-            end
+            if Glows.StopAnimatedAnts then Glows.StopAnimatedAnts(preview._dmGlow) end
+            if preview._dmGlow._cuiGlowActive and Glows.StopGlow then Glows.StopGlow(preview._dmGlow) end
         end
         preview._dmGlow:Hide()
     end
@@ -2580,9 +2317,7 @@ function mod.DMP_RefreshPreview()
     -- profile for the base grid, the tile's inherit-until-set view for a
     -- tile -- the same view the live renderer styles that tile with.
     local function RenderRun(rowConf)
-        if rowConf.count <= 0 then
-            return
-        end
+        if rowConf.count <= 0 then return end
         local sv = rowConf.sv or profile
         local anchor = string.upper(rowConf.pos or "center")
         local sz = rowConf.size or 18
@@ -2594,9 +2329,7 @@ function mod.DMP_RefreshPreview()
         -- follow debuffWrapDirection, tiles the anchored-edge rule -- both
         -- arrive here as cfg.wrapV/cfg.wrapH from the caller).
         local per = rowConf.perRow or 0
-        if per < 2 then
-            per = 0
-        end
+        if per < 2 then per = 0 end
         if dir == "CENTER" then
             -- Live parity: CENTER growth centers the run ON the position point (the
             -- base grid pins the container's row-edge midpoint at the corner, tiles pin
@@ -2610,9 +2343,7 @@ function mod.DMP_RefreshPreview()
             -- wrap direction).
             selfPoint = rowConf.vAlign or "CENTER"
             local lineN = rowConf.count
-            if per > 0 and per < lineN then
-                lineN = per
-            end
+            if per > 0 and per < lineN then lineN = per end
             cursor = -((lineN - 1) * (sz + gap)) / 2
         end
         local lineStart = cursor
@@ -2623,9 +2354,7 @@ function mod.DMP_RefreshPreview()
             tile:ClearAllPoints()
             local lineOff = 0
             if per > 0 then
-                if idx > 1 and (idx - 1) % per == 0 then
-                    cursor = lineStart
-                end
+                if idx > 1 and (idx - 1) % per == 0 then cursor = lineStart end
                 lineOff = math.floor((idx - 1) / per) * (sz + gap)
             end
             local gx, gy = 0, 0
@@ -2702,20 +2431,13 @@ function mod.DMP_RefreshPreview()
                     end
                 else
                     cooldown:Hide()
-                    if tile._pvDurText then
-                        tile._pvDurText:Hide()
-                    end
+                    if tile._pvDurText then tile._pvDurText:Hide() end
                 end
             end
             if tile._count then
                 if sv.debuffShowStacks ~= false then
                     local sc = sv.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
-                    CUI.ApplyIconTextFont(
-                        tile._count,
-                        fontFile,
-                        sv.debuffStacksTextSize or 11,
-                        "raidFrames"
-                    )
+                    CUI.ApplyIconTextFont(tile._count, fontFile, sv.debuffStacksTextSize or 11, "raidFrames")
                     tile._count:SetTextColor(sc.r or 1, sc.g or 1, sc.b or 1)
                     tile._count:ClearAllPoints()
                     tile._count:SetPoint(
@@ -2731,9 +2453,7 @@ function mod.DMP_RefreshPreview()
                     -- bare SetText on a fontless one spams "Font not set"
                     -- (field report 2026-08-16, 122x with stacks disabled).
                     -- Fonted = a previous stacks-on render left text to clear.
-                    if tile._count:GetFont() then
-                        tile._count:SetText("")
-                    end
+                    if tile._count:GetFont() then tile._count:SetText("") end
                 end
             end
             tile:Show()
@@ -2879,7 +2599,12 @@ function mod.DMP_RefreshPreview()
                     tile._tex:SetPoint("BOTTOM" .. edgeName, tile, "BOTTOM" .. edgeName, 0, 0)
                     tile._tex:SetWidth(math.max(1, floor(sw * 0.6)))
                 end
-                tile._tex:SetColorTexture(color.r or 1, color.g or 1, color.b or 1, (t.barColorOpacity or 100) / 100)
+                tile._tex:SetColorTexture(
+                    color.r or 1,
+                    color.g or 1,
+                    color.b or 1,
+                    (t.barColorOpacity or 100) / 100
+                )
                 tile:SetAlpha(alpha)
                 tile:Show()
             elseif t.type == "healthcolor" then
@@ -2939,9 +2664,7 @@ end
 
 function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local scrollFrame = CUI._scrollFrame
-    if not scrollFrame then
-        return 0
-    end
+    if not scrollFrame then return 0 end
     local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
     local Pix = CUI.PanelPP
 
@@ -2958,12 +2681,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local outerRoot = PoolKept(mod, "dmRoot", "Frame", scrollFrame)
     outerRoot:SetAllPoints(scrollFrame)
     outerRoot:SetFrameLevel(scrollFrame:GetFrameLevel() + 5)
-    if mod._dmAddPopup then
-        mod._dmAddPopup:Hide()
-    end
-    if CUI._pickMenu then
-        CUI._pickMenu:Hide()
-    end
+    if mod._dmAddPopup then mod._dmAddPopup:Hide() end
+    if CUI._pickMenu then CUI._pickMenu:Hide() end
     mod._dmRoot = outerRoot
 
     -- Override-session gate: heals a stale Debuff Manager layer FIRST (so
@@ -3028,9 +2747,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             end
         end
     end
-    if not (inhSelTile or inhSelBase) then
-        inheritSel = nil
-    end
+    if not (inhSelTile or inhSelBase) then inheritSel = nil end
 
     -- Validate selection.
     if dmSel ~= "base" then
@@ -3041,9 +2758,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 break
             end
         end
-        if not found then
-            dmSel = "base"
-        end
+        if not found then dmSel = "base" end
     end
     -- "base" in a concrete spec view IS the inherited base grid.
     if dmSel == "base" and not inheritSel and baseInherited then
@@ -3085,9 +2800,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     navScroll:SetScrollChild(navBody)
     navScroll:EnableMouseWheel(true)
     navScroll:SetScript("OnMouseWheel", function(self, delta)
-        if CUI._ShiftWheelScale(delta) then
-            return
-        end
+        if CUI._ShiftWheelScale(delta) then return end
         local scroll = self:GetVerticalScroll()
         local maxS = max(0, navBody:GetHeight() - self:GetHeight())
         self:SetVerticalScroll(max(0, math.min(maxS, scroll - delta * 30)))
@@ -3198,9 +2911,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             title = TileName(tbl),
             posText = TilePosText(tbl),
             -- Live: filter and Match Mode clicks refresh without a rebuild.
-            subtitleFn = function()
-                return TileSubtitle(tbl)
-            end,
+            subtitleFn = function() return TileSubtitle(tbl) end,
             selected = (dmSel == tbl.id and not inheritSel),
             enabled = tbl.enabled and true or false,
             showToggle = true,
@@ -3212,17 +2923,13 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             -- Right-click: copy this tile into another editing-spec bucket
             -- (full clone, fresh id; the source stays).
             onContext = function(tileFrame)
-                if not CUI.ShowPickMenu then
-                    return
-                end
+                if not CUI.ShowPickMenu then return end
                 CUI.ShowPickMenu(tileFrame, {
                     title = Loc("Add To"),
                     fontPath = fontFile,
                     items = CUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
                     onPick = function(filterKey)
-                        if mod.DM_CopyTile and mod.DM_CopyTile(tbl, filterKey) then
-                            ApplyAndRedraw()
-                        end
+                        if mod.DM_CopyTile and mod.DM_CopyTile(tbl, filterKey) then ApplyAndRedraw() end
                     end,
                 })
             end,
@@ -3254,12 +2961,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     confirmText = Loc("Delete"),
                     cancelText = Loc("Cancel"),
                     onConfirm = function()
-                        if mod.DM_DeleteTile then
-                            mod.DM_DeleteTile(tbl.id)
-                        end
-                        if dmSel == tbl.id then
-                            dmSel = "base"
-                        end
+                        if mod.DM_DeleteTile then mod.DM_DeleteTile(tbl.id) end
+                        if dmSel == tbl.id then dmSel = "base" end
                         ApplyAndRedraw()
                     end,
                 })
@@ -3365,12 +3068,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 end)
                 dialog:SetScript("OnHide", function(p2)
                     p2:SetScript("OnUpdate", nil)
-                    if p2._dmFilters then
-                        wipe(p2._dmFilters)
-                    end
-                    if p2._fltDDRefresh then
-                        p2._fltDDRefresh()
-                    end
+                    if p2._dmFilters then wipe(p2._dmFilters) end
+                    if p2._fltDDRefresh then p2._fltDDRefresh() end
                 end)
 
                 local paneY = -POPUP_PAD
@@ -3398,9 +3097,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     dialog:GetFrameLevel() + 2,
                     TILE_LANE_ITEMS,
                     function(keyName, negated)
-                        if negated then
-                            return pend["neg_" .. keyName] and true or false
-                        end
+                        if negated then return pend["neg_" .. keyName] and true or false end
                         return pend[keyName] and true or false
                     end,
                     function(keyName, val, negated)
@@ -3414,22 +3111,16 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                             -- across rows AND lanes, base-dropdown parity).
                             pend.dispel_you, pend.dispel_typed = nil, nil
                             pend.neg_dispel_you, pend.neg_dispel_typed = nil, nil
-                            if val then
-                                pend[(negated and "neg_" or "") .. keyName] = true
-                            end
+                            if val then pend[(negated and "neg_" or "") .. keyName] = true end
                             return
                         end
                         -- Two-lane pend write: checking one lane clears the other.
                         if negated then
                             pend["neg_" .. keyName] = val and true or nil
-                            if val then
-                                pend[keyName] = nil
-                            end
+                            if val then pend[keyName] = nil end
                         else
                             pend[keyName] = val and true or nil
-                            if val then
-                                pend["neg_" .. keyName] = nil
-                            end
+                            if val then pend["neg_" .. keyName] = nil end
                         end
                     end,
                     nil,
@@ -3454,12 +3145,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     dialog:GetFrameLevel() + 2,
                     TYPE_NAMES,
                     TYPE_ORDER,
-                    function()
-                        return dmSelType
-                    end,
-                    function(val)
-                        dmSelType = val
-                    end
+                    function() return dmSelType end,
+                    function(val) dmSelType = val end
                 )
                 indDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
                 dialog._indDD = indDD
@@ -3514,27 +3201,17 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     if tbl then
                         if mode then
                             local dm2 = DmTable()
-                            if dm2 then
-                                dm2.dispelMode = mode
-                            end
+                            if dm2 then dm2.dispelMode = mode end
                         end
                         -- Every tile type takes the full picked set now
                         -- (effect tiles run one slot per category).
-                        if not tbl.claim then
-                            tbl.claim = {}
-                        end
+                        if not tbl.claim then tbl.claim = {} end
                         for category in pairs(picked) do
                             tbl.claim[category] = true
                         end
-                        if negPicked then
-                            tbl.neg = negPicked
-                        end
-                        if caAll then
-                            tbl.all = true
-                        end
-                        if caDur then
-                            tbl.hasDuration = true
-                        end
+                        if negPicked then tbl.neg = negPicked end
+                        if caAll then tbl.all = true end
+                        if caDur then tbl.hasDuration = true end
                         dmSel = tbl.id
                         inheritSel = nil
                         ApplyAndRedraw()
@@ -3606,9 +3283,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         eyeButton:SetScript("OnClick", function()
             mod._dmAllVisible = not mod._dmAllVisible
             eyeTex:SetTexture(mod._dmAllVisible and EYE_INVIS or EYE_VIS)
-            if mod.DMP_RefreshPreview then
-                mod.DMP_RefreshPreview()
-            end
+            if mod.DMP_RefreshPreview then mod.DMP_RefreshPreview() end
         end)
         eyeButton:SetScript("OnEnter", function(self)
             CUI.SetGlyphAlpha(self, 0.7)
@@ -3638,9 +3313,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local specDDValues, specDDOrder, specDDIcons = CUI.BuildSpecBucketRoster(nil, mod.DM_ForeverKey)
         specDDValues._menuOpts = {
             maxHeight = 300,
-            icon = function(filterKey)
-                return specDDIcons[filterKey]
-            end,
+            icon = function(filterKey) return specDDIcons[filterKey] end,
         }
 
         local groupH = 14 + 7 + 30
@@ -3659,9 +3332,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             leftPane:GetFrameLevel() + 2,
             specDDValues,
             specDDOrder,
-            function()
-                return dmSpecSel or "allspecs"
-            end,
+            function() return dmSpecSel or "allspecs" end,
             function(val)
                 dmSpecSel = val
                 dmSel = "base"
@@ -3735,9 +3406,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     elseif selTile then
         settingsHeading:SetText(Loc(TYPE_NAMES[selTile.type] or selTile.type))
         subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
-        CUI.RegisterWidgetRefresh(function()
-            subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
-        end)
+        CUI.RegisterWidgetRefresh(function() subHeading:SetText("(" .. TileSubtitle(selTile) .. ")") end)
     elseif groupEmpty then
         local ginfo3 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[dmSpecSel]
         settingsHeading:SetText(ginfo3 and Loc(ginfo3.name) or dmSpecSel)
@@ -3816,12 +3485,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             linkFS:SetTextColor(0.30, 0.79, 0.94, 0.85)
         end
         itemLink:SetSize(linkFS:GetStringWidth() + 4, 18)
-        itemLink:SetScript("OnEnter", function()
-            linkFS:SetAlpha(1)
-        end)
-        itemLink:SetScript("OnLeave", function()
-            linkFS:SetAlpha(0.85)
-        end)
+        itemLink:SetScript("OnEnter", function() linkFS:SetAlpha(1) end)
+        itemLink:SetScript("OnLeave", function() linkFS:SetAlpha(0.85) end)
         itemLink:SetScript("OnClick", function()
             dmSpecSel = jumpGroup
             dmSel = jumpId
@@ -3866,9 +3531,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     UpdateThumb()
 
     -- First render of the preview content
-    if mod.DMP_RefreshPreview then
-        mod.DMP_RefreshPreview()
-    end
+    if mod.DMP_RefreshPreview then mod.DMP_RefreshPreview() end
 
     -- Override-session overlay (mirror of the Buff Manager page's): built
     -- LAST so it covers the whole page incl. the sidebar. High frame level;
@@ -3884,9 +3547,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             buttonLabel = st.mode == "activate" and CUI.L("Activate Custom Debuff Manager") or nil,
         })
         if button then
-            button:SetScript("OnClick", function()
-                CUI.SpecOverrides_ActivateDm(st.kind, st.gid)
-            end)
+            button:SetScript("OnClick", function() CUI.SpecOverrides_ActivateDm(st.kind, st.gid) end)
         end
     end
 
@@ -3941,9 +3602,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
             end
         end
     end
-    local fontFile = (CUI.GetFontPath("options"))
-        or (CUI.GetFontPath("raidFrames"))
-        or "Fonts\\FRIZQT__.TTF"
+    local fontFile = (CUI.GetFontPath("options")) or (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
     local ar, ag, ab = 1, 0.82, 0.30
     if CUI.GetAccentColor then
         ar, ag, ab = CUI.GetAccentColor()
@@ -3963,28 +3622,16 @@ function mod.BMP_ShowFilterEditor(show, hide)
     if fdSel then
         local success = false
         for idx = 1, #filters do
-            if filters[idx].id == fdSel then
-                success = true
-            end
+            if filters[idx].id == fdSel then success = true end
         end
-        if not success then
-            fdSel = nil
-        end
+        if not success then fdSel = nil end
     end
-    if not fdSel and filters[1] then
-        fdSel = filters[1].id
-    end
+    if not fdSel and filters[1] then fdSel = filters[1].id end
 
-    local function Rebuild()
-        mod.BMP_ShowFilterEditor()
-    end
+    local function Rebuild() mod.BMP_ShowFilterEditor() end
     local function Apply()
-        if mod.BM2_Invalidate then
-            mod.BM2_Invalidate()
-        end
-        if mod.ReloadFrames then
-            mod.ReloadFrames()
-        end
+        if mod.BM2_Invalidate then mod.BM2_Invalidate() end
+        if mod.ReloadFrames then mod.ReloadFrames() end
     end
     -- The standard input popup is a lazily-created singleton that predates
     -- this (later-created) editor, so at equal strata it renders BEHIND it.
@@ -3995,9 +3642,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
         if d and mod._bm2FilterEditor then
             d:SetFrameLevel(dialog:GetFrameLevel() + 40)
             local p = _G.CUIInputPopup
-            if p then
-                p:SetFrameLevel(d:GetFrameLevel() + 10)
-            end
+            if p then p:SetFrameLevel(d:GetFrameLevel() + 10) end
         end
     end
 
@@ -4040,16 +3685,12 @@ function mod.BMP_ShowFilterEditor(show, hide)
             fdSel = id
             fdScrollPos = 0 -- new filter = new list; start at the top
         end,
-        onAdded = function(id)
-            fdSel = id
-        end,
+        onAdded = function(id) fdSel = id end,
         delete = mod.BM2_DeleteFilter,
         rename = mod.BM2_RenameFilter,
         add = mod.BM2_AddFilter,
         deleteMessage = "Delete this filter? It is removed from every indicator using it.",
-        renamePlaceholder = function(f)
-            return f.name
-        end,
+        renamePlaceholder = function(f) return f.name end,
         apply = Apply,
         rebuild = Rebuild,
         input = EditorInput,
@@ -4095,13 +3736,9 @@ function mod.BMP_ShowFilterEditor(show, hide)
     -- LEFT: selected filter detail
     local sel
     for idx = 1, #filters do
-        if filters[idx].id == fdSel then
-            sel = filters[idx]
-        end
+        if filters[idx].id == fdSel then sel = filters[idx] end
     end
-    if not sel then
-        return
-    end
+    if not sel then return end
 
     local function SpellName(ident)
         return (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
@@ -4129,9 +3766,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
                 end
                 if f.custom then
                     for spellRef in pairs(f.custom) do
-                        if ap[spellRef] then
-                            held[ap[spellRef]] = true
-                        end
+                        if ap[spellRef] then held[ap[spellRef]] = true end
                     end
                 end
             end
@@ -4146,21 +3781,15 @@ function mod.BMP_ShowFilterEditor(show, hide)
                 )
                     or (f.custom and f.custom[ident])
                     or (held and held[ident])
-                if not onFilter then
-                    ids[#ids + 1] = ident
-                end
+                if not onFilter then ids[#ids + 1] = ident end
             end
             return ids
         end,
         label = SpellName,
-        addPicked = function(ident)
-            return mod.BM2_AddCustomSpell and mod.BM2_AddCustomSpell(sel.id, ident)
-        end,
+        addPicked = function(ident) return mod.BM2_AddCustomSpell and mod.BM2_AddCustomSpell(sel.id, ident) end,
         -- Typed: the ID tracks that aura alone (a Search Spells pick keeps
         -- the buff's other versions).
-        addTyped = function(ident)
-            return mod.BM2_AddCustomSpell(sel.id, ident, true)
-        end,
+        addTyped = function(ident) return mod.BM2_AddCustomSpell(sel.id, ident, true) end,
         rename = mod.BM2_RenameFilter,
         renamePlaceholder = sel.name,
         apply = Apply,
@@ -4169,9 +3798,11 @@ function mod.BMP_ShowFilterEditor(show, hide)
     })
     -- Standard smooth scroll + thin bar; every scroll write persists the
     -- position so rebuilds land the user back where they were.
-    local _updSpellThumb, setSpellScroll = AttachEditorScroll(scroll, childFrame, function(val)
-        fdScrollPos = val
-    end)
+    local _updSpellThumb, setSpellScroll = AttachEditorScroll(
+        scroll,
+        childFrame,
+        function(val) fdScrollPos = val end
+    )
 
     local curated = (mod.BM2_DEFAULT_FILTER_SPELLS and sel.preset)
             and mod.BM2_DEFAULT_FILTER_SPELLS[sel.preset]
@@ -4188,14 +3819,10 @@ function mod.BMP_ShowFilterEditor(show, hide)
         end
     end
     -- Alphabetical by spell name (id tiebreak for identical names).
-    local function NameOf(ident)
-        return SpellName(ident) or tostring(ident)
-    end
+    local function NameOf(ident) return SpellName(ident) or tostring(ident) end
     local function ByName(lhs, rhs)
         local na, nb = NameOf(lhs), NameOf(rhs)
-        if na == nb then
-            return lhs < rhs
-        end
+        if na == nb then return lhs < rhs end
         return na < nb
     end
     for _, entries in pairs(byClass) do
@@ -4217,9 +3844,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
             -- A user-added id the preset has since curated keeps its custom mark
             -- (it stays if the curation is ever dropped) but is a curated row
             -- now: no remove control.
-            removable = function(ident)
-                return sel.custom[ident] and not (curated and curated[ident])
-            end,
+            removable = function(ident) return sel.custom[ident] and not (curated and curated[ident]) end,
             set = function(ident, value)
                 mod.BM2_SetSpellState(sel.id, ident, value)
                 Apply()
@@ -4246,9 +3871,7 @@ end
 function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
     local W = CUI.Widgets
     local Pix = CUI.PP or CUI.PanelPP
-    if not (W and Pix) then
-        return sy
-    end
+    if not (W and Pix) then return sy end
     local hh
     local _r
     _r, hh = W:SectionHeader(hostFrame, "ASSIGNED BUFFS", sy)
@@ -4260,18 +3883,14 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
         text = "Filters",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     }, {
         type = "dropdown",
         text = "Extra Spells",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
     sy = sy - hh
@@ -4284,9 +3903,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
     -- Spells win over the hide lane). Lanes are mutually exclusive per filter.
     do
         local region = row._leftRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         -- Dynamic items (function): the filter list re-evaluates on every
         -- menu open, so filters added/renamed in the editor appear live.
         local function FilterItems()
@@ -4295,9 +3912,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 {
                     isTopAction = true,
                     label = "Edit Filters",
-                    onClick = function()
-                        mod.BMP_ShowFilterEditor(indicator.filters, indicator.negFilters)
-                    end,
+                    onClick = function() mod.BMP_ShowFilterEditor(indicator.filters, indicator.negFilters) end,
                 },
                 { isHeader = true, label = "Show", rightLabel = "Hide" },
             }
@@ -4312,9 +3927,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             region:GetFrameLevel() + 2,
             FilterItems,
             function(keyName, negated)
-                if negated then
-                    return indicator.negFilters and indicator.negFilters[keyName] == true
-                end
+                if negated then return indicator.negFilters and indicator.negFilters[keyName] == true end
                 return indicator.filters and indicator.filters[keyName] and true or false
             end,
             function(keyName, val, negated)
@@ -4322,27 +3935,17 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 if negated then
                     indicator.negFilters = indicator.negFilters or {}
                     indicator.negFilters[keyName] = val and true or nil
-                    if not next(indicator.negFilters) then
-                        indicator.negFilters = nil
-                    end
-                    if val and indicator.filters then
-                        indicator.filters[keyName] = nil
-                    end
+                    if not next(indicator.negFilters) then indicator.negFilters = nil end
+                    if val and indicator.filters then indicator.filters[keyName] = nil end
                 else
-                    if not indicator.filters then
-                        indicator.filters = {}
-                    end
+                    if not indicator.filters then indicator.filters = {} end
                     indicator.filters[keyName] = val and true or nil
                     if val and indicator.negFilters then
                         indicator.negFilters[keyName] = nil
-                        if not next(indicator.negFilters) then
-                            indicator.negFilters = nil
-                        end
+                        if not next(indicator.negFilters) then indicator.negFilters = nil end
                     end
                 end
-                if mod.BM2_Invalidate then
-                    mod.BM2_Invalidate()
-                end
+                if mod.BM2_Invalidate then mod.BM2_Invalidate() end
                 -- Frames and preview now, then the selected tile's icon and
                 -- spell list (a widget refresh keeps this menu open).
                 if mod._bmReloadAndUpdate then
@@ -4366,18 +3969,12 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
     -- (ns.BM2_SpellIdAction).
     do
         local region = row._rightRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         local function HasDirect(ident)
             local sp = indicator.spells
-            if not sp then
-                return false
-            end
+            if not sp then return false end
             for idx = 1, #sp do
-                if sp[idx] == ident then
-                    return true
-                end
+                if sp[idx] == ident then return true end
             end
             return false
         end
@@ -4396,9 +3993,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             mod.BM2_SetSpellExact(indicator, ident, true)
             ex = indicator.exactSpells
             if added or (ex and ex[ident]) ~= was then
-                if mod.ReloadFrames then
-                    mod.ReloadFrames()
-                end
+                if mod.ReloadFrames then mod.ReloadFrames() end
                 CUI:RefreshPage(true)
             end
         end)
@@ -4423,9 +4018,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident),
             }
         end
-        local function ByLabel(lhs, rhs)
-            return lhs.label < rhs.label
-        end
+        local function ByLabel(lhs, rhs) return lhs.label < rhs.label end
         local function ExtraItems()
             -- WoW Forever: a rank alternate stands for its family's primary
             -- (BM2_ResolveSpellsOwn), so Presets offers no second row for a
@@ -4439,9 +4032,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                         for ident, on in pairs(f.spells) do
                             if on and not mod.BM2_OtherClientSpell(f, ident) then
                                 covered[ident] = true
-                                if ap and ap[ident] then
-                                    covered[ap[ident]] = true
-                                end
+                                if ap and ap[ident] then covered[ap[ident]] = true end
                             end
                         end
                     end
@@ -4453,16 +4044,12 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             local sp = indicator.spells or {}
             for idx = 1, #sp do
                 seen[sp[idx]] = true
-                if ap and ap[sp[idx]] then
-                    seen[ap[sp[idx]]] = true
-                end
+                if ap and ap[sp[idx]] then seen[ap[sp[idx]]] = true end
                 selected[#selected + 1] = SpellEntry(sp[idx])
             end
             for idx = 1, #universe do
                 local ident = universe[idx]
-                if not seen[ident] and not covered[ident] then
-                    rest[#rest + 1] = SpellEntry(ident)
-                end
+                if not seen[ident] and not covered[ident] then rest[#rest + 1] = SpellEntry(ident) end
             end
             table.sort(selected, ByLabel)
             table.sort(rest, ByLabel)
@@ -4488,22 +4075,16 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             function(keyName, val)
                 indicator.spells = indicator.spells or {}
                 if val then
-                    if not HasDirect(keyName) then
-                        indicator.spells[#indicator.spells + 1] = keyName
-                    end
+                    if not HasDirect(keyName) then indicator.spells[#indicator.spells + 1] = keyName end
                 else
                     for idx = #indicator.spells, 1, -1 do
-                        if indicator.spells[idx] == keyName then
-                            table.remove(indicator.spells, idx)
-                        end
+                        if indicator.spells[idx] == keyName then table.remove(indicator.spells, idx) end
                     end
                     -- The typed mark leaves with the entry: a later pick from
                     -- Presets keeps the curated family.
                     mod.BM2_SetSpellExact(indicator, keyName, false)
                 end
-                if mod.ReloadFrames then
-                    mod.ReloadFrames()
-                end
+                if mod.ReloadFrames then mod.ReloadFrames() end
             end,
             nil,
             10,
@@ -4526,15 +4107,16 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
         values = { both = "Raid and Party", raid = "Raid Only", party = "Party Only" },
         order = { "both", "raid", "party" },
         tooltip = "Party frames in arenas and small raids count as Party; Friendly Boss frames count as Raid.",
-        disabled = function()
-            return indicator.anchorTo ~= nil
-        end,
+        disabled = function() return indicator.anchorTo ~= nil end,
         disabledTooltip = "Remove the Anchor To position",
         getValue = function()
             local val = indicator.showIn
             if indicator.anchorTo ~= nil and mod.BM2_EffectiveShowIn then
                 local filterKey = mod._bmSelectedSpecKey
-                val = mod.BM2_EffectiveShowIn(indicator, filterKey and mod.BM2_SpecInds and mod.BM2_SpecInds(filterKey) or nil)
+                val = mod.BM2_EffectiveShowIn(
+                    indicator,
+                    filterKey and mod.BM2_SpecInds and mod.BM2_SpecInds(filterKey) or nil
+                )
             end
             return (val == "raid" or val == "party") and val or "both"
         end,
@@ -4544,9 +4126,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             else
                 indicator.showIn = nil
             end
-            if mod.BM2_Invalidate then
-                mod.BM2_Invalidate()
-            end
+            if mod.BM2_Invalidate then mod.BM2_Invalidate() end
             -- Frames and preview: the preview shows the indicator only on the
             -- side of its Raid / Party switch that renders it.
             if mod._bmReloadAndUpdate then
@@ -4571,9 +4151,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             local specs = mod.BM_HEALER_SPECS
             if filterKey and specs then
                 for idx = 1, #specs do
-                    if specs[idx].key == filterKey then
-                        return specs[idx].classToken
-                    end
+                    if specs[idx].key == filterKey then return specs[idx].classToken end
                 end
             end
             local _, classTok = UnitClass("player")
@@ -4607,21 +4185,19 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             type = "toggle",
             text = "Custom Order",
             tooltip = "Show this indicator's buffs in the exact order you arrange (the first 10 arranged buffs are guaranteed; any beyond follow the default sorting).",
-            getValue = function()
-                return indicator.customOrder == true
-            end,
+            getValue = function() return indicator.customOrder == true end,
             setValue = function(val)
                 indicator.customOrder = val or nil
                 if val and not indicator.spellOrder then
                     -- Seed the arrangement from the current resolved list so
                     -- the ordered groups engage immediately; the cog only
                     -- rearranges from there.
-                    local r = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(indicator)) or indicator.spells or {}
+                    local r = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(indicator))
+                        or indicator.spells
+                        or {}
                     indicator.spellOrder = PrioritizeResolved(r)
                 end
-                if mod.ReloadFrames then
-                    mod.ReloadFrames()
-                end
+                if mod.ReloadFrames then mod.ReloadFrames() end
             end,
         })
         sy = sy - hh
@@ -4631,7 +4207,9 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             -- then any newly-resolved spells appended in prioritized order.
             -- The cog reads the items again each time its list opens.
             local function OrderItems()
-                local resolved = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(indicator)) or indicator.spells or {}
+                local resolved = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(indicator))
+                    or indicator.spells
+                    or {}
                 local present, seen, result = {}, {}, {}
                 for idx = 1, #resolved do
                     present[resolved[idx]] = true
@@ -4648,9 +4226,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                     local ap = mod.BM2_ForeverAltPrimary
                     for idx = 1, #so do
                         local ident = so[idx]
-                        if ap then
-                            ident = ap[ident] or ident
-                        end
+                        if ap then ident = ap[ident] or ident end
                         if present[ident] and not seen[ident] then
                             seen[ident] = true
                             Add(ident)
@@ -4659,9 +4235,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 end
                 local rest = {}
                 for idx = 1, #resolved do
-                    if not seen[resolved[idx]] then
-                        rest[#rest + 1] = resolved[idx]
-                    end
+                    if not seen[resolved[idx]] then rest[#rest + 1] = resolved[idx] end
                 end
                 rest = PrioritizeResolved(rest)
                 for idx = 1, #rest do
@@ -4680,13 +4254,9 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                         items = OrderItems,
                         set = function(keyList)
                             indicator.spellOrder = keyList
-                            if mod.ReloadFrames then
-                                mod.ReloadFrames()
-                            end
+                            if mod.ReloadFrames then mod.ReloadFrames() end
                         end,
-                        disabled = function()
-                            return indicator.customOrder ~= true
-                        end,
+                        disabled = function() return indicator.customOrder ~= true end,
                         disabledTooltip = "Custom Order",
                     },
                 },

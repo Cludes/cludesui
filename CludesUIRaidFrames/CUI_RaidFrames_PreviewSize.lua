@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewSize.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local max = math.max
@@ -31,21 +27,13 @@ local HidePreview = Inner.HidePreview
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local saved
-RF.dbSetters[#RF.dbSetters + 1] = function(val)
-    saved = val
-end
+RF.dbSetters[#RF.dbSetters + 1] = function(val) saved = val end
 local Pix
-RF.PPSetters[#RF.PPSetters + 1] = function(val)
-    Pix = val
-end
+RF.PPSetters[#RF.PPSetters + 1] = function(val) Pix = val end
 local containerFrame
-RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val) containerFrame = val end
 local previewActive = false
-Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val)
-    previewActive = val
-end
+Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val) previewActive = val end
 
 -------------------------------------------------------------------------------
 --  Size preview (simple: just health + power bars at the tier's dimensions)
@@ -63,40 +51,26 @@ mod._ShowSizePreview = function(tier)
     -- be undone by the PLAYER_REGEN_DISABLED safety net (it already fired at
     -- combat start), and would strand the real frames invisible for the rest of
     -- the pull -- the same game-breaking outcome the alpha rework prevents.
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     local cfg = saved.profile
     local overrides = cfg.raidSizeOverrides
-    if not overrides or not overrides[tier] then
-        return
-    end
+    if not overrides or not overrides[tier] then return end
 
     -- Hide any active previews (both real and overlay mode)
     if previewActive then
         HidePreview() -- cleans up real-mode preview frames
     end
-    if mod._partyPvActive then
-        mod.HidePartyPreview()
-    end
+    if mod._partyPvActive then mod.HidePartyPreview() end
     -- Hide real raid + party frames during size preview via alpha so a combat
     -- start can re-show them (Hide/Show are protected and cannot be undone in
     -- combat; SetAlpha is not). The size-preview frames live in their own
     -- UIParent child (ns._sizePreviewContainer), so container alpha does not
     -- affect them. The mouse blocker keeps the now-invisible real unit buttons
     -- from catching clicks while configuring out of combat.
-    if containerFrame then
-        containerFrame:SetAlpha(0)
-    end
-    if mod._partyContainerFrame then
-        mod._partyContainerFrame:SetAlpha(0)
-    end
-    if mod._ptModelOn then
-        mod.RF_PtContainerAlpha(0)
-    end
-    if mod._PF.container then
-        mod._PF.container:SetAlpha(0)
-    end
+    if containerFrame then containerFrame:SetAlpha(0) end
+    if mod._partyContainerFrame then mod._partyContainerFrame:SetAlpha(0) end
+    if mod._ptModelOn then mod.RF_PtContainerAlpha(0) end
+    if mod._PF.container then mod._PF.container:SetAlpha(0) end
     mod._PF_AlphaSync()
     mod._SetPreviewMouseBlock(true)
 
@@ -141,12 +115,8 @@ mod._ShowSizePreview = function(tier)
     for u = 0, perGroup - 1 do
         local px = u * uStepX
         local py = u * uStepY
-        if px < minUX then
-            minUX = px
-        end
-        if py > maxUY then
-            maxUY = py
-        end
+        if px < minUX then minUX = px end
+        if py > maxUY then maxUY = py end
     end
 
     -- Total bounding box: the tier's group mover footprint via the SAME
@@ -173,9 +143,7 @@ mod._ShowSizePreview = function(tier)
     -- Always use real positioning (where frames actually sit)
     local pad = 0
     boxHolder:SetSize(totalW, totalH)
-    if boxHolder._bg then
-        boxHolder._bg:Hide()
-    end
+    if boxHolder._bg then boxHolder._bg:Hide() end
     boxHolder:SetFrameStrata("HIGH")
     boxHolder:ClearAllPoints()
     -- Same growth-corner origin as the live container (_ApplyTierOffset):
@@ -208,7 +176,9 @@ mod._ShowSizePreview = function(tier)
         shiftX, shiftY = mod._RFCenterShift(gSlots, numGroups)
     end
 
-    local groupOrder = cfg.customGroupOrder and not cfg.mergeGroups and mod._RFValidatedGroupOrder(cfg.groupOrder)
+    local groupOrder = cfg.customGroupOrder
+        and not cfg.mergeGroups
+        and mod._RFValidatedGroupOrder(cfg.groupOrder)
     local sizePreviewSlotByGroup
     if groupOrder then
         sizePreviewSlotByGroup = {}
@@ -232,16 +202,12 @@ mod._ShowSizePreview = function(tier)
             health:SetValue(100)
             -- Pre-paint tint (see StyleButton's health bar note).
             health:SetStatusBarColor(0.12, 0.12, 0.12)
-            if Pix then
-                Pix.DisablePixelSnap(health)
-            end
+            if Pix then Pix.DisablePixelSnap(health) end
             frame._health = health
 
             local backdrop = frame:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
-            if Pix then
-                Pix.DisablePixelSnap(backdrop)
-            end
+            if Pix then Pix.DisablePixelSnap(backdrop) end
             frame._bg = backdrop
 
             local power = CreateFrame("StatusBar", nil, frame)
@@ -249,17 +215,13 @@ mod._ShowSizePreview = function(tier)
             power:SetPoint("BOTTOMRIGHT")
             power:SetMinMaxValues(0, 1)
             power:SetValue(1)
-            if Pix then
-                Pix.DisablePixelSnap(power)
-            end
+            if Pix then Pix.DisablePixelSnap(power) end
             frame._power = power
 
             local bdr = CreateFrame("Frame", nil, frame)
             bdr:SetAllPoints()
             bdr:SetFrameLevel(frame:GetFrameLevel() + 2)
-            if Pix then
-                Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
-            end
+            if Pix then Pix.CreateBorder(bdr, 0, 0, 0, 1, 1) end
             frame._border = bdr
 
             -- Name text
@@ -275,9 +237,7 @@ mod._ShowSizePreview = function(tier)
             tnb:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
             local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
             tnbBg:SetAllPoints()
-            if Pix then
-                Pix.DisablePixelSnap(tnbBg)
-            end
+            if Pix then Pix.DisablePixelSnap(tnbBg) end
             local tnbText = tnb:CreateFontString(nil, "OVERLAY")
             tnbText:SetWordWrap(false)
             tnb:Hide()
@@ -312,17 +272,11 @@ mod._ShowSizePreview = function(tier)
         frame._health:SetStatusBarColor(0.24, 0.26, 0.30, 1)
         frame._health:SetValue(100)
         frame._bg:SetColorTexture(0.09, 0.09, 0.11, 1)
-        if frame._power then
-            frame._power:Hide()
-        end
-        if frame._topNameBar then
-            frame._topNameBar:Hide()
-        end
+        if frame._power then frame._power:Hide() end
+        if frame._topNameBar then frame._topNameBar:Hide() end
         if frame._roleIcon then
             frame._roleIcon:Hide()
-            if frame._roleIcon._roleText then
-                frame._roleIcon._roleText:Hide()
-            end
+            if frame._roleIcon._roleText then frame._roleIcon._roleText:Hide() end
         end
 
         -- Thin neutral outline so each block and the spacing between them reads clearly.
@@ -383,34 +337,22 @@ mod._ShowSizePreview = function(tier)
 end
 
 mod._HideSizePreview = function()
-    if mod._sizePreviewContainer then
-        mod._sizePreviewContainer:Hide()
-    end
+    if mod._sizePreviewContainer then mod._sizePreviewContainer:Hide() end
     for _, frame in ipairs(mod._sizePreviewFrames) do
         frame:Hide()
     end
     -- Restore real frame opacity (size preview only changed alpha, never the
     -- Shown state) and drop the mouse blocker. SetAlpha(1) is always legal, in
     -- or out of combat, so the frames can never be stranded invisible.
-    if containerFrame then
-        containerFrame:SetAlpha(1)
-    end
-    if mod._partyContainerFrame then
-        mod._partyContainerFrame:SetAlpha(1)
-    end
-    if mod._ptModelOn then
-        mod.RF_PtContainerAlpha(1)
-    end
-    if mod._PF.container then
-        mod._PF.container:SetAlpha(1)
-    end
+    if containerFrame then containerFrame:SetAlpha(1) end
+    if mod._partyContainerFrame then mod._partyContainerFrame:SetAlpha(1) end
+    if mod._ptModelOn then mod.RF_PtContainerAlpha(1) end
+    if mod._PF.container then mod._PF.container:SetAlpha(1) end
     mod._PF_AlphaSync()
     mod._SetPreviewMouseBlock(false)
     -- Recompute party visibility (only shows party frames if actually grouped /
     -- Show When Solo). Bails in combat; the alpha restore above suffices there.
-    if mod._UpdatePartyVisibility then
-        mod._UpdatePartyVisibility()
-    end
+    if mod._UpdatePartyVisibility then mod._UpdatePartyVisibility() end
 end
 
 Inner.broken = false

@@ -1,17 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end -- Forever Essentials loads on WoW Forever only
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Travel_Options.lua
 --  Builds the "Travel" page inside the Forever Essentials module: a live
 --  preview of the flight timer in the content header, then its settings.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 -- The preview surface in the content header. Exported so the module's
 -- getHeaderBuilder can hand it back when the page cache outlives its header.
@@ -36,18 +30,14 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
 
     CludesUI:SetContentHeader(HeaderBuilder)
 
-    local function off()
-        return not FT.Get("enabled")
-    end
+    local function off() return not FT.Get("enabled") end
     local function Set(key, val)
         FT.Cfg()[key] = val
         FT.ApplyStyle()
     end
     -- Row setters over Set: the key written with the row's value.
     local function SetRow(key)
-        return function(value)
-            Set(key, value)
-        end
+        return function(value) Set(key, value) end
     end
 
     local function TextCogRows(prefixText)
@@ -58,12 +48,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 min = 8,
                 max = 24,
                 step = 1,
-                get = function()
-                    return FT.Get(prefixText .. "Size")
-                end,
-                set = function(val)
-                    Set(prefixText .. "Size", val)
-                end,
+                get = function() return FT.Get(prefixText .. "Size") end,
+                set = function(val) Set(prefixText .. "Size", val) end,
             },
             {
                 type = "slider",
@@ -71,12 +57,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return FT.Get(prefixText .. "X")
-                end,
-                set = function(val)
-                    Set(prefixText .. "X", val)
-                end,
+                get = function() return FT.Get(prefixText .. "X") end,
+                set = function(val) Set(prefixText .. "X", val) end,
             },
             {
                 type = "slider",
@@ -84,39 +66,21 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return FT.Get(prefixText .. "Y")
-                end,
-                set = function(val)
-                    Set(prefixText .. "Y", val)
-                end,
+                get = function() return FT.Get(prefixText .. "Y") end,
+                set = function(val) Set(prefixText .. "Y", val) end,
             },
         }
     end
 
     local function BorderOffsets(prefixText, disabled)
         return CludesUI.BorderOffsetCogRows({
-            getTex = function()
-                return FT.Get("borderTexture")
-            end,
-            getStep = function()
-                return FT.Get("borderSize")
-            end,
-            getPx = function()
-                return FT.Get("borderSizePx")
-            end,
-            getX = function()
-                return FT.Get(prefixText .. "Offset")
-            end,
-            setX = function(val)
-                FT.Cfg()[prefixText .. "Offset"] = val
-            end,
-            getY = function()
-                return FT.Get(prefixText .. "OffsetY")
-            end,
-            setY = function(val)
-                FT.Cfg()[prefixText .. "OffsetY"] = val
-            end,
+            getTex = function() return FT.Get("borderTexture") end,
+            getStep = function() return FT.Get("borderSize") end,
+            getPx = function() return FT.Get("borderSizePx") end,
+            getX = function() return FT.Get(prefixText .. "Offset") end,
+            setX = function(val) FT.Cfg()[prefixText .. "Offset"] = val end,
+            getY = function() return FT.Get(prefixText .. "OffsetY") end,
+            setY = function(val) FT.Cfg()[prefixText .. "OffsetY"] = val end,
             apply = FT.ApplyStyle,
             disabled = disabled,
             disabledTooltip = disabled and "This option requires an enabled textured border." or nil,
@@ -142,9 +106,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enable Flight Timer",
         tooltip = "Shows a bar with the time left while you ride a flight path.",
-        getValue = function()
-            return not off()
-        end,
+        getValue = function() return not off() end,
         setValue = function(val)
             FT.Cfg().enabled = val
             FT.Apply()
@@ -156,12 +118,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         tooltip = "Fades the timer in at takeoff and out on landing.",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("fade")
-        end,
-        setValue = function(val)
-            FT.Cfg().fade = val
-        end,
+        getValue = function() return FT.Get("fade") end,
+        setValue = function(val) FT.Cfg().fade = val end,
     })
     cursorY = cursorY - height
 
@@ -185,9 +143,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             step = 1,
             disabled = off,
             disabledTooltip = "Flight Timer",
-            getValue = function()
-                return FT.Get("width")
-            end,
+            getValue = function() return FT.Get("width") end,
             setValue = SetRow("width"),
         },
         -- The track's own key (trackHeight), not the retired bar's height.
@@ -199,9 +155,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             step = 1,
             disabled = off,
             disabledTooltip = "Flight Timer",
-            getValue = function()
-                return FT.Get("trackHeight")
-            end,
+            getValue = function() return FT.Get("trackHeight") end,
             setValue = SetRow("trackHeight"),
         }
     )
@@ -221,9 +175,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         local tbl = FT.textures
         CludesUI.AppendSharedMediaTextures(tbl.names, tbl.order, nil, tbl.lookup)
         for _, key in ipairs(tbl.order) do
-            if key ~= "---" then
-                texValues[key] = tbl.names[key] or key
-            end
+            if key ~= "---" then texValues[key] = tbl.names[key] or key end
             texOrder[#texOrder + 1] = key
         end
     end
@@ -240,9 +192,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             order = borderOrder,
             disabled = off,
             disabledTooltip = "Flight Timer",
-            getValue = function()
-                return FT.Get("borderTexture")
-            end,
+            getValue = function() return FT.Get("borderTexture") end,
             setValue = function(val)
                 local cfg = FT.Cfg()
                 cfg.borderTexture = val
@@ -252,12 +202,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
                 cfg.borderR, cfg.borderG, cfg.borderB, cfg.borderBehind = color.r, color.g, color.b, behind
                 local size = CludesUI.GetBorderDefaultSize(nil, val)
-                if size then
-                    cfg.borderSize = size
-                end
-                if cfg.borderSizePx then
-                    cfg.borderSizePx = false
-                end
+                if size then cfg.borderSize = size end
+                if cfg.borderSizePx then cfg.borderSizePx = false end
                 FT.ApplyStyle()
                 CludesUI:RefreshPage(true)
             end,
@@ -266,22 +212,14 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             trackWidth = 120,
             disabled = off,
             disabledTooltip = "Flight Timer",
-            getStep = function()
-                return FT.Get("borderSize")
-            end,
+            getStep = function() return FT.Get("borderSize") end,
             setStep = function(val)
                 local cfg = FT.Cfg()
                 cfg.borderTexture, cfg.borderSize = FT.Get("borderTexture"), val
             end,
-            getTex = function()
-                return FT.Get("borderTexture")
-            end,
-            getPx = function()
-                return FT.Get("borderSizePx")
-            end,
-            setPx = function(val)
-                FT.Cfg().borderSizePx = val
-            end,
+            getTex = function() return FT.Get("borderTexture") end,
+            getPx = function() return FT.Get("borderSizePx") end,
+            setPx = function(val) FT.Cfg().borderSizePx = val end,
             apply = function()
                 FT.ApplyStyle()
                 CludesUI:RefreshPage()
@@ -293,9 +231,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         local offsetX, offsetY = BorderOffsets("borderTexture")
         CludesUI.BuildInlineCog(borderRow._leftRegion, {
             title = "Border Options",
-            disabled = function()
-                return off() or SolidBorder()
-            end,
+            disabled = function() return off() or SolidBorder() end,
             disabledTooltip = "This option requires a textured border.",
             rows = {
                 {
@@ -304,9 +240,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     min = -10,
                     max = 10,
                     step = 1,
-                    get = function()
-                        return FT.Get("borderTextureShiftX") or 0
-                    end,
+                    get = function() return FT.Get("borderTextureShiftX") or 0 end,
                     set = SetRow("borderTextureShiftX"),
                 },
                 {
@@ -315,9 +249,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     min = -10,
                     max = 10,
                     step = 1,
-                    get = function()
-                        return FT.Get("borderTextureShiftY") or 0
-                    end,
+                    get = function() return FT.Get("borderTextureShiftY") or 0 end,
                     set = SetRow("borderTextureShiftY"),
                 },
                 offsetX,
@@ -325,9 +257,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Show Behind",
-                    get = function()
-                        return FT.Get("borderBehind")
-                    end,
+                    get = function() return FT.Get("borderBehind") end,
                     set = SetRow("borderBehind"),
                 },
             },
@@ -335,15 +265,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         CludesUI.BuildInlineSwatches(borderRow._rightRegion, {
             {
                 tooltip = "Border Color",
-                disabled = function()
-                    return off() or FT.Get("borderSize") == 0
-                end,
-                disabledTooltip = function()
-                    return off() and "Flight Timer" or "Border Size"
-                end,
-                getValue = function()
-                    return FT.Get("borderR"), FT.Get("borderG"), FT.Get("borderB"), 1
-                end,
+                disabled = function() return off() or FT.Get("borderSize") == 0 end,
+                disabledTooltip = function() return off() and "Flight Timer" or "Border Size" end,
+                getValue = function() return FT.Get("borderR"), FT.Get("borderG"), FT.Get("borderB"), 1 end,
                 setValue = function(red, green, blue)
                     local cfg = FT.Cfg()
                     cfg.borderR, cfg.borderG, cfg.borderB = red, green, blue
@@ -360,9 +284,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         order = texOrder,
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("texture")
-        end,
+        getValue = function() return FT.Get("texture") end,
         setValue = SetRow("texture"),
     }, {
         type = "dropdown",
@@ -371,9 +293,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         order = texOrder,
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("bgTexture")
-        end,
+        getValue = function() return FT.Get("bgTexture") end,
         setValue = SetRow("bgTexture"),
     })
     cursorY = cursorY - height
@@ -389,9 +309,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         tooltip = "Opacity of the bar fill.",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("fillOpacity")
-        end,
+        getValue = function() return FT.Get("fillOpacity") end,
         setValue = SetRow("fillOpacity"),
     }, {
         type = "slider",
@@ -402,12 +320,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         trackWidth = 120,
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return math.floor(FT.Get("bgA") * 100 + 0.5)
-        end,
-        setValue = function(val)
-            Set("bgA", val / 100)
-        end,
+        getValue = function() return math.floor(FT.Get("bgA") * 100 + 0.5) end,
+        setValue = function(val) Set("bgA", val / 100) end,
     })
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
@@ -416,9 +330,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 tooltip = "Custom Colored",
                 getValue = function()
                     local fr = FT.Get("fillR")
-                    if fr then
-                        return fr, FT.Get("fillG"), FT.Get("fillB"), 1
-                    end
+                    if fr then return fr, FT.Get("fillG"), FT.Get("fillB"), 1 end
                     local ACC = CludesUI.CLUDES_GREEN
                     return ACC.r, ACC.g, ACC.b, 1
                 end,
@@ -435,22 +347,16 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                         CludesUI:RefreshPage()
                         return
                     end
-                    if self._eabOrigClick then
-                        self._eabOrigClick(self)
-                    end
+                    if self._eabOrigClick then self._eabOrigClick(self) end
                 end,
-                refreshAlpha = function()
-                    return FT.Get("classColored") and 0.3 or 1
-                end,
+                refreshAlpha = function() return FT.Get("classColored") and 0.3 or 1 end,
             },
             {
                 tooltip = "Class Colored",
                 getValue = function()
                     local _, class = UnitClass("player")
                     local classColor = class and CludesUI.GetClassColor(class)
-                    if classColor then
-                        return classColor.r, classColor.g, classColor.b, 1
-                    end
+                    if classColor then return classColor.r, classColor.g, classColor.b, 1 end
                     return 1, 1, 1, 1
                 end,
                 setValue = function() end,
@@ -458,17 +364,13 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     Set("classColored", true)
                     CludesUI:RefreshPage()
                 end,
-                refreshAlpha = function()
-                    return FT.Get("classColored") and 1 or 0.3
-                end,
+                refreshAlpha = function() return FT.Get("classColored") and 1 or 0.3 end,
             },
         }, { disabled = off, disabledTooltip = "Flight Timer" })
         CludesUI.BuildInlineSwatches(colorRow._rightRegion, {
             {
                 tooltip = "Background Color",
-                getValue = function()
-                    return FT.Get("bgR"), FT.Get("bgG"), FT.Get("bgB"), 1
-                end,
+                getValue = function() return FT.Get("bgR"), FT.Get("bgG"), FT.Get("bgB"), 1 end,
                 setValue = function(red, green, blue)
                     local cfg = FT.Cfg()
                     cfg.bgR, cfg.bgG, cfg.bgB = red, green, blue
@@ -484,9 +386,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         text = "Show Time",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("timeText") ~= "none"
-        end,
+        getValue = function() return FT.Get("timeText") ~= "none" end,
         setValue = function(val)
             Set("timeText", not val and "none" or nil)
             CludesUI:RefreshPage()
@@ -495,16 +395,10 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Total Time",
         tooltip = "Shows the full flight time next to the time left, for example 1:23 / 4:19.",
-        disabled = function()
-            return off() or FT.Get("timeText") == "none"
-        end,
+        disabled = function() return off() or FT.Get("timeText") == "none" end,
         disabledTooltip = "Show Time",
-        getValue = function()
-            return FT.Get("showTotal")
-        end,
-        setValue = function(val)
-            FT.Cfg().showTotal = val
-        end,
+        getValue = function() return FT.Get("showTotal") end,
+        setValue = function(val) FT.Cfg().showTotal = val end,
     })
     cursorY = cursorY - height
     CludesUI.BuildInlineCog(textRow._leftRegion, {
@@ -512,9 +406,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         rows = TextCogRows("time"),
         gap = 9,
         disabledTooltip = "Show Time",
-        disabled = function()
-            return off() or FT.Get("timeText") == "none"
-        end,
+        disabled = function() return off() or FT.Get("timeText") == "none" end,
     })
 
     local exitRow
@@ -523,9 +415,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         text = "Show Names",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("destText") ~= "none"
-        end,
+        getValue = function() return FT.Get("destText") ~= "none" end,
         setValue = function(val)
             Set("destText", not val and "none" or nil)
             CludesUI:RefreshPage()
@@ -536,9 +426,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         tooltip = "Shows a button next to the bar that lands you at the next flight point.",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("earlyExit")
-        end,
+        getValue = function() return FT.Get("earlyExit") end,
         setValue = function(val)
             Set("earlyExit", val)
             CludesUI:RefreshPage()
@@ -550,42 +438,35 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         rows = TextCogRows("dest"),
         gap = 9,
         disabledTooltip = "Show Names",
-        disabled = function()
-            return off() or FT.Get("destText") == "none"
-        end,
+        disabled = function() return off() or FT.Get("destText") == "none" end,
     })
-    local offsetX, offsetY = BorderOffsets("exitBorder", function()
-        return not FT.Get("exitBorder")
-            or not FT.Get("exitBorderCustom")
-            or FT.Get("borderSize") == 0
-            or SolidBorder()
-    end)
+    local offsetX, offsetY = BorderOffsets(
+        "exitBorder",
+        function()
+            return not FT.Get("exitBorder")
+                or not FT.Get("exitBorderCustom")
+                or FT.Get("borderSize") == 0
+                or SolidBorder()
+        end
+    )
     CludesUI.BuildInlineCog(exitRow._rightRegion, {
         title = "Early Exit Border Options",
-        disabled = function()
-            return off() or not FT.Get("earlyExit")
-        end,
+        disabled = function() return off() or not FT.Get("earlyExit") end,
         disabledTooltip = "Early Exit Button",
         rows = {
             {
                 type = "toggle",
                 label = "Enable Border",
-                get = function()
-                    return FT.Get("exitBorder")
-                end,
+                get = function() return FT.Get("exitBorder") end,
                 set = SetRow("exitBorder"),
             },
             {
                 type = "toggle",
                 label = "Use Bar Border",
                 tooltip = "Inherits the travel bar's border style, size and color instead of the plain button border.",
-                disabled = function()
-                    return not FT.Get("exitBorder")
-                end,
+                disabled = function() return not FT.Get("exitBorder") end,
                 disabledTooltip = "Enable Border",
-                get = function()
-                    return FT.Get("exitBorderCustom")
-                end,
+                get = function() return FT.Get("exitBorderCustom") end,
                 set = SetRow("exitBorderCustom"),
             },
             offsetX,
@@ -600,9 +481,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         tooltip = "The dots at the two ends of the track.",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("showEndCaps")
-        end,
+        getValue = function() return FT.Get("showEndCaps") end,
         setValue = SetRow("showEndCaps"),
     }, {
         type = "toggle",
@@ -610,9 +489,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         tooltip = "The white line at the middle of the track on flights with multiple stops.",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("showSeparator")
-        end,
+        getValue = function() return FT.Get("showSeparator") end,
         setValue = function(val)
             Set("showSeparator", val)
             CludesUI:RefreshPage()
@@ -621,9 +498,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     cursorY = cursorY - height
     CludesUI.BuildInlineCog(separatorRow._rightRegion, {
         title = "Separator Settings",
-        disabled = function()
-            return off() or not FT.Get("showSeparator")
-        end,
+        disabled = function() return off() or not FT.Get("showSeparator") end,
         disabledTooltip = "Show Separator",
         rows = {
             {
@@ -632,9 +507,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 min = 1,
                 max = 60,
                 step = 1,
-                get = function()
-                    return FT.Get("separatorHeight")
-                end,
+                get = function() return FT.Get("separatorHeight") end,
                 set = SetRow("separatorHeight"),
             },
             {
@@ -646,9 +519,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                         or not CludesUI.GetBorderCompanion(FT.Get("borderTexture"), "sepV")
                 end,
                 disabledTooltip = "This option requires a Pixels or Pixels Textured border above size 0.",
-                get = function()
-                    return FT.Get("customSeparator")
-                end,
+                get = function() return FT.Get("customSeparator") end,
                 set = SetRow("customSeparator"),
             },
         },
@@ -661,9 +532,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         tooltip = "Shows a Pixels glow line at the moving end of the bar fill.",
         disabled = off,
         disabledTooltip = "Flight Timer",
-        getValue = function()
-            return FT.Get("showSpark")
-        end,
+        getValue = function() return FT.Get("showSpark") end,
         setValue = function(val)
             Set("showSpark", val)
             CludesUI:RefreshPage()
@@ -674,13 +543,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         CludesUI.BuildInlineSwatches(sparkRow._leftRegion, {
             {
                 tooltip = "Spark Color",
-                disabled = function()
-                    return off() or not FT.Get("showSpark")
-                end,
+                disabled = function() return off() or not FT.Get("showSpark") end,
                 disabledTooltip = "Show Spark",
-                getValue = function()
-                    return FT.Get("sparkR"), FT.Get("sparkG"), FT.Get("sparkB"), 1
-                end,
+                getValue = function() return FT.Get("sparkR"), FT.Get("sparkG"), FT.Get("sparkB"), 1 end,
                 setValue = function(red, green, blue)
                     local cfg = FT.Cfg()
                     cfg.sparkR, cfg.sparkG, cfg.sparkB = red, green, blue

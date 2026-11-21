@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Reload.lua
 --
@@ -40,9 +38,7 @@ local GetCastbarColor, ApplyUnitFrameCastColor, IsKickCastbarUnit, UpdateUnitFra
     Inner.IsKickCastbarUnit,
     Inner.UpdateUnitFrameKickTick
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Detached portrait click overlays on the settled geometry; true while any
 -- frame wants one.
@@ -66,18 +62,14 @@ local function ReloadFrames()
     mod._ufReloadSweep = true
     local success, err = pcall(ReloadFramesBody)
     mod._ufReloadSweep = nil
-    if not success then
-        geterrorhandler()(err)
-    end
+    if not success then geterrorhandler()(err) end
 end
 ReloadFramesBody = function()
     ResolveFontPath()
     -- Refresh the tag-readable decimal globals before the combat early-return so
     -- tags pick up the saved state at login and on any settings change.
     mod.ApplyTextDecimalGlobals()
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
 
     -- Normalize opacity values: old profiles stored 0-1 floats, new format is 0-100 integers
     do
@@ -114,9 +106,7 @@ ReloadFramesBody = function()
             local castbarBg = widget.Castbar:GetParent()
             if castbarBg then
                 if prefs.showCastbar ~= false then
-                    if not widget:IsElementEnabled("Castbar") then
-                        widget:EnableElement("Castbar")
-                    end
+                    if not widget:IsElementEnabled("Castbar") then widget:EnableElement("Castbar") end
                     local cbW3 = prefs.castbarWidth or 181
                     local cbH3 = prefs.castbarHeight or 14
                     Pix.Size(castbarBg, cbW3, cbH3)
@@ -160,9 +150,7 @@ ReloadFramesBody = function()
                         castbarBg:Show()
                     end
                 else
-                    if widget:IsElementEnabled("Castbar") then
-                        widget:DisableElement("Castbar")
-                    end
+                    if widget:IsElementEnabled("Castbar") then widget:DisableElement("Castbar") end
                     widget.Castbar:Hide()
                     castbarBg:Hide()
                 end
@@ -170,14 +158,10 @@ ReloadFramesBody = function()
             -- Store per-unit settings for PostCastStart
             widget.Castbar._eufSettings = prefs
             -- A glow already showing takes new Important Cast Glow settings now.
-            if widget.Castbar._impGlowActive then
-                mod.UpdateUnitFrameImportantGlow(widget.Castbar)
-            end
+            if widget.Castbar._impGlowActive then mod.UpdateUnitFrameImportantGlow(widget.Castbar) end
             -- Resolve per-unit fill color
             local fCbColor = castbarColor
-            if prefs.castbarFillColor then
-                fCbColor = prefs.castbarFillColor
-            end
+            if prefs.castbarFillColor then fCbColor = prefs.castbarFillColor end
             -- Fill Opacity below 100: tint layer carries the visible
             -- fill; zero the base so it cannot bleed through.
             widget.Castbar:SetStatusBarColor(
@@ -220,12 +204,8 @@ ReloadFramesBody = function()
                 widget.Castbar._nameSide = prefs.castSpellNameSide or "left"
                 widget.Castbar._tgtSide = prefs.castSpellTargetSide or "right"
                 widget.Castbar._durSide = prefs.castDurationSide or "right"
-                if not widget.Castbar._showTarget then
-                    widget.Castbar.Target:Hide()
-                end
-                if widget.Castbar._layoutTextZones then
-                    widget.Castbar:_layoutTextZones()
-                end
+                if not widget.Castbar._showTarget then widget.Castbar.Target:Hide() end
+                if widget.Castbar._layoutTextZones then widget.Castbar:_layoutTextZones() end
             end
         end
     end
@@ -242,9 +222,7 @@ ReloadFramesBody = function()
             -- should ride with anyway.
             local strata = ufStrata
             local us = GetSettingsForUnit(unitKey)
-            if us and us.frameStrata then
-                strata = us.frameStrata
-            end
+            if us and us.frameStrata then strata = us.frameStrata end
             widget:SetFrameStrata(strata)
             -- Re-apply or reset custom strata for detached bars
             if widget.BottomTextBar and widget.BottomTextBar._isDetached then
@@ -297,9 +275,7 @@ ReloadFramesBody = function()
 
     -- Live enable/disable frames without reload
     local function ToggleFrame(unitToken, widget)
-        if not widget then
-            return
-        end
+        if not widget then return end
         if widget._cuiVisDriver then
             -- A secure condition driver owns this frame's Show/Hide (group gating
             -- included); manual toggling here would de-sync it until the next driver
@@ -318,9 +294,7 @@ ReloadFramesBody = function()
                 local vis = (inRaid and (cfg.showInRaid ~= false))
                     or (inParty and (cfg.showInParty ~= false))
                     or (solo and (cfg.showSolo ~= false))
-                if not vis then
-                    isEnabled = false
-                end
+                if not vis then isEnabled = false end
             end
         end
         if isEnabled then
@@ -402,9 +376,7 @@ ReloadFramesBody = function()
                         local anchored = CludesUI
                             and CludesUI.IsUnlockAnchored
                             and CludesUI.IsUnlockAnchored(unitToken)
-                        if not anchored or not widget:GetLeft() then
-                            ApplyFramePosition(widget, unitToken)
-                        end
+                        if not anchored or not widget:GetLeft() then ApplyFramePosition(widget, unitToken) end
                     end
                 end
                 local prefs = GetSettingsForUnit(unitToken)
@@ -414,17 +386,13 @@ ReloadFramesBody = function()
                     or unitToken == "targettarget"
                     or unitToken == "focustarget"
                     or unitToken:match("^boss%d$")
-                if unitIsMini and pStyle == "detached" then
-                    pStyle = "attached"
-                end
+                if unitIsMini and pStyle == "detached" then pStyle = "attached" end
                 local showPortrait = pStyle ~= "none" and prefs.showPortrait ~= false
 
                 -- Keep the cached portrait side in sync with user-edited settings. Downstream
                 -- re-snap code (SnapLayout, health anchor math) reads this lookup, so without
                 -- it the side toggle wouldn't flip until a full UI reload.
-                if prefs.portraitSide then
-                    CludesUI._ufPortraitSide[widget] = prefs.portraitSide
-                end
+                if prefs.portraitSide then CludesUI._ufPortraitSide[widget] = prefs.portraitSide end
 
                 -- Re-anchor portrait backdrop based on style + side.
                 if widget.Portrait and widget.Portrait.backdrop and prefs.portraitSide then
@@ -435,21 +403,15 @@ ReloadFramesBody = function()
                         or pSide == "insidecenter"
                     edge._isInside = isInsideNow
                     if isInsideNow then
-                        if edge._bg then
-                            edge._bg:Hide()
-                        end
+                        if edge._bg then edge._bg:Hide() end
                         local healthAnchor = widget.Health or widget
                         local pXO = prefs.portraitX or 0
                         local pYO = prefs.portraitY or 0
                         local pSizeAdj = prefs.portraitSize or 0
                         local frameH = widget:GetHeight()
-                        if frameH < 1 then
-                            frameH = 46
-                        end
+                        if frameH < 1 then frameH = 46 end
                         local pDim = frameH + pSizeAdj
-                        if pDim < 8 then
-                            pDim = 8
-                        end
+                        if pDim < 8 then pDim = 8 end
                         edge:SetClipsChildren(true)
                         edge:SetFrameLevel(widget:GetFrameLevel() + 3)
                         -- Raise border above 3D model (PlayerModel ignores frame level):
@@ -473,9 +435,7 @@ ReloadFramesBody = function()
                             edge:SetPoint("BOTTOM", widget, "BOTTOM", pXO, 0)
                         end
                     elseif pStyle == "attached" then
-                        if edge._bg then
-                            edge._bg:Show()
-                        end
+                        if edge._bg then edge._bg:Show() end
                         edge:SetClipsChildren(false)
                         edge:ClearAllPoints()
                         if pSide == "left" then
@@ -516,9 +476,7 @@ ReloadFramesBody = function()
                         end
                     else
                         widget.Portrait.backdrop:Hide()
-                        if widget:IsElementEnabled("Portrait") then
-                            widget:DisableElement("Portrait")
-                        end
+                        if widget:IsElementEnabled("Portrait") then widget:DisableElement("Portrait") end
                     end
                     -- Live-update detached portrait shape/mask/border
                     ApplyDetachedPortraitShape(widget.Portrait.backdrop, uSettings, unitToken)
@@ -540,9 +498,7 @@ ReloadFramesBody = function()
                     local cpAboveH = 0
                     if unitToken == "player" and SpecHasClassPower() then
                         local cpSt = prefs.classPowerStyle or "none"
-                        if mod.UF_ForeverCPStyle then
-                            cpSt = mod.UF_ForeverCPStyle(cpSt)
-                        end
+                        if mod.UF_ForeverCPStyle then cpSt = mod.UF_ForeverCPStyle(cpSt) end
                         local cpPo = (cpSt == "modern") and (prefs.classPowerPosition or "top") or "none"
                         if cpSt == "modern" and cpPo == "above" then
                             local cpSizeAdj = prefs.classPowerSize or 8
@@ -571,13 +527,9 @@ ReloadFramesBody = function()
                     if unitToken == "player" then
                         local pSide = prefs.portraitSide or "left"
                         local effectiveSide = pSide
-                        if isAttached and pSide == "top" then
-                            effectiveSide = "left"
-                        end
+                        if isAttached and pSide == "top" then effectiveSide = "left" end
                         local adjPortraitH = playerTargetHeightWithCp + pSizeAdj
-                        if adjPortraitH < 8 then
-                            adjPortraitH = 8
-                        end
+                        if adjPortraitH < 8 then adjPortraitH = 8 end
                         if not showPortrait then
                             totalWidth = prefs.frameWidth
                             portraitHeight = 0
@@ -657,9 +609,7 @@ ReloadFramesBody = function()
                                     )
                                 end
                             end
-                            if widget.Portrait.backdrop._2d then
-                                UnsnapTex(widget.Portrait.backdrop._2d)
-                            end
+                            if widget.Portrait.backdrop._2d then UnsnapTex(widget.Portrait.backdrop._2d) end
                             if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
                                 widget.Portrait:ForceUpdate()
                             end
@@ -702,9 +652,7 @@ ReloadFramesBody = function()
                         if widget.Power then
                             local pw = prefs.frameWidth
                             local ppIsDetached = (ppPos == "detached_top" or ppPos == "detached_bottom")
-                            if ppIsDetached and (prefs.powerWidth or 0) > 0 then
-                                pw = prefs.powerWidth
-                            end
+                            if ppIsDetached and (prefs.powerWidth or 0) > 0 then pw = prefs.powerWidth end
                             Pix.Size(widget.Power, pw, prefs.powerHeight)
                             -- Apply custom strata for detached power bar
                             if ppIsDetached and saved.profile.enableCustomBarStratas then
@@ -769,13 +717,9 @@ ReloadFramesBody = function()
                                         and lvlOk
                                         and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1))
                                     local isCst = UnitClassBase and UnitClassBase(unitToken)
-                                    if issecretvalue(isCst) then
-                                        isCst = nil
-                                    end
+                                    if issecretvalue(isCst) then isCst = nil end
                                     isCst = (isCst == "PALADIN")
-                                    if not isBoss and not isMB and not isCst then
-                                        shouldGray = true
-                                    end
+                                    if not isBoss and not isMB and not isCst then shouldGray = true end
                                 end
                                 if shouldGray then
                                     widget.Power._grayedOut = true
@@ -891,9 +835,7 @@ ReloadFramesBody = function()
                                     local tsC = prefs.castSpellTargetColor or { r = 1, g = 1, b = 1 }
                                     widget.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
                                     widget.Castbar._showTarget = prefs.showCastTarget ~= false
-                                    if not widget.Castbar._showTarget then
-                                        widget.Castbar.Target:Hide()
-                                    end
+                                    if not widget.Castbar._showTarget then widget.Castbar.Target:Hide() end
                                     if widget.Castbar._syncOffsetsAndLayout then
                                         widget.Castbar:_syncOffsetsAndLayout(prefs)
                                     end
@@ -901,9 +843,7 @@ ReloadFramesBody = function()
                             else
                                 mod.SetCastbarElement(widget, false)
                                 widget.Castbar:Hide()
-                                if castbarBg then
-                                    castbarBg:Hide()
-                                end
+                                if castbarBg then castbarBg:Hide() end
                             end
                         end
 
@@ -964,9 +904,7 @@ ReloadFramesBody = function()
                                 prefs.centerTextContent or "none"
                             )
                         end
-                        if widget._applyTextPositions then
-                            widget._applyTextPositions(prefs)
-                        end
+                        if widget._applyTextPositions then widget._applyTextPositions(prefs) end
 
                         -- Bottom Text Bar update (player)
                         if prefs.bottomTextBar then
@@ -1038,9 +976,7 @@ ReloadFramesBody = function()
                                 end
                                 if btb._applyBTBTextPositions then
                                     btb._applyBTBTextPositions(prefs)
-                                    if btb._applyBTBClassIcon then
-                                        btb._applyBTBClassIcon(prefs)
-                                    end
+                                    if btb._applyBTBClassIcon then btb._applyBTBClassIcon(prefs) end
                                 end
                                 btb:Show()
                             end
@@ -1053,13 +989,9 @@ ReloadFramesBody = function()
                     elseif unitToken == "target" then
                         local pSide = prefs.portraitSide or "right"
                         local effectiveSide = pSide
-                        if isAttached and pSide == "top" then
-                            effectiveSide = "right"
-                        end
+                        if isAttached and pSide == "top" then effectiveSide = "right" end
                         local adjPortraitH = playerTargetHeight + pSizeAdj
-                        if adjPortraitH < 8 then
-                            adjPortraitH = 8
-                        end
+                        if adjPortraitH < 8 then adjPortraitH = 8 end
                         if not showPortrait then
                             totalWidth = prefs.frameWidth
                             portraitHeight = 0
@@ -1138,9 +1070,7 @@ ReloadFramesBody = function()
                                     )
                                 end
                             end
-                            if widget.Portrait.backdrop._2d then
-                                UnsnapTex(widget.Portrait.backdrop._2d)
-                            end
+                            if widget.Portrait.backdrop._2d then UnsnapTex(widget.Portrait.backdrop._2d) end
                             if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
                                 widget.Portrait:ForceUpdate()
                             end
@@ -1182,9 +1112,7 @@ ReloadFramesBody = function()
                         if widget.Power then
                             local pw2 = prefs.frameWidth
                             local ppIsDetached2 = (ppPos == "detached_top" or ppPos == "detached_bottom")
-                            if ppIsDetached2 and (prefs.powerWidth or 0) > 0 then
-                                pw2 = prefs.powerWidth
-                            end
+                            if ppIsDetached2 and (prefs.powerWidth or 0) > 0 then pw2 = prefs.powerWidth end
                             Pix.Size(widget.Power, pw2, prefs.powerHeight)
                             widget.Power:ClearAllPoints()
                             if ppPos == "none" then
@@ -1243,13 +1171,9 @@ ReloadFramesBody = function()
                                         and lvlOk
                                         and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1))
                                     local isCst = UnitClassBase and UnitClassBase(unitToken)
-                                    if issecretvalue(isCst) then
-                                        isCst = nil
-                                    end
+                                    if issecretvalue(isCst) then isCst = nil end
                                     isCst = (isCst == "PALADIN")
-                                    if not isBoss and not isMB and not isCst then
-                                        shouldGray = true
-                                    end
+                                    if not isBoss and not isMB and not isCst then shouldGray = true end
                                 end
                                 if shouldGray then
                                     widget.Power._grayedOut = true
@@ -1271,9 +1195,7 @@ ReloadFramesBody = function()
                                 prefs.centerTextContent or "none"
                             )
                         end
-                        if widget._applyTextPositions then
-                            widget._applyTextPositions(prefs)
-                        end
+                        if widget._applyTextPositions then widget._applyTextPositions(prefs) end
 
                         -- Bottom Text Bar update (target) -- must come before castbar so castbar can anchor to it
                         local tPpBtbAnchor = (
@@ -1350,9 +1272,7 @@ ReloadFramesBody = function()
                                 end
                                 if btb._applyBTBTextPositions then
                                     btb._applyBTBTextPositions(prefs)
-                                    if btb._applyBTBClassIcon then
-                                        btb._applyBTBClassIcon(prefs)
-                                    end
+                                    if btb._applyBTBClassIcon then btb._applyBTBClassIcon(prefs) end
                                 end
                                 btb:Show()
                             end
@@ -1426,9 +1346,7 @@ ReloadFramesBody = function()
                             end
                             -- Resolve per-unit fill color
                             local tCbColor = castbarColor
-                            if prefs.castbarFillColor then
-                                tCbColor = prefs.castbarFillColor
-                            end
+                            if prefs.castbarFillColor then tCbColor = prefs.castbarFillColor end
                             -- Fill Opacity below 100: tint layer carries the visible
                             -- fill; zero the base so it cannot bleed through.
                             widget.Castbar:SetStatusBarColor(
@@ -1468,9 +1386,7 @@ ReloadFramesBody = function()
                                 local tsC = prefs.castSpellTargetColor or { r = 1, g = 1, b = 1 }
                                 widget.Castbar.Target:SetTextColor(tsC.r, tsC.g, tsC.b)
                                 widget.Castbar._showTarget = prefs.showCastTarget ~= false
-                                if not widget.Castbar._showTarget then
-                                    widget.Castbar.Target:Hide()
-                                end
+                                if not widget.Castbar._showTarget then widget.Castbar.Target:Hide() end
                                 if widget.Castbar._syncOffsetsAndLayout then
                                     widget.Castbar:_syncOffsetsAndLayout(prefs)
                                 end
@@ -1497,22 +1413,14 @@ ReloadFramesBody = function()
                     local isAttached = focusPStyle == "attached"
                     local pSide = prefs.portraitSide or "right"
                     local effectiveSide = pSide
-                    if isAttached and pSide == "top" then
-                        effectiveSide = "right"
-                    end
+                    if isAttached and pSide == "top" then effectiveSide = "right" end
                     local pSizeAdj = prefs.portraitSize or 0
-                    if not isAttached then
-                        pSizeAdj = pSizeAdj + 10
-                    end
+                    if not isAttached then pSizeAdj = pSizeAdj + 10 end
                     local pXOff = prefs.portraitX or 0
                     local pYOff = prefs.portraitY or 0
-                    if not isAttached then
-                        pYOff = pYOff + 5
-                    end
+                    if not isAttached then pYOff = pYOff + 5 end
                     local adjPortraitH = focusBarHeight + pSizeAdj
-                    if adjPortraitH < 8 then
-                        adjPortraitH = 8
-                    end
+                    if adjPortraitH < 8 then adjPortraitH = 8 end
 
                     if not showPortrait then
                         totalWidth = prefs.frameWidth
@@ -1539,9 +1447,7 @@ ReloadFramesBody = function()
                             if portW + prefs.frameWidth > frameW + 0.01 then
                                 Pix.Width(widget.Portrait.backdrop, frameW - prefs.frameWidth)
                             end
-                            if portH > frameH + 0.01 then
-                                Pix.Height(widget.Portrait.backdrop, frameH)
-                            end
+                            if portH > frameH + 0.01 then Pix.Height(widget.Portrait.backdrop, frameH) end
                         end
                         -- Reposition portrait for attached/detached
                         widget.Portrait.backdrop:ClearAllPoints()
@@ -1596,9 +1502,7 @@ ReloadFramesBody = function()
                             end
                         end
                         -- Re-apply pixel snap disable after resize
-                        if widget.Portrait.backdrop._2d then
-                            UnsnapTex(widget.Portrait.backdrop._2d)
-                        end
+                        if widget.Portrait.backdrop._2d then UnsnapTex(widget.Portrait.backdrop._2d) end
                         if widget:IsElementEnabled("Portrait") and widget.Portrait.ForceUpdate then
                             widget.Portrait:ForceUpdate()
                         end
@@ -1637,9 +1541,7 @@ ReloadFramesBody = function()
                     if widget.Power then
                         local fpw = prefs.frameWidth
                         local fPpIsDet = (fPpPos == "detached_top" or fPpPos == "detached_bottom")
-                        if fPpIsDet and (prefs.powerWidth or 0) > 0 then
-                            fpw = prefs.powerWidth
-                        end
+                        if fPpIsDet and (prefs.powerWidth or 0) > 0 then fpw = prefs.powerWidth end
                         Pix.Size(widget.Power, fpw, prefs.powerHeight or 6)
                         widget.Power:ClearAllPoints()
                         if fPpPos == "none" then
@@ -1684,9 +1586,7 @@ ReloadFramesBody = function()
                             prefs.centerTextContent or "none"
                         )
                     end
-                    if widget._applyTextPositions then
-                        widget._applyTextPositions(prefs)
-                    end
+                    if widget._applyTextPositions then widget._applyTextPositions(prefs) end
 
                     -- Bottom Text Bar update (focus) -- must come before castbar so castbar can anchor to it
                     local fPpBtbAnchor = (fPpIsAtt and widget.Power) or widget.Health
@@ -1743,9 +1643,7 @@ ReloadFramesBody = function()
                             end
                             if btb._applyBTBTextPositions then
                                 btb._applyBTBTextPositions(prefs)
-                                if btb._applyBTBClassIcon then
-                                    btb._applyBTBClassIcon(prefs)
-                                end
+                                if btb._applyBTBClassIcon then btb._applyBTBClassIcon(prefs) end
                             end
                             btb:Show()
                         end
@@ -1838,9 +1736,7 @@ ReloadFramesBody = function()
                             Pix.Point(miniPower, "TOPRIGHT", widget.Health, "BOTTOMRIGHT", 0, 0)
                             miniPower:Show()
                         end
-                        if miniPower._applyPowerPercentText then
-                            miniPower._applyPowerPercentText(prefs)
-                        end
+                        if miniPower._applyPowerPercentText then miniPower._applyPowerPercentText(prefs) end
                         -- "none" parks the power painter (zero cost while hidden);
                         -- turning the bar back on repaints it at once.
                         local wantPower = miniPpPos ~= "none"
@@ -1909,9 +1805,7 @@ ReloadFramesBody = function()
                     if widget.Power then
                         local bpw = prefs.frameWidth
                         local bPpIsDet = (bPpPos == "detached_top" or bPpPos == "detached_bottom")
-                        if bPpIsDet and (prefs.powerWidth or 0) > 0 then
-                            bpw = prefs.powerWidth
-                        end
+                        if bPpIsDet and (prefs.powerWidth or 0) > 0 then bpw = prefs.powerWidth end
                         widget.Power:SetSize(bpw, prefs.powerHeight or 6)
                         widget.Power:ClearAllPoints()
                         if bPpPos == "none" then
@@ -1962,13 +1856,9 @@ ReloadFramesBody = function()
                                 local pLvl = UnitLevel("player")
                                 local isMB = isElite and (lvl == -1 or (pLvl and lvl >= pLvl + 1))
                                 local isCst = UnitClassBase and UnitClassBase(unitToken)
-                                if issecretvalue(isCst) then
-                                    isCst = nil
-                                end
+                                if issecretvalue(isCst) then isCst = nil end
                                 isCst = (isCst == "PALADIN")
-                                if not isBoss and not isMB and not isCst then
-                                    shouldGray = true
-                                end
+                                if not isBoss and not isMB and not isCst then shouldGray = true end
                             end
                             if shouldGray then
                                 widget.Power._grayedOut = true
@@ -2003,9 +1893,7 @@ ReloadFramesBody = function()
                                 -- Custom widths floor at 30: below the cast icon size the
                                 -- icon-in-width inset inverts the bar's anchor rect.
                                 local bCbW = prefs.castbarWidth or 0
-                                if bCbW > 0 and bCbW < 30 then
-                                    bCbW = 30
-                                end
+                                if bCbW > 0 and bCbW < 30 then bCbW = 30 end
                                 Pix.Size(
                                     castbarBg,
                                     bCbW > 0 and bCbW or totalWidth,
@@ -2064,9 +1952,7 @@ ReloadFramesBody = function()
                         end
                         widget.Castbar._eufSettings = prefs
                         local bCbColor = castbarColor
-                        if prefs.castbarFillColor then
-                            bCbColor = prefs.castbarFillColor
-                        end
+                        if prefs.castbarFillColor then bCbColor = prefs.castbarFillColor end
                         widget.Castbar:SetStatusBarColor(
                             bCbColor.r,
                             bCbColor.g,
@@ -2106,12 +1992,8 @@ ReloadFramesBody = function()
                             widget.Castbar._nameSide = prefs.castSpellNameSide or "left"
                             widget.Castbar._tgtSide = prefs.castSpellTargetSide or "right"
                             widget.Castbar._durSide = prefs.castDurationSide or "right"
-                            if not widget.Castbar._showTarget then
-                                widget.Castbar.Target:Hide()
-                            end
-                            if widget.Castbar._layoutTextZones then
-                                widget.Castbar:_layoutTextZones()
-                            end
+                            if not widget.Castbar._showTarget then widget.Castbar.Target:Hide() end
+                            if widget.Castbar._layoutTextZones then widget.Castbar:_layoutTextZones() end
                         end
                     end
 
@@ -2170,9 +2052,7 @@ ReloadFramesBody = function()
                         and Enum.StatusBarInterpolation
                         and Enum.StatusBarInterpolation.Immediate
                 end
-                if widget.Health.ForceUpdate then
-                    widget.Health:ForceUpdate()
-                end
+                if widget.Health.ForceUpdate then widget.Health:ForceUpdate() end
 
                 -- Apply power bar opacity
                 if widget.Power then
@@ -2192,9 +2072,7 @@ ReloadFramesBody = function()
                     end
                     widget.Power.PostUpdateColor = function(self)
                         local s2 = GetSettingsForUnit(unitToken)
-                        if not s2 then
-                            return
-                        end
+                        if not s2 then return end
                         local useP = s2.powerPercentPowerColor ~= false
                         local bR, bG, bB
                         -- PLAIN stand-ins for bR
@@ -2223,9 +2101,7 @@ ReloadFramesBody = function()
                         if s2.powerGradientEnabled and haveBase and not baseSecret then
                             local gc = s2.powerGradientColor
                             local ga = s2.powerBarOpacity or 100
-                            if ga > 1.0 then
-                                ga = ga / 100
-                            end
+                            if ga > 1.0 then ga = ga / 100 end
                             ApplyBarGradient(
                                 self:GetStatusBarTexture(),
                                 s2.powerGradientDir or "HORIZONTAL",
@@ -2273,9 +2149,7 @@ ReloadFramesBody = function()
                         -- Same continuous re-application for the Bottom Text Bar's
                         -- power-colored text (per-slot early-out keeps it ~free).
                         local btb = widget.BottomTextBar
-                        if btb and btb._applyBTBPowerColors then
-                            btb._applyBTBPowerColors(s2)
-                        end
+                        if btb and btb._applyBTBPowerColors then btb._applyBTBPowerColors(s2) end
                     end
                     local customBg = prefs.customPowerBgColor
                     if customBg and widget.Power.bg then
@@ -2288,9 +2162,7 @@ ReloadFramesBody = function()
                     -- (ApplyPowerBarAlpha above ran before this SetReverseFill, so a direction
                     -- change would otherwise leave the bg anchored to the wrong side).
                     ApplyPowerBarAlpha(widget.Power, UnitToSettingsKey(unitToken))
-                    if widget.Power.ForceUpdate then
-                        widget.Power:ForceUpdate()
-                    end
+                    if widget.Power.ForceUpdate then widget.Power:ForceUpdate() end
                     if unitToken == "player" then
                         mod.UF_SetupPowerCost(widget.Power, prefs)
                         mod.UF_PowerValSync(widget)
@@ -2337,9 +2209,7 @@ ReloadFramesBody = function()
                     -- border until the boss Border Style leaves Inherit.
                     -- ns.UF_FrameBorderPad mirrors this apply for size matching: change the two together.
                     local bsrc = donorSettings
-                    if unitToken:match("^boss%d$") then
-                        bsrc = mod.UF_BossBorderSettings()
-                    end
+                    if unitToken:match("^boss%d$") then bsrc = mod.UF_BossBorderSettings() end
                     local bs = prefs.borderSizeOverride or bsrc.borderSize or 1
                     local bc = bsrc.borderColor or { r = 0, g = 0, b = 0 }
                     local btex = bsrc.borderTexture or "solid"
@@ -2381,9 +2251,7 @@ ReloadFramesBody = function()
                 -- Helper: set font on a FontString, using donor font for mini frames.
                 -- A font family, as SetFSFont gives.
                 local function SetMiniFont(fontStr, sz)
-                    if not fontStr or not fontStr.SetFont then
-                        return
-                    end
+                    if not fontStr or not fontStr.SetFont then return end
                     if isMiniFrame then
                         CludesUI.ApplyModuleFontFamily(fontStr, donorFontPath, sz or 12, "unitFrames")
                     else
@@ -2418,9 +2286,7 @@ ReloadFramesBody = function()
                         prefs.centerTextContent or "none"
                     )
                 end
-                if isMiniFrame and widget._applyTextPositions then
-                    widget._applyTextPositions(prefs)
-                end
+                if isMiniFrame and widget._applyTextPositions then widget._applyTextPositions(prefs) end
 
                 if widget.Castbar then
                     local cfg = isMiniFrame and donorSettings or prefs
@@ -2440,18 +2306,12 @@ ReloadFramesBody = function()
                     -- on every cast-text option change.
                     if unitToken:match("^boss") then
                         local callback = widget.Castbar
-                        if callback.Text then
-                            SetMiniFont(callback.Text, prefs.castSpellNameSize or 11)
-                        end
-                        if callback.Time then
-                            SetMiniFont(callback.Time, prefs.castDurationSize or 10)
-                        end
+                        if callback.Text then SetMiniFont(callback.Text, prefs.castSpellNameSize or 11) end
+                        if callback.Time then SetMiniFont(callback.Time, prefs.castDurationSize or 10) end
                         if callback.Target then
                             SetMiniFont(callback.Target, prefs.castSpellTargetSize or 11)
                         end
-                        if callback._syncOffsetsAndLayout then
-                            callback:_syncOffsetsAndLayout(prefs)
-                        end
+                        if callback._syncOffsetsAndLayout then callback:_syncOffsetsAndLayout(prefs) end
                     end
                 end
             end -- else (enabled frame processing)
@@ -2537,9 +2397,7 @@ ReloadFramesBody = function()
             if rmEnabled then
                 rmFrame.RaidTargetIndicator = iconTex
                 rmFrame:EnableElement("RaidTargetIndicator")
-                if iconTex.ForceUpdate then
-                    iconTex:ForceUpdate()
-                end
+                if iconTex.ForceUpdate then iconTex:ForceUpdate() end
             else
                 rmFrame:DisableElement("RaidTargetIndicator")
                 rmFrame.RaidTargetIndicator = nil
@@ -2572,9 +2430,7 @@ ReloadFramesBody = function()
 
     -- Detached portrait click overlays, and once more next frame (anchors still
     -- resolving) only while a frame uses one.
-    if SyncPortraitClicks() then
-        C_Timer.After(0, SyncPortraitClicks)
-    end
+    if SyncPortraitClicks() then C_Timer.After(0, SyncPortraitClicks) end
 
     -- Rounded corners (CludesUI_RoundedCorners.lua), on the settled
     -- geometry. The radius rides with the border source, like the border; a
@@ -2609,9 +2465,7 @@ ReloadFramesBody = function()
                 local ps = us and us.portraitStyle or profile.portraitStyle or "attached"
                 local attached = ps == "attached" or ((isMini or isBoss) and ps == "detached")
                 local edge = widget.Portrait and widget.Portrait.backdrop
-                if not (attached and edge and edge:IsShown()) then
-                    edge = nil
-                end
+                if not (attached and edge and edge:IsShown()) then edge = nil end
                 local btb = widget.BottomTextBar
                 CludesUI.RoundCorners(widget, radius, {
                     roots = { widget._barClip, btb and not btb._isDetached and btb or nil },
@@ -2641,20 +2495,14 @@ ReloadFramesBody = function()
     -- Player Aura Bars resolve font path and outline flag at style-build time; every
     -- settings path landing here (fonts, profiles, options) forces one explicit
     -- re-skin of the default and custom bars, both change-guarded no-ops when nothing changed.
-    if mod.PAB_Restyle then
-        mod.PAB_Restyle()
-    end
+    if mod.PAB_Restyle then mod.PAB_Restyle() end
     -- Profile-grade resync: enable/useBlizzard modes, native frames, default
     -- movers, and a late build when a swap lands on an enabled profile from
     -- a disabled-at-login session. Cheap no-op when nothing changed.
-    if mod.PAB_ProfileResync then
-        mod.PAB_ProfileResync()
-    end
+    if mod.PAB_ProfileResync then mod.PAB_ProfileResync() end
     -- Reload-all also SWEEPS stale bar ids (a previous profile's bars must
     -- park on swap -- field report).
-    if mod.PAB_ReloadAllCustomBars then
-        mod.PAB_ReloadAllCustomBars()
-    end
+    if mod.PAB_ReloadAllCustomBars then mod.PAB_ReloadAllCustomBars() end
     mod.UF_PlayerPortraitChanged()
     -- Size matching: the unified borders were just applied, so report each
     -- frame's border pad; only a pad that really changed re-pushes its matches.
@@ -2694,24 +2542,16 @@ mod.UF_PAD_KEYS = {
 -- looks (no CludesUI border), for the class resource bar and the boss
 -- stack. Reads settings only. Change together with the sweep.
 function mod.UF_FrameBorderPad(key)
-    if key == "classPower" or key == "boss" or mod.UF_Blizz() then
-        return nil
-    end
+    if key == "classPower" or key == "boss" or mod.UF_Blizz() then return nil end
     local prefs = GetSettingsForUnit(key)
-    if not prefs then
-        return nil
-    end
+    if not prefs then return nil end
     local isMini = (key == "pet" or key == "targettarget" or key == "focustarget")
     local skinData = isMini and GetMiniDonorSettings(key) or prefs
     local btex = skinData.borderTexture or "solid"
-    if btex == "solid" then
-        return nil
-    end
+    if btex == "solid" then return nil end
     local bs = prefs.borderSizeOverride or skinData.borderSize or 1
     local bpx = nil
-    if not prefs.borderSizeOverride then
-        bpx = CludesUI.BorderPx(skinData.borderSizePx, bs, btex)
-    end
+    if not prefs.borderSizeOverride then bpx = CludesUI.BorderPx(skinData.borderSizePx, bs, btex) end
     return CludesUI.BorderMatchPad(
         bs,
         btex,

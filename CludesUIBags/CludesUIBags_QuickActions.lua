@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBags_QuickActions.lua
 --  Quick Actions (Bag Top Bar Icons, off by default): the header icon toggles a
@@ -13,15 +11,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  OnLeave hooks; marks live on btn._textOverlay.
 -------------------------------------------------------------------------------
 local mod = select(2, ...)
-if not (mod and mod.GetSelection) then
-    return
-end
+if not (mod and mod.GetSelection) then return end
 
 local CUI = CludesUI
 local _emptyP = {}
-local function BP()
-    return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
-end
+local function BP() return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP end
 
 -- Milling and Prospecting are profession salvage recipes, not item-targeted spells.
 local DISENCHANT, PICK_LOCK, COMPREHEND = 13262, 1804, 1296017
@@ -64,20 +58,14 @@ local marks = setmetatable({}, { __mode = "k" }) -- slot button -> { shade, spel
 local hooked = setmetatable({}, { __mode = "k" })
 local SetActive, StopHover, TryAlt -- defined below
 
-local function Known(spellId)
-    return C_SpellBook.IsSpellKnown(spellId)
-end
+local function Known(spellId) return C_SpellBook.IsSpellKnown(spellId) end
 
 -- Whether the bag item's tooltip has a line reading exactly text.
 local function TooltipHas(bag, slot, textValue)
     local tipText = C_TooltipInfo.GetBagItem(bag, slot)
-    if not (tipText and tipText.lines) then
-        return false
-    end
+    if not (tipText and tipText.lines) then return false end
     for _, line in ipairs(tipText.lines) do
-        if line.leftText == textValue then
-            return true
-        end
+        if line.leftText == textValue then return true end
     end
     return false
 end
@@ -85,9 +73,7 @@ end
 -- TooltipHas for a line that never changes for a given item, cached while the
 -- mode paints every slot.
 local function ItemTooltipHas(bag, slot, itemLink, textValue)
-    if not (itemLink and isActive) then
-        return TooltipHas(bag, slot, textValue)
-    end
+    if not (itemLink and isActive) then return TooltipHas(bag, slot, textValue) end
     local val = tipCache[itemLink]
     if val == nil then
         val = TooltipHas(bag, slot, textValue)
@@ -100,9 +86,7 @@ end
 -- is never offered to Disenchant.
 local function SpellFor(bag, slot, details)
     local itemId = details.itemID
-    if CUI.IS_FOREVER and SCROLLS[itemId] then
-        return Known(COMPREHEND) and COMPREHEND or nil
-    end
+    if CUI.IS_FOREVER and SCROLLS[itemId] then return Known(COMPREHEND) and COMPREHEND or nil end
     local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(itemId)
     if classID == IC_WEAPON or classID == IC_ARMOR then
         local q = details.quality or 0
@@ -126,9 +110,7 @@ end
 -------------------------------------------------------------------------------
 local function HideCastButton()
     if castBtn and not InCombatLockdown() then
-        if GameTooltip:IsOwned(castBtn) then
-            GameTooltip:Hide()
-        end
+        if GameTooltip:IsOwned(castBtn) then GameTooltip:Hide() end
         castBtn:Hide()
         castBtn:ClearAllPoints()
         castBtn.owner = nil
@@ -153,9 +135,7 @@ end
 -- Combat is watched while the mode is on or a slot is hovered, Alt only then.
 local function SyncEvents()
     if not events then
-        if not (isActive or hovered) then
-            return
-        end
+        if not (isActive or hovered) then return end
         events = CreateFrame("Frame")
         events:SetScript("OnEvent", OnEvent)
     end
@@ -172,17 +152,13 @@ local function SyncEvents()
 end
 
 function StopHover()
-    if not hovered then
-        return
-    end
+    if not hovered then return end
     hovered = nil
     SyncEvents()
 end
 
 local function CastOnEnter(self)
-    if not self.owner then
-        return
-    end
+    if not self.owner then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetBagItem(self.bag, self.slot)
     local red, green, blue = CUI.GetAccentColor()
@@ -193,9 +169,7 @@ end
 local function CastOnLeave()
     GameTooltip:Hide()
     HideCastButton()
-    if hovered and not hovered:IsMouseOver() then
-        StopHover()
-    end
+    if hovered and not hovered:IsMouseOver() then StopHover() end
 end
 
 local function BuildCast()
@@ -213,9 +187,7 @@ local function BuildCast()
 end
 
 local function ShowCast(button, spell, bag, slot)
-    if not castBtn then
-        BuildCast()
-    end
+    if not castBtn then BuildCast() end
     castBtn:ClearAllPoints()
     castBtn:SetAllPoints(button)
     castBtn:SetAttribute("spell", spell)
@@ -227,9 +199,7 @@ end
 
 -- Alt held over the hovered slot: the cast button goes over it when a spell fits.
 function TryAlt()
-    if not hovered or InCombatLockdown() or not IsAltKeyDown() then
-        return
-    end
+    if not hovered or InCombatLockdown() or not IsAltKeyDown() then return end
     if not hovered:IsMouseOver() then
         StopHover()
         return
@@ -237,20 +207,14 @@ function TryAlt()
     local cfg = slots[hovered]
     local details = cfg and C_Container.GetContainerItemInfo(cfg.bag, cfg.slot)
     local spell = details and details.itemID and SpellFor(cfg.bag, cfg.slot, details)
-    if spell then
-        ShowCast(hovered, spell, cfg.bag, cfg.slot)
-    end
+    if spell then ShowCast(hovered, spell, cfg.bag, cfg.slot) end
 end
 
 local function OnSlotEnter(button)
     local cfg = enabled and slots[button]
-    if not cfg or InCombatLockdown() then
-        return
-    end
+    if not cfg or InCombatLockdown() then return end
     if isActive then
-        if cfg.spell then
-            ShowCast(button, cfg.spell, cfg.bag, cfg.slot)
-        end
+        if cfg.spell then ShowCast(button, cfg.spell, cfg.bag, cfg.slot) end
     else
         hovered = button
         SyncEvents()
@@ -260,9 +224,7 @@ end
 
 local function OnSlotLeave(button)
     -- The cast button over the slot takes the mouse: still on it.
-    if hovered == button and not (castBtn and castBtn.owner == button) then
-        StopHover()
-    end
+    if hovered == button and not (castBtn and castBtn.owner == button) then StopHover() end
 end
 
 -------------------------------------------------------------------------------
@@ -271,9 +233,7 @@ end
 -- The spell icon in a corner, or a shade over the item.
 local function Marks(button)
     local m = marks[button]
-    if m then
-        return m
-    end
+    if m then return m end
     local owner = button._textOverlay
     m = {}
     m.shade = owner:CreateTexture(nil, "OVERLAY", nil, 6)
@@ -318,9 +278,7 @@ local function Paint(button, payload)
     if isActive and inBags then -- the bank keeps its look
         local m = Marks(button)
         local spell = s and s.spell
-        if spell then
-            m.spell:SetTexture(C_Spell.GetSpellTexture(spell))
-        end
+        if spell then m.spell:SetTexture(C_Spell.GetSpellTexture(spell)) end
         m.spell:SetShown(spell ~= nil)
         m.shade:SetShown(spell == nil)
     else
@@ -329,9 +287,7 @@ local function Paint(button, payload)
     -- The item under the cast button changed: look again.
     if castBtn and castBtn.owner == button and not InCombatLockdown() then
         HideCastButton()
-        if button:IsMouseOver() then
-            OnSlotEnter(button)
-        end
+        if button:IsMouseOver() then OnSlotEnter(button) end
     end
 end
 
@@ -340,9 +296,7 @@ end
 -------------------------------------------------------------------------------
 local function SyncIconLook()
     local b = CUI_Bags._quickBtn
-    if not b then
-        return
-    end
+    if not b then return end
     if isActive then
         b.icon:SetVertexColor(CUI.GetAccentColor())
     else
@@ -352,9 +306,7 @@ end
 
 function SetActive(on)
     on = on and true or false
-    if on == (isActive or false) or (on and InCombatLockdown()) then
-        return
-    end
+    if on == (isActive or false) or (on and InCombatLockdown()) then return end
     isActive = on or nil
     StopHover()
     HideCastButton()
@@ -406,9 +358,7 @@ local function BuildIcon()
 end
 
 local function SyncEnabled(on)
-    if on == (enabled or false) then
-        return
-    end
+    if on == (enabled or false) then return end
     enabled = on or nil
     if on then
         if not hideHooked then
@@ -420,9 +370,7 @@ local function SyncEnabled(on)
             end)
         end
         CUI_Bags.RegisterItemOverlayIcon("CUI_QuickActions", Paint)
-        if CUI_Bags:IsShown() then
-            CUI_Bags:RefreshInventory()
-        end
+        if CUI_Bags:IsShown() then CUI_Bags:RefreshInventory() end
     else
         SetActive(false)
         CUI_Bags.UnregisterItemOverlayIcon("CUI_QuickActions")
@@ -437,13 +385,9 @@ end
 function mod.SyncQuickActionsIcon(previous, gap)
     local on = BP().bagShowQuickIcon == true
     SyncEnabled(on)
-    if on and not CUI_Bags._quickBtn then
-        BuildIcon()
-    end
+    if on and not CUI_Bags._quickBtn then BuildIcon() end
     local widget = CUI_Bags._quickBtn
-    if not widget then
-        return nil
-    end
+    if not widget then return nil end
     widget:ClearAllPoints()
     widget:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
     widget:SetShown(on)

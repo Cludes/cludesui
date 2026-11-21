@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Start.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local mod = select(2, ...)
 local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -52,26 +48,18 @@ local SetSelectedGroupName = Inner.SetSelectedGroupName
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._bagsInternals, which hands the value to every copy.
 local selectedCategoryIndex = Inner.selectedCategoryIndex
-Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val)
-    selectedCategoryIndex = val
-end
+Inner.categoryIndexSetters[#Inner.categoryIndexSetters + 1] = function(val) selectedCategoryIndex = val end
 local selectedGroupName
-Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val)
-    selectedGroupName = val
-end
+Inner.groupNameSetters[#Inner.groupNameSetters + 1] = function(val) selectedGroupName = val end
 local _anyItemPanelOpen = Inner._anyItemPanelOpen
-Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val)
-    _anyItemPanelOpen = val
-end
+Inner.anyItemPanelOpenSetters[#Inner.anyItemPanelOpenSetters + 1] = function(val) _anyItemPanelOpen = val end
 
 -- Unmerge state the CURRENT painted layout was built with; the bags OnShow
 -- compares against it so a flip while hidden still repaints (closing a
 -- mailbox hides both). Written by the earlier files through
 -- SetPaintedPanelOpen, read here only.
 local _paintedPanelOpen = false
-Inner.paintedPanelOpenSetters[#Inner.paintedPanelOpenSetters + 1] = function(val)
-    _paintedPanelOpen = val
-end
+Inner.paintedPanelOpenSetters[#Inner.paintedPanelOpenSetters + 1] = function(val) _paintedPanelOpen = val end
 
 -------------------------------------------------------------------------------
 --  StartAddon
@@ -142,18 +130,14 @@ local function StartAddon()
         -- Locked (the footer's lock icon): the window stays put. Nor does it move
         -- while something is on the cursor: a click on its empty space drops an
         -- item from outside the bags (the OnMouseUp hook below).
-        if btnFrame ~= "LeftButton" or BP().bagWindowLocked or GetCursorInfo() then
-            return
-        end
+        if btnFrame ~= "LeftButton" or BP().bagWindowLocked or GetCursorInfo() then return end
         local cursorX, cursorY = GetCursorPosition()
         local effScale = self:GetEffectiveScale()
         _bagDragStartCX = cursorX / effScale
         _bagDragStartCY = cursorY / effScale
         _bagDragStartLeft = self:GetLeft()
         _bagDragStartTop = self:GetTop()
-        if not _bagDragStartLeft or not _bagDragStartTop then
-            return
-        end
+        if not _bagDragStartLeft or not _bagDragStartTop then return end
         _bagDragging = true
         _bagDragFrame:Show()
     end)
@@ -209,22 +193,16 @@ local function StartAddon()
         end
         -- Controller cursor: scroll aids and the carried-item drop button,
         -- built only once a controller is in use.
-        if CUI_Bags._padBuilt or CUI.PadInUse() then
-            PadBagsShown()
-        end
+        if CUI_Bags._padBuilt or CUI.PadInUse() then PadBagsShown() end
         -- The one-time "categories can be dragged" tip, until its Okay
-        if not CludesUIDB.bagCategoryTipSeen then
-            mod.ShowCategoryTip()
-        end
+        if not CludesUIDB.bagCategoryTipSeen then mod.ShowCategoryTip() end
     end)
 
     CUI_Bags:HookScript("OnHide", function()
         PlaySound(SOUNDKIT.IG_BACKPACK_CLOSE)
         CUI_Bags._closeSoundAt = GetTime()
         -- A tip left up without Okay must not come back with the window (in combat too)
-        if CUI_Bags._catTip then
-            CUI_Bags._catTip:Hide()
-        end
+        if CUI_Bags._catTip then CUI_Bags._catTip:Hide() end
         if CUI_Bags._searchBox then
             CUI_Bags._searchBox:SetText("")
             CUI_Bags._searchBox:ClearFocus()
@@ -233,26 +211,20 @@ local function StartAddon()
 
     -- An item on the cursor that is not from the player's bags (bank withdrawals, mail, etc.).
     local function CursorItemIsExternal()
-        if GetCursorInfo() ~= "item" then
-            return false
-        end
+        if GetCursorInfo() ~= "item" then return false end
         -- The cursor item's own location is its pickup source: a slot of the
         -- player's bags (bag 0-5, reagent bag included) when it came from them.
         local location = C_Cursor.GetCursorItem()
         if location and location:IsBagAndSlot() then
             local bagId = location:GetBagAndSlot()
-            if bagId >= 0 and bagId <= 5 then
-                return false
-            end
+            if bagId >= 0 and bagId <= 5 then return false end
         end
         return true
     end
     -- External item: place in first empty bag slot (same as looting), never in
     -- a WoW Forever special bag.
     local function PlaceExternalCursorItem()
-        if not CursorItemIsExternal() then
-            return
-        end
+        if not CursorItemIsExternal() then return end
         local special = mod.SpecialBags()
         for bagId = 0, 4 do
             local slotCount = (special and special[bagId]) and 0 or C_Container.GetContainerNumSlots(bagId)
@@ -268,9 +240,7 @@ local function StartAddon()
     -- outside the bags (bank, mail, ...) on the cursor: it goes to the first
     -- empty bag slot. An item picked up from the bags stays on the cursor.
     CUI_Bags:HookScript("OnMouseUp", function(_, btnFrame)
-        if btnFrame == "LeftButton" then
-            PlaceExternalCursorItem()
-        end
+        if btnFrame == "LeftButton" then PlaceExternalCursorItem() end
     end)
     CUI_Bags:SetScript("OnReceiveDrag", PlaceExternalCursorItem)
 
@@ -302,14 +272,10 @@ local function StartAddon()
             dropCatcher:SetScript("OnMouseWheel", function(_, delta)
                 local scrollFrame = CUI_Bags._scrollFrame
                 local wheel = scrollFrame and scrollFrame:GetScript("OnMouseWheel")
-                if wheel then
-                    wheel(scrollFrame, delta)
-                end
+                if wheel then wheel(scrollFrame, delta) end
             end)
             dropCatcher:SetScript("OnMouseUp", function(_, btnFrame)
-                if btnFrame == "LeftButton" then
-                    PlaceExternalCursorItem()
-                end
+                if btnFrame == "LeftButton" then PlaceExternalCursorItem() end
             end)
             dropCatcher:SetScript("OnReceiveDrag", PlaceExternalCursorItem)
             dropCatcher:SetScript("OnEnter", function()
@@ -320,9 +286,7 @@ local function StartAddon()
                 hoverCatch = false
                 PaintDropBorder()
             end)
-            dropCatcher:SetScript("OnHide", function()
-                hoverCatch = false
-            end)
+            dropCatcher:SetScript("OnHide", function() hoverCatch = false end)
         end
         if dropCatcher then
             if layer and not dropCatcher:IsShown() then
@@ -341,9 +305,7 @@ local function StartAddon()
             dropEdge:EnableMouse(false)
             CreateInsetBorder(dropEdge)
         end
-        if not dropEdge then
-            return
-        end
+        if not dropEdge then return end
         if enabled then
             local red, green, blue = GetAccentRGB()
             SetInsetBorderColor(dropEdge, red, green, blue, 1)
@@ -387,9 +349,7 @@ local function StartAddon()
     -- category views, so an item carried in from the bank or mail gets a
     -- "Place in Bags" footer button. The cursor watch is registered only
     -- while the bags are open with a controller in use.
-    local function PadPlaceSync()
-        CUI_Bags._padPlaceBtn:SetShown(CursorItemIsExternal())
-    end
+    local function PadPlaceSync() CUI_Bags._padPlaceBtn:SetShown(CursorItemIsExternal()) end
     local function PadPlaceButton()
         local footerBar = CUI_Bags.Footer
         local widget = CreateFrame("Button", nil, footerBar)
@@ -400,24 +360,16 @@ local function StartAddon()
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
         local Pix = CUI and CUI.PP
-        if Pix and Pix.CreateBorder then
-            Pix.CreateBorder(widget, 0.25, 0.25, 0.25, 1)
-        end
+        if Pix and Pix.CreateBorder then Pix.CreateBorder(widget, 0.25, 0.25, 0.25, 1) end
         local fontStr = widget:CreateFontString(nil, "OVERLAY")
         SetBagFont(fontStr, 11)
         fontStr:SetPoint("CENTER", 0, 0)
         fontStr:SetTextColor(1, 1, 1, 0.9)
         fontStr:SetText(CludesUI.L("Place in Bags"))
         widget:SetWidth(fontStr:GetStringWidth() + 20)
-        widget:SetScript("OnEnter", function()
-            backdrop:SetColorTexture(0.2, 0.2, 0.2, 1)
-        end)
-        widget:SetScript("OnLeave", function()
-            backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
-        end)
-        widget:SetScript("OnClick", function()
-            PlaceExternalCursorItem()
-        end)
+        widget:SetScript("OnEnter", function() backdrop:SetColorTexture(0.2, 0.2, 0.2, 1) end)
+        widget:SetScript("OnLeave", function() backdrop:SetColorTexture(0.15, 0.15, 0.15, 1) end)
+        widget:SetScript("OnClick", function() PlaceExternalCursorItem() end)
         widget:Hide()
         CUI_Bags._padPlaceBtn = widget
         local watcher = CreateFrame("Frame")
@@ -428,9 +380,7 @@ local function StartAddon()
     PadBagsShown = function()
         local enabled = CUI.PadInUse()
         CUI_Bags._padBuilt = true
-        if CUI_Bags._scrollTrack then
-            CUI_Bags._scrollTrack.PadSync(enabled)
-        end
+        if CUI_Bags._scrollTrack then CUI_Bags._scrollTrack.PadSync(enabled) end
         mod.PadSidebarSync(
             CUI_Bags._sidebarHdr,
             CUI_Bags._sidebarSF,
@@ -497,9 +447,7 @@ local function StartAddon()
     CUI_BagsReagent:SetScript("OnEvent", function(self, eventName)
         if eventName == "BAG_UPDATE" then
             local detached = BP().detachReagentBag or false
-            if detached and CUI_BagsReagent:IsVisible() then
-                CUI_BagsReagent:RefreshInventory()
-            end
+            if detached and CUI_BagsReagent:IsVisible() then CUI_BagsReagent:RefreshInventory() end
         end
     end)
     CludesUI.RegisterEscapeClose(CUI_BagsReagent)
@@ -516,14 +464,10 @@ local function StartAddon()
     local function CloseBags()
         CUI_Bags:Hide()
         CUI_BagsReagent:Hide()
-        if not CludesUIDB then
-            CludesUIDB = {}
-        end
+        if not CludesUIDB then CludesUIDB = {} end
         CludesUIDB.bagsVisible = false
         -- Controller cursor: keep Blizzard's hidden bag frames closed too.
-        if CUI.PadInUse() then
-            mod.PadReleaseBlizzBags()
-        end
+        if CUI.PadInUse() then mod.PadReleaseBlizzBags() end
     end
     local function ToggleBags()
         if CUI_Bags:IsVisible() then
@@ -545,15 +489,11 @@ local function StartAddon()
             ApplyBagScale()
             CUI_Bags:Show()
             CUI_Bags:RefreshInventory()
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
             -- Seed default pinned items on first ever open
             if not CludesUIDB.bagPinsSeeded then
                 CludesUIDB.bagPinsSeeded = true
-                if not CludesUIDB.bagPinnedItems then
-                    CludesUIDB.bagPinnedItems = {}
-                end
+                if not CludesUIDB.bagPinnedItems then CludesUIDB.bagPinnedItems = {} end
                 CludesUIDB.bagPinnedItems[6948] = 1 -- Hearthstone
                 CludesUIDB.bagPinnedItems[180653] = 1 -- Nomi Snacks
             end
@@ -573,28 +513,18 @@ local function StartAddon()
 
     local characterBagHooksInstalled = false
     function mod.ToggleBagsWithCharacterFrame()
-        if not BP().bagOpenWithCharacter then
-            return
-        end
+        if not BP().bagOpenWithCharacter then return end
         -- WoW Forever's Gamepad interface style: no hooks on Blizzard windows (see the stand-down below).
-        if mod.PadUIStandDown() then
-            return
-        end
+        if mod.PadUIStandDown() then return end
         local widget = _G.CharacterFrame
-        if not widget then
-            return
-        end
+        if not widget then return end
         if not characterBagHooksInstalled then
             characterBagHooksInstalled = true
             widget:HookScript("OnShow", function()
-                if BP().bagOpenWithCharacter and not CUI_Bags:IsVisible() then
-                    ToggleBags()
-                end
+                if BP().bagOpenWithCharacter and not CUI_Bags:IsVisible() then ToggleBags() end
             end)
             widget:HookScript("OnHide", function()
-                if BP().bagOpenWithCharacter and CUI_Bags:IsVisible() then
-                    ToggleBags()
-                end
+                if BP().bagOpenWithCharacter and CUI_Bags:IsVisible() then ToggleBags() end
             end)
         end
     end
@@ -604,18 +534,14 @@ local function StartAddon()
     local _visibleBeforeToggle = false
     local function SmartToggleBags()
         -- Debounce: Blizzard keybinds can fire both ToggleAllBags and C_Container.ToggleAllBags in the same frame, causing a double-toggle.
-        if GetTime() == _lastToggleTime then
-            return
-        end
+        if GetTime() == _lastToggleTime then return end
         _lastToggleTime = GetTime()
         _visibleBeforeToggle = CUI_Bags:IsVisible()
         local enhancedEnabled = BP().enhancedBags ~= false
         if enhancedEnabled then
             ToggleBags()
         else
-            if OriginalToggleAllBags then
-                OriginalToggleAllBags()
-            end
+            if OriginalToggleAllBags then OriginalToggleAllBags() end
         end
     end
 
@@ -625,9 +551,7 @@ local function StartAddon()
     if mod.PadUIStandDown() then
         -- A switch back to another style: the takeover follows a reload.
         local function StyleCheck()
-            if not CUI.PadGamepadUI() then
-                mod.PadStyleChanged()
-            end
+            if not CUI.PadGamepadUI() then mod.PadStyleChanged() end
         end
         hooksecurefunc("ToggleAllBags", StyleCheck)
         hooksecurefunc("ToggleBackpack", StyleCheck)
@@ -650,19 +574,18 @@ local function StartAddon()
         -- let back out of the hidden container while it shows.
         local KEYRING = CUI.IS_FOREVER and Enum.BagIndex and Enum.BagIndex.Keyring or nil
         local function IsKeyringFrame(frame)
-            return KEYRING ~= nil and frame:IsShown() and frame.MatchesBagID ~= nil and frame:MatchesBagID(KEYRING)
+            return KEYRING ~= nil
+                and frame:IsShown()
+                and frame.MatchesBagID ~= nil
+                and frame:MatchesBagID(KEYRING)
         end
 
         local function KillBlizzard()
             for i = 1, 13 do
                 local frame = _G["ContainerFrame" .. i]
-                if frame and not IsKeyringFrame(frame) then
-                    frame:SetParent(_blizzBagHidden)
-                end
+                if frame and not IsKeyringFrame(frame) then frame:SetParent(_blizzBagHidden) end
             end
-            if ContainerFrameCombinedBags then
-                ContainerFrameCombinedBags:SetParent(_blizzBagHidden)
-            end
+            if ContainerFrameCombinedBags then ContainerFrameCombinedBags:SetParent(_blizzBagHidden) end
         end
         KillBlizzard()
 
@@ -679,9 +602,7 @@ local function StartAddon()
                         -- The frames are shared: once closed (its own shown flag
                         -- clear, not just a hidden UI), any bag it shows next stays hidden.
                         frame:HookScript("OnHide", function(self)
-                            if not self:IsShown() then
-                                self:SetParent(_blizzBagHidden)
-                            end
+                            if not self:IsShown() then self:SetParent(_blizzBagHidden) end
                         end)
                     end
                 end
@@ -696,25 +617,20 @@ local function StartAddon()
             -- Blizzard's OpenBackpack can call ToggleBackpack first, which already
             -- flipped our window this frame: read its state from before that.
             local wasVisible = CUI_Bags:IsVisible()
-            if _lastToggleTime == GetTime() then
-                wasVisible = _visibleBeforeToggle
-            end
-            local isOpen = wasVisible or mod.BagAutoWindowOn("bagAutoOpenWindows", mod.BagAutoWindowKey(widget))
+            if _lastToggleTime == GetTime() then wasVisible = _visibleBeforeToggle end
+            local isOpen = wasVisible
+                or mod.BagAutoWindowOn("bagAutoOpenWindows", mod.BagAutoWindowKey(widget))
             if isOpen and not CUI_Bags:IsVisible() then
                 ToggleBags()
             elseif not isOpen and CUI_Bags:IsVisible() then
                 CloseBags()
             end
-            if isOpen and not wasVisible then
-                bagsOpener = widget
-            end
+            if isOpen and not wasVisible then bagsOpener = widget end
             KillBlizzard()
         end)
         -- Close with that window; frame is nil for non-window closes
         hooksecurefunc("CloseAllBags", function(widget)
-            if not widget or widget ~= bagsOpener then
-                return
-            end
+            if not widget or widget ~= bagsOpener then return end
             bagsOpener = nil
             if
                 CUI_Bags:IsShown()
@@ -726,9 +642,7 @@ local function StartAddon()
         -- Closed by hand: a later open is the player's, so it stays open.
         -- Alt-Z also fires OnHide but leaves IsShown true.
         CUI_Bags:HookScript("OnHide", function(self)
-            if not self:IsShown() then
-                bagsOpener = nil
-            end
+            if not self:IsShown() then bagsOpener = nil end
         end)
     end -- not ns.PadUIStandDown()
 
@@ -784,9 +698,7 @@ local function StartAddon()
             for slotId = 1, slotCount do
                 local details = C_Container.GetContainerItemInfo(bagId, slotId)
                 if details and details.itemID then
-                    if not counts[details.itemID] then
-                        sequence[#sequence + 1] = details.itemID
-                    end
+                    if not counts[details.itemID] then sequence[#sequence + 1] = details.itemID end
                     counts[details.itemID] = (counts[details.itemID] or 0) + (details.stackCount or 0)
                 end
             end
@@ -794,9 +706,7 @@ local function StartAddon()
         for slotId = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
             local itemId = GetInventoryItemID("player", slotId)
             if itemId then
-                if not counts[itemId] then
-                    sequence[#sequence + 1] = itemId
-                end
+                if not counts[itemId] then sequence[#sequence + 1] = itemId end
                 counts[itemId] = (counts[itemId] or 0) + (GetInventoryItemCount("player", slotId) or 1)
             end
         end
@@ -822,9 +732,7 @@ local function StartAddon()
     -- raises one), which is what left auction returns landing with no trace.
     -- Drops stay ignored: sent, sold and deleted are indistinguishable.
     local function DetectNewItems()
-        if not _snapshotReady or BankOpen() then
-            return
-        end
+        if not _snapshotReady or BankOpen() then return end
         local atMail = MailOpen()
         local counts, sequence = TallyItemCounts()
         for _, itemId in ipairs(sequence) do
@@ -848,9 +756,7 @@ local function StartAddon()
                     recent[table.remove(ro, 1)] = nil
                 end
             end
-            if not atMail or total > known then
-                _knownItemCounts[itemId] = total
-            end
+            if not atMail or total > known then _knownItemCounts[itemId] = total end
         end
         -- Items gone entirely (sold/used/deleted) no longer appear in `counts`;
         -- drop their known peak too. Worn gear is in `counts`, so an equipped
@@ -860,9 +766,7 @@ local function StartAddon()
         -- dropping its peak would re-flag it as new the moment it came back.
         if not atMail then
             for itemId in pairs(_knownItemCounts) do
-                if not counts[itemId] then
-                    _knownItemCounts[itemId] = nil
-                end
+                if not counts[itemId] then _knownItemCounts[itemId] = nil end
             end
         end
     end
@@ -873,14 +777,10 @@ local function StartAddon()
     function CUI_Bags:ClearRecentItems()
         wipe(CUI_Bags._recentItems)
         wipe(CUI_Bags._recentOrder)
-        if CUI_Bags:IsVisible() then
-            CUI_Bags:RefreshInventory()
-        end
+        if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
     end
 
-    C_Timer.After(1, function()
-        SnapshotKnownIDs()
-    end)
+    C_Timer.After(1, function() SnapshotKnownIDs() end)
 
     -- Debounced full refresh: one code path, no stale state. The first paint of a
     -- window stays at 0.1 s. When events kept landing during that window a burst is
@@ -901,16 +801,12 @@ local function StartAddon()
         if CUI_Bags:IsVisible() then
             CUI_Bags:RefreshInventory()
             local detached = BP().detachReagentBag or false
-            if detached and CUI_BagsReagent:IsVisible() then
-                CUI_BagsReagent:RefreshInventory()
-            end
+            if detached and CUI_BagsReagent:IsVisible() then CUI_BagsReagent:RefreshInventory() end
         end
         refreshPending, rerun, refreshDefers = false, false, 0
     end
     local function QueueRefresh()
-        if not CUI_Bags.refreshEnabled then
-            return
-        end
+        if not CUI_Bags.refreshEnabled then return end
         if refreshPending then
             rerun = true
             return
@@ -955,9 +851,7 @@ local function StartAddon()
     -- Replays a refresh that was deferred during combat (secure-button taint guard).
     CUI_Bags:RegisterEvent("PLAYER_REGEN_ENABLED") -- guardrails-allow: combat-deferral by Cludes: moved unchanged by the file split
     -- Drives the post-mailbox/bank Recent Items resync (see MailOpen/BankOpen/DetectNewItems above).
-    if C_PlayerInteractionManager then
-        CUI_Bags:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
-    end
+    if C_PlayerInteractionManager then CUI_Bags:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE") end
 
     -- Panels that move items one bag slot at a time (see SetItemPanelOpen).
     local ITEM_PANEL_EVENTS = {
@@ -979,32 +873,22 @@ local function StartAddon()
     -- BEFORE the OnEvent wiring below, so one bad name kills StartAddon; a panel lost to a patch rename must degrade to "that panel doesn't unmerge", never a dead bags addon.
     for evt in pairs(ITEM_PANEL_EVENTS) do
         local success = pcall(CUI_Bags.RegisterEvent, CUI_Bags, evt)
-        if not success then
-            ITEM_PANEL_EVENTS[evt] = nil
-        end
+        if not success then ITEM_PANEL_EVENTS[evt] = nil end
     end
 
     -- Send Mail is driven off the frame, not MAIL_SHOW, so switching tabs inside an open
     -- mailbox flips the state too. Blizzard_MailFrame loads with no LoadOnDemand, so the frame exists by now; the guard is belt.
     local function HookSendMail(widget)
-        if not widget or not widget.HookScript then
-            return
-        end
+        if not widget or not widget.HookScript then return end
         local function flip(isOpen)
             if SetItemPanelOpen("sendmail", isOpen) and CUI_Bags:IsVisible() then
                 CUI_Bags:RefreshInventory()
             end
         end
-        widget:HookScript("OnShow", function()
-            flip(true)
-        end)
-        widget:HookScript("OnHide", function()
-            flip(false)
-        end)
+        widget:HookScript("OnShow", function() flip(true) end)
+        widget:HookScript("OnHide", function() flip(false) end)
         -- Already on the Send Mail tab when hooked (/reload with mailbox open): OnShow already fired, so seed from live state.
-        if widget:IsShown() then
-            flip(true)
-        end
+        if widget:IsShown() then flip(true) end
     end
     HookSendMail(_G.SendMailFrame)
 
@@ -1033,9 +917,7 @@ local function StartAddon()
             local sequence = 0
             for i = 1, 20 do
                 local details = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
-                if not details then
-                    break
-                end
+                if not details then break end
                 sequence = sequence + 1
                 coroutineObj[details.currencyTypesID] = sequence
             end
@@ -1049,9 +931,7 @@ local function StartAddon()
         if C_CurrencyInfo and C_CurrencyInfo.GetBackpackCurrencyInfo then
             for i = 1, 20 do
                 local details = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
-                if not details then
-                    break
-                end
+                if not details then break end
                 cfg[details.currencyTypesID] = true
             end
         end
@@ -1063,35 +943,25 @@ local function StartAddon()
     -- unchecked removed. Currencies added through our dropdown (never in Blizzard's set) are untouched.
     if EventRegistry and EventRegistry.RegisterCallback then
         EventRegistry:RegisterCallback("TokenFrame.OnTokenWatchChanged", function()
-            if not CludesUIDB then
-                return
-            end
+            if not CludesUIDB then return end
             local coroutineObj = CurrencyOrder()
-            if not coroutineObj then
-                return
-            end
+            if not coroutineObj then return end
             local blizzSet = ReadBlizzSet()
             for containerId in pairs(blizzSet) do
                 if not coroutineObj[containerId] then
                     local maxOrder = 0
                     for _, ord in pairs(coroutineObj) do
-                        if type(ord) == "number" and ord > maxOrder then
-                            maxOrder = ord
-                        end
+                        if type(ord) == "number" and ord > maxOrder then maxOrder = ord end
                     end
                     coroutineObj[containerId] = maxOrder + 1
                 end
             end
             -- Remove currencies that were in Blizzard's set before but aren't now
             for containerId in pairs(_lastBlizzSet) do
-                if not blizzSet[containerId] then
-                    coroutineObj[containerId] = nil
-                end
+                if not blizzSet[containerId] then coroutineObj[containerId] = nil end
             end
             _lastBlizzSet = blizzSet
-            if CUI_Bags:IsVisible() then
-                SyncBagFrameToFooter()
-            end
+            if CUI_Bags:IsVisible() then SyncBagFrameToFooter() end
             CludesUI:RefreshPage()
         end, CUI_Bags)
     end
@@ -1119,9 +989,7 @@ local function StartAddon()
             end
             if CUI_Bags._refreshPendingCombat then
                 CUI_Bags._refreshPendingCombat = nil
-                if CUI_Bags:IsVisible() then
-                    CUI_Bags:RefreshInventory()
-                end
+                if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
                 if CUI_BagsReagent:IsVisible() and CUI_BagsReagent.RefreshInventory then
                     CUI_BagsReagent:RefreshInventory()
                 end
@@ -1160,18 +1028,14 @@ local function StartAddon()
                 CUI_Bags:RefreshInventory()
             end
             -- Sell Junk shows with the merchant (only once the Junk Marker built it)
-            if panelFrame[1] == "merchant" and CUI_Bags._junkBtn then
-                CUI_Bags:SyncHeaderIcons()
-            end
+            if panelFrame[1] == "merchant" and CUI_Bags._junkBtn then CUI_Bags:SyncHeaderIcons() end
             return
         end
         if eventName == "EQUIPMENT_SETS_CHANGED" then
             -- Invalidate even while hidden: the next open must not classify with
             -- categories built from the old set list.
             CUI_Bags.InvalidateSetCategories()
-            if CUI_Bags:IsVisible() then
-                QueueRefresh()
-            end
+            if CUI_Bags:IsVisible() then QueueRefresh() end
             return
         end
         if
@@ -1182,44 +1046,28 @@ local function StartAddon()
             -- A keystone downgrade here doesn't need a hidden-side invalidation:
             -- the next manual open already forces a full RefreshInventory
             -- (ToggleCUI). This only matters while bags are already visible.
-            if CUI_Bags:IsVisible() then
-                QueueRefresh()
-            end
+            if CUI_Bags:IsVisible() then QueueRefresh() end
             return
         end
         if eventName == "BAG_UPDATE" and CUI_Bags.refreshEnabled ~= false and not _detectQueued then
             _detectQueued = true
             C_Timer.After(0, _DetectFlush)
         end
-        if not CUI_Bags:IsVisible() then
-            return
-        end
+        if not CUI_Bags:IsVisible() then return end
         if eventName == "BAG_UPDATE" or eventName == "BAG_UPDATE_DELAYED" then
             if eventName == "BAG_UPDATE_DELAYED" then
                 -- Equipped bag icons settle with the batch (bag equip / unequip)
-                if CUI_BagsWindow:IsVisible() then
-                    CUI_BagsWindow:RefreshBags()
-                end
+                if CUI_BagsWindow:IsVisible() then CUI_BagsWindow:RefreshBags() end
                 -- A refresh the batch's own BAG_UPDATE armed already lands after
                 -- it; re-arming would mark every single change as a burst.
-                if refreshPending then
-                    return
-                end
+                if refreshPending then return end
             end
-            if not CUI_Bags.refreshEnabled then
-                return
-            end
-            if CUI_Bags._unlockSort then
-                CUI_Bags._unlockSort()
-            end
+            if not CUI_Bags.refreshEnabled then return end
+            if CUI_Bags._unlockSort then CUI_Bags._unlockSort() end
             QueueRefresh()
         elseif eventName == "ITEM_LOCK_CHANGED" then
-            if not CUI_Bags.refreshEnabled then
-                return
-            end
-            if CUI_Bags._unlockSort then
-                CUI_Bags._unlockSort()
-            end
+            if not CUI_Bags.refreshEnabled then return end
+            if CUI_Bags._unlockSort then CUI_Bags._unlockSort() end
             QueueRefresh()
         elseif eventName == "CURRENCY_DISPLAY_UPDATE" then
             SyncBagFrameToFooter()
@@ -1237,18 +1085,12 @@ local function StartAddon()
         -- The select modes (pin, assign, Junk Marker) end with the bags: their
         -- click catchers cover the screen (a real close only, not a hidden UI)
         if not CUI_Bags:IsShown() then
-            if CUI_Bags._pinSelectMode then
-                ExitPinSelectMode()
-            end
-            if CUI_Bags._assignSelectMode then
-                ExitAssignSelectMode()
-            end
+            if CUI_Bags._pinSelectMode then ExitPinSelectMode() end
+            if CUI_Bags._assignSelectMode then ExitAssignSelectMode() end
         end
         -- Controller cursor: a Back press or a bank close hides the bags
         -- alone, so the detached reagent window goes with them.
-        if CUI.PadInUse() and not CUI_Bags:IsShown() then
-            CUI_BagsReagent:Hide()
-        end
+        if CUI.PadInUse() and not CUI_Bags:IsShown() then CUI_BagsReagent:Hide() end
     end)
 
     CludesUI.RegisterEscapeClose(CUI_Bags)
@@ -1261,9 +1103,7 @@ end
 -- runs in this frame's own handler (its own script budget); whatever it leaves is built at
 -- PLAYER_ENTERING_WORLD, still behind the loading screen, then at combat end.
 local WINDOW_WARM_MS = 40
-local function ReleaseStaleSortMute()
-    CludesUI.ReleaseStaleHold("Sound_EnableSFX", "CludesUIBags")
-end
+local function ReleaseStaleSortMute() CludesUI.ReleaseStaleHold("Sound_EnableSFX", "CludesUIBags") end
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function(self, eventName)
@@ -1304,9 +1144,7 @@ end)
 -------------------------------------------------------------------------------
 --  Shared with CludesUIBags_Grid.lua (loads after this file)
 -------------------------------------------------------------------------------
-function mod.GetSelection()
-    return selectedCategoryIndex, selectedGroupName
-end
+function mod.GetSelection() return selectedCategoryIndex, selectedGroupName end
 function mod.SetSelection(position, set)
     SetSelectedCategoryIndex(position)
     SetSelectedGroupName(set)
@@ -1329,12 +1167,8 @@ function mod.RecentCompare(a, b)
     local rec = CUI_Bags._recentItems
     local ra = (a.info and rec[a.info.itemID]) or 0
     local rb = (b.info and rec[b.info.itemID]) or 0
-    if ra ~= rb then
-        return ra > rb
-    end
-    if a.bag ~= b.bag then
-        return a.bag < b.bag
-    end
+    if ra ~= rb then return ra > rb end
+    if a.bag ~= b.bag then return a.bag < b.bag end
     return a.slot < b.slot
 end
 mod.VisualSortCompare = VisualSortCompare

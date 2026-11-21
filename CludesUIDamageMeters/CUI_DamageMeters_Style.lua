@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Style.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -52,9 +48,7 @@ function mod.DMStyle()
     if val == nil then
         local skinData = _G._CUDM_DB
         local dm = skinData and skinData.profile and skinData.profile.dm
-        if not dm then
-            return "cui"
-        end
+        if not dm then return "cui" end
         val = (dm.useClassicStyle and "classic") or (dm.useBlizzardStyle and "blizzard") or "cui"
         mod._dmStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it: the
@@ -72,26 +66,18 @@ function mod.DMStyle()
 end
 -- Stock-art mode: true for both stock styles (what they share: no CUI window
 -- or bar borders, no header bottom border).
-function mod.DMBlizz()
-    return mod.DMStyle() ~= "cui"
-end
-function mod.DMClassic()
-    return mod.DMStyle() == "classic"
-end
+function mod.DMBlizz() return mod.DMStyle() ~= "cui" end
+function mod.DMClassic() return mod.DMStyle() == "classic" end
 -- WoW Forever variant: DMStyle() still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces. False off Forever.
 function mod.DMForever()
-    if mod._dmStyle == nil then
-        mod.DMStyle()
-    end
+    if mod._dmStyle == nil then mod.DMStyle() end
     return mod._dmForever == true
 end
 -- The WoW Forever windows' Border Style this session: "slim", "textured" or
 -- "heavy" (latched with the look). Nil everywhere else.
 function mod.DMFvKind()
-    if mod._dmStyle == nil then
-        mod.DMStyle()
-    end
+    if mod._dmStyle == nil then mod.DMStyle() end
     return mod._dmFvKind
 end
 -- The same kind for another addon's window that wears these windows' frame
@@ -105,9 +91,7 @@ end
 -- The WoW Forever windows wear the heavy bronze frame this session (Border
 -- Style Heavy Bronze). False everywhere else.
 function mod.DMFvHeavy()
-    if mod._dmStyle == nil then
-        mod.DMStyle()
-    end
+    if mod._dmStyle == nil then mod.DMStyle() end
     return mod._dmFvHeavy == true
 end
 -- Profiles (ProfileChangesStyle's `extra`, handed the incoming dm table):
@@ -134,9 +118,7 @@ end
 -- profile that arrived with the flag already set (an import, an older
 -- build).
 function mod.DMSeedClassic(profile)
-    if profile.classicSeeded then
-        return
-    end
+    if profile.classicSeeded then return end
     profile.classicSeeded = true
     profile.bgR, profile.bgG, profile.bgB = 16 / 255, 16 / 255, 16 / 255
     profile.barTexture = "blizzard"
@@ -243,9 +225,7 @@ function mod.DMHdrArt(key)
     local style = mod.DMStyle()
     local set = mod.DM_HDR_ART[mod._dmForever and "forever" or style]
     local art = set and set[key] or nil
-    if art and art.atlas and not mod.DMFvAtlas(art.atlas) then
-        return nil
-    end
+    if art and art.atlas and not mod.DMFvAtlas(art.atlas) then return nil end
     return art
 end
 -- Header button size for a config (the Icon Size setting; the Spell History
@@ -255,21 +235,13 @@ end
 -- margin is in the file).
 function mod.DMHdrIconSize(conf)
     local sz = (conf and conf.hdrIconSize) or 22
-    if mod.DMStyle() == "classic" then
-        sz = math.floor(sz * mod.DM_HDR_CLASSIC_SCALE + 0.5)
-    end
-    if mod._dmForever then
-        sz = math.floor(sz * mod.DM_FV.btnScale + 0.5)
-    end
+    if mod.DMStyle() == "classic" then sz = math.floor(sz * mod.DM_HDR_CLASSIC_SCALE + 0.5) end
+    if mod._dmForever then sz = math.floor(sz * mod.DM_FV.btnScale + 0.5) end
     return sz
 end
 function mod.DMHdrIconPad()
-    if mod.DMStyle() == "classic" then
-        return mod.DM_HDR_CLASSIC_PAD
-    end
-    if mod._dmForever then
-        return mod.DM_FV.btnPad
-    end
+    if mod.DMStyle() == "classic" then return mod.DM_HDR_CLASSIC_PAD end
+    if mod._dmForever then return mod.DM_FV.btnPad end
     return -2
 end
 -- Seats a header icon texture in its button: full-bleed, or inset to its
@@ -311,9 +283,7 @@ function mod.DMApplyHdrArt(texture, art)
     else
         texture:SetVertexColor(k, k, k, 1)
     end
-    if art.plate or texture._fvPlate then
-        mod.DMFvPlate(texture, false)
-    end
+    if art.plate or texture._fvPlate then mod.DMFvPlate(texture, false) end
     mod.DMSeatHdrArt(texture)
 end
 -- Paints a header key's stock art on a texture; false when the key keeps
@@ -322,9 +292,7 @@ function mod.DMPaintHdrArt(texture, key)
     local art = mod.DMHdrArt(key)
     if not art then
         texture._hdrArt = nil
-        if texture._fvPlate then
-            texture._fvPlate:Hide()
-        end
+        if texture._fvPlate then texture._fvPlate:Hide() end
         return false
     end
     mod.DMApplyHdrArt(texture, art)
@@ -335,21 +303,15 @@ end
 -- glyph, whose tint the caller owns.
 function mod.DMHdrHover(texture, hover, dimmed)
     local art = texture._hdrArt
-    if not art then
-        return false
-    end
-    if art.hover then
-        texture:SetAtlas(hover and art.hover or art.atlas)
-    end
+    if not art then return false end
+    if art.hover then texture:SetAtlas(hover and art.hover or art.atlas) end
     local k, c = hover and mod.DM_HDR_HOVER or mod.DM_HDR_IDLE, art.tint
     if c then
         texture:SetVertexColor(c[1] * k, c[2] * k, c[3] * k, dimmed and 0.5 or 1)
     else
         texture:SetVertexColor(k, k, k, dimmed and 0.5 or 1)
     end
-    if art.plate then
-        mod.DMFvPlate(texture, hover)
-    end
+    if art.plate then mod.DMFvPlate(texture, hover) end
     return true
 end
 -- The mode button's icon for a meter type: the vanilla spell icon under
@@ -390,9 +352,7 @@ end
 function mod.DMPaintHeaderBg(texture, red, green, blue, a, winR, winG, winB)
     local style = mod.DMStyle()
     if style == "blizzard" then
-        if mod._dmForever and mod.DMFvHeader(texture, a) then
-            return
-        end
+        if mod._dmForever and mod.DMFvHeader(texture, a) then return end
         texture:SetAtlas(mod.DM_BLIZZ_HEADER)
         texture:SetVertexColor(1, 1, 1, a)
     elseif style == "classic" then
@@ -441,9 +401,7 @@ function mod.DMClassicEdge(window, e)
         local tex = window:CreateTexture(nil, "BORDER")
         tex:SetTexture(mod.DM_CLASSIC_EDGE)
         tex:SetTexCoord(specInfo[2], specInfo[3], specInfo[4], specInfo[5])
-        if index <= 4 then
-            tex:SetSize(e, e)
-        end
+        if index <= 4 then tex:SetSize(e, e) end
         p[specInfo[1]] = tex
     end
     -- Inside the window's rect: the rim sits two pixels in from the edge,
@@ -498,15 +456,9 @@ end
 -- the heavy frame's band), zero on every other look so the anchors below are
 -- exactly what they were.
 function mod.DMClassicInset()
-    if mod.DMClassic() then
-        return mod.DM_CLASSIC_INSET
-    end
-    if mod._dmFvHeavy then
-        return mod.DM_FV.heavyInset
-    end
-    if mod._dmForever and CUI.ForeverBorderOK() then
-        return mod.DM_FV.inset
-    end
+    if mod.DMClassic() then return mod.DM_CLASSIC_INSET end
+    if mod._dmFvHeavy then return mod.DM_FV.heavyInset end
+    if mod._dmForever and CUI.ForeverBorderOK() then return mod.DM_FV.inset end
     return 0
 end
 -- The header's bottom line under Classic WoW UI: one hairline (h = the
@@ -514,9 +466,7 @@ end
 -- rim), whatever the header border setting says (that line is an CUI-look
 -- control). Returns true when it painted.
 function mod.DMClassicSeparator(texture, hgt)
-    if not mod.DMClassic() then
-        return false
-    end
+    if not mod.DMClassic() then return false end
     texture:SetHeight(hgt)
     texture:SetColorTexture(0.41, 0.41, 0.41, 1)
     texture:Show()
@@ -561,9 +511,7 @@ function mod.DMPaintWindowBg(texture, red, green, blue, a, edged, texKey)
         mod.DMPaintClassicBg(texture, red, green, blue, a, edged)
         return
     end
-    if mod._dmForever and mod.DMPaintForeverBg(texture, a, edged) then
-        return
-    end
+    if mod._dmForever and mod.DMPaintForeverBg(texture, a, edged) then return end
     local parts = texture._blizzParts
     if not parts then
         local hostFrame = texture:GetParent()
@@ -631,16 +579,10 @@ function mod.DMApplyBlizzFill(fillTex)
     -- A bar carrying secret values (the tooltip preview rows in combat)
     -- reports a secret height; the last plain height stands in, then the
     -- row default, so nothing here ever compares a secret.
-    if issecretvalue and issecretvalue(hgt) then
-        hgt = sh._h or 18
-    end
+    if issecretvalue and issecretvalue(hgt) then hgt = sh._h or 18 end
     hgt = hgt or 0
-    if hgt <= 0 then
-        hgt = 18
-    end
-    if not ft or (sh._tex == ft and sh._h == hgt) then
-        return
-    end
+    if hgt <= 0 then hgt = 18 end
+    if not ft or (sh._tex == ft and sh._h == hgt) then return end
     sh._tex, sh._h = ft, hgt
     local topY, bottom, ends =
         math.max(2, math.floor(hgt * 0.2)),
@@ -673,12 +615,8 @@ end
 -- texture, not frame art).
 function mod.DMApplyBlizzBarBg(barFrame)
     local backdrop = barFrame._bg
-    if not backdrop or not barFrame.fill then
-        return
-    end
-    if barFrame._blizzBgOn then
-        return
-    end
+    if not backdrop or not barFrame.fill then return end
+    if barFrame._blizzBgOn then return end
     barFrame._blizzBgOn = true
     backdrop:SetAtlas(mod.DM_BLIZZ_BAR_BG)
     backdrop:SetVertexColor(1, 1, 1, 1)
@@ -772,9 +710,7 @@ end
 -- `outside`, its rim and dark line past it. Nil off the variant or where the
 -- frame cannot be drawn.
 function mod.DMFvFrameArt(ownerFrame, outside)
-    if ownerFrame._fvRim then
-        return ownerFrame._fvRim
-    end
+    if ownerFrame._fvRim then return ownerFrame._fvRim end
     if mod.DMFvHeavy() then
         local H = CUI.FOREVER_HEAVY
         local owner = CreateFrame("Frame", nil, ownerFrame)
@@ -786,9 +722,7 @@ function mod.DMFvFrameArt(ownerFrame, outside)
         ownerFrame._fvRim = owner
         return owner
     end
-    if not (mod.DMForever() and CUI.ForeverBorderOK()) then
-        return nil
-    end
+    if not (mod.DMForever() and CUI.ForeverBorderOK()) then return nil end
     local owner = CreateFrame("Frame", nil, ownerFrame)
     owner:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
     owner:SetAllPoints(ownerFrame)
@@ -814,9 +748,7 @@ end
 -- window) nothing: the window's body stays up behind it. False where the
 -- frame cannot be drawn (the caller paints plain Blizzard Style).
 function mod.DMPaintForeverBg(texture, a, edged)
-    if not CUI.ForeverBorderOK() then
-        return false
-    end
+    if not CUI.ForeverBorderOK() then return false end
     local heavy = mod._dmFvHeavy
     if not edged then
         texture:SetTexture(nil)
@@ -848,9 +780,7 @@ end
 function mod.DMFvHeader(texture, a)
     if not texture._fvHdr then
         local FV = mod.DM_FV
-        if not (CUI.ForeverBorderOK() and mod.DMFvAtlas(FV.header)) then
-            return false
-        end
+        if not (CUI.ForeverBorderOK() and mod.DMFvAtlas(FV.header)) then return false end
         local details = C_Texture.GetAtlasInfo(FV.header)
         local l, t = details.leftTexCoord, details.topTexCoord
         local wid, hgt = details.rightTexCoord - l, details.bottomTexCoord - t
@@ -869,20 +799,14 @@ end
 -- rod and its shadow, below the band's body); 0 off the variant or without
 -- the art (the same gates as ns.DMFvHeader).
 function mod.DMFvRail(hgt)
-    if not mod.DMForever() then
-        return 0
-    end
+    if not mod.DMForever() then return 0 end
     local FV = mod.DM_FV
-    if not (CUI.ForeverBorderOK() and mod.DMFvAtlas(FV.header)) then
-        return 0
-    end
+    if not (CUI.ForeverBorderOK() and mod.DMFvAtlas(FV.header)) then return 0 end
     return math.floor(hgt * FV.hdrRail + 0.5)
 end
 -- How far a header's title and buttons rise to centre on the band's body
 -- (h = the header's own height setting; nil = the meter's Header Height).
-function mod.DMHdrLift(hgt)
-    return mod.DMFvRail(hgt or DB().hdrHeight or 22) / 2
-end
+function mod.DMHdrLift(hgt) return mod.DMFvRail(hgt or DB().hdrHeight or 22) / 2 end
 -- A header glyph's square plate (Forever's button art, normal or hover)
 -- under the glyph on its button, built once; hidden when the texture's art
 -- entry carries none or the client lacks the art.
@@ -890,9 +814,7 @@ function mod.DMFvPlate(texture, hover)
     local FV, art, backing = mod.DM_FV, texture._hdrArt, texture._fvPlate
     local enabled = art and art.plate and mod.DMFvAtlas(FV.plate) and mod.DMFvAtlas(FV.plateHover)
     if not backing then
-        if not enabled then
-            return
-        end
+        if not enabled then return end
         local button = texture:GetParent()
         backing = button:CreateTexture(nil, "BACKGROUND")
         backing:SetAllPoints(button)
@@ -915,9 +837,7 @@ end
 -- off the variant or without the art.
 function mod.DMFvMenuArt(frame, backdrop)
     local atlas = mod.DM_FV.menu
-    if not (mod.DMForever() and mod.DMFvAtlas(atlas)) then
-        return false
-    end
+    if not (mod.DMForever() and mod.DMFvAtlas(atlas)) then return false end
     local tex = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
     tex:SetAtlas(atlas)
     tex:SetPoint("TOPLEFT", frame, "TOPLEFT", -10, 7)
@@ -931,9 +851,7 @@ end
 -- "hover" | "selected"), `a` its opacity (the add button reads fainter).
 -- False off the variant or without the art (the caller paints its colour).
 function mod.DMFvCard(texture, status, a)
-    if not mod._dmForever then
-        return false
-    end
+    if not mod._dmForever then return false end
     local C = mod.DM_FV.card
     if not (mod.DMFvAtlas(C.normal) and mod.DMFvAtlas(C.hover) and mod.DMFvAtlas(C.selected)) then
         return false
@@ -952,9 +870,7 @@ end
 -- (read only under the variant).
 function mod.DMFvHdrArtSet()
     local tint = mod.DM_FV.glyph
-    local function G(file)
-        return { file = file, tint = tint, plate = true }
-    end
+    local function G(file) return { file = file, tint = tint, plate = true } end
     local types = {}
     for dmType, file in pairs(DM_TYPE_ICONS) do
         types[dmType] = G(file)
@@ -971,8 +887,6 @@ function mod.DMFvHdrArtSet()
         types = types,
     }
 end
-if CludesUI.IS_FOREVER then
-    mod.DM_HDR_ART.forever = mod.DMFvHdrArtSet()
-end
+if CludesUI.IS_FOREVER then mod.DM_HDR_ART.forever = mod.DMFvHdrArtSet() end
 
 Inner.broken = false

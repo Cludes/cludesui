@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_MythicTimer_Options.lua  --  Settings pages for Mythic+ Tools
 --  (Mythic+ Timer / Kick Tracker / Cast Bars / Target & Focus Bars / Run Summary)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIMythicTimer"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local PAGE_DISPLAY = "Mythic+ Timer"
 -- The page keeps its identity (search alias, links, remembered page); its tab
@@ -26,21 +22,14 @@ local PAGE_KT = "Kick Tracker"
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- A length on a frame's physical pixel grid (onePx: one pixel in its units).
-local function PvSnap(value, onePx)
-    return math.floor(value / onePx + 0.5) * onePx
-end
+local function PvSnap(value, onePx) return math.floor(value / onePx + 0.5) * onePx end
 
 CludesUI.AtOptionsLogin(function()
-
     local saved
-    C_Timer.After(0, function()
-        saved = _G._CUMT_AceDB
-    end)
+    C_Timer.After(0, function() saved = _G._CUMT_AceDB end)
 
     local function DB()
-        if not saved then
-            saved = _G._CUMT_AceDB
-        end
+        if not saved then saved = _G._CUMT_AceDB end
         return saved and saved.profile
     end
 
@@ -51,68 +40,48 @@ CludesUI.AtOptionsLogin(function()
 
     local function Set(key, val)
         local profile = DB()
-        if profile then
-            profile[key] = val
-        end
+        if profile then profile[key] = val end
     end
 
     -- Advanced-mode toggle removed: every option is always shown so the
     -- page can be trimmed deliberately. Guard kept as a stub so existing
     -- "if IsAdvanced() then ... end" blocks render unconditionally.
-    local function IsAdvanced()
-        return true
-    end
+    local function IsAdvanced() return true end
 
     local function ApplyTimer()
-        if _G._CUMT_ApplyTimer then
-            _G._CUMT_ApplyTimer()
-        end
+        if _G._CUMT_ApplyTimer then _G._CUMT_ApplyTimer() end
         CludesUI:RefreshPage()
     end
 
     local function RebuildPage()
-        if _G._CUMT_ApplyTimer then
-            _G._CUMT_ApplyTimer()
-        end
+        if _G._CUMT_ApplyTimer then _G._CUMT_ApplyTimer() end
         CludesUI:RefreshPage(true)
     end
 
     -- One-line stand-ins for the closures the Mythic+ Timer rows repeat.
     -- The timer as a whole switched off.
-    local function ModOff()
-        return TimerCfg("enabled") == false
-    end
+    local function ModOff() return TimerCfg("enabled") == false end
     -- The timer, or the switch named by key, turned off.
     local function OffWith(key)
-        return function()
-            return TimerCfg("enabled") == false or TimerCfg(key) == false
-        end
+        return function() return TimerCfg("enabled") == false or TimerCfg(key) == false end
     end
     -- The stored value, else def.
     local function Or(key, def)
-        return function()
-            return TimerCfg(key) or def
-        end
+        return function() return TimerCfg(key) or def end
     end
     -- A switch read as on until turned off / off until turned on.
     local function NotOff(key)
-        return function()
-            return TimerCfg(key) ~= false
-        end
+        return function() return TimerCfg(key) ~= false end
     end
     local function IsTrue(key)
-        return function()
-            return TimerCfg(key) == true
-        end
+        return function() return TimerCfg(key) == true end
     end
     -- Stores the value and re-applies the timer; repaint also redraws the page.
     local function Keep(key, repaint)
         return function(value)
             Set(key, value)
             ApplyTimer()
-            if repaint then
-                CludesUI:RefreshPage()
-            end
+            if repaint then CludesUI:RefreshPage() end
         end
     end
 
@@ -134,9 +103,7 @@ CludesUI.AtOptionsLogin(function()
     local PV_PAD_Y = 20 -- header px kept clear above and below the block
     local PV_MIN_H = 80
 
-    local function PvNewState()
-        return { cols = {} }
-    end
+    local function PvNewState() return { cols = {} } end
 
     -- Paints one column at the state's scale and fits it to colW (header
     -- px). It is painted at the previous fit first so its pixel snaps read
@@ -154,9 +121,7 @@ CludesUI.AtOptionsLogin(function()
             return nil
         end
         local want = 1
-        if not col.def.noFit then
-            want = math.min(1, colW / (w * st.scale))
-        end
+        if not col.def.noFit then want = math.min(1, colW / (w * st.scale)) end
         if math.abs(want - fit) > 0.001 then
             fit = want
             host:SetScale(st.scale * fit)
@@ -190,9 +155,7 @@ CludesUI.AtOptionsLogin(function()
     -- takes the height as its return value instead of having it written.
     local function PvUpdate(st, building)
         local heading = st.hdr
-        if not heading then
-            return 0
-        end
+        if not heading then return 0 end
         local width = st.hdrW or heading:GetWidth()
         -- A sample renders at UIParent's scale, not the panel's.
         st.scale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
@@ -201,9 +164,7 @@ CludesUI.AtOptionsLogin(function()
         local colW = (width - 2 * CludesUI.CONTENT_PAD) / num
         local shown, tallest = 0, 0
         for _, col in ipairs(cols) do
-            if col.host:GetParent() ~= heading then
-                col.host:SetParent(heading)
-            end
+            if col.host:GetParent() ~= heading then col.host:SetParent(heading) end
             local h = PvPaintColumn(st, col, colW)
             if h then
                 shown = shown + 1
@@ -213,9 +174,7 @@ CludesUI.AtOptionsLogin(function()
         -- The title line and the tallest sample, centred as one block.
         local blockH = tallest + PV_TITLE_H
         for idx, col in ipairs(cols) do
-            if col.w then
-                PvPlaceColumn(st, col, idx, num, colW, blockH)
-            end
+            if col.w then PvPlaceColumn(st, col, idx, num, colW, blockH) end
         end
         local H = shown > 0 and math.max(PV_MIN_H, math.ceil(blockH + 2 * PV_PAD_Y)) or 0
         st.baseH = H
@@ -224,9 +183,7 @@ CludesUI.AtOptionsLogin(function()
             -- the header), and only when it moves by half a physical pixel.
             local es = heading:GetEffectiveScale()
             local px = es > 0 and CludesUI.PP.perfect / es or 1
-            if math.abs(heading:GetHeight() - H) >= px * 0.5 then
-                CludesUI:SetContentHeaderHeightSilent(H)
-            end
+            if math.abs(heading:GetHeight() - H) >= px * 0.5 then CludesUI:SetContentHeaderHeightSilent(H) end
         end
         return H
     end
@@ -261,9 +218,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- After a write on the page: repaint its preview if it is on screen.
     local function PvRepaint(st)
-        if st.hdr and st.hdr:IsVisible() then
-            PvUpdate(st, false)
-        end
+        if st.hdr and st.hdr:IsVisible() then PvUpdate(st, false) end
     end
 
     local tsbPv, tfbPv = PvNewState(), PvNewState()
@@ -275,9 +230,7 @@ CludesUI.AtOptionsLogin(function()
     -- drawn over its own texture.
     local function BuildBarTexDropdown()
         local appendMedia = mod.AppendSharedMediaBarTextures
-        if appendMedia then
-            appendMedia()
-        end
+        if appendMedia then appendMedia() end
         local names, files = mod.barTextureNames or {}, mod.barTextures or {}
         local labels, keys = {}, {}
         for _, key in ipairs(mod.barTextureOrder or {}) do
@@ -288,9 +241,7 @@ CludesUI.AtOptionsLogin(function()
         end
         labels._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return files[key]
-            end,
+            background = function(key) return files[key] end,
         }
         return labels, keys
     end
@@ -301,9 +252,7 @@ CludesUI.AtOptionsLogin(function()
         Set("showPreview", value)
         ApplyTimer()
         local suppress = _G._CUQT_SetSuppressed
-        if suppress then
-            suppress("MTimerPreview", value == true)
-        end
+        if suppress then suppress("MTimerPreview", value == true) end
     end
 
     -- Closing the settings window ends the sample run. Hooked once, on the
@@ -313,9 +262,7 @@ CludesUI.AtOptionsLogin(function()
         if panel and not panel._eMTPreviewHook then
             panel._eMTPreviewHook = true
             panel:HookScript("OnHide", function()
-                if TimerCfg("showPreview") ~= true then
-                    return
-                end
+                if TimerCfg("showPreview") ~= true then return end
                 _setPreview(false)
                 CludesUI:RefreshPage() -- the toggle shows off at once
             end)
@@ -329,15 +276,11 @@ CludesUI.AtOptionsLogin(function()
         local cursorY = yOffset
         local _, row, height, heading
 
-        if CludesUI.ClearContentHeader then
-            CludesUI:ClearContentHeader()
-        end
+        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         local function ApplyTimerBorder()
-            if mod.ApplyBorder then
-                mod.ApplyBorder()
-            end
+            if mod.ApplyBorder then mod.ApplyBorder() end
         end
 
         -- Inline swatches sit left of a DualRow region's control, each one
@@ -353,23 +296,17 @@ CludesUI.AtOptionsLogin(function()
             local cover = CludesUI.NewSwatchBlocker(sw)
             cover:SetScript("OnEnter", function()
                 local text = tip
-                if type(text) == "function" then
-                    text = text()
-                end
+                if type(text) == "function" then text = text() end
                 CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(text or "the module"))
             end)
-            cover:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            cover:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             return cover
         end
         -- A colour stored as { r, g, b } under key, def* for what is unset.
         local function StoredRgb(key, defR, defG, defB)
             return function()
                 local color = TimerCfg(key)
-                if not color then
-                    return defR, defG, defB, 1
-                end
+                if not color then return defR, defG, defB, 1 end
                 return color.r or defR, color.g or defG, color.b or defB, 1
             end
         end
@@ -431,9 +368,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = NotOff("enabled"),
             setValue = function(value)
                 Set("enabled", value and true or false)
-                if not value and TimerCfg("showPreview") == true then
-                    _setPreview(false)
-                end
+                if not value and TimerCfg("showPreview") == true then _setPreview(false) end
                 ApplyTimer()
             end,
         }, {
@@ -446,9 +381,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("alignAllText", "RIGHT"),
             setValue = function(value)
                 Set("alignAllText", value)
-                if _G._CUMT_RebuildStandalone then
-                    _G._CUMT_RebuildStandalone()
-                end
+                if _G._CUMT_RebuildStandalone then _G._CUMT_RebuildStandalone() end
                 ApplyTimer()
             end,
         })
@@ -467,9 +400,7 @@ CludesUI.AtOptionsLogin(function()
             glyph:SetAllPoints()
             local TIP = { width = 175 }
             -- Resting strength: faint while the timer is off.
-            local function Rest(button)
-                CludesUI.SetGlyphAlpha(button, ModOff() and 0.15 or 0.4)
-            end
+            local function Rest(button) CludesUI.SetGlyphAlpha(button, ModOff() and 0.15 or 0.4) end
             local function Paint()
                 -- The icon files are named backwards: EYE_INVISIBLE_ICON draws the open eye.
                 local open = TimerCfg("showPreview") == true
@@ -521,9 +452,7 @@ CludesUI.AtOptionsLogin(function()
             step = 5,
             isPercent = false,
             -- Stored 0..1 internally; displayed 0..100 to the user.
-            getValue = function()
-                return (TimerCfg("standaloneAlpha") or 0) * 100
-            end,
+            getValue = function() return (TimerCfg("standaloneAlpha") or 0) * 100 end,
             setValue = function(value)
                 Set("standaloneAlpha", value / 100)
                 ApplyTimer()
@@ -557,12 +486,11 @@ CludesUI.AtOptionsLogin(function()
         -- Bar Width and the border apply to the timer bar and the forces bar alike,
         -- so they stay usable while either bar is shown.
         local function _barsOff()
-            return TimerCfg("enabled") == false or (TimerCfg("showTimerBar") == false and TimerCfg("showEnemyBar") == false)
+            return TimerCfg("enabled") == false
+                or (TimerCfg("showTimerBar") == false and TimerCfg("showEnemyBar") == false)
         end
         local function _barsReq()
-            if TimerCfg("enabled") == false then
-                return "the module"
-            end
+            if TimerCfg("enabled") == false then return "the module" end
             return "This option requires Show Timer Bar or Show Enemy Forces to be enabled"
         end
 
@@ -600,32 +528,25 @@ CludesUI.AtOptionsLogin(function()
             -- on, which takes Apply to Forces Bar. The Border Options cog holds
             -- that switch, so it stays usable either way.
             local function _borderOff()
-                return _barsOff() or (TimerCfg("showTimerBar") == false and TimerCfg("borderApplyToForces") == false)
+                return _barsOff()
+                    or (TimerCfg("showTimerBar") == false and TimerCfg("borderApplyToForces") == false)
             end
             local function _borderReq()
-                if _barsOff() then
-                    return _barsReq()
-                end
+                if _barsOff() then return _barsReq() end
                 return "This option requires Show Timer Bar or Apply to Forces Bar to be enabled"
             end
             local function Raw(key)
-                return function()
-                    return TimerCfg(key)
-                end
+                return function() return TimerCfg(key) end
             end
             local function Quiet(key)
-                return function(value)
-                    Set(key, value)
-                end
+                return function(value) Set(key, value) end
             end
             -- Named apart from texValues/texOrder (the bar texture lists) on
             -- purpose: a mix-up once wrote a border key into barTexture.
             local borderTexValues, borderTexOrder = CludesUI.GetBorderTextureDropdown()
             borderTexValues.shadow = nil
             for idx = #borderTexOrder, 1, -1 do
-                if borderTexOrder[idx] == "shadow" then
-                    table.remove(borderTexOrder, idx)
-                end
+                if borderTexOrder[idx] == "shadow" then table.remove(borderTexOrder, idx) end
             end
             local BLACK, WHITE = { r = 0, g = 0, b = 0 }, { r = 1, g = 1, b = 1 }
 
@@ -654,18 +575,16 @@ CludesUI.AtOptionsLogin(function()
                         }) do
                             Set(key, nil)
                         end
-                        local col = CludesUI.GetBorderSelectColor(value) or (value ~= "solid" and WHITE) or BLACK
+                        local col = CludesUI.GetBorderSelectColor(value)
+                            or (value ~= "solid" and WHITE)
+                            or BLACK
                         Set("borderR", col.r)
                         Set("borderG", col.g)
                         Set("borderB", col.b)
                         Set("borderA", 1)
                         local size = CludesUI.GetBorderDefaultSize("MythicPlus", value)
-                        if size then
-                            Set("borderSize", size)
-                        end
-                        if TimerCfg("borderSizePx") then
-                            Set("borderSizePx", false)
-                        end
+                        if size then Set("borderSize", size) end
+                        if TimerCfg("borderSizePx") then Set("borderSizePx", false) end
                         ApplyTimerBorder()
                         CludesUI:RefreshPage(true)
                     end,
@@ -722,9 +641,7 @@ CludesUI.AtOptionsLogin(function()
                         step = 1,
                         get = function()
                             local value = TimerCfg(key)
-                            if value then
-                                return value
-                            end
+                            if value then return value end
                             return (
                                 select(
                                     slot,
@@ -768,15 +685,25 @@ CludesUI.AtOptionsLogin(function()
                 -- The border colour, left of the Border Size control.
                 local right = bsRow._rightRegion
                 local anchor = right._control
-                local sw, repaint = CludesUI.BuildColorSwatch(right, right:GetFrameLevel() + 3, function()
-                    return TimerCfg("borderR") or 0, TimerCfg("borderG") or 0, TimerCfg("borderB") or 0, TimerCfg("borderA") or 1
-                end, function(red, green, blue, a)
-                    Set("borderR", red)
-                    Set("borderG", green)
-                    Set("borderB", blue)
-                    Set("borderA", a)
-                    ApplyTimerBorder()
-                end, true, 20)
+                local sw, repaint = CludesUI.BuildColorSwatch(
+                    right,
+                    right:GetFrameLevel() + 3,
+                    function()
+                        return TimerCfg("borderR") or 0,
+                            TimerCfg("borderG") or 0,
+                            TimerCfg("borderB") or 0,
+                            TimerCfg("borderA") or 1
+                    end,
+                    function(red, green, blue, a)
+                        Set("borderR", red)
+                        Set("borderG", green)
+                        Set("borderB", blue)
+                        Set("borderA", a)
+                        ApplyTimerBorder()
+                    end,
+                    true,
+                    20
+                )
                 Pix.Point(sw, "RIGHT", anchor, "LEFT", -8, 0)
                 local cover = Cover(sw, _borderReq)
                 local function Sync()
@@ -808,9 +735,7 @@ CludesUI.AtOptionsLogin(function()
                 StoredRgb(colorKey, defR, defG, defB),
                 function(red, green, blue)
                     Set(colorKey, { r = red, g = green, b = blue })
-                    if afterSet then
-                        afterSet(red, green, blue)
-                    end
+                    if afterSet then afterSet(red, green, blue) end
                     ApplyTimer()
                 end,
                 false,
@@ -819,9 +744,7 @@ CludesUI.AtOptionsLogin(function()
             Chain(region, sw)
             local cover = Cover(sw, disabledTip)
             local function Sync()
-                if repaint then
-                    repaint()
-                end
+                if repaint then repaint() end
                 local off = isDisabled and isDisabled()
                 sw:SetAlpha(off and 0.3 or 1)
                 cover:SetShown(off and true or false)
@@ -870,9 +793,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 18
             )
-            accent:SetScript("OnClick", function()
-                Follow(true)
-            end)
+            accent:SetScript("OnClick", function() Follow(true) end)
             Chain(region, accent)
 
             local custom, repaintCustom = CludesUI.BuildColorSwatch(
@@ -899,22 +820,14 @@ CludesUI.AtOptionsLogin(function()
             -- Hover names the colour; the cover takes over while unavailable.
             for _, pair in ipairs({ { accent, followTip or "Accent Color" }, { custom, "Custom Color" } }) do
                 local sw, name = pair[1], pair[2]
-                sw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, name)
-                end)
-                sw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                sw:HookScript("OnEnter", function() CludesUI.ShowWidgetTooltip(sw, name) end)
+                sw:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 sw._block = Cover(sw, disabledTip)
             end
 
             local function Sync()
-                if repaintAccent then
-                    repaintAccent()
-                end
-                if repaintCustom then
-                    repaintCustom()
-                end
+                if repaintAccent then repaintAccent() end
+                if repaintCustom then repaintCustom() end
                 local off = isDisabled and isDisabled()
                 local useAccent = TimerCfg(useAccentKey) ~= false
                 accent:SetAlpha(off and 0.15 or (useAccent and 1 or 0.3))
@@ -941,9 +854,7 @@ CludesUI.AtOptionsLogin(function()
         -- toggle, so name whichever is actually off.
         local function ModuleOr(noun)
             return function()
-                if TimerCfg("enabled") == false then
-                    return "the module"
-                end
+                if TimerCfg("enabled") == false then return "the module" end
                 return noun
             end
         end
@@ -1001,9 +912,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0,
                         max = 40,
                         step = 1,
-                        disabled = function()
-                            return TimerCfg("showKeyLevelOnTimer") ~= true
-                        end,
+                        disabled = function() return TimerCfg("showKeyLevelOnTimer") ~= true end,
                         disabledTooltip = "Show Key Level on Timer",
                         get = Or("keyLevelTimerSpacing", 8),
                         set = Keep("keyLevelTimerSpacing"),
@@ -1139,12 +1048,11 @@ CludesUI.AtOptionsLogin(function()
             type = "slider",
             text = "Timer Size",
             disabled = function()
-                return TimerCfg("enabled") == false or (TimerCfg("timerInBar") == true and TimerCfg("showTimerBar") ~= false)
+                return TimerCfg("enabled") == false
+                    or (TimerCfg("timerInBar") == true and TimerCfg("showTimerBar") ~= false)
             end,
             disabledTooltip = function()
-                if TimerCfg("enabled") == false then
-                    return "the module"
-                end
+                if TimerCfg("enabled") == false then return "the module" end
                 return "This option requires Move Timer Inside Bar to be disabled"
             end,
             min = 10,
@@ -1235,12 +1143,8 @@ CludesUI.AtOptionsLogin(function()
                         or TimerCfg("timerInBar") ~= true
                 end,
                 disabledTooltip = function()
-                    if TimerCfg("enabled") == false then
-                        return "the module"
-                    end
-                    if TimerCfg("showTimerBar") == false then
-                        return "Show Timer Bar"
-                    end
+                    if TimerCfg("enabled") == false then return "the module" end
+                    if TimerCfg("showTimerBar") == false then return "Show Timer Bar" end
                     return "Move Timer Inside Bar"
                 end,
             })
@@ -1313,9 +1217,7 @@ CludesUI.AtOptionsLogin(function()
             afterBarSet
         )
             local function IsTimerTextShown()
-                if showKey == "showThreshRemaining" then
-                    return TimerCfg(showKey) == true
-                end
+                if showKey == "showThreshRemaining" then return TimerCfg(showKey) == true end
                 return TimerCfg(showKey) ~= false
             end
 
@@ -1342,9 +1244,7 @@ CludesUI.AtOptionsLogin(function()
                         {
                             type = "toggle",
                             label = "White Text",
-                            get = function()
-                                return TimerCfg(whiteKey) == true
-                            end,
+                            get = function() return TimerCfg(whiteKey) == true end,
                             set = function(value)
                                 Set(whiteKey, value)
                                 ApplyTimer()
@@ -1356,9 +1256,7 @@ CludesUI.AtOptionsLogin(function()
                             min = 6,
                             max = 20,
                             step = 1,
-                            get = function()
-                                return TimerCfg(sizeKey) or TimerCfg("thresholdSize") or 12
-                            end,
+                            get = function() return TimerCfg(sizeKey) or TimerCfg("thresholdSize") or 12 end,
                             set = function(value)
                                 Set(sizeKey, value)
                                 ApplyTimer()
@@ -1393,9 +1291,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                         },
                     },
-                    disabled = function()
-                        return TimerCfg("enabled") == false or not IsTimerTextShown()
-                    end,
+                    disabled = function() return TimerCfg("enabled") == false or not IsTimerTextShown() end,
                     disabledTooltip = ModuleOr(rowConf.text),
                 })
                 -- Inline colour swatch (the +N threshold / segment colour), left of the cog
@@ -1419,9 +1315,7 @@ CludesUI.AtOptionsLogin(function()
             0.4,
             1,
             0.4,
-            function(red, green, blue)
-                Set("timerPlusThreeColor", { r = red, g = green, b = blue })
-            end
+            function(red, green, blue) Set("timerPlusThreeColor", { r = red, g = green, b = blue }) end
         )
         local p2cfg, p2attach = _ThresholdWidget(
             "+2 Threshold",
@@ -1434,9 +1328,7 @@ CludesUI.AtOptionsLogin(function()
             0.3,
             0.8,
             1,
-            function(red, green, blue)
-                Set("timerPlusTwoColor", { r = red, g = green, b = blue })
-            end
+            function(red, green, blue) Set("timerPlusTwoColor", { r = red, g = green, b = blue }) end
         )
         local p1cfg, p1attach = _ThresholdWidget(
             "+1 Threshold",
@@ -1475,9 +1367,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0,
                         max = 1,
                         step = 0.05,
-                        disabled = function()
-                            return (TimerCfg("timerBarStyle") or "TICKS") ~= "TICKS"
-                        end,
+                        disabled = function() return (TimerCfg("timerBarStyle") or "TICKS") ~= "TICKS" end,
                         disabledTooltip = "Ticks",
                         get = Or("tickAlpha", 1),
                         set = Keep("tickAlpha"),
@@ -1489,9 +1379,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0,
                         max = 12,
                         step = 1,
-                        disabled = function()
-                            return (TimerCfg("timerBarStyle") or "TICKS") ~= "SEGMENTS"
-                        end,
+                        disabled = function() return (TimerCfg("timerBarStyle") or "TICKS") ~= "SEGMENTS" end,
                         disabledTooltip = "Gaps",
                         get = Or("timerBarSegmentGap", 2),
                         set = Keep("timerBarSegmentGap"),
@@ -1500,11 +1388,20 @@ CludesUI.AtOptionsLogin(function()
                 disabled = OffWith("showTimerBar"),
                 disabledTooltip = ModuleOr("Show Timer Bar"),
             })
-            _AttachInlineSwatch(row._leftRegion, "timerTickColor", 1, 1, 1, nil, function()
-                return TimerCfg("enabled") == false
-                    or TimerCfg("showTimerBar") == false
-                    or (TimerCfg("timerBarStyle") or "TICKS") ~= "TICKS"
-            end, "Ticks")
+            _AttachInlineSwatch(
+                row._leftRegion,
+                "timerTickColor",
+                1,
+                1,
+                1,
+                nil,
+                function()
+                    return TimerCfg("enabled") == false
+                        or TimerCfg("showTimerBar") == false
+                        or (TimerCfg("timerBarStyle") or "TICKS") ~= "TICKS"
+                end,
+                "Ticks"
+            )
             p3attach(row._rightRegion)
         end
         cursorY = cursorY - height
@@ -1520,9 +1417,7 @@ CludesUI.AtOptionsLogin(function()
         _, height = W:SectionHeader(hostFrame, "FORCES", cursorY)
         cursorY = cursorY - height
 
-        local function _forcesOff()
-            return TimerCfg("enabled") == false or TimerCfg("showEnemyBar") == false
-        end
+        local function _forcesOff() return TimerCfg("enabled") == false or TimerCfg("showEnemyBar") == false end
 
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
@@ -1543,9 +1438,7 @@ CludesUI.AtOptionsLogin(function()
             -- enemyBarHeight stays unset until either height slider is changed
             -- and falls back to the timer bar height, so existing layouts keep
             -- their look.
-            getValue = function()
-                return TimerCfg("enemyBarHeight") or TimerCfg("barHeight") or 8
-            end,
+            getValue = function() return TimerCfg("enemyBarHeight") or TimerCfg("barHeight") or 8 end,
             setValue = Keep("enemyBarHeight"),
         })
         cursorY = cursorY - height
@@ -1670,26 +1563,16 @@ CludesUI.AtOptionsLogin(function()
 
         -- The pull bar's default color is the forces fill color (accent or custom).
         local function _enemyBarColor()
-            if TimerCfg("enemyBarUseAccent") ~= false then
-                return CludesUI.ResolveActiveAccent()
-            end
+            if TimerCfg("enemyBarUseAccent") ~= false then return CludesUI.ResolveActiveAccent() end
             local color = TimerCfg("enemyBarColor")
-            if color then
-                return color.r or 0.35, color.g or 0.55, color.b or 0.8
-            end
+            if color then return color.r or 0.35, color.g or 0.55, color.b or 0.8 end
             return 0.35, 0.55, 0.8
         end
-        local function _pullBarOff()
-            return _forcesOff() or TimerCfg("showPullBar") ~= true
-        end
+        local function _pullBarOff() return _forcesOff() or TimerCfg("showPullBar") ~= true end
         -- Names whichever requirement actually disables the pull controls.
         local function _pullBarReq()
-            if TimerCfg("enabled") == false then
-                return "the module"
-            end
-            if TimerCfg("showEnemyBar") == false then
-                return "Show Enemy Forces"
-            end
+            if TimerCfg("enabled") == false then return "the module" end
+            if TimerCfg("showEnemyBar") == false then return "Show Enemy Forces" end
             return "Show Current Pull in Bar"
         end
         row, height = W:DualRow(hostFrame, cursorY, {
@@ -1712,9 +1595,7 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = _pullBarReq,
             tooltip = "Opacity of the current pull on the enemy forces bar.",
             -- Stored 0..1 internally; displayed 0..100 to the user.
-            getValue = function()
-                return (TimerCfg("pullBarAlpha") or 0.35) * 100
-            end,
+            getValue = function() return (TimerCfg("pullBarAlpha") or 0.35) * 100 end,
             setValue = function(value)
                 Set("pullBarAlpha", value / 100)
                 ApplyTimer()
@@ -1811,12 +1692,8 @@ CludesUI.AtOptionsLogin(function()
                     )
             end,
             disabledTooltip = function()
-                if TimerCfg("enabled") == false then
-                    return "the module"
-                end
-                if TimerCfg("showObjectives") == false then
-                    return "Show Boss Objectives"
-                end
+                if TimerCfg("enabled") == false then return "the module" end
+                if TimerCfg("showObjectives") == false then return "Show Boss Objectives" end
                 return "This option requires Show Objective Times or a Split Compare mode"
             end,
             values = objectiveTimePositionValues,
@@ -1859,9 +1736,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Always Show Split Times",
                         tooltip = "Shows your best split on upcoming bosses instead of only killed ones.",
-                        disabled = function()
-                            return (TimerCfg("objectiveCompareMode") or "NONE") == "NONE"
-                        end,
+                        disabled = function() return (TimerCfg("objectiveCompareMode") or "NONE") == "NONE" end,
                         disabledTooltip = "This option requires a Split Compare mode",
                         get = IsTrue("showUpcomingSplitTargets"),
                         set = Keep("showUpcomingSplitTargets"),
@@ -1882,9 +1757,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Fastest Run Splits",
                         tooltip = "Compare against the splits of your fastest completed run instead of your best individual splits.",
-                        disabled = function()
-                            return (TimerCfg("objectiveCompareMode") or "NONE") == "NONE"
-                        end,
+                        disabled = function() return (TimerCfg("objectiveCompareMode") or "NONE") == "NONE" end,
                         disabledTooltip = "This option requires a Split Compare mode",
                         get = IsTrue("showFastestRunSplits"),
                         set = Keep("showFastestRunSplits"),
@@ -1923,9 +1796,7 @@ CludesUI.AtOptionsLogin(function()
     local function Restyler(exportName, preview)
         return function()
             local apply = mod[exportName]
-            if apply then
-                apply()
-            end
+            if apply then apply() end
             PvRepaint(preview)
         end
     end
@@ -1975,28 +1846,16 @@ CludesUI.AtOptionsLogin(function()
         local function Writer(key, cast, repaint)
             return function(value)
                 local c = tbl()
-                if not c then
-                    return
-                end
+                if not c then return end
                 c[key] = cast(value)
                 redraw()
-                if repaint then
-                    CludesUI:RefreshPage()
-                end
+                if repaint then CludesUI:RefreshPage() end
             end
         end
-        local function Same(value)
-            return value
-        end
-        local function Truth(value)
-            return value and true or false
-        end
-        function A.Put(key, repaint)
-            return Writer(key, Same, repaint)
-        end
-        function A.Flag(key, repaint)
-            return Writer(key, Truth, repaint)
-        end
+        local function Same(value) return value end
+        local function Truth(value) return value and true or false end
+        function A.Put(key, repaint) return Writer(key, Same, repaint) end
+        function A.Flag(key, repaint) return Writer(key, Truth, repaint) end
         -- A colour kept as { r, g, b }: its reader (defaults per channel) and writer.
         function A.Rgb(key, r0, g0, b0)
             return function()
@@ -2005,9 +1864,7 @@ CludesUI.AtOptionsLogin(function()
                 return (col and col.r) or r0, (col and col.g) or g0, (col and col.b) or b0
             end, function(red, green, blue)
                 local c = tbl()
-                if not c then
-                    return
-                end
+                if not c then return end
                 c[key] = { r = red, g = green, b = blue }
                 redraw()
             end
@@ -2109,9 +1966,7 @@ CludesUI.AtOptionsLogin(function()
     -- show everywhere. The table is made on first use.
     local function TSBWhere()
         local bars = TSB()
-        if not bars then
-            return nil
-        end
+        if not bars then return nil end
         local picked = bars.whereToShow
         if not picked then
             picked = {}
@@ -2125,9 +1980,7 @@ CludesUI.AtOptionsLogin(function()
     end
     local function TSBWhereSet(keyName, value)
         local picked = TSBWhere()
-        if not picked then
-            return
-        end
+        if not picked then return end
         picked[keyName] = value and true or nil
         TSBRefresh()
     end
@@ -2139,19 +1992,13 @@ CludesUI.AtOptionsLogin(function()
     local function Painter(exportName, which)
         return function(host)
             local paint = mod[exportName]
-            if not paint then
-                return
-            end
-            if which then
-                return paint(host, which)
-            end
+            if not paint then return end
+            if which then return paint(host, which) end
             return paint(host)
         end
     end
     local function BarOn(which)
-        return Accessors(function()
-            return TFBBar(which)
-        end, TFBRefresh).IsOn("enabled")
+        return Accessors(function() return TFBBar(which) end, TFBRefresh).IsOn("enabled")
     end
     local tsbAcc = Accessors(TSB, TSBRefresh)
     local tsbBuilder = PvBuilder(tsbPv, {
@@ -2181,31 +2028,19 @@ CludesUI.AtOptionsLogin(function()
             onChange = TSBRefresh,
             get = function(field)
                 local c = TSB()
-                if not c then
-                    return nil
-                end
-                if field == "style" then
-                    return c.importantGlowStyle or 1
-                end
-                if field == "mode" then
-                    return c.importantGlowColorMode or "custom"
-                end
-                if field == "color" then
-                    return tsbAcc.Rgb("importantGlowColor", 1, 0.2, 0.2)()
-                end
+                if not c then return nil end
+                if field == "style" then return c.importantGlowStyle or 1 end
+                if field == "mode" then return c.importantGlowColorMode or "custom" end
+                if field == "color" then return tsbAcc.Rgb("importantGlowColor", 1, 0.2, 0.2)() end
                 return CludesUI.GlowOptions.FlatGet(c, "importantGlow", field)
             end,
             -- Style 0 switches the glow off and keeps the last style.
             set = function(field, a, b2, c2)
                 local c = TSB()
-                if not c then
-                    return
-                end
+                if not c then return end
                 if field == "style" then
                     c.importantGlow = a ~= 0
-                    if a ~= 0 then
-                        c.importantGlowStyle = a
-                    end
+                    if a ~= 0 then c.importantGlowStyle = a end
                 elseif field == "mode" then
                     c.importantGlowColorMode = a
                 else
@@ -2235,9 +2070,7 @@ CludesUI.AtOptionsLogin(function()
 
         local A = Accessors(TSB, TSBRefresh)
         local On = A.IsOn("enabled")
-        local function Off()
-            return not On()
-        end
+        local function Off() return not On() end
         local REQ = "Enable Cast Bars"
         -- Every row below greys out with the group's own switch.
         local function Gated(cfg)
@@ -2299,17 +2132,13 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Limit the bars to the selected content and combat states; nothing selected shows them everywhere.",
                 values = { _placeholder = "..." },
                 order = { "_placeholder" },
-                getValue = function()
-                    return "_placeholder"
-                end,
+                getValue = function() return "_placeholder" end,
                 setValue = function() end,
             })
         )
         if not CludesUI._prebuilding then
             local slot = row._rightRegion
-            if slot._control then
-                slot._control:Hide()
-            end
+            if slot._control then slot._control:Hide() end
             local where, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
                 slot,
                 220,
@@ -2510,12 +2339,8 @@ CludesUI.AtOptionsLogin(function()
                     max = 100,
                     step = 5,
                     -- Stored 0..1, shown as a percentage.
-                    get = function()
-                        return math.floor(A.Or("oorAlpha", 0.45)() * 100 + 0.5)
-                    end,
-                    set = function(value)
-                        A.Put("oorAlpha")(value / 100)
-                    end,
+                    get = function() return math.floor(A.Or("oorAlpha", 0.45)() * 100 + 0.5) end,
+                    set = function(value) A.Put("oorAlpha")(value / 100) end,
                 },
             })
             Cog(row._rightRegion, "Raid Marker Settings", "Raid Target Marker", {
@@ -2560,13 +2385,9 @@ CludesUI.AtOptionsLogin(function()
 
         -- One section per bar; the rows are the same, keyed by `which`.
         local function BuildBarSection(which, header, enableLabel)
-            local A = Accessors(function()
-                return TFBBar(which)
-            end, TFBRefresh)
+            local A = Accessors(function() return TFBBar(which) end, TFBRefresh)
             local On = A.IsOn("enabled")
-            local function Off()
-                return not On()
-            end
+            local function Off() return not On() end
             local REQ = enableLabel
             local function Gated(cfg)
                 cfg.disabled, cfg.disabledTooltip = Off, REQ
@@ -2667,9 +2488,7 @@ CludesUI.AtOptionsLogin(function()
                     -- Per bar; a bar never set follows the older shared switch.
                     function()
                         local mine = A.Raw("showTarget")()
-                        if mine == nil then
-                            mine = S.NotOff("showTarget")()
-                        end
+                        if mine == nil then mine = S.NotOff("showTarget")() end
                         return mine
                     end
                 )
@@ -2732,9 +2551,7 @@ CludesUI.AtOptionsLogin(function()
             -- Two stored switches read as one three-way choice.
             getValue = function()
                 local tbl = TFB()
-                if tbl and tbl.kickTickEnabled == false then
-                    return "none"
-                end
+                if tbl and tbl.kickTickEnabled == false then return "none" end
                 return (tbl and tbl.midCastEnabled == true) and "tickbar" or "tick"
             end,
             setValue = function(value)
@@ -2828,9 +2645,7 @@ CludesUI.AtOptionsLogin(function()
     local function RSGet(key, fallback)
         local c = RSCfg()
         local value = c and c[key]
-        if value ~= nil then
-            return value
-        end
+        if value ~= nil then return value end
         return fallback
     end
 
@@ -2838,13 +2653,9 @@ CludesUI.AtOptionsLogin(function()
     -- panel (columns and scale show at once, not only on the next opening).
     local function RSSet(key, val)
         local c = RSCfg()
-        if c then
-            c[key] = val
-        end
+        if c then c[key] = val end
         for _, step in ipairs({ "RS_Apply", "RS_Refresh" }) do
-            if mod[step] then
-                mod[step]()
-            end
+            if mod[step] then mod[step]() end
         end
     end
 
@@ -2852,18 +2663,14 @@ CludesUI.AtOptionsLogin(function()
         local c = RSCfg()
         return c ~= nil and c.enabled == true
     end
-    local function RSOff()
-        return not RSOn()
-    end
+    local function RSOff() return not RSOn() end
 
     local function BuildRSPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local cursorY = yOffset
         local _, height
 
-        if CludesUI.ClearContentHeader then
-            CludesUI:ClearContentHeader()
-        end
+        if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
         hostFrame._showRowDivider = true
 
         local REQ = "Enable Run Summary"
@@ -2883,12 +2690,8 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = tooltip,
                 disabled = RSOff,
                 disabledTooltip = REQ,
-                getValue = function()
-                    return RSGet(key, true) == true
-                end,
-                setValue = function(value)
-                    RSSet(key, value and true or false)
-                end,
+                getValue = function() return RSGet(key, true) == true end,
+                setValue = function(value) RSSet(key, value and true or false) end,
             }
         end
         local function Slider(text, key, lo, hi, step, def, tooltip)
@@ -2901,12 +2704,8 @@ CludesUI.AtOptionsLogin(function()
                 step = step,
                 disabled = RSOff,
                 disabledTooltip = REQ,
-                getValue = function()
-                    return RSGet(key, def)
-                end,
-                setValue = function(value)
-                    RSSet(key, value)
-                end,
+                getValue = function() return RSGet(key, def) end,
+                setValue = function(value) RSSet(key, value) end,
             }
         end
 
@@ -2926,9 +2725,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.MakeStyledButton(button, label, 14, CludesUI.WB_COLOURS, onClick)
             end
             Action("Show Preview", "RIGHT", -(GAP / 2), function()
-                if mod.RS_ShowPreview then
-                    mod.RS_ShowPreview()
-                end
+                if mod.RS_ShowPreview then mod.RS_ShowPreview() end
             end)
             Action("Clear Run History", "LEFT", GAP / 2, function()
                 CludesUI:ShowConfirmPopup({
@@ -2937,9 +2734,7 @@ CludesUI.AtOptionsLogin(function()
                     confirmText = "Delete",
                     cancelText = "Cancel",
                     onConfirm = function()
-                        if mod.RS_ClearHistory then
-                            mod.RS_ClearHistory()
-                        end
+                        if mod.RS_ClearHistory then mod.RS_ClearHistory() end
                     end,
                 })
             end)
@@ -3064,9 +2859,7 @@ CludesUI.AtOptionsLogin(function()
             if CludesUIDB and CludesUIDB.profiles then
                 local profile = CludesUIDB.activeProfile or "Default"
                 local p = CludesUIDB.profiles[profile]
-                if p and p.addons and p.addons.CludesUIMythicTimer then
-                    wipe(p.addons.CludesUIMythicTimer)
-                end
+                if p and p.addons and p.addons.CludesUIMythicTimer then wipe(p.addons.CludesUIMythicTimer) end
             end
         end,
     })

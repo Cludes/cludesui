@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Paging.lua
 --
@@ -71,12 +69,8 @@ local PAGING_GROUP_KEY = { modifier = "modifierPaging", target = "targetPaging" 
 
 -- True while the bar's group ("modifier" or "target") is switched off.
 function EAB_VTABLE.PagingGroupOff(bs, set)
-    if not bs then
-        return false
-    end
-    if bs.modTargetPaging == false then
-        return true
-    end
+    if not bs then return false end
+    if bs.modTargetPaging == false then return true end
     return bs[PAGING_GROUP_KEY[set]] == false
 end
 
@@ -84,20 +78,14 @@ end
 -- outside the five, or one of the five while its group is not off.
 function EAB_VTABLE.HasCustomPaging(bs)
     local p = bs and bs.paging
-    if not p or next(p) == nil then
-        return false
-    end
+    if not p or next(p) == nil then return false end
     local offMod = EAB_VTABLE.PagingGroupOff(bs, "modifier")
     local offTarget = EAB_VTABLE.PagingGroupOff(bs, "target")
-    if not (offMod or offTarget) then
-        return true
-    end
+    if not (offMod or offTarget) then return true end
     local mt = EAB_VTABLE.MOD_TARGET_PAGING
     for ident in pairs(p) do
         local g = mt[ident]
-        if not g or (g == "modifier" and not offMod) or (g == "target" and not offTarget) then
-            return true
-        end
+        if not g or (g == "modifier" and not offMod) or (g == "target" and not offTarget) then return true end
     end
     return false
 end
@@ -110,13 +98,9 @@ end
 -- these toggles. WoW Forever has no skyriding and its options offer no Skyriding
 -- Paging, so a saved disableSkyridingPaging reads as unset there.
 function EAB_VTABLE.GetAutoPagingOptOuts(barId)
-    if barId ~= "MainBar" then
-        return false, false
-    end
+    if barId ~= "MainBar" then return false, false end
     local bs = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars.MainBar
-    if not bs then
-        return false, false
-    end
+    if not bs then return false, false end
     local noSky = bs.disableSkyridingPaging and not CludesUI.IS_FOREVER
     return bs.disableFormPaging and true or false, noSky and true or false
 end
@@ -140,9 +124,7 @@ local FOREVER_DRUID = CludesUI.IS_FOREVER == true and select(2, UnitClass("playe
 -- takes the page picked for its state in pagingConfig, else its own page
 -- when useDefaults is set.
 local function ForeverFormClauses(pagingConfig, useDefaults)
-    if not FOREVER_DRUID then
-        return nil
-    end
+    if not FOREVER_DRUID then return nil end
     local result
     for index = 1, GetNumShapeshiftForms() do
         local _, _, _, spellId = GetShapeshiftFormInfo(index)
@@ -161,9 +143,7 @@ local function ForeverFormClauses(pagingConfig, useDefaults)
 end
 
 function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
-    if not pagingConfig or not next(pagingConfig) then
-        return nil
-    end
+    if not pagingConfig or not next(pagingConfig) then return nil end
     local PG = EAB_VTABLE.PAGING_STATES
     local _, class = UnitClass("player")
     local noForm, noSky = EAB_VTABLE.GetAutoPagingOptOuts(barId)
@@ -185,9 +165,7 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
     if not noModifier then
         for _, status in ipairs(PG.modifier) do
             local page = pagingConfig[status.id]
-            if page then
-                parts[#parts + 1] = status.macro .. " " .. page
-            end
+            if page then parts[#parts + 1] = status.macro .. " " .. page end
         end
     end
     -- MainBar falls back to hardcoded form pages for unconfigured (nil)
@@ -221,9 +199,7 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
     -- The druid form clauses (see ForeverFormClauses): a form's picked page,
     -- or on bar 1 its own page unless Form Paging is off.
     local formClauses = ForeverFormClauses(pagingConfig, barId == "MainBar" and not noForm)
-    if formClauses then
-        parts[#parts + 1] = formClauses
-    end
+    if formClauses then parts[#parts + 1] = formClauses end
     -- Manual pages come before the skyriding clause: the engine only consults
     -- the bonus bar while Blizzard's page is 1 (ActionBarController_UpdateAll),
     -- so [bonusbar:5] listed first pinned the bar to the skyriding page and
@@ -235,18 +211,14 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
         for index = 2, NUM_AB_PAGES do
             parts[#parts + 1] = "[bar:" .. index .. "] " .. index
         end
-        if not noSky then
-            parts[#parts + 1] = "[bonusbar:5] 11"
-        end
+        if not noSky then parts[#parts + 1] = "[bonusbar:5] 11" end
     end
     -- Target conditions come after bonusbar/bar so dragonriding and manual
     -- page switches take priority over target-based switching.
     if PG.target and not noTarget then
         for _, status in ipairs(PG.target) do
             local page = pagingConfig[status.id]
-            if page then
-                parts[#parts + 1] = status.macro .. " " .. page
-            end
+            if page then parts[#parts + 1] = status.macro .. " " .. page end
         end
     end
     parts[#parts + 1] = tostring(defaultPage or 1)
@@ -297,9 +269,7 @@ local function GetClassPagingConditions()
             conditions = conditions .. "[bonusbar:1] 7; [bonusbar:2] 8; [bonusbar:3] 9; [bonusbar:4] 10; "
             -- The druid form clauses (see ForeverFormClauses).
             local formClauses = ForeverFormClauses(nil, true)
-            if formClauses then
-                conditions = conditions .. formClauses .. "; "
-            end
+            if formClauses then conditions = conditions .. formClauses .. "; " end
         elseif class == "DRUID" then
             conditions = conditions
                 .. "[bonusbar:1,stealth] 7; [bonusbar:1] 7; [bonusbar:3] 9; [bonusbar:4] 10; "
@@ -309,9 +279,7 @@ local function GetClassPagingConditions()
     end
 
     -- Dragonriding (all classes; page 1 only, same rule as the forms above)
-    if not noSky then
-        conditions = conditions .. "[bonusbar:5] 11; "
-    end
+    if not noSky then conditions = conditions .. "[bonusbar:5] 11; " end
 
     -- Default: page 1
     conditions = conditions .. "1"
@@ -323,18 +291,14 @@ end
 --  Action Bar 1 Paging Arrows + Page Number
 -------------------------------------------------------------------------------
 local _pagingFrame -- forward ref
-Inner.pagingFrameSetters[#Inner.pagingFrameSetters + 1] = function(val)
-    _pagingFrame = val
-end
+Inner.pagingFrameSetters[#Inner.pagingFrameSetters + 1] = function(val) _pagingFrame = val end
 local LayoutPagingFrame -- forward ref (used inside SetupPagingFrame closure)
 
 -- The paging frame is parented to MainBar (see LayoutPagingFrame), so it
 -- inherits the bar's mouseover-fade alpha AND secure show/hide automatically;
 -- own alpha stays 1 so the parent governs solely (no double-fade).
 local function SyncPagingAlpha()
-    if _pagingFrame then
-        _pagingFrame:SetAlpha(1)
-    end
+    if _pagingFrame then _pagingFrame:SetAlpha(1) end
 end
 
 -- Paging arrows use SecureActionButtonTemplate type "macro"; [bar:N]
@@ -352,9 +316,7 @@ end
 function mod.GetPagingSkipMask()
     local skip = {}
     local barList = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
-    if not (barList and barList.MainBar and barList.MainBar.skipVisiblePagingBars) then
-        return skip
-    end
+    if not (barList and barList.MainBar and barList.MainBar.skipVisiblePagingBars) then return skip end
     for barId, page in pairs(EAB_VTABLE.BAR_KEY_TO_PAGE) do
         if barId ~= "MainBar" and page >= 1 and page <= NUM_AB_PAGES then
             local prefs = barList[barId]
@@ -372,9 +334,7 @@ local function BuildFilteredPageMacro(delta, skip)
         local target = page
         for _ = 1, NUM_AB_PAGES do
             target = (target - 1 + delta + NUM_AB_PAGES) % NUM_AB_PAGES + 1
-            if not skip[target] then
-                break
-            end
+            if not skip[target] then break end
         end
         macro[#macro + 1] = "[bar:" .. page .. "] " .. target
     end
@@ -394,9 +354,7 @@ function mod.RefreshPagingCycleMacros()
     local barList = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
     local enabled = barList and barList.MainBar and barList.MainBar.skipVisiblePagingBars
 
-    if not enabled and not _filteredPagingActive then
-        return
-    end
+    if not enabled and not _filteredPagingActive then return end
 
     -- A change made in combat (an options edit, a visibility switch) runs once
     -- combat ends instead of leaving the paging macros stale until the next
@@ -429,9 +387,7 @@ function mod.RefreshPagingCycleMacros()
 end
 
 local function InitPagingQuickKeybindButton(button, atlas)
-    if not button then
-        return
-    end
+    if not button then return end
 
     if not button.QuickKeybindHighlightTexture then
         local texture = button:CreateTexture(nil, "OVERLAY")
@@ -442,9 +398,7 @@ local function InitPagingQuickKeybindButton(button, atlas)
         button.QuickKeybindHighlightTexture = texture
     end
 
-    if EFD(button).quickKeybindInit or not QuickKeybindButtonTemplateMixin then
-        return
-    end
+    if EFD(button).quickKeybindInit or not QuickKeybindButtonTemplateMixin then return end
 
     Mixin(button, QuickKeybindButtonTemplateMixin)
     button:HookScript("OnShow", button.QuickKeybindButtonOnShow)
@@ -460,9 +414,7 @@ local function InitPagingQuickKeybindButton(button, atlas)
 end
 
 local function SetupPagingFrame()
-    if _pagingFrame then
-        return _pagingFrame
-    end
+    if _pagingFrame then return _pagingFrame end
 
     local frame = CreateFrame("Frame", "EABPagingFrame", UIParent)
     frame:SetSize(20, 52)
@@ -563,12 +515,8 @@ end
 
 LayoutPagingFrame = function()
     local frame = _pagingFrame
-    if not frame then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not frame then return end
+    if InCombatLockdown() then return end
     local mainFrame = barFrames and barFrames["MainBar"]
     if not mainFrame then
         SetPagedDriver(frame, false)
@@ -599,9 +547,7 @@ LayoutPagingFrame = function()
     -- (retail's page arrows sit over its caps).
     local caps = cfg.orientation ~= "vertical" and mod.AB_CAPS[mod.AB_CapsLook("MainBar") or "-"]
     local lvl = (mainFrame:GetFrameLevel() or 1) + 1 + (caps and caps.lvl or 4)
-    if frame:GetFrameLevel() ~= lvl then
-        frame:SetFrameLevel(lvl)
-    end
+    if frame:GetFrameLevel() ~= lvl then frame:SetFrameLevel(lvl) end
 
     -- Paging Arrows: always shown. Off: shown only while paged (Show While
     -- Paged, on unless turned off), through the paged driver above.
@@ -630,7 +576,11 @@ LayoutPagingFrame = function()
 
     frame._upBtn:SetSize(arrowSize, arrowSize)
     frame._downBtn:SetSize(arrowSize, arrowSize)
-    frame._pageText:SetFont(STANDARD_TEXT_FONT, textSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+    frame._pageText:SetFont(
+        STANDARD_TEXT_FONT,
+        textSize,
+        (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+    )
 
     frame._upBtn:ClearAllPoints()
     frame._downBtn:ClearAllPoints()
@@ -811,13 +761,9 @@ if FOREVER_DRUID then
             return
         end
         local forms = ForeverFormClauses(nil, true) or ""
-        if forms == lastForms then
-            return
-        end
+        if forms == lastForms then return end
         lastForms = forms
-        if not mod.RebuildBarPaging then
-            return
-        end
+        if not mod.RebuildBarPaging then return end
         for barId in pairs(barFrames) do
             mod.RebuildBarPaging(barId, true)
         end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Thresholds.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local format = string.format
@@ -56,16 +52,12 @@ do
         local rk = RKEY[powerKey]
         if rk and CludesUI.GetClassResourceColor then
             local color = CludesUI.GetClassResourceColor(rk)
-            if color then
-                return color.r, color.g, color.b
-            end
+            if color then return color.r, color.g, color.b end
         end
         local pk = PKEY[powerKey]
         if pk and CludesUI.GetPowerColor then
             local color = CludesUI.GetPowerColor(pk)
-            if color then
-                return color.r, color.g, color.b
-            end
+            if color then return color.r, color.g, color.b end
         end
         return nil
     end
@@ -81,9 +73,7 @@ local function BuildBarTypeSpecMap()
     -- The spec positions below are retail's: WoW Forever's specs are its
     -- vanilla talent trees, none of which has these resources, so the map
     -- stays empty there.
-    if CludesUI.IS_FOREVER then
-        return
-    end
+    if CludesUI.IS_FOREVER then return end
     for classID = 1, GetNumClasses() do
         local _, class = GetClassInfo(classID)
         if class then
@@ -136,16 +126,12 @@ do
     local function InvalidateThresholdCaches()
         _thrSpecID = nil
         wipe(_talentGateCache)
-        if CludesUI.IS_FOREVER and mod._fvThrPick then
-            wipe(mod._fvThrPick)
-        end
+        if CludesUI.IS_FOREVER and mod._fvThrPick then wipe(mod._fvThrPick) end
     end
     mod.InvalidateThresholdCaches = InvalidateThresholdCaches
 
     local function ResolveSpecIDCached()
-        if _thrSpecID ~= nil then
-            return _thrSpecID or nil
-        end
+        if _thrSpecID ~= nil then return _thrSpecID or nil end
         local position = GetSpecialization and GetSpecialization()
         local spellRef = position
                 and C_SpecializationInfo
@@ -171,9 +157,7 @@ do
     -- talent gate.
     function mod.ThresholdCardLiveFor(record, ident)
         local ids = record.specIDs
-        if not ids then
-            return false
-        end
+        if not ids then return false end
         for jdx = 1, #ids do
             if ids[jdx] == ident then
                 local gate = record.talentSpellID
@@ -186,9 +170,7 @@ do
     -- WoW Forever: true when any card of the list counts for this spec.
     function mod.ThresholdEntriesMention(ident, entries)
         for i = 1, #entries do
-            if mod.ThresholdCardLiveFor(entries[i], ident) then
-                return true
-            end
+            if mod.ThresholdCardLiveFor(entries[i], ident) then return true end
         end
         return false
     end
@@ -205,9 +187,7 @@ do
         if sec and entries == sec.thresholdSpecs and select(2, UnitClass("player")) == "DRUID" then
             local ids = CludesUI.ForeverClassSpecIDs("DRUID")
             for i = 1, (ids and #ids or 0) do
-                if ids[i] ~= 102 and mod.ThresholdEntriesMention(ids[i], entries) then
-                    return ids[i]
-                end
+                if ids[i] ~= 102 and mod.ThresholdEntriesMention(ids[i], entries) then return ids[i] end
             end
             return nil
         end
@@ -226,9 +206,7 @@ do
             mod._fvThrPick = memo
         end
         local m = memo[entries]
-        if m and m.gen == mod.CfgGen and m.n == #entries then
-            return m.sid
-        end
+        if m and m.gen == mod.CfgGen and m.n == #entries then return m.sid end
         if not m then
             m = {}
             memo[entries] = m
@@ -240,9 +218,7 @@ do
 
     ResolveThresholdSpecEntry = function(sp)
         local entries = sp.thresholdSpecs
-        if not entries or #entries == 0 then
-            return nil
-        end
+        if not entries or #entries == 0 then return nil end
 
         -- Form-specific mode (druid power bar): the entry matching the current
         -- form wins. Moonkin (31/35) is checked directly by form ID since it shares
@@ -254,9 +230,7 @@ do
             local key = (form == 31 or form == 35) and "moonkin" or FORM_THRESHOLD_KEY[GetPrimaryPowerType()]
             if key then
                 for _, record in ipairs(entries) do
-                    if record.formKey == key then
-                        return record
-                    end
+                    if record.formKey == key then return record end
                 end
             end
         end
@@ -266,24 +240,16 @@ do
         -- runs as the spec ns.ForeverThresholdSpec picks (none named by a live
         -- card: the class's first spec, or no spec for a Druid's Class Resource,
         -- either way leaving the All Specs tiers 3 and 4).
-        if CludesUI.IS_FOREVER then
-            specID = mod.ForeverThresholdSpec(entries)
-        end
-        if not specID and not CludesUI.IS_FOREVER then
-            return nil
-        end
+        if CludesUI.IS_FOREVER then specID = mod.ForeverThresholdSpec(entries) end
+        if not specID and not CludesUI.IS_FOREVER then return nil end
 
         local specPlain, allTalent, allPlain
         for _, record in ipairs(entries) do
             if record.specIDs then
                 local matchSpec, matchAll = false, false
                 for _, spellRef in ipairs(record.specIDs) do
-                    if spellRef == specID then
-                        matchSpec = true
-                    end
-                    if spellRef == 0 then
-                        matchAll = true
-                    end
+                    if spellRef == specID then matchSpec = true end
+                    if spellRef == 0 then matchAll = true end
                 end
                 if matchSpec or matchAll then
                     local gate = record.talentSpellID
@@ -291,9 +257,7 @@ do
                         if IsTalentGateActive(gate) then
                             -- spec + active talent gate is the top tier: nothing can
                             -- outrank it, so return as soon as it is found.
-                            if matchSpec then
-                                return record
-                            end
+                            if matchSpec then return record end
                             allTalent = allTalent or record
                         end
                     -- gated but inactive: skip
@@ -336,9 +300,7 @@ _G._CURB_ResolveSecondaryCfg = function(profile)
 end
 
 -- Always false: the options page overlays keyed off this are permanently dormant.
-_G._CURB_CurSpecOverridesSection = function()
-    return false
-end
+_G._CURB_CurSpecOverridesSection = function() return false end
 
 -- ColorCurve helper for secret-value-safe bar threshold coloring: a two-point
 -- step curve (base color below threshold, threshold color at/above), passed to
@@ -348,9 +310,7 @@ local _barColorCurve = nil
 local _barColorCurveHash = nil
 
 local function GetBarThresholdCurve(baseR, baseG, baseB, threshR, threshG, threshB, threshPct)
-    if not C_CurveUtil or not C_CurveUtil.CreateColorCurve then
-        return nil
-    end
+    if not C_CurveUtil or not C_CurveUtil.CreateColorCurve then return nil end
 
     -- Direct comparison, never a format() hash: UpdatePrimaryBar calls this twice
     -- per power event (~30/sec while casting), so hashing would allocate a string
@@ -385,14 +345,10 @@ local function GetBarThresholdCurve(baseR, baseG, baseB, threshR, threshG, thres
     -- At or below threshold -> use threshold color
     curve:AddPoint(0.0, CreateColor(threshR, threshG, threshB, 1))
 
-    if t > EPSILON then
-        curve:AddPoint(t, CreateColor(threshR, threshG, threshB, 1))
-    end
+    if t > EPSILON then curve:AddPoint(t, CreateColor(threshR, threshG, threshB, 1)) end
 
     -- Above threshold -> revert to base bar color
-    if t < 1.0 then
-        curve:AddPoint(math.min(1.0, t + EPSILON), CreateColor(baseR, baseG, baseB, 1))
-    end
+    if t < 1.0 then curve:AddPoint(math.min(1.0, t + EPSILON), CreateColor(baseR, baseG, baseB, 1)) end
 
     curve:AddPoint(1.0, CreateColor(baseR, baseG, baseB, 1))
 
@@ -411,44 +367,32 @@ local function ResolveBandConfig(sp, record)
     local enabled, bands, mode, reverse
     if record then
         enabled = record.multiBandEnabled
-        if enabled == nil then
-            enabled = sp.multiBandEnabled
-        end
+        if enabled == nil then enabled = sp.multiBandEnabled end
         bands = (record.bands and #record.bands > 0) and record.bands or sp.bands
         mode = record.bandMode or sp.bandMode or "percent"
         reverse = record.bandReverse
-        if reverse == nil then
-            reverse = sp.bandReverse
-        end
+        if reverse == nil then reverse = sp.bandReverse end
     else
         enabled = sp.multiBandEnabled
         bands = sp.bands
         mode = sp.bandMode or "percent"
         reverse = sp.bandReverse
     end
-    if not enabled or not bands or #bands == 0 then
-        return false
-    end
+    if not enabled or not bands or #bands == 0 then return false end
     return true, bands, mode, reverse and true or false
 end
 
 -- Find the band whose count range contains `count` (pip resources)
 local function FindCountBand(bands, total, reverse)
-    if not bands or #bands == 0 then
-        return nil
-    end
+    if not bands or #bands == 0 then return nil end
     if reverse then
         for i = #bands, 1, -1 do
-            if total >= (bands[i].to or 0) then
-                return bands[i]
-            end
+            if total >= (bands[i].to or 0) then return bands[i] end
         end
         return nil
     end
     for i = 1, #bands do
-        if total <= (bands[i].to or 0) then
-            return bands[i]
-        end
+        if total <= (bands[i].to or 0) then return bands[i] end
     end
     return nil
 end
@@ -466,17 +410,13 @@ local _bandCurveCache = {}
 -- `mode` "percent" -> frac = to/100; "value" -> frac = to/max (max clean for player).
 -- Returns a stops array, or nil if no usable bands.
 local function BuildBandStops(bands, mode, maxVal)
-    if not bands or #bands == 0 then
-        return nil
-    end
+    if not bands or #bands == 0 then return nil end
     local stops = {}
     for i = 1, #bands do
         local b = bands[i]
         local frac
         if mode == "value" then
-            if not maxVal or maxVal <= 0 then
-                return nil
-            end
+            if not maxVal or maxVal <= 0 then return nil end
             frac = (b.to or 0) / maxVal
         else
             frac = (b.to or 0) / 100
@@ -489,12 +429,8 @@ end
 -- cacheKey is a stable per-bar id ("health"/"primary"/"secondary"/"healthpoll").
 -- baseR/G/B is the bar's normal fill color. reverse=false (up to) / true (from).
 local function GetBarBandCurve(cacheKey, bands, mode, maxVal, baseR, baseG, baseB, reverse)
-    if not C_CurveUtil or not C_CurveUtil.CreateColorCurve then
-        return nil
-    end
-    if not bands or #bands == 0 then
-        return nil
-    end
+    if not C_CurveUtil or not C_CurveUtil.CreateColorCurve then return nil end
+    if not bands or #bands == 0 then return nil end
 
     -- Cheap signature from the raw inputs, before any stops/curve allocation.
     local parts = {}
@@ -514,9 +450,7 @@ local function GetBarBandCurve(cacheKey, bands, mode, maxVal, baseR, baseG, base
     local hash = table.concat(parts, "|")
 
     local slot = _bandCurveCache[cacheKey]
-    if slot and slot.hash == hash then
-        return slot.curve
-    end
+    if slot and slot.hash == hash then return slot.curve end
     if not slot then
         slot = {}
         _bandCurveCache[cacheKey] = slot

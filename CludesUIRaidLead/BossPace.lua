@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  BossPace.lua -- Raid Lead: Boss Pace.
 --
@@ -28,9 +26,7 @@ function mod.PaceSettings()
     local profile = mod.RaidLeadDB()
     profile.pace = profile.pace or {}
     local cfg = profile.pace
-    if cfg.enabled == nil then
-        cfg.enabled = true
-    end
+    if cfg.enabled == nil then cfg.enabled = true end
     cfg.targets = cfg.targets or {} -- { { boss = "name", seconds = 300 }, ... }
     return cfg
 end
@@ -38,9 +34,7 @@ end
 --- "m:ss" or "s" to seconds.
 function mod.ParseDuration(textValue)
     local m, sec = (textValue or ""):match("^%s*(%d+):(%d%d)%s*$")
-    if m then
-        return tonumber(m) * 60 + tonumber(sec)
-    end
+    if m then return tonumber(m) * 60 + tonumber(sec) end
     local only = (textValue or ""):match("^%s*(%d+)%s*$")
     return only and tonumber(only) or nil
 end
@@ -53,9 +47,7 @@ end
 local function TargetFor(bossName)
     local key = (bossName or ""):lower()
     for _, t in ipairs(mod.PaceSettings().targets) do
-        if (t.boss or ""):lower() == key then
-            return t.seconds
-        end
+        if (t.boss or ""):lower() == key then return t.seconds end
     end
 end
 
@@ -63,9 +55,7 @@ local bar, marker, labelText, curve
 local fight -- { start, target, name }
 
 local function Build()
-    if bar then
-        return
-    end
+    if bar then return end
     bar = CreateFrame("StatusBar", "CludesUIRaidLeadPace", UIParent)
     bar:SetSize(260, 22)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -83,9 +73,7 @@ local function Build()
 end
 
 function mod.ApplyPacePosition()
-    if not bar or InCombatLockdown() then
-        return
-    end
+    if not bar or InCombatLockdown() then return end
     local p = mod.PaceSettings().pos
     bar:ClearAllPoints()
     if p then
@@ -96,9 +84,7 @@ function mod.ApplyPacePosition()
 end
 
 local function Update()
-    if not fight then
-        return
-    end
+    if not fight then return end
     local elapsed = GetTime() - fight.start
     local expected = math.max(0, 100 - elapsed / fight.target * 100)
     -- Red below the expected percent, green from it upward: two points a
@@ -113,9 +99,7 @@ local function Update()
     if unitToken then
         bar:SetValue(UnitHealthPercent(unitToken, true, CurveConstants and CurveConstants.ScaleTo100) or 0)
         local colour = UnitHealthPercent(unitToken, true, curve)
-        if colour and colour.GetRGB then
-            bar:GetStatusBarTexture():SetVertexColor(colour:GetRGB())
-        end
+        if colour and colour.GetRGB then bar:GetStatusBarTexture():SetVertexColor(colour:GetRGB()) end
     end
     marker:ClearAllPoints()
     marker:SetPoint("CENTER", bar, "LEFT", bar:GetWidth() * expected / 100, 0)
@@ -137,22 +121,16 @@ local function Stop()
         ticker:Cancel()
         ticker = nil
     end
-    if bar then
-        bar:Hide()
-    end
+    if bar then bar:Hide() end
 end
 
 --- Starts the bar for a boss with a target kill time, as at a pull.
 function mod.StartPace(name, seconds)
     Build()
-    if not (bar and seconds and seconds > 0) then
-        return
-    end
+    if not (bar and seconds and seconds > 0) then return end
     fight = { start = GetTime(), target = seconds, name = name }
     bar:Show()
-    if ticker then
-        ticker:Cancel()
-    end
+    if ticker then ticker:Cancel() end
     ticker = C_Timer.NewTicker(TICK, Update)
     Update()
 end
@@ -163,13 +141,9 @@ eventFrame:RegisterEvent("ENCOUNTER_END")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
 eventFrame:SetScript("OnEvent", function(_, evt, _, encounterName)
-    if evt == "ENCOUNTER_END" then
-        return Stop()
-    end
+    if evt == "ENCOUNTER_END" then return Stop() end
     if evt == "PLAYER_ENTERING_WORLD" then
-        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
-            return
-        end
+        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
         Build()
         registered = true
         CludesUI:RegisterUnlockElements({
@@ -180,37 +154,21 @@ eventFrame:SetScript("OnEvent", function(_, evt, _, encounterName)
                 order = 662,
                 noAnchorTarget = true,
                 noResize = true,
-                isHidden = function()
-                    return not mod.PaceSettings().enabled
-                end,
-                getFrame = function()
-                    return bar
-                end,
-                getSize = function()
-                    return 260, 22
-                end,
+                isHidden = function() return not mod.PaceSettings().enabled end,
+                getFrame = function() return bar end,
+                getSize = function() return 260, 22 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     mod.PaceSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 end,
-                loadPos = function()
-                    return mod.PaceSettings().pos
-                end,
-                clearPos = function()
-                    mod.PaceSettings().pos = nil
-                end,
+                loadPos = function() return mod.PaceSettings().pos end,
+                clearPos = function() mod.PaceSettings().pos = nil end,
                 applyPos = mod.ApplyPacePosition,
             }),
         }, "CludesUIRaidLead")
         return
     end
-    if not mod.PaceSettings().enabled then
-        return
-    end
-    if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then
-        return
-    end
+    if not mod.PaceSettings().enabled then return end
+    if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then return end
     local target = TargetFor(encounterName)
-    if target then
-        mod.StartPace(encounterName, target)
-    end
+    if target then mod.StartPace(encounterName, target) end
 end)

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_ExtraFrames.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -33,9 +29,7 @@ local unitToButton, StyleButton, UpdateButton = Inner.unitToButton, Inner.StyleB
 local UpdateReadyCheck, LayoutTopNameBar = Inner.UpdateReadyCheck, Inner.LayoutTopNameBar
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 --  Extra Frames (raid only): 1:1 duplicates of chosen raid members (Show
@@ -57,15 +51,11 @@ do
     mod._XF = Extras
     local FB = mod._FB
 
-    Extras.Settings = function()
-        return saved and saved.profile and saved.profile.extraFrames
-    end
+    Extras.Settings = function() return saved and saved.profile and saved.profile.extraFrames end
 
     Extras.ShouldBeActive = function()
         local set = Extras.Settings()
-        if not set then
-            return false
-        end
+        if not set then return false end
         return set.showTanks or #(set.players or {}) > 0
     end
 
@@ -94,9 +84,7 @@ do
             -- the same way). Read raw it would miss every branch below: the left
             -- flip falls through to DOWN and the perpendicular check picks the
             -- RIGHT default by luck.
-            if wrap == "DOWNRIGHT" then
-                wrap = "RIGHT"
-            end
+            if wrap == "DOWNRIGHT" then wrap = "RIGHT" end
             if set and set.position == "left" then
                 wrap = (wrap == "RIGHT" and "LEFT")
                     or (wrap == "LEFT" and "RIGHT")
@@ -106,13 +94,9 @@ do
         end
         local horizontal = (grow == "LEFT" or grow == "RIGHT")
         if horizontal then
-            if wrap ~= "UP" and wrap ~= "DOWN" then
-                wrap = "DOWN"
-            end
+            if wrap ~= "UP" and wrap ~= "DOWN" then wrap = "DOWN" end
         else
-            if wrap ~= "LEFT" and wrap ~= "RIGHT" then
-                wrap = "RIGHT"
-            end
+            if wrap ~= "LEFT" and wrap ~= "RIGHT" then wrap = "RIGHT" end
         end
         return grow, wrap, horizontal
     end
@@ -124,19 +108,16 @@ do
     -- user drags the mover once. Called by FB.Anchor through the owner hook.
     Extras.FreeAnchor = function(c, set)
         local region = set and set.freeRect
-        if not region then
-            return false
-        end
+        if not region then return false end
         local grow, wrap, horizontal = Extras.GrowInfo(set, saved and saved.profile)
-        local corner, posX, posY = FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, region)
+        local corner, posX, posY =
+            FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, region)
         FB.FreePin(c, corner, posX, posY)
         return true
     end
 
     -- Called by the shared mover on drag stop: capture the dropped rect for the corner pin above.
-    Extras.SaveFreeRect = function(mover)
-        FB.SaveMoverRect(mover, Extras.Settings())
-    end
+    Extras.SaveFreeRect = function(mover) FB.SaveMoverRect(mover, Extras.Settings()) end
 
     -- Ordered raid units to duplicate (bounded by XF.CAP): tanks in roster order first
     -- (Show Tanks on), then manually added names currently in the raid. Names are stored
@@ -145,25 +126,21 @@ do
     Extras.ResolveUnits = function()
         local set = Extras.Settings()
         local units = {}
-        if not set or not IsInRaid() then
-            return units
-        end
+        if not set or not IsInRaid() then return units end
         local cap = Extras.CAP
         local seen = {}
         local num = GetNumGroupMembers() or 0
         if set.showTanks then
             for i = 1, num do
-                if #units >= cap then
-                    break
-                end
+                if #units >= cap then break end
                 local name = GetRaidRosterInfo(i)
                 if
                     name
                     and not seen[name]
                     and CludesUI.UnitEffectiveRole("raid" .. i) == "TANK"
-                    -- Exclude Myself (Show Tanks cog): the tanks auto-include
-                    -- skips the player's own frame; explicit hotkey picks below
-                    -- still add it.
+                    -- Exclude Myself (Show Tanks cog): the tanks auto-include
+                    -- skips the player's own frame; explicit hotkey picks below
+                    -- still add it.
                     and not (set.excludeSelfTank and UnitIsUnit("raid" .. i, "player"))
                 then
                     seen[name] = true
@@ -172,9 +149,7 @@ do
             end
         end
         for _, mname in ipairs(set.players or {}) do
-            if #units >= cap then
-                break
-            end
+            if #units >= cap then break end
             if not seen[mname] then
                 for i = 1, num do
                     if (GetRaidRosterInfo(i)) == mname then
@@ -205,9 +180,7 @@ do
     -- ReloadFrames pipeline (buttons are in allButtons); ReloadFrames tail-calls
     -- XF_Apply so this offset pass always runs after the bulk base-size pass.
     Extras.Layout = function()
-        if not Extras.built then
-            return
-        end
+        if not Extras.built then return end
         local cfg = mod._scaledProfile or saved.profile
         local set = Extras.Settings()
         local wid = PixelSnap(
@@ -230,9 +203,7 @@ do
             ratio = math.max(math.min(math.min(wid / aw, hgt / ah), 1.3), 0.7)
         end
         mod._xfExtraRatio = ratio
-        if mod._RefreshProxyModes then
-            mod._RefreshProxyModes()
-        end
+        if mod._RefreshProxyModes then mod._RefreshProxyModes() end
         mod._xfBmScale = (mod._bmScale or 1) * ratio
         local sp = Extras.Pitch(set, cfg)
         Extras.pitch = sp
@@ -244,12 +215,8 @@ do
         local total = Extras.activeCount or 0
         if total < 1 then
             total = ((set and set.showTanks) and 2 or 0) + ((set and set.players) and #set.players or 0)
-            if total < 1 then
-                total = 1
-            end
-            if total > Extras.CAP then
-                total = Extras.CAP
-            end
+            if total < 1 then total = 1 end
+            if total > Extras.CAP then total = Extras.CAP end
         end
         -- Frames per run: attached always uses full group-sized runs of 5 (a
         -- partially filled run still spans 5, exactly like a real group); Free
@@ -258,9 +225,7 @@ do
         if set and set.position == "free" then
             local wa = tonumber(set.wrapAfter) or 0
             per = (wa > 0) and wa or total
-            if per > total then
-                per = total
-            end
+            if per > total then per = total end
         else
             per = 5
         end
@@ -347,16 +312,12 @@ do
             end
             if skinData.statusText then
                 ApplyFont(skinData.statusText, xs.statusTextSize or 14)
-                if skinData.AnchorStatusText then
-                    skinData.AnchorStatusText()
-                end
+                if skinData.AnchorStatusText then skinData.AnchorStatusText() end
             end
             if skinData.roleIcon then
                 local riSz = PixelSnap(xs.roleIconSize or 14)
                 skinData.roleIcon:SetSize(riSz, riSz)
-                if skinData.AnchorRoleIcon then
-                    skinData.AnchorRoleIcon()
-                end
+                if skinData.AnchorRoleIcon then skinData.AnchorRoleIcon() end
             end
             if skinData.leaderIcon then
                 local liSz = PixelSnap(xs.leaderIconSize or 14)
@@ -374,30 +335,20 @@ do
             if skinData.raidMarker then
                 local rmSz = PixelSnap(xs.raidMarkerSize or 16)
                 skinData.raidMarker:SetSize(rmSz, rmSz)
-                if skinData.AnchorRaidMarker then
-                    skinData.AnchorRaidMarker()
-                end
+                if skinData.AnchorRaidMarker then skinData.AnchorRaidMarker() end
             end
             if skinData.readyCheck then
                 local rcSz = PixelSnap(xs.readyCheckSize or 20)
                 skinData.readyCheck:SetSize(rcSz, rcSz)
-                if skinData.AnchorReadyCheck then
-                    skinData.AnchorReadyCheck()
-                end
+                if skinData.AnchorReadyCheck then skinData.AnchorReadyCheck() end
             end
             if skinData.combatIcon then
                 local cciSz = PixelSnap(xs.combatIndicatorSize or 16)
                 skinData.combatIcon:SetSize(cciSz, cciSz)
-                if skinData.AnchorCombatIcon then
-                    skinData.AnchorCombatIcon()
-                end
+                if skinData.AnchorCombatIcon then skinData.AnchorCombatIcon() end
             end
-            if skinData.pingFrame then
-                mod._RFAnchorPing(skinData)
-            end
-            if mod.RF_FvMissingAnchor then
-                mod.RF_FvMissingAnchor(btn, skinData)
-            end
+            if skinData.pingFrame then mod._RFAnchorPing(skinData) end
+            if mod.RF_FvMissingAnchor then mod.RF_FvMissingAnchor(btn, skinData) end
         end
     end
 
@@ -439,12 +390,11 @@ do
             Extras.container = boxHolder
         end
         local wanted = total or 5
-        if wanted < 5 then
-            wanted = 5
-        end
+        if wanted < 5 then wanted = 5 end
 
         for i = #Extras.buttons + 1, wanted do
-            local widget = CreateFrame("Button", "ERFExtraFrame" .. i, Extras.container, "SecureUnitButtonTemplate")
+            local widget =
+                CreateFrame("Button", "ERFExtraFrame" .. i, Extras.container, "SecureUnitButtonTemplate")
             widget:Hide()
             GetFFD(widget)._isExtra = true
             mod._StyleButtonSecure(widget)
@@ -456,9 +406,7 @@ do
             -- Bounded to the built slots; zero registrations while a slot is empty.
             local t = mod.TakeShell()
             t:SetScript("OnEvent", function(_, evt, unitToken, updateInfo)
-                if not widget:IsVisible() then
-                    return
-                end
+                if not widget:IsVisible() then return end
                 if evt == "UNIT_HEALTH" or evt == "UNIT_MAXHEALTH" then
                     mod._UpdateButtonHealth(widget, unitToken)
                     if evt == "UNIT_MAXHEALTH" then
@@ -468,9 +416,7 @@ do
                         -- clip-anchored; the missing-health clamp edge rides the
                         -- armed belt / next absorb event instead).
                         local skinData = GetFFD(widget)
-                        if skinData._absActive then
-                            mod._MarkAbsorbDirty(widget, unitToken)
-                        end
+                        if skinData._absActive then mod._MarkAbsorbDirty(widget, unitToken) end
                     end
                 elseif evt == "UNIT_POWER_UPDATE" then
                     local skinData = GetFFD(widget)
@@ -486,9 +432,7 @@ do
                         skinData.power:SetValue(ppct)
                         -- Power Texts ride the same value (one field test while off);
                         -- the Custom texts follow below, power bar or not.
-                        if skinData._pwtOn then
-                            mod.RF_TextPower(skinData, unitToken, ppct, pType, true)
-                        end
+                        if skinData._pwtOn then mod.RF_TextPower(skinData, unitToken, ppct, pType, true) end
                     end
                     local tp = skinData._txP
                     if tp and tp.reads and tp.reads.pp then
@@ -498,7 +442,8 @@ do
                     local skinData = GetFFD(widget)
                     if skinData.power and skinData.power:IsShown() then
                         mod._RFPowerTypeEdge(skinData, unitToken)
-                        local ppct = UnitPowerPercent(unitToken, skinData._pwType, true, CurveConstants.ScaleTo100)
+                        local ppct =
+                            UnitPowerPercent(unitToken, skinData._pwType, true, CurveConstants.ScaleTo100)
                         skinData.power:SetValue(ppct)
                         if skinData._pwtOn then
                             mod.RF_TextPower(skinData, unitToken, ppct, skinData._pwType, true)
@@ -568,18 +513,14 @@ do
                         UpdateReadyCheck(widget, unitToken)
                     end
                 elseif evt == "PLAYER_FLAGS_CHANGED" then
-                    if unitToken and unitToken == widget:GetAttribute("unit") then
-                        UpdateButton(widget)
-                    end
+                    if unitToken and unitToken == widget:GetAttribute("unit") then UpdateButton(widget) end
                 elseif evt == "UNIT_LEVEL" then
                     mod._RFRepaintLevel(widget)
                 elseif evt == "UNIT_TARGET" then
                     mod.RF_TextRepaintCustom(GetFFD(widget), unitToken, "tgt")
                 else -- UNIT_NAME_UPDATE / UNIT_CONNECTION
                     UpdateButton(widget)
-                    if evt == "UNIT_CONNECTION" then
-                        mod._UpdateButtonRange(unitToken, widget)
-                    end
+                    if evt == "UNIT_CONNECTION" then mod._UpdateButtonRange(unitToken, widget) end
                 end
             end)
             Extras.trackers[i] = t
@@ -596,13 +537,9 @@ do
     -- hook, which repaints in full (UpdateButton + auras + dispel + BM), seeds
     -- range and re-registers private auras -- same path as a real header assignment.
     function mod.XF_Apply()
-        if not saved or not saved.profile then
-            return
-        end
+        if not saved or not saved.profile then return end
         local set = Extras.Settings()
-        if not set then
-            return
-        end
+        if not set then return end
         if InCombatLockdown() then
             Extras.applyDirty = true
             return
@@ -620,16 +557,12 @@ do
                     Extras.trackers[i]:UnregisterAllEvents()
                 end
             end
-            if Extras.mover then
-                Extras.mover:Hide()
-            end
+            if Extras.mover then Extras.mover:Hide() end
             wipe(mod._xfUnitToButton)
             -- The boss group may have been chained behind this container;
             -- re-anchor it back onto the raid (no-op when FB is not built).
             FB.Anchor()
-            if mod._NotifyTrackerProviders then
-                mod._NotifyTrackerProviders()
-            end
+            if mod._NotifyTrackerProviders then mod._NotifyTrackerProviders() end
             return
         end
 
@@ -659,17 +592,13 @@ do
                 if not UnitName(unitToken) then
                     local tries = 0
                     local function RetryName()
-                        if widget:GetAttribute("unit") ~= unitToken then
-                            return
-                        end
+                        if widget:GetAttribute("unit") ~= unitToken then return end
                         if UnitName(unitToken) then
                             UpdateButton(widget)
                             return
                         end
                         tries = tries + 1
-                        if tries < 5 then
-                            C_Timer.After(2, RetryName)
-                        end
+                        if tries < 5 then C_Timer.After(2, RetryName) end
                     end
                     C_Timer.After(2, RetryName)
                 end
@@ -677,17 +606,11 @@ do
                     t:RegisterUnitEvent(ev, unitToken)
                 end
                 -- UNIT_FLAGS is opt-in: extra frames mirror the raid combat-icon toggle.
-                if saved.profile.showCombatIndicator then
-                    t:RegisterUnitEvent("UNIT_FLAGS", unitToken)
-                end
+                if saved.profile.showCombatIndicator then t:RegisterUnitEvent("UNIT_FLAGS", unitToken) end
                 -- UNIT_LEVEL is opt-in too: only while a view shows the level.
-                if mod.RF_TextWanted("level") then
-                    t:RegisterUnitEvent("UNIT_LEVEL", unitToken)
-                end
+                if mod.RF_TextWanted("level") then t:RegisterUnitEvent("UNIT_LEVEL", unitToken) end
                 -- UNIT_TARGET likewise: only while a view's Custom text shows [target].
-                if mod.RF_TextWanted("tgt") then
-                    t:RegisterUnitEvent("UNIT_TARGET", unitToken)
-                end
+                if mod.RF_TextWanted("tgt") then t:RegisterUnitEvent("UNIT_TARGET", unitToken) end
                 t:RegisterEvent("READY_CHECK_CONFIRM")
                 t:RegisterEvent("PLAYER_FLAGS_CHANGED")
                 widget:Show()
@@ -701,18 +624,12 @@ do
         -- Extra frames are excluded from _CollectTrackerFrames (duplicates), but
         -- name-scanning trackers do index them, and PLAYER_ROLES_ASSIGNED reshuffles
         -- them with no event those trackers listen for.
-        if mod._NotifyTrackerProviders then
-            mod._NotifyTrackerProviders()
-        end
+        if mod._NotifyTrackerProviders then mod._NotifyTrackerProviders() end
     end
 
-    function mod.XF_IsMoverShown()
-        return Extras.mover and Extras.mover:IsShown() or false
-    end
+    function mod.XF_IsMoverShown() return Extras.mover and Extras.mover:IsShown() or false end
 
-    function mod.XF_SetMoverShown(show)
-        FB.SetMoverShown(Extras, show, "ERFExtraFramesMover", "Extra Frames")
-    end
+    function mod.XF_SetMoverShown(show) FB.SetMoverShown(Extras, show, "ERFExtraFramesMover", "Extra Frames") end
 
     -- Hidden bind target (pure Lua keybinding, no Bindings.xml; same pattern as
     -- the Party Mode toggle key). The options panel binds the saved key to click
@@ -721,16 +638,10 @@ do
     bindBtn:Hide()
 
     Extras.ToggleHovered = function()
-        if not saved or not saved.profile then
-            return
-        end
-        if not IsInRaid() then
-            return
-        end
+        if not saved or not saved.profile then return end
+        if not IsInRaid() then return end
         local set = Extras.Settings()
-        if not set then
-            return
-        end
+        if not set then return end
         -- The real raid frame under the mouse, or one of our own duplicates
         -- (pressing the hotkey on a duplicate removes that player too).
         local unitToken
@@ -748,14 +659,10 @@ do
                 end
             end
         end
-        if not unitToken then
-            return
-        end
+        if not unitToken then return end
         local index = tonumber(unitToken:match("^raid(%d+)$"))
         local name = index and GetRaidRosterInfo(index)
-        if not name then
-            return
-        end
+        if not name then return end
 
         local players = set.players or {}
         set.players = players
@@ -776,16 +683,12 @@ do
         then
             return
         end
-        if #Extras.ResolveUnits() >= Extras.CAP then
-            return
-        end
+        if #Extras.ResolveUnits() >= Extras.CAP then return end
         players[#players + 1] = name
         mod.XF_Apply()
     end
 
-    bindBtn:SetScript("OnClick", function()
-        Extras.ToggleHovered()
-    end)
+    bindBtn:SetScript("OnClick", function() Extras.ToggleHovered() end)
 
     -- Standing event frame: exists even while inactive so the tanks toggle or a
     -- first hotkey add can activate the feature without a /reload, and so the
@@ -807,9 +710,7 @@ do
                 end
                 return
             end
-            if not saved then
-                return
-            end
+            if not saved then return end
             if evt == "PLAYER_REGEN_ENABLED" then
                 if Extras.applyDirty then
                     Extras.applyDirty = nil
@@ -821,9 +722,7 @@ do
                 end
             else -- GROUP_ROSTER_UPDATE / PLAYER_ROLES_ASSIGNED
                 -- Raid indices and the tank set both shift with the roster
-                if Extras.ShouldBeActive() or Extras.built then
-                    mod.XF_Apply()
-                end
+                if Extras.ShouldBeActive() or Extras.built then mod.XF_Apply() end
             end
         end)
         Extras.eventFrame = ev

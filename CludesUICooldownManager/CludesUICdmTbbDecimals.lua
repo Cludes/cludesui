@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUICdmTbbDecimals.lua
 --  12.1-only engine-driven decimal duration text for Tracking Bars.
@@ -63,9 +61,7 @@ local function GetDecimalFormatter(thr)
     thr = ClampThr(thr)
     local cached = formatterByThr[thr]
     if cached ~= nil then
-        if cached then
-            return cached
-        end
+        if cached then return cached end
         return nil -- false sentinel: this threshold's table was rejected
     end
     if not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding) then
@@ -129,22 +125,16 @@ end
 -- Variant expansion for one stored spell id: the live aura can come up under
 -- the talent override (or base) form of the id the config captured.
 local function AddVariants(include, spellRef)
-    if type(spellRef) ~= "number" or spellRef <= 0 then
-        return
-    end
+    if type(spellRef) ~= "number" or spellRef <= 0 then return end
     include[spellRef] = true
     if C_Spell then
         if C_Spell.GetOverrideSpell then
             local o = C_Spell.GetOverrideSpell(spellRef)
-            if type(o) == "number" and o > 0 then
-                include[o] = true
-            end
+            if type(o) == "number" and o > 0 then include[o] = true end
         end
         if C_Spell.GetBaseSpell then
             local b = C_Spell.GetBaseSpell(spellRef)
-            if type(b) == "number" and b > 0 then
-                include[b] = true
-            end
+            if type(b) == "number" and b > 0 then include[b] = true end
         end
     end
 end
@@ -153,12 +143,8 @@ end
 -- active frame's ids can be SECRET; a secret table key would blow up the
 -- filter). issecretvalue FIRST, arithmetic after.
 local function AddCleanID(include, ident)
-    if issecretvalue and issecretvalue(ident) then
-        return
-    end
-    if type(ident) ~= "number" or ident <= 0 then
-        return
-    end
+    if issecretvalue and issecretvalue(ident) then return end
+    if type(ident) ~= "number" or ident <= 0 then return end
     AddVariants(include, ident)
 end
 
@@ -169,20 +155,14 @@ end
 -- slot filter can never match. Sync-time only (rebuilds), never per tick.
 local function AddCooldownInfoIDs(include, conf)
     local widget = ns.FindTBBChild and ns.FindTBBChild(conf)
-    if not widget then
-        return
-    end
+    if not widget then return end
     -- The frame's canonical id resolves GetSpellID/GetAuraSpellID (the actual
     -- aura variant) with its own secret handling.
-    if ns.GetCanonicalSpellIDForFrame then
-        AddCleanID(include, ns.GetCanonicalSpellIDForFrame(widget))
-    end
+    if ns.GetCanonicalSpellIDForFrame then AddCleanID(include, ns.GetCanonicalSpellIDForFrame(widget)) end
     local cdID = widget.cooldownID
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local details = cdID and getCdInfo and getCdInfo(cdID)
-    if not details then
-        return
-    end
+    if not details then return end
     AddCleanID(include, details.spellID)
     AddCleanID(include, details.overrideSpellID)
     AddCleanID(include, details.overrideTooltipSpellID)
@@ -216,9 +196,7 @@ local function UnmarkAll()
             -- The mirror gates the timer FS alpha from the secret aura
             -- presence; an unbound bar must never keep a stuck alpha-0 FS.
             if barFrame._tbbAlphaGated then
-                if barFrame._timerText then
-                    barFrame._timerText:SetAlpha(1)
-                end
+                if barFrame._timerText then barFrame._timerText:SetAlpha(1) end
                 barFrame._tbbAlphaGated = nil
             end
         end
@@ -249,9 +227,7 @@ end
 local function CollectDesired()
     local tbb = ns.GetTrackedBuffBars and ns.GetTrackedBuffBars()
     local barList = tbb and tbb.bars
-    if not barList then
-        return nil, ""
-    end
+    if not barList then return nil, "" end
 
     local work, claimed
     for i, conf in ipairs(barList) do
@@ -274,16 +250,12 @@ local function CollectDesired()
                 claimed = claimed or {}
                 work[#work + 1] = { index = i, cfg = conf, include = include }
                 for ident in pairs(include) do
-                    if claimed[ident] == nil then
-                        claimed[ident] = i
-                    end
+                    if claimed[ident] == nil then claimed[ident] = i end
                 end
             end
         end
     end
-    if not work then
-        return nil, ""
-    end
+    if not work then return nil, "" end
 
     local desired, sigParts = {}, {}
     local extra = {}
@@ -293,9 +265,7 @@ local function CollectDesired()
         AddCooldownInfoIDs(extra, wid.cfg)
         for ident in pairs(extra) do
             local ownerFrame = claimed[ident]
-            if ownerFrame == nil or ownerFrame == wid.index then
-                wid.include[ident] = true
-            end
+            if ownerFrame == nil or ownerFrame == wid.index then wid.include[ident] = true end
         end
         local ids = {}
         for ident in pairs(wid.include) do
@@ -340,17 +310,11 @@ local function BuildContainer(desired)
             candidateFilters = { includeSpellIDs = wanted.include },
             style = "tbbDecimalText",
             extraInit = function(btnFrame)
-                if btnFrame.SetMouseMotionEnabled then
-                    btnFrame:SetMouseMotionEnabled(false)
-                end
+                if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
                 local fmt = GetDecimalFormatter(wanted.thr)
-                if not fmt then
-                    return
-                end -- rejected: tick keeps its mirror
+                if not fmt then return end -- rejected: tick keeps its mirror
                 local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
-                if not (barFrame and barFrame._timerText) then
-                    return
-                end -- unbound: tick keeps its mirror
+                if not (barFrame and barFrame._timerText) then return end -- unbound: tick keeps its mirror
                 -- The bound FS MUST be a descendant of the aura button (aspect
                 -- inheritance) -- so the engine writes into this hidden one and
                 -- the tick copies its string to the bar's real timer FS. Same
@@ -391,16 +355,12 @@ end
 
 function ns.TBBDecimals_Sync()
     AK = AK or (CludesUI and CludesUI.AuraKit)
-    if not AK then
-        return
-    end
+    if not AK then return end
 
     local desired, sig = CollectDesired()
 
     if not desired then
-        if boxHolder then
-            ReleaseCurrent()
-        end
+        if boxHolder then ReleaseCurrent() end
         return
     end
 
@@ -427,9 +387,7 @@ function ns.TBBDecimals_Sync()
                             barFrame._tbbEngineFS,
                             AK.BuildDurationTextOpts(fmt, nil, 0.05)
                         )
-                        if success then
-                            boundThr[wanted.index] = wanted.thr
-                        end
+                        if success then boundThr[wanted.index] = wanted.thr end
                     end
                 end
             end

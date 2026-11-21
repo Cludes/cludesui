@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end
 -- Shared opt-in shield glow. Callers own settings, event registration and visibility.
 local Pix = CludesUI.PP
 local Glow = {}
@@ -17,9 +15,7 @@ Glow.art = {
         true,
     },
 }
-function Glow.Width(art)
-    return art[4] and Pix.Scale(art[3]) or art[3]
-end
+function Glow.Width(art) return art[4] and Pix.Scale(art[3]) or art[3] end
 
 function Glow.Build(ab)
     local hp = ab._hpBar
@@ -67,9 +63,7 @@ end
 -- the settings pass and after a retexture (a new shield fill object).
 function Glow.Anchor(ab)
     local g = ab._glow
-    if not (g and g.ge) then
-        return
-    end
+    if not (g and g.ge) then return end
     local rev = g.rev
     local near, far = rev and "RIGHT" or "LEFT", rev and "LEFT" or "RIGHT"
     local off = rev and 1 or -1
@@ -98,9 +92,7 @@ end
 function Glow.Flip(ab, unitToken)
     local g = ab._glow
     local ge = g.ge
-    if ge == 3 then
-        return
-    end
+    if ge == 3 then return end
     local eh, bh = g.edgeHost, g.bfHost
     local calc = g.calc
     if not (calc and eh.SetAlphaFromBoolean) then

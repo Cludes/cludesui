@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Window.lua  (WoW Forever only)
 --  The threat meter's window chrome, built to behave like a Damage Meters
@@ -49,12 +45,8 @@ end
 -- Top-left corner of a frame, nil when it has no plain geometry.
 local function Corner(frame)
     local leftX, topY = frame:GetLeft(), frame:GetTop()
-    if issecretvalue(leftX) or issecretvalue(topY) then
-        return nil
-    end
-    if leftX and topY then
-        return leftX, topY
-    end
+    if issecretvalue(leftX) or issecretvalue(topY) then return nil end
+    if leftX and topY then return leftX, topY end
 end
 mod.WindowCorner = Corner
 
@@ -87,21 +79,11 @@ mod.WindowCorner = Corner
 local Look = { inset = 0, iconPad = -2, stock = false, menuLook = "meter" }
 mod.Look = Look
 
-function Look.IconSize(px)
-    return px
-end
-function Look.WindowBg(texture, red, green, blue, a)
-    texture:SetColorTexture(red, green, blue, a)
-end
-function Look.HeaderBg(texture, red, green, blue, a)
-    texture:SetColorTexture(red, green, blue, a)
-end
-function Look.HeaderRail()
-    return 0
-end
-function Look.HeaderLine()
-    return false
-end
+function Look.IconSize(px) return px end
+function Look.WindowBg(texture, red, green, blue, a) texture:SetColorTexture(red, green, blue, a) end
+function Look.HeaderBg(texture, red, green, blue, a) texture:SetColorTexture(red, green, blue, a) end
+function Look.HeaderRail() return 0 end
+function Look.HeaderLine() return false end
 function Look.HeaderIcon(button)
     local iconTex = button.icon
     iconTex:SetTexture(MEDIA .. button.file)
@@ -122,9 +104,7 @@ function Look.SeatFill(line, iconWidth)
     fillTex:SetPoint("BOTTOMRIGHT", line, "BOTTOMRIGHT", 0, 0)
     return iconWidth, 0
 end
-function Look.RowBg(texture, red, green, blue, a)
-    texture:SetColorTexture(red, green, blue, a)
-end
+function Look.RowBg(texture, red, green, blue, a) texture:SetColorTexture(red, green, blue, a) end
 function Look.RowStyled() end
 local GlyphIcon, GlyphHover = Look.HeaderIcon, Look.HeaderHover
 
@@ -211,9 +191,7 @@ end
 
 -- The stock track (set up with the row's art) takes no colour.
 function Blizzard.RowBg(texture, red, green, blue, a)
-    if AtlasExists(BLIZZ_TRACK) then
-        return
-    end
+    if AtlasExists(BLIZZ_TRACK) then return end
     texture:SetColorTexture(red, green, blue, a)
 end
 
@@ -292,9 +270,7 @@ function Blizzard.RowStyled(line, dragMove)
     for index = 1, 4 do
         artTex[index]:SetAlpha(a)
     end
-    if artTex.edge then
-        artTex.edge:SetAlpha(a)
-    end
+    if artTex.edge then artTex.edge:SetAlpha(a) end
 end
 
 local CLASSIC_TILE = "Interface\\Tooltips\\UI-Tooltip-Background"
@@ -357,9 +333,7 @@ end
 
 local Classic = { inset = 5, iconPad = 2, stock = true }
 
-function Classic.IconSize(px)
-    return math.floor(px * 0.85 + 0.5)
-end
+function Classic.IconSize(px) return math.floor(px * 0.85 + 0.5) end
 
 -- The window wears the whole box: the tile from under the bevel (the rim's
 -- corner pixels round its corners) and the eight edge pieces along the
@@ -421,18 +395,14 @@ end
 
 function Classic.HeaderIcon(button)
     local artTex = CLASSIC_HDR_ART[button.key]
-    if not artTex then
-        return GlyphIcon(button)
-    end
+    if not artTex then return GlyphIcon(button) end
     iconArt[button] = artTex
     PaintArt(button.icon, artTex)
 end
 
 function Classic.SeatHeaderIcon(button, px)
     local artTex = iconArt[button]
-    if not artTex then
-        return
-    end
+    if not artTex then return end
     local iconTex, k = button.icon, artTex.scale
     iconTex:ClearAllPoints()
     if k and k < 1 then
@@ -446,9 +416,7 @@ end
 
 -- Stock art brightens on hover instead of fading in.
 function Classic.HeaderHover(button, isHovered)
-    if not iconArt[button] then
-        return GlyphHover(button, isHovered)
-    end
+    if not iconArt[button] then return GlyphHover(button, isHovered) end
     local k = isHovered and ART_HOVER or ART_IDLE
     button.icon:SetVertexColor(k, k, k, 1)
 end
@@ -515,15 +483,11 @@ local frameKind -- the Damage Meters windows' Border Style ("slim", "textured", 
 -- Always installed; the window pieces go in only with their art (UseForever).
 local Forever = { iconPad = FV.btnPad, titleColor = FV.gold, menuLook = "meterForever" }
 
-function Forever.IconSize(px)
-    return math.floor(px * FV.btnScale + 0.5)
-end
+function Forever.IconSize(px) return math.floor(px * FV.btnScale + 0.5) end
 
 -- A button's plate in its idle or hover art, set only when it changes.
 local function Plate(button, isHovered)
-    if not platesOK then
-        return
-    end
+    if not platesOK then return end
     local p = plates[button]
     if not p then
         local texture = button:CreateTexture(nil, "BACKGROUND")
@@ -552,9 +516,7 @@ local function FvGlyph(button, file)
     Plate(button, false)
 end
 
-function Forever.HeaderIcon(button)
-    FvGlyph(button, button.file)
-end
+function Forever.HeaderIcon(button) FvGlyph(button, button.file) end
 
 function Forever.HeaderHover(button, isHovered)
     Tan(button.icon, isHovered and ART_HOVER or ART_IDLE)
@@ -575,9 +537,7 @@ end
 local function FrameArt(window)
     local heavy = frameKind == "heavy"
     local owner = CreateFrame("Frame", nil, window)
-    if heavy then
-        owner:SetScale(CUI.FOREVER_HEAVY.k)
-    end
+    if heavy then owner:SetScale(CUI.FOREVER_HEAVY.k) end
     owner:SetFrameLevel(window:GetFrameLevel() + FV.frameLevel)
     owner:SetAllPoints(window)
     if heavy then
@@ -625,9 +585,7 @@ local function FvHeaderBg(texture, _, _, _, a)
     texture:SetVertexColor(1, 1, 1, a)
 end
 
-local function FvHeaderRail(hgt)
-    return math.floor(hgt * FV.hdrRail + 0.5)
-end
+local function FvHeaderRail(hgt) return math.floor(hgt * FV.hdrRail + 0.5) end
 
 -- Over Blizzard Style's entries: the pieces whose art this client has. The
 -- frame's Border Style is the Damage Meters windows' (latched with their
@@ -663,9 +621,7 @@ end
 -- forever: Blizzard Style's WoW Forever variant.
 function mod.UseLook(styleKey, forever)
     local source = (styleKey == "blizzard" and Blizzard) or (styleKey == "classic" and Classic) or nil
-    if not source then
-        return
-    end
+    if not source then return end
     if source == Blizzard then
         shadeTex = {
             lo = CreateColor(0, 0, 0, 1),
@@ -679,9 +635,7 @@ function mod.UseLook(styleKey, forever)
     for key, value in pairs(source) do
         Look[key] = value
     end
-    if source == Blizzard and forever then
-        UseForever()
-    end
+    if source == Blizzard and forever then UseForever() end
 end
 
 -------------------------------------------------------------------------------
@@ -712,9 +666,7 @@ end
 
 local function HeaderClick(button)
     CUI.HideWidgetTooltip()
-    if button.onClick then
-        button.onClick(button)
-    end
+    if button.onClick then button.onClick(button) end
 end
 
 local function NewHeaderButton(surface, key, tooltip)
@@ -762,13 +714,9 @@ function mod.LayoutHeaderButtons(surface, px, lift)
         if button:IsShown() then
             num = num + 1
             local winWidth = px
-            if button.isText then
-                winWidth = math.ceil(button.label:GetStringWidth() or 0) + 12
-            end
+            if button.isText then winWidth = math.ceil(button.label:GetStringWidth() or 0) + 12 end
             button:SetSize(winWidth, px)
-            if not button.isText then
-                Look.SeatHeaderIcon(button, px)
-            end
+            if not button.isText then Look.SeatHeaderIcon(button, px) end
             button:ClearAllPoints()
             button:SetPoint("RIGHT", header, "RIGHT", -(used + pad * num + 2), lift or 0)
             used = used + winWidth
@@ -795,9 +743,7 @@ local function GatherTargets(self)
         for index = 1, #windows do
             local wid = windows[index]
             local frame = type(wid) == "table" and wid.frame
-            if frame and frame ~= self then
-                targets[#targets + 1] = frame
-            end
+            if frame and frame ~= self then targets[#targets + 1] = frame end
         end
     else
         for index = 1, #DM_FRAME_NAMES do
@@ -809,9 +755,7 @@ local function GatherTargets(self)
     end
 end
 
-local function Plain(val)
-    return not issecretvalue(val) and val ~= nil
-end
+local function Plain(val) return not issecretvalue(val) and val ~= nil end
 
 -- The shown target nearest the rect: the smallest edge-to-edge gap (0 when
 -- they overlap), the first in list order on a tie. Its edges land in near*.
@@ -850,9 +794,7 @@ end
 -- stacked below, stacked above), taken within SNAP_DIST.
 local function SnapMove(self, leftX, topY)
     local winWidth, winHeight = self:GetWidth(), self:GetHeight()
-    if not Closest(leftX, topY, winWidth, winHeight) then
-        return leftX, topY
-    end
+    if not Closest(leftX, topY, winWidth, winHeight) then return leftX, topY end
     local best, snapped = SNAP_DIST + 1, leftX
     local skinData = math.abs(leftX - nearL)
     if skinData < best then
@@ -870,9 +812,7 @@ local function SnapMove(self, leftX, topY)
     if skinData < best then
         best, snapped = skinData, nearL - winWidth
     end
-    if best <= SNAP_DIST then
-        leftX = snapped
-    end
+    if best <= SNAP_DIST then leftX = snapped end
     best, snapped = SNAP_DIST + 1, topY
     skinData = math.abs(topY - nearT)
     if skinData < best then
@@ -890,9 +830,7 @@ local function SnapMove(self, leftX, topY)
     if skinData < best then
         best, snapped = skinData, nearT + winHeight
     end
-    if best <= SNAP_DIST then
-        topY = snapped
-    end
+    if best <= SNAP_DIST then topY = snapped end
     return leftX, topY
 end
 
@@ -900,16 +838,10 @@ end
 -- SNAP_DIST.
 local function SnapSize(self, leftX, topY, winWidth, winHeight)
     local near = Closest(leftX, topY, self:GetWidth(), self:GetHeight())
-    if not near then
-        return winWidth, winHeight
-    end
+    if not near then return winWidth, winHeight end
     local wid, hgt = near:GetWidth(), near:GetHeight()
-    if Plain(wid) and math.abs(winWidth - wid) <= SNAP_DIST then
-        winWidth = wid
-    end
-    if Plain(hgt) and math.abs(winHeight - hgt) <= SNAP_DIST then
-        winHeight = hgt
-    end
+    if Plain(wid) and math.abs(winWidth - wid) <= SNAP_DIST then winWidth = wid end
+    if Plain(hgt) and math.abs(winHeight - hgt) <= SNAP_DIST then winHeight = hgt end
     return winWidth, winHeight
 end
 
@@ -960,13 +892,9 @@ function mod.AttachChrome(widget, owner)
     lockBtn:SetAlpha(0)
     widget.lockBtn = lockBtn
 
-    local function Resting()
-        return isHovered and 0.3 or 0
-    end
+    local function Resting() return isHovered and 0.3 or 0 end
 
-    local function LockText()
-        return isLocked and CludesUI.L("Locked") or CludesUI.L("Unlocked")
-    end
+    local function LockText() return isLocked and CludesUI.L("Locked") or CludesUI.L("Unlocked") end
 
     -- Locked, the icon takes the grip's corner (the grip is hidden then).
     local function UpdateLockIcon()
@@ -980,13 +908,9 @@ function mod.AttachChrome(widget, owner)
     end
 
     gripBtn:SetScript("OnEnter", function(self)
-        if not isLocked then
-            self:SetAlpha(0.7)
-        end
+        if not isLocked then self:SetAlpha(0.7) end
     end)
-    gripBtn:SetScript("OnLeave", function(self)
-        self:SetAlpha((isHovered and not isLocked) and 0.3 or 0)
-    end)
+    gripBtn:SetScript("OnLeave", function(self) self:SetAlpha((isHovered and not isLocked) and 0.3 or 0) end)
     lockBtn:SetScript("OnEnter", function(self)
         self:SetAlpha(0.7)
         CUI.ShowWidgetTooltip(self, LockText())
@@ -1024,18 +948,10 @@ function mod.AttachChrome(widget, owner)
         else
             fadeNow = math.max(fadeTarget, fadeNow - step)
         end
-        if math.abs(fadeNow - fadeTarget) < 0.001 then
-            fadeNow = fadeTarget
-        end
-        if not isLocked and not gripBtn:IsMouseOver() then
-            gripBtn:SetAlpha(fadeNow * 0.3)
-        end
-        if not lockBtn:IsMouseOver() then
-            lockBtn:SetAlpha(fadeNow * 0.3)
-        end
-        if fadeNow == fadeTarget then
-            self:Hide()
-        end
+        if math.abs(fadeNow - fadeTarget) < 0.001 then fadeNow = fadeTarget end
+        if not isLocked and not gripBtn:IsMouseOver() then gripBtn:SetAlpha(fadeNow * 0.3) end
+        if not lockBtn:IsMouseOver() then lockBtn:SetAlpha(fadeNow * 0.3) end
+        if fadeNow == fadeTarget then self:Hide() end
     end)
 
     local poll
@@ -1060,9 +976,7 @@ function mod.AttachChrome(widget, owner)
         end
     end
     local function StartPoll()
-        if not poll then
-            poll = C_Timer.NewTicker(HOVER_POLL, Poll)
-        end
+        if not poll then poll = C_Timer.NewTicker(HOVER_POLL, Poll) end
     end
     widget:HookScript("OnEnter", StartPoll)
     header:HookScript("OnEnter", StartPoll)
@@ -1076,9 +990,7 @@ function mod.AttachChrome(widget, owner)
         lockBtn:SetAlpha(0)
         -- A menu opened from this window's header closes with it.
         local ownerFrame = CUI.ContextMenuOwner()
-        if ownerFrame and ownerFrame:GetParent() == header then
-            CUI.CloseContextMenu()
-        end
+        if ownerFrame and ownerFrame:GetParent() == header then CUI.CloseContextMenu() end
     end)
 
     local function Cursor()
@@ -1087,9 +999,7 @@ function mod.AttachChrome(widget, owner)
         return posX / scale, posY / scale
     end
 
-    local function CanStart()
-        return not isLocked and owner.CanMove() and not CUI.InProtectedInstance()
-    end
+    local function CanStart() return not isLocked and owner.CanMove() and not CUI.InProtectedInstance() end
 
     local snapOff, cursorX, cursorY, startL, startT
     -- The last applied spot and size: a held but still pointer re-anchors
@@ -1107,13 +1017,9 @@ function mod.AttachChrome(widget, owner)
     local function EndDrag()
         dragger:Hide()
         wipe(targets)
-        if not moved then
-            return
-        end
+        if not moved then return end
         local leftX, topY = Corner(widget)
-        if not leftX then
-            return
-        end
+        if not leftX then return end
         leftX, topY = Pix.Snap(leftX), Pix.Snap(topY)
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
@@ -1126,9 +1032,7 @@ function mod.AttachChrome(widget, owner)
         end
         local posX, posY = Cursor()
         if not moved then
-            if math.abs(posX - cursorX) + math.abs(posY - cursorY) <= DRAG_START then
-                return
-            end
+            if math.abs(posX - cursorX) + math.abs(posY - cursorY) <= DRAG_START then return end
             moved = true
         end
         local leftX, topY = startL + (posX - cursorX), startT + (posY - cursorY)
@@ -1136,21 +1040,15 @@ function mod.AttachChrome(widget, owner)
             leftX, topY = SnapMove(widget, leftX, topY)
         end
         leftX, topY = Pix.Snap(leftX), Pix.Snap(topY)
-        if leftX == lastL and topY == lastT then
-            return
-        end
+        if leftX == lastL and topY == lastT then return end
         lastL, lastT = leftX, topY
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
     end)
     header:SetScript("OnMouseDown", function(_, btnFrame)
-        if btnFrame ~= "LeftButton" or not CanStart() then
-            return
-        end
+        if btnFrame ~= "LeftButton" or not CanStart() then return end
         local leftX, topY = Corner(widget)
-        if not leftX then
-            return
-        end
+        if not leftX then return end
         cursorX, cursorY = Cursor()
         startL, startT = leftX, topY
         moved, lastL, lastT = false, nil, nil
@@ -1159,9 +1057,7 @@ function mod.AttachChrome(widget, owner)
         dragger:Show()
     end)
     header:SetScript("OnMouseUp", function(_, btnFrame)
-        if btnFrame == "LeftButton" and dragger:IsShown() then
-            EndDrag()
-        end
+        if btnFrame == "LeftButton" and dragger:IsShown() then EndDrag() end
     end)
 
     -- Grip resize from the pinned top-left corner, never past the screen's
@@ -1188,9 +1084,7 @@ function mod.AttachChrome(widget, owner)
         local shift = IsShiftKeyDown()
         local winWidth, winHeight = startW + dx, startH + dy
         if shift then
-            if not shiftWas then
-                axis = math.abs(dx) >= math.abs(dy) and "w" or "h"
-            end
+            if not shiftWas then axis = math.abs(dx) >= math.abs(dy) and "w" or "h" end
             if axis == "w" then
                 winHeight = startH
             else
@@ -1203,29 +1097,19 @@ function mod.AttachChrome(widget, owner)
         end
         local maxW = (UIParent:GetRight() or 0) - pinL
         local maxH = pinT - (UIParent:GetBottom() or 0)
-        if maxW > MIN_W then
-            winWidth = math.min(winWidth, maxW)
-        end
-        if maxH > MIN_H then
-            winHeight = math.min(winHeight, maxH)
-        end
+        if maxW > MIN_W then winWidth = math.min(winWidth, maxW) end
+        if maxH > MIN_H then winHeight = math.min(winHeight, maxH) end
         shiftWas = shift
-        if winWidth == lastW and winHeight == lastH then
-            return
-        end
+        if winWidth == lastW and winHeight == lastH then return end
         lastW, lastH = winWidth, winHeight
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", pinL, pinT)
         widget:SetSize(winWidth, winHeight)
     end)
     gripBtn:SetScript("OnMouseDown", function(_, btnFrame)
-        if btnFrame ~= "LeftButton" or not CanStart() then
-            return
-        end
+        if btnFrame ~= "LeftButton" or not CanStart() then return end
         local leftX, topY = Corner(widget)
-        if not leftX then
-            return
-        end
+        if not leftX then return end
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
         owner.PinPosition(leftX, topY)
@@ -1240,9 +1124,7 @@ function mod.AttachChrome(widget, owner)
         sizer:Show()
     end)
     gripBtn:SetScript("OnMouseUp", function(_, btnFrame)
-        if btnFrame == "LeftButton" and sizer:IsShown() then
-            EndResize()
-        end
+        if btnFrame == "LeftButton" and sizer:IsShown() then EndResize() end
     end)
 
     UpdateLockIcon()

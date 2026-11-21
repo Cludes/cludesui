@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\TotemBarPage_Options.lua
 --  Resource Bars options: Totem Bar page ("Totem Bars" on WoW Forever, where a
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  shared helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
@@ -41,12 +37,8 @@ local function BuildTotemSection(hostFrame, cursorY, S)
     end
 
     local function ApplyTotemBar()
-        if _G._CURB_Apply then
-            _G._CURB_Apply()
-        end
-        if CludesUI.NotifyElementResized then
-            CludesUI.NotifyElementResized(S.unlockKey)
-        end
+        if _G._CURB_Apply then _G._CURB_Apply() end
+        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized(S.unlockKey) end
         environ.UpdateTotemPreview()
     end
 
@@ -82,9 +74,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
         end,
         setValue = function(val)
             local sectionCfg = T()
-            if not sectionCfg then
-                return
-            end
+            if not sectionCfg then return end
             sectionCfg.iconSize = val
             ApplyTotemBar()
         end,
@@ -109,9 +99,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     end,
                     set = function(val)
                         local sectionCfg = T()
-                        if not sectionCfg then
-                            return
-                        end
+                        if not sectionCfg then return end
                         sectionCfg.spacing = val
                         ApplyTotemBar()
                     end,
@@ -136,9 +124,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
         end,
         setValue = function(val)
             local sectionCfg = T()
-            if not sectionCfg then
-                return
-            end
+            if not sectionCfg then return end
             sectionCfg.timerSize = val
             ApplyTotemBar()
         end,
@@ -154,9 +140,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
         end,
         setValue = function(val)
             local sectionCfg = T()
-            if not sectionCfg then
-                return
-            end
+            if not sectionCfg then return end
             sectionCfg.showTimer = val
             ApplyTotemBar()
             CludesUI:RefreshPage()
@@ -185,9 +169,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 end,
                 setValue = function(val)
                     local sectionCfg = T()
-                    if not sectionCfg then
-                        return
-                    end
+                    if not sectionCfg then return end
                     sectionCfg.borderTexture = val
                     sectionCfg.borderTextureOffset = nil
                     sectionCfg.borderTextureOffsetY = nil
@@ -200,12 +182,8 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     sectionCfg.borderA = 1
                     sectionCfg.borderBehind = _bbehind
                     local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
-                    if defSz then
-                        sectionCfg.borderSize = defSz
-                    end
-                    if sectionCfg.borderSizePx then
-                        sectionCfg.borderSizePx = false
-                    end
+                    if defSz then sectionCfg.borderSize = defSz end
+                    if sectionCfg.borderSizePx then sectionCfg.borderSizePx = false end
                     ApplyTotemBar()
                     CludesUI:RefreshPage(true)
                 end,
@@ -221,9 +199,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 end,
                 setStep = function(val)
                     local sectionCfg = T()
-                    if sectionCfg then
-                        sectionCfg.borderSize = val
-                    end
+                    if sectionCfg then sectionCfg.borderSize = val end
                 end,
                 getTex = function()
                     local sectionCfg = T()
@@ -235,9 +211,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 end,
                 setPx = function(val)
                     local sectionCfg = T()
-                    if sectionCfg then
-                        sectionCfg.borderSizePx = val
-                    end
+                    if sectionCfg then sectionCfg.borderSizePx = val end
                 end,
                 apply = function()
                     ApplyTotemBar()
@@ -276,9 +250,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     end,
                     setX = function(val)
                         local t2 = T()
-                        if t2 then
-                            t2.borderTextureOffset = val
-                        end
+                        if t2 then t2.borderTextureOffset = val end
                     end,
                     getY = function()
                         local t2 = T()
@@ -286,9 +258,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     end,
                     setY = function(val)
                         local t2 = T()
-                        if t2 then
-                            t2.borderTextureOffsetY = val
-                        end
+                        if t2 then t2.borderTextureOffsetY = val end
                     end,
                     apply = function()
                         ApplyTotemBar()
@@ -318,9 +288,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 end,
                 function(red, green, blue, a)
                     local sectionCfg = T()
-                    if not sectionCfg then
-                        return
-                    end
+                    if not sectionCfg then return end
                     sectionCfg.borderR = red
                     sectionCfg.borderG = green
                     sectionCfg.borderB = blue
@@ -334,15 +302,16 @@ local function BuildTotemSection(hostFrame, cursorY, S)
             Pix.Point(borderSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
             local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
-            borderSwatchBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(
-                    borderSwatch,
-                    CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
-                )
-            end)
-            borderSwatchBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            borderSwatchBlock:SetScript(
+                "OnEnter",
+                function()
+                    CludesUI.ShowWidgetTooltip(
+                        borderSwatch,
+                        CludesUI.DisabledTooltip("This option requires a Border Size above 0.")
+                    )
+                end
+            )
+            borderSwatchBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             local function UpdateBorderSwatchState()
                 local sectionCfg = T()
                 local noBorder = not sectionCfg or (sectionCfg.borderSize or 0) == 0
@@ -379,13 +348,9 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         step = 1,
                         get = function()
                             local sectionCfg = T()
-                            if not sectionCfg then
-                                return 0
-                            end
+                            if not sectionCfg then return 0 end
                             local val = sectionCfg.borderTextureShiftX
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local _, _, dsx = CludesUI.GetBorderDefaults(
                                 "resourcebars",
                                 sectionCfg.borderTexture or "solid",
@@ -395,9 +360,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         end,
                         set = function(val)
                             local sectionCfg = T()
-                            if not sectionCfg then
-                                return
-                            end
+                            if not sectionCfg then return end
                             sectionCfg.borderTextureShiftX = val == 0 and nil or val
                             ApplyTotemBar()
                             CludesUI:RefreshPage()
@@ -411,13 +374,9 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         step = 1,
                         get = function()
                             local sectionCfg = T()
-                            if not sectionCfg then
-                                return 0
-                            end
+                            if not sectionCfg then return 0 end
                             local val = sectionCfg.borderTextureShiftY
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                 "resourcebars",
                                 sectionCfg.borderTexture or "solid",
@@ -427,9 +386,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         end,
                         set = function(val)
                             local sectionCfg = T()
-                            if not sectionCfg then
-                                return
-                            end
+                            if not sectionCfg then return end
                             sectionCfg.borderTextureShiftY = val == 0 and nil or val
                             ApplyTotemBar()
                             CludesUI:RefreshPage()
@@ -444,9 +401,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         end,
                         set = function(val)
                             local sectionCfg = T()
-                            if not sectionCfg then
-                                return
-                            end
+                            if not sectionCfg then return end
                             sectionCfg.borderBehind = val == false and nil or val
                             ApplyTotemBar()
                             CludesUI:RefreshPage()
@@ -486,9 +441,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
         end,
         setValue = function(val)
             local sectionCfg = T()
-            if not sectionCfg then
-                return
-            end
+            if not sectionCfg then return end
             sectionCfg.frameStrata = val
             ApplyTotemBar()
         end,
@@ -506,9 +459,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
         end,
         setValue = function(val)
             local sectionCfg = T()
-            if not sectionCfg then
-                return
-            end
+            if not sectionCfg then return end
             sectionCfg.orientation = val
             ApplyTotemBar()
         end,
@@ -587,19 +538,14 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                     classItems,
                     function(key)
                         local profile = DB()
-                        if not profile then
-                            return false
-                        end
-                        if key == "NONE" then
-                            return not profile.totemBar.enabledClasses
-                        end
-                        return profile.totemBar.enabledClasses and profile.totemBar.enabledClasses[key] or false
+                        if not profile then return false end
+                        if key == "NONE" then return not profile.totemBar.enabledClasses end
+                        return profile.totemBar.enabledClasses and profile.totemBar.enabledClasses[key]
+                            or false
                     end,
                     function(key, val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         if key == "NONE" then
                             profile.totemBar.enabledClasses = nil
                         else
@@ -617,9 +563,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                                 local sc = scrollFrame.GetScrollChild and scrollFrame:GetScrollChild()
                                 if sc then
                                     for _, row in ipairs({ sc:GetChildren() }) do
-                                        if row._updateCheck then
-                                            row._updateCheck()
-                                        end
+                                        if row._updateCheck then row._updateCheck() end
                                     end
                                 end
                             end
@@ -671,9 +615,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                     setValue = function(val)
                         local profile = DB()
                         local c = profile and profile.callTotemBar
-                        if not c then
-                            return
-                        end
+                        if not c then return end
                         c.enabled = val
                         ApplyTotemBar()
                         CludesUI:RefreshPage()

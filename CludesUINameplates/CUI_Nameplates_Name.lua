@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Name.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs, type = ipairs, type
@@ -42,19 +38,13 @@ local HideClassPowerOnPlate = Inner.HideClassPowerOnPlate
 local UpdateClassPowerOnPlate, NameplateFrame = Inner.UpdateClassPowerOnPlate, Inner.NameplateFrame
 
 local classPowerType
-Inner.classPowerTypeSetters[#Inner.classPowerTypeSetters + 1] = function(val)
-    classPowerType = val
-end
+Inner.classPowerTypeSetters[#Inner.classPowerTypeSetters + 1] = function(val) classPowerType = val end
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 function NameplateFrame:UpdateName()
     local unitToken = self.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     if self.nameplate then
         local actualUnit = self.nameplate.namePlateUnitToken
         if actualUnit and actualUnit ~= unitToken then
@@ -65,22 +55,16 @@ function NameplateFrame:UpdateName()
             -- belongs to the old unit, drop it too.
             self._absorbHidden = nil
             -- Color Casting Enemies remembers the mob, not the plate.
-            if self._castSeen ~= nil then
-                mod.NP_ResetCastKind(self)
-            end
+            if self._castSeen ~= nil then mod.NP_ResetCastKind(self) end
             -- Repaint target/hover styling for the new occupant so the old one's
             -- paint cannot stick; mirrors the UpdateHealthValues swap.
             -- ApplyTarget re-owns the shared target-plate cache as a side effect.
             -- The new occupant's type scale first: ApplyTarget ends in ApplyScale.
-            if mod._typeScaleOn then
-                self:UpdateTypeScale()
-            end
+            if mod._typeScaleOn then self:UpdateTypeScale() end
             mod.ClearHoverExtras(self)
             self:ApplyTarget()
             self._maxHPValid = nil
-            if mod._npTgtTexts or self._totEv then
-                self:SyncToT(actualUnit)
-            end
+            if mod._npTgtTexts or self._totEv then self:SyncToT(actualUnit) end
         end
     end
     -- Standalone level renders on its own FontString and can share the plate with a
@@ -90,13 +74,9 @@ function NameplateFrame:UpdateName()
         self.levelText:SetText(mod.GetUnitLevelText(unitToken))
     end
     -- Classic WoW UI: the level in the vanilla border's plate.
-    if self._classicLevel then
-        mod.NP_UpdateClassicLevel(self)
-    end
+    if self._classicLevel then mod.NP_UpdateClassicLevel(self) end
     -- WoW Forever: the level in the box right of the bar.
-    if self._fvLevelBox then
-        mod.NP_UpdateForeverLevel(self)
-    end
+    if self._fvLevelBox then mod.NP_UpdateForeverLevel(self) end
     -- The slotted name-family variant decides what renders: name or a level+name
     -- combo (in the slot's materialized part colours). A nil slot keeps the plain-name
     -- write (RefreshNamePosition hides it).
@@ -171,9 +151,7 @@ end
 -- checked and, in an instance, its Show In Instances is on. The frame keeps the size it was
 -- given in _npSz (each half its own size; the chain and the faction badge read it).
 function NameplateFrame:UpdateClassification()
-    if not self.unit then
-        return
-    end
+    if not self.unit then return end
     local slotRec = GetClassificationSlot()
     if slotRec == "none" then
         self.classFrame:Hide()
@@ -235,16 +213,12 @@ end
 NameplateFrame._UpdateClassificationBase = NameplateFrame.UpdateClassification
 function NameplateFrame:UpdateClassification()
     self:_UpdateClassificationBase()
-    if p and p.classificationIncludeFaction then
-        self:UpdateFaction()
-    end
+    if p and p.classificationIncludeFaction then self:UpdateFaction() end
     local slotRec = GetClassificationSlot()
     -- Its own chain pass is this one's when the two share the slot.
     self:UpdateQuestText(slotRec)
     -- Elements sharing the slot follow the indicator's show, hide and move.
-    if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, slotRec)
-    end
+    if mod.NP_CoreChain then mod.NP_CoreChain(self, slotRec) end
 end
 
 -- Quest Objective Text: a Core Positions element of its own (its slot ns.NP_GetQuestTextSlot).
@@ -270,20 +244,14 @@ local function QuestTextMeasure(textValue, size, font, outline)
     end
     fontStr:SetText(textValue)
     local wid, hgt = fontStr:GetStringWidth(), fontStr:GetStringHeight()
-    if not (wid and wid > 0) then
-        wid = size * 0.6 * #textValue
-    end
-    if not (hgt and hgt > 0) then
-        hgt = size
-    end
+    if not (wid and wid > 0) then wid = size * 0.6 * #textValue end
+    if not (hgt and hgt > 0) then hgt = size end
     return math.ceil(wid), math.ceil(hgt)
 end
 local function QuestTextTypeIconHide(self)
     local frame = self.questTextFrame
     local iconTex = self.questTextTypeIcon
-    if iconTex and iconTex:IsShown() then
-        iconTex:Hide()
-    end
+    if iconTex and iconTex:IsShown() then iconTex:Hide() end
     if frame and frame._qtTypeIconOn then
         self.questText:ClearAllPoints()
         self.questText:SetPoint("CENTER", frame, "CENTER", 0, 0)
@@ -305,22 +273,14 @@ function mod.NP_QuestTypeIconLayout(counterW, counterH, fontSize, scale)
 end
 -- Hides the frame; the name width, the target arrows and the slot's other elements follow.
 local function QuestTextHide(self, chainParent)
-    if self.questTextTypeIcon then
-        QuestTextTypeIconHide(self)
-    end
+    if self.questTextTypeIcon then QuestTextTypeIconHide(self) end
     local frame = self.questTextFrame
-    if not (frame and frame:IsShown()) then
-        return
-    end
+    if not (frame and frame:IsShown()) then return end
     frame:Hide()
     local last = self._qtSlot
     self:UpdateNameWidth()
-    if last == "left" or last == "right" then
-        PositionArrowsOutsideAuras(self)
-    end
-    if mod.NP_CoreChain and last and last ~= chainParent then
-        mod.NP_CoreChain(self, last)
-    end
+    if last == "left" or last == "right" then PositionArrowsOutsideAuras(self) end
+    if mod.NP_CoreChain and last and last ~= chainParent then mod.NP_CoreChain(self, last) end
 end
 function NameplateFrame:UpdateQuestText(chainParent)
     local slotRec = mod.NP_GetQuestTextSlot()
@@ -369,7 +329,12 @@ function NameplateFrame:UpdateQuestText(chainParent)
         local fontStr = self.questText
         -- Paint and measure only when the text or its font moved (the text is a verified
         -- plain string: SetFormattedText's "%s" is the secret-safe text path all the same).
-        if frame._qtText ~= textValue or frame._qtSize ~= size or frame._qtFont ~= font or frame._qtOutline ~= outline then
+        if
+            frame._qtText ~= textValue
+            or frame._qtSize ~= size
+            or frame._qtFont ~= font
+            or frame._qtOutline ~= outline
+        then
             SetFSFont(fontStr, size, outline)
             fontStr:SetFormattedText("%s", textValue)
             frame._qtW, frame._qtH = QuestTextMeasure(textValue, size, font, outline)
@@ -399,7 +364,11 @@ function NameplateFrame:UpdateQuestText(chainParent)
             local fullW, fullH, textX, iconX, iconSize =
                 mod.NP_QuestTypeIconLayout(frame._qtW, frame._qtH, size, p.questObjectiveTypeIconScale or 100)
             -- Laid out again only when the count's width or the icon's size moved.
-            if not frame._qtTypeIconOn or frame._qtTypeIconCounterW ~= frame._qtW or frame._qtTypeIconW ~= iconSize then
+            if
+                not frame._qtTypeIconOn
+                or frame._qtTypeIconCounterW ~= frame._qtW
+                or frame._qtTypeIconW ~= iconSize
+            then
                 fontStr:ClearAllPoints()
                 fontStr:SetPoint("CENTER", frame, "CENTER", textX, 0)
                 typeTex:ClearAllPoints()
@@ -416,9 +385,7 @@ function NameplateFrame:UpdateQuestText(chainParent)
         self.questTextIcon:Hide()
         fontStr:Show()
     else
-        if self.questTextTypeIcon then
-            QuestTextTypeIconHide(self)
-        end
+        if self.questTextTypeIcon then QuestTextTypeIconHide(self) end
         wid, hgt = iconSz, iconSz
         self.questText:Hide()
         self.questTextIcon:Show()
@@ -430,9 +397,7 @@ function NameplateFrame:UpdateQuestText(chainParent)
     PlaceSlotIcon(self, frame, slotRec, xOff, yOff, 2, hgt)
     self._qtSlot = slotRec
     frame:Show()
-    if not wasShown or lastW ~= wid then
-        self:UpdateNameWidth()
-    end
+    if not wasShown or lastW ~= wid then self:UpdateNameWidth() end
     -- A side slot pushes the target arrows out, like the classification icon.
     if
         (not wasShown or lastSlot ~= slotRec or lastW ~= wid)
@@ -445,9 +410,7 @@ function NameplateFrame:UpdateQuestText(chainParent)
         if wasShown and lastSlot and lastSlot ~= slotRec and lastSlot ~= chainParent then
             mod.NP_CoreChain(self, lastSlot)
         end
-        if slotRec ~= chainParent then
-            mod.NP_CoreChain(self, slotRec)
-        end
+        if slotRec ~= chainParent then mod.NP_CoreChain(self, slotRec) end
     end
 end
 -- Faction badge (Horde/Alliance): a Core Positions slot element, placed exactly like
@@ -492,13 +455,9 @@ function NameplateFrame:UpdateFaction(artOnly)
             self.factionFrame:Hide()
             self:UpdateNameWidth()
             -- A side-slot badge had pushed the target arrows out: pull them back in.
-            if self._facSlot == "left" or self._facSlot == "right" then
-                PositionArrowsOutsideAuras(self)
-            end
+            if self._facSlot == "left" or self._facSlot == "right" then PositionArrowsOutsideAuras(self) end
             -- Elements sharing the slot close up.
-            if mod.NP_CoreChain then
-                mod.NP_CoreChain(self, slotRec)
-            end
+            if mod.NP_CoreChain then mod.NP_CoreChain(self, slotRec) end
         end
         return
     end
@@ -516,9 +475,7 @@ function NameplateFrame:UpdateFaction(artOnly)
         self.faction:SetAlpha(dimmed and 0.6 or 1)
         self._facDim = dimmed
     end
-    if artOnly and self._facSlot == slotRec and self.factionFrame:IsShown() then
-        return
-    end
+    if artOnly and self._facSlot == slotRec and self.factionFrame:IsShown() then return end
     local fxOff, fyOff = GetSlotOffsets(slotRec)
     local size = mod.NP_GetFactionIconSize()
     self.factionFrame._npSz = size
@@ -529,9 +486,7 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- Bottom slot so it clears the cast bar.
     if p and p.classificationIncludeFaction and self.classFrame:IsShown() then
         local step = math.floor((self.classFrame._npSz or GetRareEliteIconSize()) * 0.6 + 0.5)
-        if slotRec == "bottom" then
-            step = -step
-        end
+        if slotRec == "bottom" then step = -step end
         if mod.NP_CoreChained and mod.NP_CoreChained(slotRec) then
             -- Other elements share the slot: the pair is one member of its chain, so the
             -- badge rides the indicator wherever the chain puts it.
@@ -547,9 +502,7 @@ function NameplateFrame:UpdateFaction(artOnly)
     local lastSlot = self._facSlot
     self._facSlot = slotRec
     self.factionFrame:Show()
-    if not wasShown then
-        self:UpdateNameWidth()
-    end
+    if not wasShown then self:UpdateNameWidth() end
     -- A side-slot badge pushes the target arrows out, like the classification icon:
     -- re-flank them when it appears or moves into or out of a side slot.
     if
@@ -559,9 +512,7 @@ function NameplateFrame:UpdateFaction(artOnly)
         PositionArrowsOutsideAuras(self)
     end
     -- Elements sharing the slot follow the badge's show and move.
-    if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, slotRec)
-    end
+    if mod.NP_CoreChain then mod.NP_CoreChain(self, slotRec) end
 end
 -- The room a name has in the Top slot: the bar minus the raid marker, the Rare/Quest
 -- indicator, the Quest Objective Text and the faction badge while they show, and minus the
@@ -584,9 +535,7 @@ local function TopNameWidth(self, barW)
         nameWidth = nameWidth - ((self.classFrame._npSz or GetRareEliteIconSize()) + 4)
     end
     local qf = self.questTextFrame
-    if qf and qf:IsShown() then
-        nameWidth = nameWidth - ((qf._npW or 0) + 4)
-    end
+    if qf and qf:IsShown() then nameWidth = nameWidth - ((qf._npW or 0) + 4) end
     -- Stacked with the classification icon ("Rare/Quest + Faction") it takes
     -- no extra width; alone it reserves its own.
     local stacked = p and p.classificationIncludeFaction and self.classFrame:IsShown()
@@ -647,18 +596,12 @@ end
 function NameplateFrame:ApplyNameVisibility()
     -- Zero cost when off: the name's shown state is owned by RefreshNamePosition;
     -- only override it (hide while the cast bar is up) when the feature is on.
-    if not GetHideEnemyNameWhileCasting() then
-        return
-    end
+    if not GetHideEnemyNameWhileCasting() then return end
     local hasNameSlot = mod.FindNameSlot() ~= nil
     local isShown = hasNameSlot and not self.cast:IsShown()
     self.name:SetShown(isShown)
-    if self.nameRaidFrame then
-        self.nameRaidFrame:SetShown(isShown and self._nameRaidMarkerShown == true)
-    end
-    if mod.DebuffColors_NameChanged then
-        mod.DebuffColors_NameChanged(self, true)
-    end
+    if self.nameRaidFrame then self.nameRaidFrame:SetShown(isShown and self._nameRaidMarkerShown == true) end
+    if mod.DebuffColors_NameChanged then mod.DebuffColors_NameChanged(self, true) end
 end
 -- The full-size cast icon (a cast-bar child) occupies its side-slot space only while a cast is
 -- up, so its push is gated on the cast bar being shown (see ns.NP_FullIconPush). On every cast
@@ -666,17 +609,11 @@ end
 -- marker, the side aura rows) and the target arrows, so they track the icon instead of sitting
 -- shoved out by a phantom gap. Zero cost unless the full-size icon is enabled.
 function NameplateFrame:RefreshCastIconSideReserve()
-    if not (GetShowCastIcon() and mod.GetCastIconFullSize()) then
-        return
-    end
+    if not (GetShowCastIcon() and mod.GetCastIconFullSize()) then return end
     self:UpdateClassification()
-    if not (p and p.classificationIncludeFaction) then
-        self:UpdateFaction()
-    end
+    if not (p and p.classificationIncludeFaction) then self:UpdateFaction() end
     self:UpdateRaidIcon()
-    if mod.NPC_PlaceSideRows then
-        mod.NPC_PlaceSideRows(self)
-    end
+    if mod.NPC_PlaceSideRows then mod.NPC_PlaceSideRows(self) end
     PositionArrowsOutsideAuras(self)
 end
 
@@ -767,9 +704,7 @@ function NameplateFrame:RefreshNamePosition(localOnly)
     -- Apply name wrap here (not only at creation) so the cog toggle takes effect on the next
     -- settings refresh. Off = single line + ellipsis, on = up to two lines; reflow re-lays out.
     local nameWrap = defaultSet.enemyNameWrap
-    if p and p.enemyNameWrap ~= nil then
-        nameWrap = p.enemyNameWrap
-    end
+    if p and p.enemyNameWrap ~= nil then nameWrap = p.enemyNameWrap end
     if
         nameSlotKey == "textSlotBottomLeft"
         or nameSlotKey == "textSlotBottomRight"
@@ -799,26 +734,16 @@ function NameplateFrame:RefreshNamePosition(localOnly)
         raidMarker:Hide()
     end
     -- Debuff coloring's Color Name copies follow the name's host, font and wrapping.
-    if mod.DebuffColors_NameChanged then
-        mod.DebuffColors_NameChanged(self)
-    end
+    if mod.DebuffColors_NameChanged then mod.DebuffColors_NameChanged(self) end
     -- The top corner texts sit at the name's height: they follow the class power
     -- push with it (a target change runs this on the target's plate).
-    if mod._npTopCornerUsed then
-        self:AnchorTopCornerTexts()
-    end
-    if localOnly then
-        return
-    end
+    if mod._npTopCornerUsed then self:AnchorTopCornerTexts() end
+    if localOnly then return end
     self:UpdateClassification()
-    if not (p and p.classificationIncludeFaction) then
-        self:UpdateFaction()
-    end
+    if not (p and p.classificationIncludeFaction) then self:UpdateFaction() end
 end
 function NameplateFrame:UpdateRaidIcon()
-    if not self.unit then
-        return
-    end
+    if not self.unit then return end
     local place = GetRaidMarkerPos()
     if place == "none" then
         self.raidFrame:Hide()
@@ -831,9 +756,7 @@ function NameplateFrame:UpdateRaidIcon()
         self.raidFrame:Hide()
         self:UpdateNameWidth()
         -- Elements sharing the slot close up.
-        if mod.NP_CoreChain then
-            mod.NP_CoreChain(self, place)
-        end
+        if mod.NP_CoreChain then mod.NP_CoreChain(self, place) end
         return
     end
     SetRaidTargetIconTexture(self.raid, position)
@@ -845,26 +768,18 @@ function NameplateFrame:UpdateRaidIcon()
     self.raidFrame:Show()
     self:UpdateNameWidth()
     -- Elements sharing the slot follow the marker's show and move.
-    if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, place)
-    end
+    if mod.NP_CoreChain then mod.NP_CoreChain(self, place) end
 end
 function NameplateFrame:ApplyTarget()
-    if not self.unit then
-        return
-    end
+    if not self.unit then return end
     local targeted = UnitIsUnit(self.unit, "target")
     local flip = (self._isTarget == true) ~= (targeted == true)
     -- The hash line is painted by the health pass from this cached flag, so a
     -- flip queues one coalesced repaint (only while the line is enabled).
-    if flip and p and p.hashLineEnabled then
-        self:MarkHealthDirty()
-    end
+    if flip and p and p.hashLineEnabled then self:MarkHealthDirty() end
     self._isTarget = targeted -- cached for hot-path hash line check
     -- The Threat Gap shows on the target's plate only: a flip repaints its text.
-    if flip and mod._npTgapOn then
-        mod.NP_UpdateThreatPct(self, self.unit)
-    end
+    if flip and mod._npTgapOn then mod.NP_UpdateThreatPct(self, self.unit) end
     -- Cache ownership lives here so EVERY painter keeps it coherent:
     -- SetUnit's deferred setup (pending-watcher promotion), the UpdateHealthValues
     -- token swap and PLAYER_TARGET_CHANGED all funnel through this method. Gaining
@@ -894,9 +809,7 @@ function NameplateFrame:ApplyTarget()
     -- on AND a size was snapshotted. Runs BEFORE Border Color so a rebuilt custom border gets
     -- its target tint right after. Restore is one-shot via self._targetBorderSized.
     local tbsz
-    if targeted and mod.GetTargetGlowBorderSize() then
-        tbsz = mod.GetTargetBorderSizeValue()
-    end
+    if targeted and mod.GetTargetGlowBorderSize() then tbsz = mod.GetTargetBorderSizeValue() end
     if tbsz then
         if mod.IsCustomBorderEnabled() then
             mod.ApplyCustomBorderStyle(self, tbsz)
@@ -915,9 +828,7 @@ function NameplateFrame:ApplyTarget()
             if mod.IsCustomBorderEnabled() then
                 -- Custom border replaces the simple one; recolor with the target color,
                 -- lazy-creating it if this plate is targeted before its first ApplyBorder ran.
-                if not self._customBorder then
-                    mod.ApplyCustomBorderStyle(self)
-                end
+                if not self._customBorder then mod.ApplyCustomBorderStyle(self) end
                 if self._customBorder and CludesUI.SetBorderStyleColor then
                     CludesUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
                 end
@@ -928,23 +839,17 @@ function NameplateFrame:ApplyTarget()
         end
         -- Use Target Border Color on the custom spell icon border (the else branch's
         -- ApplyBorderColor restores it). One field read while off.
-        if p and p.castIconCustomBorder then
-            mod.ApplyCastIconBorder(self)
-        end
+        if p and p.castIconCustomBorder then mod.ApplyCastIconBorder(self) end
     else
         self:ApplyBorderColor()
     end
     -- If this plate is wrapping its border around the cast bar, the colour just set landed on
     -- the HIDDEN health border: re-sync the visible unified border. One field read unless live.
     -- (Custom wrap: re-syncs the lower piece and seam to the size and colour just set.)
-    if self._wrapActive or self._cbWrapActive then
-        self:UpdateBorderWrap()
-    end
+    if self._wrapActive or self._cbWrapActive then self:UpdateBorderWrap() end
     -- Blizzard Style: stock selection ring / deselected overlay. The classic
     -- plate marks its target through the CUI effects above alone.
-    if mod.NP_Style() == "blizzard" then
-        mod.NP_ApplyBlizzSelection(self, targeted)
-    end
+    if mod.NP_Style() == "blizzard" then mod.NP_ApplyBlizzSelection(self, targeted) end
     -- Highlight: translucent wash across the health bar (color + opacity are
     -- configurable; re-applied on show so live edits and pooled textures update)
     if targeted and mod.GetTargetGlowHighlight() then
@@ -991,16 +896,12 @@ function NameplateFrame:ApplyTarget()
     self:ApplyScale()
 end
 function NameplateFrame:ApplyMouseover()
-    if not self.unit then
-        return
-    end
+    if not self.unit then return end
     if UnitExists("mouseover") and UnitIsUnit(self.unit, "mouseover") then
         mod.ShowHoverEffect(self)
         mod.ApplyHoverExtras(self)
         mod._currentMouseoverPlate = self
-        if mod._EnsureMouseoverTicker then
-            mod._EnsureMouseoverTicker()
-        end
+        if mod._EnsureMouseoverTicker then mod._EnsureMouseoverTicker() end
     else
         mod.HideHoverEffect(self)
         mod.ClearHoverExtras(self)
@@ -1014,9 +915,7 @@ end
 -- alone -- and ApplyTarget runs after every target change, so the target
 -- state always reasserts over a stale hover write.
 function mod.ApplyHoverExtras(backing)
-    if not backing or not backing.unit or not backing.health then
-        return
-    end
+    if not backing or not backing.unit or not backing.health then return end
     local targeted = backing._isTarget
     local any = false
     local wrapSync = false -- one cast bar wrap re-sync at the end, after size and colour
@@ -1056,9 +955,7 @@ function mod.ApplyHoverExtras(backing)
             any = true
             -- The custom wrap copies the size its border is drawn at. Not the Basic
             -- wrap: it re-applies the base size and would undo the hover size.
-            if backing._cbWrapActive then
-                wrapSync = true
-            end
+            if backing._cbWrapActive then wrapSync = true end
         end
     end
     -- Border Color (the target color wins).
@@ -1066,9 +963,7 @@ function mod.ApplyHoverExtras(backing)
         if Pix then
             local bc = mod.GetHoverBorderColor()
             if mod.IsCustomBorderEnabled() then
-                if not backing._customBorder then
-                    mod.ApplyCustomBorderStyle(backing)
-                end
+                if not backing._customBorder then mod.ApplyCustomBorderStyle(backing) end
                 if backing._customBorder and CludesUI.SetBorderStyleColor then
                     CludesUI.SetBorderStyleColor(backing._customBorder, bc.r, bc.g, bc.b, 1)
                 end
@@ -1081,16 +976,10 @@ function mod.ApplyHoverExtras(backing)
             -- on: this flag tells it to repaint the base colour on the way out.
             backing._fxBorderTinted = true
         end
-        if backing._wrapActive or backing._cbWrapActive then
-            wrapSync = true
-        end
+        if backing._wrapActive or backing._cbWrapActive then wrapSync = true end
     end
-    if wrapSync then
-        backing:UpdateBorderWrap()
-    end
-    if any then
-        backing._hoverFxOn = true
-    end
+    if wrapSync then backing:UpdateBorderWrap() end
+    if any then backing._hoverFxOn = true end
 end
 
 -- One-shot restore of every shared channel to the target/base state: the
@@ -1098,9 +987,7 @@ end
 -- sizing flag), then ApplyTarget's else-branches reset glow/border color.
 -- Early-out keeps the no-extras case (the shipped default) zero-cost.
 function mod.ClearHoverExtras(backing)
-    if not backing or not backing._hoverFxOn then
-        return
-    end
+    if not backing or not backing._hoverFxOn then return end
     backing._hoverFxOn = nil
     if backing._hoverBorderSized then
         backing._hoverBorderSized = nil

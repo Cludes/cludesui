@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_CastState.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs, type = pairs, type
@@ -27,9 +23,7 @@ local ApplyOverlayGeometry, OverlayBgAlpha = Inner.ApplyOverlayGeometry, Inner.O
 local GetActiveKickSpell = Inner.GetActiveKickSpell
 
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 -------------------------------------------------------------------------------
 --  Non-Target Opacity: while the player has a target, every skinned plate that is not the
@@ -53,9 +47,7 @@ mod._ntCastImportantOnly = false
 -- SetAlpha calls are skipped and pooled frames reset cheaply (nil = never faded).
 function mod.NT_Apply(backing)
     local unitToken = backing.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     local a = 1
     local nt = mod._ntAlpha
     if
@@ -85,9 +77,7 @@ function mod.NT_Apply(backing)
             local lo = a * rest
             if backing._ntCurAlpha ~= -1 or backing._ntBoolHi ~= rest or backing._ntBoolLo ~= lo then
                 local imp = backing._castImportant
-                if type(imp) == "nil" then
-                    imp = false
-                end
+                if type(imp) == "nil" then imp = false end
                 -- Never a plain number: the next numeric apply always writes.
                 backing._ntCurAlpha = -1
                 backing._ntBoolHi, backing._ntBoolLo = rest, lo
@@ -147,25 +137,15 @@ function mod.NT_RefreshSetting()
 end
 
 function mod.HideHoverEffect(backing)
-    if not backing then
-        return
-    end
-    if backing.highlight then
-        backing.highlight:Hide()
-    end
-    if backing.hoverClipFill then
-        backing.hoverClipFill:Hide()
-    end
-    if backing.hoverClipBg then
-        backing.hoverClipBg:Hide()
-    end
+    if not backing then return end
+    if backing.highlight then backing.highlight:Hide() end
+    if backing.hoverClipFill then backing.hoverClipFill:Hide() end
+    if backing.hoverClipBg then backing.hoverClipBg:Hide() end
     backing._ovHoverShown = nil
 end
 
 function mod.ShowHoverEffect(backing)
-    if not backing or not backing.health then
-        return
-    end
+    if not backing or not backing.health then return end
     -- Highlight channel gate (the Hover Effect dropdown's Highlight box): off
     -- = both the flat wash and the Hover Texture overlay stay hidden; the
     -- extra channels render independently via ns.ApplyHoverExtras.
@@ -211,19 +191,13 @@ function mod.ShowHoverEffect(backing)
             backing.hoverOverlayBg:SetAlpha(bgAlpha)
             backing.hoverOverlayBg:SetVertexColor(hc.r, hc.g, hc.b)
         end
-        if backing.highlight then
-            backing.highlight:Hide()
-        end
+        if backing.highlight then backing.highlight:Hide() end
         backing.hoverClipFill:Show()
         backing.hoverClipBg:Show()
         return
     end
-    if backing.hoverClipFill then
-        backing.hoverClipFill:Hide()
-    end
-    if backing.hoverClipBg then
-        backing.hoverClipBg:Hide()
-    end
+    if backing.hoverClipFill then backing.hoverClipFill:Hide() end
+    if backing.hoverClipBg then backing.hoverClipBg:Hide() end
     backing._ovHoverShown = nil
     if backing.highlight then
         backing.highlight:SetColorTexture(hc.r, hc.g, hc.b, ha)
@@ -236,9 +210,7 @@ function mod.RefreshHoverEffect()
     local color = (p and p.hoverColor) or defaultSet.hoverColor
     local a = (p and p.hoverAlpha) or defaultSet.hoverAlpha
     for _, backing in pairs(mod.plates) do
-        if backing.highlight then
-            backing.highlight:SetColorTexture(color.r, color.g, color.b, a)
-        end
+        if backing.highlight then backing.highlight:SetColorTexture(color.r, color.g, color.b, a) end
         if backing == mod._currentMouseoverPlate then
             mod.ShowHoverEffect(backing)
             mod.ApplyHoverExtras(backing)
@@ -248,9 +220,7 @@ function mod.RefreshHoverEffect()
         end
     end
     for _, backing in pairs(mod.friendlyPlates or {}) do
-        if backing.highlight then
-            backing.highlight:SetColorTexture(color.r, color.g, color.b, a)
-        end
+        if backing.highlight then backing.highlight:SetColorTexture(color.r, color.g, color.b, a) end
         if backing == mod._currentMouseoverPlate then
             mod.ShowHoverEffect(backing)
             mod.ApplyHoverExtras(backing)
@@ -270,9 +240,7 @@ mod._castingPlates = {}
 -- SPELL_UPDATE_COOLDOWN and SPELL_UPDATE_USABLE (the only events this frame
 -- holds) usually arrive together, and again for every spell the GCD touches:
 -- each only shows the frame, and its next OnUpdate makes ONE pass for them all.
-kickWatcher:SetScript("OnEvent", function(self)
-    self:Show()
-end)
+kickWatcher:SetScript("OnEvent", function(self) self:Show() end)
 kickWatcher:SetScript("OnUpdate", function(self)
     self:Hide()
     -- No per-event cast-info re-reads or geometry: cast identity (protection/channel
@@ -305,9 +273,7 @@ local function NotifyCastStarted(backing)
         -- Arm the 10Hz cast-timer ticker (engine-slept between fires; self-stops at cast end)
         -- and paint ONCE synchronously, or the ticker's first fire alone leaves text blank 0.1s.
         if backing.cast and backing.cast._timerTicker then
-            if backing.cast._timerTick then
-                backing.cast._timerTick(true)
-            end
+            if backing.cast._timerTick then backing.cast._timerTick(true) end
             backing.cast._timerTicker.Start()
         end
     end
@@ -331,9 +297,7 @@ end
 local function NotifyCastEnded(backing)
     if backing then
         mod._castingPlates[backing] = nil
-        if mod._ntCastFull and mod._ntAlpha < 1 then
-            mod.NT_Apply(backing)
-        end
+        if mod._ntCastFull and mod._ntAlpha < 1 then mod.NT_Apply(backing) end
     end
     activeCastCount = activeCastCount - 1
     if activeCastCount <= 0 then
@@ -467,9 +431,7 @@ local function SetupAuraCVars()
     -- Apply stacking state via the Midnight bitfield CVar.
     mod.RefreshStackingMotion()
     local function ApplyNamePlateClickArea()
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         local saved = p or defaultSet
         local sx = (saved.hitboxScaleX or 100) / 100
         if C_NamePlate and C_NamePlate.SetNamePlateSize then
@@ -524,13 +486,9 @@ local function SetupAuraCVars()
         -- so its initial layout pass never affects nameplate bounds. Any other
         -- unit gets back what an earlier enemy parked on this pooled UnitFrame.
         hooksecurefunc(NamePlateDriverFrame, "OnNamePlateAdded", function(_, addedUnit)
-            if not addedUnit or addedUnit == "preview" then
-                return
-            end
+            if not addedUnit or addedUnit == "preview" then return end
             local np = C_NamePlate.GetNamePlateForUnit(addedUnit)
-            if not np then
-                return
-            end
+            if not np then return end
             mod.NP_HideBehindCameraIcon(np.UnitFrame)
             if UnitCanAttack("player", addedUnit) then
                 mod.HideBlizzardFrame(np, addedUnit)

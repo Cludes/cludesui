@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Nine-point picking lives on movers; gameplay frames receive no mouse hooks.
 local _, mod = ...
 mod = mod.__cuiCoreNS or mod
@@ -13,9 +11,7 @@ mod.unlockParts.PointPicker = function(LM)
     LM.PointPicker = picker
     local sourceSet, targetSet, sourcePoint
 
-    local function Enabled()
-        return CludesUIDB and CludesUIDB.unlockPointHandles == true
-    end
+    local function Enabled() return CludesUIDB and CludesUIDB.unlockPointHandles == true end
 
     local function Reject(mover, message)
         LM.FlashRedBorder(mover)
@@ -23,21 +19,13 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function Eligible(mover, source)
-        if not mover or not mover:IsShown() or mover._tempHidden then
-            return false
-        end
+        if not mover or not mover:IsShown() or mover._tempHidden then return false end
         local key = mover._barKey
         local elem = LM.registeredElements[key]
-        if not elem or CludesUI.IsScreenEdgeKey(key) then
-            return false
-        end
+        if not elem or CludesUI.IsScreenEdgeKey(key) then return false end
         if source then
-            if elem.noAnchorTo or elem.ownsPosition or mod.IsMoverPosLocked(key) then
-                return false
-            end
-            if elem.isAnchored and elem.isAnchored(key) then
-                return false
-            end
+            if elem.noAnchorTo or elem.ownsPosition or mod.IsMoverPosLocked(key) then return false end
+            if elem.isAnchored and elem.isAnchored(key) then return false end
         elseif elem.noAnchorTarget then
             return false
         end
@@ -45,15 +33,9 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function FrameDependsOn(widget, wanted, seen, depth)
-        if widget == wanted then
-            return true
-        end
-        if not widget or widget == UIParent or seen[widget] then
-            return false
-        end
-        if depth > 30 then
-            return true
-        end
+        if widget == wanted then return true end
+        if not widget or widget == UIParent or seen[widget] then return false end
+        if depth > 30 then return true end
         seen[widget] = true
         local success, total = pcall(widget.GetNumPoints, widget)
         if not success or (issecretvalue and issecretvalue(total)) or type(total) ~= "number" then
@@ -61,20 +43,14 @@ mod.unlockParts.PointPicker = function(LM)
         end
         for idx = 1, total do
             local plain, _, relative = pcall(widget.GetPoint, widget, idx)
-            if not plain or (issecretvalue and issecretvalue(relative)) then
-                return true
-            end
-            if relative and FrameDependsOn(relative, wanted, seen, depth + 1) then
-                return true
-            end
+            if not plain or (issecretvalue and issecretvalue(relative)) then return true end
+            if relative and FrameDependsOn(relative, wanted, seen, depth + 1) then return true end
         end
         return false
     end
 
     local function CanLink(source, target)
-        if not Eligible(source, true) or not Eligible(target, false) then
-            return false
-        end
+        if not Eligible(source, true) or not Eligible(target, false) then return false end
         local childKey, targetKey = source._barKey, target._barKey
         local childFrame = LM.GetBarFrame(childKey)
         if childKey == targetKey or FrameDependsOn(LM.GetBarFrame(targetKey), childFrame, {}, 0) then
@@ -83,15 +59,11 @@ mod.unlockParts.PointPicker = function(LM)
         local seen, stack = {}, { targetKey }
         while #stack > 0 do
             local key = table.remove(stack)
-            if key == childKey or LM.GetBarFrame(key) == childFrame then
-                return false
-            end
+            if key == childKey or LM.GetBarFrame(key) == childFrame then return false end
             if not seen[key] then
                 seen[key] = true
                 local details = LM.GetAnchorInfo(key)
-                if details and details.target then
-                    stack[#stack + 1] = details.target
-                end
+                if details and details.target then stack[#stack + 1] = details.target end
                 if details and details.fallback and details.fallback.target then
                     stack[#stack + 1] = details.fallback.target
                 end
@@ -124,9 +96,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function Choose(set, anchorPoint)
-        if not LM.isUnlocked or InCombatLockdown() or not Enabled() then
-            return
-        end
+        if not LM.isUnlocked or InCombatLockdown() or not Enabled() then return end
         local source = LM.pickModeMover
         if set == sourceSet and LM.pickMode == "anchorTo" then
             if not Eligible(source, true) then
@@ -146,9 +116,7 @@ mod.unlockParts.PointPicker = function(LM)
             end
             return
         end
-        if set ~= targetSet or LM.pickMode ~= "pointAnchor" or not sourcePoint then
-            return
-        end
+        if set ~= targetSet or LM.pickMode ~= "pointAnchor" or not sourcePoint then return end
         local target = set.mover
         if not CanLink(source, target) then
             Reject(target, CludesUI.L("This point anchor is unavailable or would create a circular anchor"))
@@ -175,15 +143,9 @@ mod.unlockParts.PointPicker = function(LM)
         stored.edge = nil -- An explicit point owns both axes of the new relationship.
         LM.hasChanges = true
         LM.ApplyAnchorPosition(childKey, targetKey)
-        if source.RefreshAnchoredText then
-            source:RefreshAnchoredText()
-        end
-        LM.DeferMoverSync(source, function(m)
-            m:Sync()
-        end, LM.GetBarFrame(childKey))
-        C_Timer.After(0, function()
-            LM.PropagateAnchorChain(childKey)
-        end)
+        if source.RefreshAnchoredText then source:RefreshAnchoredText() end
+        LM.DeferMoverSync(source, function(m) m:Sync() end, LM.GetBarFrame(childKey))
+        C_Timer.After(0, function() LM.PropagateAnchorChain(childKey) end)
     end
 
     local function Layout(set)
@@ -240,9 +202,7 @@ mod.unlockParts.PointPicker = function(LM)
             end)
             btnFrame:SetScript("OnLeave", function()
                 btnFrame.hovered = nil
-                if set.mover._pointHandleHovered == btnFrame then
-                    set.mover._pointHandleHovered = nil
-                end
+                if set.mover._pointHandleHovered == btnFrame then set.mover._pointHandleHovered = nil end
                 UpdateDot(btnFrame, true)
                 CludesUI.HideWidgetTooltip()
                 local leave = set.mover:GetScript("OnLeave")
@@ -253,9 +213,7 @@ mod.unlockParts.PointPicker = function(LM)
                 end
             end)
             btnFrame:SetScript("OnHide", function()
-                if btnFrame.hovered then
-                    CludesUI.HideWidgetTooltip()
-                end
+                if btnFrame.hovered then CludesUI.HideWidgetTooltip() end
                 if set.mover and set.mover._pointHandleHovered == btnFrame then
                     set.mover._pointHandleHovered = nil
                 end
@@ -277,9 +235,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     local function ShowPicker(set, mover)
-        if set.mover ~= mover then
-            set:Hide()
-        end
+        if set.mover ~= mover then set:Hide() end
         set.mover = mover
         set:SetParent(mover)
         visuals.RaiseAboveMover(set, mover)
@@ -307,22 +263,16 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     function picker.Begin(mover)
-        if not Enabled() or not Eligible(mover, true) then
-            return
-        end
+        if not Enabled() or not Eligible(mover, true) then return end
         sourceSet = sourceSet or CreateSet()
         sourcePoint = nil
         ShowPicker(sourceSet, mover)
     end
 
     function picker.Enter(mover)
-        if LM.pickMode ~= "pointAnchor" or not sourcePoint or mover == LM.pickModeMover then
-            return
-        end
+        if LM.pickMode ~= "pointAnchor" or not sourcePoint or mover == LM.pickModeMover then return end
         if not Eligible(mover, false) then
-            if targetSet then
-                targetSet:Hide()
-            end
+            if targetSet then targetSet:Hide() end
             return
         end
         targetSet = targetSet or CreateSet()
@@ -330,9 +280,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     function picker.Leave(mover)
-        if not targetSet or targetSet.mover ~= mover or not targetSet:IsShown() then
-            return
-        end
+        if not targetSet or targetSet.mover ~= mover or not targetSet:IsShown() then return end
         -- Let the next mouse focus settle when crossing onto an edge handle.
         C_Timer.After(0, function()
             if targetSet.mover == mover and not mover:IsMouseOver() and not mover._pointHandleHovered then
@@ -342,9 +290,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     function picker.Refresh(mover)
-        if not LM.isUnlocked or not LM.pickMode then
-            return
-        end
+        if not LM.isUnlocked or not LM.pickMode then return end
         if sourceSet and sourceSet.mover == mover and sourceSet:IsShown() then
             ShowPicker(sourceSet, mover)
         end
@@ -354,35 +300,21 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     function picker.BodyClick(mover, btnFrame)
-        if LM.pickMode ~= "pointAnchor" or btnFrame ~= "LeftButton" then
-            return false
-        end
-        if mover == LM.pickModeMover then
-            LM.CancelPickMode()
-        end
+        if LM.pickMode ~= "pointAnchor" or btnFrame ~= "LeftButton" then return false end
+        if mover == LM.pickModeMover then LM.CancelPickMode() end
         return true
     end
 
     function picker.Cancel()
-        if sourceSet and sourceSet:IsShown() then
-            CludesUI.HideWidgetTooltip()
-        end
-        if sourceSet then
-            sourceSet:Hide()
-        end
-        if targetSet then
-            targetSet:Hide()
-        end
+        if sourceSet and sourceSet:IsShown() then CludesUI.HideWidgetTooltip() end
+        if sourceSet then sourceSet:Hide() end
+        if targetSet then targetSet:Hide() end
         sourcePoint = nil
     end
 
-    function picker.Active()
-        return sourceSet and sourceSet:IsShown()
-    end
+    function picker.Active() return sourceSet and sourceSet:IsShown() end
 
     PA.cancelPicker = function()
-        if picker.Active() then
-            LM.CancelPickMode()
-        end
+        if picker.Active() then LM.CancelPickMode() end
     end
 end

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookPressMirror.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local barDataByKey = mod.barDataByKey
@@ -55,13 +51,9 @@ do
     -- Read the action bars' pushed settings live so the CDM press matches them.
     local function GetABProfile()
         local L = CludesUI and CludesUI.Lite
-        if not (L and L.GetAddon) then
-            return nil
-        end
+        if not (L and L.GetAddon) then return nil end
         local success, eab = pcall(L.GetAddon, "CludesUIActionBars", true)
-        if success and eab and eab.db then
-            return eab.db.profile
-        end
+        if success and eab and eab.db then return eab.db.profile end
         return nil
     end
 
@@ -162,9 +154,7 @@ do
     end
 
     local function EnsureBorderEdges(shade)
-        if shade._borderEdges then
-            return shade._borderEdges
-        end
+        if shade._borderEdges then return shade._borderEdges end
         local edges = {}
         for jdx = 1, 4 do
             local tex = shade:CreateTexture(nil, "OVERLAY", nil, 2)
@@ -184,13 +174,9 @@ do
     -- nil: their icon art fills the frame rect, so a square press is correct.
     local function IconShape(iconTex)
         local ifc = _ecmeFC and _ecmeFC[iconTex]
-        if not (ifc and ifc.shapeApplied and ifc.shapeMask) then
-            return nil
-        end
+        if not (ifc and ifc.shapeApplied and ifc.shapeMask) then return nil end
         local shape = ifc.shapeName
-        if not shape or shape == "none" or shape == "cropped" then
-            return nil
-        end
+        if not shape or shape == "none" or shape == "cropped" then return nil end
         return shape, ifc.shapeMask
     end
 
@@ -199,9 +185,7 @@ do
     -- shape's own border texture instead. Its thickness is baked into the art,
     -- so the bars' pushed border size doesn't apply -- colour still does.
     local function EnsureShapeRing(shade)
-        if shade._shapeRing then
-            return shade._shapeRing
-        end
+        if shade._shapeRing then return shade._shapeRing end
         local tex = shade:CreateTexture(nil, "OVERLAY", nil, 2)
         tex:SetSnapToPixelGrid(false)
         tex:SetTexelSnappingBias(0)
@@ -273,9 +257,7 @@ do
             ring:Show()
         elseif result == "border" then
             shade._tex:Hide()
-            if shade._shapeRing then
-                shade._shapeRing:Hide()
-            end
+            if shade._shapeRing then shade._shapeRing:Hide() end
             local edges = EnsureBorderEdges(shade)
             for jdx = 1, 4 do
                 edges[jdx]:SetVertexColor(cr, cg, callback, 1)
@@ -307,17 +289,13 @@ do
                     shade._borderEdges[jdx]:Hide()
                 end
             end
-            if shade._shapeRing then
-                shade._shapeRing:Hide()
-            end
+            if shade._shapeRing then shade._shapeRing:Hide() end
         end
         shade:Show()
         return shade
     end
 
-    local function ShowPush(iconTex)
-        return ShowOverlay(iconTex, _pushOverlay, 15, StylePush)
-    end
+    local function ShowPush(iconTex) return ShowOverlay(iconTex, _pushOverlay, 15, StylePush) end
 
     ---------------------------------------------------------------------------
     --  Spell matching (pressed button's spell vs. a CDM icon's spell)
@@ -327,48 +305,30 @@ do
     local FindSpellOverrideByID = C_SpellBook and C_SpellBook.FindSpellOverrideByID
 
     local function safeNum(func, arg)
-        if type(func) ~= "function" then
-            return nil
-        end
+        if type(func) ~= "function" then return nil end
         local success, res = pcall(func, arg)
-        if success and type(res) == "number" and res > 0 then
-            return res
-        end
+        if success and type(res) == "number" and res > 0 then return res end
     end
 
     local function SpellIdSet(ident)
         local tbl = { [ident] = true }
         local a = safeNum(GetOverrideSpell, ident)
-        if a then
-            tbl[a] = true
-        end
+        if a then tbl[a] = true end
         local b = safeNum(GetBaseSpell, ident)
-        if b then
-            tbl[b] = true
-        end
+        if b then tbl[b] = true end
         local c = safeNum(FindBaseSpellByID, ident)
-        if c then
-            tbl[c] = true
-        end
+        if c then tbl[c] = true end
         local skinData = safeNum(FindSpellOverrideByID, ident)
-        if skinData then
-            tbl[skinData] = true
-        end
+        if skinData then tbl[skinData] = true end
         return tbl
     end
 
     local function IconMatches(pressedSet, iconSid)
-        if pressedSet[iconSid] then
-            return true
-        end
+        if pressedSet[iconSid] then return true end
         local a = safeNum(GetOverrideSpell, iconSid)
-        if a and pressedSet[a] then
-            return true
-        end
+        if a and pressedSet[a] then return true end
         local b = safeNum(GetBaseSpell, iconSid)
-        if b and pressedSet[b] then
-            return true
-        end
+        if b and pressedSet[b] then return true end
         return false
     end
 
@@ -395,15 +355,11 @@ do
     local function IconSpellID(iconTex)
         local fc = _ecmeFC and _ecmeFC[iconTex]
         local spellRef = fc and fc.spellID
-        if spellRef then
-            return spellRef
-        end
+        if spellRef then return spellRef end
         local cdID = iconTex.cooldownID
         if cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
             local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
-            if details then
-                return details.overrideSpellID or details.spellID
-            end
+            if details then return details.overrideSpellID or details.spellID end
         end
         return nil
     end
@@ -447,13 +403,9 @@ do
                         end
                     end
                 end
-                if not anyDown then
-                    done = true
-                end
+                if not anyDown then done = true end
             end
-            if done then
-                ReleaseEntry(button, record)
-            end
+            if done then ReleaseEntry(button, record) end
         end
     end)
 
@@ -464,9 +416,7 @@ do
     local _anyPressMirror = false
     local function RefreshCdmPressMirrorFlag()
         _anyPressMirror = false
-        if not barDataByKey then
-            return
-        end
+        if not barDataByKey then return end
         for _, edge in pairs(barDataByKey) do
             -- Buff-family bars never mirror presses (auto-tracked auras, not
             -- keybind-pressed), so ignore a stale/imported pressMirror on them.
@@ -480,12 +430,8 @@ do
     RefreshCdmPressMirrorFlag()
 
     local function SlotSpellID(slot)
-        if not slot then
-            return nil
-        end
-        if HasAction and not HasAction(slot) then
-            return nil
-        end
+        if not slot then return nil end
+        if HasAction and not HasAction(slot) then return nil end
         -- NOTE (Midnight): GetActionInfo is documented as usable only in the
         -- secure restricted environment. This runs from an insecure post-hook,
         -- so a future build could hand back nil/secret here and silently no-op
@@ -510,9 +456,7 @@ do
             local macroName = GetActionText(slot)
             local macroIndex = macroName and GetMacroIndexByName(macroName)
             if macroIndex and macroIndex > 0 then
-                if GetMacroItem and GetMacroItem(macroIndex) then
-                    return nil
-                end
+                if GetMacroItem and GetMacroItem(macroIndex) then return nil end
                 return GetMacroSpell(macroIndex)
             end
         end
@@ -521,19 +465,13 @@ do
     mod.SlotSpellID = SlotSpellID
 
     -- Base key of a (possibly modified) binding, e.g. "SHIFT-1" -> "1".
-    local function BaseKey(binding)
-        return binding and binding:match("[^%-]+$") or nil
-    end
+    local function BaseKey(binding) return binding and binding:match("[^%-]+$") or nil end
 
     local function OnPress(button, bindCmd)
-        if not button or not _anyPressMirror then
-            return
-        end
+        if not button or not _anyPressMirror then return end
         local slot = button.action or (button.GetAttribute and button:GetAttribute("action"))
         local spellRef, itemId = SlotSpellID(slot)
-        if not spellRef and not itemId then
-            return
-        end
+        if not spellRef and not itemId then return end
 
         local pressedSet = spellRef and SpellIdSet(spellRef) or {}
         if itemId then
@@ -544,13 +482,9 @@ do
             -- of it being tracked as a plain Custom Spell entry instead.
             pressedSet[-itemId] = true
             local primaryItemID = PresetPrimaryItemID(itemId)
-            if primaryItemID then
-                pressedSet[-primaryItemID] = true
-            end
+            if primaryItemID then pressedSet[-primaryItemID] = true end
             for invSlot in pairs(mod.INV_SLOT_NAMES) do
-                if GetInventoryItemID("player", invSlot) == itemId then
-                    pressedSet[-invSlot] = true
-                end
+                if GetInventoryItemID("player", invSlot) == itemId then pressedSet[-invSlot] = true end
             end
             local _, useSpellID = C_Item.GetItemSpell(itemId)
             if useSpellID then
@@ -580,9 +514,7 @@ do
                 end
             end
         end
-        if not overlays then
-            return
-        end
+        if not overlays then return end
 
         local keyList
         if bindCmd then
@@ -623,9 +555,7 @@ do
     _G._CUI_OnActionButtonPress = function(button, down, bindCmd)
         -- Down edge only: buttons register both edges, and in key-up mode the
         -- key is already released by the up click.
-        if not down or not button or not bindCmd or not _anyPressMirror then
-            return
-        end
+        if not down or not button or not bindCmd or not _anyPressMirror then return end
         -- Keyboard evidence (a real mouse click must not mirror): a held
         -- binding key proves keyboard, but wheel binds are never IsKeyDown, so
         -- the cursor-rect test covers those. Only miss: a wheel bind pressed
@@ -633,9 +563,7 @@ do
         local k1, k2 = GetBindingKey(bindCmd)
         local b1, b2 = BaseKey(k1), BaseKey(k2)
         local keyHeld = (b1 and IsKeyDown(b1)) or (b2 and IsKeyDown(b2))
-        if not keyHeld and button.IsUnderMouse and button:IsUnderMouse() then
-            return
-        end
+        if not keyHeld and button.IsUnderMouse and button:IsUnderMouse() then return end
         OnPress(button, bindCmd)
     end
 
@@ -696,17 +624,13 @@ do
                 break
             end
         end
-        if name == _queued then
-            return
-        end
+        if name == _queued then return end
         _queued = name
         for index = #_lit, 1, -1 do
             _lit[index]:Hide()
             _lit[index] = nil
         end
-        if not (name and cdmBarIcons) then
-            return
-        end
+        if not (name and cdmBarIcons) then return end
         for barId, entries in pairs(cdmBarIcons) do
             local edge = barDataByKey and barDataByKey[barId]
             if edge and not mod.IsBarBuffFamily(edge) then
@@ -720,9 +644,7 @@ do
                             and C_Spell.GetSpellName(spellRef) == name
                         then
                             local shade = ShowOverlay(iconTex, _checkOverlay, 14, StyleChecked)
-                            if shade then
-                                _lit[#_lit + 1] = shade
-                            end
+                            if shade then _lit[#_lit + 1] = shade end
                         end
                     end
                 end
@@ -741,19 +663,13 @@ do
         local lists = CludesUI.FOREVER_NEXT_SWING
         local _, class = UnitClass("player")
         local ids = lists and lists[class]
-        if not (ids and C_Spell.IsCurrentSpell) then
-            return
-        end
+        if not (ids and C_Spell.IsCurrentSpell) then return end
         _queueNames = {}
         for index = 1, #ids do
             local num = C_Spell.GetSpellName(ids[index])
-            if not issecretvalue(num) and num then
-                _queueNames[#_queueNames + 1] = num
-            end
+            if not issecretvalue(num) and num then _queueNames[#_queueNames + 1] = num end
         end
-        if #_queueNames > 0 then
-            self:RegisterEvent("ACTIONBAR_UPDATE_STATE")
-        end
+        if #_queueNames > 0 then self:RegisterEvent("ACTIONBAR_UPDATE_STATE") end
     end)
 end
 Inner.broken = false

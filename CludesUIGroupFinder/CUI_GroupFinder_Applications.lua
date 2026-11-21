@@ -1,23 +1,17 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CUI_GroupFinder_Applications.lua: M+ applications bar in the rail, counts per
 -- session, character and account.
 -------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then
-    return
-end -- held back (CludesUIGroupFinder.lua)
+if CludesUI.HELD_BACK_ADDONS[ADDON_NAME] then return end -- held back (CludesUIGroupFinder.lua)
 local CM = CludesUI
 
 local IsSecret, PlainString = CludesUI.IsSecret, CludesUI.PlainString
 -- Realm the way UnitFullName returns it.
 local function NormRealm(realm)
     realm = PlainString(realm)
-    if not realm then
-        return nil
-    end
+    if not realm then return nil end
     realm = realm:gsub("[%s%-]", "")
     return realm ~= "" and realm or nil
 end
@@ -53,9 +47,7 @@ local VALID_SCOPE = { session = true, character = true, account = true }
 -- ready by then).
 local tipText
 local function TipText()
-    if tipText then
-        return tipText
-    end
+    if tipText then return tipText end
     tipText = {
         session = CludesUI.L("Session"),
         character = CludesUI.L("Character"),
@@ -83,29 +75,21 @@ function mod.BarTextureTables()
     return barTextures, barTexNames, barTexOrder
 end
 
-local function Cfg()
-    return mod.AppsCfg()
-end
+local function Cfg() return mod.AppsCfg() end
 
 local function Get(key, default)
     local cfg = Cfg()
     local val = cfg and cfg[key]
-    if val == nil then
-        return default
-    end
+    if val == nil then return default end
     return val
 end
 
-local function On()
-    return Get("enabled", false) == true
-end
+local function On() return Get("enabled", false) == true end
 
 -- The picked bar texture's file, or nil for a flat colour.
 local function TexturePath()
     local key = Get("texture", "none")
-    if key == "none" then
-        return nil
-    end
+    if key == "none" then return nil end
     return CM.ResolveTexturePath((mod.BarTextureTables()), key)
 end
 
@@ -127,29 +111,17 @@ end
 local myKey
 local function CountsStore()
     local a = mod.AppCountsStore()
-    if type(a.account) ~= "table" then
-        a.account = ZeroCounts()
-    end
-    if type(a.chars) ~= "table" then
-        a.chars = {}
-    end
-    if type(a.session) ~= "table" then
-        a.session = ZeroCounts()
-    end
+    if type(a.account) ~= "table" then a.account = ZeroCounts() end
+    if type(a.chars) ~= "table" then a.chars = {} end
+    if type(a.session) ~= "table" then a.session = ZeroCounts() end
     return a
 end
 
 local function Counts(scope)
     local a = CountsStore()
-    if scope == "account" then
-        return Fill(a.account)
-    end
-    if scope == "session" then
-        return Fill(a.session)
-    end
-    if not myKey then
-        return ZeroCounts()
-    end
+    if scope == "account" then return Fill(a.account) end
+    if scope == "session" then return Fill(a.session) end
+    if not myKey then return ZeroCounts() end
     a.chars[myKey] = Fill(a.chars[myKey] or ZeroCounts())
     return a.chars[myKey]
 end
@@ -174,9 +146,7 @@ local function CountFont()
     if type(scrollBar) == "table" and scrollBar.GetFont then
         filePath, size = scrollBar:GetFont()
     end
-    if filePath and size and size > 0 then
-        return filePath, size
-    end
+    if filePath and size and size > 0 then return filePath, size end
     return CM.GetFontPath(ADDON_NAME), 12
 end
 
@@ -200,17 +170,13 @@ local function ShowTip(self)
     end
     CM.ShowWidgetTooltip(self, table.concat(tipLines, "\n"), { anchor = "right", justify = "LEFT" })
 end
-local function HideTip()
-    CM.HideWidgetTooltip()
-end
+local function HideTip() CM.HideWidgetTooltip() end
 
 -- Where the search rows sit, in PVEFrame coordinates.
 local function Place()
     local pve = _G.PVEFrame
     local inset = pve and pve.Inset
-    if not (cardFrame and inset) then
-        return
-    end
+    if not (cardFrame and inset) then return end
     local r1, r2, size = -42, -57, 28
     if mod.Search_Rows then
         r1, r2, size = mod.Search_Rows()
@@ -219,16 +185,12 @@ local function Place()
     local st, pt = sp and sp:GetTop(), pve:GetTop()
     local dy = (st and pt) and (st - pt) or 0
     local ref = _G.GroupFinderFrame and _G.GroupFinderFrame.groupButton1
-    if type(ref) ~= "table" or not ref.GetLeft then
-        ref = inset
-    end
+    if type(ref) ~= "table" or not ref.GetLeft then ref = inset end
     local il, ir, pl = ref:GetLeft(), ref:GetRight(), pve:GetLeft()
     if not (il and ir and pl) then
         il, ir = inset:GetLeft(), inset:GetRight()
     end
-    if not (il and ir and pl) then
-        return
-    end
+    if not (il and ir and pl) then return end
     local pad = tonumber(mod.Cfg().padding) or 12
     local x1, x2 = il - pl + pad, ir - pl - pad
     cardFrame.box:ClearAllPoints()
@@ -242,9 +204,7 @@ local function Place()
 end
 
 local function Layout()
-    if not cardFrame then
-        return
-    end
+    if not cardFrame then return end
     local npath, nsize = CountFont()
     CM.ApplyModuleFont(cardFrame.title, nil, TITLE_SIZE, ADDON_NAME, "")
     -- The Premade Groups title, same size and colour as ours.
@@ -253,16 +213,10 @@ local function Layout()
         and _G.LFGListFrame.CategorySelection.Label
     if labelFS and labelFS.GetFont then
         local lpath, lsize, lflags = labelFS:GetFont()
-        if not cardFrame.lblSize then
-            cardFrame.lblSize = lsize
-        end
-        if lpath then
-            labelFS:SetFont(lpath, TITLE_SIZE, lflags)
-        end
+        if not cardFrame.lblSize then cardFrame.lblSize = lsize end
+        if lpath then labelFS:SetFont(lpath, TITLE_SIZE, lflags) end
         local red, green, blue = labelFS:GetTextColor()
-        if red then
-            cardFrame.title:SetTextColor(red, green, blue, 1)
-        end
+        if red then cardFrame.title:SetTextColor(red, green, blue, 1) end
     end
     local texPath = TexturePath()
     for index, seg in ipairs(SEGMENTS) do
@@ -283,9 +237,7 @@ end
 
 local shares = {} -- reused per paint
 local function RedrawCard()
-    if not (cardFrame and cardFrame:IsVisible()) then
-        return
-    end
+    if not (cardFrame and cardFrame:IsVisible()) then return end
     local c = Counts(Scope())
     -- Split the bar between the shown outcomes so it always fills.
     local sum = 0
@@ -306,9 +258,7 @@ local function RedrawCard()
         texture:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", posX, 0)
         texture:SetWidth(math.max(sw, 0.01))
         -- Each segment shows its slice of the texture so it reads as one bar.
-        if textured and wid > 0 then
-            texture:SetTexCoord(posX / wid, (posX + sw) / wid, 0, 1)
-        end
+        if textured and wid > 0 then texture:SetTexCoord(posX / wid, (posX + sw) / wid, 0, 1) end
         texture:SetShown(sw >= 0.5)
         num:SetFormattedText("%d", c[seg.key])
         num:ClearAllPoints()
@@ -321,25 +271,17 @@ end
 
 local BuildCardInto
 local function BuildCard()
-    if cardFrame then
-        return cardFrame
-    end
+    if cardFrame then return cardFrame end
     local success, built = pcall(BuildCardInto)
-    if success and built then
-        cardFrame = built
-    end
-    if not success then
-        geterrorhandler()(built)
-    end
+    if success and built then cardFrame = built end
+    if not success then geterrorhandler()(built) end
     return cardFrame
 end
 
 BuildCardInto = function()
     local owner = _G.GroupFinderFrame
     local pve = _G.PVEFrame
-    if not (owner and pve and pve.Inset) then
-        return nil
-    end
+    if not (owner and pve and pve.Inset) then return nil end
 
     -- Build into a local first so a failure never leaves half a card.
     local cardFrame = CreateFrame("Frame", nil, owner)
@@ -387,9 +329,7 @@ BuildCardInto = function()
     cardFrame.empty:SetPoint("CENTER", barFrame, "CENTER", 0, 0)
     cardFrame.empty:SetText(CludesUI.L("N/A"))
     cardFrame.empty:Hide()
-    barFrame:SetScript("OnSizeChanged", function()
-        RedrawCard()
-    end)
+    barFrame:SetScript("OnSizeChanged", function() RedrawCard() end)
     return cardFrame
 end
 
@@ -402,9 +342,7 @@ end
 -- The status event is registered only while the bar is on.
 local ev
 local function SyncCountEvent()
-    if not ev then
-        return
-    end
+    if not ev then return end
     if On() then
         ev:RegisterEvent("LFG_LIST_APPLICATION_STATUS_UPDATED")
     else
@@ -413,15 +351,11 @@ local function SyncCountEvent()
 end
 
 local function Apply()
-    if not mod.Enabled() then
-        return
-    end
+    if not mod.Enabled() then return end
     SyncCountEvent()
     local enabled = On()
     local wanted = enabled and InDungeonSearch()
-    if wanted then
-        BuildCard()
-    end
+    if wanted then BuildCard() end
     if cardFrame then
         cardFrame:SetShown(wanted)
         if wanted then
@@ -432,9 +366,7 @@ local function Apply()
                 and _G.LFGListFrame.CategorySelection
                 and _G.LFGListFrame.CategorySelection.Label
             local lpath, _, lflags = labelFS and labelFS:GetFont()
-            if lpath then
-                labelFS:SetFont(lpath, cardFrame.lblSize, lflags)
-            end
+            if lpath then labelFS:SetFont(lpath, cardFrame.lblSize, lflags) end
         end
     end
     RedrawCard()
@@ -452,40 +384,26 @@ local function LookUpMythicPlus(ident)
     end
     local acts = details.activityIDs
     local aid = (type(acts) == "table" and not IsSecret(acts)) and acts[1] or details.activityID
-    if type(aid) ~= "number" or IsSecret(aid) then
-        return nil
-    end
+    if type(aid) ~= "number" or IsSecret(aid) then return nil end
     local ai = C_LFGList.GetActivityInfoTable(aid)
-    if type(ai) ~= "table" or IsSecret(ai) or (canaccesstable and not canaccesstable(ai)) then
-        return nil
-    end
+    if type(ai) ~= "table" or IsSecret(ai) or (canaccesstable and not canaccesstable(ai)) then return nil end
     local mp = ai.isMythicPlusActivity
-    if IsSecret(mp) then
-        return nil
-    end
+    if IsSecret(mp) then return nil end
     return mp == true
 end
 
 local function Count(status, oldStatus, resultID)
     local key = STATUS_KEY[status]
-    if type(resultID) ~= "number" or IsSecret(resultID) then
-        return
-    end
+    if type(resultID) ~= "number" or IsSecret(resultID) then return end
     if status == "applied" then
-        if oldStatus == "applied" then
-            return
-        end
+        if oldStatus == "applied" then return end
         isMythicPlus[resultID] = LookUpMythicPlus(resultID)
     elseif isMythicPlus[resultID] == nil then
         isMythicPlus[resultID] = LookUpMythicPlus(resultID)
     end
     local counted = isMythicPlus[resultID]
-    if status ~= "applied" and status ~= "invited" then
-        isMythicPlus[resultID] = nil
-    end
-    if not key or status == oldStatus or counted ~= true then
-        return
-    end
+    if status ~= "applied" and status ~= "invited" then isMythicPlus[resultID] = nil end
+    if not key or status == oldStatus or counted ~= true then return end
     local a = CountsStore()
     local tbl = Fill(a.account)
     tbl[key] = tbl[key] + 1
@@ -497,9 +415,7 @@ local function Count(status, oldStatus, resultID)
 end
 
 function mod.ResetApplications(scope)
-    if not mod.Enabled() then
-        return
-    end
+    if not mod.Enabled() then return end
     local a = CountsStore()
     if scope == "account" then
         a.account = ZeroCounts()
@@ -514,22 +430,14 @@ end
 local hooked = false
 local function HookPVE()
     local pve = _G.PVEFrame
-    if hooked or not pve then
-        return
-    end
+    if hooked or not pve then return end
     hooked = true
     -- Next frame, after the skin lays the window out.
-    pve:HookScript("OnShow", function()
-        C_Timer.After(0, Apply)
-    end)
-    if pve:IsShown() then
-        C_Timer.After(0, Apply)
-    end
+    pve:HookScript("OnShow", function() C_Timer.After(0, Apply) end)
+    if pve:IsShown() then C_Timer.After(0, Apply) end
     local sp = _G.LFGListFrame and _G.LFGListFrame.SearchPanel
     if sp then
-        sp:HookScript("OnShow", function()
-            C_Timer.After(0, Apply)
-        end)
+        sp:HookScript("OnShow", function() C_Timer.After(0, Apply) end)
         sp:HookScript("OnHide", Apply)
     end
 end
@@ -537,17 +445,11 @@ end
 function mod.Apps_Enable()
     local name, realm = UnitFullName("player")
     name = PlainString(name)
-    if name then
-        myKey = name .. "-" .. (PlainString(realm) or MyRealm())
-    end
+    if name then myKey = name .. "-" .. (PlainString(realm) or MyRealm()) end
     local a = CountsStore()
-    if time() - (tonumber(a.session.t) or 0) > SESSION_GAP then
-        a.session = ZeroCounts()
-    end
+    if time() - (tonumber(a.session.t) or 0) > SESSION_GAP then a.session = ZeroCounts() end
     -- Follow the search rows when they resize.
-    if mod.Search_Layout then
-        hooksecurefunc(mod, "Search_Layout", Apply)
-    end
+    if mod.Search_Layout then hooksecurefunc(mod, "Search_Layout", Apply) end
     ev = CreateFrame("Frame")
     ev:RegisterEvent("PLAYER_LOGOUT")
     ev:SetScript("OnEvent", function(self, evt, ...)
@@ -567,8 +469,6 @@ function mod.Apps_Enable()
         end
     end)
     HookPVE()
-    if not hooked then
-        ev:RegisterEvent("ADDON_LOADED")
-    end
+    if not hooked then ev:RegisterEvent("ADDON_LOADED") end
     SyncCountEvent()
 end

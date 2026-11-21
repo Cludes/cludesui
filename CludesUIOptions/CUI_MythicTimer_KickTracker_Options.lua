@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickTracker_Options.lua
 --  Builds the "Kick Tracker" page inside the Mythic+ Tools module: the
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  dispatches the page to ns._KT_BuildPage.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIMythicTimer"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local REQ = "Kick Tracker"
 
@@ -26,16 +22,12 @@ end
 local function KickGet(key, fallback)
     local c = KickCfg()
     local val = c and c[key]
-    if val == nil then
-        return fallback
-    end
+    if val == nil then return fallback end
     return val
 end
 -- A row getter over Get: the key's value, or the default given.
 local function GetRow(key, default)
-    return function()
-        return KickGet(key, default)
-    end
+    return function() return KickGet(key, default) end
 end
 
 -- The header preview's state and builder (ns._MT_Preview), made on the
@@ -45,48 +37,28 @@ local ktPv, ktBuilder
 -- Every write hands the new settings to the runtime, which restyles the live
 -- icons and bars first; the header sample paints second.
 local function Refresh()
-    if mod.KT_Refresh then
-        mod.KT_Refresh()
-    end
-    if ktPv then
-        mod._MT_Preview.Repaint(ktPv)
-    end
+    if mod.KT_Refresh then mod.KT_Refresh() end
+    if ktPv then mod._MT_Preview.Repaint(ktPv) end
 end
 
 local function Set(key, val)
     local c = KickCfg()
-    if not c then
-        return
-    end
+    if not c then return end
     c[key] = val
     Refresh()
 end
 -- Row setters over Set: the key written with the row's value.
 local function SetRow(key)
-    return function(value)
-        Set(key, value)
-    end
+    return function(value) Set(key, value) end
 end
 
-local function On()
-    return KickGet("enabled", false) == true
-end
-local function Off()
-    return not On()
-end
-local function PlatesOn()
-    return On() and KickGet("showPlates", true) ~= false
-end
-local function PlatesOff()
-    return not PlatesOn()
-end
+local function On() return KickGet("enabled", false) == true end
+local function Off() return not On() end
+local function PlatesOn() return On() and KickGet("showPlates", true) ~= false end
+local function PlatesOff() return not PlatesOn() end
 local REQ_PLATES = "Show on Nameplates"
-local function BarsOn()
-    return On() and KickGet("showBars", true) ~= false
-end
-local function BarsHidden()
-    return not BarsOn()
-end
+local function BarsOn() return On() and KickGet("showBars", true) ~= false end
+local function BarsHidden() return not BarsOn() end
 local REQ_BARS = "Show Bars"
 
 -- The header preview: the bars on the left, the nameplate icon on the right
@@ -100,9 +72,7 @@ local KT_COLS = {
         title = "Bars",
         on = BarsOn,
         paint = function(host)
-            if mod.KTB_PaintSample then
-                return mod.KTB_PaintSample(host, 3)
-            end
+            if mod.KTB_PaintSample then return mod.KTB_PaintSample(host, 3) end
         end,
     },
     {
@@ -110,9 +80,7 @@ local KT_COLS = {
         on = PlatesOn,
         noFit = true,
         paint = function(host)
-            if mod.KT_PaintSampleIcon then
-                return mod.KT_PaintSampleIcon(host)
-            end
+            if mod.KT_PaintSampleIcon then return mod.KT_PaintSampleIcon(host) end
         end,
     },
 }
@@ -125,22 +93,16 @@ mod._KT_HeaderBuilder = function(heading, hdrW)
 end
 -- A kept page shown again (onPageCacheRestore): the preview paints again.
 mod._KT_RestorePreview = function()
-    if ktPv then
-        mod._MT_Preview.Update(ktPv, false)
-    end
+    if ktPv then mod._MT_Preview.Update(ktPv, false) end
 end
 
 -- Where to Show: every content key of ns.MTWhere, in its order, with the
 -- labels the module's other Where to Show lists use. Built on first use.
 local whereItems
 local function WhereItems()
-    if whereItems then
-        return whereItems
-    end
+    if whereItems then return whereItems end
     local keyList = mod.KickEngine and mod.KickEngine.WHERE_LIST
-    if not keyList then
-        return {}
-    end
+    if not keyList then return {} end
     local labels = mod._MT_WHERE_LABELS
     whereItems = {}
     for idx = 1, #keyList do
@@ -160,9 +122,7 @@ end
 
 local function WhereSet(keyName, val)
     local c = KickCfg()
-    if not c then
-        return
-    end
+    if not c then return end
     local tbl = c.whereToShow
     if type(tbl) ~= "table" then
         tbl = {}
@@ -183,9 +143,7 @@ local SIDE_X = { LEFT = -4, RIGHT = 4, TOP = 0, BOTTOM = 0 }
 -- still untouched; custom offsets stay as they are.
 local function SetPosition(val)
     local c = KickCfg()
-    if not c then
-        return
-    end
+    if not c then return end
     local old = KickGet("anchor", "LEFT")
     if SIDE_X[val] and KickGet("offsetX", -4) == SIDE_X[old] and KickGet("offsetY", 0) == 0 then
         c.offsetX = SIDE_X[val]
@@ -200,9 +158,7 @@ local function NoCUIPlates()
     local m = CludesUI._ModuleNS.CludesUINameplates
     return not (m and m.plates)
 end
-local function CUIPlatesOn()
-    return not NoCUIPlates()
-end
+local function CUIPlatesOn() return not NoCUIPlates() end
 
 -- The shared position labels, in this row's own order (the menu lists only
 -- the keys the order names).
@@ -261,9 +217,7 @@ local function MarkerValues()
         markerValues._menuOpts = {
             icon = function(key)
                 local idx = tonumber(key)
-                if not idx or idx < 1 then
-                    return nil
-                end
+                if not idx or idx < 1 then return nil end
                 local l, t = ((idx - 1) % 4) * 0.25, math.floor((idx - 1) / 4) * 0.25
                 return MARKER_ICONS, l, l + 0.25, t, t + 0.25
             end,
@@ -280,15 +234,11 @@ end
 -- message's 255 bytes.
 local ANNOUNCE_MAX = 80
 
-local function AnnounceDefault()
-    return mod.KT_AnnounceDefault and mod.KT_AnnounceDefault() or ""
-end
+local function AnnounceDefault() return mod.KT_AnnounceDefault and mod.KT_AnnounceDefault() or "" end
 
 local function EditAnnounceText()
     local current = KickGet("announceText", nil)
-    if type(current) ~= "string" or current == "" then
-        current = AnnounceDefault()
-    end
+    if type(current) ~= "string" or current == "" then current = AnnounceDefault() end
     CludesUI:ShowInputPopup({
         title = "Edit Announce Text",
         message = "Sent in party chat at the ready check. {marker} stands for your raid marker. Empty brings the default line back.",
@@ -300,9 +250,7 @@ local function EditAnnounceText()
         confirmText = "Save",
         onConfirm = function(textValue)
             textValue = strtrim(textValue or "")
-            if textValue == "" or textValue == AnnounceDefault() then
-                textValue = nil
-            end
+            if textValue == "" or textValue == AnnounceDefault() then textValue = nil end
             Set("announceText", textValue)
         end,
     })
@@ -347,13 +295,9 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             -- The runtime alone: the section rebuild that follows builds
             -- the header again and paints its samples then.
             local c = KickCfg()
-            if not c then
-                return
-            end
+            if not c then return end
             c.enabled = val and true or false
-            if mod.KT_Refresh then
-                mod.KT_Refresh()
-            end
+            if mod.KT_Refresh then mod.KT_Refresh() end
         end),
     }, {
         type = "dropdown",
@@ -363,17 +307,13 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         tooltip = "The tracker runs in Mythic and Mythic+ dungeons and arenas only; untick one to turn it off there.",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = row._rightRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         local whereDD, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             220,
@@ -402,12 +342,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         disabledTooltip = REQ,
         values = MarkerValues(),
         order = MARKER_ORDER,
-        getValue = function()
-            return tostring(KickGet("focusMarker", 0))
-        end,
-        setValue = function(val)
-            Set("focusMarker", tonumber(val) or 0)
-        end,
+        getValue = function() return tostring(KickGet("focusMarker", 0)) end,
+        setValue = function(val) Set("focusMarker", tonumber(val) or 0) end,
     }, {
         type = "labeledButton",
         text = "Edit Announce Text",
@@ -436,9 +372,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 end,
                 {
                     onDismiss = function()
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
+                        if not CludesUIDB then CludesUIDB = {} end
                         CludesUIDB.dismissedKickMarkerWarning = true
                     end,
                 }
@@ -556,9 +490,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             tooltip = "The seconds left on the kicker's interrupt.",
             disabled = PlatesOff,
             disabledTooltip = REQ_PLATES,
-            getValue = function()
-                return KickGet("showTimer", true) == true
-            end,
+            getValue = function() return KickGet("showTimer", true) == true end,
             setValue = function(val)
                 Set("showTimer", val and true or false)
                 CludesUI:RefreshPage()
@@ -571,9 +503,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_PLATES,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         })
         cursorY = cursorY - height
@@ -581,20 +511,14 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             -- Icon Effects: the checkbox dropdown over its three keys, in
             -- place of the row's placeholder dropdown.
             local fxRgn = row._rightRegion
-            if fxRgn._control then
-                fxRgn._control:Hide()
-            end
+            if fxRgn._control then fxRgn._control:Hide() end
             local fxDD, fxRefresh = CludesUI.BuildVisOptsCBDropdown(
                 fxRgn,
                 220,
                 fxRgn:GetFrameLevel() + 2,
                 ICON_EFFECTS,
-                function(key)
-                    return KickGet(key, key ~= "desaturate") == true
-                end,
-                function(key, val)
-                    Set(key, val and true or false)
-                end,
+                function(key) return KickGet(key, key ~= "desaturate") == true end,
+                function(key, val) Set(key, val and true or false) end,
                 nil,
                 nil,
                 nil,
@@ -609,9 +533,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             CludesUI.BuildInlineCog(row._leftRegion, {
                 tip = "Timer Settings",
                 title = "Cooldown Timer",
-                disabled = function()
-                    return PlatesOff() or KickGet("showTimer", true) ~= true
-                end,
+                disabled = function() return PlatesOff() or KickGet("showTimer", true) ~= true end,
                 disabledTooltip = "Show Cooldown Timer",
                 rows = {
                     {
@@ -659,12 +581,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             tooltip = "The icons draw over every other nameplate, so an overlapping plate never hides one. When off, an icon stays inside its own nameplate, behind any plate that covers it.",
             disabled = PlatesOff,
             disabledTooltip = REQ_PLATES,
-            getValue = function()
-                return KickGet("aboveOverlap", true) ~= false
-            end,
-            setValue = function(val)
-                Set("aboveOverlap", val and true or false)
-            end,
+            getValue = function() return KickGet("aboveOverlap", true) ~= false end,
+            setValue = function(val) Set("aboveOverlap", val and true or false) end,
         }, CludesUI.BlankRowCfg())
         cursorY = cursorY - height
 
@@ -738,12 +656,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_BARS,
             values = { DOWN = "Down", UP = "Up" },
             order = { "DOWN", "UP" },
-            getValue = function()
-                return KickGet("barGrowUp", false) == true and "UP" or "DOWN"
-            end,
-            setValue = function(val)
-                Set("barGrowUp", val == "UP")
-            end,
+            getValue = function() return KickGet("barGrowUp", false) == true and "UP" or "DOWN" end,
+            setValue = function(val) Set("barGrowUp", val == "UP") end,
         }, {
             type = "dropdown",
             text = "Bar Texture",
@@ -772,9 +686,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     getValue = function()
                         local _, cls = UnitClass("player")
                         local color = cls and C_ClassColor.GetClassColor(cls)
-                        if not color then
-                            return 0.2, 0.2, 0.2
-                        end
+                        if not color then return 0.2, 0.2, 0.2 end
                         local red, green, b = color:GetRGB()
                         return red * 0.3, green * 0.3, b * 0.3
                     end,
@@ -783,9 +695,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         Set("barBgMode", "class")
                         CludesUI:RefreshPage()
                     end,
-                    refreshAlpha = function()
-                        return KickGet("barBgMode", "class") ~= "custom" and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return KickGet("barBgMode", "class") ~= "custom" and 1 or 0.3 end,
                 },
                 {
                     tooltip = "Custom Color",
@@ -799,9 +709,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     end,
                     setValue = function(red, green, blue, a)
                         local c = KickCfg()
-                        if not c then
-                            return
-                        end
+                        if not c then return end
                         c.barBgColor = { r = red, g = green, b = blue, a = a }
                         Set("barBgMode", "custom")
                     end,
@@ -811,13 +719,9 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
-                    refreshAlpha = function()
-                        return KickGet("barBgMode", "class") == "custom" and 1 or 0.3
-                    end,
+                    refreshAlpha = function() return KickGet("barBgMode", "class") == "custom" and 1 or 0.3 end,
                 },
             },
         }, {
@@ -842,9 +746,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_BARS,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         }, {
             type = "toggle",
@@ -852,12 +754,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             tooltip = "Adds your own row, with its cooldown read from your talents.",
             disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
-            getValue = function()
-                return KickGet("barIncludeSelf", true) == true
-            end,
-            setValue = function(val)
-                Set("barIncludeSelf", val and true or false)
-            end,
+            getValue = function() return KickGet("barIncludeSelf", true) == true end,
+            setValue = function(val) Set("barIncludeSelf", val and true or false) end,
         })
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
@@ -866,20 +764,14 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             -- the icon's side and one text size for the name and the timer
             -- (the Fonts page sets the two apart).
             local elRgn = row._leftRegion
-            if elRgn._control then
-                elRgn._control:Hide()
-            end
+            if elRgn._control then elRgn._control:Hide() end
             local elDD, elRefresh = CludesUI.BuildVisOptsCBDropdown(
                 elRgn,
                 220,
                 elRgn:GetFrameLevel() + 2,
                 BAR_ELEMENTS,
-                function(key)
-                    return KickGet(key, true) == true
-                end,
-                function(key, val)
-                    Set(key, val and true or false)
-                end,
+                function(key) return KickGet(key, true) == true end,
+                function(key, val) Set(key, val and true or false) end,
                 nil,
                 nil,
                 nil,
@@ -900,12 +792,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     {
                         type = "toggle",
                         label = "Icon on Right",
-                        get = function()
-                            return KickGet("barIconOnRight", false) == true
-                        end,
-                        set = function(val)
-                            Set("barIconOnRight", val and true or false)
-                        end,
+                        get = function() return KickGet("barIconOnRight", false) == true end,
+                        set = function(val) Set("barIconOnRight", val and true or false) end,
                     },
                     {
                         type = "slider",

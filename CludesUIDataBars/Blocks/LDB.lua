@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\LDB.lua - Info Bar block: any LibDataBroker plugin.
 --
@@ -51,9 +49,7 @@ local SHOWN_KEYS = {
 -- Plugins colour their text, which would beat the block's colour and its
 -- hover accent; stripping (the default) gives the colour back to the block.
 local function StripColours(text)
-    if not text then
-        return text
-    end
+    if not text then return text end
     text = text:gsub("|c%x%x%x%x%x%x%x%x", "")
     text = text:gsub("|cn[%a%d_]+:", "") -- the named form, |cnGREEN_FONT_COLOR:
     return (text:gsub("|r", ""))
@@ -61,19 +57,13 @@ end
 
 -- The plugin's text, or its value and suffix for plugins that publish those.
 local function PluginText(object)
-    if not object then
-        return nil
-    end
+    if not object then return nil end
     local text = object.text
-    if type(text) == "string" and text ~= "" then
-        return text
-    end
+    if type(text) == "string" and text ~= "" then return text end
     if object.value ~= nil then
         local out = tostring(object.value)
         local suffix = object.suffix
-        if type(suffix) == "string" and suffix ~= "" then
-            out = out .. " " .. suffix
-        end
+        if type(suffix) == "string" and suffix ~= "" then out = out .. " " .. suffix end
         return out
     end
     return nil
@@ -85,9 +75,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     -- Collapsing is a Show/Hide that combat can refuse; it is done when combat ends.
     inst.events = { "PLAYER_REGEN_ENABLED" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:EnableMouse(true)
@@ -131,9 +119,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         if cfg.showLabel and type(name) == "string" and name ~= "" then
             text = body and (name .. ": " .. body) or name
         end
-        if cfg.stripColors ~= false then
-            text = StripColours(text)
-        end
+        if cfg.stripColors ~= false then text = StripColours(text) end
         return text or "", false
     end
 
@@ -153,9 +139,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     -- Everything about the icon that is drawn, as one string.
     local function Art(object)
         local texture = Settings().showIcon ~= false and object and object.icon
-        if not texture then
-            return "-"
-        end
+        if not texture then return "-" end
         local c = object.iconCoords
         local coords = (type(c) == "table" and #c == 4) and table.concat(c, ",") or "full"
         local red, green, blue = IconTint(object)
@@ -277,9 +261,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     -- Width on a horizontal bar a new text is just set (the width cannot
     -- change); anything else lays the block out again.
     local function Update()
-        if inst._dead then
-            return
-        end
+        if inst._dead then return end
         local object = Plugin()
         if not object or drawnText == nil then
             inst:Refresh()
@@ -301,19 +283,13 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     -- Listens to the picked plugin's updates; does nothing if already listening to it.
     function inst:Listen()
         local name = Settings().source
-        if listening == name then
-            return
-        end
+        if listening == name then return end
         StopListening()
         local lib = name and mod.GetLDB()
-        if not lib then
-            return
-        end
+        if not lib then return end
         -- Called with (event, name, key, value, object); only the key matters.
         pcall(lib.RegisterCallback, inst, "LibDataBroker_AttributeChanged_" .. name, function(_, _, key)
-            if SHOWN_KEYS[key] then
-                Update()
-            end
+            if SHOWN_KEYS[key] then Update() end
         end)
         listening = name
     end
@@ -321,13 +297,9 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     local function HideTip()
         if tipRoute == "plugin" then
             local object = Plugin()
-            if object and object.OnLeave then
-                pcall(object.OnLeave, button)
-            end
+            if object and object.OnLeave then pcall(object.OnLeave, button) end
         elseif tipRoute == "gametip" then
-            if GameTooltip:IsOwned(button) then
-                GameTooltip:Hide()
-            end
+            if GameTooltip:IsOwned(button) then GameTooltip:Hide() end
         else
             mod.Tip_Hide(button)
         end
@@ -349,9 +321,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             return
         end
         local object = Plugin()
-        if not object then
-            return
-        end
+        if not object then return end
         if object.OnEnter then
             tipRoute = "plugin"
             pcall(object.OnEnter, button)
@@ -407,21 +377,15 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             if not mod.OpenBlockSettings then
                 CludesUI:EnsureLoaded() -- the settings load on demand
             end
-            if mod.OpenBlockSettings then
-                mod.OpenBlockSettings(barCtx.id, blockCfg.id, "ldb")
-            end
+            if mod.OpenBlockSettings then mod.OpenBlockSettings(barCtx.id, blockCfg.id, "ldb") end
             return
         end
         local object = Plugin()
-        if object and object.OnClick then
-            pcall(object.OnClick, button, mouseButton)
-        end
+        if object and object.OnClick then pcall(object.OnClick, button, mouseButton) end
     end)
     button:SetScript("OnMouseWheel", function(_, delta)
         local object = Plugin()
-        if object and object.OnMouseWheel then
-            pcall(object.OnMouseWheel, button, delta)
-        end
+        if object and object.OnMouseWheel then pcall(object.OnMouseWheel, button, delta) end
     end)
 
     -- A plugin made after us (its addon loads later, or on demand) fills the
@@ -436,9 +400,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     local function StopAll()
         K.UnregisterInstEvents(inst)
         local lib = mod.GetLDB()
-        if lib then
-            pcall(lib.UnregisterCallback, inst, "LibDataBroker_DataObjectCreated")
-        end
+        if lib then pcall(lib.UnregisterCallback, inst, "LibDataBroker_DataObjectCreated") end
         StopListening()
     end
 
@@ -447,16 +409,12 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         if not self.eventFrame then
             -- PLAYER_REGEN_ENABLED: only a Show/Hide that combat refused.
             self.eventFrame = K.MakeEventFrame(self, function(me)
-                if owesShow and not me._dead then
-                    me:Refresh()
-                end
+                if owesShow and not me._dead then me:Refresh() end
             end)
         end
         K.RegisterInstEvents(self)
         local lib = mod.GetLDB()
-        if lib then
-            pcall(lib.RegisterCallback, inst, "LibDataBroker_DataObjectCreated", OnCreated)
-        end
+        if lib then pcall(lib.RegisterCallback, inst, "LibDataBroker_DataObjectCreated", OnCreated) end
         self:Listen()
     end
 
@@ -466,12 +424,8 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if not contentFrame:IsShown() then
-            return 0
-        end
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if not contentFrame:IsShown() then return 0 end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 

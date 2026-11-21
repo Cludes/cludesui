@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIChat_Forever.lua
 --
@@ -31,9 +29,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local CUI = _G.CludesUI
 local CHAT = mod.ECHAT
-if not CHAT or not CUI then
-    return
-end
+if not CHAT or not CUI then return end
 local CFD = CUI._chatCFD
 local BORDER = CUI.FOREVER_BORDER
 local HEAVY = CUI.FOREVER_HEAVY
@@ -109,9 +105,7 @@ local function SeatBox(box, owner, tp, ty, by, inX)
     end
     cfg[1], cfg[2], cfg[3], cfg[4], cfg[5] = tp, posX, ty, -posX, by
     CUI.ForeverBorderSeat(box.rim, owner, tp, posX, ty, -posX, by)
-    if box.lift then
-        CUI.ForeverBorderSeat(box.lift, owner, tp, posX, ty, -posX, by)
-    end
+    if box.lift then CUI.ForeverBorderSeat(box.lift, owner, tp, posX, ty, -posX, by) end
     Seat(box.fill, owner, tp, posX + frame, ty - frame, -posX - frame, by + frame)
 end
 
@@ -136,9 +130,7 @@ end
 local function SeatHeavyBox(box, owner, tp, ty, by, inX)
     local posX = inX or 0
     CUI.ForeverHeavySeat(box.rim, owner, tp, posX, ty, -posX, by)
-    if box.lift then
-        CUI.ForeverHeavySeat(box.lift, owner, tp, posX, ty, -posX, by)
-    end
+    if box.lift then CUI.ForeverHeavySeat(box.lift, owner, tp, posX, ty, -posX, by) end
     CUI.ForeverHeavyFill(box.rim, box.fill, owner, tp, posX, ty, -posX, by)
 end
 
@@ -147,9 +139,7 @@ end
 local function ShowLift(box, isShown)
     local lift = box.lift
     if not lift then
-        if not isShown then
-            return
-        end
+        if not isShown then return end
         local l, s = ForeverChat.lift, box.seat
         lift = CUI.ForeverBorder(box.host, "ARTWORK", 0, true, mod.ChatFvKind())
         CUI.ForeverBorderPaint(lift, l[1], l[2], l[3], l[4])
@@ -191,9 +181,7 @@ end
 -- Seats the input and records the panel insets (numeric placement off the
 -- chat frame's rect, PositionChatPanel; the engine derives the text area).
 function CHAT.FV_SeatInput(castFrame, eb, inputH)
-    if eb then
-        CHAT.FV_PlaceEditBox(castFrame, eb, inputH)
-    end
+    if eb then CHAT.FV_PlaceEditBox(castFrame, eb, inputH) end
     local skinData = CFD(castFrame)
     local ins = skinData._bgIns
     if not ins then
@@ -211,9 +199,7 @@ end
 function CHAT.FV_LayoutPanel(castFrame, inputH)
     local skinData = CFD(castFrame)
     local owner = skinData.fvHost
-    if not owner or skinData.fvInputH == inputH then
-        return
-    end
+    if not owner or skinData.fvInputH == inputH then return end
     skinData.fvInputH = inputH
     local inTall = inputH + 2 * ForeverChat.IN_PAD
     if skinData.fvMsg.heavy then
@@ -230,9 +216,7 @@ end
 -- panel's art scale.
 function CHAT.FV_BuildPanel(castFrame, backdrop, inputH)
     local skinData = CFD(castFrame)
-    if skinData.fvHost then
-        return
-    end
+    if skinData.fvHost then return end
     local owner = CreateFrame("Frame", nil, backdrop)
     local New = NewBox
     if mod.ChatFvHeavy() then
@@ -288,9 +272,7 @@ function CHAT.FV_StyleGhost(g, isActive)
         clip:SetClipsChildren(true)
         art = CreateFrame("Frame", nil, clip)
         local heavy = mod.ChatFvHeavy()
-        if heavy then
-            art:SetScale(ForeverChat.tabK)
-        end
+        if heavy then art:SetScale(ForeverChat.tabK) end
         art:SetAllPoints(clip)
         -- Label and alert glow over the art (they are the ghost's regions).
         local topY = CreateFrame("Frame", nil, g)
@@ -321,25 +303,15 @@ function CHAT.FV_StyleGhost(g, isActive)
         g._underline:Hide()
         g._sep:Hide()
         g._borderHost:Hide()
-        if not tabCol then
-            TabColours()
-        end
+        if not tabCol then TabColours() end
     end
     -- Relative levels, re-asserted: docked ghosts change parent between
     -- passes (strip / scroll clip).
     local L = g:GetFrameLevel()
-    if g._fvClip:GetFrameLevel() ~= L + 1 then
-        g._fvClip:SetFrameLevel(L + 1)
-    end
-    if art:GetFrameLevel() ~= L + 2 then
-        art:SetFrameLevel(L + 2)
-    end
-    if g._fvTop:GetFrameLevel() ~= L + 3 then
-        g._fvTop:SetFrameLevel(L + 3)
-    end
-    if g._fvOn == isActive then
-        return
-    end
+    if g._fvClip:GetFrameLevel() ~= L + 1 then g._fvClip:SetFrameLevel(L + 1) end
+    if art:GetFrameLevel() ~= L + 2 then art:SetFrameLevel(L + 2) end
+    if g._fvTop:GetFrameLevel() ~= L + 3 then g._fvTop:SetFrameLevel(L + 3) end
+    if g._fvOn == isActive then return end
     g._fvOn = isActive
     local box = g._fvBox
     local val = isActive and 1 or 0.85
@@ -365,40 +337,28 @@ end
 -------------------------------------------------------------------------------
 local function PlateEnter(self)
     local p = self._fvPlate
-    if p then
-        ShowLift(p, true)
-    end
+    if p then ShowLift(p, true) end
 end
 local function PlateLeave(self)
     local p = self._fvPlate
-    if p then
-        ShowLift(p, false)
-    end
+    if p then ShowLift(p, false) end
 end
 local function HeavyPlateEnter(self)
     local p = self._fvPlate
-    if p then
-        CUI.ForeverHeavyShown(p.lift, true)
-    end
+    if p then CUI.ForeverHeavyShown(p.lift, true) end
 end
 local function HeavyPlateLeave(self)
     local p = self._fvPlate
-    if p then
-        CUI.ForeverHeavyShown(p.lift, false)
-    end
+    if p then CUI.ForeverHeavyShown(p.lift, false) end
 end
 
 function CHAT.FV_Plate(button, enabled)
     local p = button._fvPlate
     if not p then
-        if not enabled then
-            return
-        end
+        if not enabled then return end
         local owner = CreateFrame("Frame", nil, button)
         local heavy = mod.ChatFvHeavy()
-        if heavy then
-            owner:SetScale(ForeverChat.btnK)
-        end
+        if heavy then owner:SetScale(ForeverChat.btnK) end
         owner:SetAllPoints(button)
         p = heavy and NewHeavyBox(owner, true) or NewBox(owner)
         local c = ForeverChat.plateFill
@@ -416,9 +376,7 @@ function CHAT.FV_Plate(button, enabled)
     -- level with its seat).
     local L = button:GetFrameLevel()
     local wanted = L > 0 and L - 1 or 0
-    if p.host:GetFrameLevel() ~= wanted then
-        p.host:SetFrameLevel(wanted)
-    end
+    if p.host:GetFrameLevel() ~= wanted then p.host:SetFrameLevel(wanted) end
     p.host:SetShown(enabled and true or false)
     return p
 end
@@ -441,9 +399,7 @@ if CUI.IS_FOREVER and Entry and CHAT.SB_KITS then
     local function A(atlas, wid, hgt, posY)
         return { atlas = atlas, w = wid, h = hgt, y = posY, tint = ATL_TINT }
     end
-    local function P(name, posY)
-        return { file = MEDIA .. name, w = 18, h = 18, y = posY }
-    end
+    local function P(name, posY) return { file = MEDIA .. name, w = 18, h = 18, y = posY } end
     local blizz = CHAT.SB_KITS.blizzard
     CHAT.SB_KITS.forever = {
         col = { dx = -ForeverChat.GAP, top = 0, bot = 0 },

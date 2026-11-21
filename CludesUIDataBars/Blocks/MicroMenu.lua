@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Blocks\MicroMenu.lua
 -- Micro menu block factory and Blizzard micro menu hider.
 
@@ -172,13 +170,9 @@ local MM_ART_BUTTON = { menu = "MainMenuMicroButton", pvp = "PVPMicroButton", so
 
 -- First existing global among a name or list of names.
 local function FindMicroButton(nameList)
-    if type(nameList) ~= "table" then
-        return nameList and _G[nameList]
-    end
+    if type(nameList) ~= "table" then return nameList and _G[nameList] end
     for _, name in ipairs(nameList) do
-        if _G[name] then
-            return _G[name]
-        end
+        if _G[name] then return _G[name] end
     end
 end
 
@@ -188,15 +182,16 @@ end
 local function SetAtlasArt(iconTex, atlas)
     local details = C_Texture.GetAtlasInfo(atlas)
     local file = details and (details.file or details.filename)
-    if not file then
-        return false
-    end
+    if not file then return false end
     iconTex:SetTexture(file)
-    iconTex:SetTexCoord(details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord)
+    iconTex:SetTexCoord(
+        details.leftTexCoord,
+        details.rightTexCoord,
+        details.topTexCoord,
+        details.bottomTexCoord
+    )
     -- Native shape (retail micro art is 32x40); PaintIcon fits it in the slot.
-    if details.width > 0 and details.height > 0 then
-        iconTex._edbAspect = details.width / details.height
-    end
+    if details.width > 0 and details.height > 0 then iconTex._edbAspect = details.width / details.height end
     return true
 end
 
@@ -220,16 +215,12 @@ end
 -- buttons) that gets trimmed, "plain" for art that fills its texture (the PvP
 -- faction crest, the Battle.net portrait), false when none exists.
 local function SetBlizzardArt(iconTex, key)
-    if key == "guild" then
-        return SetGuildArt(iconTex)
-    end
+    if key == "guild" then return SetGuildArt(iconTex) end
     local source = FindMicroButton(MM_ART_BUTTON[key] or MM_MICRO_BUTTON_NAMES[key])
     local normal = source and source.GetNormalTexture and source:GetNormalTexture()
     local atlas = normal and normal:GetAtlas()
     if atlas then
-        if SetAtlasArt(iconTex, atlas) then
-            return "micro"
-        end
+        if SetAtlasArt(iconTex, atlas) then return "micro" end
     else
         local texture = normal and normal:GetTexture()
         if texture then
@@ -244,9 +235,7 @@ local function SetBlizzardArt(iconTex, key)
         end
     end
     local stem = MM_BLIZZARD_ATLAS[key]
-    if stem and SetAtlasArt(iconTex, "UI-HUD-MicroMenu-" .. stem .. "-Up") then
-        return "micro"
-    end
+    if stem and SetAtlasArt(iconTex, "UI-HUD-MicroMenu-" .. stem .. "-Up") then return "micro" end
     if key == "social" then
         -- No friends micro button exists: the Friends window's own portrait.
         iconTex:SetTexture("Interface\\FriendsFrame\\Battlenet-Portrait")
@@ -273,9 +262,7 @@ end
 -- (portrait and guild changes, and PLAYER_ENTERING_WORLD for Blizzard art that
 -- was missing). Returns true when it painted.
 local function ApplyMicroIcon(iconTex, key, blizzard, force)
-    if not force and iconTex._edbWow == blizzard then
-        return
-    end
+    if not force and iconTex._edbWow == blizzard then return end
     iconTex._edbWow = blizzard
     iconTex._edbAspect = nil -- square unless the Blizzard art below sets its own
     iconTex._edbTint = nil
@@ -301,9 +288,7 @@ local function IconColor(block, iconTex)
     local cfg = block.settings
     if cfg and cfg.iconStyle == "wow" then
         local tint = iconTex and iconTex._edbTint
-        if tint then
-            return tint.r, tint.g, tint.b
-        end
+        if tint then return tint.r, tint.g, tint.b end
         return 1, 1, 1
     end
     return BlockColorOf(block)
@@ -311,9 +296,7 @@ end
 
 local function OnlineCount(key)
     if key == "guild" then
-        if IsInGuild() then
-            return select(2, GetNumGuildMembers()) or 0
-        end
+        if IsInGuild() then return select(2, GetNumGuildMembers()) or 0 end
     elseif key == "social" then
         return (select(2, BNGetNumFriends()) or 0) + (C_FriendList.GetNumOnlineFriends() or 0)
     end
@@ -446,9 +429,7 @@ end
 local mmClickFunctions = {}
 mmClickFunctions.menu = function(_, btnFrame)
     if btnFrame == "LeftButton" then
-        if not InCombatLockdown() then
-            ToggleFrame(GameMenuFrame)
-        end
+        if not InCombatLockdown() then ToggleFrame(GameMenuFrame) end
     elseif btnFrame == "RightButton" then
         if IsShiftKeyDown() then
             CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
@@ -457,13 +438,9 @@ mmClickFunctions.menu = function(_, btnFrame)
         end
     end
 end
-local function MMBlockedInCombat(btnFrame)
-    return btnFrame ~= "LeftButton" or InCombatLockdown()
-end
+local function MMBlockedInCombat(btnFrame) return btnFrame ~= "LeftButton" or InCombatLockdown() end
 mmClickFunctions.spell = function(_, btnFrame)
-    if MMBlockedInCombat(btnFrame) then
-        return
-    end
+    if MMBlockedInCombat(btnFrame) then return end
     if PlayerSpellsUtil and PlayerSpellsUtil.ToggleSpellBookFrame then
         PlayerSpellsUtil.ToggleSpellBookFrame()
     elseif _G.SpellBookFrame then
@@ -471,9 +448,7 @@ mmClickFunctions.spell = function(_, btnFrame)
     end
 end
 mmClickFunctions.pvp = function(_, btnFrame)
-    if MMBlockedInCombat(btnFrame) then
-        return
-    end
+    if MMBlockedInCombat(btnFrame) then return end
     if _G.TogglePVPUI then
         _G.TogglePVPUI()
     elseif _G.PVEFrame and _G.PVEFrame:IsShown() then
@@ -495,16 +470,12 @@ mmClickFunctions.pvp = function(_, btnFrame)
     end
 end
 mmClickFunctions.journal = function(_, btnFrame)
-    if MMBlockedInCombat(btnFrame) then
-        return
-    end
+    if MMBlockedInCombat(btnFrame) then return end
     -- Go through Blizzard's toggle so the frame is placed by the UI panel system; ej:Show() directly would bypass ShowUIPanel.
     if _G.ToggleEncounterJournal then
         _G.ToggleEncounterJournal()
     else
-        if _G.EncounterJournal_LoadUI then
-            _G.EncounterJournal_LoadUI()
-        end
+        if _G.EncounterJournal_LoadUI then _G.EncounterJournal_LoadUI() end
         local ej = _G.EncounterJournal
         if ej then
             if ej:IsShown() then
@@ -522,12 +493,8 @@ end
 local mmHiders = {}
 local function MMGetHider(widget)
     local hider = mmHiders[widget]
-    if hider then
-        return hider
-    end
-    if InCombatLockdown() then
-        return nil
-    end
+    if hider then return hider end
+    if InCombatLockdown() then return nil end
     hider = CreateFrame("Frame", nil, nil, "SecureHandlerStateTemplate")
     hider:SetFrameRef("target", widget)
     hider:SetAttribute(
@@ -567,28 +534,18 @@ function mod.RefreshMicroMenuHider(force)
         end
     end
     -- Never touch Blizzard's micro menu until a block opts in: with nothing applied a "show" needs no restore, so no hiders on the managed frames.
-    if not hide and mmLastApplied == nil then
-        return
-    end
+    if not hide and mmLastApplied == nil then return end
     -- Steady-state guard: re-registering the same driver re-runs the secure snippet (and
     -- re-Shows the target) for nothing. Push only changes, unless a caller is repairing an external hide, where the re-run IS the repair.
     local wanted = hide and "hide" or "show"
-    if not force and wanted == mmLastApplied then
-        return
-    end
+    if not force and wanted == mmLastApplied then return end
     mmLastApplied = wanted
     mod.DeferUntilOOC("edb_mm_blizz", function()
         -- Build the target list without array holes (any of these globals may be absent on a given client).
         local targets = {}
-        if _G.MicroMenuContainer then
-            targets[#targets + 1] = _G.MicroMenuContainer
-        end
-        if _G.MainMenuBarMicroButtons then
-            targets[#targets + 1] = _G.MainMenuBarMicroButtons
-        end
-        if _G.MicroButtonAndBagsBar then
-            targets[#targets + 1] = _G.MicroButtonAndBagsBar
-        end
+        if _G.MicroMenuContainer then targets[#targets + 1] = _G.MicroMenuContainer end
+        if _G.MainMenuBarMicroButtons then targets[#targets + 1] = _G.MainMenuBarMicroButtons end
+        if _G.MicroButtonAndBagsBar then targets[#targets + 1] = _G.MicroButtonAndBagsBar end
         for index = 1, #targets do
             local hider = MMGetHider(targets[index])
             if hider then
@@ -599,9 +556,7 @@ function mod.RefreshMicroMenuHider(force)
         -- Action Bars' micro menu end caps follow the container's shown state
         -- (a no-op while that bar shows none).
         local ab = CludesUI._ModuleNS.CludesUIActionBars
-        if ab and ab.AB_ExtraCapsShown then
-            ab.AB_ExtraCapsShown("MicroBar")
-        end
+        if ab and ab.AB_ExtraCapsShown then ab.AB_ExtraCapsShown("MicroBar") end
     end)
 end
 
@@ -613,19 +568,11 @@ local CS_DIM = "|cffaaaaaa"
 
 local function MMPrimaryStat()
     local specIndex = C_SpecializationInfo.GetSpecialization()
-    if not specIndex or specIndex <= 0 then
-        return nil
-    end
+    if not specIndex or specIndex <= 0 then return nil end
     local _, _, _, _, _, statID = C_SpecializationInfo.GetSpecializationInfo(specIndex)
-    if statID == LE_UNIT_STAT_STRENGTH then
-        return SPELL_STAT1_NAME or "Strength", 1
-    end
-    if statID == LE_UNIT_STAT_AGILITY then
-        return SPELL_STAT2_NAME or "Agility", 2
-    end
-    if statID == LE_UNIT_STAT_INTELLECT then
-        return SPELL_STAT4_NAME or "Intellect", 4
-    end
+    if statID == LE_UNIT_STAT_STRENGTH then return SPELL_STAT1_NAME or "Strength", 1 end
+    if statID == LE_UNIT_STAT_AGILITY then return SPELL_STAT2_NAME or "Agility", 2 end
+    if statID == LE_UNIT_STAT_INTELLECT then return SPELL_STAT4_NAME or "Intellect", 4 end
     return nil
 end
 
@@ -635,16 +582,12 @@ local function MMAddCharStats()
     -- read: format() carries the secret into the row text, which detonates in
     -- Tip_Show's width measuring. Check every value and drop that row alone (Tip_AddDouble also refuses secret rows as a net).
     local function clean(val)
-        if issecretvalue(val) then
-            return nil
-        end
+        if issecretvalue(val) then return nil end
         return val or 0
     end
     local function pctRating(labelText, pct, rating)
         pct, rating = clean(pct), clean(rating)
-        if not (pct and rating) then
-            return
-        end
+        if not (pct and rating) then return end
         mod.Tip_AddDouble(
             labelText,
             format("%.2f%%", pct) .. " " .. CS_DIM .. "(" .. floor(rating + 0.5) .. ")|r",
@@ -669,9 +612,7 @@ local function MMAddCharStats()
     if pLabel and pIdx then
         local _, eff = UnitStat("player", pIdx)
         eff = clean(eff)
-        if eff then
-            mod.Tip_AddDouble(pLabel, format("%.0f", eff), ar, ag, ab, 1, 1, 1)
-        end
+        if eff then mod.Tip_AddDouble(pLabel, format("%.0f", eff), ar, ag, ab, 1, 1, 1) end
     end
 
     -- WoW Forever has no Mastery or Versatility.
@@ -694,9 +635,7 @@ local function MMAddCharStats()
             + (GetVersatilityBonus(CR_VERSATILITY_DAMAGE_DONE) or 0)
         return skinData, GetCombatRating(CR_VERSATILITY_DAMAGE_DONE) or 0
     end)
-    if success then
-        pctRating(STAT_VERSATILITY or "Versatility", dmg, rating)
-    end
+    if success then pctRating(STAT_VERSATILITY or "Versatility", dmg, rating) end
 end
 
 -- Interactive Social / Guild tooltips (always on): online member lists
@@ -720,9 +659,7 @@ local function MMOpenWhisper(charName, bnetName)
         blocked = "This action is protected in Mythic+ and raid combat."
     end
     if blocked then
-        if UIErrorsFrame then
-            UIErrorsFrame:AddMessage(blocked, 1.0, 0.3, 0.3, 1.0)
-        end
+        if UIErrorsFrame then UIErrorsFrame:AddMessage(blocked, 1.0, 0.3, 0.3, 1.0) end
         return
     end
     if bnetName and bnetName ~= "" then
@@ -736,9 +673,7 @@ local function MMOpenWhisper(charName, bnetName)
         local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
         -- Fix "Name-Realm-Realm" to "Name-Realm"
         local target = CludesUI.BuildFullName(charName) or charName
-        if sendTell then
-            sendTell(target, DEFAULT_CHAT_FRAME)
-        end
+        if sendTell then sendTell(target, DEFAULT_CHAT_FRAME) end
     end
 end
 
@@ -771,12 +706,8 @@ local function MMBuildSocialTip()
             local charName, realmName = ga.characterName, ga.realmName
             local faction = ga.factionName
             local iconTex = FRIENDS_TEXTURE_ONLINE
-            if acc.isAFK or ga.isGameAFK then
-                iconTex = FRIENDS_TEXTURE_AFK
-            end
-            if acc.isDND or ga.isGameBusy then
-                iconTex = FRIENDS_TEXTURE_DND
-            end
+            if acc.isAFK or ga.isGameAFK then iconTex = FRIENDS_TEXTURE_AFK end
+            if acc.isDND or ga.isGameBusy then iconTex = FRIENDS_TEXTURE_DND end
             -- Left text carries NO |c codes so hover recolor (Tip_Show) shows; its blue rides the left-color args. Right column keeps its codes.
             local leftX = format("|T%s:16|t %s", iconTex, acc.accountName or "?")
             -- A cross-faction BNet friend's characterName can be secret; format("%s", ...)
@@ -786,12 +717,8 @@ local function MMBuildSocialTip()
             -- so a secret in either is dropped the same way: no area shown, and a
             -- friend whose faction cannot be read is treated as not ours to invite.
             local displayCharName, displayArea = charName, ga.areaName
-            if issecretvalue(displayCharName) then
-                displayCharName = nil
-            end
-            if issecretvalue(displayArea) then
-                displayArea = nil
-            end
+            if issecretvalue(displayCharName) then displayCharName = nil end
+            if issecretvalue(displayArea) then displayArea = nil end
             local secretFaction = issecretvalue(faction)
             -- Character name in its class colour when the class reads plain, else gold.
             local nameText
@@ -835,12 +762,8 @@ local function MMBuildSocialTip()
                 hidden = hidden + 1
             elseif online then
                 local iconTex = FRIENDS_TEXTURE_ONLINE
-                if fi.afk then
-                    iconTex = FRIENDS_TEXTURE_AFK
-                end
-                if fi.dnd then
-                    iconTex = FRIENDS_TEXTURE_DND
-                end
+                if fi.afk then iconTex = FRIENDS_TEXTURE_AFK end
+                if fi.dnd then iconTex = FRIENDS_TEXTURE_DND end
                 -- No |c codes on the left (hover recolor needs a plain string); the class
                 -- colour rides the left-color args (white when the class is unknown).
                 local leftX = format("|T%s:16|t %s  %s", iconTex, fi.name or "?", fi.level or "")
@@ -853,12 +776,8 @@ local function MMBuildSocialTip()
                 local fname = fi.name
                 mod.Tip_AddClickable(leftX, fi.area or "", function(mouseButton)
                     local num = fname
-                    if not num then
-                        return
-                    end
-                    if not num:find("%-") then
-                        num = num .. "-" .. GetRealmName():gsub("%s+", "")
-                    end
+                    if not num then return end
+                    if not num:find("%-") then num = num .. "-" .. GetRealmName():gsub("%s+", "") end
                     if mouseButton == "RightButton" then
                         MMOpenWhisper(num, nil)
                     elseif mouseButton == "LeftButton" and IsShiftKeyDown() then
@@ -874,9 +793,7 @@ local function MMBuildSocialTip()
         mod.Tip_AddLine(L["NO_FRIENDS_ONLINE"], 0.6, 0.6, 0.6)
         return
     end
-    if hidden > 0 then
-        mod.Tip_AddLine(format("...and %d more", hidden), 0.53, 0.53, 0.53)
-    end
+    if hidden > 0 then mod.Tip_AddLine(format("...and %d more", hidden), 0.53, 0.53, 0.53) end
 
     -- Left-click BNet-whispers (reaches them cross-realm/faction), right-click whispers the character directly: distinct actions, distinct labels.
     mod.Tip_AddLine(" ")
@@ -900,9 +817,7 @@ local function MMBuildGuildTip(cfg)
     end
 
     local gName = GetGuildInfo("player")
-    if gName then
-        mod.Tip_AddLine("|cff00ff00" .. gName .. "|r")
-    end
+    if gName then mod.Tip_AddLine("|cff00ff00" .. gName .. "|r") end
 
     local noteFmt
     if cfg.showGuildNotes == true then
@@ -936,14 +851,10 @@ local function MMBuildGuildTip(cfg)
             -- Left plain (no |c): the class color rides the left-color args so the hover recolor to accent shows, like the M+ teleport rows.
             local leftX = format("%s  %s %s", level or "", cn, st)
             -- Own color codes: the note keeps its color under the hover accent.
-            if noteFmt and note and note ~= "" then
-                leftX = leftX .. format(noteFmt, note)
-            end
+            if noteFmt and note and note ~= "" then leftX = leftX .. format(noteFmt, note) end
             local fname = name
             mod.Tip_AddClickable(leftX, zone or "", function(mouseButton)
-                if not fname then
-                    return
-                end
+                if not fname then return end
                 if mouseButton == "LeftButton" then
                     if IsShiftKeyDown() then
                         C_PartyInfo.InviteUnit(CludesUI.BuildFullName(fname) or fname)
@@ -954,9 +865,7 @@ local function MMBuildGuildTip(cfg)
             end, clr, clg, clb, 1, 1, 1)
         end
     end
-    if hidden > 0 then
-        mod.Tip_AddLine(format("...and %d more", hidden), 0.53, 0.53, 0.53)
-    end
+    if hidden > 0 then mod.Tip_AddLine(format("...and %d more", hidden), 0.53, 0.53, 0.53) end
 
     mod.Tip_AddLine(" ")
     mod.Tip_AddDouble(L["LEFT_CLICK"], L["WHISPER"], 1, 1, 1, ar, ag, ab)
@@ -991,12 +900,8 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     local guildEmblem
     local lastRosterRequest = 0
 
-    local function BlockSettings()
-        return blockCfg.settings or {}
-    end
-    local function BC()
-        return barCtx.cfg
-    end
+    local function BlockSettings() return blockCfg.settings or {} end
+    local function BC() return barCtx.cfg end
 
     local function GetIconSize()
         -- Fixed content size: bar Height never scales icons (Content Scale does).
@@ -1013,18 +918,14 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     -- here trimmed to its middle 2/3. Re-textured only when the banner repainted.
     local function PaintGuildEmblem(iconTex, widget, painted, wid, hgt)
         if not iconTex._edbTint then
-            if guildEmblem then
-                guildEmblem:Hide()
-            end
+            if guildEmblem then guildEmblem:Hide() end
             return
         end
         if not guildEmblem then
             guildEmblem = widget:CreateTexture(nil, "OVERLAY", nil, 1)
             painted = true
         end
-        if painted then
-            SetSmallGuildTabardTextures("player", guildEmblem)
-        end
+        if painted then SetSmallGuildTabardTextures("player", guildEmblem) end
         guildEmblem:SetSize(wid * 0.5625, hgt * 0.525)
         guildEmblem:ClearAllPoints()
         guildEmblem:SetPoint("CENTER", iconTex, "CENTER", 0, hgt * 0.075)
@@ -1046,9 +947,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     local function PaintIcon(key, force)
         local iconTex, widget = icons[key], frameList[key]
-        if not iconTex or not widget then
-            return
-        end
+        if not iconTex or not widget then return end
         local painted = ApplyMicroIcon(iconTex, key, BlockSettings().iconStyle == "wow", force)
         -- SetPortraitTexture can reset anchors; restore our slot after each paint.
         PlaceIcon(key)
@@ -1067,9 +966,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         else
             iconTex:SetVertexColor(IconColor(blockCfg, iconTex))
         end
-        if key == "guild" then
-            PaintGuildEmblem(iconTex, widget, painted, wid, hgt)
-        end
+        if key == "guild" then PaintGuildEmblem(iconTex, widget, painted, wid, hgt) end
     end
 
     -- Blizzard style only: the portrait and the guild tabard repaint from their
@@ -1116,9 +1013,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         end
         if not fontStr:IsShown() then
             fontStr:Show()
-            if icons[key] then
-                PlaceIcon(key)
-            end
+            if icons[key] then PlaceIcon(key) end
         end
         if frameList[key]:IsMouseOver() then
             fontStr:SetTextColor(mod.GetAccent())
@@ -1129,36 +1024,24 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     local function ShowButtonTooltip(name)
         local widget = frameList[name]
-        if not widget then
-            return
-        end
+        if not widget then return end
         local def = mmButtonDefsByKey[name]
-        if not def then
-            return
-        end
+        if not def then return end
         local red, green, blue = 1, 1, 1
         mod.Tip_Begin(widget)
         local title = "|cFFFFFFFF" .. (def.label or name) .. "|r"
         if def.binding then
             local k1, k2 = GetBindingKey(def.binding)
             local keyList = {}
-            if k1 and k1 ~= "" then
-                keyList[#keyList + 1] = GetBindingText(k1)
-            end
-            if k2 and k2 ~= "" then
-                keyList[#keyList + 1] = GetBindingText(k2)
-            end
-            if #keyList > 0 then
-                title = title .. " |cFFFFD200(" .. tconcat(keyList, " / ") .. ")|r"
-            end
+            if k1 and k1 ~= "" then keyList[#keyList + 1] = GetBindingText(k1) end
+            if k2 and k2 ~= "" then keyList[#keyList + 1] = GetBindingText(k2) end
+            if #keyList > 0 then title = title .. " |cFFFFD200(" .. tconcat(keyList, " / ") .. ")|r" end
         end
         mod.Tip_AddLine(title, red, green, blue)
 
         if name == "ach" then
             local pts = 0
-            if GetTotalAchievementPoints then
-                pts = GetTotalAchievementPoints() or 0
-            end
+            if GetTotalAchievementPoints then pts = GetTotalAchievementPoints() or 0 end
             local hexAccent = format("%02x%02x%02x", floor(red * 255), floor(green * 255), floor(blue * 255))
             mod.Tip_AddLine(" ")
             mod.Tip_AddDouble(
@@ -1189,9 +1072,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                     delveRank = C_MajorFactions.GetCurrentRenownLevel(fid) or 0
                     if C_MajorFactions.GetRenownLevels then
                         local levels = C_MajorFactions.GetRenownLevels(fid)
-                        if type(levels) == "table" and #levels > 0 then
-                            delveMax = tostring(#levels)
-                        end
+                        if type(levels) == "table" and #levels > 0 then delveMax = tostring(#levels) end
                     end
                 end
             end
@@ -1215,9 +1096,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 local cfid = C_DelvesUI.GetFactionForCompanion()
                 if cfid then
                     local fi = C_GossipInfo.GetFriendshipReputation(cfid)
-                    if fi and fi.reaction then
-                        companionLvl = tonumber(fi.reaction:match("%d+")) or 0
-                    end
+                    if fi and fi.reaction then companionLvl = tonumber(fi.reaction:match("%d+")) or 0 end
                 end
             end
             mod.Tip_AddDouble(
@@ -1238,12 +1117,8 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             pcall(MMAddCharStats)
         end
 
-        if name == "social" then
-            pcall(MMBuildSocialTip)
-        end
-        if name == "guild" then
-            pcall(MMBuildGuildTip, BlockSettings())
-        end
+        if name == "social" then pcall(MMBuildSocialTip) end
+        if name == "guild" then pcall(MMBuildGuildTip, BlockSettings()) end
 
         mod.Tip_Show()
     end
@@ -1272,13 +1147,9 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         widget:SetScript("OnEnter", function()
             -- Hover tint stays alive in combat (our textures/fonts only).
             local red, green, blue = mod.GetAccent()
-            if icons[name] then
-                icons[name]:SetVertexColor(red, green, blue, 1)
-            end
+            if icons[name] then icons[name]:SetVertexColor(red, green, blue, 1) end
             -- The counter text (guild/social) follows its button's hover.
-            if textFS[name] then
-                textFS[name]:SetTextColor(red, green, blue, 1)
-            end
+            if textFS[name] then textFS[name]:SetTextColor(red, green, blue, 1) end
             if InCombatLockdown() then
                 -- The FULL tooltip reads combat-restricted surfaces (char stat
                 -- secrets, guild/social rosters); in lockdown show a notice.
@@ -1292,12 +1163,8 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             ShowButtonTooltip(name)
         end)
         widget:SetScript("OnLeave", function()
-            if icons[name] then
-                icons[name]:SetVertexColor(IconColor(blockCfg, icons[name]))
-            end
-            if textFS[name] then
-                textFS[name]:SetTextColor(BlockColorOf(blockCfg))
-            end
+            if icons[name] then icons[name]:SetVertexColor(IconColor(blockCfg, icons[name])) end
+            if textFS[name] then textFS[name]:SetTextColor(BlockColorOf(blockCfg)) end
             mod.Tip_HideUnlessInteractive(widget)
         end)
     end
@@ -1305,9 +1172,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     -- Create one button frame (idempotent). Returns nil in combat: secure frame creation/attribute setup must wait for PLAYER_REGEN_ENABLED.
     local function EnsureButtonFrame(def)
         local key = def.key
-        if frameList[key] then
-            return frameList[key]
-        end
+        if frameList[key] then return frameList[key] end
         if InCombatLockdown() then
             -- Secure creation must wait for regen; the deferred marker is the only thing that still hides the strip in combat.
             instance._mmDeferred = true
@@ -1318,9 +1183,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         if type(microBtnName) == "table" then
             for _, num in ipairs(microBtnName) do
                 microRef = _G[num]
-                if microRef then
-                    break
-                end
+                if microRef then break end
             end
         elseif microBtnName then
             microRef = _G[microBtnName]
@@ -1380,14 +1243,10 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     local function CreateFramesInner()
         local mm = BlockSettings()
         for _, def in ipairs(mmButtonDefs) do
-            if MMButtonOn(mm, def.key) then
-                EnsureButtonFrame(def)
-            end
+            if MMButtonOn(mm, def.key) then EnsureButtonFrame(def) end
         end
         -- A full out-of-combat pass clears the deferred marker (buttons that cannot exist, e.g. housing without its micro button, do not count).
-        if not InCombatLockdown() then
-            instance._mmDeferred = nil
-        end
+        if not InCombatLockdown() then instance._mmDeferred = nil end
     end
 
     local function SyncCombatLook()
@@ -1404,15 +1263,11 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     local function UpdateGuildText()
         local mm = BlockSettings()
-        if not textFS.guild or not mm.guild or mm.hideSocialText then
-            return
-        end
+        if not textFS.guild or not mm.guild or mm.hideSocialText then return end
         if not IsInGuild() then
             if textFS.guild:IsShown() then
                 textFS.guild:Hide()
-                if icons.guild then
-                    PlaceIcon("guild")
-                end
+                if icons.guild then PlaceIcon("guild") end
             end
             return
         end
@@ -1427,9 +1282,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     local function UpdateFriendText()
         local mm = BlockSettings()
-        if mm.hideSocialText or not mm.social or not textFS.social then
-            return
-        end
+        if mm.hideSocialText or not mm.social or not textFS.social then return end
         SetCounterText("social", OnlineCount("social"))
     end
 
@@ -1446,9 +1299,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         -- Materialise any buttons enabled after creation (options toggle).
         CreateFramesInner()
         SyncStyleEvents()
-        if not next(frameList) then
-            return
-        end
+        if not next(frameList) then return end
         if mm.hideSocialText then
             for _, fontStr in pairs(textFS) do
                 fontStr:Hide()
@@ -1478,9 +1329,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 end
                 widget:ClearAllPoints()
                 local spacing = mm.iconSpacing or MM_SPACING
-                if previous and previous == frameList.menu then
-                    spacing = mm.mainMenuSpacing or 4
-                end
+                if previous and previous == frameList.menu then spacing = mm.mainMenuSpacing or 4 end
                 if not previous then
                     if isVertical then
                         widget:SetPoint("TOP", contentFrame, "TOP", 0, 0)
@@ -1495,9 +1344,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                     end
                 end
                 local prevSpacing = 0
-                if previous then
-                    prevSpacing = spacing
-                end
+                if previous then prevSpacing = spacing end
                 if isVertical then
                     totalHeight = totalHeight + ICON_SIZE + prevSpacing
                     totalWidth = max(totalWidth, ICON_SIZE)
@@ -1524,9 +1371,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             -- cleared memo lets the regen refresh repaint it instead.
             if guildEvents and icons.guild then
                 icons.guild._edbWow = nil
-                if not InCombatLockdown() then
-                    PaintIcon("guild")
-                end
+                if not InCombatLockdown() then PaintIcon("guild") end
             end
         elseif evt == "GUILD_ROSTER_UPDATE" then
             UpdateGuildText()

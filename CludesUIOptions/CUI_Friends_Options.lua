@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Friends_Options.lua - the Friends List module's settings page.
 --
@@ -34,9 +32,7 @@ end
 -- Calls a hook the Friends List module publishes, if it is there.
 local function Call(name)
     local hook = _G[name]
-    if hook then
-        hook()
-    end
+    if hook then hook() end
 end
 
 -- A display toggle repaints the rows: the legacy window's row pass and a
@@ -47,35 +43,23 @@ local function RepaintRows()
     Call("_CUFR_RedecorateTiles")
 end
 
-local function Reapply()
-    Call("_CUFR_ApplyFriends")
-end
+local function Reapply() Call("_CUFR_ApplyFriends") end
 
 -- get/set for one setting: default when unset (or, with onByDefault, "on
 -- unless set false"), and after() once it is written.
 local function Bind(key, after, default, onByDefault)
     return function()
         local cfg = Settings()
-        if not cfg then
-            return default
-        end
-        if onByDefault then
-            return cfg[key] ~= false
-        end
+        if not cfg then return default end
+        if onByDefault then return cfg[key] ~= false end
         local value = cfg[key]
-        if value == nil then
-            return default
-        end
+        if value == nil then return default end
         return value
     end, function(value)
         local cfg = Settings()
-        if not cfg then
-            return
-        end
+        if not cfg then return end
         cfg[key] = value
-        if after then
-            after()
-        end
+        if after then after() end
     end
 end
 
@@ -96,22 +80,16 @@ local function BuildPage(_, host, yOffset)
     -- Rows that only drive our own window are gated off under a stock style.
     local BS = CludesUI.BlizzStyle
     local function Gate(rowConf)
-        if BS then
-            BS.Gate("friends", rowConf)
-        end
+        if BS then BS.Gate("friends", rowConf) end
         return rowConf
     end
     -- The border rows drive this module's flat look only; with the Window
     -- Skins "Friends List" card the skin draws the frame.
-    local function Chrome()
-        return mod.FR_ChromeShell()
-    end
+    local function Chrome() return mod.FR_ChromeShell() end
 
     _, h = W:SectionHeader(host, "DISPLAY", y)
     y = y - h
-    if BS then
-        y = BS.Note(host, y, "friends")
-    end
+    if BS then y = BS.Note(host, y, "friends") end
 
     -- Class Icon Theme | Class Color Names
     local iconGet, iconSet = Bind("iconStyle", RepaintRows, "modern")
@@ -133,9 +111,7 @@ local function BuildPage(_, host, yOffset)
     local function SwatchAlpha(lit)
         return function()
             local cfg = Settings()
-            if not cfg or not cfg.enabled then
-                return 0.15
-            end
+            if not cfg or not cfg.enabled then return 0.15 end
             return lit(cfg) and 1 or 0.3
         end
     end
@@ -158,15 +134,11 @@ local function BuildPage(_, host, yOffset)
             type = "multiSwatch",
             text = "Border Color",
             disabled = function()
-                if Chrome() then
-                    return true
-                end
+                if Chrome() then return true end
                 local cfg = Settings()
                 return not cfg or (cfg.borderSize or 0) == 0
             end,
-            disabledTooltip = function()
-                return Chrome() and CHROME_TIP or "Set Border Size above 0"
-            end,
+            disabledTooltip = function() return Chrome() and CHROME_TIP or "Set Border Size above 0" end,
             rawTooltip = true,
             swatches = {
                 {
@@ -174,9 +146,7 @@ local function BuildPage(_, host, yOffset)
                     hasAlpha = false,
                     getValue = function()
                         local cfg = Settings()
-                        if not cfg then
-                            return 0.05, 0.05, 0.05
-                        end
+                        if not cfg then return 0.05, 0.05, 0.05 end
                         return cfg.borderR, cfg.borderG, cfg.borderB
                     end,
                     setValue = function(red, green, blue)
@@ -190,9 +160,7 @@ local function BuildPage(_, host, yOffset)
                     -- custom colour instead of opening the picker.
                     onClick = function(self)
                         local cfg = Settings()
-                        if not cfg then
-                            return
-                        end
+                        if not cfg then return end
                         if cfg.useClassColor then
                             cfg.useClassColor = false
                             Reapply()
@@ -201,16 +169,12 @@ local function BuildPage(_, host, yOffset)
                             self._eabOrigClick(self)
                         end
                     end,
-                    refreshAlpha = SwatchAlpha(function(cfg)
-                        return not cfg.useClassColor
-                    end),
+                    refreshAlpha = SwatchAlpha(function(cfg) return not cfg.useClassColor end),
                 },
                 {
                     tooltip = "Accent Colored",
                     hasAlpha = false,
-                    getValue = function()
-                        return CludesUI.GetAccentColor()
-                    end,
+                    getValue = function() return CludesUI.GetAccentColor() end,
                     setValue = function() end,
                     onClick = function()
                         local cfg = Settings()
@@ -220,9 +184,7 @@ local function BuildPage(_, host, yOffset)
                             CludesUI:RefreshPage()
                         end
                     end,
-                    refreshAlpha = SwatchAlpha(function(cfg)
-                        return cfg.useClassColor
-                    end),
+                    refreshAlpha = SwatchAlpha(function(cfg) return cfg.useClassColor end),
                 },
             },
         })
@@ -277,23 +239,17 @@ local function BuildPage(_, host, yOffset)
 end
 
 local function Register()
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+    if not CludesUI or not CludesUI.RegisterModule then return end
     CludesUI:RegisterModule(MODULE, {
         title = "Friends List",
         description = "Custom friends list with groups, notes, and realm grouping.",
         pages = { "Friends" },
         buildPage = function(page, host, yOffset)
-            if page == "Friends" then
-                return BuildPage(page, host, yOffset)
-            end
+            if page == "Friends" then return BuildPage(page, host, yOffset) end
         end,
         onReset = function()
             local db = _G._CUFR_DB
-            if db and db.ResetProfile then
-                db:ResetProfile()
-            end
+            if db and db.ResetProfile then db:ResetProfile() end
             CludesUI:InvalidatePageCache()
             Reapply()
             Call("_CUFR_SyncAutoAccept")
@@ -303,9 +259,7 @@ local function Register()
 
     SLASH_EFR1 = "/cfr"
     SlashCmdList.EFR = function()
-        if not (InCombatLockdown and InCombatLockdown()) then
-            CludesUI:ShowModule(MODULE)
-        end
+        if not (InCombatLockdown and InCombatLockdown()) then CludesUI:ShowModule(MODULE) end
     end
 end
 

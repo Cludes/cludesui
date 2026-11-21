@@ -5,9 +5,7 @@
 -- toggle the lines), the plot, the per-key strip, notes.
 
 local _, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 local DAY = mod.DAY
 local C = mod.COLORS
 
@@ -169,13 +167,9 @@ end
 
 -- Scales ------------------------------------------------------------------------------
 
-local function X(t)
-    return (t - view.x0) / (view.x1 - view.x0) * PW
-end
+local function X(t) return (t - view.x0) / (view.x1 - view.x0) * PW end
 
-local function Y(val)
-    return (val - view.y0) / (view.y1 - view.y0) * PH
-end
+local function Y(val) return (val - view.y0) / (view.y1 - view.y0) * PH end
 
 -- Dashes along a path of plot points, the pattern running on across joins so
 -- a curve dashes as evenly as a straight line.
@@ -210,9 +204,7 @@ end
 
 -- A segment in data space, clipped to the visible time window.
 local function Segment(pool, ta, va, tb, vb, c, dashed, a, th)
-    if tb < view.x0 or ta > view.x1 or tb <= ta then
-        return
-    end
+    if tb < view.x0 or ta > view.x1 or tb <= ta then return end
     if ta < view.x0 then
         va = va + (vb - va) * (view.x0 - ta) / (tb - ta)
         ta = view.x0
@@ -254,9 +246,7 @@ end
 local function Projection(pool, s, c)
     local last = s.pts[#s.pts]
     local ta = math.max(last[1], view.x0)
-    if ta >= view.x1 then
-        return
-    end
+    if ta >= view.x1 then return end
     local num = math.max(2, math.ceil((X(view.x1) - X(ta)) / 6))
     local filePath = {}
     for idx = 0, num do
@@ -278,9 +268,7 @@ end
 function mod.Window(context, mode, hidden)
     local nowTime, regionFrame, sum = context.now, context.region, context.summary
     local x0 = regionFrame.startsAt
-    if mode ~= "season" then
-        x0 = math.max(x0, nowTime - RECENT_DAYS * DAY)
-    end
+    if mode ~= "season" then x0 = math.max(x0, nowTime - RECENT_DAYS * DAY) end
 
     -- Reach far enough ahead to show the crossings, within reason.
     local ahead = MIN_AHEAD
@@ -291,9 +279,7 @@ function mod.Window(context, mode, hidden)
     end
     local x1 = nowTime + ahead * DAY
     -- The season view runs to the season's end.
-    if mode == "season" and sum.endsAt and sum.endsAt > x1 then
-        x1 = sum.endsAt
-    end
+    if mode == "season" and sum.endsAt and sum.endsAt > x1 then x1 = sum.endsAt end
 
     local lo, hi = math.huge, -math.huge
     local function take(val)
@@ -303,18 +289,14 @@ function mod.Window(context, mode, hidden)
     end
     take(mod.ScoreAt(context.history.points, x0))
     for _, p in ipairs(context.history.points) do
-        if p.t >= x0 then
-            take(p.score)
-        end
+        if p.t >= x0 then take(p.score) end
     end
     take(sum.you + sum.pace * (x1 - nowTime) / DAY)
     for _, tier in ipairs(sum.tiers) do
         if not hidden[tier.tier.key] then
             take(mod.LineValue(tier.pts, tier.fit, x0))
             for _, p in ipairs(tier.pts) do
-                if p[1] >= x0 then
-                    take(p[2])
-                end
+                if p[1] >= x0 then take(p[2]) end
             end
             local low, _, high = mod.LineRange(tier.pts, tier.fit, x1)
             take(low)
@@ -327,17 +309,13 @@ function mod.Window(context, mode, hidden)
     local reach = math.max(hi - lo, 100) * PARTY_REACH
     local floor, ceil = lo - reach, hi + reach
     local function near(val)
-        if val >= floor and val <= ceil then
-            take(val)
-        end
+        if val >= floor and val <= ceil then take(val) end
     end
     for _, m in ipairs(context.party or {}) do
         if m.score > 0 then
             near(m.score)
             for _, p in ipairs(m.seen and m.seen.pts or {}) do
-                if p[1] >= x0 then
-                    near(p[2])
-                end
+                if p[1] >= x0 then near(p[2]) end
             end
         end
     end
@@ -382,17 +360,11 @@ local function MakeSegmented(hostFrame, options)
         widget.value = o[1]
         widget:SetScript("OnClick", function()
             CludesUITitleLineDB.view = o[1]
-            if o[1] == "guild" and IsInGuild() then
-                C_GuildInfo.GuildRoster()
-            end
+            if o[1] == "guild" and IsInGuild() then C_GuildInfo.GuildRoster() end
             Graph:Render()
         end)
-        widget:SetScript("OnEnter", function()
-            box:Refresh()
-        end)
-        widget:SetScript("OnLeave", function()
-            box:Refresh()
-        end)
+        widget:SetScript("OnEnter", function() box:Refresh() end)
+        widget:SetScript("OnLeave", function() box:Refresh() end)
         box.buttons[idx] = widget
     end
     return box
@@ -415,15 +387,9 @@ local function MakeClose(hostFrame)
         end
     end
     tint(C.muted)
-    widget:SetScript("OnEnter", function()
-        tint(C.ink)
-    end)
-    widget:SetScript("OnLeave", function()
-        tint(C.muted)
-    end)
-    widget:SetScript("OnClick", function()
-        hostFrame:Hide()
-    end)
+    widget:SetScript("OnEnter", function() tint(C.ink) end)
+    widget:SetScript("OnLeave", function() tint(C.muted) end)
+    widget:SetScript("OnClick", function() hostFrame:Hide() end)
     return widget
 end
 
@@ -691,9 +657,7 @@ local function Create()
     pools.hoverMarks = textures(hover, "OVERLAY", 4, "Dot")
 
     MakeTip()
-    hover:SetScript("OnEnter", function()
-        hover:SetScript("OnUpdate", Graph.OnHover)
-    end)
+    hover:SetScript("OnEnter", function() hover:SetScript("OnUpdate", Graph.OnHover) end)
     hover:SetScript("OnLeave", function()
         hover:SetScript("OnUpdate", nil)
         Graph:ClearHover()
@@ -703,9 +667,7 @@ end
 -- Drawing -------------------------------------------------------------------------------
 
 -- A fractional key level, as the level you would time.
-local function LevelText(level)
-    return ("+%d"):format(math.floor(level + 0.5))
-end
+local function LevelText(level) return ("+%d"):format(math.floor(level + 0.5)) end
 
 local function DrawTiles(context, hidden)
     local sum = context.summary
@@ -770,7 +732,9 @@ local function DrawTiles(context, hidden)
             t:SetAlpha(0.45)
         else
             if tier.lineEnd then
-                t.sub:SetText(("Line %s now, ~%s at the end"):format(mod.Fmt(tier.lineNow), mod.Fmt(tier.lineEnd)))
+                t.sub:SetText(
+                    ("Line %s now, ~%s at the end"):format(mod.Fmt(tier.lineNow), mod.Fmt(tier.lineEnd))
+                )
             else
                 t.sub:SetText("Line " .. mod.Fmt(tier.lineNow))
             end
@@ -803,17 +767,13 @@ local function DrawAxes(context, hidden)
             local t = view.now + dx / PW * (view.x1 - view.x0)
             ys[#ys + 1] = Y(sum.you + sum.pace * (t - view.now) / DAY)
             for _, tier in ipairs(sum.tiers) do
-                if not hidden[tier.tier.key] then
-                    ys[#ys + 1] = Y(mod.LineValue(tier.pts, tier.fit, t))
-                end
+                if not hidden[tier.tier.key] then ys[#ys + 1] = Y(mod.LineValue(tier.pts, tier.fit, t)) end
             end
         end
         for _, band in ipairs({ { PH - 20, PH - 2 }, { 2, 20 } }) do
             local free = true
             for _, posY in ipairs(ys) do
-                if posY > band[1] - 8 and posY < band[2] + 8 then
-                    free = false
-                end
+                if posY > band[1] - 8 and posY < band[2] + 8 then free = false end
             end
             if free then
                 tag = { today + 4, band[1], 64, band[2] - band[1] }
@@ -941,9 +901,7 @@ local function DrawMarkers(context, hidden, taken)
 
     -- Where every series stands today.
     for _, tier in ipairs(sum.tiers) do
-        if not hidden[tier.tier.key] then
-            mark(today, Y(tier.lineNow), tier.tier.color, 8)
-        end
+        if not hidden[tier.tier.key] then mark(today, Y(tier.lineNow), tier.tier.color, 8) end
     end
     mark(today, Y(sum.you), mod.YOU_COLOR, 9)
 
@@ -981,9 +939,7 @@ local function DrawMarkers(context, hidden, taken)
             local inside = b[1] >= 0 and b[1] + wid <= PW and b[2] >= 0 and b[2] + hgt <= PH
             local clear = inside
             for _, t in ipairs(taken) do
-                if clear and Overlaps(b, t) then
-                    clear = false
-                end
+                if clear and Overlaps(b, t) then clear = false end
             end
             if clear then
                 box = b
@@ -1016,9 +972,7 @@ local function DrawEndLabels(context, hidden)
         local posY = Y(entry[2])
         local clear = true
         for _, py in ipairs(placed) do
-            if math.abs(py - posY) < 13 then
-                clear = false
-            end
+            if math.abs(py - posY) < 13 then clear = false end
         end
         if clear then
             placed[#placed + 1] = posY
@@ -1030,14 +984,10 @@ end
 local function DrawStrip(context)
     local maxGain = 0
     for _, p in ipairs(context.history.points) do
-        if p.gain and p.t >= view.x0 then
-            maxGain = math.max(maxGain, p.gain)
-        end
+        if p.gain and p.t >= view.x0 then maxGain = math.max(maxGain, p.gain) end
     end
     Text(pools.axis, "tiny", C.muted, "BOTTOMRIGHT", strip, "BOTTOMLEFT", -8, 0, "Per key")
-    if maxGain <= 0 then
-        return
-    end
+    if maxGain <= 0 then return end
     Text(pools.axis, "tiny", C.muted, "TOPRIGHT", strip, "TOPLEFT", -8, 0, "+" .. mod.Fmt(maxGain))
     local c = mod.YOU_COLOR
     for _, p in ipairs(context.history.points) do
@@ -1082,9 +1032,7 @@ local function NextLine(context, score)
     local sum = context.summary
     for idx = #sum.tiers, 1, -1 do
         local s = sum.tiers[idx]
-        if score < s.lineNow then
-            return mod.Fmt(s.lineNow - score) .. " to " .. s.tier.short
-        end
+        if score < s.lineNow then return mod.Fmt(s.lineNow - score) .. " to " .. s.tier.short end
     end
     return "above " .. sum.tiers[1].tier.short
 end
@@ -1114,9 +1062,7 @@ end
 local function DrawParty(context)
     local today, placed = X(context.now), { Y(context.summary.you) }
     -- Off-scale ratings ride the plot's edge rather than leave it.
-    local function edge(val)
-        return math.max(view.y0, math.min(view.y1, val))
-    end
+    local function edge(val) return math.max(view.y0, math.min(view.y1, val)) end
     for _, m in ipairs(context.party) do
         if m.score > 0 then
             local pts = m.seen and m.seen.pts or {}
@@ -1140,9 +1086,7 @@ local function DrawParty(context)
             Marker(pools.dotRings, pools.dots, plot, today, posY, C.ink2, 7)
             local clear = true
             for _, py in ipairs(placed) do
-                if math.abs(py - posY) < 12 then
-                    clear = false
-                end
+                if math.abs(py - posY) < 12 then clear = false end
             end
             if clear then
                 placed[#placed + 1] = posY
@@ -1170,9 +1114,7 @@ local function DrawParty(context)
 end
 
 function Graph:Render()
-    if not widget or not widget:IsShown() then
-        return
-    end
+    if not widget or not widget:IsShown() then return end
     for _, p in pairs(pools) do
         p:Reset()
     end
@@ -1214,9 +1156,7 @@ function Graph:Render()
 
     local hidden = CludesUITitleLineDB.hidden
     DrawTiles(context, hidden)
-    if grouped then
-        DrawGroup(context)
-    end
+    if grouped then DrawGroup(context) end
 
     -- The Keys and Guild views are tables in the plot's place.
     local list = mod.Views and mod.Views[CludesUITitleLineDB.view]
@@ -1246,12 +1186,8 @@ end
 -- Hover readout --------------------------------------------------------------------------
 
 function Graph:ClearHover()
-    if not hover then
-        return
-    end
-    if view then
-        view.hoverX = nil
-    end
+    if not hover then return end
+    if view then view.hoverX = nil end
     cross:Hide()
     tipText:Hide()
     pools.hoverRings:Reset()
@@ -1287,18 +1223,14 @@ local function TipRow(colorSwatch, labelText, value, posY, muted, labelColor)
 end
 
 function Graph.OnHover()
-    if not view then
-        return
-    end
+    if not view then return end
     local curX = GetCursorPosition() / plot:GetEffectiveScale() - plot:GetLeft()
     curX = math.max(0, math.min(PW, curX))
     -- Snap to whole days from the window's start: readers aim at a date.
     local t = view.x0 + math.floor((curX / PW * (view.x1 - view.x0)) / DAY + 0.5) * DAY
     t = math.min(t, view.x1)
     local posX = X(t)
-    if view.hoverX == posX then
-        return
-    end
+    if view.hoverX == posX then return end
     view.hoverX = posX
 
     local context, sum = view.ctx, view.ctx.summary
@@ -1327,9 +1259,7 @@ function Graph.OnHover()
             local lo, val, hi = mod.LineRange(tier.pts, tier.fit, t)
             Marker(pools.hoverRings, pools.hoverMarks, plot, posX, Y(val), tier.tier.color, 8)
             local textValue = mod.Fmt(val)
-            if hi - lo >= 2 then
-                textValue = mod.Fmt(lo) .. "-" .. mod.Fmt(hi)
-            end
+            if hi - lo >= 2 then textValue = mod.Fmt(lo) .. "-" .. mod.Fmt(hi) end
             posY = TipRow(tier.tier.color, tier.tier.label, textValue, posY)
         end
     end
@@ -1342,9 +1272,7 @@ function Graph.OnHover()
             val = m.score
         elseif not future and m.seen then
             for _, p in ipairs(m.seen.pts) do
-                if p[1] <= t then
-                    val = p[2]
-                end
+                if p[1] <= t then val = p[2] end
             end
         end
         if val then
@@ -1382,9 +1310,7 @@ end
 -- A groupmate's best key and score in every dungeon, under their cell.
 function Graph.ShowMember(cell)
     local m = cell.member
-    if not m then
-        return
-    end
+    if not m then return end
     tipText.rows:Reset()
     local color = mod.ClassColor(m.class)
     SizeTip(260)
@@ -1397,13 +1323,9 @@ function Graph.ShowMember(cell)
 
     local runs = {}
     for _, r in ipairs(m.runs) do
-        if r.mapScore and r.mapScore > 0 then
-            runs[#runs + 1] = r
-        end
+        if r.mapScore and r.mapScore > 0 then runs[#runs + 1] = r end
     end
-    table.sort(runs, function(lhs, rhs)
-        return lhs.mapScore > rhs.mapScore
-    end)
+    table.sort(runs, function(lhs, rhs) return lhs.mapScore > rhs.mapScore end)
     local posY = -30
     for _, r in ipairs(runs) do
         local name = C_ChallengeMode.GetMapUIInfo(r.challengeModeID) or "?"
@@ -1411,9 +1333,7 @@ function Graph.ShowMember(cell)
             .. (r.finishedSuccess and "" or "  (over time)")
         posY = TipRow(nil, labelText, mod.Fmt(r.mapScore), posY, not r.finishedSuccess)
     end
-    if #runs == 0 then
-        posY = TipRow(nil, "No rated runs shared yet", "", posY, true)
-    end
+    if #runs == 0 then posY = TipRow(nil, "No rated runs shared yet", "", posY, true) end
 
     tipText:SetHeight(-posY + 6)
     tipText:ClearAllPoints()
@@ -1427,9 +1347,7 @@ end
 -- next line; says what a click on the tile does.
 function Graph.ShowChars(tbl)
     local context = tbl.ctx
-    if not context or #context.chars == 0 then
-        return
-    end
+    if not context or #context.chars == 0 then return end
     tipText.rows:Reset()
     SizeTip(250)
     tipText.title:SetText("Your characters")
@@ -1462,9 +1380,7 @@ end
 
 function Graph.ShowTile(tbl)
     local s, context = tbl.summary, tbl.ctx
-    if not s or CludesUITitleLineDB.hidden[s.tier.key] then
-        return
-    end
+    if not s or CludesUITitleLineDB.hidden[s.tier.key] then return end
     local sum = context.summary
     tipText.rows:Reset()
     SizeTip(250)
@@ -1488,9 +1404,7 @@ function Graph.ShowTile(tbl)
             posY
         )
     end
-    if s.levelNow then
-        posY = TipRow(nil, "Timed in every dungeon, today", LevelText(s.levelNow), posY)
-    end
+    if s.levelNow then posY = TipRow(nil, "Timed in every dungeon, today", LevelText(s.levelNow), posY) end
     if s.levelEnd then
         posY = TipRow(nil, "Timed in every dungeon, at the end", LevelText(s.levelEnd), posY)
     end
@@ -1527,20 +1441,14 @@ mod.UI = {
 -- Public ------------------------------------------------------------------------------------
 
 function Graph:Toggle()
-    if not widget then
-        Create()
-    end
+    if not widget then Create() end
     widget:SetShown(not widget:IsShown())
 end
 
 function Graph:ApplyScale()
-    if widget then
-        widget:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE)
-    end
+    if widget then widget:SetScale(CludesUITitleLineDB.scale or DEFAULT_SCALE) end
 end
 
 function Graph:Refresh()
-    if widget and widget:IsShown() then
-        self:Render()
-    end
+    if widget and widget:IsShown() then self:Render() end
 end

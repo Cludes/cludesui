@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_BagSpace.lua  (WoW Forever only)
 --  Bag Space: free bag slots on screen ("Bags 28/52"), amber when under a
@@ -26,9 +22,7 @@ local CHEAPEST = 6
 local widget, textValue
 local warnedAt
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 --- free, total for general bags.
 local function Space()
@@ -58,16 +52,12 @@ local function Cheapest()
             end
         end
     end
-    table.sort(entries, function(lhs, rhs)
-        return lhs.value < rhs.value
-    end)
+    table.sort(entries, function(lhs, rhs) return lhs.value < rhs.value end)
     return entries
 end
 
 local function Paint()
-    if not widget then
-        return
-    end
+    if not widget then return end
     if not Enabled() then
         widget:Hide()
         return
@@ -92,26 +82,20 @@ local function Paint()
 end
 
 local function Build()
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("Button", "CludesUIBagSpace", UIParent)
     widget:SetSize(90, 20)
     textValue = widget:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(textValue, 13, "essentials")
     textValue:SetPoint("CENTER")
     widget:SetScript("OnClick", function()
-        if ToggleAllBags then
-            ToggleAllBags()
-        end
+        if ToggleAllBags then ToggleAllBags() end
     end)
     widget:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine(CludesUI.L("Cheapest items you carry"), CludesUI.Kit.Accent())
         local entries = Cheapest()
-        if #entries == 0 then
-            GameTooltip:AddLine(CludesUI.L("Nothing a vendor buys."), 0.6, 0.6, 0.6)
-        end
+        if #entries == 0 then GameTooltip:AddLine(CludesUI.L("Nothing a vendor buys."), 0.6, 0.6, 0.6) end
         for index = 1, math.min(CHEAPEST, #entries) do
             GameTooltip:AddDoubleLine(
                 entries[index].link,
@@ -127,18 +111,14 @@ local function Build()
         GameTooltip:AddLine(CludesUI.L("Click to open your bags."), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
-    widget:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return widget
 end
 
 local eventFrame = CreateFrame("Frame")
 local queued
 eventFrame:SetScript("OnEvent", function()
-    if queued then
-        return
-    end
+    if queued then return end
     queued = true
     C_Timer.After(0.2, function()
         queued = nil
@@ -151,9 +131,7 @@ local function Apply()
         Build()
         eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if not CludesUI._unlockActive then
-            F.Place(widget)
-        end
+        if not CludesUI._unlockActive then F.Place(widget) end
     else
         eventFrame:UnregisterAllEvents()
     end
@@ -173,9 +151,7 @@ F.Start(Apply, {
         end
         return widget
     end,
-    size = function()
-        return 90, 20
-    end,
+    size = function() return 90, 20 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })

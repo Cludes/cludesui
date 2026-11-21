@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MacroManager.lua  (WoW Forever only)
 --  The Macro Manager's switch and /cuimacros. The editor is the "Macros" page
@@ -19,9 +15,7 @@ local F = module.Feature("macroManager", { enabled = false })
 -- /cuimacros opens the page; registered at the first enable.
 local slashDone
 local function Apply()
-    if slashDone or not F.Enabled() then
-        return
-    end
+    if slashDone or not F.Enabled() then return end
     slashDone = true
     SLASH_CUIMACROS1 = "/cuimacros"
     SlashCmdList.CUIMACROS = function()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Lifecycle.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -33,17 +29,11 @@ local RegisterWithUnlockMode, SetDB, SetPP = Inner.RegisterWithUnlockMode, Inner
 local SetInCombat = Inner.SetInCombat
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local containerFrame
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val) containerFrame = val end
 local framesVisible = false
-Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val)
-    framesVisible = val
-end
+Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val) framesVisible = val end
 
 -------------------------------------------------------------------------------
 --  Lifecycle: OnInitialize (ADDON_LOADED - SavedVariables available)
@@ -66,15 +56,11 @@ function ERF:OnInitialize()
             local popFrame = pdata.addons and pdata.addons.CludesUIRaidFrames
             if popFrame then
                 if popFrame.showThreat ~= nil then
-                    if popFrame.showThreat == false then
-                        popFrame.threatBorderSize = 0
-                    end
+                    if popFrame.showThreat == false then popFrame.threatBorderSize = 0 end
                     popFrame.showThreat = nil
                 end
                 if popFrame.party_showThreat ~= nil then
-                    if popFrame.party_showThreat == false then
-                        popFrame.party_threatBorderSize = 0
-                    end
+                    if popFrame.party_showThreat == false then popFrame.party_threatBorderSize = 0 end
                     popFrame.party_showThreat = nil
                 end
             end
@@ -118,9 +104,7 @@ function ERF:OnEnable()
     -- Stock styles: a profile that arrives already switched (an import, an
     -- older build) gets the style's first-visit defaults once, before the
     -- proxies below materialize them.
-    if mod.RF_Stock() then
-        mod.RF_SeedStock(saved.profile, mod.RF_Style())
-    end
+    if mod.RF_Stock() then mod.RF_SeedStock(saved.profile, mod.RF_Style()) end
     mod.RF_MigrateSmRaidBar(saved.profile)
     mod._FrameSortRegister()
 
@@ -132,14 +116,10 @@ function ERF:OnEnable()
     mod._NormalizeTierOffsetAnchors()
 
     -- Initialize click-cast engine (before CreateHeaders so ClickCastFrames hook is active)
-    if mod.CC_Init then
-        mod.CC_Init()
-    end
+    if mod.CC_Init then mod.CC_Init() end
 
     -- Set party strata before creating its secure header.
-    if mod.ApplyFrameStrata then
-        mod.ApplyFrameStrata()
-    end
+    if mod.ApplyFrameStrata then mod.ApplyFrameStrata() end
 
     -- Create headers; buttons get window-phase secure styling only
     CreateHeaders()
@@ -185,13 +165,9 @@ function ERF:OnEnable()
     mod.ReloadPartyFrames(true)
 
     -- Friendly Boss Frames: initial activation (raid-only boss1-5 frames)
-    if mod.FB_Apply then
-        mod.FB_Apply()
-    end
+    if mod.FB_Apply then mod.FB_Apply() end
     -- Extra Frames: initial activation (raid-only member duplicates)
-    if mod.XF_Apply then
-        mod.XF_Apply()
-    end
+    if mod.XF_Apply then mod.XF_Apply() end
     -- Pet frames: built and styled here, once (in the login window, so a combat /reload has them);
     -- the deferred reloads below find their style unchanged.
     mod.PF_Apply(true)
@@ -223,9 +199,7 @@ function ERF:OnEnable()
         -- never be deduped away (mirrors _CURF_RefreshAll). Re-bumped in each
         -- later stage: every stage is a new frame with its own stamps.
         mod._paintGen = (mod._paintGen or 0) + 1
-        if mod.BM_RebuildLookup then
-            mod.BM_RebuildLookup(saved)
-        end
+        if mod.BM_RebuildLookup then mod.BM_RebuildLookup(saved) end
         local queue = {}
         for _, button in ipairs(allButtons) do
             queue[#queue + 1] = button
@@ -266,9 +240,7 @@ function ERF:OnEnable()
     -- is out of combat.
     function mod._ApplyPartyContainerGeometry()
         local c = mod._partyContainerFrame
-        if not c or not mod.db then
-            return
-        end
+        if not c or not mod.db then return end
         if InCombatLockdown() then
             mod._partyGeomDirtyInCombat = true
             return
@@ -297,9 +269,7 @@ function ERF:OnEnable()
     -- change so raid + party frames re-read the (now-swapped) profile live,
     -- instead of staying stale until /reload. Mirrors the reload sequence above.
     _G._CURF_RefreshAll = function()
-        if not mod.db then
-            return
-        end
+        if not mod.db then return end
         -- Profile/view swaps break the same-frame paint-stamp window: the
         -- repaint of the new profile must never dedupe against a paint made
         -- under the old one earlier this frame.
@@ -312,48 +282,30 @@ function ERF:OnEnable()
         mod._NormalizeTierOffsetAnchors()
         -- Rebuild the buff-manager spell lookup for the new profile's per-spec
         -- indicators (and the Simple Setup whitelist) before frames re-render.
-        if mod.BM_RebuildLookup then
-            mod.BM_RebuildLookup(mod.db)
-        end
+        if mod.BM_RebuildLookup then mod.BM_RebuildLookup(mod.db) end
         -- Apply strata first; reload restores child frame levels.
-        if mod.ApplyFrameStrata then
-            mod.ApplyFrameStrata()
-        end
+        if mod.ApplyFrameStrata then mod.ApplyFrameStrata() end
         -- Raid frames: restyle + relayout + reposition from the new profile.
-        if mod.ReloadFrames then
-            mod.ReloadFrames()
-        end
+        if mod.ReloadFrames then mod.ReloadFrames() end
         -- Party container size + position (combat-deferred inside), then the party buttons.
         mod._ApplyPartyContainerGeometry()
-        if mod.ReloadPartyFrames then
-            mod.ReloadPartyFrames()
-        end
+        if mod.ReloadPartyFrames then mod.ReloadPartyFrames() end
         -- Re-sync per-unit UNIT_POWER_UPDATE registration to the new profile's
         -- power role filters, so units that GAIN power across the swap get live
         -- updates instead of a frozen one-shot snapshot (rage/runic power would
         -- otherwise sit empty out of combat). Event registration is combat-safe.
-        if mod.UpdatePowerEventRegistration then
-            mod.UpdatePowerEventRegistration()
-        end
+        if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
         -- Re-apply click-cast / hovercast bindings for the new profile.
-        if mod.CC_ApplyBindings then
-            mod.CC_ApplyBindings()
-        end
+        if mod.CC_ApplyBindings then mod.CC_ApplyBindings() end
         -- Friendly Boss Frames and Extra Frames re-read the swapped profile (the pet frames did at
         -- the tails of the raid and party reloads above).
-        if mod.FB_Apply then
-            mod.FB_Apply()
-        end
-        if mod.XF_Apply then
-            mod.XF_Apply()
-        end
+        if mod.FB_Apply then mod.FB_Apply() end
+        if mod.XF_Apply then mod.XF_Apply() end
         -- Real-preview effective overlay: RunRefreshers reaches here synchronously from
         -- every view/spec/conditional transition, so the preview's value source is
         -- corrected in the SAME frame -- the shared tickers never render a stale
         -- overlay across a flip. Near-zero cost when the overlay gate is inactive.
-        if mod._RebuildPvOverlay then
-            mod._RebuildPvOverlay()
-        end
+        if mod._RebuildPvOverlay then mod._RebuildPvOverlay() end
         -- Solo-visibility recompute: override/profile transitions can flip showWhenSolo
         -- (e.g. a healer solo-frames spec override), and the DB restore alone never
         -- re-derives container visibility or the secure showSolo header attributes, so
@@ -363,12 +315,8 @@ function ERF:OnEnable()
         -- attribute writes are combat-blocked; a combat-time skip self-heals on the
         -- existing combat-exit visibility pass.
         if not InCombatLockdown() then
-            if mod.UpdateVisibility then
-                mod.UpdateVisibility()
-            end
-            if mod._UpdatePartyVisibility then
-                mod._UpdatePartyVisibility()
-            end
+            if mod.UpdateVisibility then mod.UpdateVisibility() end
+            if mod._UpdatePartyVisibility then mod._UpdatePartyVisibility() end
         end
     end
 
@@ -379,12 +327,8 @@ function ERF:OnEnable()
     -- touches our own pooled child frames, never the secure buttons.
     -- noPage: skip the options-page repaint when the caller IS a page build.
     _G._CURF_BMRefresh = function(noPage)
-        if not mod.db then
-            return
-        end
-        if mod.BM_RebuildLookup then
-            mod.BM_RebuildLookup(mod.db)
-        end
+        if not mod.db then return end
+        if mod.BM_RebuildLookup then mod.BM_RebuildLookup(mod.db) end
         local pv = mod._bmPreviewFrame
         if pv and pv._health and mod.BM_ApplyPreviewIndicators then
             mod.BM_ApplyPreviewIndicators(pv, 1, mod.db.profile)
@@ -392,9 +336,7 @@ function ERF:OnEnable()
         -- Aura containers own BM rendering on 12.1: re-drive them so a
         -- swapped-in override fork repaints (fingerprint guards make this
         -- near-free when nothing actually changed).
-        if mod.RFC_ReloadAll then
-            mod.RFC_ReloadAll()
-        end
+        if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
         -- Open BM options page: force a rebuild so its widgets re-bind to
         -- the (identity-preserved, content-swapped) profile tables.
         if not noPage and mod._bmRoot and CludesUI and CludesUI.RefreshPage then
@@ -484,9 +426,7 @@ function ERF:OnEnable()
         for _, ev in ipairs(UNIT_EVENTS_BASE) do
             frame:RegisterUnitEvent(ev, unitToken)
         end
-        if mod._RFPredWanted() then
-            frame:RegisterUnitEvent("UNIT_HEAL_PREDICTION", unitToken)
-        end
+        if mod._RFPredWanted() then frame:RegisterUnitEvent("UNIT_HEAL_PREDICTION", unitToken) end
         frame:RegisterUnitEvent("UNIT_POWER_UPDATE", unitToken)
         frame:RegisterUnitEvent("UNIT_DISPLAYPOWER", unitToken)
         frame:SetScript("OnEvent", OnEvent)
@@ -531,9 +471,7 @@ function ERF:OnEnable()
     local lvlRegistered = false
     function mod._RFSyncLevelRegistration()
         local wanted = mod.RF_TextWanted("level")
-        if wanted == lvlRegistered then
-            return
-        end
+        if wanted == lvlRegistered then return end
         lvlRegistered = wanted
         SyncOptInEvent("UNIT_LEVEL", wanted)
     end
@@ -557,17 +495,13 @@ function ERF:OnEnable()
         local raidPP, partyPP = (region and region.pp) and true or false, (p and p.pp) and true or false
         if raidPP ~= raidPowerWanted or partyPP ~= partyPowerWanted then
             raidPowerWanted, partyPowerWanted = raidPP, partyPP
-            if mod.UpdatePowerEventRegistration then
-                mod.UpdatePowerEventRegistration()
-            end
+            if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
         end
     end
     mod._RFSyncCustomRegistration()
 
     -- UNIT_FLAGS is opt-in: only registered while the combat icon is enabled.
-    if mod.UpdateCombatEventRegistration then
-        mod.UpdateCombatEventRegistration()
-    end
+    if mod.UpdateCombatEventRegistration then mod.UpdateCombatEventRegistration() end
 
     -- Dynamically register/unregister UNIT_POWER_UPDATE per unit based on
     -- role and power display settings. Called after roster changes and
@@ -628,9 +562,7 @@ function ERF:OnEnable()
             end
         end
         -- Same cadence as the registrations (roster/roles/settings changes).
-        if mod.HM_Rebuild then
-            mod.HM_Rebuild()
-        end
+        if mod.HM_Rebuild then mod.HM_Rebuild() end
     end
     mod.UpdatePowerEventRegistration = UpdatePowerEventRegistration
 
@@ -644,9 +576,7 @@ function ERF:OnEnable()
             mod._RFCombatVisEdge()
             -- Members assigned while the flag was still down (the first half
             -- second) were kept out of the map; the raid branch below rebuilds too.
-            if mod._partyFramesVisible then
-                mod._RebuildPartyUnitMap()
-            end
+            if mod._partyFramesVisible then mod._RebuildPartyUnitMap() end
         end
         UpdateVisibility()
         mod._UpdatePartyVisibility()
@@ -656,14 +586,10 @@ function ERF:OnEnable()
             -- Re-derive the growth-corner anchor: this can be the first
             -- sized pass when roster data arrives late, and its SetSize
             -- must not leave the container on a stale anchor.
-            if mod._ApplyTierOffset then
-                mod._ApplyTierOffset()
-            end
+            if mod._ApplyTierOffset then mod._ApplyTierOffset() end
             UpdateAllButtons()
         end
-        if mod._partyFramesVisible then
-            mod._LayoutPartyFrames()
-        end
+        if mod._partyFramesVisible then mod._LayoutPartyFrames() end
     end)
 
     -- Nickname integrations. When Northern Sky Raid Tools (NSAPI) or Timeline
@@ -676,14 +602,10 @@ function ERF:OnEnable()
     -- registrant key (CallbackHandler keys registrations by it). A colon call would
     -- pass the API table itself as the key and collide with other addons doing the same.
     local function RegisterNSRTNicknames()
-        if mod._nsrtNickHooked then
-            return true
-        end
+        if mod._nsrtNickHooked then return true end
         if NSAPI and NSAPI.RegisterCallback then
             local function onNamesChanged()
-                if mod.RefreshAllNames then
-                    mod.RefreshAllNames()
-                end
+                if mod.RefreshAllNames then mod.RefreshAllNames() end
             end
             NSAPI.RegisterCallback("CludesUI", "NSRT_NICKNAME_UPDATED", onNamesChanged)
             NSAPI.RegisterCallback("CludesUI", mod.EXT_NICK.nsToggle, onNamesChanged)
@@ -693,35 +615,25 @@ function ERF:OnEnable()
         return false
     end
     local function RegisterMethodInternalNicknames()
-        if mod._methodInternalSurfaceNickHooked then
-            return
-        end
+        if mod._methodInternalSurfaceNickHooked then return end
         if EasyNicknameAPI and EasyNicknameAPI.RegisterCallback then
             EasyNicknameAPI.RegisterCallback("SurfaceNicknamesChanged", function()
-                if mod.RefreshAllNames then
-                    mod.RefreshAllNames()
-                end
+                if mod.RefreshAllNames then mod.RefreshAllNames() end
             end, "CludesUIRaidFrames")
             mod._methodInternalSurfaceNickHooked = true
         end
     end
     local function RegisterTRNicknames()
-        if mod._trNickHooked then
-            return true
-        end
+        if mod._trNickHooked then return true end
         local TR = TimelineReminders
         if TR and TR.RegisterCallback then
             -- CallbackHandler passes the event name as the first callback argument.
             -- Toggle fires for every addon checkbox in TR, so filter on ours.
             TR.RegisterCallback("CludesUI", "TimelineReminders_NicknameToggle", function(_, _, addOnName)
-                if addOnName == mod.NICK_ADDON and mod.RefreshAllNames then
-                    mod.RefreshAllNames()
-                end
+                if addOnName == mod.NICK_ADDON and mod.RefreshAllNames then mod.RefreshAllNames() end
             end)
             TR.RegisterCallback("CludesUI", "TimelineReminders_NicknameUpdate", function()
-                if mod.RefreshAllNames then
-                    mod.RefreshAllNames()
-                end
+                if mod.RefreshAllNames then mod.RefreshAllNames() end
             end)
             mod._trNickHooked = true
             return true
@@ -729,9 +641,7 @@ function ERF:OnEnable()
         return false
     end
     local function RegisterRGALIASNicknames()
-        if mod._rgaliasNickHooked then
-            return true
-        end
+        if mod._rgaliasNickHooked then return true end
         local RGA = _G.RG_ALIAS
         if RGA and RGA.RegisterCallback and _G.RG_UnitName then
             -- ns._rgaNick gates the ResolveDisplayName consult. The settings
@@ -741,9 +651,7 @@ function ERF:OnEnable()
             local function SyncRGAFlag()
                 local cfg = RG_ALTS_SETTINGS and RG_ALTS_SETTINGS.settings
                 mod._rgaNick = (cfg and cfg[mod.EXT_NICK.rgaModule]) and true or nil
-                if mod.RefreshAllNames then
-                    mod.RefreshAllNames()
-                end
+                if mod.RefreshAllNames then mod.RefreshAllNames() end
             end
             -- pcall: RGA owns its RegisterCallback signature; a mismatch or
             -- future change must not error our OnEnable. If registration
@@ -751,14 +659,10 @@ function ERF:OnEnable()
             -- then need a /reload to be noticed (degraded, never broken).
             pcall(RGA.RegisterCallback, "DbUpdated", SyncRGAFlag)
             pcall(RGA.RegisterCallback, "ModuleEnabled", function(evt, moduleName)
-                if moduleName == mod.EXT_NICK.rgaModule then
-                    SyncRGAFlag()
-                end
+                if moduleName == mod.EXT_NICK.rgaModule then SyncRGAFlag() end
             end)
             pcall(RGA.RegisterCallback, "ModuleDisabled", function(evt, moduleName)
-                if moduleName == mod.EXT_NICK.rgaModule then
-                    SyncRGAFlag()
-                end
+                if moduleName == mod.EXT_NICK.rgaModule then SyncRGAFlag() end
             end)
             local cfg = RG_ALTS_SETTINGS and RG_ALTS_SETTINGS.settings
             mod._rgaNick = (cfg and cfg[mod.EXT_NICK.rgaModule]) and true or nil
@@ -780,9 +684,7 @@ function ERF:OnEnable()
             local b = RegisterTRNicknames()
             local c = RegisterRGALIASNicknames()
             -- Anything not loaded by first PLAYER_ENTERING_WORLD is not coming.
-            if (a and b and c) or evt == "PLAYER_ENTERING_WORLD" then
-                self:UnregisterAllEvents()
-            end
+            if (a and b and c) or evt == "PLAYER_ENTERING_WORLD" then self:UnregisterAllEvents() end
         end)
     end
     EventUtil.ContinueOnAddOnLoaded("MethodInternal", RegisterMethodInternalNicknames)
@@ -791,39 +693,29 @@ function ERF:OnEnable()
     -- it unless it is installed and enabled for this character.
     local function RegisterCustomNames()
         local CN = LibStub("CustomNames", true)
-        if not (CN and CN.UnitName and CN.RegisterCallback) or mod._customNames then
-            return
-        end
+        if not (CN and CN.UnitName and CN.RegisterCallback) or mod._customNames then return end
         mod._customNames = CN
         local pending
         local function flush()
             pending = nil
-            if mod.RefreshAllNames then
-                mod.RefreshAllNames()
-            end
+            if mod.RefreshAllNames then mod.RefreshAllNames() end
         end
         local function onNamesChanged()
-            if pending then
-                return
-            end
+            if pending then return end
             pending = true
             C_Timer.After(0, flush)
         end
         CN.RegisterCallback("CludesUI", "Name_Added", onNamesChanged)
         CN.RegisterCallback("CludesUI", "Name_Update", onNamesChanged)
         CN.RegisterCallback("CludesUI", "Name_Removed", onNamesChanged)
-        if mod.RefreshAllNames then
-            mod.RefreshAllNames()
-        end
+        if mod.RefreshAllNames then mod.RefreshAllNames() end
     end
     if C_AddOns.IsAddOnLoaded("CustomNames") or C_AddOns.IsAddOnLoadable("CustomNames") then
         EventUtil.ContinueOnAddOnLoaded("CustomNames", RegisterCustomNames)
     end
 
     -- Init options module if it loaded before us
-    if mod._InitCUIModule then
-        C_Timer.After(0, mod._InitCUIModule)
-    end
+    if mod._InitCUIModule then C_Timer.After(0, mod._InitCUIModule) end
 end
 
 -- Slash command registered in CUI_RaidFrames_Options.lua
@@ -837,14 +729,10 @@ end
 do
     -- A header's shown buttons, in child order.
     local function AddShown(heading, entries)
-        if not (heading and heading:IsVisible()) then
-            return
-        end
+        if not (heading and heading:IsVisible()) then return end
         local i, b = 1, heading:GetAttribute("child1")
         while b do
-            if b:IsVisible() then
-                entries[#entries + 1] = b
-            end
+            if b:IsVisible() then entries[#entries + 1] = b end
             i = i + 1
             b = heading:GetAttribute("child" .. i)
         end
@@ -863,9 +751,7 @@ do
             if box and box:IsVisible() then
                 AddShown(mod._partyHeader, partyList)
                 local scrollBar = mod._partySelfButton
-                if scrollBar and scrollBar:IsVisible() then
-                    partyList[#partyList + 1] = scrollBar
-                end
+                if scrollBar and scrollBar:IsVisible() then partyList[#partyList + 1] = scrollBar end
                 partyGroup.pivot = box
                 partyGroups[1] = partyGroup
             end

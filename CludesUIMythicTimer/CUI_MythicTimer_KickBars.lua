@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickBars.lua - Kick Tracker bars (Mythic+ Tools).
 --
@@ -38,9 +36,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, ns = ...
 
 local MTWhere, KE, KD = ns.MTWhere, ns.KickEngine, CludesUI.KickData
-if not (MTWhere and KE and KD) then
-    return
-end
+if not (MTWhere and KE and KD) then return end
 
 local db -- the module's settings handle, given by ns.KTB_OnEnable
 
@@ -57,9 +53,7 @@ local PP = CludesUI.PP
 -- Font family, outline and shadow are the module's ("mythicTimer"); only
 -- sizes are settings. Rows show player names, so they take a font family
 -- (Cyrillic, Korean and Chinese names draw), never a plain SetFont.
-local function Font(text, size)
-    CludesUI.ApplyModuleFontFamily(text, nil, size, "mythicTimer")
-end
+local function Font(text, size) CludesUI.ApplyModuleFontFamily(text, nil, size, "mythicTimer") end
 
 local IMMEDIATE = Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.Immediate or 0
 local ELAPSED = Enum.StatusBarTimerDirection and Enum.StatusBarTimerDirection.ElapsedTime or 0
@@ -125,9 +119,7 @@ local moving = {} -- RelayLayers' scratch: layers following their member to a ne
 --  UIParent's centre, as for the cast bars)
 --------------------------------------------------------------------------------
 local function PlaceContainer()
-    if not container then
-        return
-    end
+    if not container then return end
     local settings = Cfg()
     local position = settings and settings.barPos
     container:ClearAllPoints()
@@ -325,9 +317,7 @@ local function PaintMember(row, settings, class, kick, name)
         br, bgTex, bb, ba = red * DARK_SHARE, green * DARK_SHARE, blue * DARK_SHARE, DARK_ALPHA
     end
     row.bg:SetColorTexture(br, bgTex, bb, ba)
-    if row.cover then
-        row.cover:SetColorTexture(br, bgTex, bb, 1)
-    end
+    if row.cover then row.cover:SetColorTexture(br, bgTex, bb, 1) end
 end
 
 local StartTicker
@@ -363,9 +353,7 @@ local function PaintCooldown(row, start, dur)
         row.timer:SetText("")
         row.timeShown = nil
         row.markerIdx = nil
-        if row.unit then
-            markerOf[row.unit] = nil
-        end
+        if row.unit then markerOf[row.unit] = nil end
     end
     PaintMarker(row)
 end
@@ -450,9 +438,7 @@ local function SetLevels(layer, base)
     row:SetFrameLevel(base)
     row.iconFrame:SetFrameLevel(base + 1)
     row.sb:SetFrameLevel(base + 1)
-    if type(row.border) == "table" then
-        row.border:SetFrameLevel(base + 1)
-    end
+    if type(row.border) == "table" then row.border:SetFrameLevel(base + 1) end
     row.textFrame:SetFrameLevel(base + 2)
 end
 
@@ -468,9 +454,7 @@ end
 -- not leaves the fill whole and the clip empty.
 local function Lay(layer, under, settings, depth)
     local row = layer.row
-    if row.styleGen ~= styleGen then
-        Style(row, settings)
-    end
+    if row.styleGen ~= styleGen then Style(row, settings) end
     layer:ClearAllPoints()
     layer:SetAllPoints(under)
     row:ClearAllPoints()
@@ -507,9 +491,7 @@ end
 -- Frees a member's layers started at or before `upto` (all with nil).
 local function FreeUnit(unit, upto)
     local list = layersOf[unit]
-    if not list or #list == 0 then
-        return
-    end
+    if not list or #list == 0 then return end
     local freed = false
     for i = #list, 1, -1 do
         if upto == nil or list[i].t <= upto then
@@ -517,9 +499,7 @@ local function FreeUnit(unit, upto)
             freed = true
         end
     end
-    if freed then
-        Relevel(unit)
-    end
+    if freed then Relevel(unit) end
 end
 
 local function FreeAll()
@@ -547,15 +527,11 @@ local function TickLayers(now)
                 freed = true
             else
                 any = true
-                if layer.feed then
-                    Feed(layer)
-                end
+                if layer.feed then Feed(layer) end
                 PaintSeconds(layer.row, readyAt - now)
             end
         end
-        if freed then
-            Relevel(unit)
-        end
+        if freed then Relevel(unit) end
     end
     return any
 end
@@ -575,9 +551,7 @@ local function Tick()
             end
         end
     end
-    if TickLayers(now) then
-        any = true
-    end
+    if TickLayers(now) then any = true end
     if not any and ticker then
         ticker:Cancel()
         ticker = nil
@@ -604,9 +578,7 @@ end
 --------------------------------------------------------------------------------
 local function ShowRow(slot, settings, class, kick, name, start, dur, unit, marker)
     local row = LiveRow(slot)
-    if row.styleGen ~= styleGen then
-        Style(row, settings)
-    end
+    if row.styleGen ~= styleGen then Style(row, settings) end
     Place(row, slot, settings)
     row.unit, row.markerIdx = unit, marker
     PaintMember(row, settings, class, kick, name)
@@ -619,9 +591,7 @@ end
 local function UnitOf(guid)
     for _, unit in ipairs(KE.GROUP_UNITS) do
         local member = rowOf[unit] and KE.Member(unit)
-        if member and member.guid == guid then
-            return unit
-        end
+        if member and member.guid == guid then return unit end
     end
     return nil
 end
@@ -691,9 +661,7 @@ end
 
 local function Layout()
     local settings = Cfg()
-    if not settings then
-        return
-    end
+    if not settings then return end
     Container()
     wipe(rowOf)
     local count = 0
@@ -729,8 +697,17 @@ local function Layout()
                     markerOf[unit] = nil
                 end
                 count = count + 1
-                rowOf[unit] =
-                    ShowRow(count, settings, member.class, member.kick, UnitName(unit), start, dur, unit, marker)
+                rowOf[unit] = ShowRow(
+                    count,
+                    settings,
+                    member.class,
+                    member.kick,
+                    UnitName(unit),
+                    start,
+                    dur,
+                    unit,
+                    marker
+                )
             end
         end
     end
@@ -752,20 +729,14 @@ end
 -- A cooldown with a start is a known kick: it replaces the member's layers up
 -- to it. A cleared one ends them all.
 local function OnCooldown(unit, start, dur)
-    if mode ~= LIVE then
-        return
-    end
+    if mode ~= LIVE then return end
     FreeUnit(unit, start and (start + 0.01) or nil)
     local row = rowOf[unit]
-    if row then
-        PaintCooldown(row, start, dur)
-    end
+    if row then PaintCooldown(row, start, dur) end
 end
 
 local function OnRoster()
-    if mode == LIVE then
-        Layout()
-    end
+    if mode == LIVE then Layout() end
 end
 
 -- A known kick on a plate: the mob's raid marker rides the kicker's row while
@@ -774,13 +745,9 @@ end
 -- is hidden (type() still says number): kept as is, only handed back to the
 -- game, never compared.
 local function OnKick(plate, kicker)
-    if mode ~= LIVE or not kicker then
-        return
-    end
+    if mode ~= LIVE or not kicker then return end
     local index = plate and GetRaidTargetIndex(plate)
-    if type(index) ~= "number" then
-        index = nil
-    end
+    if type(index) ~= "number" then index = nil end
     local member = KE.Member(kicker)
     markerOf[kicker] = index
     markerGuid[kicker] = member and member.guid or nil
@@ -798,14 +765,10 @@ end
 -- `platesOnly` adds it to the layers already made for t. The engine's tables
 -- are read here and never kept.
 local function OnGate(t, units, before, after, plates, platesOnly)
-    if mode ~= LIVE then
-        return
-    end
+    if mode ~= LIVE then return end
     local plate = plates and plates[1]
     local index = plate and GetRaidTargetIndex(plate)
-    if type(index) ~= "number" then
-        index = nil
-    end
+    if type(index) ~= "number" then index = nil end
     if platesOnly then
         if type(index) == "number" then
             for _, list in pairs(layersOf) do
@@ -820,9 +783,7 @@ local function OnGate(t, units, before, after, plates, platesOnly)
         return
     end
     local settings = Cfg()
-    if not settings then
-        return
-    end
+    if not settings then return end
     local now = GetTime()
     for _, unit in ipairs(units) do
         local under = rowOf[unit]
@@ -855,12 +816,8 @@ local ENGINE_CALLS = { kick = OnKick, cooldown = OnCooldown, roster = OnRoster, 
 --  Modes
 --------------------------------------------------------------------------------
 local function SetMode(to)
-    if to == mode then
-        return
-    end
-    if mode == LIVE then
-        KE.Unsubscribe(WHERE_KEY)
-    end
+    if to == mode then return end
+    if mode == LIVE then KE.Unsubscribe(WHERE_KEY) end
     mode = to
     FreeAll()
     wipe(rowOf)
@@ -873,20 +830,14 @@ local function SetMode(to)
             row.readyAt = nil
         end
         inUse = 0
-        if container then
-            container:Hide()
-        end
+        if container then container:Hide() end
         return
     end
-    if to == LIVE then
-        KE.Subscribe(WHERE_KEY, ENGINE_CALLS)
-    end
+    if to == LIVE then KE.Subscribe(WHERE_KEY, ENGINE_CALLS) end
     Layout()
 end
 
-local function Enabled(settings)
-    return settings and settings.enabled == true and settings.showBars ~= false
-end
+local function Enabled(settings) return settings and settings.enabled == true and settings.showBars ~= false end
 
 -- The preview owns the display while on: no Where to Show filter, no
 -- engine. Leaving it applies the filter again.
@@ -909,9 +860,7 @@ end
 local function OnWhere(event)
     local was = mode
     Sync()
-    if event == "PLAYER_ENTERING_WORLD" and mode ~= OFF and mode == was then
-        FreeAll()
-    end
+    if event == "PLAYER_ENTERING_WORLD" and mode ~= OFF and mode == was then FreeAll() end
 end
 
 --------------------------------------------------------------------------------
@@ -919,9 +868,7 @@ end
 --  bars are off.
 --------------------------------------------------------------------------------
 local function RegisterUnlock()
-    if unlockRegistered then
-        return
-    end
+    if unlockRegistered then return end
     unlockRegistered = true
     CludesUI:RegisterUnlockElements({
         CludesUI.MakeUnlockElement({
@@ -933,13 +880,9 @@ local function RegisterUnlock()
             -- element's size and be matched to.
             noResize = true,
             allowMatchSource = true,
-            isHidden = function()
-                return not Enabled(Cfg())
-            end,
+            isHidden = function() return not Enabled(Cfg()) end,
             getFrame = Container,
-            getSize = function()
-                return GroupSize(Cfg())
-            end,
+            getSize = function() return GroupSize(Cfg()) end,
             setWidth = function(_, w)
                 local settings = Cfg()
                 if settings then
@@ -949,9 +892,7 @@ local function RegisterUnlock()
             end,
             setHeight = function(_, h)
                 local settings = Cfg()
-                if not settings then
-                    return
-                end
+                if not settings then return end
                 -- A row's share of the group's height.
                 local n = #SAMPLES
                 settings.barHeight = math.max(6, floor((h - (n - 1) * (settings.barSpacing or 2)) / n + 0.5))
@@ -963,38 +904,35 @@ local function RegisterUnlock()
                 local settings = Cfg()
                 if settings and x and y then
                     settings.barPos = { centerX = x, centerY = y }
-                    if not CludesUI._unlockActive then
-                        PlaceContainer()
-                    end
+                    if not CludesUI._unlockActive then PlaceContainer() end
                 end
             end,
             loadPos = function()
                 local settings = Cfg()
                 local position = settings and settings.barPos
                 if position and position.centerX and position.centerY then
-                    return { point = "CENTER", relPoint = "CENTER", x = position.centerX, y = position.centerY }
+                    return {
+                        point = "CENTER",
+                        relPoint = "CENTER",
+                        x = position.centerX,
+                        y = position.centerY,
+                    }
                 end
                 return nil
             end,
             clearPos = function()
                 local settings = Cfg()
-                if settings then
-                    settings.barPos = nil
-                end
+                if settings then settings.barPos = nil end
             end,
             applyPos = PlaceContainer,
         }),
     }, "CludesUIMythicTimer")
 
     CludesUI:RegisterUnlockModeListener("EMT_KickBars", function(active)
-        if not Enabled(Cfg()) then
-            return
-        end
+        if not Enabled(Cfg()) then return end
         -- Sample rows while placing; live rows again on leaving.
         ns.KTB_SetPreview(active == true)
-        if not CludesUI.IsUnlockAnchored("EMT_KickBars") then
-            PlaceContainer()
-        end
+        if not CludesUI.IsUnlockAnchored("EMT_KickBars") then PlaceContainer() end
     end)
 end
 
@@ -1014,9 +952,7 @@ function ns.KTB_Refresh()
     MTWhere.Subscribe(WHERE_KEY, OnWhere)
     PlaceContainer()
     Sync()
-    if mode ~= OFF then
-        Layout()
-    end
+    if mode ~= OFF then Layout() end
 end
 
 -- Unlock mode's sample rows (only while the bars are enabled).
@@ -1025,9 +961,7 @@ function ns.KTB_SetPreview(on)
     ns.KTB_Refresh()
 end
 
-function ns.KTB_IsPreview()
-    return previewOn
-end
+function ns.KTB_IsPreview() return previewOn end
 
 -- The options header's sample: the first `n` sample rows (SAMPLE_COUNT by
 -- default) under `host`'s top left, styled at the current settings whatever
@@ -1037,9 +971,7 @@ end
 -- out of `rows`, so the layout, ticker and modes never see them.
 function ns.KTB_PaintSample(owner, n)
     local settings = Cfg()
-    if not settings then
-        return nil
-    end
+    if not settings then return nil end
     n = math.min(n or SAMPLE_COUNT, #SAMPLES)
     local now = GetTime()
     for i = 1, n do

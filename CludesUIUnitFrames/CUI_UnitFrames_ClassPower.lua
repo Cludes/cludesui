@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_ClassPower.lua
 --
@@ -21,9 +19,7 @@ local frameList = Inner.frames
 local ClassPowerEntry, DruidNeedsCatForm, InCatForm =
     Inner.ClassPowerEntry, Inner.DruidNeedsCatForm, Inner.InCatForm
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Fixed child-born shells for the class-power event driver and castbar watcher. The
 -- class-power bar is parked and rebuilt on spec switches through the profile system,
@@ -45,16 +41,12 @@ mod._cpCastWatcher:Hide()
 -- between Start()/Stop() and pauses while its host is hidden.
 mod._cpDriverTick = CludesUI.Tick.NewAnimTicker(mod._cpDriver, function()
     local func = mod._cpTickFn
-    if func then
-        func()
-    end
+    if func then func() end
     return true
 end, 0.1)
 mod._cpWatchTick = CludesUI.Tick.NewAnimTicker(mod._cpCastWatcher, function()
     local func = mod._cpWatchFn
-    if func then
-        func()
-    end
+    if func then func() end
     return true
 end, 0.1)
 
@@ -69,9 +61,7 @@ local cpPipPool = {}
 -- Silences and hides every child of the parked row (the engine-slot overlay's
 -- proxy included) without building a table of them.
 local function ParkChildren(childFrame, ...)
-    if not childFrame then
-        return
-    end
+    if not childFrame then return end
     childFrame:UnregisterAllEvents()
     childFrame:SetScript("OnEvent", nil)
     childFrame:Hide()
@@ -81,9 +71,7 @@ end
 local function DestroyCustomClassPower()
     -- Park the engine-slot warrior charge overlay: its proxy is parented to
     -- the container being parked; the next _WCUF_Sync re-adopts it.
-    if _G._EWC then
-        _G._EWC.Gate("uf")
-    end
+    if _G._EWC then _G._EWC.Gate("uf") end
     mod._cpTickFn = nil
     mod._cpDriverTick.Stop()
     mod._cpWatchFn = nil
@@ -99,9 +87,7 @@ end
 local function CreateCustomClassPower(playerFrame, style)
     local _, playerClass = UnitClass("player")
     local record = ClassPowerEntry(playerClass)
-    if not record then
-        return nil
-    end
+    if not record then return nil end
 
     -- Resolve spec-specific entries (table with specID keys)
     local powerType, customMax, isCustom, renderMode
@@ -109,9 +95,7 @@ local function CreateCustomClassPower(playerFrame, style)
         local specInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
         local specID = specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
         local specEntry = specID and record[specID]
-        if not specEntry then
-            return nil
-        end
+        if not specEntry then return nil end
         if type(specEntry) == "table" and type(specEntry[1]) == "string" then
             -- String-keyed custom resource (e.g. "SOUL_FRAGMENTS_VENGEANCE")
             powerType = specEntry[1]
@@ -152,18 +136,14 @@ local function CreateCustomClassPower(playerFrame, style)
             local maxC = customMax or 50
             if CludesUI and CludesUI.GetSoulFragments then
                 local _, m = CludesUI.GetSoulFragments()
-                if m and m > 0 then
-                    maxC = m
-                end
+                if m and m > 0 then maxC = m end
             end
             maxPower = maxC
             customMax = maxPower
         elseif powerType == "BREWMASTER_STAGGER" then
             -- Bar mode: "max" is player max HP; StatusBar fills with UnitStagger.
             local mh = UnitHealthMax("player") or 0
-            if issecretvalue and issecretvalue(mh) then
-                mh = 0
-            end
+            if issecretvalue and issecretvalue(mh) then mh = 0 end
             maxPower = (mh > 0) and mh or 1
             customMax = maxPower
         else
@@ -171,9 +151,7 @@ local function CreateCustomClassPower(playerFrame, style)
         end
     else
         maxPower = UnitPowerMax("player", powerType) or 5
-        if maxPower <= 0 then
-            maxPower = 5
-        end
+        if maxPower <= 0 then maxPower = 5 end
     end
 
     local isModern = (style == "modern")
@@ -229,9 +207,7 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- Border: non-modern styles only, built on first use and shown per style
     if not isModern then
-        if not cpBorder then
-            cpBorder = MakeBorder(boxHolder, 0, 0, 0, 0.8)
-        end
+        if not cpBorder then cpBorder = MakeBorder(boxHolder, 0, 0, 0, 0.8) end
         cpBorder._frame:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
         cpBorder.edges:SetFrameLevel(boxHolder:GetFrameLevel() + 2)
         cpBorder._frame:Show()
@@ -358,9 +334,7 @@ local function CreateCustomClassPower(playerFrame, style)
         end
     else
         boxHolder._staggerBar = nil
-        if cpStaggerBar then
-            cpStaggerBar:Hide()
-        end
+        if cpStaggerBar then cpStaggerBar:Hide() end
         for i = 1, maxPower do
             pips[i] = MakePip(boxHolder, i)
         end
@@ -384,9 +358,7 @@ local function CreateCustomClassPower(playerFrame, style)
                     staggerBar:Hide()
                     return
                 end
-                if maxHP <= 0 then
-                    maxHP = 1
-                end
+                if maxHP <= 0 then maxHP = 1 end
                 if staggerBar._lastMax ~= maxHP then
                     staggerBar._lastMax = maxHP
                     staggerBar:SetMinMaxValues(0, maxHP)
@@ -409,9 +381,7 @@ local function CreateCustomClassPower(playerFrame, style)
                 local current, maxC = 0, customMax or 50
                 if CludesUI and CludesUI.GetSoulFragments then
                     current, maxC = CludesUI.GetSoulFragments()
-                    if not maxC or maxC <= 0 then
-                        maxC = customMax or 50
-                    end
+                    if not maxC or maxC <= 0 then maxC = customMax or 50 end
                 end
                 if staggerBar._lastMax ~= maxC then
                     staggerBar._lastMax = maxC
@@ -423,14 +393,10 @@ local function CreateCustomClassPower(playerFrame, style)
                     staggerBar._colorSet = true
                     local rc = CludesUI.GetResourceColor("DEMONHUNTER")
                     local cc = rc or (CludesUI.GetClassColor("DEMONHUNTER"))
-                    if cc then
-                        staggerBar:GetStatusBarTexture():SetVertexColor(cc.r, cc.g, cc.b, 1)
-                    end
+                    if cc then staggerBar:GetStatusBarTexture():SetVertexColor(cc.r, cc.g, cc.b, 1) end
                 end
             end
-            if not staggerBar:IsShown() then
-                staggerBar:Show()
-            end
+            if not staggerBar:IsShown() then staggerBar:Show() end
             return
         end
         local current, max
@@ -448,9 +414,7 @@ local function CreateCustomClassPower(playerFrame, style)
                 -- the true count fills the overlay bar C-side; legacy pips
                 -- stay hidden (empty row until the deferred build lands).
                 for i = 1, #pips do
-                    if pips[i] then
-                        pips[i]:Hide()
-                    end
+                    if pips[i] then pips[i]:Hide() end
                 end
                 return
             elseif powerType == "ICICLES" then
@@ -460,18 +424,14 @@ local function CreateCustomClassPower(playerFrame, style)
                     local aura = C_UnitAuras.GetPlayerAuraBySpellID(205473)
                     if aura then
                         total = aura.applications or aura.charges or aura.points or 0
-                        if total > 5 then
-                            total = 5
-                        end
+                        if total > 5 then total = 5 end
                     end
                 end
                 current, max = total, 5
             else
                 current, max = 0, maxPower
             end
-            if not max or max <= 0 then
-                max = maxPower
-            end
+            if not max or max <= 0 then max = maxPower end
         else
             -- Forever combo points belong to the target, and UnitPower still
             -- reports the previous target's count at the moment
@@ -490,9 +450,7 @@ local function CreateCustomClassPower(playerFrame, style)
                 current = 0
                 for i = 1, max do
                     local start, duration, ready = GetRuneCooldown(i)
-                    if ready then
-                        current = current + 1
-                    end
+                    if ready then current = current + 1 end
                 end
             end
         end
@@ -508,9 +466,7 @@ local function CreateCustomClassPower(playerFrame, style)
             local newTotalW = max * pipSize + (max - 1) * gap + pad
             boxHolder:SetWidth(newTotalW)
             for i = 1, max do
-                if not pips[i] then
-                    pips[i] = MakePip(boxHolder, i)
-                end
+                if not pips[i] then pips[i] = MakePip(boxHolder, i) end
                 local posX = (i - 1) * (pipSize + gap) + pad / 2
                 pips[i]:ClearAllPoints()
                 Pix.Point(pips[i], "TOPLEFT", boxHolder, "TOPLEFT", posX, 0)
@@ -551,18 +507,14 @@ local function CreateCustomClassPower(playerFrame, style)
                     pips[i]._secretBar:SetStatusBarColor(cr, cg, callback, 1)
                     pips[i]._secretBar:Show()
                     -- Hide normal fill; StatusBar replaces it
-                    if pips[i]._fill then
-                        pips[i]._fill:Hide()
-                    end
+                    if pips[i]._fill then pips[i]._fill:Hide() end
                 end
             end
         else
             -- Clean-value path
             for i = 1, #pips do
                 if pips[i] then
-                    if pips[i]._secretBar then
-                        pips[i]._secretBar:Hide()
-                    end
+                    if pips[i]._secretBar then pips[i]._secretBar:Hide() end
                     if pips[i]._fill then
                         if i <= current then
                             pips[i]._fill:Show()
@@ -615,23 +567,15 @@ local function CreateCustomClassPower(playerFrame, style)
         -- teardown unregisters the driver mid-dispatch), and -- lacking the unit filter
         -- -- would fire on any GROUP MEMBER's spec event, silently killing the bar until
         -- the next /reload.
-        if needsAura then
-            eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
-        end
-        eventFrame:SetScript("OnEvent", function()
-            PaintPips()
-        end)
+        if needsAura then eventFrame:RegisterUnitEvent("UNIT_AURA", "player") end
+        eventFrame:SetScript("OnEvent", function() PaintPips() end)
     else
         eventFrame:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
         eventFrame:RegisterUnitEvent("UNIT_MAXPOWER", "player")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if powerType == Enum.PowerType.Runes then
-            eventFrame:RegisterEvent("RUNE_POWER_UPDATE")
-        end
+        if powerType == Enum.PowerType.Runes then eventFrame:RegisterEvent("RUNE_POWER_UPDATE") end
         local druidFormToggle = DruidNeedsCatForm(playerClass, powerType)
-        if druidFormToggle then
-            eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-        end
+        if druidFormToggle then eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM") end
         -- Combo points belong to the target on Forever, so swapping targets
         -- changes the count with no power event behind it, and so does points
         -- moving to a new target (COMBO_TARGET_CHANGED, no payload). Blizzard's
@@ -657,9 +601,7 @@ local function CreateCustomClassPower(playerFrame, style)
     end
 
     -- Form-toggled druids start hidden unless already in cat form
-    if DruidNeedsCatForm(playerClass, powerType) and not InCatForm() then
-        boxHolder:Hide()
-    end
+    if DruidNeedsCatForm(playerClass, powerType) and not InCatForm() then boxHolder:Hide() end
 
     PaintPips()
     boxHolder._updatePips = PaintPips
@@ -684,16 +626,10 @@ local function CreateCustomClassPower(playerFrame, style)
         -- shownPipCount, not #pips: the table is a high-water mark, so a shrunk
         -- max would divide the width by the old pip count and leave a gap.
         local num = shownPipCount
-        if num <= 0 then
-            return
-        end
+        if num <= 0 then return end
         local efs = boxHolder:GetEffectiveScale()
-        if efs <= 0 then
-            efs = 1
-        end
-        local function Snap(val)
-            return math_floor(val * efs + 0.5) / efs
-        end
+        if efs <= 0 then efs = 1 end
+        local function Snap(val) return math_floor(val * efs + 0.5) / efs end
         local intW = math_floor(targetW)
         local gapPx = Snap(gap)
         local totalGapW = (num - 1) * gapPx
@@ -723,9 +659,7 @@ end
 -- PositionClassPowerBar, so "above" stretching has already settled the width.
 mod._WCUF_Sync = function(boxHolder)
     local ewc = _G._EWC
-    if not (ewc and boxHolder) then
-        return
-    end
+    if not (ewc and boxHolder) then return end
     local powerType = boxHolder._powerType
     if
         (powerType ~= "WHIRLWIND_STACKS" and powerType ~= "SWEEPING_STRIKES")
@@ -767,9 +701,7 @@ end
 -- FACTION_BAR_COLORS when unset, so this is idempotent and reset-safe (re-applies the
 -- active profile's colors on profile swap). Hostile = reactions 1-3, Neutral = 4, Friendly = 5-8.
 local function ApplyEnemyColors()
-    if not (mod.Colors and mod.Colors.reaction and FACTION_BAR_COLORS) then
-        return
-    end
+    if not (mod.Colors and mod.Colors.reaction and FACTION_BAR_COLORS) then return end
     local ec = (saved and saved.profile and saved.profile.enemyColors) or {}
     local function setIdx(index, custom)
         local frame = FACTION_BAR_COLORS[index]

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Lifecycle.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -39,29 +35,17 @@ local SetStopSharedTicker = Inner.SetStopSharedTicker
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._dmInternals, which hands the value to every copy.
 local _inCombat = Inner._inCombat
-Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val)
-    _inCombat = val
-end
+Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) _inCombat = val end
 local _combatEndTime = Inner._combatEndTime
-Inner.combatEndTimeSetters[#Inner.combatEndTimeSetters + 1] = function(val)
-    _combatEndTime = val
-end
+Inner.combatEndTimeSetters[#Inner.combatEndTimeSetters + 1] = function(val) _combatEndTime = val end
 local _needsFinalRefresh = Inner._needsFinalRefresh
-Inner.needsFinalRefreshSetters[#Inner.needsFinalRefreshSetters + 1] = function(val)
-    _needsFinalRefresh = val
-end
+Inner.needsFinalRefreshSetters[#Inner.needsFinalRefreshSetters + 1] = function(val) _needsFinalRefresh = val end
 local _sharedTicker
-Inner.sharedTickerSetters[#Inner.sharedTickerSetters + 1] = function(val)
-    _sharedTicker = val
-end
+Inner.sharedTickerSetters[#Inner.sharedTickerSetters + 1] = function(val) _sharedTicker = val end
 local _ttFrame
-Inner.ttFrameSetters[#Inner.ttFrameSetters + 1] = function(val)
-    _ttFrame = val
-end
+Inner.ttFrameSetters[#Inner.ttFrameSetters + 1] = function(val) _ttFrame = val end
 local _saTimer
-Inner.saTimerSetters[#Inner.saTimerSetters + 1] = function(val)
-    _saTimer = val
-end
+Inner.saTimerSetters[#Inner.saTimerSetters + 1] = function(val) _saTimer = val end
 
 -- Bumped whenever a build of the windows starts or _CUDM_Apply() supersedes one. The
 -- login build is staggered across frames, so a profile swap arriving while it is still
@@ -83,9 +67,7 @@ local ScheduleStopTicker
 
 local _regenTimestamp = 0 -- GetTime() when player left combat
 -- State's zone-in group poll drops a stale stamp through this (State loads first).
-mod.DMClearRegenStamp = function()
-    _regenTimestamp = 0
-end
+mod.DMClearRegenStamp = function() _regenTimestamp = 0 end
 
 -- Dedicated combat-timer ticker: keeps header clocks (and the standalone timer) ticking once per displayed second regardless of refresh rate, only while the shared ticker runs (combat); the second
 -- memo in UpdateTimerText makes redundant ticks free. Historical-session windows are skipped -- their duration is static and already painted by RefreshUI.
@@ -94,13 +76,9 @@ local _saDecimalTicker
 
 local function TimerTick()
     for _, wid in ipairs(_windows) do
-        if not wid.curSessionID and wid.UpdateTimerText then
-            wid.UpdateTimerText()
-        end
+        if not wid.curSessionID and wid.UpdateTimerText then wid.UpdateTimerText() end
     end
-    if _windows[1] and UpdateSATimerText then
-        UpdateSATimerText()
-    end
+    if _windows[1] and UpdateSATimerText then UpdateSATimerText() end
 end
 
 local function CancelTimerTicker()
@@ -119,17 +97,13 @@ end
 -- on the live Current Deaths view needs them (ns._DMHiddenDeathsPass, no clock); false
 -- otherwise. A hidden window's refresh only marks it stale for its OnShow catch-up.
 local function AnyTickViewer()
-    if DB().standaloneTimer then
-        return true
-    end
+    if DB().standaloneTimer then return true end
     local stamp = false
     for _, wid in ipairs(_windows) do
         local frame = wid.frame
         -- A Threat window (WoW Forever) is painted by its own list's updates.
         if frame and wid.curDMType ~= "threat" then
-            if frame:IsVisible() then
-                return true
-            end
+            if frame:IsVisible() then return true end
             if
                 wid.curDMType == Enum.DamageMeterType.Deaths
                 and not wid.curSessionID
@@ -158,9 +132,7 @@ local function SharedRefreshTick()
             SetNeedsFinalRefresh(false)
             _regenTimestamp = 0
             for _, wid in ipairs(_windows) do
-                if wid.curDMType ~= "threat" then
-                    wid.Refresh()
-                end
+                if wid.curDMType ~= "threat" then wid.Refresh() end
             end
             if _sharedTicker then
                 _sharedTicker:Cancel()
@@ -182,9 +154,7 @@ local function SharedRefreshTick()
     end
     -- (Threat windows, WoW Forever, are painted by their own list's updates.)
     for _, wid in ipairs(_windows) do
-        if wid.curDMType ~= "threat" then
-            wid.Refresh()
-        end
+        if wid.curDMType ~= "threat" then wid.Refresh() end
     end
     -- Nothing on screen any more (each window above only marked itself stale): stop, and the
     -- next window to show restarts the ticks. The group-fight poll and a hidden live Deaths
@@ -223,14 +193,10 @@ StartSharedTicker = function()
     -- unsafeRefreshRate the same way the login clamp does; the hard floor
     -- applies either way so 0 or negative can never reach the ticker.
     local floor = DB().unsafeRefreshRate and REFRESH_RATE_HARD_FLOOR or REFRESH_RATE_FLOOR
-    if rate < floor then
-        rate = floor
-    end
+    if rate < floor then rate = floor end
     SetSharedTicker(C_Timer.NewTicker(rate, SharedRefreshTick))
     -- The poll or a hidden live Deaths view alone (nothing on screen) needs no clock
-    if viewers ~= true then
-        return
-    end
+    if viewers ~= true then return end
     _timerTicker = C_Timer.NewTicker(0.5, TimerTick)
     -- Tenths display needs a faster brush than the 0.5s timer tick; combat-only, opt-in only, standalone timer only
     local conf = DB()
@@ -254,9 +220,7 @@ SetStopSharedTicker(StopSharedTicker)
 -- to a clockless ticker. The clock runs whenever anything is on screen, so its absence
 -- is the signal. On ns: CreateDMWindow sits at the 60-upvalue cap.
 mod._DMReviveTicks = function()
-    if (_inCombat or _needsFinalRefresh) and not _timerTicker then
-        StartSharedTicker()
-    end
+    if (_inCombat or _needsFinalRefresh) and not _timerTicker then StartSharedTicker() end
 end
 
 -- Stop the ticker after `delay`, no-op if a newer combat segment started (generation mismatch)
@@ -264,12 +228,8 @@ end
 ScheduleStopTicker = function(delay)
     local gen = _combatGen
     C_Timer.After(delay, function()
-        if gen ~= _combatGen then
-            return
-        end
-        if _inCombat or _needsFinalRefresh then
-            return
-        end
+        if gen ~= _combatGen then return end
+        if _inCombat or _needsFinalRefresh then return end
         StopSharedTicker()
     end)
 end
@@ -291,14 +251,10 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
     -- UNIT_SPELLCAST_SUCCEEDED is the highest-frequency event here; check first with a tight integer compare so non-FD casts cost ~nothing
     if evt == "UNIT_SPELLCAST_SUCCEEDED" then
         local unitToken, _, spellId = ...
-        if not unitToken then
-            return
-        end
+        if not unitToken then return end
         -- spellID can be a secret number when tainted by C_DamageMeter (comparing one throws "attempt to compare a secret value");
         -- without a usable spellID we can't classify the cast, so bail
-        if issecretvalue and issecretvalue(spellId) then
-            return
-        end
+        if issecretvalue and issecretvalue(spellId) then return end
         if spellId == 5384 then -- Feign Death
             local unitGuid = UnitGUID(unitToken)
             if unitGuid and not (issecretvalue and issecretvalue(unitGuid)) then
@@ -341,13 +297,9 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
     if evt == "UNIT_FLAGS" then
         -- Moved profiling inside the gate so filtered-out calls are truly zero-cost
         -- Quick bail: only care when in an instance, out of combat, and ticker not running
-        if _inCombat or _sharedTicker or not IsInInstance() then
-            return
-        end
+        if _inCombat or _sharedTicker or not IsInInstance() then return end
         local unitToken = ...
-        if not unitToken or not (unitToken:match("^raid") or unitToken:match("^party")) then
-            return
-        end
+        if not unitToken or not (unitToken:match("^raid") or unitToken:match("^party")) then return end
         -- Group member entered combat before us: start polling so bars populate
         if IsGroupInCombat() then
             SetCombatEndTime(0)
@@ -368,20 +320,14 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
         -- never fires: bump the segment token (pending deferred stops no-op), assert combat, reset
         -- the timer pin. No clock anchored here -- the timer derives from the live "Current" session so it self-resets on the roll; a synchronous read here would race it and show the stale pre-pull duration.
         _combatGen = _combatGen + 1
-        if next(_feignDeathGUIDs) then
-            wipe(_feignDeathGUIDs)
-        end -- new segment: stale feign tags would mis-filter real deaths
-        if next(_deathStamps) then
-            wipe(_deathStamps)
-        end
+        if next(_feignDeathGUIDs) then wipe(_feignDeathGUIDs) end -- new segment: stale feign tags would mis-filter real deaths
+        if next(_deathStamps) then wipe(_deathStamps) end
         SetInCombat(true)
         SetCombatEndTime(0)
         SetCurViewFrozenDur(0)
         _regenTimestamp = 0
         SetNeedsFinalRefresh(false)
-        if not _sharedTicker then
-            StartSharedTicker()
-        end
+        if not _sharedTicker then StartSharedTicker() end
         mod.AutoCurrentOnCombat()
         for _, wid in ipairs(_windows) do
             wid._barCacheKey = nil
@@ -400,17 +346,11 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
             local gen = _combatGen
             -- Short delay: let Blizzard finalize the session data first
             C_Timer.After(0.5, function()
-                if gen ~= _combatGen then
-                    return
-                end -- a new segment (chain pull) started
-                if _combatEndTime > 0 then
-                    return
-                end -- already ended elsewhere
+                if gen ~= _combatGen then return end -- a new segment (chain pull) started
+                if _combatEndTime > 0 then return end -- already ended elsewhere
                 if success ~= 1 and IsGroupInCombat() then
                     SetNeedsFinalRefresh(true)
-                    if not _sharedTicker then
-                        StartSharedTicker()
-                    end
+                    if not _sharedTicker then StartSharedTicker() end
                     return
                 end
                 FreezeCombat()
@@ -426,48 +366,32 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
     end
     if evt == "PLAYER_REGEN_DISABLED" then
         -- Ignore post-match cleanup combat after a PvP match ends
-        if _G._CUIDM_PvpBlocked and _G._CUIDM_PvpBlocked() then
-            return
-        end
+        if _G._CUIDM_PvpBlocked and _G._CUIDM_PvpBlocked() then return end
         _combatGen = _combatGen + 1
-        if next(_feignDeathGUIDs) then
-            wipe(_feignDeathGUIDs)
-        end -- new segment: stale feign tags would mis-filter real deaths
-        if next(_deathStamps) then
-            wipe(_deathStamps)
-        end
+        if next(_feignDeathGUIDs) then wipe(_feignDeathGUIDs) end -- new segment: stale feign tags would mis-filter real deaths
+        if next(_deathStamps) then wipe(_deathStamps) end
         SetInCombat(true)
         SetCombatEndTime(0)
         SetCurViewFrozenDur(0)
         _regenTimestamp = 0
         SetNeedsFinalRefresh(false)
-        if _targetsCache then
-            wipe(_targetsCache)
-        end
+        if _targetsCache then wipe(_targetsCache) end
         StartSharedTicker()
         mod.AutoCurrentOnCombat()
     else
         _regenTimestamp = GetTime()
         -- Feign Death + group still fighting: keep timer running
-        if UnitIsFeignDeath and UnitIsFeignDeath("player") and IsGroupInCombat() then
-            return
-        end
-        if _targetsCache then
-            wipe(_targetsCache)
-        end
+        if UnitIsFeignDeath and UnitIsFeignDeath("player") and IsGroupInCombat() then return end
+        if _targetsCache then wipe(_targetsCache) end
         -- Check if group is still fighting (player died but boss alive)
         if IsGroupInCombat() then
             SetNeedsFinalRefresh(true) -- let tick poll until group leaves combat
             -- The poll needs its tick even when a fully hidden meter let the ticker lapse
-            if not _sharedTicker then
-                StartSharedTicker()
-            end
+            if not _sharedTicker then StartSharedTicker() end
             -- Don't freeze timer -- group is still in combat
         else
             -- Freeze timer: entire group out of combat. Guard against overwriting an earlier freeze (e.g. ENCOUNTER_END already froze at the boss end)
-            if _combatEndTime == 0 then
-                FreezeCombat()
-            end
+            if _combatEndTime == 0 then FreezeCombat() end
             SetInCombat(false)
             SetNeedsFinalRefresh(false)
             for _, wid in ipairs(_windows) do
@@ -483,9 +407,7 @@ combatFrame:SetScript("OnEvent", function(_, evt, ...)
             end
             -- Declassified = the ideal moment to refresh the breakdown
             -- resolver's class:spec -> guid snapshot for the NEXT pull.
-            if mod._SnapshotSourceKeys and not InCombatLockdown() then
-                mod._SnapshotSourceKeys()
-            end
+            if mod._SnapshotSourceKeys and not InCombatLockdown() then mod._SnapshotSourceKeys() end
         end)
     end
 end)
@@ -501,21 +423,15 @@ do
     pvpFrame:RegisterEvent("PVP_MATCH_STATE_CHANGED")
     pvpFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     pvpFrame:SetScript("OnEvent", function()
-        if not C_PvP or not C_PvP.IsMatchActive then
-            return
-        end
+        if not C_PvP or not C_PvP.IsMatchActive then return end
         local isActive = C_PvP.IsMatchActive()
         if isActive and not _pvpMatchActive then
             _pvpMatchActive = true
         elseif not isActive and _pvpMatchActive then
             _pvpMatchActive = false
             C_Timer.After(1.5, function()
-                if _pvpMatchActive then
-                    return
-                end
-                if _combatEndTime > 0 then
-                    return
-                end
+                if _pvpMatchActive then return end
+                if _combatEndTime > 0 then return end
                 FreezeCombat()
                 SetInCombat(false)
                 SetNeedsFinalRefresh(false)
@@ -530,9 +446,7 @@ do
     end)
 
     -- Expose the block check so combat start can respect it
-    _G._CUIDM_PvpBlocked = function()
-        return GetTime() < _pvpBlockUntil
-    end
+    _G._CUIDM_PvpBlocked = function() return GetTime() < _pvpBlockUntil end
 end
 
 -- Reset Data keybind button (hidden, receives override binding click)
@@ -556,9 +470,7 @@ if not _G["CludesUIDMToggleBindBtn"] then
     local button = CreateFrame("Button", "CludesUIDMToggleBindBtn", UIParent)
     button:Hide()
     button:SetScript("OnClick", function()
-        if mod.ToggleDMWindows then
-            mod.ToggleDMWindows()
-        end
+        if mod.ToggleDMWindows then mod.ToggleDMWindows() end
     end)
 end
 
@@ -569,22 +481,16 @@ initFrame:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
     if CUI and CUI.ADDON_ROSTER then
         for _, details in ipairs(CUI.ADDON_ROSTER) do
-            if details.folder == "CludesUIDamageMeters" and details.comingSoon then
-                return
-            end
+            if details.folder == "CludesUIDamageMeters" and details.comingSoon then return end
         end
     end
 
     EnsureDB()
     -- DB is now available; rebuild number format so a saved forceEnglishUnits preference applies at login (load-time build ran before the DB existed)
-    if mod.RebuildNumberFormat then
-        mod.RebuildNumberFormat()
-    end
+    if mod.RebuildNumberFormat then mod.RebuildNumberFormat() end
     -- A profile already on Classic WoW UI gets its one-time seed here (the
     -- Style page seeds on the switch; flags make both idempotent).
-    if mod.DMClassic() then
-        mod.DMSeedClassic(DB())
-    end
+    if mod.DMClassic() then mod.DMSeedClassic(DB()) end
     -- Disable Blizzard's built-in damage meter UI; C_DamageMeter API still works
     CludesUI.SetCVar("damageMeterEnabled", 0, "CludesUIDamageMeters")
     AppendDMSharedMedia()
@@ -596,9 +502,7 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Defer window creation off the login frame to avoid blocking
     local conf = DB()
-    if not conf.windows then
-        conf.windows = {}
-    end
+    if not conf.windows then conf.windows = {} end
     -- windowCount is authoritative; trim stale array entries beyond it
     local winCount = math.max(1, conf.windowCount or 1)
     conf.windowCount = winCount
@@ -611,16 +515,12 @@ initFrame:SetScript("OnEvent", function(self)
     local function CreateNextWindow()
         -- A rebuild has superseded this staggered build; carrying on would overwrite the
         -- windows it created and leave those frames orphaned but visible.
-        if myBuildGen ~= _buildGen then
-            return
-        end
+        if myBuildGen ~= _buildGen then return end
         winIdx = winIdx + 1
         if winIdx > winCount then
             -- All windows exist: register them with the core unlock mode system
             mod.RegisterDMUnlock()
-            if conf.standaloneTimer then
-                CreateSATimer()
-            end
+            if conf.standaloneTimer then CreateSATimer() end
             mod._DMReviveTicks()
             -- Pre-create tooltip frame so first hover doesn't pay creation cost
             EnsureTooltipFrame()
@@ -645,9 +545,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- assign over the windows set up below
         _buildGen = _buildGen + 1
         -- Hide tooltip
-        if _ttFrame then
-            _ttFrame:Hide()
-        end
+        if _ttFrame then _ttFrame:Hide() end
         SetActiveRow(nil)
         _hoverPollFrame:Hide()
         local cfg = DB()
@@ -657,9 +555,7 @@ initFrame:SetScript("OnEvent", function(self)
         mod.ApplyDMKeybinds()
         -- Force English Units from the new profile
         mod.RebuildNumberFormat()
-        if not cfg.windows then
-            cfg.windows = {}
-        end
+        if not cfg.windows then cfg.windows = {} end
         local wc = math.max(1, cfg.windowCount or 1)
         cfg.windowCount = wc
         for index = wc + 1, MAX_WINDOWS do
@@ -683,14 +579,10 @@ initFrame:SetScript("OnEvent", function(self)
         end
         mod.ApplyWindowBorder()
         -- A window that left the Threat type may leave its list with no window (WoW Forever)
-        if mod.DMThreatSync then
-            mod.DMThreatSync()
-        end
+        if mod.DMThreatSync then mod.DMThreatSync() end
         -- Spell History caches its profile table; refresh it before rebuilding
         -- optional unlock registrations so enable state and positions agree.
-        if mod.RefreshSpellHistoryProfile then
-            mod.RefreshSpellHistoryProfile()
-        end
+        if mod.RefreshSpellHistoryProfile then mod.RefreshSpellHistoryProfile() end
         -- Refresh unlock registrations for the new profile's window count
         mod.RegisterDMUnlock()
         -- The standalone timer is kept: set up again as built, or hidden while disabled

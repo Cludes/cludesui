@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI or CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI or CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIABR_BeaconMPlus.lua
 --  Beacon M+ Reminders (retail, Holy Paladin; CORE > Beacon M+ Reminders, off
@@ -21,9 +17,7 @@ end
 --  another spec, registers no gameplay events, and an armed one follows the
 --  roster only while a key runs.
 -------------------------------------------------------------------------------
-if select(2, UnitClass("player")) ~= "PALADIN" then
-    return
-end
+if select(2, UnitClass("player")) ~= "PALADIN" then return end
 
 local BEACON_IDS = { [53563] = true, [156910] = true } -- Beacon of Light, Beacon of Faith
 local PARTY = { "party1", "party2", "party3", "party4" }
@@ -55,9 +49,7 @@ local function FindTank()
         local u = PARTY[index]
         if UnitExists(u) then
             local role = UnitGroupRolesAssigned(u)
-            if issecretvalue and issecretvalue(role) then
-                return
-            end -- keep the cached tank
+            if issecretvalue and issecretvalue(role) then return end -- keep the cached tank
             if role == "TANK" then
                 tankUnit = u
                 return
@@ -68,14 +60,10 @@ local function FindTank()
 end
 
 local function FindIn(entries, unitToken)
-    if not entries then
-        return
-    end
+    if not entries then return end
     for index = 1, #entries do
         local widget = entries[index]
-        if widget and widget:IsVisible() and widget:GetAttribute("unit") == unitToken then
-            return widget
-        end
+        if widget and widget:IsVisible() and widget:GetAttribute("unit") == unitToken then return widget end
     end
 end
 
@@ -83,9 +71,7 @@ end
 -- party is shown on them.
 local function TankButton(unitToken)
     local rf = CludesUI._ModuleNS["CludesUIRaidFrames"]
-    if not rf then
-        return
-    end
+    if not rf then return end
     return FindIn(rf._partyAllButtons, unitToken) or FindIn(rf._allButtons, unitToken)
 end
 
@@ -110,7 +96,10 @@ local function InitButton(btnFrame, skinData)
     -- to re-run its visibility). Without that API the animation plays while
     -- hidden too, and the group's cap is a fixed 1: only the one button it
     -- can ever show carries the glow.
-    if not Glows.BindEngineHost(glow, btnFrame, skinData, iconTex) and not CludesUI.AuraKit.ButtonCanShow(btnFrame) then
+    if
+        not Glows.BindEngineHost(glow, btnFrame, skinData, iconTex)
+        and not CludesUI.AuraKit.ButtonCanShow(btnFrame)
+    then
         return
     end
     Glows.PrewarmEngineHost(glow, ICON_SIZE, ICON_SIZE, GLOW_NEED)
@@ -123,9 +112,7 @@ end
 -- again (an unchanged one returns at once).
 local function RetryGlow(btnFrame, skinData)
     local glow = skinData.abrBeaconGlow
-    if glow then
-        CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine")
-    end
+    if glow then CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine") end
 end
 
 local function EnsureContainer(unitToken)
@@ -165,9 +152,7 @@ end
 -- number.
 local function PlaceOver(btnFrame)
     local posX, posY = btnFrame:GetCenter()
-    if not posX or (issecretvalue and (issecretvalue(posX) or issecretvalue(posY))) then
-        return false
-    end
+    if not posX or (issecretvalue and (issecretvalue(posX) or issecretvalue(posY))) then return false end
     local s = btnFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     owner:ClearAllPoints()
     owner:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX * s, posY * s)
@@ -175,9 +160,7 @@ local function PlaceOver(btnFrame)
 end
 
 local function StandDown()
-    if owner then
-        owner:Hide()
-    end
+    if owner then owner:Hide() end
 end
 
 -- The tank is read only inside a key, so the roster events are registered from
@@ -196,40 +179,26 @@ end
 -- Built while the key's countdown runs (out of combat), so the first pull does
 -- no engine construction; Arm still builds it if a key began before the option.
 local function Prebuild()
-    if level == 2 and tankUnit and C_ChallengeMode.IsChallengeModeActive() then
-        EnsureContainer(tankUnit)
-    end
+    if level == 2 and tankUnit and C_ChallengeMode.IsChallengeModeActive() then EnsureContainer(tankUnit) end
 end
 
 local function Arm()
-    if level ~= 2 or not C_ChallengeMode.IsChallengeModeActive() then
-        return
-    end
+    if level ~= 2 or not C_ChallengeMode.IsChallengeModeActive() then return end
     local unitToken = tankUnit
     local btnFrame = unitToken and TankButton(unitToken)
-    if not btnFrame then
-        return
-    end
+    if not btnFrame then return end
     EnsureContainer(unitToken)
-    if PlaceOver(btnFrame) then
-        owner:Show()
-    end
+    if PlaceOver(btnFrame) then owner:Show() end
 end
 
 local function Sync()
     local wanted = 0
-    if Enabled() then
-        wanted = IsHoly() and 2 or 1
-    end
-    if wanted == level then
-        return
-    end
+    if Enabled() then wanted = IsHoly() and 2 or 1 end
+    if wanted == level then return end
     level = wanted
     eventFrame:UnregisterAllEvents()
     StandDown()
-    if wanted == 0 then
-        return
-    end
+    if wanted == 0 then return end
     eventFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
     if wanted == 2 then
         eventFrame:RegisterEvent("ENCOUNTER_START")
@@ -267,9 +236,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             -- After every module's OnEnable, so ABR's DB and refresh exist. The
             -- options page and profile switches both go through that refresh.
             started = true
-            if _G._CUABR_RequestRefresh then
-                hooksecurefunc("_CUABR_RequestRefresh", Sync)
-            end
+            if _G._CUABR_RequestRefresh then hooksecurefunc("_CUABR_RequestRefresh", Sync) end
             Sync()
             return
         end

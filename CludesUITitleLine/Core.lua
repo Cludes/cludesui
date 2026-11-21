@@ -5,9 +5,7 @@
 -- history, so the graph covers the whole season, not just since install.
 
 local ADDON, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 
 local DAY = 86400
 mod.DAY = DAY
@@ -55,9 +53,7 @@ local DEFAULTS = {
 local SEEN_CAP = 500 -- groupmates remembered per season
 
 local PREFIX = "|cffffd100TitleLine|r: "
-function mod.Print(msg)
-    print(PREFIX .. msg)
-end
+function mod.Print(msg) print(PREFIX .. msg) end
 
 -- Formatting -------------------------------------------------------------------
 
@@ -76,9 +72,7 @@ function mod.DateText(t, long)
     return (text:gsub(" 0", " "):gsub("^0", ""))
 end
 
-function mod.Hex(cfg)
-    return ("|cff%02x%02x%02x"):format(cfg[1] * 255, cfg[2] * 255, cfg[3] * 255)
-end
+function mod.Hex(cfg) return ("|cff%02x%02x%02x"):format(cfg[1] * 255, cfg[2] * 255, cfg[3] * 255) end
 
 -- A short coloured line, inline in text, to key a series.
 function mod.Key(cfg)
@@ -114,9 +108,7 @@ end
 -- season's runs in order rebuilds it over time. `exact` says whether the replay
 -- lands on the rating the game reports; when it does not, the graph says so.
 function mod.Replay(runs, actual, nowTime)
-    table.sort(runs, function(lhs, rhs)
-        return lhs.t < rhs.t
-    end)
+    table.sort(runs, function(lhs, rhs) return lhs.t < rhs.t end)
     local best, total, points = {}, 0, {}
     for _, run in ipairs(runs) do
         local prev = best[run.map] or 0
@@ -158,9 +150,7 @@ end
 function mod.ScoreAt(points, t)
     local val = 0
     for _, p in ipairs(points) do
-        if p.t > t then
-            break
-        end
+        if p.t > t then break end
         val = p.score
     end
     return val
@@ -171,17 +161,11 @@ end
 -- Line points are { time, score }. Returns nil past the last point.
 function mod.LineAt(pts, t)
     local num = #pts
-    if num == 0 then
-        return nil
-    end
-    if t <= pts[1][1] then
-        return pts[1][2]
-    end
+    if num == 0 then return nil end
+    if t <= pts[1][1] then return pts[1][2] end
     for idx = 2, num do
         local a, b = pts[idx - 1], pts[idx]
-        if t <= b[1] then
-            return a[2] + (b[2] - a[2]) * (t - a[1]) / (b[1] - a[1])
-        end
+        if t <= b[1] then return a[2] + (b[2] - a[2]) * (t - a[1]) / (b[1] - a[1]) end
     end
     return nil
 end
@@ -189,9 +173,7 @@ end
 -- Least-squares rise per day over the last `days` of the series.
 function mod.Slope(pts, days)
     local num = #pts
-    if num < 2 then
-        return 0
-    end
+    if num < 2 then return 0 end
     local from = pts[num][1] - days * DAY
     local c, sx, sy, sxx, sxy = 0, 0, 0, 0, 0
     for idx = 1, num do
@@ -202,9 +184,7 @@ function mod.Slope(pts, days)
         end
     end
     local d = c * sxx - sx * sx
-    if c < 2 or d == 0 then
-        return 0
-    end
+    if c < 2 or d == 0 then return 0 end
     return (c * sxy - sx * sy) / d
 end
 
@@ -224,18 +204,14 @@ function mod.Fit(pts, start)
         end
     end
     local d = c * sxx - sx * sx
-    if c < FIT_MIN_POINTS or d == 0 then
-        return { slope = mod.Slope(pts, LINE_SLOPE_DAYS) }
-    end
+    if c < FIT_MIN_POINTS or d == 0 then return { slope = mod.Slope(pts, LINE_SLOPE_DAYS) } end
     return { start = start, b = (c * sxy - sx * sy) / d }
 end
 
 -- The line at time t: the data where it exists, its fitted course beyond it.
 function mod.LineValue(pts, fit, t)
     local last = pts[#pts]
-    if t <= last[1] then
-        return mod.LineAt(pts, t)
-    end
+    if t <= last[1] then return mod.LineAt(pts, t) end
     if fit.b then
         return last[2] + fit.b * (math.log((t - fit.start) / DAY) - math.log((last[1] - fit.start) / DAY))
     end
@@ -260,14 +236,10 @@ local BAND = {
 }
 
 function mod.Band(days)
-    if days <= 0 then
-        return 0
-    end
+    if days <= 0 then return 0 end
     for idx = 2, #BAND do
         local a, b = BAND[idx - 1], BAND[idx]
-        if days <= b[1] then
-            return a[2] + (b[2] - a[2]) * (days - a[1]) / (b[1] - a[1])
-        end
+        if days <= b[1] then return a[2] + (b[2] - a[2]) * (days - a[1]) / (b[1] - a[1]) end
     end
     local a, b = BAND[#BAND - 1], BAND[#BAND]
     return b[2] + (b[2] - a[2]) * (days - b[1]) / (b[1] - a[1])
@@ -284,16 +256,12 @@ end
 -- year. The line is a curve, so step a day at a time, then bisect the step.
 -- `edge` -1 or +1 aims at the low or high side of the line's range instead.
 function mod.Crossing(pts, fit, nowTime, you, pace, edge)
-    if pace <= 0 then
-        return nil
-    end
+    if pace <= 0 then return nil end
     local last = pts[#pts][1]
     local function ahead(d)
         local t = nowTime + d * DAY
         local line = mod.LineValue(pts, fit, t)
-        if edge then
-            line = line + edge * mod.Band((t - last) / DAY)
-        end
+        if edge then line = line + edge * mod.Band((t - last) / DAY) end
         return you + pace * d >= line
     end
     for d = 1, 365 do
@@ -322,9 +290,7 @@ function mod.Summary(regionFrame, history, nowTime, you)
     -- A season's rating never falls; floor at zero so the rebuilt history's
     -- decimals against the game's whole-number rating cannot read as a loss.
     local pace = 0
-    if window >= 1 then
-        pace = math.max(0, (history.actual - mod.ScoreAt(history.points, from)) / window)
-    end
+    if window >= 1 then pace = math.max(0, (history.actual - mod.ScoreAt(history.points, from)) / window) end
 
     -- The season end: Blizzard's date once announced, until then the last
     -- season's length (Data.lua says which).
@@ -379,22 +345,14 @@ end
 -- When you reach the line at your current pace, in a few words: a span from
 -- the low to the high side of the line's range where both fall in time.
 function mod.EtaText(cfg, pace, endsAt)
-    if cfg.gap <= 0 then
-        return "reached"
-    end
+    if cfg.gap <= 0 then return "reached" end
     local early = cfg.etaEarly or cfg.eta
-    if early and endsAt and early > endsAt then
-        return "after the season"
-    end
+    if early and endsAt and early > endsAt then return "after the season" end
     if early and cfg.etaLate and not (endsAt and cfg.etaLate > endsAt) then
-        if mod.DateText(early) == mod.DateText(cfg.etaLate) then
-            return "ETA " .. mod.DateText(early)
-        end
+        if mod.DateText(early) == mod.DateText(cfg.etaLate) then return "ETA " .. mod.DateText(early) end
         return "ETA " .. mod.SpanText(early, cfg.etaLate)
     end
-    if early then
-        return "ETA from " .. mod.DateText(early)
-    end
+    if early then return "ETA from " .. mod.DateText(early) end
     return pace and pace > 0 and "over a year" or "not closing"
 end
 
@@ -402,9 +360,7 @@ end
 -- nil if it does not within `limit` days.
 function mod.Overtake(pts, fit, nowTime, you, pace, limit)
     for d = 1, math.floor(limit) do
-        if mod.LineValue(pts, fit, nowTime + d * DAY) >= you + pace * d then
-            return d
-        end
+        if mod.LineValue(pts, fit, nowTime + d * DAY) >= you + pace * d then return d end
     end
     return nil
 end
@@ -421,9 +377,7 @@ mod.SCORING_NOTE =
 function mod.LevelFor(rating)
     local t = mod.Data.levels
     for _, row in ipairs(t) do
-        if row[2] >= rating - 0.5 then
-            return row[1]
-        end
+        if row[2] >= rating - 0.5 then return row[1] end
     end
     local a, b = t[#t - 1], t[#t]
     return b[1] + math.ceil((rating - b[2]) / (b[2] - a[2]))
@@ -455,9 +409,7 @@ function mod.Targets(maps, runs, tiers)
         rowList[#rowList + 1] = row
     end
     table.sort(rowList, function(posX, posY)
-        if posX.best ~= posY.best then
-            return posX.best < posY.best
-        end
+        if posX.best ~= posY.best then return posX.best < posY.best end
         return posX.score < posY.score
     end)
     return goals, rowList
@@ -472,9 +424,7 @@ end
 local IN_GAME = { [1] = true, [4] = true, [5] = true } -- Enum.ClubMemberPresence Online, Away, Busy
 
 function mod.SeenThisSeason(details, seasonDays)
-    if details.isSelf then
-        return true
-    end
+    if details.isSelf then return true end
     local posY, m, d, hgt =
         details.lastOnlineYear, details.lastOnlineMonth, details.lastOnlineDay, details.lastOnlineHour
     if posY or m or d or hgt then
@@ -487,18 +437,12 @@ end
 -- roster the way Blizzard's own member list reads it. During a chat lockdown
 -- (combat in instances) those values are secret, so it waits instead.
 function mod.Guild(startsAt, nowTime)
-    if not IsInGuild() then
-        return { state = "none" }
-    end
-    if C_ChatInfo.InChatMessagingLockdown() then
-        return { state = "hidden" }
-    end
+    if not IsInGuild() then return { state = "none" } end
+    if C_ChatInfo.InChatMessagingLockdown() then return { state = "hidden" } end
     local success, members = pcall(function()
         local club = C_Club.GetGuildClubId()
         local ids = club and C_Club.GetClubMembers(club)
-        if not ids or #ids == 0 then
-            return nil
-        end
+        if not ids or #ids == 0 then return nil end
         local result, stale = {}, 0
         local seasonDays = (nowTime - startsAt) / DAY
         for _, ident in ipairs(ids) do
@@ -520,14 +464,10 @@ function mod.Guild(startsAt, nowTime)
                 end
             end
         end
-        table.sort(result, function(lhs, rhs)
-            return lhs.score > rhs.score
-        end)
+        table.sort(result, function(lhs, rhs) return lhs.score > rhs.score end)
         return { members = result, stale = stale }
     end)
-    if not success or not members then
-        return { state = "loading" }
-    end
+    if not success or not members then return { state = "loading" } end
     return { state = "ok", members = members.members, stale = members.stale }
 end
 
@@ -545,9 +485,7 @@ function mod.Remember(m, nowTime)
     end
     e.name, e.class, e.last = m.name, m.class, nowTime
     local last = e.pts[#e.pts]
-    if not last or m.score > last[2] then
-        e.pts[#e.pts + 1] = { nowTime, m.score }
-    end
+    if not last or m.score > last[2] then e.pts[#e.pts + 1] = { nowTime, m.score } end
     return e
 end
 
@@ -555,9 +493,7 @@ end
 -- has been remembered of them. Raids are skipped: M+ is a five-player party.
 function mod.Party(nowTime)
     local result = {}
-    if not IsInGroup() or IsInRaid() then
-        return result
-    end
+    if not IsInGroup() or IsInRaid() then return result end
     for idx = 1, 4 do
         local unitToken = "party" .. idx
         if
@@ -653,9 +589,7 @@ function mod.Chars(regionKey)
                 { key = key, name = c.name, class = c.class, score = c.score, updated = c.updated }
         end
     end
-    table.sort(result, function(lhs, rhs)
-        return lhs.score > rhs.score
-    end)
+    table.sort(result, function(lhs, rhs) return lhs.score > rhs.score end)
     return result
 end
 
@@ -700,9 +634,7 @@ function mod.Context(options)
     local mine = C_PlayerInfo.GetPlayerMythicPlusRatingSummary("player")
     local liveRuns = mine and mine.runs or {}
     local key, name = mod.CharKey()
-    if key then
-        SaveChar(context, key, name, live, liveRuns)
-    end
+    if key then SaveChar(context, key, name, live, liveRuns) end
     context.chars = mod.Chars(context.regionKey)
 
     local best = context.chars[1]
@@ -757,9 +689,7 @@ end
 -- Tooltip lines, shared by the Mythic+ tab and the addon compartment.
 function mod.AddTooltipLines(tt, spaced)
     local context = mod.Context()
-    if spaced then
-        tt:AddLine(" ")
-    end
+    if spaced then tt:AddLine(" ") end
     local C = mod.COLORS
     tt:AddLine(
         "TitleLine" .. (context.regionKey and ("  " .. context.regionKey:upper()) or ""),
@@ -783,7 +713,12 @@ function mod.AddTooltipLines(tt, spaced)
     for _, tier in ipairs(context.summary.tiers) do
         local right = tier.gap > 0 and (mod.Fmt(tier.gap) .. " to go") or "reached"
         tt:AddDoubleLine(
-            mod.Key(tier.tier.color) .. " " .. tier.tier.label .. "  |cff898781" .. mod.Fmt(tier.lineNow) .. "|r",
+            mod.Key(tier.tier.color)
+                .. " "
+                .. tier.tier.label
+                .. "  |cff898781"
+                .. mod.Fmt(tier.lineNow)
+                .. "|r",
             right,
             C.ink2[1],
             C.ink2[2],
@@ -816,13 +751,9 @@ end
 -- announced, and once a day a line you are above but on course to pass you
 -- before the season ends is a warning.
 function mod.CheckAlerts()
-    if not CludesUITitleLineDB.alerts then
-        return
-    end
+    if not CludesUITitleLineDB.alerts then return end
     local context = mod.Context({ subject = "best" })
-    if context.error or context.history.actual <= 0 then
-        return
-    end
+    if context.error or context.history.actual <= 0 then return end
     local sum, who = context.summary, context.subject.name or "you"
     local slot = context.regionKey .. ":" .. mod.Data.season.slug
     local status = CludesUITitleLineDB.alertState[slot] or {}
@@ -833,7 +764,11 @@ function mod.CheckAlerts()
         local above = tier.gap <= 0
         local was = status[key]
         if was == "below" and above then
-            Alert(("%s passed the %s line (%s)."):format(who, tier.tier.label, mod.Fmt(tier.lineNow)), true, true)
+            Alert(
+                ("%s passed the %s line (%s)."):format(who, tier.tier.label, mod.Fmt(tier.lineNow)),
+                true,
+                true
+            )
         elseif was == "above" and not above then
             Alert(
                 ("The %s line (%s) passed %s: %s to go."):format(
@@ -866,19 +801,13 @@ function mod.CheckAlerts()
 end
 
 local function OnKeyCompleted()
-    if not CludesUITitleLineDB.chat then
-        return
-    end
+    if not CludesUITitleLineDB.chat then return end
     local details = C_ChallengeMode.GetChallengeCompletionInfo()
-    if not details or details.practiceRun or not details.isEligibleForScore then
-        return
-    end
+    if not details or details.practiceRun or not details.isEligibleForScore then return end
     -- Blizzard already prints the rating gained; add only where that leaves
     -- the character that ran the key.
     local context = mod.Context({ subject = "current" })
-    if context.error then
-        return
-    end
+    if context.error then return end
     local you = details.newOverallDungeonScore or C_ChallengeMode.GetOverallDungeonScore() or 0
     local parts = {}
     for _, tier in ipairs(mod.Summary(context.region, context.history, context.now, you).tiers) do
@@ -888,9 +817,7 @@ local function OnKeyCompleted()
                 or (tier.tier.label .. " reached")
         end
     end
-    if #parts > 0 then
-        mod.Print(table.concat(parts, ", "))
-    end
+    if #parts > 0 then mod.Print(table.concat(parts, ", ")) end
 end
 
 -- Drop remembered groupmates from earlier seasons, and the longest-unseen
@@ -899,9 +826,7 @@ local function PruneSeen()
     local slug = mod.Data and mod.Data.season.slug
     for _, storage in ipairs({ CludesUITitleLineDB.chars, CludesUITitleLineDB.shared }) do
         for key, c in pairs(storage) do
-            if c.season ~= slug then
-                storage[key] = nil
-            end
+            if c.season ~= slug then storage[key] = nil end
         end
     end
     local keyList = {}
@@ -913,9 +838,10 @@ local function PruneSeen()
         end
     end
     if #keyList > SEEN_CAP then
-        table.sort(keyList, function(lhs, rhs)
-            return CludesUITitleLineDB.seen[lhs].last > CludesUITitleLineDB.seen[rhs].last
-        end)
+        table.sort(
+            keyList,
+            function(lhs, rhs) return CludesUITitleLineDB.seen[lhs].last > CludesUITitleLineDB.seen[rhs].last end
+        )
         for idx = SEEN_CAP + 1, #keyList do
             CludesUITitleLineDB.seen[keyList[idx]] = nil
         end
@@ -926,16 +852,12 @@ end
 -- takes a moment to send them, so look a little later, once per burst.
 local pending = false
 local function RefreshGroupSoon(delay)
-    if pending then
-        return
-    end
+    if pending then return end
     pending = true
     C_Timer.After(delay, function()
         pending = false
         mod.Party(time())
-        if mod.Graph then
-            mod.Graph:Refresh()
-        end
+        if mod.Graph then mod.Graph:Refresh() end
     end)
 end
 
@@ -967,15 +889,11 @@ events:SetScript("OnEvent", function(_, evt, arg1)
         RefreshGroupSoon(15)
         C_Timer.After(20, mod.CheckAlerts)
     elseif evt == "CHALLENGE_MODE_MAPS_UPDATE" then
-        if mod.Graph then
-            mod.Graph:Refresh()
-        end
+        if mod.Graph then mod.Graph:Refresh() end
     elseif evt == "GROUP_ROSTER_UPDATE" then
         RefreshGroupSoon(2)
     elseif evt == "GUILD_ROSTER_UPDATE" or evt == "CLUB_MEMBERS_UPDATED" then
-        if CludesUITitleLineDB and CludesUITitleLineDB.view == "guild" then
-            RefreshGroupSoon(1)
-        end
+        if CludesUITitleLineDB and CludesUITitleLineDB.view == "guild" then RefreshGroupSoon(1) end
     end
 end)
 
@@ -1047,9 +965,7 @@ SlashCmdList.TITLELINE = function(msg)
     end
 end
 
-function TitleLine_OnAddonCompartmentClick()
-    mod.Graph:Toggle()
-end
+function TitleLine_OnAddonCompartmentClick() mod.Graph:Toggle() end
 
 function TitleLine_OnAddonCompartmentEnter(_, btnFrame)
     GameTooltip:SetOwner(btnFrame, "ANCHOR_LEFT")
@@ -1057,6 +973,4 @@ function TitleLine_OnAddonCompartmentEnter(_, btnFrame)
     GameTooltip:Show()
 end
 
-function TitleLine_OnAddonCompartmentLeave()
-    GameTooltip:Hide()
-end
+function TitleLine_OnAddonCompartmentLeave() GameTooltip:Hide() end

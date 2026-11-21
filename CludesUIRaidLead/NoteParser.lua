@@ -25,9 +25,7 @@
 --  gives addons no phase or boss cast events, so those lines are skipped and
 --  counted, never guessed at.
 -------------------------------------------------------------------------------
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 mod = mod or {}
 
@@ -49,9 +47,7 @@ local MARKERS = {
 --- Seconds from "{time:...}" contents, or nil. "1:30" -> 90, "95" -> 95.
 function Parser.Seconds(specInfo)
     local m, s = specInfo:match("^%s*(%d+):(%d+%.?%d*)%s*$")
-    if m then
-        return tonumber(m) * 60 + tonumber(s)
-    end
+    if m then return tonumber(m) * 60 + tonumber(s) end
     local only = specInfo:match("^%s*(%d+%.?%d*)%s*$")
     return only and tonumber(only) or nil
 end
@@ -67,9 +63,7 @@ local function Chunks(textValue)
         local place = 1
         while true do
             local a = line:find("{time:", place, true)
-            if not a then
-                break
-            end
+            if not a then break end
             starts[#starts + 1] = a
             place = a + 6
         end
@@ -87,9 +81,7 @@ function Parser.Words(textValue)
     local words = {}
     for wid in textValue:gmatch("[^%s%p%d]+[%-]?[^%s%p%d]*") do
         local name = wid:match("^([^%-]+)") or wid
-        if #name >= 2 then
-            words[#words + 1] = name
-        end
+        if #name >= 2 then words[#words + 1] = name end
     end
     return words
 end
@@ -134,9 +126,7 @@ function Parser.Parse(textValue, spellName)
                             return ""
                         end
                         local mark = MARKERS[t]
-                        if mark then
-                            return "{rt" .. mark .. "}"
-                        end
+                        if mark then return "{rt" .. mark .. "}" end
                         return "{" .. tag .. "}"
                     end)
                     -- Spells become their names.
@@ -153,16 +143,12 @@ function Parser.Parse(textValue, spellName)
                     end
                     record.names = nameList
                     record.text = body:gsub("^[%s%-:]+", ""):gsub("%s+$", ""):gsub("%s%s+", " ")
-                    if record.text ~= "" then
-                        entries[#entries + 1] = record
-                    end
+                    if record.text ~= "" then entries[#entries + 1] = record end
                 end
             end
         end
     end
-    table.sort(entries, function(lhs, rhs)
-        return lhs.at < rhs.at
-    end)
+    table.sort(entries, function(lhs, rhs) return lhs.at < rhs.at end)
     return entries, skipped
 end
 
@@ -174,25 +160,17 @@ end
 --- members is for them only (other words on the line, like "soak", are not
 --- group members and so do not count).
 function Parser.IsFor(record, me, role, roster)
-    if record.everyone then
-        return true
-    end
-    if record.roles and role and record.roles[role] then
-        return true
-    end
+    if record.everyone then return true end
+    if record.roles and role and record.roles[role] then return true end
     local mine = me and me:lower()
     local namedSomeone = false
     for _, num in ipairs(record.names or {}) do
         if roster and roster[num] then
             namedSomeone = true
-            if num == mine then
-                return true
-            end
+            if num == mine then return true end
         end
     end
-    if record.roles then
-        return false
-    end
+    if record.roles then return false end
     return not namedSomeone
 end
 

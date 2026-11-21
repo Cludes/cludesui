@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_VisibilityDrivers.lua
 --
@@ -28,9 +26,7 @@ local SetSecureRefsReady = Inner.SetSecureRefsReady
 -- Written by ApplyAll (CUI_ActionBars_ApplyAll.lua);
 -- SetIsApplyingAll hands the value to this copy.
 local _isApplyingAll = false
-Inner.isApplyingAllSetters[#Inner.isApplyingAllSetters + 1] = function(val)
-    _isApplyingAll = val
-end
+Inner.isApplyingAllSetters[#Inner.isApplyingAllSetters + 1] = function(val) _isApplyingAll = val end
 
 -------------------------------------------------------------------------------
 --  Visibility Condition Builder: macro condition string for RegisterStateDriver,
@@ -46,9 +42,7 @@ end
 -- Multi-select visibility compiler: thin delegate to the shared secure driver
 -- compiler in CludesUI_Visibility.lua (one grammar for Action Bars and
 -- Unit Frames). EAB table fields, not locals.
-function ABAR.BuildVisModeConjuncts(vm)
-    return CludesUI.BuildVisModeConjuncts(vm)
-end
+function ABAR.BuildVisModeConjuncts(vm) return CludesUI.BuildVisModeConjuncts(vm) end
 
 function ABAR.BuildVisibilityStringMulti(hidePrefix, vm)
     return CludesUI.BuildVisibilityDriverString(hidePrefix, vm)
@@ -64,9 +58,7 @@ local function BuildVisibilityString(details, cfg, visOverride)
     -- every writer that builds a bar's driver here agrees (combat-gated sites,
     -- regen healers, housing/soft-target/pet rebuilds). An explicit override
     -- (toggle keybind, drag, spellbook) still wins, as it does over Never.
-    if ABAR._padHide and not visOverride and cfg.gamepadHideBar == true then
-        return "hide"
-    end
+    if ABAR._padHide and not visOverride and cfg.gamepadHideBar == true then return "hide" end
     local key = details.key
     local vis = visOverride or cfg.barVisibility or "always"
     -- An applied Visibility override replaces the whole setting, the shared option
@@ -84,28 +76,16 @@ local function BuildVisibilityString(details, cfg, visOverride)
     -- its own leading gates, so this block would only duplicate them.
     local visOptHide = ""
     if cfg.visibilityMatch ~= "any" and not visOv then
-        if cfg.visHideMounted then
-            visOptHide = visOptHide .. "[mounted] hide; "
-        end
+        if cfg.visHideMounted then visOptHide = visOptHide .. "[mounted] hide; " end
         -- Inverse of the above. [nomounted] cannot see druid travel/flight forms
         -- (they are shapeshifts), so a druid in a mount-like form reads unmounted
         -- here and the bar hides -- accepted asymmetry: the secure clause is what
         -- keeps this working in combat, and Lua cannot un-hide past the driver.
-        if cfg.visOnlyMounted then
-            visOptHide = visOptHide .. "[nomounted] hide; "
-        end
-        if cfg.visHideNoTarget then
-            visOptHide = visOptHide .. "[noexists] hide; "
-        end
-        if cfg.visHideWithTarget then
-            visOptHide = visOptHide .. "[exists] hide; "
-        end
-        if cfg.visHideNoEnemy then
-            visOptHide = visOptHide .. "[noharm] hide; "
-        end
-        if cfg.visHideWithEnemy then
-            visOptHide = visOptHide .. "[harm] hide; "
-        end
+        if cfg.visOnlyMounted then visOptHide = visOptHide .. "[nomounted] hide; " end
+        if cfg.visHideNoTarget then visOptHide = visOptHide .. "[noexists] hide; " end
+        if cfg.visHideWithTarget then visOptHide = visOptHide .. "[exists] hide; " end
+        if cfg.visHideNoEnemy then visOptHide = visOptHide .. "[noharm] hide; " end
+        if cfg.visHideWithEnemy then visOptHide = visOptHide .. "[harm] hide; " end
     end
 
     -- Authoritative multi-select set. Explicit overrides (toggle keybind,
@@ -146,9 +126,7 @@ local function BuildVisibilityString(details, cfg, visOverride)
         if visOv then
             -- An override replaces the setting, so no mode terms at all: Never hides
             -- outright, the other two leave the pet wrapper as the only condition.
-            if visOv == "never" then
-                return "hide"
-            end
+            if visOv == "never" then return "hide" end
             conj, negGate = "", ""
         elseif vm then
             -- Group modes are structurally unsupported here (locked in UI, stripped by sync copies).
@@ -170,9 +148,7 @@ local function BuildVisibilityString(details, cfg, visOverride)
             end
         end
         local bracket = "[novehicleui,pet,nooverridebar,nopossessbar"
-        if conj ~= "" then
-            bracket = bracket .. "," .. conj:sub(1, -2)
-        end
+        if conj ~= "" then bracket = bracket .. "," .. conj:sub(1, -2) end
         bracket = bracket .. "]"
         return "[petbattle] hide; " .. visOptHide .. negGate .. bracket .. " show; hide"
     end
@@ -191,15 +167,11 @@ local function BuildVisibilityString(details, cfg, visOverride)
     hidePrefix = hidePrefix .. visOptHide
 
     -- One constant, with the standard pet battle / vehicle prefix still in front.
-    if visOv then
-        return hidePrefix .. ((visOv == "never") and "hide" or "show")
-    end
+    if visOv then return hidePrefix .. ((visOv == "never") and "hide" or "show") end
 
     -- Multi-select set: compiled tail; the legacy single-mode chain below
     -- stays byte-identical for every scalar value.
-    if vm then
-        return ABAR.BuildVisibilityStringMulti(hidePrefix, vm)
-    end
+    if vm then return ABAR.BuildVisibilityStringMulti(hidePrefix, vm) end
 
     -- Append visibility mode conditions
     if vis == "never" then
@@ -325,7 +297,9 @@ function ABAR:ApplyCombatVisibility()
                 -- ShouldHideNonMacro carries; with all of them skipping it, the "any"
                 -- branch inside CheckVisibilityOptionsNonMacro has no live caller left and
                 -- is kept only so the helper stays correct for a future non-driver one.
-                elseif barCfg.visibilityMatch ~= "any" and CludesUI.CheckVisibilityOptionsNonMacro(barCfg) then
+                elseif
+                    barCfg.visibilityMatch ~= "any" and CludesUI.CheckVisibilityOptionsNonMacro(barCfg)
+                then
                     newStr = "hide"
                 else
                     newStr = BuildVisibilityString(details, barCfg)
@@ -361,9 +335,7 @@ function ABAR:_RefreshSoftTargetGate()
     for _, details in ipairs(ALL_BARS) do
         local barCfg = self.db.profile.bars[details.key]
         if barCfg then
-            if barCfg.mouseoverEnabled and barCfg.visibilityMatch == "any" then
-                anyHoverGated = true
-            end
+            if barCfg.mouseoverEnabled and barCfg.visibilityMatch == "any" then anyHoverGated = true end
             -- Under Any the counter lane carries the soft-target correction too, so it
             -- arms the same machinery; under All it never did and still does not.
             if barCfg.visHideNoTarget or (barCfg.visHideWithTarget and barCfg.visibilityMatch == "any") then
@@ -374,13 +346,9 @@ function ABAR:_RefreshSoftTargetGate()
             -- for that bar. Deliberately over-inclusive (it also matches the
             -- macro-expressible lanes) -- a needless walk on a rare zone/mount edge is
             -- cheap, a missed one leaves the bar stale until the next settings change.
-            if not anyNonMacro and CludesUI.VisHasAnyOption(barCfg) then
-                anyNonMacro = true
-            end
+            if not anyNonMacro and CludesUI.VisHasAnyOption(barCfg) then anyNonMacro = true end
         end
-        if not anyNonMacro and EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(details) then
-            anyNonMacro = true
-        end
+        if not anyNonMacro and EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(details) then anyNonMacro = true end
     end
     self._anyHideNoTarget = anySoft
     self._anyNonMacroVis = anyNonMacro
@@ -394,9 +362,7 @@ end
 -- and carries no taint exposure. Fully gated -- users with no Any-plus-mouseover bar pay
 -- one flag read per dispatcher event.
 function ABAR:RefreshHoverGatedAlpha()
-    if not self._anyHoverGated then
-        return
-    end
+    if not self._anyHoverGated then return end
     self:RefreshMouseover(true)
 end
 
@@ -416,9 +382,7 @@ end
 -- reading the empty map there built every skipped bar one frame after load
 -- (plus a second full apply).
 mod._eabBuildSkippedBars = function()
-    if not next(mod._eabBarNoButtons) or InCombatLockdown() then
-        return false
-    end
+    if not next(mod._eabBarNoButtons) or InCombatLockdown() then return false end
     local built = false
     for _, details in ipairs(BAR_CONFIG) do
         local key = details.key
@@ -452,9 +416,7 @@ mod._eabBuildSkippedBars = function()
         -- so it finds nothing to build. On ns, not on EAB, so the
         -- CUI_UnlockMode hook on EAB.ApplyAll stays as it was.
         C_Timer.After(0, function()
-            if mod._eabApplyAll then
-                mod._eabApplyAll()
-            end
+            if mod._eabApplyAll then mod._eabApplyAll() end
         end)
     end
     return built
@@ -469,13 +431,9 @@ end
 -- _isApplyingAll, a chunk local that ApplyAll rewrites.
 mod._ixBarSync = function(barId, eligOnly)
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return
-    end
+    if not profile then return end
     local push, hover, cast = mod._ixRolesOn(profile)
-    if not (push or hover or cast) then
-        return
-    end
+    if not (push or hover or cast) then return end
     local elig, changed = mod._ixBarEligible(barId)
     if elig and not eligOnly then
         local buttons = barButtons[barId]
@@ -487,9 +445,7 @@ mod._ixBarSync = function(barId, eligOnly)
                 for index = 1, #buttons do
                     local button = buttons[index]
                     local fd = button and mod._eabFD[button]
-                    if fd and fd.ixStyled then
-                        mod._ixStyle(button, fd, s)
-                    end
+                    if fd and fd.ixStyled then mod._ixStyle(button, fd, s) end
                 end
             end
         end

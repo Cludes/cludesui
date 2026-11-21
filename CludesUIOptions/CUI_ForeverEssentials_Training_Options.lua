@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_Training_Options.lua
 --  Forever Tools > Training: the Training Planner page. Lists what you can
 --  train now with its total, then the next levels that bring spells.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIForeverEssentials"]
-if not mod then
-    return
-end
+if not mod then return end
 
 local COMING_LEVELS = 6 -- how many coming levels the page lists
 
@@ -27,12 +23,8 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
         type = "toggle",
         text = "Message on Level Up",
         tooltip = "When you level up, a chat line says how many new spells your trainer has for you and what they cost.",
-        getValue = function()
-            return cfg.levelUpMessage
-        end,
-        setValue = function(val)
-            cfg.levelUpMessage = val and true or false
-        end,
+        getValue = function() return cfg.levelUpMessage end,
+        setValue = function(val) cfg.levelUpMessage = val and true or false end,
     }, {
         type = "label",
         text = "Base prices, before rep discount",
@@ -46,16 +38,12 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
     local function List(entries, showLevel)
         for idx = 1, #entries, 2 do
             local function Slot(e)
-                if not e then
-                    return { type = "label", text = "" }
-                end
+                if not e then return { type = "label", text = "" } end
                 local textValue = mod.TrainingSpellLabel(e.id)
                     .. "  |cff9aa6b2"
                     .. mod.TrainingMoney(e.cost)
                     .. "|r"
-                if showLevel then
-                    textValue = "|cff4cc9f0" .. e.level .. "|r  " .. textValue
-                end
+                if showLevel then textValue = "|cff4cc9f0" .. e.level .. "|r  " .. textValue end
                 if e.needs then
                     textValue = textValue
                         .. "  |cffffb040needs "
@@ -107,7 +95,8 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
         for _, entry in ipairs(entries) do
             cost = cost + entry.cost
         end
-        _, height = W:SectionHeader(hostFrame, ("LEVEL %d  -  %s"):format(lvl, mod.TrainingMoney(cost)), cursorY)
+        _, height =
+            W:SectionHeader(hostFrame, ("LEVEL %d  -  %s"):format(lvl, mod.TrainingMoney(cost)), cursorY)
         cursorY = cursorY - height
         List(entries, false)
     end

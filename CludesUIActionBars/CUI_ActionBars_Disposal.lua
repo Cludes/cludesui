@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Disposal.lua
 --
@@ -52,9 +50,7 @@ end
 -- own Shown state. On ns, not a file local.
 function mod.ReassertHiddenOnShow(barFrame)
     barFrame:HookScript("OnShow", function(self)
-        if not InCombatLockdown() then
-            self:SetParent(hiddenParent)
-        end
+        if not InCombatLockdown() then self:SetParent(hiddenParent) end
     end)
 end
 
@@ -141,9 +137,7 @@ do
             end
         end
         local aaef = ActionBarActionEventsFrame
-        if aaef then
-            aaef:UnregisterAllEvents()
-        end
+        if aaef then aaef:UnregisterAllEvents() end
     end
     -- Retail quiets at file load, before any button exists. WoW Forever waits
     -- for login, where the interface style it decides on is settled, and from
@@ -153,9 +147,7 @@ do
         local loginFrame = mod.TakeShell()
         local styleAsked = false
         local function StyleCheck()
-            if styleAsked or not CludesUI.PadGamepadUI() then
-                return
-            end
+            if styleAsked or not CludesUI.PadGamepadUI() then return end
             styleAsked = true
             loginFrame:UnregisterAllEvents()
             -- The Gamepad style's D-pad cannot reach the popup, so chat says it too.
@@ -212,9 +204,7 @@ do
     -- tick rate. No tick set there at all; the vehicle/extra buttons keep the
     -- two seeding events plus our dispatcher's direct paints.
     local function CooldownsSecret()
-        if not (C_Secrets and C_Secrets.ShouldCooldownsBeSecret) then
-            return false
-        end
+        if not (C_Secrets and C_Secrets.ShouldCooldownsBeSecret) then return false end
         local success, secret = pcall(C_Secrets.ShouldCooldownsBeSecret)
         return (success and secret) and true or false
     end
@@ -229,12 +219,8 @@ do
         local wanted = (_vehNeed or _extraNeed) and "full" or "off"
         -- Folded into `want` so the mode comparison below sees the change and
         -- re-applies; PLAYER_ENTERING_WORLD and the REGEN edges re-run this.
-        if wanted == "full" and (CludesUI.IS_FOREVER or CooldownsSecret()) then
-            wanted = "off"
-        end
-        if wanted == _broadcasterMode then
-            return
-        end
+        if wanted == "full" and (CludesUI.IS_FOREVER or CooldownsSecret()) then wanted = "off" end
+        if wanted == _broadcasterMode then return end
         _broadcasterMode = wanted
         -- Drop to the quiet state first (the two seeding registrations survive
         -- it), then add the tick set.
@@ -344,23 +330,13 @@ do
     -- ours clicks them -- CUI's paging arrows drive their own secure buttons.
     local function KillPagerMouse(barFrame)
         local pager = barFrame and barFrame.ActionBarPageNumber
-        if not pager then
-            return
-        end
+        if not pager then return end
         local function killOne(frame)
-            if not frame or type(frame.IsMouseEnabled) ~= "function" then
-                return
-            end
-            if not frame:IsMouseEnabled() then
-                return
-            end -- no-op after first pass
+            if not frame or type(frame.IsMouseEnabled) ~= "function" then return end
+            if not frame:IsMouseEnabled() then return end -- no-op after first pass
             frame:EnableMouse(false)
-            if frame.EnableMouseClicks then
-                frame:EnableMouseClicks(false)
-            end
-            if frame.EnableMouseMotion then
-                frame:EnableMouseMotion(false)
-            end
+            if frame.EnableMouseClicks then frame:EnableMouseClicks(false) end
+            if frame.EnableMouseMotion then frame:EnableMouseMotion(false) end
         end
         killOne(pager)
         killOne(pager.UpButton)
@@ -393,9 +369,7 @@ do
     for _, frameName in ipairs(framesToHide) do
         local widget = _G[frameName]
         if widget then
-            if not keepEvents[frameName] then
-                widget:UnregisterAllEvents()
-            end
+            if not keepEvents[frameName] then widget:UnregisterAllEvents() end
 
             -- MainActionBar stays in Blizzard's parent chain so pet battle
             -- restoration of MicroMenu works; all others safely reparent.
@@ -415,12 +389,8 @@ do
                 -- combat (mount/dismount), and at alpha 0 / level 50 it would
                 -- invisibly intercept clicks above our EABButtons.
                 widget:EnableMouse(false)
-                if widget.EnableMouseClicks then
-                    widget:EnableMouseClicks(false)
-                end
-                if widget.EnableMouseMotion then
-                    widget:EnableMouseMotion(false)
-                end
+                if widget.EnableMouseClicks then widget:EnableMouseClicks(false) end
+                if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
                 -- EnableMouse(false) on a parent does NOT disable children, so
                 -- the pager's invisible arrows would still eat clicks.
                 KillPagerMouse(widget)
@@ -445,9 +415,7 @@ do
                         right.Selection:EnableMouse(false)
                     end
                 end
-                if widget.BorderArt then
-                    widget.BorderArt:Hide()
-                end
+                if widget.BorderArt then widget.BorderArt:Hide() end
                 widget:SetAlpha(0)
             else
                 -- No Hide()/HideBase() here: reparenting to hiddenParent (kept

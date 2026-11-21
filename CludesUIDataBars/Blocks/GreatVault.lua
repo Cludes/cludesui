@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then
-    return
-end -- no Great Vault on WoW Forever (the main file drops the block type there too)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then return end -- no Great Vault on WoW Forever (the main file drops the block type there too)
 -------------------------------------------------------------------------------
 --  Blocks\GreatVault.lua - Info Bar block: the Great Vault and keystones.
 --
@@ -37,9 +33,7 @@ local STATE_COLOR = {
 
 local function ByIndex(a, b)
     local ai, bi = (a and a.index) or 0, (b and b.index) or 0
-    if ai == bi then
-        return ((a and a.threshold) or 0) < ((b and b.threshold) or 0)
-    end
+    if ai == bi then return ((a and a.threshold) or 0) < ((b and b.threshold) or 0) end
     return ai < bi
 end
 
@@ -73,9 +67,7 @@ local function RewardCells(kind, isRaid)
                     state = "done"
                     -- A finished Mythic+ or world slot shows the level it earned
                     -- (raids have none, so they keep the count).
-                    if not isRaid and level > 0 then
-                        text = "+" .. level
-                    end
+                    if not isRaid and level > 0 then text = "+" .. level end
                 elseif progress > 0 then
                     state = "partial"
                 end
@@ -88,32 +80,22 @@ local function RewardCells(kind, isRaid)
 end
 
 local function Dungeon(mapID)
-    if not mapID or mapID == 0 then
-        return nil
-    end
+    if not mapID or mapID == 0 then return nil end
     return C_ChallengeMode and C_ChallengeMode.GetMapUIInfo and (C_ChallengeMode.GetMapUIInfo(mapID)) or nil
 end
 
 -- The player's own keystone: dungeon name and level, or nil.
 local function MyKeystone()
     local mp = C_MythicPlus
-    if not mp then
-        return nil
-    end
+    if not mp then return nil end
     local mapID = mp.GetOwnedKeystoneChallengeMapID and mp.GetOwnedKeystoneChallengeMapID()
     local level = mp.GetOwnedKeystoneLevel and mp.GetOwnedKeystoneLevel()
-    if not mapID or not level or level <= 0 then
-        return nil
-    end
+    if not mapID or not level or level <= 0 then return nil end
     local name = Dungeon(mapID)
-    if name then
-        return name, level
-    end
+    if name then return name, level end
 end
 
-local function ShortName(name)
-    return name and (name:match("^([^-]+)") or name)
-end
+local function ShortName(name) return name and (name:match("^([^-]+)") or name) end
 
 -------------------------------------------------------------------------------
 --  Party keystones
@@ -125,49 +107,35 @@ local lastAsked = 0
 local ASK_EVERY = 5 -- seconds; a filling group sends roster updates in bursts
 local ASK_EVERY_EMPTY = 1 -- when the tooltip has nothing to show for this group
 
-local function Lib()
-    return LibStub and LibStub("LibKeystone", true)
-end
+local function Lib() return LibStub and LibStub("LibKeystone", true) end
 
 -- The open tooltip, so a late reply repaints it where it is. A burst of
 -- replies repaints once.
 local openOwner, openPaint
 local repaintQueued = false
 local function RepaintSoon()
-    if not openPaint or repaintQueued then
-        return
-    end
+    if not openPaint or repaintQueued then return end
     repaintQueued = true
     C_Timer.After(0.2, function()
         repaintQueued = false
-        if openPaint and openOwner and mod.Tip_IsOwned(openOwner) then
-            openPaint()
-        end
+        if openPaint and openOwner and mod.Tip_IsOwned(openOwner) then openPaint() end
     end)
 end
 
 -- The units to check (the player's own key has its own row), and how many.
 local function Roster()
-    if IsInRaid() then
-        return "raid", GetNumGroupMembers()
-    end
+    if IsInRaid() then return "raid", GetNumGroupMembers() end
     return "party", GetNumGroupMembers() - 1
 end
 
 -- Whether a player (by short name, however the library spells it) is in the group.
 local function InGroup(name)
-    if not IsInGroup() then
-        return false
-    end
+    if not IsInGroup() then return false end
     local short = ShortName(name)
-    if not short then
-        return false
-    end
+    if not short then return false end
     local unit, count = Roster()
     for i = 1, count do
-        if ShortName(GetUnitName(unit .. i, true)) == short then
-            return true
-        end
+        if ShortName(GetUnitName(unit .. i, true)) == short then return true end
     end
     return false
 end
@@ -176,18 +144,12 @@ end
 -- without one pays nothing). Kept by group membership, not by channel: a
 -- groupmate who is also a guildmate can reply on GUILD.
 local function Listen()
-    if listening then
-        return
-    end
+    if listening then return end
     local lib = Lib()
-    if not lib then
-        return
-    end
+    if not lib then return end
     listening = true
     lib.Register(token, function(level, mapID, _, name)
-        if not name or not InGroup(name) then
-            return
-        end
+        if not name or not InGroup(name) then return end
         local entry = keys[name]
         if entry then
             entry.mapID, entry.level = mapID, level
@@ -204,13 +166,9 @@ end
 -- short wait applies (a new member may have missed the last request).
 local function Ask(emptyHanded)
     local lib = Lib()
-    if not lib or not IsInGroup(LE_PARTY_CATEGORY_HOME) then
-        return
-    end
+    if not lib or not IsInGroup(LE_PARTY_CATEGORY_HOME) then return end
     local now = GetTime()
-    if now - lastAsked < (emptyHanded and ASK_EVERY_EMPTY or ASK_EVERY) then
-        return
-    end
+    if now - lastAsked < (emptyHanded and ASK_EVERY_EMPTY or ASK_EVERY) then return end
     lastAsked = now
     lib.Request("PARTY")
 end
@@ -218,9 +176,7 @@ end
 -- Drops players no longer in the group (never one still here). A roster
 -- update can arrive before the units resolve; then nothing is dropped.
 local function Prune()
-    if not next(keys) then
-        return
-    end
+    if not next(keys) then return end
     if not IsInGroup() then
         wipe(keys)
         return
@@ -233,13 +189,9 @@ local function Prune()
             break
         end
     end
-    if not resolved then
-        return
-    end
+    if not resolved then return end
     for name in pairs(keys) do
-        if not InGroup(name) then
-            keys[name] = nil
-        end
+        if not InGroup(name) then keys[name] = nil end
     end
 end
 
@@ -258,9 +210,7 @@ local function AddRow(name, dungeon, level, red, green, blue)
 end
 
 local function Before(a, b)
-    if a.level ~= b.level then
-        return a.level > b.level
-    end
+    if a.level ~= b.level then return a.level > b.level end
     return a.name < b.name
 end
 
@@ -269,9 +219,7 @@ end
 -- sharing a short name are skipped (better none than the wrong key).
 local function PartyRows()
     rowCount = 0
-    if not IsInGroup() then
-        return 0
-    end
+    if not IsInGroup() then return 0 end
     wipe(byShort)
     local any = false
     for name, entry in pairs(keys) do
@@ -283,18 +231,14 @@ local function PartyRows()
             end
         end
     end
-    if not any then
-        return 0
-    end
+    if not any then return 0 end
     local unit, count = Roster()
     for i = 1, count do
         local u = unit .. i
         if UnitExists(u) and not UnitIsUnit(u, "player") then
             local full = GetUnitName(u, true)
             local entry = keys[full]
-            if not (entry and (entry.level or 0) > 0) then
-                entry = byShort[ShortName(full)] or nil
-            end
+            if not (entry and (entry.level or 0) > 0) then entry = byShort[ShortName(full)] or nil end
             local dungeon = entry and Dungeon(entry.mapID)
             if dungeon then
                 local _, class = UnitClass(u)
@@ -437,9 +381,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
         Paint()
     end)
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton == "LeftButton" then
-            CludesUI.ToggleGreatVault()
-        end
+        if mouseButton == "LeftButton" then CludesUI.ToggleGreatVault() end
     end)
 
     inst.eventFrame = K.MakeEventFrame(inst, function()
@@ -469,9 +411,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 

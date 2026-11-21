@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_QoL_AutoLogging_Options.lua - the lower part of Utilities > QoL.
 --
@@ -57,27 +55,17 @@ end
 
 -- A feature's settings table in CludesUIDB (made on first use).
 local function Store(name)
-    if not CludesUIDB then
-        return {}
-    end
+    if not CludesUIDB then return {} end
     CludesUIDB[name] = CludesUIDB[name] or {}
     return CludesUIDB[name]
 end
-local function Logging()
-    return Store("autoLogging")
-end
-local function Keys()
-    return Store("keystonePopup")
-end
-local function Teleport()
-    return Store("teleportPrompt")
-end
+local function Logging() return Store("autoLogging") end
+local function Keys() return Store("keystonePopup") end
+local function Teleport() return Store("teleportPrompt") end
 
 -- /way's table is only made by a change, so viewing the page saves nothing.
 local NONE = {}
-local function Way()
-    return CludesUIDB and CludesUIDB.waypointCmd or NONE
-end
+local function Way() return CludesUIDB and CludesUIDB.waypointCmd or NONE end
 local function SetWay(key, value)
     if CludesUIDB then
         CludesUIDB.waypointCmd = CludesUIDB.waypointCmd or {}
@@ -87,9 +75,7 @@ end
 
 local function Call(name)
     local hook = _G[name]
-    if hook then
-        hook()
-    end
+    if hook then hook() end
 end
 
 local function AskReload(what)
@@ -111,9 +97,7 @@ local function ScaleRow(store, tooltip, applied, extra)
         max = 150,
         step = 5,
         tooltip = tooltip,
-        getValue = function()
-            return math.floor((store().scale or 1.05) * 100 + 0.5)
-        end,
+        getValue = function() return math.floor((store().scale or 1.05) * 100 + 0.5) end,
         setValue = function(val)
             store().scale = val / 100
             applied(val / 100)
@@ -137,9 +121,7 @@ end
 -- KEYSTONE CHECK POPUP (/keys)
 local function KeysSection(W, host, y)
     y = Section(W, host, y, "KEYSTONE CHECK POPUP")
-    local function On()
-        return Keys().enabled ~= false
-    end
+    local function On() return Keys().enabled ~= false end
     local _, h = W:DualRow(host, y, {
         type = "toggle",
         text = "Enable /keys Popup (or /ckeys)",
@@ -157,14 +139,10 @@ local function KeysSection(W, host, y)
         min = 8,
         max = 16,
         step = 1,
-        disabled = function()
-            return not On()
-        end,
+        disabled = function() return not On() end,
         disabledTooltip = "/keys Popup",
         tooltip = "Font size for keystone entries in the popup (does not affect the header).",
-        getValue = function()
-            return Keys().textSize or 11
-        end,
+        getValue = function() return Keys().textSize or 11 end,
         setValue = function(val)
             Keys().textSize = val
             Call("_CUI_RefreshKeystonePopup")
@@ -177,9 +155,7 @@ local function KeysSection(W, host, y)
             y,
             ScaleRow(Keys, "Scale of the /keys popup window.", function(scale)
                 local popup = _G.CUIKeysPopup
-                if popup then
-                    popup:SetScale(scale)
-                end
+                if popup then popup:SetScale(scale) end
             end),
             { type = "label", text = "" }
         )
@@ -191,9 +167,7 @@ end
 -- LFG REMINDER (the dungeon teleport popup)
 local function ReminderSection(W, host, y)
     y = Section(W, host, y, "LFG REMINDER")
-    local function On()
-        return Teleport().enabled ~= false
-    end
+    local function On() return Teleport().enabled ~= false end
     local _, h = W:DualRow(
         host,
         y,
@@ -210,14 +184,15 @@ local function ReminderSection(W, host, y)
                 Call("_CUI_ApplyTeleportPrompt")
             end),
         },
-        ScaleRow(Teleport, "Scale of the LFG Reminder popup window.", function()
-            Call("_CUI_RefreshTeleportPrompt")
-        end, {
-            disabled = function()
-                return not On()
-            end,
-            disabledTooltip = "LFG Reminder",
-        })
+        ScaleRow(
+            Teleport,
+            "Scale of the LFG Reminder popup window.",
+            function() Call("_CUI_RefreshTeleportPrompt") end,
+            {
+                disabled = function() return not On() end,
+                disabledTooltip = "LFG Reminder",
+            }
+        )
     )
     y = y - h
     if On() then
@@ -225,9 +200,7 @@ local function ReminderSection(W, host, y)
             type = "toggle",
             text = "Show 'Disable Feature' Text",
             tooltip = "Shows the 'Disable Feature' text below the teleport button. When off, the text is hidden and the window is 20px shorter.",
-            getValue = function()
-                return Teleport().showDisable ~= false
-            end,
+            getValue = function() return Teleport().showDisable ~= false end,
             setValue = function(val)
                 Teleport().showDisable = val
                 Call("_CUI_RefreshTeleportPrompt")
@@ -245,9 +218,7 @@ local function WaySection(W, host, y)
         type = "toggle",
         text = "Enable /way Command",
         tooltip = "Adds /way, which prints a map pin link.",
-        getValue = function()
-            return Way().enabled == true
-        end,
+        getValue = function() return Way().enabled == true end,
         setValue = function(val)
             SetWay("enabled", val or nil)
             CludesUI:RefreshPage()
@@ -259,24 +230,18 @@ local function WaySection(W, host, y)
     -- arrivals only while this or a /way list needs them, so it re-syncs.
     CludesUI.BuildInlineCog(row._leftRegion, {
         title = "/way Command",
-        disabled = function()
-            return Way().enabled ~= true
-        end,
+        disabled = function() return Way().enabled ~= true end,
         disabledTooltip = "Enable /way Command",
         rows = {
             {
                 type = "toggle",
                 label = "Hand-Placed Pin Arrival",
                 tooltip = "Also announces arrival at pins you place.",
-                get = function()
-                    return Way().manualArrival == true
-                end,
+                get = function() return Way().manualArrival == true end,
                 set = function(val)
                     SetWay("manualArrival", val or nil)
                     local sync = CludesUI._ModuleNS["CludesUIQoL"].WaypointArrivalSync
-                    if sync then
-                        sync()
-                    end
+                    if sync then sync() end
                 end,
             },
         },
@@ -288,14 +253,10 @@ end
 -- checkbox-dropdown type, so the row is built with a stand-in dropdown and
 -- the checklist takes its place; it greys out while logging is off.
 local function TriggersChecklist(region, Pix)
-    if region._control then
-        region._control:Hide()
-    end
+    if region._control then region._control:Hide() end
     local function Get(key)
         local value = Logging()[key]
-        if value == nil then
-            return LOG_DEFAULTS[key]
-        end
+        if value == nil then return LOG_DEFAULTS[key] end
         return value
     end
     local list, refresh = CludesUI.BuildVisOptsCBDropdown(
@@ -317,9 +278,7 @@ local function TriggersChecklist(region, Pix)
         local off = Logging().enabled ~= true
         list:SetAlpha(off and 0.3 or 1)
         list:EnableMouse(not off)
-        if region._label then
-            region._label:SetAlpha(off and 0.3 or 1)
-        end
+        if region._label then region._label:SetAlpha(off and 0.3 or 1) end
     end
     Grey()
     CludesUI.RegisterWidgetRefresh(Grey)
@@ -328,9 +287,7 @@ end
 -- AUTO COMBAT LOGGING
 local function LoggingSection(W, host, y)
     y = Section(W, host, y, "AUTO COMBAT LOGGING")
-    local function On()
-        return Logging().enabled == true
-    end
+    local function On() return Logging().enabled == true end
     local row, h = W:DualRow(host, y, {
         type = "toggle",
         text = "Enable Auto Logging",
@@ -347,9 +304,7 @@ local function LoggingSection(W, host, y)
         text = "Auto-Log Triggers",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
     y = y - h
@@ -362,24 +317,16 @@ local function LoggingSection(W, host, y)
             tooltip = "Delays stopping combat logging by 30 seconds after leaving an instance. Recommended for Warcraft Recorder compatibility.",
             getValue = function()
                 local value = Logging().delaystop
-                if value == nil then
-                    return LOG_DEFAULTS.delaystop
-                end
+                if value == nil then return LOG_DEFAULTS.delaystop end
                 return value
             end,
-            setValue = function(val)
-                Logging().delaystop = val
-            end,
+            setValue = function(val) Logging().delaystop = val end,
         }, {
             type = "toggle",
             text = "Chat Notification",
             tooltip = "Prints a chat message when auto logging starts or stops.",
-            getValue = function()
-                return Logging().notify == true
-            end,
-            setValue = function(val)
-                Logging().notify = val or nil
-            end,
+            getValue = function() return Logging().notify == true end,
+            setValue = function(val) Logging().notify = val or nil end,
         })
         y = y - h
     end
@@ -389,9 +336,7 @@ end
 -- A section another file builds (alerts, battle res, bloodlust), if loaded.
 local function External(name, host, y, W)
     local build = _G[name]
-    if not build then
-        return y
-    end
+    if not build then return y end
     return y - build(host, y, W, CludesUI.PP)
 end
 

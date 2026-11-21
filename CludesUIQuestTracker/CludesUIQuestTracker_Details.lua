@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_Details.lua - our quest details window (WoW Forever).
 --
@@ -51,9 +47,7 @@ local function Entry(kind, index, name, texture, count, quality, itemID)
 end
 
 function EQT.QuestRewards(questID)
-    if not C_QuestLog.ShouldShowQuestRewards(questID) then
-        return
-    end
+    if not C_QuestLog.ShouldShowQuestRewards(questID) then return end
     local found = {
         xp = GetQuestLogRewardXP(questID),
         money = GetQuestLogRewardMoney(questID),
@@ -73,9 +67,7 @@ function EQT.QuestRewards(questID)
         local name, texture, count, quality, _, itemID = GetQuestLogChoiceInfo(i, questID)
         found.choices[#found.choices + 1] = Entry("choice", i, name, texture, count, quality, itemID)
     end
-    if found.xp <= 0 and found.money <= 0 and #found.rewards == 0 and #found.choices == 0 then
-        return
-    end
+    if found.xp <= 0 and found.money <= 0 and #found.rewards == 0 and #found.choices == 0 then return end
     return found
 end
 
@@ -263,12 +255,8 @@ local function LevelLine()
         parts[1] = CreateColor(color.r, color.g, color.b):WrapTextInColorCode(LEVEL .. " " .. level)
     end
     local tag = C_QuestLog.GetQuestTagInfo(questID)
-    if tag and tag.tagName then
-        parts[#parts + 1] = tag.tagName
-    end
-    if C_QuestLog.IsComplete(questID) then
-        parts[#parts + 1] = COMPLETE
-    end
+    if tag and tag.tagName then parts[#parts + 1] = tag.tagName end
+    if C_QuestLog.IsComplete(questID) then parts[#parts + 1] = COMPLETE end
     return table.concat(parts, "   ")
 end
 
@@ -303,7 +291,12 @@ local function Read(logIndex)
         for _, list in ipairs({ region.rewards, region.choices }) do
             for _, entry in ipairs(list) do
                 parts[#parts + 1] = table.concat(
-                    { tostring(entry.name), tostring(entry.texture), tostring(entry.count), tostring(entry.quality) },
+                    {
+                        tostring(entry.name),
+                        tostring(entry.texture),
+                        tostring(entry.count),
+                        tostring(entry.quality),
+                    },
                     ","
                 )
             end
@@ -317,9 +310,7 @@ local Refresh
 
 -- force: draw even if nothing seems to have changed.
 function Refresh(force)
-    if not (window and window:IsShown() and questID) then
-        return
-    end
+    if not (window and window:IsShown() and questID) then return end
     local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
     if not logIndex then
         window:Hide()
@@ -367,12 +358,8 @@ function Refresh(force)
         if region.xp > 0 then
             y = y + PlaceText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(region.xp), 0, y, 12, 1, 1, 1) + 4
         end
-        if region.money > 0 then
-            y = y + PlaceText(GetMoneyString(region.money), 0, y, 12, 1, 1, 1) + 4
-        end
-        if #region.rewards > 0 then
-            y = y + 4 + AddTiles(region.rewards, y + 4) + 4
-        end
+        if region.money > 0 then y = y + PlaceText(GetMoneyString(region.money), 0, y, 12, 1, 1, 1) + 4 end
+        if #region.rewards > 0 then y = y + 4 + AddTiles(region.rewards, y + 4) + 4 end
         if #region.choices > 0 then
             y = y + 8
             y = y + PlaceText(REWARD_CHOICES, 0, y, 12, dr, dg, db, da) + 6
@@ -384,9 +371,7 @@ function Refresh(force)
             for _, entry in ipairs(list) do
                 if not entry.name then
                     EQT.OnRewardLoad(entry, function()
-                        if questID == shownQuest then
-                            Refresh(true)
-                        end
+                        if questID == shownQuest then Refresh(true) end
                     end)
                 end
             end
@@ -410,9 +395,7 @@ end
 
 -- Beside the tracker, on the side towards the middle of the screen.
 local function Place()
-    if dragged then
-        return
-    end
+    if dragged then return end
     local tracker = _G.CUI_CustomQuestTracker
     window:ClearAllPoints()
     local x = tracker and tracker:GetCenter()
@@ -454,9 +437,7 @@ local function Build()
     window:EnableMouse(true)
     window:SetMovable(true)
     window:RegisterForDrag("LeftButton")
-    window:SetScript("OnDragStart", function(self)
-        self:StartMoving()
-    end)
+    window:SetScript("OnDragStart", function(self) self:StartMoving() end)
     window:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         dragged = true
@@ -494,15 +475,9 @@ local function Build()
     close.icon:SetAllPoints()
     close.icon:SetTexture(CLOSE)
     close.icon:SetAlpha(0.7)
-    close:SetScript("OnEnter", function()
-        close.icon:SetAlpha(1)
-    end)
-    close:SetScript("OnLeave", function()
-        close.icon:SetAlpha(0.7)
-    end)
-    close:SetScript("OnClick", function()
-        window:Hide()
-    end)
+    close:SetScript("OnEnter", function() close.icon:SetAlpha(1) end)
+    close:SetScript("OnLeave", function() close.icon:SetAlpha(0.7) end)
+    close:SetScript("OnClick", function() window:Hide() end)
 
     scroll = CreateFrame("ScrollFrame", nil, window)
     scroll:SetPoint("TOPLEFT", PAD, -HEADER - 12)
@@ -520,28 +495,21 @@ local function Build()
     -- The footer: one row of buttons.
     Divider(FOOTER, true)
     local act = EQT.CustomQuestActions
-    window.focus = Button(SUPER_TRACK_QUEST, function()
-        act.Focus(questID)
-    end)
+    window.focus = Button(SUPER_TRACK_QUEST, function() act.Focus(questID) end)
     window.focus:SetPoint("BOTTOMLEFT", PAD, PAD)
-    window.untrack = Button(UNTRACK_QUEST_ABBREV, function()
-        act.Untrack(questID)
-    end)
+    window.untrack = Button(UNTRACK_QUEST_ABBREV, function() act.Untrack(questID) end)
     window.untrack:SetPoint("LEFT", window.focus, "RIGHT", GAP, 0)
-    window.share = Button(SHARE_QUEST_ABBREV, function()
-        QuestLogPushQuest(C_QuestLog.GetLogIndexForQuestID(questID))
-    end)
+    window.share = Button(
+        SHARE_QUEST_ABBREV,
+        function() QuestLogPushQuest(C_QuestLog.GetLogIndexForQuestID(questID)) end
+    )
     window.share:SetPoint("LEFT", window.untrack, "RIGHT", GAP, 0)
-    window.abandon = Button(ABANDON_QUEST_ABBREV, function()
-        act.Abandon(questID)
-    end)
+    window.abandon = Button(ABANDON_QUEST_ABBREV, function() act.Abandon(questID) end)
     window.abandon:SetPoint("LEFT", window.share, "RIGHT", GAP, 0)
 
     window:SetScript("OnEvent", function(_, event, id)
         if event == "QUEST_REMOVED" then
-            if id == questID then
-                window:Hide()
-            end
+            if id == questID then window:Hide() end
         elseif event == "SUPER_TRACKING_CHANGED" or event == "GROUP_ROSTER_UPDATE" then
             SyncButtons()
         else
@@ -564,9 +532,7 @@ end
 
 -- Opens the window for a quest; a second click on the same quest closes it.
 function EQT.ShowQuestDetails(id)
-    if not window then
-        Build()
-    end
+    if not window then Build() end
     if window:IsShown() and questID == id then
         window:Hide()
         return

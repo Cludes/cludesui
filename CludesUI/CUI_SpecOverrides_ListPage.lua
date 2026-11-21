@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_ListPage.lua
 --
@@ -12,15 +10,14 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ACCENT_B, ACCENT_G, ACCENT_R = Inner.ACCENT_B, Inner.ACCENT_G, Inner.ACCENT_R
 local BlacklistedFKey, CurrentSpecID, DeepCopy = Inner.BlacklistedFKey, Inner.CurrentSpecID, Inner.DeepCopy
 local EntryHolderGroup, EntryOwning = Inner.EntryHolderGroup, Inner.EntryOwning
-local FKeyLoaded, GetGroups, GetStore, GOLD_B = Inner.FKeyLoaded, Inner.GetGroups, Inner.GetStore, Inner.GOLD_B
+local FKeyLoaded, GetGroups, GetStore, GOLD_B =
+    Inner.FKeyLoaded, Inner.GetGroups, Inner.GetStore, Inner.GOLD_B
 local GOLD_G, GOLD_R, GroupById = Inner.GOLD_G, Inner.GOLD_R, Inner.GroupById
 local HasRegisteredDefault, L, MatchOwnedFKey = Inner.HasRegisteredDefault, Inner.L, Inner.MatchOwnedFKey
 local NIL_SENT, ReadLive, RebuildFKeyIndex = Inner.NIL_SENT, Inner.ReadLive, Inner.RebuildFKeyIndex
@@ -36,22 +33,16 @@ local EnterGroupEdit, BuildEntryCrumb = Inner.EnterGroupEdit, Inner.BuildEntryCr
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(v)
-    _editGroup = v
-end
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(v) _editGroup = v end
 local _activeSpec = nil
-Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(v)
-    _activeSpec = v
-end
+Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(v) _activeSpec = v end
 
 -------------------------------------------------------------------------------
 --  Management list page ("Spec Overrides" tab under Profiles & Presets).
 --  Purely a list: per group, each captured setting with Go To / Remove.
 -------------------------------------------------------------------------------
 local function TitleCase(text)
-    local out = text:gsub("(%a[%w']*)", function(w)
-        return w:sub(1, 1):upper() .. w:sub(2):lower()
-    end)
+    local out = text:gsub("(%a[%w']*)", function(w) return w:sub(1, 1):upper() .. w:sub(2):lower() end)
     return out
 end
 
@@ -113,9 +104,7 @@ local function BuildListRow(host, rowY, item)
         local ownerEntry
         for fieldKey in pairs(item.values and item.values.default or {}) do
             ownerEntry = EntryOwning(fieldKey)
-            if ownerEntry then
-                break
-            end
+            if ownerEntry then break end
         end
         if ownerEntry then
             local og = GroupById(ownerEntry.group)
@@ -125,30 +114,27 @@ local function BuildListRow(host, rowY, item)
             local hit = CreateFrame("Frame", nil, line)
             hit:SetAllPoints(warn)
             hit:EnableMouse(true)
-            hit:SetScript("OnEnter", function(self)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    L(
-                        "A spec override owns this setting, so this conditional value never applies outside an editing session. Remove the spec override to let it through."
+            hit:SetScript(
+                "OnEnter",
+                function(self)
+                    CludesUI.ShowWidgetTooltip(
+                        self,
+                        L(
+                            "A spec override owns this setting, so this conditional value never applies outside an editing session. Remove the spec override to let it through."
+                        )
                     )
-                )
-            end)
-            hit:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+                end
+            )
+            hit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         end
     end
 
     local removeBtn, rmBrd = MakeBtn("Remove Override", -20, 116)
     removeBtn:SetScript("OnEnter", function()
-        if rmBrd and rmBrd.SetColor then
-            rmBrd:SetColor(1, 0.35, 0.35, 0.8)
-        end
+        if rmBrd and rmBrd.SetColor then rmBrd:SetColor(1, 0.35, 0.35, 0.8) end
     end)
     removeBtn:SetScript("OnLeave", function()
-        if rmBrd and rmBrd.SetColor then
-            rmBrd:SetColor(1, 1, 1, 0.22)
-        end
+        if rmBrd and rmBrd.SetColor then rmBrd:SetColor(1, 1, 1, 0.22) end
     end)
     removeBtn:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
@@ -182,14 +168,10 @@ local function BuildListRow(host, rowY, item)
 
     local go, goBrd = MakeBtn("Go to Setting", -144, 104)
     go:SetScript("OnEnter", function()
-        if goBrd and goBrd.SetColor then
-            goBrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.8)
-        end
+        if goBrd and goBrd.SetColor then goBrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.8) end
     end)
     go:SetScript("OnLeave", function()
-        if goBrd and goBrd.SetColor then
-            goBrd:SetColor(1, 1, 1, 0.22)
-        end
+        if goBrd and goBrd.SetColor then goBrd:SetColor(1, 1, 1, 0.22) end
     end)
     go:SetScript("OnClick", function()
         local mod = item.module
@@ -201,9 +183,7 @@ local function BuildListRow(host, rowY, item)
         end
         if mod and CludesUI:GetModuleTitle(mod) then
             CludesUI:SelectModule(mod)
-            if item.page and CludesUI.SelectPage then
-                CludesUI:SelectPage(item.page)
-            end
+            if item.page and CludesUI.SelectPage then CludesUI:SelectPage(item.page) end
         end
     end)
 
@@ -245,14 +225,10 @@ local function BuildStrandedRow(host, rowY, item, specID)
     rmLbl:SetPoint("CENTER")
     rmLbl:SetText(L("Remove Override"))
     removeBtn:SetScript("OnEnter", function()
-        if rmBrd and rmBrd.SetColor then
-            rmBrd:SetColor(1, 0.35, 0.35, 0.8)
-        end
+        if rmBrd and rmBrd.SetColor then rmBrd:SetColor(1, 0.35, 0.35, 0.8) end
     end)
     removeBtn:SetScript("OnLeave", function()
-        if rmBrd and rmBrd.SetColor then
-            rmBrd:SetColor(1, 1, 1, 0.22)
-        end
+        if rmBrd and rmBrd.SetColor then rmBrd:SetColor(1, 1, 1, 0.22) end
     end)
     removeBtn:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
@@ -280,9 +256,7 @@ end
 -- all (legacy captures) are kept.
 local function PruneOrphanEntries()
     local storeTbl = GetStore()
-    if not storeTbl then
-        return false
-    end
+    if not storeTbl then return false end
     local removed = false
     local touched
     -- Restore an entry's recorded defaults live before dropping it as an ORPHAN: the
@@ -291,15 +265,11 @@ local function PruneOrphanEntries()
     -- baseline). Loaded, non-blacklisted scalar paths only; excluded-context drops
     -- deliberately keep live as-is (those settings left the system).
     local function RestoreEntryDefaults(record)
-        if not (record.values and record.values.default) then
-            return
-        end
+        if not (record.values and record.values.default) then return end
         for fieldKey, def in pairs(record.values.default) do
             if not BlacklistedFKey(fieldKey) and FKeyLoaded(fieldKey) then
                 local v = def
-                if v == NIL_SENT then
-                    v = nil
-                end
+                if v == NIL_SENT then v = nil end
                 -- Same defaults-backed nil-poison skip as WriteSpecValues.
                 local nilPoison = (v == nil) and HasRegisteredDefault(fieldKey)
                 local cur = ReadLive(fieldKey)
@@ -356,18 +326,14 @@ local function PruneOrphanEntries()
             for fieldKey in pairs(record.values.default) do
                 if BlacklistedFKey(fieldKey) then
                     for _, m in pairs(record.values) do
-                        if type(m) == "table" then
-                            m[fieldKey] = nil
-                        end
+                        if type(m) == "table" then m[fieldKey] = nil end
                     end
                     stripped = true
                 end
             end
             if stripped then
                 removed = true
-                if not next(record.values.default) then
-                    dropBtn = true
-                end
+                if not next(record.values.default) then dropBtn = true end
             end
         end
         if dropBtn then
@@ -398,13 +364,9 @@ local function PruneOrphanEntries()
         -- where a synchronous Apply fires module refreshers (and can re-enter a page
         -- rebuild) mid-build. Safe to defer: PruneRedundantValues' live-guard refuses
         -- to GC a recorded default while live still differs, so nothing is lost.
-        C_Timer.After(0, function()
-            CludesUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID())
-        end)
+        C_Timer.After(0, function() CludesUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID()) end)
     end
-    if touched then
-        RunRefreshers(touched)
-    end
+    if touched then RunRefreshers(touched) end
     if removed then
         RebuildFKeyIndex()
         RequestGoldWalk()
@@ -446,14 +408,10 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
     caption:SetPoint("CENTER")
     caption:SetText(L("Delete"))
     button:SetScript("OnEnter", function()
-        if brd and brd.SetColor then
-            brd:SetColor(1, 0.35, 0.35, 0.8)
-        end
+        if brd and brd.SetColor then brd:SetColor(1, 0.35, 0.35, 0.8) end
     end)
     button:SetScript("OnLeave", function()
-        if brd and brd.SetColor then
-            brd:SetColor(1, 1, 1, 0.22)
-        end
+        if brd and brd.SetColor then brd:SetColor(1, 1, 1, 0.22) end
     end)
     button:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
@@ -462,9 +420,7 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
             confirmText = L("Delete"),
             cancelText = L("Cancel"),
             onConfirm = function()
-                if removeFn then
-                    removeFn(group.id)
-                end
+                if removeFn then removeFn(group.id) end
                 CludesUI:RefreshPage(true)
             end,
         })
@@ -484,39 +440,25 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
         elbl:SetPoint("CENTER")
         elbl:SetText(L("Edit"))
         record:SetScript("OnEnter", function()
-            if ebrd and ebrd.SetColor then
-                ebrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.8)
-            end
+            if ebrd and ebrd.SetColor then ebrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.8) end
         end)
         record:SetScript("OnLeave", function()
-            if ebrd and ebrd.SetColor then
-                ebrd:SetColor(1, 1, 1, 0.22)
-            end
+            if ebrd and ebrd.SetColor then ebrd:SetColor(1, 1, 1, 0.22) end
         end)
         record:SetScript("OnClick", function()
             -- Raid Frames must be registered to navigate to (same gate as the
             -- entry rows' Go to Setting).
-            if not (CludesUI:GetModuleTitle("CludesUIRaidFrames")) then
-                return
-            end
+            if not (CludesUI:GetModuleTitle("CludesUIRaidFrames")) then return end
             -- Both entry points refuse (own popup) when another fork holds the
             -- manager page; only navigate once the session actually opened.
             if opts.editKind == "cond" then
-                if not Cond.EnterEdit then
-                    return
-                end
+                if not Cond.EnterEdit then return end
                 Cond.EnterEdit(group)
-                if Cond._edit ~= group then
-                    return
-                end
+                if Cond._edit ~= group then return end
             else
-                if not EnterGroupEdit then
-                    return
-                end
+                if not EnterGroupEdit then return end
                 EnterGroupEdit(group)
-                if _editGroup ~= group then
-                    return
-                end
+                if _editGroup ~= group then return end
             end
             CludesUI:SelectModule("CludesUIRaidFrames")
             CludesUI:SelectPage(opts.editPage)
@@ -531,9 +473,7 @@ local BM_ROW_SPEC = {
     crumb = "Custom Buff Manager",
     title = "Delete Custom Buff Manager",
     message = "Delete the custom Buff Manager for '%s'? Its specs return to your default Buff Manager.",
-    removeFn = function(gid)
-        CludesUI.SpecOverrides_RemoveBmLayout(gid)
-    end,
+    removeFn = function(gid) CludesUI.SpecOverrides_RemoveBmLayout(gid) end,
     editKind = "spec",
     editPage = "Buff Manager",
 }
@@ -541,9 +481,7 @@ local BM_ROW_COND = {
     crumb = "Custom Buff Manager",
     title = "Delete Custom Buff Manager",
     message = "Delete the custom Buff Manager for '%s'? Its conditions return to your default Buff Manager.",
-    removeFn = function(gid)
-        CludesUI.Conditions_RemoveBmLayout(gid)
-    end,
+    removeFn = function(gid) CludesUI.Conditions_RemoveBmLayout(gid) end,
     editKind = "cond",
     editPage = "Buff Manager",
 }
@@ -553,9 +491,7 @@ local DM_ROW_SPEC = {
     crumb = "Custom Debuff Manager",
     title = "Delete Custom Debuff Manager",
     message = "Delete the custom Debuff Manager for '%s'? Its specs return to your default Debuff Manager.",
-    removeFn = function(gid)
-        CludesUI.SpecOverrides_RemoveDmLayout(gid)
-    end,
+    removeFn = function(gid) CludesUI.SpecOverrides_RemoveDmLayout(gid) end,
     editKind = "spec",
     editPage = "Debuff Manager",
 }
@@ -563,9 +499,7 @@ local DM_ROW_COND = {
     crumb = "Custom Debuff Manager",
     title = "Delete Custom Debuff Manager",
     message = "Delete the custom Debuff Manager for '%s'? Its conditions return to your default Debuff Manager.",
-    removeFn = function(gid)
-        CludesUI.Conditions_RemoveDmLayout(gid)
-    end,
+    removeFn = function(gid) CludesUI.Conditions_RemoveDmLayout(gid) end,
     editKind = "cond",
     editPage = "Debuff Manager",
 }
@@ -584,9 +518,7 @@ local DM_ROW_COND = {
 local _promoteSelGid = nil -- list-page dropdown selection (runtime only)
 
 local function PromoteGroupToProfile(group)
-    if not group or not group.specs or #group.specs == 0 then
-        return
-    end
+    if not group or not group.specs or #group.specs == 0 then return end
     -- Combat re-check (the typed-confirm popup can sit open while combat starts): the
     -- tail must flush secure-frame repositioning synchronously before the reload, which
     -- lockdown blocks. Nothing is written yet, so refusing here is a clean abort.
@@ -661,39 +593,27 @@ local function PromoteGroupToProfile(group)
                 elems = {},
             }
             for key, val in pairs(layerRec.anchors or {}) do
-                if not IsTBBChildKey(key) then
-                    nb.anchors[key] = DeepCopy(val)
-                end
+                if not IsTBBChildKey(key) then nb.anchors[key] = DeepCopy(val) end
             end
             for key, val in pairs(layerRec.widthMatch or {}) do
-                if not IsTBBChildKey(key) then
-                    nb.widthMatch[key] = val
-                end
+                if not IsTBBChildKey(key) then nb.widthMatch[key] = val end
             end
             for key, val in pairs(layerRec.heightMatch or {}) do
-                if not IsTBBChildKey(key) then
-                    nb.heightMatch[key] = val
-                end
+                if not IsTBBChildKey(key) then nb.heightMatch[key] = val end
             end
             -- Match extras ride with the links (a fork without them promotes none).
             nb.widthMatchExtra, nb.heightMatchExtra = {}, {}
             for key, val in pairs(layerRec.widthMatchExtra or {}) do
-                if not IsTBBChildKey(key) then
-                    nb.widthMatchExtra[key] = val
-                end
+                if not IsTBBChildKey(key) then nb.widthMatchExtra[key] = val end
             end
             for key, val in pairs(layerRec.heightMatchExtra or {}) do
-                if not IsTBBChildKey(key) then
-                    nb.heightMatchExtra[key] = val
-                end
+                if not IsTBBChildKey(key) then nb.heightMatchExtra[key] = val end
             end
             local function MergePos(lp, bp)
                 local out = lp and DeepCopy(lp) or (bp and DeepCopy(bp) or nil)
                 if lp and bp then
                     for key, val in pairs(bp) do
-                        if out[key] == nil then
-                            out[key] = DeepCopy(val)
-                        end
+                        if out[key] == nil then out[key] = DeepCopy(val) end
                     end
                 end
                 return out
@@ -731,15 +651,11 @@ local function PromoteGroupToProfile(group)
             )
             if base and base.elems then
                 for key, record in pairs(base.elems) do
-                    if not LayerSkipsKey(key) then
-                        nb.elems[key] = DeepCopy(record)
-                    end
+                    if not LayerSkipsKey(key) then nb.elems[key] = DeepCopy(record) end
                 end
             end
             for key, record in pairs(layerRec.elems or {}) do
-                if not LayerSkipsKey(key) then
-                    nb.elems[key] = DeepCopy(record)
-                end
+                if not LayerSkipsKey(key) then nb.elems[key] = DeepCopy(record) end
             end
             cfg.baselineLayout = nb
         end
@@ -752,9 +668,7 @@ local function PromoteGroupToProfile(group)
     local bs = GetBmStore()
     if bs then
         local bl = bs.layouts and bs.layouts[group.id]
-        if bl then
-            bs.baselineLayout = DeepCopy(bl)
-        end
+        if bl then bs.baselineLayout = DeepCopy(bl) end
         wipe(bs.layouts)
         bs.active = nil
     end
@@ -763,9 +677,7 @@ local function PromoteGroupToProfile(group)
     local ds = GetDmStore()
     if ds then
         local dl = ds.layouts and ds.layouts[group.id]
-        if dl then
-            ds.baselineLayout = DeepCopy(dl)
-        end
+        if dl then ds.baselineLayout = DeepCopy(dl) end
         wipe(ds.layouts)
         ds.active = nil
     end
@@ -774,12 +686,8 @@ local function PromoteGroupToProfile(group)
     --    values are already live and the promoted layouts are the baselines,
     --    so from here the profile simply IS the override.
     local groupList = GetGroups()
-    if groupList then
-        wipe(groupList)
-    end
-    if storeTbl then
-        wipe(storeTbl)
-    end
+    if groupList then wipe(groupList) end
+    if storeTbl then wipe(storeTbl) end
     RebuildFKeyIndex()
 
     -- 5) CONVERGE live onto the new baselines, forced: with the groups gone the
@@ -813,9 +721,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
     -- Skip during a hidden search pre-build: the page is only indexed for its
     -- static labels, and pruning mutates saved profile data -- not something a
     -- read-only indexing pass may do as a side effect.
-    if not CludesUI._prebuilding then
-        PruneOrphanEntries()
-    end
+    if not CludesUI._prebuilding then PruneOrphanEntries() end
     local storeTbl = GetStore()
     local groupList = GetGroups() or {}
     local us = GetUnlockStore()
@@ -905,20 +811,14 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
     -- group whose member specs store a value differing from the entry's shared
     -- default. Derived live -- no stored ownership metadata.
     local function GroupCustomizes(item, group)
-        if item.group == group.id then
-            return true
-        end
+        if item.group == group.id then return true end
         local def = item.values and item.values.default
-        if not def then
-            return false
-        end
+        if not def then return false end
         for _, sid in ipairs(group.specs or {}) do
             local m = item.values[sid]
             if m then
                 for fieldKey, dv in pairs(def) do
-                    if m[fieldKey] ~= nil and m[fieldKey] ~= dv then
-                        return true
-                    end
+                    if m[fieldKey] ~= nil and m[fieldKey] ~= dv then return true end
                 end
             end
         end
@@ -934,9 +834,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
                 listed = true
             end
         end
-        if not listed then
-            ungrouped[#ungrouped + 1] = item
-        end
+        if not listed then ungrouped[#ungrouped + 1] = item end
     end
 
     for _, group in ipairs(groupList) do
@@ -974,9 +872,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
         end
     end
     if stranded then
-        table.sort(stranded, function(a, button)
-            return a.spec < button.spec
-        end)
+        table.sort(stranded, function(a, button) return a.spec < button.spec end)
         local _, hh = W:SectionHeader(host, "Stranded Overrides", rowY)
         rowY = rowY - hh
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
@@ -1018,14 +914,17 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
             ddValues[gg.id] = gg.name or ("Group " .. gg.id)
             ddOrder[#ddOrder + 1] = gg.id
         end
-        if not _promoteSelGid or not GroupById(_promoteSelGid) then
-            _promoteSelGid = groupList[1].id
-        end
-        local _, dh = W:WideDropdown(host, "Override to Promote", rowY, ddValues, function()
-            return _promoteSelGid
-        end, function(v)
-            _promoteSelGid = v
-        end, ddOrder, 300)
+        if not _promoteSelGid or not GroupById(_promoteSelGid) then _promoteSelGid = groupList[1].id end
+        local _, dh = W:WideDropdown(
+            host,
+            "Override to Promote",
+            rowY,
+            ddValues,
+            function() return _promoteSelGid end,
+            function(v) _promoteSelGid = v end,
+            ddOrder,
+            300
+        )
         rowY = rowY - dh
         rowY = rowY - 6
         local BTN_W, BTN_H = 300, 38
@@ -1070,9 +969,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
         end
         btn:SetScript("OnClick", function()
             local pg = GroupById(_promoteSelGid)
-            if not pg then
-                return
-            end
+            if not pg then return end
             -- The promote ends in a synchronous flush + ReloadUI, neither
             -- of which belongs in combat lockdown.
             if InCombatLockdown() then
@@ -1129,9 +1026,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
                 typeToConfirm = "Confirm",
                 confirmText = L("Promote & Reload"),
                 cancelText = L("Cancel"),
-                onConfirm = function()
-                    PromoteGroupToProfile(pg)
-                end,
+                onConfirm = function() PromoteGroupToProfile(pg) end,
             })
         end)
         rowY = rowY - BTN_H - 10
@@ -1180,7 +1075,13 @@ function CludesUI.Conditions_BuildListPage(host, startY)
         end
     end
 
-    if (not storeTbl or #storeTbl == 0) and not layoutList and not bmList and not dmList and #groupList == 0 then
+    if
+        (not storeTbl or #storeTbl == 0)
+        and not layoutList
+        and not bmList
+        and not dmList
+        and #groupList == 0
+    then
         local _, h = W:SectionHeader(host, L("Conditional Overrides"), rowY)
         rowY = rowY - h
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
@@ -1224,14 +1125,10 @@ function CludesUI.Conditions_BuildListPage(host, startY)
             caption:SetPoint("CENTER")
             caption:SetText(L("Delete"))
             button:SetScript("OnEnter", function()
-                if brd and brd.SetColor then
-                    brd:SetColor(1, 0.35, 0.35, 0.8)
-                end
+                if brd and brd.SetColor then brd:SetColor(1, 0.35, 0.35, 0.8) end
             end)
             button:SetScript("OnLeave", function()
-                if brd and brd.SetColor then
-                    brd:SetColor(1, 1, 1, 0.22)
-                end
+                if brd and brd.SetColor then brd:SetColor(1, 1, 1, 0.22) end
             end)
             local gid = group.id
             local gname = group.name or "?"
@@ -1294,9 +1191,7 @@ function CludesUI.Conditions_BuildListPage(host, startY)
                     end
                 end
             end
-            if owns then
-                list[#list + 1] = item
-            end
+            if owns then list[#list + 1] = item end
         end
         if #list > 0 then
             local _, hh = W:SectionHeader(host, group.name or "?", rowY)

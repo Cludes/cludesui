@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_RaidTools.lua -- Raid control panels (QoL: Raid Tools page)
 --
@@ -173,9 +171,7 @@ local function SkinPanelBg(frame)
     frame._titleBar = topStrip
     frame._bgFit = function()
         local fw, fh = frame:GetSize()
-        if not fw or fw == 0 or not fh or fh == 0 then
-            return
-        end
+        if not fw or fw == 0 or not fh or fh == 0 then return end
         local fadeAnim = fw / fh
         if fadeAnim > BG_ASPECT then
             local visV = BASE_V * (BG_ASPECT / fadeAnim)
@@ -400,9 +396,7 @@ local function TrackFont(markerOwner, fontStr, size, family)
 end
 local function ApplyFonts()
     local filePath = CludesUI.GetFontPath(FONT_KEY)
-    if not filePath then
-        return
-    end
+    if not filePath then return end
     for _, markerOwner in ipairs(fontOwners) do
         local t = markerOwner._fonts
         if t then
@@ -524,9 +518,7 @@ local DB_DEFAULTS = {
 -- that proxy in another, and reading through the stack overflows the C stack.
 -- DB_DEFAULTS already guarantees the slice exists; the seeding was never
 -- needed and is actively harmful here.
-local function P()
-    return saved and saved.profile and saved.profile.raidTools
-end
+local function P() return saved and saved.profile and saved.profile.raidTools end
 mod.RaidToolsProfile = P
 
 local function ShowMode()
@@ -586,9 +578,7 @@ local function MakeGroupButton(hostFrame, textValue, width, onClick, needsLeader
     SkinButtonChrome(widget)
     local labelFS = TrackFont(hostFrame, CludesUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
     labelFS:SetPoint("CENTER")
-    if textValue ~= "" then
-        labelFS:SetText(CludesUI.L(textValue))
-    end
+    if textValue ~= "" then labelFS:SetText(CludesUI.L(textValue)) end
     widget:SetScript("OnClick", onClick)
     widget._lbl = labelFS
     widget.needsLeader = needsLeader
@@ -701,9 +691,7 @@ local function MakeMarkerButton(hostFrame, index, kindName)
         widget._activeHost = markerOwner
     end
     widget:SetScript("OnEnter", function(self)
-        if (self._baseAlpha or 0.8) >= 0.8 then
-            self.icon:SetAlpha(1)
-        end
+        if (self._baseAlpha or 0.8) >= 0.8 then self.icon:SetAlpha(1) end
         if isCompact and ShowCompactTip then
             if kindName == "compact-clear" then
                 ShowCompactTip(self, "Clear Markers", COMPACT_CLEAR_TIP_ROWS)
@@ -714,9 +702,7 @@ local function MakeMarkerButton(hostFrame, index, kindName)
     end)
     widget:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(self._baseAlpha or 0.8)
-        if isCompact and HideCompactTip then
-            HideCompactTip(self)
-        end
+        if isCompact and HideCompactTip then HideCompactTip(self) end
     end)
 
     markerButtons[#markerButtons + 1] = widget
@@ -733,16 +719,12 @@ end
 -- anyone, and the game already no-ops whatever does not apply outside a group -- gating
 -- it ourselves would only make the panels dead on a target dummy for no reason.
 local function CanMark()
-    if not IsInGroup() then
-        return true
-    end
+    if not IsInGroup() then return true end
     return UnitIsGroupLeader("player") or UnitIsGroupAssistant("player")
 end
 
 local function IsLeader()
-    if not IsInGroup() then
-        return true
-    end
+    if not IsInGroup() then return true end
     return UnitIsGroupLeader("player")
 end
 
@@ -755,11 +737,10 @@ mod.RT = {
     SkinPanelBorder = SkinPanelBorder,
     SkinButtonChrome = SkinButtonChrome,
     HasAssist = CanMark,
-    AddFontOwner = function(markerOwner)
-        fontOwners[#fontOwners + 1] = markerOwner
-    end,
+    AddFontOwner = function(markerOwner) fontOwners[#fontOwners + 1] = markerOwner end,
     Text = function(markerOwner, hostFrame, size, red, green, blue)
-        local fontStr = TrackFont(markerOwner, CludesUI.MakeFont(hostFrame, size, nil, red, green, blue), size)
+        local fontStr =
+            TrackFont(markerOwner, CludesUI.MakeFont(hostFrame, size, nil, red, green, blue), size)
         local filePath = CludesUI.GetFontPath(FONT_KEY)
         if filePath then
             local _, _, flags = fontStr:GetFont()
@@ -778,9 +759,7 @@ mod.RT = {
             "",
             false
         )
-        if red then
-            fontStr:SetTextColor(red, green, blue, 1)
-        end
+        if red then fontStr:SetTextColor(red, green, blue, 1) end
         return fontStr
     end,
 }
@@ -799,9 +778,7 @@ mod.RT = {
 -- promotion mid-combat is picked up on PLAYER_REGEN_ENABLED like every other
 -- Lua-side change (see the combat model in the header).
 local function AssistHidden()
-    if previewOn then
-        return false
-    end -- configuring the thing beats hiding it
+    if previewOn then return false end -- configuring the thing beats hiding it
     return IsInRaid() and not CanMark()
 end
 
@@ -815,13 +792,14 @@ end
 -- feature file publishes ns.ToggleBuffCheck only there).
 local function BuffCheckOn()
     local profile = P()
-    return profile and profile.showBuffCheck == true and profile.buffCheck == true and mod.ToggleBuffCheck ~= nil
+    return profile
+        and profile.showBuffCheck == true
+        and profile.buffCheck == true
+        and mod.ToggleBuffCheck ~= nil
 end
 
 local function ToggleBuffCheck()
-    if mod.ToggleBuffCheck then
-        mod.ToggleBuffCheck()
-    end
+    if mod.ToggleBuffCheck then mod.ToggleBuffCheck() end
 end
 
 -- The pull durations worth a button, in slot order. 0 (and anything below it)
@@ -831,12 +809,8 @@ local function VisiblePullTimes()
     local result = {}
     for index = 1, PULL_SLOTS do
         local seconds = timeList[index]
-        if seconds == nil then
-            seconds = PULL_DEFAULTS[index]
-        end
-        if seconds and seconds > 0 then
-            result[#result + 1] = seconds
-        end
+        if seconds == nil then seconds = PULL_DEFAULTS[index] end
+        if seconds and seconds > 0 then result[#result + 1] = seconds end
     end
     return result
 end
@@ -848,9 +822,7 @@ end
 local lastAssist, lastLeader, lastRaid
 local function RefreshPermissions(force)
     local hasAssist, leader, raid = CanMark(), IsLeader(), IsInRaid()
-    if not force and hasAssist == lastAssist and leader == lastLeader and raid == lastRaid then
-        return
-    end
+    if not force and hasAssist == lastAssist and leader == lastLeader and raid == lastRaid then return end
     lastAssist, lastLeader, lastRaid = hasAssist, leader, raid
 
     for _, btn in ipairs(groupBtns) do
@@ -891,9 +863,7 @@ end
 --  there, and losing the in-game countdown is better than losing both.
 -------------------------------------------------------------------------------
 
-local function BossModPullHandler()
-    return SlashCmdList.BIGWIGSPULL or SlashCmdList.DEADLYBOSSMODSPULL
-end
+local function BossModPullHandler() return SlashCmdList.BIGWIGSPULL or SlashCmdList.DEADLYBOSSMODSPULL end
 
 local function ChatLocked()
     return C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
@@ -901,9 +871,7 @@ end
 
 local function StartPull(seconds)
     local handler = BossModPullHandler()
-    if handler then
-        handler(tostring(seconds))
-    end
+    if handler then handler(tostring(seconds)) end
     if ChatLocked() then
         CludesUI.Print(
             CludesUI.COLOR_CODES.BRAND
@@ -919,12 +887,8 @@ end
 
 local function StopPull()
     local handler = BossModPullHandler()
-    if handler then
-        handler("0")
-    end
-    if not ChatLocked() then
-        C_PartyInfo.DoCountdown(0)
-    end
+    if handler then handler("0") end
+    if not ChatLocked() then C_PartyInfo.DoCountdown(0) end
 end
 
 -------------------------------------------------------------------------------
@@ -932,22 +896,16 @@ end
 -------------------------------------------------------------------------------
 
 local function DisbandGroup()
-    if not IsLeader() then
-        return
-    end
+    if not IsLeader() then return end
     if IsInRaid() then
         for index = 1, GetNumGroupMembers() do
             local label = GetRaidRosterInfo(index)
-            if label and label ~= UnitName("player") then
-                C_PartyInfo.UninviteUnit(label)
-            end
+            if label and label ~= UnitName("player") then C_PartyInfo.UninviteUnit(label) end
         end
     else
         for index = 1, GetNumSubgroupMembers() do
             local label = UnitName("party" .. index)
-            if label then
-                C_PartyInfo.UninviteUnit(label)
-            end
+            if label then C_PartyInfo.UninviteUnit(label) end
         end
     end
     C_PartyInfo.LeaveParty()
@@ -1056,12 +1014,8 @@ local function MakeShell(toolKey)
     colFs:SetPoint("CENTER", colour, "CENTER", 0, 1)
     colFs:SetText("-")
     colFs:SetAlpha(0.7)
-    colour:SetScript("OnEnter", function()
-        colFs:SetAlpha(1)
-    end)
-    colour:SetScript("OnLeave", function()
-        colFs:SetAlpha(0.7)
-    end)
+    colour:SetScript("OnEnter", function() colFs:SetAlpha(1) end)
+    colour:SetScript("OnLeave", function() colFs:SetAlpha(0.7) end)
     colour:SetAttribute("_onclick", COLLAPSE_SNIPPET)
     frame._collapseBtn = colour
 
@@ -1074,9 +1028,7 @@ end
 -- GROUP_CONTENT_H. Plain frames only, run from build and Apply (out of combat);
 -- must run BEFORE ApplyLayout, which sizes the shells from that height.
 local function LayoutGroupContent()
-    if not groupFrame then
-        return
-    end
+    if not groupFrame then return end
     local frame = groupFrame
 
     -- Row plan: two action buttons per row in fixed order; hidden buttons close
@@ -1090,21 +1042,11 @@ local function LayoutGroupContent()
         end
     end
     Add(readyButton)
-    if ButtonShown("showRoleCheck") then
-        Add(roleButton)
-    end
-    if BuffCheckOn() then
-        Add(buffButton)
-    end
-    if ButtonShown("showConvert") then
-        Add(convertButton)
-    end
-    if ButtonShown("showDisband") then
-        Add(disbandButton)
-    end
-    if #pair > 0 then
-        rowList[#rowList + 1] = pair
-    end
+    if ButtonShown("showRoleCheck") then Add(roleButton) end
+    if BuffCheckOn() then Add(buffButton) end
+    if ButtonShown("showConvert") then Add(convertButton) end
+    if ButtonShown("showDisband") then Add(disbandButton) end
+    if #pair > 0 then rowList[#rowList + 1] = pair end
 
     -- Pull row: surviving durations move onto the leading buttons (the click
     -- closure reads b.secs), Stop last; no durations = no row at all.
@@ -1155,12 +1097,8 @@ local function BuildGroupContent()
     local frame = groupFrame
     local full = PANEL_W - PAD * 2
 
-    readyButton = MakeGroupButton(frame, "Ready Check", full, function()
-        DoReadyCheck()
-    end)
-    roleButton = MakeGroupButton(frame, "Role Check", full, function()
-        InitiateRolePoll()
-    end)
+    readyButton = MakeGroupButton(frame, "Ready Check", full, function() DoReadyCheck() end)
+    roleButton = MakeGroupButton(frame, "Role Check", full, function() InitiateRolePoll() end)
     buffButton = MakeGroupButton(frame, "Buff Check", full, ToggleBuffCheck)
     buffButton.ungated = true -- only reads auras: needs no leader or assist
 
@@ -1172,17 +1110,13 @@ local function BuildGroupContent()
         end
     end, true)
 
-    disbandButton = MakeGroupButton(frame, "Disband", full, function()
-        ConfirmDisband()
-    end, true)
+    disbandButton = MakeGroupButton(frame, "Disband", full, function() ConfirmDisband() end, true)
 
     for index = 1, PULL_SLOTS do
         -- The pull duration lives on the button and changes at runtime, so
         -- the click reads it through the closure.
         local b
-        b = MakeGroupButton(frame, "", full, function()
-            StartPull(b.secs)
-        end)
+        b = MakeGroupButton(frame, "", full, function() StartPull(b.secs) end)
         pullButtons[index] = b
     end
     stopButton = MakeGroupButton(frame, "Stop", full, StopPull)
@@ -1220,9 +1154,7 @@ local function BuildMarkersContent()
             widget:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + step * index, posY)
         end
         posY = posY - MARKER_SZ
-        if region < #MARKER_ROWS then
-            posY = posY - ROW_GAP * 2
-        end
+        if region < #MARKER_ROWS then posY = posY - ROW_GAP * 2 end
     end
 
     MARKERS_CONTENT_H = -posY
@@ -1245,15 +1177,11 @@ do
             local fallbackPath, _, fallbackFlags = GameFontNormal:GetFont()
             filePath, flags = fallbackPath, fallbackFlags
         end
-        if filePath then
-            fontStr:SetFont(filePath, TIP_FONT_SIZE, flags or "")
-        end
+        if filePath then fontStr:SetFont(filePath, TIP_FONT_SIZE, flags or "") end
     end
 
     local function EnsureTip()
-        if tipText then
-            return tipText
-        end
+        if tipText then return tipText end
         tipText = CreateFrame("Frame", "CludesUIRaidToolsTip", UIParent)
         tipText:SetFrameStrata("TOOLTIP")
         tipText:SetFrameLevel(900)
@@ -1320,9 +1248,7 @@ do
             line.right:SetTextColor(1, 1, 1, 1)
             line.left:Show()
             maxLeft = math.max(maxLeft, line.left:GetStringWidth() or 0)
-            if line.right:IsShown() then
-                maxRight = math.max(maxRight, line.right:GetStringWidth() or 0)
-            end
+            if line.right:IsShown() then maxRight = math.max(maxRight, line.right:GetStringWidth() or 0) end
             totalH = totalH + line._h + (index > 1 and TIP_ROW_GAP or 0)
         end
         for index = total + 1, #rowList do
@@ -1345,13 +1271,9 @@ do
         local level = 900
         if GameTooltip and GameTooltip.GetFrameLevel then
             local gameTipLevel = GameTooltip:GetFrameLevel()
-            if gameTipLevel then
-                level = math.max(level, gameTipLevel + 10)
-            end
+            if gameTipLevel then level = math.max(level, gameTipLevel + 10) end
         end
-        if tipText:GetFrameLevel() < level then
-            tipText:SetFrameLevel(level)
-        end
+        if tipText:GetFrameLevel() < level then tipText:SetFrameLevel(level) end
         tipText:ClearAllPoints()
         local _, cy = ownerFrame:GetCenter()
         if cy and cy < UIParent:GetHeight() / 2 then
@@ -1363,9 +1285,7 @@ do
     end
 
     HideCompactTip = function(ownerFrame)
-        if not tipText or (ownerFrame and markerOwner ~= ownerFrame) then
-            return
-        end
+        if not tipText or (ownerFrame and markerOwner ~= ownerFrame) then return end
         markerOwner = nil
         tipText:Hide()
     end
@@ -1397,9 +1317,7 @@ end
 local function PullTimeFor(slot)
     local timeList = (P() and P().pullTimes) or {}
     local value = timeList[slot]
-    if value == nil then
-        value = PULL_DEFAULTS[slot]
-    end
+    if value == nil then value = PULL_DEFAULTS[slot] end
     return value and value > 0 and value or nil
 end
 
@@ -1407,13 +1325,9 @@ end
 -- the utilities. Skull owns the left edge, Clear owns the right edge beside
 -- the divider, and the seven symbols between them share the remaining width.
 local function LayoutCompactMarkers()
-    if not compactFrame or not sectionList.Group or #compactMarkers < 2 then
-        return
-    end
+    if not compactFrame or not sectionList.Group or #compactMarkers < 2 then return end
     local width = sectionList.Group:GetWidth()
-    if not width or width < COMPACT_MIN_W then
-        return
-    end
+    if not width or width < COMPACT_MIN_W then return end
 
     local utilityCount = compactPullButton and compactPullButton:IsShown() and 2 or 1
     local utilityWidth = utilityCount * COMPACT_ICON + (utilityCount - 1) * COMPACT_GAP
@@ -1429,9 +1343,7 @@ local function LayoutCompactMarkers()
 end
 
 local function RefreshCompactPullState()
-    if not compactPullButton then
-        return
-    end
+    if not compactPullButton then return end
     local seconds = PullTimeFor(3) or PullTimeFor(2) or PullTimeFor(1)
     compactPullButton:SetShown(seconds ~= nil)
     if compactReady then
@@ -1465,9 +1377,7 @@ end
 local function SyncCompactMarkers()
     -- Hidden buttons are left alone: switching back to the band runs
     -- ApplyLayout, which ends by calling this.
-    if ShowAs() ~= "compact" then
-        return
-    end
+    if ShowAs() ~= "compact" then return end
     for _, b in ipairs(compactMarkers) do
         -- The clear button carries no world marker and never greys out.
         local ident = b._worldID
@@ -1495,18 +1405,12 @@ local function BuildCompactContent()
 
     compactReady = MakeCompactActionButton(compactFrame, "RC", function()
         local actions = { { "Left Click", "Ready Check" } }
-        if ButtonShown("showRoleCheck") then
-            actions[#actions + 1] = { "Right Click", "Role Check" }
-        end
-        if BuffCheckOn() then
-            actions[#actions + 1] = { "Shift + Left Click", "Buff Check" }
-        end
+        if ButtonShown("showRoleCheck") then actions[#actions + 1] = { "Right Click", "Role Check" } end
+        if BuffCheckOn() then actions[#actions + 1] = { "Shift + Left Click", "Buff Check" } end
         return "Ready Check", actions
     end, function(_, btnFrame)
         if btnFrame == "RightButton" then
-            if ButtonShown("showRoleCheck") then
-                InitiateRolePoll()
-            end
+            if ButtonShown("showRoleCheck") then InitiateRolePoll() end
         elseif IsShiftKeyDown() and BuffCheckOn() then
             ToggleBuffCheck()
         else
@@ -1538,9 +1442,7 @@ local function BuildCompactContent()
         else
             seconds = PullTimeFor(3) or PullTimeFor(2) or PullTimeFor(1)
         end
-        if seconds then
-            StartPull(seconds)
-        end
+        if seconds then StartPull(seconds) end
     end)
 
     -- Pull is the inner utility beside the marker region; Ready Check owns the
@@ -1622,9 +1524,7 @@ local function BuildCollapsedIcon()
 end
 
 local function BuildSections()
-    if sectionList.Group then
-        return
-    end
+    if sectionList.Group then return end
     MakeShell("Group")
     MakeShell("Markers")
     BuildGroupContent()
@@ -1678,18 +1578,10 @@ local ICON_CORNER = {
 }
 
 local function ApplyShellMaterial(frame, isCompact)
-    if frame._bgArt then
-        frame._bgArt:SetShown(not isCompact)
-    end
-    if frame._titleBar then
-        frame._titleBar:SetShown(not isCompact)
-    end
-    if frame._bgOverlay then
-        frame._bgOverlay:SetColorTexture(0, 0, 0, 0.62)
-    end
-    if frame._windowBorder then
-        frame._windowBorder:SetShown(not isCompact)
-    end
+    if frame._bgArt then frame._bgArt:SetShown(not isCompact) end
+    if frame._titleBar then frame._titleBar:SetShown(not isCompact) end
+    if frame._bgOverlay then frame._bgOverlay:SetColorTexture(0, 0, 0, 0.62) end
+    if frame._windowBorder then frame._windowBorder:SetShown(not isCompact) end
 end
 
 -- Show-as arrangement. OOC only (Apply gates); the holders are plain frames,
@@ -1711,12 +1603,8 @@ local function LayoutTools()
     ApplyShellMaterial(windowMarkers, false)
     shellTitle.Group:SetShown(not isCompact)
     shellTitle.Markers:SetShown(true)
-    if isCompact and not compactFrame then
-        BuildCompactContent()
-    end
-    if compactFrame then
-        compactFrame:SetShown(isCompact)
-    end
+    if isCompact and not compactFrame then BuildCompactContent() end
+    if compactFrame then compactFrame:SetShown(isCompact) end
 
     if isCompact then
         local width = CompactWidth()
@@ -1775,12 +1663,8 @@ local function LayoutTools()
     -- Heights just moved: re-crop the backdrop art so it covers instead of
     -- stretches (the skins hook SetHeight for this; our heights only ever
     -- change right here, so a direct call is the whole hook).
-    if windowGroup._bgFit then
-        windowGroup._bgFit()
-    end
-    if windowMarkers._bgFit then
-        windowMarkers._bgFit()
-    end
+    if windowGroup._bgFit then windowGroup._bgFit() end
+    if windowMarkers._bgFit then windowMarkers._bgFit() end
     RefreshCompactPullState()
     SyncCompactMarkers()
 end
@@ -1798,9 +1682,7 @@ local function DefaultPos(toolKey)
     -- Markers under Group & Pull. A saved position always wins over this.
     local MARGIN = 20
     local topY = -MARGIN
-    if toolKey == "Markers" then
-        topY = topY - (sectionList.Group:GetHeight() * ToolScale() + ROW_GAP)
-    end
+    if toolKey == "Markers" then topY = topY - (sectionList.Group:GetHeight() * ToolScale() + ROW_GAP) end
     -- Screen-space margin converted into the frame's own scaled units.
     local s = ToolScale()
     return { point = "TOPLEFT", relPoint = "TOPLEFT", x = MARGIN / s, y = topY / s }
@@ -1808,9 +1690,7 @@ end
 
 local function PlaceSection(toolKey, unlockKey, posKey)
     local frame = sectionList[toolKey]
-    if not frame then
-        return
-    end
+    if not frame then return end
     if InCombatLockdown() then
         applyPending = true
         return
@@ -1824,17 +1704,19 @@ local function PlaceSection(toolKey, unlockKey, posKey)
         -- Skips anchor-linked elements itself, and defers its own combat case for
         -- protected frames. FALSE means it could not resolve a live frame for this key
         -- -- fall through to the plain path, exactly as unlock mode's own caller does.
-        if CludesUI.ApplyCenterPosition(unlockKey, position) then
-            return
-        end
+        if CludesUI.ApplyCenterPosition(unlockKey, position) then return end
     end
 
     -- Anything not in that convention is a default or a pre-conversion value.
-    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey) then
-        return
-    end
+    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey) then return end
     frame:ClearAllPoints()
-    frame:SetPoint(position.point, UIParent, position.relPoint or position.point, position.x or 0, position.y or 0)
+    frame:SetPoint(
+        position.point,
+        UIParent,
+        position.relPoint or position.point,
+        position.x or 0,
+        position.y or 0
+    )
 end
 
 local function ApplyPositions()
@@ -1845,9 +1727,7 @@ local function ApplyPositions()
     -- spot -- and because Save & Exit derives the value it stores from the frame's LIVE
     -- bounds, the drag is then written back as the old position and lost for good. Same
     -- guard Action Bars, Aura Reminders and the Cooldown Manager already carry.
-    if CludesUI._unlockActive then
-        return
-    end
+    if CludesUI._unlockActive then return end
 
     -- Each shell is positioned only when the Show as choice can put it on screen; One
     -- Window and Only Group & Pull ride pos.Group, Only Markers rides pos.Markers.
@@ -1857,9 +1737,7 @@ local function ApplyPositions()
     elseif displayAs ~= "markers" then
         PlaceSection("Group")
     end
-    if displayAs == "two" or displayAs == "markers" then
-        PlaceSection("Markers")
-    end
+    if displayAs == "two" or displayAs == "markers" then PlaceSection("Markers") end
 end
 
 -- The whole replacement for the old shared-visibility machinery: two literal
@@ -1929,9 +1807,7 @@ local function ApplyVisibility()
         frame:SetAttribute("expanded", expandedNow)
 
         UnregisterStateDriver(frame, "cuirt_vis")
-        if enabled and driver then
-            RegisterStateDriver(frame, "cuirt_vis", driver)
-        end
+        if enabled and driver then RegisterStateDriver(frame, "cuirt_vis", driver) end
     end
 
     -- The icon represents the whole feature; every Show as choice shows
@@ -1962,9 +1838,7 @@ end
 -- Toggle Action Bar. Pressing the bound key is a hardware click,
 -- so the toggle itself works IN combat; only (re)binding defers.
 local function ApplyToggleKeybind()
-    if not toggleBtn then
-        return
-    end
+    if not toggleBtn then return end
     ClearOverrideBindings(toggleBtn)
     local profile = P()
     local k = profile and profile.toggleKey
@@ -1996,9 +1870,7 @@ end
 -- read before anything is written, so a secret never leaves a half-built run.
 -- An instance change also empties the Undo stack: its markers are gone.
 local function PrimeQuickFire(placement)
-    if not placement or InCombatLockdown() then
-        return
-    end
+    if not placement or InCombatLockdown() then return end
     local zoned = runState.qfZonedPending
     local free = runState.qfFree
     if not free then
@@ -2015,9 +1887,7 @@ local function PrimeQuickFire(placement)
                 end
                 placement:SetAttribute("qfAvailCount", 8)
                 placement:SetAttribute("qfAvailPos", 0)
-                if zoned or not num then
-                    placement:SetAttribute("qfDepth", 0)
-                end
+                if zoned or not num then placement:SetAttribute("qfDepth", 0) end
                 runState.qfZonedPending = nil
             end
             return
@@ -2036,9 +1906,7 @@ local function PrimeQuickFire(placement)
     end
     placement:SetAttribute("qfAvailCount", total)
     placement:SetAttribute("qfAvailPos", 0)
-    if zoned then
-        placement:SetAttribute("qfDepth", 0)
-    end
+    if zoned then placement:SetAttribute("qfDepth", 0) end
     runState.qfZonedPending = nil
 end
 
@@ -2046,9 +1914,7 @@ end
 -- Their secure click snippets keep Place, Undo and Clear usable in combat;
 -- changing the bindings themselves still follows WoW's normal combat lock.
 local function BuildQuickFire()
-    if runState.qfPlace then
-        return
-    end
+    if runState.qfPlace then return end
 
     runState.qfHeader =
         CreateFrame("Frame", "CludesUIRaidToolsQuickFireHeader", UIParent, "SecureHandlerBaseTemplate")
@@ -2071,9 +1937,7 @@ local function BuildQuickFire()
             (SLASH_WORLD_MARKER1 or "/wm") .. " [@cursor] " .. SYMBOL_TO_WORLD[index]
         )
     end
-    placement:SetScript("PreClick", function(self)
-        PrimeQuickFire(self)
-    end)
+    placement:SetScript("PreClick", function(self) PrimeQuickFire(self) end)
     SecureHandlerWrapScript(
         placement,
         "OnClick",
@@ -2193,12 +2057,8 @@ end
 
 local function ApplyQuickFireBindings()
     local profile = P()
-    if runState.qfBindingOwner then
-        ClearOverrideBindings(runState.qfBindingOwner)
-    end
-    if not profile or profile.quickFire ~= true or ShowMode() == "never" or AssistHidden() then
-        return
-    end
+    if runState.qfBindingOwner then ClearOverrideBindings(runState.qfBindingOwner) end
+    if not profile or profile.quickFire ~= true or ShowMode() == "never" or AssistHidden() then return end
 
     BuildQuickFire()
     PrimeQuickFire(runState.qfPlace)
@@ -2231,9 +2091,7 @@ end
 -- PLAYER_REGEN_ENABLED finishes the job. That is the module's standard
 -- deferral, not an omission.
 local function RefreshAssistGate()
-    if AssistHidden() ~= lastSuppressed then
-        Apply()
-    end
+    if AssistHidden() ~= lastSuppressed then Apply() end
 end
 
 -- Events live only while the feature is active (or while a combat-deferred
@@ -2251,9 +2109,7 @@ local function EnsureEvents()
                 Apply()
                 return
             end
-            if ShowMode() == "never" then
-                return
-            end
+            if ShowMode() == "never" then return end
             -- A zone change repaints the band too: the markers it showed belong
             -- to the ground just left.
             if (evt == "RAID_TARGET_UPDATE" or evt == "PLAYER_ENTERING_WORLD") and ShowAs() == "compact" then
@@ -2296,9 +2152,7 @@ local function EnsureEvents()
     end
 end
 local function DropEvents()
-    if eventName then
-        eventName:UnregisterAllEvents()
-    end
+    if eventName then eventName:UnregisterAllEvents() end
 end
 
 -- Unlock-mode movers, registered once, on first activation. getFrame
@@ -2307,13 +2161,9 @@ end
 -- entry vanishes and the Group entry moves the combined window via pos.Group.
 local unlockRegistered
 local function RegisterUnlock()
-    if unlockRegistered then
-        return
-    end
+    if unlockRegistered then return end
     local MK = CludesUI.MakeUnlockElement
-    if not MK then
-        return
-    end
+    if not MK then return end
     unlockRegistered = true
 
     local elementList = {}
@@ -2326,14 +2176,10 @@ local function RegisterUnlock()
             order = 540 + index,
             noResize = true,
             getFrame = function()
-                if ShowMode() == "never" then
-                    return nil
-                end
+                if ShowMode() == "never" then return nil end
                 -- Nothing to move while the assist gate has the whole feature
                 -- off the screen -- same opt-out as the modes below.
-                if AssistHidden() then
-                    return nil
-                end
+                if AssistHidden() then return nil end
                 -- Offer exactly the shells the Show as choice puts on screen:
                 -- One Window / Only Group & Pull = the Group element alone,
                 -- Two Windows = both, Only Markers = the Markers element alone.
@@ -2341,9 +2187,7 @@ local function RegisterUnlock()
                 if toolKey == "Group" and (displayAs == "compact" or displayAs == "markers") then
                     return nil
                 end
-                if toolKey == "Markers" and displayAs ~= "two" and displayAs ~= "markers" then
-                    return nil
-                end
+                if toolKey == "Markers" and displayAs ~= "two" and displayAs ~= "markers" then return nil end
                 BuildSections()
                 return sectionList[toolKey]
             end,
@@ -2353,19 +2197,13 @@ local function RegisterUnlock()
                 -- frame's own (unscaled) size.
                 local s = ToolScale()
                 local frame = sectionList[toolKey]
-                if frame then
-                    return frame:GetWidth() * s, frame:GetHeight() * s
-                end
+                if frame then return frame:GetWidth() * s, frame:GetHeight() * s end
                 return PANEL_W * s, 60 * s
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
-                if not anchorPoint then
-                    return
-                end
+                if not anchorPoint then return end
                 local profile = P()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 -- Unlock mode hands us two conventions: a normal drag arrives
                 -- already converted to CENTER/CENTER, a snapped one arrives
                 -- raw. Converting here makes both identical --
@@ -2380,31 +2218,21 @@ local function RegisterUnlock()
                 -- proxy the reseed stores a proxy into the real profile (the
                 -- hazard the P() comment documents). Writing THROUGH p.pos is
                 -- proxy-safe; storing it back is not.
-                if not profile.pos then
-                    return
-                end
+                if not profile.pos then return end
                 profile.pos[toolKey] = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                if not CludesUI._unlockActive then
-                    PlaceSection(toolKey)
-                end
+                if not CludesUI._unlockActive then PlaceSection(toolKey) end
             end,
-            loadPos = function()
-                return ((P() and P().pos) or {})[toolKey]
-            end,
+            loadPos = function() return ((P() and P().pos) or {})[toolKey] end,
             clearPos = function()
                 local profile = P()
-                if profile and profile.pos then
-                    profile.pos[toolKey] = nil
-                end
+                if profile and profile.pos then profile.pos[toolKey] = nil end
             end,
             applyPos = function()
                 -- Compact reuses the Group shell but owns a separate unlock key
                 -- and saved position. The global login pass visits every
                 -- registered element, including this inactive legacy entry; do
                 -- not let its stale Group position overwrite Compact's position.
-                if toolKey == "Group" and ShowAs() == "compact" then
-                    return
-                end
+                if toolKey == "Group" and ShowAs() == "compact" then return end
                 PlaceSection(toolKey)
             end,
         })
@@ -2416,78 +2244,52 @@ local function RegisterUnlock()
         group = "Raid Tools",
         order = 540,
         getFrame = function()
-            if ShowMode() == "never" or AssistHidden() or ShowAs() ~= "compact" then
-                return nil
-            end
+            if ShowMode() == "never" or AssistHidden() or ShowAs() ~= "compact" then return nil end
             BuildSections()
             return sectionList.Group
         end,
         getSize = function()
             local frame = sectionList.Group
-            if frame then
-                return frame:GetWidth(), frame:GetHeight()
-            end
+            if frame then return frame:GetWidth(), frame:GetHeight() end
             return CompactWidth(), CompactHeight()
         end,
         setWidth = function(_, newW)
             local profile = P()
-            if not (profile and newW) then
-                return
-            end
+            if not (profile and newW) then return end
             local Pix = CludesUI and CludesUI.PP
             profile.compactWidth = math.max(COMPACT_MIN_W, Pix and Pix.Snap(newW) or math.floor(newW + 0.5))
-            if sectionList.Group then
-                LayoutTools()
-            end
+            if sectionList.Group then LayoutTools() end
         end,
         setHeight = function(_, newH)
             local profile = P()
-            if not (profile and newH) then
-                return
-            end
+            if not (profile and newH) then return end
             local Pix = CludesUI and CludesUI.PP
             profile.compactHeight = math.max(COMPACT_MIN_H, Pix and Pix.Snap(newH) or math.floor(newH + 0.5))
-            if sectionList.Group then
-                LayoutTools()
-            end
+            if sectionList.Group then LayoutTools() end
         end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
-            if not anchorPoint then
-                return
-            end
+            if not anchorPoint then return end
             local profile = P()
-            if not (profile and profile.pos) then
-                return
-            end
+            if not (profile and profile.pos) then return end
             if CludesUI.ConvertToCenterPos then
                 anchorPoint, relPoint, posX, posY =
                     CludesUI.ConvertToCenterPos(COMPACT_UNLOCK_KEY, anchorPoint, relPoint, posX, posY)
             end
             profile.pos.Compact = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-            if not CludesUI._unlockActive then
-                PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
-            end
+            if not CludesUI._unlockActive then PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact") end
         end,
-        loadPos = function()
-            return ((P() and P().pos) or {}).Compact
-        end,
+        loadPos = function() return ((P() and P().pos) or {}).Compact end,
         clearPos = function()
             local profile = P()
-            if profile and profile.pos then
-                profile.pos.Compact = nil
-            end
+            if profile and profile.pos then profile.pos.Compact = nil end
         end,
         applyPos = function()
-            if ShowAs() ~= "compact" then
-                return
-            end
+            if ShowAs() ~= "compact" then return end
             PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
         end,
     })
 
-    if #elementList > 0 then
-        CludesUI:RegisterUnlockElements(elementList, "CludesUIQoL")
-    end
+    if #elementList > 0 then CludesUI:RegisterUnlockElements(elementList, "CludesUIQoL") end
 end
 
 -- Options-page entry point, and the completion target for combat-deferred work. Every
@@ -2498,9 +2300,7 @@ end
 function Apply()
     -- Raid Buff Check registers plain events only, so it follows the settings
     -- even in combat and with the panels on Never.
-    if mod.BuffCheckSync then
-        mod.BuffCheckSync()
-    end
+    if mod.BuffCheckSync then mod.BuffCheckSync() end
     if InCombatLockdown() then
         applyPending = true
         EnsureEvents()
@@ -2524,9 +2324,7 @@ function Apply()
             iconButton:Hide()
             ClearOverrideBindings(toggleBtn)
         end
-        if runState.qfBindingOwner then
-            ClearOverrideBindings(runState.qfBindingOwner)
-        end
+        if runState.qfBindingOwner then ClearOverrideBindings(runState.qfBindingOwner) end
         -- Fully off and nothing pending: no reason to keep hearing roster
         -- spam. Never-activated sessions never created the frame at all.
         DropEvents()
@@ -2560,9 +2358,7 @@ _G._CUI_RaidTools_Apply = Apply
 -- page builds. Same convention as _CUI_RaidTools_Apply.
 _G._CUI_RaidTools_Preview = function(enabled)
     enabled = enabled and true or false
-    if previewOn == enabled then
-        return
-    end
+    if previewOn == enabled then return end
     previewOn = enabled
     Apply()
 end
@@ -2578,9 +2374,7 @@ end
 -- the handler would never fire. The keybind keeps the hardware path because a
 -- real click is the only thing that can run the snippet during combat.
 local function ToggleOutOfCombat()
-    if toggleBtn and SecureHandlerExecute then
-        SecureHandlerExecute(toggleBtn, TOGGLE_SNIPPET)
-    end
+    if toggleBtn and SecureHandlerExecute then SecureHandlerExecute(toggleBtn, TOGGLE_SNIPPET) end
 end
 
 SLASH_CUIRAIDTOOLS1 = "/cuiraid"
@@ -2626,12 +2420,8 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if not (CludesUI and CludesUI.Lite and CludesUI.Lite.NewDB) then
-        return
-    end
+    if not (CludesUI and CludesUI.Lite and CludesUI.Lite.NewDB) then return end
     saved = CludesUI.Lite.NewDB("CludesUIQoLDB", DB_DEFAULTS, true)
-    _G._CUI_RaidTools_DB = function()
-        return saved
-    end
+    _G._CUI_RaidTools_DB = function() return saved end
     Apply()
 end)

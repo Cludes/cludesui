@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Timer.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -28,17 +24,11 @@ local SetUpdateSATimerText = Inner.SetUpdateSATimerText
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._dmInternals, which hands the value to every copy.
 local _inCombat = Inner._inCombat
-Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val)
-    _inCombat = val
-end
+Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) _inCombat = val end
 local _needsFinalRefresh = Inner._needsFinalRefresh
-Inner.needsFinalRefreshSetters[#Inner.needsFinalRefreshSetters + 1] = function(val)
-    _needsFinalRefresh = val
-end
+Inner.needsFinalRefreshSetters[#Inner.needsFinalRefreshSetters + 1] = function(val) _needsFinalRefresh = val end
 local _ttFrame
-Inner.ttFrameSetters[#Inner.ttFrameSetters + 1] = function(val)
-    _ttFrame = val
-end
+Inner.ttFrameSetters[#Inner.ttFrameSetters + 1] = function(val) _ttFrame = val end
 
 -- Assigned below and handed to the earlier files (SetUpdateSATimerText).
 local UpdateSATimerText
@@ -46,17 +36,13 @@ local UpdateSATimerText
 -- Standalone Combat Timer
 local _saTimer -- frame reference
 local _saTimerFS -- fontstring
-Inner.saTimerSetters[#Inner.saTimerSetters + 1] = function(val)
-    _saTimer = val
-end
+Inner.saTimerSetters[#Inner.saTimerSetters + 1] = function(val) _saTimer = val end
 local _saTimerBG -- backdrop texture
 local _saTimerBorder -- PP border child frame
 local _saTimerPreview = false
 local _saTimerLive = false -- last live/idle state seen (drives OOC desaturation)
 
-local function GetSATimerPreviewText()
-    return DB().standaloneTimerDecimal and "11:37.0" or "11:37"
-end
+local function GetSATimerPreviewText() return DB().standaloneTimerDecimal and "11:37.0" or "11:37" end
 
 -- Per-user font override for the standalone timer only (standaloneTimerFont,
 -- a dropdown key: "__global"/nil = follow the Damage Meters module font).
@@ -64,26 +50,20 @@ local function GetSATimerFontOverride()
     local key = DB().standaloneTimerFont
     if key and key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(key)
-        if filePath and filePath ~= "" then
-            return filePath
-        end
+        if filePath and filePath ~= "" then return filePath end
     end
     return nil
 end
 
 local function GetSATimerColor()
     local conf = DB()
-    if conf.standaloneTimerUseAccent then
-        return GetAccentRGB()
-    end
+    if conf.standaloneTimerUseAccent then return GetAccentRGB() end
     local color = conf.standaloneTimerColor
     return color and color.r or 1, color and color.g or 1, color and color.b or 1
 end
 
 local function ApplySATimerColor()
-    if not _saTimerFS then
-        return
-    end
+    if not _saTimerFS then return end
     local conf = DB()
     local red, green, blue = GetSATimerColor()
     if conf.standaloneTimerDesatOOC and not (_inCombat or _needsFinalRefresh) then
@@ -95,9 +75,7 @@ local function ApplySATimerColor()
 end
 
 local function ApplySATimerStyle()
-    if not _saTimer or not _saTimerFS then
-        return
-    end
+    if not _saTimer or not _saTimerFS then return end
     local conf = DB()
     _saTimer:SetFrameStrata(conf.standaloneTimerStrata or "HIGH")
 
@@ -174,13 +152,9 @@ end
 local _saDecBase, _saDecAnchor = nil, 0
 
 UpdateSATimerText = function()
-    if not _saTimer or not _saTimerFS then
-        return
-    end
+    if not _saTimer or not _saTimerFS then return end
     local conf = DB()
-    if not conf.standaloneTimer then
-        return
-    end
+    if not conf.standaloneTimer then return end
     -- The timer runs on its own ticker and re-shows itself every 0.1s, so the hotkey
     -- toggle has to be checked here rather than hiding the frame from the outside
     if
@@ -190,18 +164,14 @@ UpdateSATimerText = function()
         and not CUI._unlockActive
         and not _saTimerPreview
     then
-        if _saTimer:IsShown() then
-            _saTimer:Hide()
-        end
+        if _saTimer:IsShown() then _saTimer:Hide() end
         return
     end
     -- Same source as the window's Current timer so the two can never disagree. Visible while
     -- combat is live (or polling a group fight we're not in); out of combat it hides unless Show Out of Combat keeps it up (last fight's frozen duration).
     local live = _inCombat or _needsFinalRefresh
     if live or conf.standaloneTimerShowOOC then
-        if not _saTimer:IsShown() and not _saTimerPreview then
-            _saTimer:Show()
-        end
+        if not _saTimer:IsShown() and not _saTimerPreview then _saTimer:Show() end
         if live or not _saTimerPreview then
             local dur = GetCurrentViewDuration()
             if conf.standaloneTimerDecimal then
@@ -211,9 +181,7 @@ UpdateSATimerText = function()
                         _saDecAnchor = GetTime()
                     end
                     local frac = GetTime() - _saDecAnchor
-                    if frac > 0.9 then
-                        frac = 0.9
-                    end
+                    if frac > 0.9 then frac = 0.9 end
                     dur = dur + frac
                 end
                 _saTimerFS:SetText(FormatTimerDecimal(dur))
@@ -223,9 +191,7 @@ UpdateSATimerText = function()
         end
     else
         if not _saTimerPreview then
-            if _saTimer:IsShown() then
-                _saTimer:Hide()
-            end
+            if _saTimer:IsShown() then _saTimer:Hide() end
             _saTimerFS:SetText("")
         end
     end
@@ -237,15 +203,11 @@ end
 SetUpdateSATimerText(UpdateSATimerText)
 
 local function RepositionSATimer()
-    if not _saTimer then
-        return
-    end
+    if not _saTimer then return end
     local conf = DB()
     -- While the timer has a live unlock anchor link, the anchor system owns
     -- its position -- do not fight it.
-    if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EDM_CombatTimer") then
-        return
-    end
+    if CUI.IsUnlockAnchored and CUI.IsUnlockAnchored("EDM_CombatTimer") then return end
     local anchor = conf.standaloneTimerAnchor or "free"
 
     _saTimer:ClearAllPoints()
@@ -257,9 +219,7 @@ local function RepositionSATimer()
         local locked = conf.standaloneTimerLocked == true
         _saTimer:SetMovable(not locked)
         _saTimer:EnableMouse(not locked)
-        if _saTimer.EnableMouseMotion then
-            _saTimer:EnableMouseMotion(not locked)
-        end
+        if _saTimer.EnableMouseMotion then _saTimer:EnableMouseMotion(not locked) end
         local place = conf.standaloneTimerPos
         if place and place.point then
             _saTimer:SetPoint(
@@ -285,9 +245,7 @@ local function RepositionSATimer()
 
     _saTimer:SetMovable(false)
     _saTimer:EnableMouse(false)
-    if _saTimer.EnableMouseMotion then
-        _saTimer:EnableMouseMotion(false)
-    end
+    if _saTimer.EnableMouseMotion then _saTimer:EnableMouseMotion(false) end
 
     -- Find the highest (max top) and lowest (min bottom) window
     local topWin, botWin
@@ -342,9 +300,7 @@ local function SetupSATimer()
 end
 
 local function CreateSATimer()
-    if _saTimer then
-        return
-    end
+    if _saTimer then return end
     local conf = DB()
 
     SetSATimer(CreateFrame("Frame", "CludesUIDMStandaloneTimer", UIParent))
@@ -356,12 +312,8 @@ local function CreateSATimer()
             local cfg = DB()
             -- Belt and braces: locked timers are click-through (EnableMouse
             -- off), so this handler should never fire while locked.
-            if cfg.standaloneTimerLocked then
-                return
-            end
-            if (cfg.standaloneTimerAnchor or "free") == "free" then
-                self:StartMoving()
-            end
+            if cfg.standaloneTimerLocked then return end
+            if (cfg.standaloneTimerAnchor or "free") == "free" then self:StartMoving() end
         end
     end)
     _saTimer:SetScript("OnMouseUp", function(self)
@@ -369,9 +321,7 @@ local function CreateSATimer()
         local cfg = DB()
         if (cfg.standaloneTimerAnchor or "free") == "free" then
             local leftX, topY = self:GetLeft(), self:GetTop()
-            if leftX and topY then
-                cfg.standaloneTimerPos = { x = leftX, y = topY }
-            end
+            if leftX and topY then cfg.standaloneTimerPos = { x = leftX, y = topY } end
         end
     end)
 
@@ -382,9 +332,7 @@ local function CreateSATimer()
     _saTimerBorder:SetAllPoints(_saTimer)
     _saTimerBorder:SetFrameLevel(_saTimer:GetFrameLevel() + 5)
     local Pix = CludesUI and CludesUI.PP
-    if Pix and Pix.CreateBorder then
-        Pix.CreateBorder(_saTimerBorder, 0, 0, 0, 1, 1)
-    end
+    if Pix and Pix.CreateBorder then Pix.CreateBorder(_saTimerBorder, 0, 0, 0, 1, 1) end
 
     _saTimerFS = _saTimer:CreateFontString(nil, "OVERLAY")
     SetupSATimer()
@@ -393,9 +341,7 @@ end
 mod.ApplySATimer = function()
     local conf = DB()
     if conf.standaloneTimer then
-        if not _saTimer then
-            CreateSATimer()
-        end
+        if not _saTimer then CreateSATimer() end
         ApplySATimerStyle()
         local prevText = _saTimerFS:GetText()
         RepositionSATimer()
@@ -406,19 +352,13 @@ mod.ApplySATimer = function()
             UpdateSATimerText()
         end
     else
-        if _saTimer then
-            _saTimer:Hide()
-        end
+        if _saTimer then _saTimer:Hide() end
     end
 end
 
 mod.ShowSATimerPreview = function()
-    if not _saTimer then
-        CreateSATimer()
-    end
-    if not _saTimer then
-        return
-    end
+    if not _saTimer then CreateSATimer() end
+    if not _saTimer then return end
     -- Show Out of Combat already keeps real data on screen (last segment duration, or 0:00) -- never clobber it with the preview value
     if DB().standaloneTimerShowOOC then
         UpdateSATimerText()
@@ -431,20 +371,14 @@ end
 mod.HideSATimerPreview = function()
     local wasPreview = _saTimerPreview
     _saTimerPreview = false
-    if not _saTimer then
-        return
-    end
+    if not _saTimer then return end
     local conf = DB()
     if conf.standaloneTimer and conf.standaloneTimerShowOOC then
         -- Show Out of Combat was enabled during this preview session: swap the preview value for the real one (last segment, or 0:00)
-        if wasPreview then
-            UpdateSATimerText()
-        end
+        if wasPreview then UpdateSATimerText() end
         return
     end
-    if not _inCombat then
-        _saTimer:Hide()
-    end
+    if not _inCombat then _saTimer:Hide() end
 end
 
 -------------------------------------------------------------------------------
@@ -460,21 +394,13 @@ end
 mod.ApplyDMToggleState = function(includeSpellHistory)
     -- The row tooltip is parented to UIParent, not to the window, so it would be
     -- left floating if the hotkey is pressed while hovering a row
-    if mod._toggleHidden and _ttFrame then
-        _ttFrame:Hide()
-    end
+    if mod._toggleHidden and _ttFrame then _ttFrame:Hide() end
     for _, wid in ipairs(_windows) do
         wid.UpdateVisibility()
     end
-    if _saTimer then
-        UpdateSATimerText()
-    end
-    if includeSpellHistory == nil then
-        includeSpellHistory = DB().toggleIncludeSpellHistory
-    end
-    if includeSpellHistory and mod.ApplySpellHistory then
-        mod.ApplySpellHistory()
-    end
+    if _saTimer then UpdateSATimerText() end
+    if includeSpellHistory == nil then includeSpellHistory = DB().toggleIncludeSpellHistory end
+    if includeSpellHistory and mod.ApplySpellHistory then mod.ApplySpellHistory() end
 end
 
 mod.ToggleDMWindows = function()
@@ -485,9 +411,7 @@ mod.ToggleDMWindows = function()
     -- hover-gated window on the next pass. Deferred by a frame the way the
     -- dispatcher defers its own events: this runs from a hardware keypress, and
     -- other modules' updaters have no business running in that context.
-    if CUI.RequestVisibilityUpdate then
-        C_Timer.After(0, CUI.RequestVisibilityUpdate)
-    end
+    if CUI.RequestVisibilityUpdate then C_Timer.After(0, CUI.RequestVisibilityUpdate) end
 end
 
 -- Both damage meter hotkeys live on override bindings, which are protected: a rebind
@@ -507,9 +431,7 @@ do
     local appliedReset, appliedToggle
 
     local function WantKey(key)
-        if key == nil or key == "" then
-            return nil
-        end
+        if key == nil or key == "" then return nil end
         return key
     end
 
@@ -528,9 +450,7 @@ do
         local resetBtn = _G.CludesUIDMResetBindBtn
         if resetBtn then
             ClearOverrideBindings(resetBtn)
-            if wantReset then
-                SetOverrideBindingClick(resetBtn, true, wantReset, "CludesUIDMResetBindBtn")
-            end
+            if wantReset then SetOverrideBindingClick(resetBtn, true, wantReset, "CludesUIDMResetBindBtn") end
             appliedReset = wantReset
         end
         local toggleBtn = _G.CludesUIDMToggleBindBtn
@@ -550,9 +470,7 @@ do
 
     kbFrame:SetScript("OnEvent", function(_, evt)
         -- Ours, echoing back: ignore, or we re-enter forever
-        if evt == "UPDATE_BINDINGS" and GetTime() < selfWriteUntil then
-            return
-        end
+        if evt == "UPDATE_BINDINGS" and GetTime() < selfWriteUntil then return end
         mod.ApplyDMKeybinds()
     end)
 end
@@ -561,13 +479,9 @@ end
 CUI.RegAccent({
     type = "callback",
     fn = function()
-        if not _saTimer or not _saTimerFS then
-            return
-        end
+        if not _saTimer or not _saTimerFS then return end
         local conf = DB()
-        if conf.standaloneTimerUseAccent then
-            ApplySATimerColor()
-        end
+        if conf.standaloneTimerUseAccent then ApplySATimerColor() end
     end,
 })
 
@@ -580,32 +494,22 @@ mod.MakeSATimerUnlockElement = function(MK)
         order = 650 + MAX_WINDOWS + 1,
         noResize = true,
         noAnchorTarget = true,
-        getFrame = function()
-            return _saTimer
-        end,
+        getFrame = function() return _saTimer end,
         getSize = function()
-            if _saTimer then
-                return _saTimer:GetWidth(), _saTimer:GetHeight()
-            end
+            if _saTimer then return _saTimer:GetWidth(), _saTimer:GetHeight() end
             return 60, 20
         end,
-        isHidden = function()
-            return not DB().standaloneTimer
-        end,
+        isHidden = function() return not DB().standaloneTimer end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
             local conf = DB()
             conf.standaloneTimerPos =
                 { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             -- A manual unlock-mode move implies free placement: un-snap the window-anchor mode or RepositionSATimer would fight the drag
-            if (conf.standaloneTimerAnchor or "free") ~= "free" then
-                conf.standaloneTimerAnchor = "free"
-            end
+            if (conf.standaloneTimerAnchor or "free") ~= "free" then conf.standaloneTimerAnchor = "free" end
         end,
         loadPos = function()
             local place = DB().standaloneTimerPos
-            if not place then
-                return nil
-            end
+            if not place then return nil end
             if place.point then
                 return { point = place.point, relPoint = place.relPoint, x = place.x, y = place.y }
             end
@@ -615,12 +519,8 @@ mod.MakeSATimerUnlockElement = function(MK)
             end
             return nil
         end,
-        clearPos = function()
-            DB().standaloneTimerPos = nil
-        end,
-        applyPos = function()
-            RepositionSATimer()
-        end,
+        clearPos = function() DB().standaloneTimerPos = nil end,
+        applyPos = function() RepositionSATimer() end,
     })
 end
 

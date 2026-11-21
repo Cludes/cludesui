@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  AuraSounds.lua -- Raid Lead: Aura Sounds.
 --
@@ -39,9 +37,7 @@ mod.SOUND_WHEN = {
 
 local saved
 function mod.RaidLeadDB()
-    if not saved then
-        saved = CludesUI.Lite.NewDB("CludesUIRaidLeadDB", { profile = { sounds = {} } })
-    end
+    if not saved then saved = CludesUI.Lite.NewDB("CludesUIRaidLeadDB", { profile = { sounds = {} } }) end
     saved.profile.sounds = saved.profile.sounds or {}
     return saved.profile
 end
@@ -49,21 +45,13 @@ end
 local handles = {} -- ids the game gave back, to remove them again
 local pending = false -- a rebuild is owed for after combat
 
-local function Secret()
-    return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
-end
+local function Secret() return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() end
 
 local function Trigger(when)
     local T = Enum and Enum.UnitAuraSoundTrigger
-    if not T then
-        return nil
-    end
-    if when == "stacks" then
-        return T.ApplicationsIncreased
-    end
-    if when == "removed" then
-        return T.Removed
-    end
+    if not T then return nil end
+    if when == "stacks" then return T.ApplicationsIncreased end
+    if when == "removed" then return T.Removed end
     return T.Added
 end
 
@@ -76,9 +64,7 @@ end
 
 --- Registers every enabled aura sound with the game. Returns how many took.
 function mod.RebuildAuraSounds()
-    if not (C_UnitAuras and C_UnitAuras.AddAuraSound) then
-        return 0
-    end
+    if not (C_UnitAuras and C_UnitAuras.AddAuraSound) then return 0 end
     if Secret() or InCombatLockdown() then
         pending = true
         return 0
@@ -106,15 +92,11 @@ function mod.RebuildAuraSounds()
 end
 
 --- Plays one sound file, for the settings page's preview.
-function mod.PreviewSound(file)
-    PlaySoundFile(SOUND_DIR .. (file or "WarningSiren.ogg"), "Master")
-end
+function mod.PreviewSound(file) PlaySoundFile(SOUND_DIR .. (file or "WarningSiren.ogg"), "Master") end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent", function(_, evt)
-    if evt == "PLAYER_ENTERING_WORLD" or pending then
-        C_Timer.After(1, mod.RebuildAuraSounds)
-    end
+    if evt == "PLAYER_ENTERING_WORLD" or pending then C_Timer.After(1, mod.RebuildAuraSounds) end
 end)

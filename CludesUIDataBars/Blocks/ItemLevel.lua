@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\ItemLevel.lua - Info Bar block: average item level.
 --
@@ -29,22 +27,16 @@ local format, floor, max, min = string.format, math.floor, math.max, math.min
 local function Averages()
     local all, equipped, pvp = GetAverageItemLevel()
     local function Plain(v)
-        if issecretvalue and issecretvalue(v) then
-            return nil
-        end
+        if issecretvalue and issecretvalue(v) then return nil end
         return v
     end
     return Plain(all), Plain(equipped), Plain(pvp)
 end
 
-local function Show(v, decimals)
-    return v and format("%." .. decimals .. "f", v) or "-"
-end
+local function Show(v, decimals) return v and format("%." .. decimals .. "f", v) or "-" end
 
 -- The game's own translated "Item Level" label, else ours.
-local function LongLabel()
-    return STAT_AVERAGE_ITEM_LEVEL or CludesUI.L(L["ITEM_LEVEL"])
-end
+local function LongLabel() return STAT_AVERAGE_ITEM_LEVEL or CludesUI.L(L["ITEM_LEVEL"]) end
 
 mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
@@ -58,9 +50,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         "PLAYER_REGEN_ENABLED",
     }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetAllPoints()
@@ -117,9 +107,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         if equipped then
             mod.Tip_AddDouble(L["EQUIPPED"], format("%.2f", equipped), 0.6, 0.6, 0.6, 1, 1, 1)
         end
-        if all then
-            mod.Tip_AddDouble(L["TOTAL"], format("%.2f", all), 0.6, 0.6, 0.6, 1, 1, 1)
-        end
+        if all then mod.Tip_AddDouble(L["TOTAL"], format("%.2f", all), 0.6, 0.6, 0.6, 1, 1, 1) end
         -- A PvP average exists only with PvP-scaled gear.
         if pvp and pvp > 0 then
             mod.Tip_AddDouble(L["PVP_ITEM_LEVEL"], format("%.2f", pvp), 0.6, 0.6, 0.6, 1, 1, 1)
@@ -146,22 +134,16 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
     -- Until the secure button exists (made in combat, or no Character button):
     -- opening the sheet from here taints it, so this is only the fallback.
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton == "LeftButton" and ToggleCharacter then
-            ToggleCharacter("PaperDollFrame")
-        end
+        if mouseButton == "LeftButton" and ToggleCharacter then ToggleCharacter("PaperDollFrame") end
     end)
 
     -- The secure button: presses the Character micro button (as the location
     -- and micro menu blocks do). Never made in combat; in combat its click does
     -- nothing (the state driver drops it) but it keeps the hover.
     local function EnsureSecure()
-        if secure or InCombatLockdown() then
-            return
-        end
+        if secure or InCombatLockdown() then return end
         local micro = _G.CharacterMicroButton
-        if not micro then
-            return
-        end
+        if not micro then return end
         secure = CreateFrame(
             "Button",
             "CUIInfoBar_ILvl_" .. inst.key,
@@ -266,9 +248,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
 
     function inst:Enable()
         shownText = nil
-        if not contentFrame:IsShown() and not InCombatLockdown() then
-            contentFrame:Show()
-        end
+        if not contentFrame:IsShown() and not InCombatLockdown() then contentFrame:Show() end
         EnsureSecure()
         K.RegisterInstEvents(self)
     end
@@ -281,9 +261,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 
@@ -296,9 +274,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
             K.ParkSecureFrame(secure, self.key .. "_ilvl")
             secure = nil
         end
-        if not InCombatLockdown() then
-            contentFrame:Hide()
-        end
+        if not InCombatLockdown() then contentFrame:Hide() end
     end
 
     return inst

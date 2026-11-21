@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_Waypoint.lua - /way [#mapID | zone] x y [description] [; ...]
 --
@@ -16,9 +14,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the player's own click.
 -------------------------------------------------------------------------------
 -- Off by default, and only read at load: while off, nothing below runs.
-if not (CludesUIDB and CludesUIDB.waypointCmd and CludesUIDB.waypointCmd.enabled == true) then
-    return
-end
+if not (CludesUIDB and CludesUIDB.waypointCmd and CludesUIDB.waypointCmd.enabled == true) then return end
 
 local mod = select(2, ...)
 local CUI = CludesUI
@@ -26,12 +22,8 @@ local C = CUI.COLOR_CODES
 local L, Lf = CludesUI.L, CludesUI.Lf
 local floor, abs, min = math.floor, math.abs, math.min
 
-local function Say(text)
-    CUI.Print(C.BRAND .. "CludesUI:|r " .. text)
-end
-local function Note(text)
-    Say(C.DIM .. text .. "|r")
-end
+local function Say(text) CUI.Print(C.BRAND .. "CludesUI:|r " .. text) end
+local function Note(text) Say(C.DIM .. text .. "|r") end
 
 -- The hand-placed pin setting, read each time (the options cog writes it).
 local function HandPins()
@@ -44,9 +36,7 @@ local function MapName(mapID)
     return info and info.name or ("#" .. mapID)
 end
 
-local function Position(x, y)
-    return C.DIM .. ("%.1f, %.1f"):format(x, y) .. "|r"
-end
+local function Position(x, y) return C.DIM .. ("%.1f, %.1f"):format(x, y) .. "|r" end
 
 -------------------------------------------------------------------------------
 --  Zones by name: every zone-like map under the top of the map tree, read
@@ -61,9 +51,7 @@ local ZONE_KINDS = {
 }
 local zoneIds, zoneNames -- side by side: map ID, folded name
 
-local function Fold(text)
-    return CaseAccentInsensitiveParse(text):lower()
-end
+local function Fold(text) return CaseAccentInsensitiveParse(text):lower() end
 
 local function ReadZones()
     local top = C_Map.GetFallbackWorldMapID()
@@ -87,9 +75,7 @@ end
 -- phase of it). Returns their IDs (nil: no map of that name), their
 -- distinct names, and the first match's name.
 local function ZonesNamed(query)
-    if not zoneIds then
-        ReadZones()
-    end
+    if not zoneIds then ReadZones() end
     local wanted = Fold(query)
     local exact, partial = {}, {}
     for i, name in ipairs(zoneNames) do
@@ -100,12 +86,8 @@ local function ZonesNamed(query)
         end
     end
     local found = #exact > 0 and exact or partial
-    if #found == 0 then
-        return nil
-    end
-    table.sort(found, function(lhs, rhs)
-        return zoneIds[lhs] < zoneIds[rhs]
-    end)
+    if #found == 0 then return nil end
+    table.sort(found, function(lhs, rhs) return zoneIds[lhs] < zoneIds[rhs] end)
     local ids, names, seenSlot, seenName = {}, {}, {}, {}
     for _, i in ipairs(found) do
         local id, name = zoneIds[i], zoneNames[i]
@@ -131,9 +113,7 @@ end
 local HIGHEST_MAP_ID = 999999 -- a typed ID stays inside the map API's integer range
 
 local function IfPinnable(mapID)
-    if C_Map.CanSetUserWaypointOnMap(mapID) then
-        return { mapID }
-    end
+    if C_Map.CanSetUserWaypointOnMap(mapID) then return { mapID } end
     CUI.PrintError(Lf("Map pins cannot be placed on %1$s.", MapName(mapID)))
 end
 
@@ -142,9 +122,7 @@ end
 local function MapsFor(spec)
     if not spec.zone then
         local mapID = C_Map.GetBestMapForUnit("player")
-        if mapID then
-            return IfPinnable(mapID)
-        end
+        if mapID then return IfPinnable(mapID) end
         -- WoW Forever gives no player map inside instances.
         if IsInInstance() then
             CUI.PrintError(L("Map pins cannot be placed inside instances."))
@@ -156,9 +134,7 @@ local function MapsFor(spec)
     local typedId = spec.zone:match("^#?(%d+)$")
     if typedId then
         local mapID = tonumber(typedId)
-        if mapID <= HIGHEST_MAP_ID and C_Map.GetMapInfo(mapID) then
-            return IfPinnable(mapID)
-        end
+        if mapID <= HIGHEST_MAP_ID and C_Map.GetMapInfo(mapID) then return IfPinnable(mapID) end
         CUI.PrintError(Lf("Unknown map ID: %1$s", typedId))
         return
     end
@@ -168,9 +144,7 @@ local function MapsFor(spec)
     elseif #ids == 0 then
         CUI.PrintError(Lf("Map pins cannot be placed on %1$s.", first))
     elseif #names > 1 then
-        table.sort(names, function(lhs, rhs)
-            return strcmputf8i(lhs, rhs) < 0
-        end)
+        table.sort(names, function(lhs, rhs) return strcmputf8i(lhs, rhs) < 0 end)
         local shown = table.concat(names, ", ", 1, min(#names, 8)) .. (#names > 8 and ", ..." or "")
         Say(Lf("Several zones match %1$s:", spec.zone) .. " " .. shown)
     else
@@ -200,12 +174,8 @@ local function DestinationLine(dest, number)
         .. dest.label
         .. "|r "
         .. Position(dest.x, dest.y)
-    if dest.desc then
-        line = line .. "  " .. dest.desc
-    end
-    if number then
-        return C.BRAND .. number .. ".|r " .. line
-    end
+    if dest.desc then line = line .. "  " .. dest.desc end
+    if number then return C.BRAND .. number .. ".|r " .. line end
     return line
 end
 
@@ -261,30 +231,20 @@ local function ListedAt(mapID, x, y)
 end
 
 local function OnNear()
-    if not C_Map.HasUserWaypoint() then
-        return
-    end
+    if not C_Map.HasUserWaypoint() then return end
     local pin = C_Map.GetUserWaypoint()
     local mapID, x, y = pin.uiMapID, pin.position.x, pin.position.y
     -- Nil while the player is off the pin's map or in an instance.
     local me = C_Map.GetPlayerMapPosition(mapID, "player")
-    if not me then
-        return
-    end
+    if not me then return end
     local width, height = C_Map.GetMapWorldSize(mapID)
     local dx, dy = (me.x - x) * width, (me.y - y) * height
-    if dx * dx + dy * dy > NEAR * NEAR then
-        return
-    end
+    if dx * dx + dy * dy > NEAR * NEAR then return end
     local key = mapID .. ":" .. x .. ":" .. y
-    if key == lastPin then
-        return
-    end
+    if key == lastPin then return end
     local i = ListedAt(mapID, x, y)
     -- A hand-placed pin counts only with the setting on.
-    if not i and not HandPins() then
-        return
-    end
+    if not i and not HandPins() then return end
     lastPin = key
 
     if not i then
@@ -297,9 +257,7 @@ local function OnNear()
         Announce(L("You have arrived:") .. " " .. C.WHITE .. number .. (dest.desc or dest.label) .. "|r")
         -- The same-named maps offered for this destination are reached too.
         for _, other in ipairs(waiting) do
-            if other.part == dest.part then
-                other.reached = true
-            end
+            if other.part == dest.part then other.reached = true end
         end
         -- The next one still to reach, after this one in list order.
         for step = 1, #waiting - 1 do
@@ -342,9 +300,7 @@ local JOINED = "^(%d+%.?%d*),(%d+%.?%d*)$" -- both in one word
 
 local function Coordinate(text)
     local n = text and tonumber((text:gsub(",", ".")))
-    if n and n >= 0 and n <= 100 then
-        return n
-    end
+    if n and n >= 0 and n <= 100 then return n end
 end
 
 -- One destination as { x, y, zone (nil = here), desc }, or nil.
@@ -405,17 +361,13 @@ local function OnWay(text)
             if #ids > 1 then
                 -- Same-named maps are told apart by their parent.
                 local parent = C_Map.GetMapInfo(C_Map.GetMapInfo(id).parentMapID)
-                if parent then
-                    label = label .. " (" .. parent.name .. ")"
-                end
+                if parent then label = label .. " (" .. parent.name .. ")" end
             end
             dests[#dests + 1] =
                 { mapID = id, x = spec.x, y = spec.y, desc = spec.desc, label = label, part = number }
         end
     end
-    if #dests > 0 then
-        List(dests)
-    end
+    if #dests > 0 then List(dests) end
 end
 
 -------------------------------------------------------------------------------
@@ -424,16 +376,12 @@ end
 --  or still waiting in SlashCmdList).
 -------------------------------------------------------------------------------
 local function Taken(name)
-    if hash_SlashCmdList[name:upper()] then
-        return true
-    end
+    if hash_SlashCmdList[name:upper()] then return true end
     for key in pairs(SlashCmdList) do
         local i = 1
         local alias = _G["SLASH_" .. key .. i]
         while type(alias) == "string" do
-            if alias:lower() == name then
-                return true
-            end
+            if alias:lower() == name then return true end
             i = i + 1
             alias = _G["SLASH_" .. key .. i]
         end

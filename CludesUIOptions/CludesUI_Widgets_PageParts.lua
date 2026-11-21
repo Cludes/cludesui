@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_PageParts.lua
 --  Shared page parts: unlock placeholder, max duration and sound dropdown
@@ -65,22 +63,16 @@ function CUI.BuildUnlockPlaceholder(options)
     local brd = frame._brd
     frame:SetScript("OnEnter", function()
         labelText:SetTextColor(ar, ag, ab, 1)
-        if brd then
-            brd:SetColor(ar, ag, ab, 0.85)
-        end
+        if brd then brd:SetColor(ar, ag, ab, 0.85) end
     end)
     frame:SetScript("OnLeave", function()
         labelText:SetTextColor(1, 1, 1, 0.9)
-        if brd then
-            brd:SetColor(ar, ag, ab, 0.6)
-        end
+        if brd then brd:SetColor(ar, ag, ab, 0.6) end
     end)
 
     -- Click: open unlock mode (or custom handler)
     frame:SetScript("OnClick", options.onClick or function()
-        if CUI.ToggleUnlockMode then
-            CUI:ToggleUnlockMode()
-        end
+        if CUI.ToggleUnlockMode then CUI:ToggleUnlockMode() end
     end)
 
     return frame
@@ -105,16 +97,12 @@ function CUI.MaxDurationDropdown(get, set, apply)
         tooltip = "Only show debuffs whose full duration is at most this many seconds. Combines with the filters; Unlimited applies no cap.",
         values = values,
         order = { "unlimited", "custom" },
-        getValue = function()
-            return get() and "custom" or "unlimited"
-        end,
+        getValue = function() return get() and "custom" or "unlimited" end,
         setValue = function(val)
             if val == "unlimited" then
                 if get() ~= nil then
                     set(nil)
-                    if apply then
-                        apply()
-                    end
+                    if apply then apply() end
                 end
                 CUI:RefreshPage(true)
                 return
@@ -132,16 +120,12 @@ function CUI.MaxDurationDropdown(get, set, apply)
                         num = math.floor(num)
                         if num ~= get() then
                             set(num)
-                            if apply then
-                                apply()
-                            end
+                            if apply then apply() end
                         end
                     end
                     CUI:RefreshPage(true)
                 end,
-                onCancel = function()
-                    CUI:RefreshPage(true)
-                end,
+                onCancel = function() CUI:RefreshPage(true) end,
             })
         end,
     }
@@ -173,23 +157,15 @@ function CUI.BuildSoundDropdownValues(paths, nameList, sequence)
         maxTextWidthPct = 0.8,
         searchable = true,
         iconAtlas = function(key)
-            if key == "none" or not paths[key] then
-                return nil
-            end
+            if key == "none" or not paths[key] then return nil end
             return CUI.SOUND_ICON_ATLAS
         end,
         iconPressedAtlas = function(key)
-            if key == "none" or not paths[key] then
-                return nil
-            end
+            if key == "none" or not paths[key] then return nil end
             return CUI.SOUND_ICON_PRESSED_ATLAS
         end,
-        iconOnClick = function(key)
-            CUI.PlaySoundPath(paths[key])
-        end,
-        iconTooltip = function()
-            return "Preview Sound"
-        end,
+        iconOnClick = function(key) CUI.PlaySoundPath(paths[key]) end,
+        iconTooltip = function() return "Preview Sound" end,
     }
     return values, sequence
 end
@@ -199,13 +175,9 @@ end
 -------------------------------------------------------------------------------
 
 -- Fresh table per call: DualRow configs must never be shared across rows.
-function CUI.BlankRowCfg()
-    return { type = "label", text = "" }
-end
+function CUI.BlankRowCfg() return { type = "label", text = "" } end
 
-function CUI.ModuleNS(folder)
-    return CUI._ModuleNS and CUI._ModuleNS[folder]
-end
+function CUI.ModuleNS(folder) return CUI._ModuleNS and CUI._ModuleNS[folder] end
 
 -- Custom link row: label on the left, an Open Settings button on the right,
 -- jumping to the module page that owns a selection-bound settings family.
@@ -225,17 +197,19 @@ function CUI.BuildLinkRow(hostFrame, cursorY, labelText, module, page, section, 
     labelFS:SetAlpha(0.9)
     labelFS:SetPoint("LEFT", row, "LEFT", 20, 0)
     labelFS:SetText(CUI.L(labelText))
-    if options and options.warn then
-        labelFS:SetTextColor(0.9, 0.3, 0.3)
-    end
+    if options and options.warn then labelFS:SetTextColor(0.9, 0.3, 0.3) end
 
     local button = CreateFrame("Button", nil, row)
     Pix.Size(button, 122, 26)
     button:SetPoint("RIGHT", row, "RIGHT", -20, 0)
     button:SetFrameLevel(row:GetFrameLevel() + 2)
-    CUI.MakeStyledButton(button, "Open Settings", 11, CUI.WB_COLOURS, function()
-        CUI:NavigateToElementSettings(module, page, section, nil, highlight)
-    end)
+    CUI.MakeStyledButton(
+        button,
+        "Open Settings",
+        11,
+        CUI.WB_COLOURS,
+        function() CUI:NavigateToElementSettings(module, page, section, nil, highlight) end
+    )
     function row:Relink(l, m, p, s, height)
         labelFS:SetText(CUI.L(l))
         module, page, section, highlight = m, p, s, height
@@ -314,9 +288,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
             descFs:SetText(Loc(d))
             wid = math.max(wid, math.ceil(titleFs:GetStringWidth()), math.ceil(descFs:GetStringWidth()))
         end
-        if specInfo.sizeAlso then
-            Measure(specInfo.sizeAlso[1], specInfo.sizeAlso[2])
-        end
+        if specInfo.sizeAlso then Measure(specInfo.sizeAlso[1], specInfo.sizeAlso[2]) end
         Measure(specInfo.title, specInfo.desc)
         cardFrame:SetCardContent(specInfo.icon, specInfo.title, specInfo.desc)
         p.card, p.icon, p.titleFs, p.descFs, p.textW = cardFrame, icon, titleFs, descFs, wid
@@ -327,9 +299,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
     end
 
     local scale = 1
-    if sumText > 0 and fixed + sumText > availW then
-        scale = math.max(0, availW - fixed) / sumText
-    end
+    if sumText > 0 and fixed + sumText > availW then scale = math.max(0, availW - fixed) / sumText end
     local totalW = fixed
     for idx = 1, num do
         parts[idx].textW = math.floor(parts[idx].textW * scale)
@@ -392,9 +362,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
         end
         Paint(false)
         if not specInfo.accent then
-            CUI.RegisterWidgetRefresh(function()
-                Paint(cardFrame:IsMouseOver())
-            end)
+            CUI.RegisterWidgetRefresh(function() Paint(cardFrame:IsMouseOver()) end)
         end
         -- The labels' resting alpha is their text colour's (MakeFont), so the
         -- hover moves that alpha, never the region's: a leave puts back exactly
@@ -403,9 +371,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
             Paint(true)
             icon:SetAlpha(boxed and (BOX_ICON_A + 0.25) or 1)
             titleFs:SetTextColor(1, 1, 1, 1)
-            if not boxed then
-                descFs:SetTextColor(1, 1, 1, DESC_A + 0.15)
-            end
+            if not boxed then descFs:SetTextColor(1, 1, 1, DESC_A + 0.15) end
         end)
         cardFrame:SetScript("OnLeave", function()
             Paint(false)
@@ -413,9 +379,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
             titleFs:SetTextColor(1, 1, 1, TITLE_A)
             descFs:SetTextColor(1, 1, 1, p.descA)
         end)
-        if specInfo.onClick then
-            cardFrame:SetScript("OnClick", specInfo.onClick)
-        end
+        if specInfo.onClick then cardFrame:SetScript("OnClick", specInfo.onClick) end
     end
     return cursorY - blockH, built
 end
@@ -516,17 +480,11 @@ function CUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
             fade:SetToAlpha(0.2)
             fade:SetDuration(0.9)
             fade:SetSmoothing("IN_OUT")
-            pulse:SetScript("OnShow", function()
-                breathe:Play()
-            end)
-            pulse:SetScript("OnHide", function()
-                breathe:Stop()
-            end)
+            pulse:SetScript("OnShow", function() breathe:Play() end)
+            pulse:SetScript("OnHide", function() breathe:Stop() end)
         end
         function cardFrame:SetPulse(on)
-            if not pulse then
-                return
-            end
+            if not pulse then return end
             if on then
                 local live = specInfo.accent or CUI.CLUDES_GREEN
                 pulse._ring:SetColor(live.r, live.g, live.b, 1)
@@ -547,9 +505,7 @@ function CUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
             titleFs:SetTextColor(1, 1, 1, TITLE_A)
             icon:SetAlpha(ICON_A)
         end)
-        if specInfo.onClick then
-            cardFrame:SetScript("OnClick", specInfo.onClick)
-        end
+        if specInfo.onClick then cardFrame:SetScript("OnClick", specInfo.onClick) end
         built[idx] = cardFrame
     end
     return cursorY - CARD_H, built
@@ -562,17 +518,13 @@ function CUI.BuildNoteRow(hostFrame, cursorY, textValue, options)
     local banner = options and options.banner
     local ROW_H = banner and 40 or 34
     -- The search prebuild only indexes rows: same y advance, no frames.
-    if CUI._prebuilding then
-        return cursorY - ROW_H
-    end
+    if CUI._prebuilding then return cursorY - ROW_H end
     local Pix = CUI.PanelPP
     local row = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(row, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, ROW_H)
     Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
-    if banner then
-        CUI.RowBg(row, hostFrame)
-    end
+    if banner then CUI.RowBg(row, hostFrame) end
     local labelFS = CUI.MakeFont(row, 12, nil, 1, 1, 1)
     labelFS:SetAlpha(banner and 0.6 or 0.45)
     labelFS:SetPoint("LEFT", row, "LEFT", 20, 0)
@@ -620,25 +572,19 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     -- The header is its own pseudo-section, so searching the module name
     -- lands on the card; each page's deep-link pre-hook expands cards first.
     local sDesc = options.searchDesc
-    if sDesc == nil then
-        sDesc = tile.desc or ""
-    end
+    if sDesc == nil then sDesc = tile.desc or "" end
     local searchName = tile.display .. " " .. sDesc
     if not options.noSearch then
         heading._isSectionHeader = true
         heading._sectionName = searchName
         local searchNameLoc = Loc(tile.display) .. " " .. Loc(sDesc)
-        if searchNameLoc ~= searchName then
-            heading._sectionNameLoc = searchNameLoc
-        end
+        if searchNameLoc ~= searchName then heading._sectionNameLoc = searchNameLoc end
     end
     if CUI._RegisterSearchEntry and not options.noSearch then
         local titleLoc = Loc(tile.display)
         local descSearch = sDesc
         local descLoc = Loc(sDesc)
-        if descLoc ~= descSearch then
-            descSearch = descSearch .. " " .. descLoc
-        end
+        if descLoc ~= descSearch then descSearch = descSearch .. " " .. descLoc end
         CUI._RegisterSearchEntry(
             tile.display,
             titleLoc ~= tile.display and titleLoc or nil,
@@ -681,9 +627,7 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
         Pix.Point(chev, "RIGHT", heading, "RIGHT", -16, 0)
         chev:SetTexture(expanded and MC_ARROW_UP or MC_ARROW_DOWN)
         chev:SetAlpha(0.45)
-        if expanded then
-            chev:SetVertexColor(ACC.r, ACC.g, ACC.b)
-        end
+        if expanded then chev:SetVertexColor(ACC.r, ACC.g, ACC.b) end
     end
 
     local dropdown = enabled and options.headerDD and options.headerDD(heading)
@@ -694,25 +638,15 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     local function ApplyHeaderHover()
         hbg:SetColorTexture(1, 1, 1, 0.05)
         title:SetTextColor(1, 1, 1, 1)
-        if chev then
-            chev:SetAlpha(0.85)
-        end
-        if brd then
-            brd:SetColor(1, 1, 1, 0.22)
-        end
+        if chev then chev:SetAlpha(0.85) end
+        if brd then brd:SetColor(1, 1, 1, 0.22) end
     end
     local function ClearHeaderHover()
-        if heading:IsMouseOver() then
-            return
-        end
+        if heading:IsMouseOver() then return end
         hbg:SetColorTexture(0, 0, 0, 0)
         title:SetTextColor(1, 1, 1, 0.9)
-        if chev then
-            chev:SetAlpha(0.45)
-        end
-        if brd then
-            brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12)
-        end
+        if chev then chev:SetAlpha(0.45) end
+        if brd then brd:SetColor(1, 1, 1, expanded and 0.16 or 0.12) end
     end
     if enabled then
         heading:SetScript("OnEnter", ApplyHeaderHover)
@@ -730,15 +664,13 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
         tag:SetAlpha(0.3)
         Pix.Point(tag, "RIGHT", heading, "RIGHT", -16, 0)
         tag:SetText(Loc("Module Disabled"))
-        heading:SetScript("OnEnter", function(self)
-            CUI.ShowWidgetTooltip(
-                self,
-                CUI.Lf("Enable %1$s to edit these settings.", Loc(tile.display))
-            )
-        end)
-        heading:SetScript("OnLeave", function()
-            CUI.HideWidgetTooltip()
-        end)
+        heading:SetScript(
+            "OnEnter",
+            function(self)
+                CUI.ShowWidgetTooltip(self, CUI.Lf("Enable %1$s to edit these settings.", Loc(tile.display)))
+            end
+        )
+        heading:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
     end
 
     cursorY = cursorY - MC_HEADER_H
@@ -786,9 +718,7 @@ function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     if enabled then
         CUI.RegisterWidgetRefresh(function()
             strip:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.7)
-            if chev and expanded then
-                chev:SetVertexColor(ACC.r, ACC.g, ACC.b)
-            end
+            if chev and expanded then chev:SetVertexColor(ACC.r, ACC.g, ACC.b) end
         end)
     end
 
@@ -857,9 +787,7 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
             iconTex:SetTexture(options.iconFn and options.iconFn() or options.icon)
         end
         if options.iconFn then
-            CUI.RegisterWidgetRefresh(function()
-                iconTex:SetTexture(options.iconFn())
-            end)
+            CUI.RegisterWidgetRefresh(function() iconTex:SetTexture(options.iconFn()) end)
         end
         local iconBdr = CreateFrame("Frame", nil, iconFrame)
         iconBdr:SetAllPoints()
@@ -911,37 +839,25 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
         -- Re-read on every non-force RefreshPage (a full rebuild would close
         -- an open checkbox dropdown in the detail pane).
         if options.subtitleFn then
-            CUI.RegisterWidgetRefresh(function()
-                subMenu:SetText(options.subtitleFn())
-            end)
+            CUI.RegisterWidgetRefresh(function() subMenu:SetText(options.subtitleFn()) end)
         end
     end
 
     tile:SetScript("OnEnter", function()
-        if not options.selected then
-            backdrop:SetColorTexture(1, 1, 1, 0.04)
-        end
-        if options.inheritedTooltip then
-            CUI.ShowWidgetTooltip(tile, options.inheritedTooltip)
-        end
+        if not options.selected then backdrop:SetColorTexture(1, 1, 1, 0.04) end
+        if options.inheritedTooltip then CUI.ShowWidgetTooltip(tile, options.inheritedTooltip) end
     end)
     tile:SetScript("OnLeave", function()
         backdrop:SetColorTexture(1, 1, 1, options.selected and 0.06 or 0)
-        if options.inheritedTooltip then
-            CUI.HideWidgetTooltip()
-        end
+        if options.inheritedTooltip then CUI.HideWidgetTooltip() end
     end)
     tile:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     tile:SetScript("OnClick", function(self, button)
         if button == "RightButton" then
-            if options.onContext then
-                options.onContext(tile)
-            end
+            if options.onContext then options.onContext(tile) end
             return
         end
-        if options.onSelect then
-            options.onSelect()
-        end
+        if options.onSelect then options.onSelect() end
     end)
 
     if options.showToggle then
@@ -977,9 +893,7 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
             toggleKnob:SetVertexColor(0.5, 0.5, 0.5, 1)
         end
         toggleBtn:SetScript("OnClick", function()
-            if options.onToggle then
-                options.onToggle(not options.enabled)
-            end
+            if options.onToggle then options.onToggle(not options.enabled) end
         end)
     end
 
@@ -995,15 +909,9 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
         delTex:SetDesaturated(true)
         delTex:SetVertexColor(0.75, 0.75, 0.75)
         delBtn:SetAlpha(0.5)
-        delBtn:SetScript("OnEnter", function(self)
-            self:SetAlpha(0.9)
-        end)
-        delBtn:SetScript("OnLeave", function(self)
-            self:SetAlpha(0.5)
-        end)
-        delBtn:SetScript("OnClick", function()
-            options.onDelete()
-        end)
+        delBtn:SetScript("OnEnter", function(self) self:SetAlpha(0.9) end)
+        delBtn:SetScript("OnLeave", function(self) self:SetAlpha(0.5) end)
+        delBtn:SetScript("OnClick", function() options.onDelete() end)
     end
 
     -- Rename pencil beside the trash.
@@ -1028,19 +936,13 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
         local tipText = options.editTooltip
         editBtn:SetScript("OnEnter", function(self)
             self:SetAlpha(0.9)
-            if tipText then
-                CUI.ShowWidgetTooltip(self, tipText)
-            end
+            if tipText then CUI.ShowWidgetTooltip(self, tipText) end
         end)
         editBtn:SetScript("OnLeave", function(self)
             self:SetAlpha(0.5)
-            if tipText then
-                CUI.HideWidgetTooltip()
-            end
+            if tipText then CUI.HideWidgetTooltip() end
         end)
-        editBtn:SetScript("OnClick", function()
-            options.onEdit()
-        end)
+        editBtn:SetScript("OnClick", function() options.onEdit() end)
     end
 
     local sep = tile:CreateTexture(nil, "ARTWORK")
@@ -1058,9 +960,7 @@ function CUI.BuildManagerTile(parentFrame, cursorY, options)
         dot:SetVertexColor(options.statusDot[1], options.statusDot[2], options.statusDot[3], 1)
     end
 
-    if options.dimmed then
-        tile:SetAlpha(0.55)
-    end
+    if options.dimmed then tile:SetAlpha(0.55) end
 
     return TILE_H, tile
 end
@@ -1100,9 +1000,7 @@ function CUI.BuildActivationOverlay(outerRoot, options)
         subMenu:SetTextColor(1, 1, 1, 0.45)
         subMenu:SetText(options.sub)
     end
-    if not options.buttonLabel then
-        return shade
-    end
+    if not options.buttonLabel then return shade end
     local button = CreateFrame("Button", nil, shade)
     button:SetSize(240, 28)
     button:SetPoint("TOP", subMenu or body, "BOTTOM", 0, -22)
@@ -1113,12 +1011,8 @@ function CUI.BuildActivationOverlay(outerRoot, options)
     labelFS:SetPoint("CENTER")
     labelFS:SetText(options.buttonLabel)
     local brandGreen = CUI.CLUDES_GREEN
-    button:SetScript("OnEnter", function()
-        brd:SetColor(brandGreen.r, brandGreen.g, brandGreen.b, 0.9)
-    end)
-    button:SetScript("OnLeave", function()
-        brd:SetColor(1, 1, 1, 0.22)
-    end)
+    button:SetScript("OnEnter", function() brd:SetColor(brandGreen.r, brandGreen.g, brandGreen.b, 0.9) end)
+    button:SetScript("OnLeave", function() brd:SetColor(1, 1, 1, 0.22) end)
     return shade, button
 end
 
@@ -1157,30 +1051,20 @@ end
 --  RestedIndicatorCfg()            -> a fresh toggle config for a DualRow slot
 --  BuildRestedIndicatorCog(region) -> its inline cog on that slot's region
 -------------------------------------------------------------------------------
-local function RestPlayerFrame()
-    return _G["CludesUIUnitFrames_Player"]
-end
+local function RestPlayerFrame() return _G["CludesUIUnitFrames_Player"] end
 local function RestUpdate()
     local popFrame = RestPlayerFrame()
-    if popFrame and popFrame._restUpdate then
-        popFrame._restUpdate()
-    end
+    if popFrame and popFrame._restUpdate then popFrame._restUpdate() end
 end
 local function RestPlace()
     local popFrame = RestPlayerFrame()
-    if popFrame and popFrame._restPlace then
-        popFrame._restPlace()
-    end
+    if popFrame and popFrame._restPlace then popFrame._restPlace() end
 end
 local function RestSet(key, val)
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB[key] = val
 end
-local function RestOff()
-    return not CludesUIDB or CludesUIDB.showRestedIndicator ~= true
-end
+local function RestOff() return not CludesUIDB or CludesUIDB.showRestedIndicator ~= true end
 
 function CUI.RestedIndicatorCfg()
     return {
@@ -1188,9 +1072,7 @@ function CUI.RestedIndicatorCfg()
         text = "Rested Indicator",
         tooltip = "Displays a ZZZ indicator on your player frame when you are in a resting area.",
         getValue = function()
-            if not CludesUIDB then
-                return true
-            end
+            if not CludesUIDB then return true end
             return CludesUIDB.showRestedIndicator == true
         end,
         setValue = function(val)
@@ -1204,9 +1086,7 @@ end
 -- Animated, Size, X / Y Offset; greyed while the indicator is off. Builds
 -- nothing during the search pre-build.
 function CUI.BuildRestedIndicatorCog(regionFrame)
-    if CUI._prebuilding then
-        return
-    end
+    if CUI._prebuilding then return end
     return CUI.BuildInlineCog(regionFrame, {
         title = "Rested Indicator",
         rows = {
@@ -1214,9 +1094,7 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 type = "toggle",
                 label = "Animated",
                 tooltip = "Shows the animated rest icon from Blizzard's player frame instead of the ZZZ text.",
-                get = function()
-                    return CludesUIDB and CludesUIDB.restedIndicatorAnimated == true or false
-                end,
+                get = function() return CludesUIDB and CludesUIDB.restedIndicatorAnimated == true or false end,
                 set = function(val)
                     RestSet("restedIndicatorAnimated", val)
                     RestUpdate()
@@ -1228,13 +1106,9 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 min = 12,
                 max = 64,
                 step = 1,
-                disabled = function()
-                    return not (CludesUIDB and CludesUIDB.restedIndicatorAnimated == true)
-                end,
+                disabled = function() return not (CludesUIDB and CludesUIDB.restedIndicatorAnimated == true) end,
                 disabledTooltip = "Animated",
-                get = function()
-                    return (CludesUIDB and CludesUIDB.restedIndicatorAnimatedSize) or 24
-                end,
+                get = function() return (CludesUIDB and CludesUIDB.restedIndicatorAnimatedSize) or 24 end,
                 set = function(val)
                     RestSet("restedIndicatorAnimatedSize", val)
                     RestPlace()
@@ -1246,9 +1120,7 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 min = -50,
                 max = 50,
                 step = 1,
-                get = function()
-                    return (CludesUIDB and CludesUIDB.restedIndicatorXOffset) or 0
-                end,
+                get = function() return (CludesUIDB and CludesUIDB.restedIndicatorXOffset) or 0 end,
                 set = function(val)
                     RestSet("restedIndicatorXOffset", val)
                     RestPlace()
@@ -1260,9 +1132,7 @@ function CUI.BuildRestedIndicatorCog(regionFrame)
                 min = -50,
                 max = 50,
                 step = 1,
-                get = function()
-                    return (CludesUIDB and CludesUIDB.restedIndicatorYOffset) or 0
-                end,
+                get = function() return (CludesUIDB and CludesUIDB.restedIndicatorYOffset) or 0 end,
                 set = function(val)
                     RestSet("restedIndicatorYOffset", val)
                     RestPlace()

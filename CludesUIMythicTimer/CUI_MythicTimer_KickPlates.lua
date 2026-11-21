@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CUI_MythicTimer_KickPlates.lua
 --  Kick Tracker (Mythic+ Tools), the nameplate icon: when an enemy's cast is
@@ -91,9 +89,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local ADDON_NAME, mod = ...
 
 local MTWhere, KE, KD = mod.MTWhere, mod.KickEngine, CludesUI.KickData
-if not (MTWhere and KE and KD) then
-    return
-end
+if not (MTWhere and KE and KD) then return end
 
 local saved -- Lite DB handle, handed over by ns.KT_OnEnable
 
@@ -303,9 +299,7 @@ local function InlineFactor()
         measureText:SetFormattedText(MEASURE_FMT, MEASURE_H, MEASURE_H)
     end
     local wid = measureText:GetStringWidth()
-    if type(wid) ~= "number" or wid <= 0 then
-        return ICON_SIZE / 12
-    end
+    if type(wid) ~= "number" or wid <= 0 then return ICON_SIZE / 12 end
     return wid / MEASURE_H
 end
 
@@ -314,9 +308,7 @@ end
 -- whether anything changed.
 local function MatchScale(force)
     local ui, px = UIParent:GetEffectiveScale(), Pix.perfect or 1
-    if not force and ui == uiZoom and px == perfect then
-        return false
-    end
+    if not force and ui == uiZoom and px == perfect then return false end
     uiZoom, perfect = ui, px
     onePx = px / ui
     -- The area inside the border in physical pixels (the icon as PP.Size
@@ -325,16 +317,12 @@ local function MatchScale(force)
     -- rest. Texcoords widened by the overfill, centred, inside the aura
     -- icons' zoom: the clip trims the widening back off.
     local innerPx = Pix.Scale(iconPx) / onePx - 2 * BORDER_PX
-    if innerPx < 1 then
-        innerPx = 1
-    end
+    if innerPx < 1 then innerPx = 1 end
     local k = InlineFactor()
     local iconH = ceil((innerPx + ICON_OVER) * px / k)
     local isShown = ART_CROP * (1 - 2 * ICON_ZOOM)
     local l = floor(32 - isShown * iconH * k / (px * innerPx) / 2 + 0.5)
-    if l < 0 then
-        l = 0
-    end
+    if l < 0 then l = 0 end
     iconFmt = format(ICON_FMT, iconH, iconH, l, 64 - l, l, 64 - l)
     styleStamp = styleStamp + 1
     return true
@@ -449,9 +437,7 @@ end
 function PlateGate.NewBar(hostFrame, reverse)
     local barFrame = CreateFrame("StatusBar", nil, hostFrame)
     barFrame:EnableMouse(false)
-    if reverse then
-        barFrame:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
-    end
+    if reverse then barFrame:SetFillStyle(Enum.StatusBarFillStyle.Reverse) end
     barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     local fillTex = barFrame:GetStatusBarTexture()
     fillTex:SetVertexColor(0, 0, 0, 0)
@@ -487,9 +473,11 @@ end
 function PlateGate.AnchorStep(plateRow, from, fromPoint, off, goesLeft)
     local firstPlate, firstFill, secondary, secondFill
     if goesLeft then
-        firstPlate, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
+        firstPlate, firstFill, secondary, secondFill =
+            plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
     else
-        firstPlate, firstFill, secondary, secondFill = plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
+        firstPlate, firstFill, secondary, secondFill =
+            plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
     end
     firstPlate:ClearAllPoints()
     secondary:ClearAllPoints()
@@ -518,16 +506,12 @@ function PlateGate.FeedStep(plateRow, lo, hi, v1, v2, goesLeft)
 end
 
 -- One pitch from plain values.
-function PlateGate.ResetStep(plateRow, goesLeft)
-    PlateGate.FeedStep(plateRow, 0, 1, 0, 0, goesLeft)
-end
+function PlateGate.ResetStep(plateRow, goesLeft) PlateGate.FeedStep(plateRow, 0, 1, 0, 0, goesLeft) end
 
 -- Where the next element of a row hangs from after `e`: a fill, the point
 -- of it and a plain offset along the row (a ghost's chain undoes its fixed
 -- length with it).
-function PlateGate.ElementEnd(e)
-    return e.endFill, e.endPoint, e.endOffset or 0
-end
+function PlateGate.ElementEnd(e) return e.endFill, e.endPoint, e.endOffset or 0 end
 
 -- A pooled icon's count gate and its step pair, fed together: the clip
 -- closes and the slot collapses on the same rise.
@@ -544,9 +528,7 @@ end
 -- A baseline count taken in the fight `gen`: as it is in this fight, 0 from
 -- an older one (the counts restarted since).
 function PlateGate.Base(base, gen)
-    if gen == KE.FightGen() then
-        return base
-    end
+    if gen == KE.FightGen() then return base end
     return 0
 end
 
@@ -566,9 +548,7 @@ end
 -- it, so nothing the count does while a member cannot kick (a grip of a
 -- caster) ever cuts a running cooldown's display.
 function PlateGate.StillDownAt(unit, startAt, duration, T)
-    if not startAt then
-        return false
-    end
+    if not startAt then return false end
     local cd = KE.DownFor(unit) or duration
     return cd ~= nil and T - startAt < cd - KE.ELIM_SLACK
 end
@@ -578,12 +558,8 @@ end
 -- could not be read keeps no gate, unless the fight moved since), and only
 -- once that kick's cooldown is over.
 function PlateGate.FeedIcon(b, unit, current, T)
-    if b.cGen == nil or (b.cBase == nil and b.cGen == KE.FightGen()) then
-        return
-    end
-    if PlateGate.StillDownAt(unit, b.cdStart, b.cdDur, T) then
-        return
-    end
+    if b.cGen == nil or (b.cBase == nil and b.cGen == KE.FightGen()) then return end
+    if PlateGate.StillDownAt(unit, b.cdStart, b.cdDur, T) then return end
     b.cCur = current
     PlateGate.FeedIconGate(b, PlateGate.Base(b.cBase, b.cGen), current)
 end
@@ -595,9 +571,7 @@ end
 -- in instanced combat; a secret answer counts as hostile, never branched on.
 local function IsHostile(unitToken)
     local success, att = pcall(UnitCanAttack, "player", unitToken)
-    if success and not Secret(att) and att == false then
-        return false
-    end
+    if success and not Secret(att) and att == false then return false end
     return true
 end
 
@@ -615,9 +589,7 @@ end
 local function FullIconSide()
     local reg = CludesUI._ModuleNS
     local m = reg and reg.CludesUINameplates
-    if not (m and m.GetShowCastIcon() and m.GetCastIconFullSize()) or m.NP_Classic() then
-        return nil
-    end
+    if not (m and m.GetShowCastIcon() and m.GetCastIconFullSize()) or m.NP_Classic() then return nil end
     return m.GetCastIconOnRight() and "RIGHT" or "LEFT"
 end
 
@@ -626,14 +598,10 @@ end
 -- CludesUI plate changed, the arrows are placed again. A no-op unless that
 -- plate shows them (the player's target).
 local function ArrowsFollow(backing)
-    if not (backing and backing.leftArrow) then
-        return
-    end
+    if not (backing and backing.leftArrow) then return end
     local reg = CludesUI._ModuleNS
     local m = reg and reg.CludesUINameplates
-    if m and m.PositionArrowsOutsideAuras then
-        m.PositionArrowsOutsideAuras(backing)
-    end
+    if m and m.PositionArrowsOutsideAuras then m.PositionArrowsOutsideAuras(backing) end
 end
 
 -- Plate units per icon unit: the icons render at UIParent's scale and the
@@ -641,9 +609,7 @@ end
 -- that module eases), so an icon size or offset converts by this ratio.
 local function PlateRatio(backing)
     local global = tonumber(C_CVar.GetCVar("nameplateGlobalScale")) or 1
-    if global <= 0 then
-        global = 1
-    end
+    if global <= 0 then global = 1 end
     return (uiZoom or 1) / (global * (backing._curScale or 1))
 end
 
@@ -652,9 +618,7 @@ end
 -- centre in plate units, while the icons sit on that side and their span
 -- meets a0..a1 (the arrows', above the bar's bottom).
 local function SideGuest(backing, side, a0, a1)
-    if stackAnchor ~= ((side == "left") and "LEFT" or "RIGHT") then
-        return nil
-    end
+    if stackAnchor ~= ((side == "left") and "LEFT" or "RIGHT") then return nil end
     local entries
     for _, l in pairs(onPlate) do
         local b = l[1]
@@ -667,33 +631,23 @@ local function SideGuest(backing, side, a0, a1)
     -- its own inner edge once its count gate hid it, so the arrows never
     -- hug an empty slot.
     local outer = entries and entries[#entries]
-    if outer then
-        outer = outer.rowEnd or outer
-    end
+    if outer then outer = outer.rowEnd or outer end
     -- A marker defaults rail: its hug edge, the end of the row as the mob
     -- draws it, its own marker's lanes included (LayoutRail), never the
     -- rail's whole span.
     local track = MarkRails.OnPlate(backing)
-    if track then
-        outer = track.hug
-    end
-    if not outer then
-        return nil
-    end
+    if track then outer = track.hug end
+    if not outer then return nil end
     local scaleRatio = PlateRatio(backing)
     local gy = sOffY * scaleRatio
     local half = (iconPx * scaleRatio + (a1 - a0)) / 2
-    if gy >= half or -gy >= half then
-        return nil
-    end
+    if gy >= half or -gy >= half then return nil end
     return outer, gy
 end
 
 local guestRegistered = false
 local function RegisterGuest()
-    if guestRegistered then
-        return
-    end
+    if guestRegistered then return end
     local reg = CludesUI._ModuleNS
     local m = reg and reg.CludesUINameplates
     if m and m.NP_AddSideGuest then
@@ -715,13 +669,9 @@ end
 local function ResolveHost(unitToken)
     local plateList = NPPlates()
     local backing = plateList and plateList[unitToken]
-    if backing and backing.health then
-        return backing, true
-    end
+    if backing and backing.health then return backing, true end
     local base = C_NamePlate.GetNamePlateForUnit(unitToken)
-    if base then
-        return base, false
-    end
+    if base then return base, false end
     return nil, false
 end
 
@@ -753,9 +703,7 @@ local function ApplyText(btnFrame, skinData, style)
         fontStr:SetJustifyH(m.justify)
         fontStr:SetShown(not style.hideDurationText)
     end
-    if skinData.stack then
-        skinData.stack:Hide()
-    end
+    if skinData.stack then skinData.stack:Hide() end
 end
 
 local function BuildStyle()
@@ -781,9 +729,7 @@ end
 
 local function RegisterStyle()
     AK = AK or CludesUI.AuraKit
-    if not AK then
-        return false
-    end
+    if not AK then return false end
     AK.styles[STYLE] = BuildStyle()
     return true
 end
@@ -797,14 +743,10 @@ end
 -- icon's side, with its slot's Y offset and its height in plate units, or
 -- nil: no row there, a Top or Bottom icon, or a client without the aspect.
 local function SideRow(backing)
-    if not rowsOK or (stackAnchor ~= "LEFT" and stackAnchor ~= "RIGHT") then
-        return nil
-    end
+    if not rowsOK or (stackAnchor ~= "LEFT" and stackAnchor ~= "RIGHT") then return nil end
     local reg = CludesUI._ModuleNS
     local m = reg and reg.CludesUINameplates
-    if not (m and m.NPC_SideRow) then
-        return nil
-    end
+    if not (m and m.NPC_SideRow) then return nil end
     return m.NPC_SideRow(backing, (stackAnchor == "LEFT") and "left" or "right")
 end
 
@@ -853,9 +795,7 @@ end
 -- The order of a plate's live icons: ready kicks first, each group in the
 -- order they came (seq).
 local function ReadyFirst(a, b)
-    if a.rdy ~= b.rdy then
-        return a.rdy
-    end
+    if a.rdy ~= b.rdy then return a.rdy end
     return a.seq < b.seq
 end
 
@@ -937,26 +877,20 @@ local function PlaceIcon(b)
     -- fed once more on the driver's next pass (its fill's edge moved).
     if b.gate then
         PlateGate.HangWhole(b.clip, b.fill, b.gate)
-        if b.cCur ~= nil then
-            b.feed = true
-        end
+        if b.cCur ~= nil then b.feed = true end
     end
 end
 
 local function OnCastShown(self)
     local b = self.kickIcon
     b.casting = true
-    if b.unit and b.iconFrame then
-        PlaceIcon(b)
-    end
+    if b.unit and b.iconFrame then PlaceIcon(b) end
 end
 
 local function OnCastHidden(self)
     local b = self.kickIcon
     b.casting = false
-    if b.unit and b.iconFrame then
-        PlaceIcon(b)
-    end
+    if b.unit and b.iconFrame then PlaceIcon(b) end
 end
 
 -- While the CludesUI plate's Full Sized cast icon takes the icon's side,
@@ -1044,9 +978,7 @@ local function Place(b, owner, isCUI)
     -- Show Above Overlapping Nameplates: the element hangs from the lift at
     -- the lift's strata instead of the plate (its anchors still follow it).
     local above = Lift.on and Lift.frame or nil
-    if above then
-        layerStrata = Lift.STRATA
-    end
+    if above then layerStrata = Lift.STRATA end
     -- Placement stamp: a new kick on the same plate under the same style
     -- skips this pass.
     b.placedHost, b.placedGen = owner, styleStamp
@@ -1064,9 +996,7 @@ local function Place(b, owner, isCUI)
     local iconFrame = isCUI and FullIconSide() == stackAnchor and owner.castIconFrame or nil
     WatchCast(b, iconFrame and owner.cast or nil, iconFrame)
     PlaceIcon(b)
-    if isCUI then
-        ArrowsFollow(owner)
-    end
+    if isCUI then ArrowsFollow(owner) end
 end
 
 -- The icons on a plate take their places in order: ready kicks nearest the
@@ -1087,9 +1017,7 @@ local function LayoutPlate(unitToken)
     for i = 1, num do
         local b = entries[i]
         b.rdy = not CdRunning(b)
-        if b.rdy then
-            ready = ready + 1
-        end
+        if b.rdy then ready = ready + 1 end
     end
     for i = 2, num do
         if ReadyFirst(entries[i], entries[i - 1]) then
@@ -1098,9 +1026,7 @@ local function LayoutPlate(unitToken)
         end
     end
     local track = MarkRails.railOf[unitToken]
-    if track and not track.placedHost then
-        track = nil
-    end
+    if track and not track.placedHost then track = nil end
     local shift = track and track.shift or false
     -- Each element's link, and every element whose link moved unhooked
     -- BEFORE the rail's chains are laid out: those anchor to the row's ends,
@@ -1118,16 +1044,16 @@ local function LayoutPlate(unitToken)
         end
         local prevGen = previous and previous.endGen or 0
         b.slot = i
-        if b.placedHost and (b.slotAt ~= i or b.hang ~= hang or b.prevEl ~= previous or b.prevGen ~= prevGen) then
+        if
+            b.placedHost and (b.slotAt ~= i or b.hang ~= hang or b.prevEl ~= previous or b.prevGen ~= prevGen)
+        then
             b.slotAt, b.hang, b.prevEl, b.prevGen = i, hang, previous, prevGen
             b.relink = true
             local frame = b.wrap or b
             frame:ClearAllPoints()
         end
     end
-    if track then
-        LayoutRail(track, ready, num, entries)
-    end
+    if track then LayoutRail(track, ready, num, entries) end
     -- The chain's length to undo is the rail's after its layout, so an
     -- element on the shift edge is hooked again when that moved too.
     local backing
@@ -1145,9 +1071,7 @@ end
 
 local function TakeOffPlate(b)
     local unitToken = b.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     local entries = onPlate[unitToken]
     if entries then
         for i = 1, #entries do
@@ -1156,9 +1080,7 @@ local function TakeOffPlate(b)
                 break
             end
         end
-        if #entries == 0 then
-            onPlate[unitToken] = nil
-        end
+        if #entries == 0 then onPlate[unitToken] = nil end
         LayoutPlate(unitToken)
     end
     b.unit, b.slot, b.slotAt = nil, nil, nil
@@ -1188,17 +1110,13 @@ local function PutOnPlate(b, unitToken, owner, isCUI)
         liveCount = liveCount + 1
         -- The kicker's marker default stands down while their live icon sits
         -- on a plate.
-        if b.kicker then
-            MarkRails.SetLiveHidden(b.kicker, true)
-        end
+        if b.kicker then MarkRails.SetLiveHidden(b.kicker, true) end
     end
     if b.placedHost ~= owner or b.placedGen ~= styleStamp then
         Place(b, owner, isCUI)
     else
         PlaceIcon(b)
-        if isCUI then
-            ArrowsFollow(owner)
-        end
+        if isCUI then ArrowsFollow(owner) end
     end
     b.slotAt = b.slot
     LayoutPlate(unitToken)
@@ -1336,9 +1254,7 @@ end
 -- The kicker's icon by the Icon setting, for a named group unit: the spec's
 -- icon file, the interrupt's, or nil (the class icon string then).
 local function KickerTexture(m)
-    if not m then
-        return nil
-    end
+    if not m then return nil end
     if iconStyle == "spec" then
         return m.specIcon
     elseif iconStyle == "kick" then
@@ -1361,21 +1277,16 @@ local function Detach(widget)
         widget.edge:ClearAllPoints()
         widget.edge:SetParent(parked)
         TakeOffPlate(widget)
-        widget.cuiPlate, widget.placedHost, widget.placedGen, widget.rel, widget.relBottom, widget.row = nil, nil, nil, nil, nil, nil
-        if widget.kicker then
-            MarkRails.SetLiveHidden(widget.kicker, false)
-        end
+        widget.cuiPlate, widget.placedHost, widget.placedGen, widget.rel, widget.relBottom, widget.row =
+            nil, nil, nil, nil, nil, nil
+        if widget.kicker then MarkRails.SetLiveHidden(widget.kicker, false) end
     end
-    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
-        driverFrame:Hide()
-    end
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then driverFrame:Hide() end
 end
 
 local function FreePlate(b)
     Detach(b)
-    if b.binding then
-        b.binding:SetEnabled(false)
-    end
+    if b.binding then b.binding:SetEnabled(false) end
     local key = b.key
     if key then
         icons[key] = nil
@@ -1386,9 +1297,7 @@ local function FreePlate(b)
     b.hang, b.hangConst, b.slotAt, b.prevEl, b.prevGen = nil, nil, nil, nil, nil
     -- The count gate whole again from plain values, its baseline dropped.
     b.cBase, b.cGen, b.cCur, b.feed = nil, nil, nil, nil
-    if b.gate then
-        PlateGate.ResetIconGate(b)
-    end
+    if b.gate then PlateGate.ResetIconGate(b) end
     free[#free + 1] = b
 end
 
@@ -1402,9 +1311,7 @@ local function ReleaseAll()
     liveCount = 0
     MarkRails.ReleaseAll()
     wipe(MarkRails.liveHidden)
-    if driverFrame then
-        driverFrame:Hide()
-    end
+    if driverFrame then driverFrame:Hide() end
 end
 
 -- A plate went away: its icons leave it. An icon that can find its mob again
@@ -1412,9 +1319,7 @@ end
 -- A ghost follows the same rule (Ghosts.Detach), its span still running.
 local function PlateGone(unitToken)
     local entries = onPlate[unitToken]
-    if not entries then
-        return
-    end
+    if not entries then return end
     for i = #entries, 1, -1 do
         local b = entries[i]
         if b.preview then
@@ -1445,14 +1350,10 @@ local function OnTargetChanged()
     for key, b in pairs(isDetached) do
         if b.waitTarget then
             b.waitTarget = false
-            if not b.guid then
-                FreePlate(b)
-            end
+            if not b.guid then FreePlate(b) end
         end
     end
-    if GhostPool.nWaiting > 0 then
-        GhostPool.TargetChanged()
-    end
+    if GhostPool.nWaiting > 0 then GhostPool.TargetChanged() end
     for unitToken, entries in pairs(onPlate) do
         local isTarget = IsTargetPlate(unitToken)
         for i = 1, #entries do
@@ -1466,18 +1367,14 @@ end
 --------------------------------------------------------------------------------
 local function PreviewClass(num)
     local token = PREVIEW_CLASSES[(num - 1) % NUM_PREVIEW + 1]
-    if token then
-        return token
-    end
+    if token then return token end
     return nil
 end
 
 -- A sample's icon by the Icon setting: the class's first spec, its main
 -- interrupt, or the class icon.
 local function PreviewTexture(classFile)
-    if not classFile then
-        return nil
-    end
+    if not classFile then return nil end
     if iconStyle == "spec" then
         local ident = CLASS_IDS[classFile]
         local _, _, _, iconTex = GetSpecializationInfoForClassID(ident, 1)
@@ -1505,9 +1402,7 @@ end
 --------------------------------------------------------------------------------
 local function DriverOnUpdate(self, elapsed)
     driverAcc = driverAcc + elapsed
-    if driverAcc < TICK then
-        return
-    end
+    if driverAcc < TICK then return end
     driverAcc = 0
     local nowTime = GetTime()
     local plateList = NPPlates()
@@ -1524,9 +1419,7 @@ local function DriverOnUpdate(self, elapsed)
             if p ~= b.cuiPlate then
                 if p and p.health then
                     Place(b, p, true)
-                    if b.isGhost then
-                        b.feed = true
-                    end
+                    if b.isGhost then b.feed = true end
                 elseif b.cuiPlate then
                     PlateGone(unitToken)
                     break
@@ -1536,13 +1429,9 @@ local function DriverOnUpdate(self, elapsed)
                 -- in that module's settings, the buff row hidden for a unit
                 -- you cannot attack): the icon takes its new spot.
                 Place(b, p, true)
-                if b.isGhost then
-                    b.feed = true
-                end
+                if b.isGhost then b.feed = true end
             end
-            if b.preview and b.unit and nowTime >= b.restartAt then
-                RestartPreview(b)
-            end
+            if b.preview and b.unit and nowTime >= b.restartAt then RestartPreview(b) end
             -- The one deferred feed of a pooled icon's count gate after the
             -- icon moved (AnchorIcon).
             if b.feed and b.gate then
@@ -1552,12 +1441,8 @@ local function DriverOnUpdate(self, elapsed)
         end
     end
     MarkRails.Follow(plateList)
-    if GhostPool.live[1] then
-        GhostPool.Tick(nowTime)
-    end
-    if liveCount == 0 and MarkRails.count == 0 then
-        self:Hide()
-    end
+    if GhostPool.live[1] then GhostPool.Tick(nowTime) end
+    if liveCount == 0 and MarkRails.count == 0 then self:Hide() end
 end
 
 --------------------------------------------------------------------------------
@@ -1567,9 +1452,7 @@ end
 --  parent's scale and renders at UIParent's (StyleIcon); the icon string's
 --  holder renders at scale 1.
 --------------------------------------------------------------------------------
-local function CellExtra(btnFrame, skinData, style)
-    ApplyText(btnFrame, skinData, style)
-end
+local function CellExtra(btnFrame, skinData, style) ApplyText(btnFrame, skinData, style) end
 
 -- `parent`: a lane's or a ghost cell's count clip, for a cell that hangs
 -- there for good (it gets no edge frame and keeps its parent's scale: the
@@ -1658,18 +1541,14 @@ local function BuildIcon(hostFrame)
         b.binding:SetFontString(skinData.duration)
         b.binding:SetDuration(b.dur)
         local fmt = AK.GetDurationFormatter(false)
-        if fmt then
-            b.binding:SetFormatter(fmt)
-        end
+        if fmt then b.binding:SetFormatter(fmt) end
         b.binding:SetEnabled(false)
     end
     return b
 end
 
 local function EnsurePool()
-    if parked then
-        return
-    end
+    if parked then return end
     -- The park is born with the aspect that lets an object anchor to an aura
     -- container (a side row carries UntrustedLayoutScriptExecution once it
     -- holds a group, and the aspect is only ever inherited at creation,
@@ -1690,15 +1569,11 @@ local function EnsurePool()
     -- render tree and draws over every plate; its anchors to the plate's
     -- bar, its edge frame or the rail's shift edge still carry it along.
     local okLift, liftPx = pcall(CreateFrame, "Frame", nil, UIParent, "DisableUntrustedLayoutScriptsTemplate")
-    if not (okLift and liftPx) then
-        liftPx = CreateFrame("Frame", nil, UIParent)
-    end
+    if not (okLift and liftPx) then liftPx = CreateFrame("Frame", nil, UIParent) end
     liftPx:SetFrameStrata(Lift.STRATA)
     liftPx:SetSize(1, 1)
     liftPx:EnableMouse(false)
-    if liftPx.EnableMouseMotion then
-        liftPx:EnableMouseMotion(false)
-    end
+    if liftPx.EnableMouseMotion then liftPx:EnableMouseMotion(false) end
     liftPx:Show()
     Lift.frame = liftPx
     -- The cast watchers' holder: a plain frame, since a watcher is born
@@ -1741,9 +1616,7 @@ local function ShowIcon(key, kicker, unitToken, owner, isCUI, classFile, texture
     local widget = icons[key] or Acquire(key, kicker)
     isDetached[key] = nil
     widget.preview = preview
-    if widget.styleGen ~= styleStamp then
-        StyleIcon(widget)
-    end
+    if widget.styleGen ~= styleStamp then StyleIcon(widget) end
     PutOnPlate(widget, unitToken, owner, isCUI)
     PaintKicker(widget, classFile, texture)
     PaintCooldown(widget, start, duration)
@@ -1857,9 +1730,7 @@ end
 
 -- How far a gate (and so an open clip) reaches past the cell on every side,
 -- in the ghost's units (Gate.Margin).
-function GhostPool.Margin()
-    return PlateGate.Margin()
-end
+function GhostPool.Margin() return PlateGate.Margin() end
 
 -- Both gates' size and place on ghost g for the cell width `cw`, in the
 -- ghost's units (Gate.Size). The clips are hung again after this (Feed,
@@ -1887,7 +1758,13 @@ end
 -- the baseline was read in), or whole while it was never fed.
 function GhostPool.FeedB(subRow)
     if subRow.cCur ~= nil then
-        PlateGate.FeedWhole(subRow.gateB, subRow.fillB, subRow.clipB, PlateGate.Base(subRow.after, subRow.gen), subRow.cCur)
+        PlateGate.FeedWhole(
+            subRow.gateB,
+            subRow.fillB,
+            subRow.clipB,
+            PlateGate.Base(subRow.after, subRow.gen),
+            subRow.cCur
+        )
     else
         PlateGate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
     end
@@ -2002,13 +1879,9 @@ end
 -- A member's cooldown after a landed kick, while they can stand in a ghost:
 -- both counts handed over and their interrupt known. nil otherwise.
 function GhostPool.Dur(unit, before, after)
-    if not (before[unit] ~= nil and after[unit] ~= nil) then
-        return nil
-    end
+    if not (before[unit] ~= nil and after[unit] ~= nil) then return nil end
     local duration = KE.KickDuration(unit)
-    if duration and duration > 0 then
-        return duration
-    end
+    if duration and duration > 0 then return duration end
     return nil
 end
 
@@ -2017,9 +1890,7 @@ function GhostPool.Has(t, unitToken)
     local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
-        if g.t == t and g.unit == unitToken then
-            return true
-        end
+        if g.t == t and g.unit == unitToken then return true end
     end
     return false
 end
@@ -2041,9 +1912,7 @@ end
 -- Whether a ghost waits for its mob's plate, kept with the count of them.
 function GhostPool.SetWaiting(g, on)
     on = on and true or nil
-    if g.waiting == on then
-        return
-    end
+    if g.waiting == on then return end
     g.waiting = on
     GhostPool.nWaiting = GhostPool.nWaiting + (on and 1 or -1)
 end
@@ -2071,9 +1940,7 @@ function GhostPool.Release(g)
     g.guid, g.onTarget, g.waitTarget, g.seq, g.rdy = nil, nil, nil, nil, nil
     local free = GhostPool.free
     free[#free + 1] = g
-    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
-        driverFrame:Hide()
-    end
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then driverFrame:Hide() end
 end
 
 function GhostPool.ReleaseAll()
@@ -2091,9 +1958,7 @@ end
 function GhostPool.Detach(g)
     GhostPool.Unplace(g)
     GhostPool.SetWaiting(g, true)
-    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
-        driverFrame:Hide()
-    end
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then driverFrame:Hide() end
 end
 
 -- The player's target changed: a waiting ghost that counted on it keeps
@@ -2104,9 +1969,7 @@ function GhostPool.TargetChanged()
         local g = liveSet[i]
         if g.waiting and g.waitTarget then
             g.waitTarget = false
-            if not g.guid then
-                GhostPool.Release(g)
-            end
+            if not g.guid then GhostPool.Release(g) end
         end
     end
 end
@@ -2140,9 +2003,7 @@ function GhostPool.Return(unitToken, unitGuid, isTarget)
                 end
                 if owner then
                     GhostPool.SetWaiting(g, false)
-                    if g.styleGen ~= styleStamp then
-                        GhostPool.Dress(g)
-                    end
+                    if g.styleGen ~= styleStamp then GhostPool.Dress(g) end
                     PutOnPlate(g, unitToken, owner, isCUI)
                     GhostPool.FeedAll(g)
                     g:Show()
@@ -2184,14 +2045,10 @@ function GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
         local duration = GhostPool.Dur(units[i], before, after)
         if duration then
             num = num + 1
-            if duration > longestText then
-                longestText = duration
-            end
+            if duration > longestText then longestText = duration end
         end
     end
-    if num == 0 then
-        return
-    end
+    if num == 0 then return end
     Ready()
     local free = GhostPool.free
     local g = free[#free]
@@ -2200,9 +2057,7 @@ function GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
     else
         g = GhostPool.Build()
     end
-    if g.styleGen ~= styleStamp then
-        GhostPool.Style(g)
-    end
+    if g.styleGen ~= styleStamp then GhostPool.Style(g) end
     local subRows, k = g.subs, 0
     local gen = KE.FightGen()
     for i = 1, #units do
@@ -2222,9 +2077,7 @@ function GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
             subRow.gateB:Show()
             GhostPool.Feed(subRow)
             local cellFrame = subRow.cell
-            if cellFrame.styleGen ~= styleStamp then
-                StyleIcon(cellFrame)
-            end
+            if cellFrame.styleGen ~= styleStamp then StyleIcon(cellFrame) end
             PaintKicker(cellFrame, (m and m.class) or UnitClassBase(u), KickerTexture(m))
             PaintCooldown(cellFrame, t, duration)
             cellFrame:Show()
@@ -2249,9 +2102,7 @@ function GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
     -- counts event of this update came before the ghost existed).
     for i = 1, k do
         local subRow = subRows[i]
-        if after[subRow.unit] ~= nil then
-            MarkRails.Counts(subRow.unit, after[subRow.unit], t)
-        end
+        if after[subRow.unit] ~= nil then MarkRails.Counts(subRow.unit, after[subRow.unit], t) end
     end
 end
 
@@ -2260,18 +2111,14 @@ end
 -- or nil with none, so the lane hides while such a ghost may show them and
 -- comes back once every one of them is gone.
 function GhostPool.LaneBase(unitGuid)
-    if not unitGuid then
-        return nil
-    end
+    if not unitGuid then return nil end
     local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
         local subRows = g.subs
         for k = 1, g.used do
             local subRow = subRows[k]
-            if subRow.guid == unitGuid then
-                return PlateGate.Base(subRow.before, subRow.gen)
-            end
+            if subRow.guid == unitGuid then return PlateGate.Base(subRow.before, subRow.gen) end
         end
     end
     return nil
@@ -2284,16 +2131,17 @@ end
 function GhostPool.Counts(unit, current, T)
     local m = KE.Member(unit)
     local unitGuid = m and m.guid
-    if not unitGuid then
-        return
-    end
+    if not unitGuid then return end
     local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
         local subRows = g.subs
         for k = 1, g.used do
             local subRow = subRows[k]
-            if subRow.guid == unitGuid and not PlateGate.StillDownAt(unit, subRow.cell.cdStart, subRow.cell.cdDur, T) then
+            if
+                subRow.guid == unitGuid
+                and not PlateGate.StillDownAt(unit, subRow.cell.cdStart, subRow.cell.cdDur, T)
+            then
                 subRow.cCur = current
                 GhostPool.FeedB(subRow)
             end
@@ -2305,16 +2153,12 @@ end
 -- lanes take their baselines from the ghosts left, with the counts as the
 -- engine last read them.
 function GhostPool.LanesAfter(g)
-    if MarkRails.count == 0 then
-        return
-    end
+    if MarkRails.count == 0 then return end
     local subRows, nowTime = g.subs, GetTime()
     for k = 1, g.used do
         local m = GhostPool.MemberOf(subRows[k])
         local current = m and KE.Count(m.unit)
-        if current ~= nil then
-            MarkRails.Counts(m.unit, current, nowTime)
-        end
+        if current ~= nil then MarkRails.Counts(m.unit, current, nowTime) end
     end
 end
 
@@ -2324,13 +2168,9 @@ end
 -- else nil (they left the group: the cell keeps its picture).
 function GhostPool.MemberOf(subRow)
     local unitGuid = subRow.guid
-    if not unitGuid then
-        return nil
-    end
+    if not unitGuid then return nil end
     local m = KE.Member(subRow.unit)
-    if m and m.guid == unitGuid then
-        return m
-    end
+    if m and m.guid == unitGuid then return m end
     local units = KE.GROUP_UNITS
     for i = 1, #units do
         m = KE.Member(units[i])
@@ -2352,9 +2192,7 @@ function GhostPool.Dress(g)
     for k = 1, g.used do
         local subRow = subRows[k]
         local cellFrame = subRow.cell
-        if cellFrame.styleGen ~= styleStamp then
-            StyleIcon(cellFrame)
-        end
+        if cellFrame.styleGen ~= styleStamp then StyleIcon(cellFrame) end
         local m = GhostPool.MemberOf(subRow)
         local texture = cellFrame.kTex
         if m then
@@ -2417,9 +2255,7 @@ end
 function GhostPool.Supersede(kicker, start)
     local m = KE.Member(kicker)
     local unitGuid = m and m.guid
-    if not unitGuid then
-        return
-    end
+    if not unitGuid then return end
     local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
@@ -2443,16 +2279,12 @@ function GhostPool.Supersede(kicker, start)
                     local longestText = 0
                     for k = 1, num do
                         local skinData = subRows[k].cell.cdDur
-                        if skinData and skinData > longestText then
-                            longestText = skinData
-                        end
+                        if skinData and skinData > longestText then longestText = skinData end
                     end
                     g.cdDur, g.expireAt = longestText, g.t + longestText
                     -- Fewer cells: the chain, and the row after the ghost.
                     GhostPool.Chain(g)
-                    if g.unit then
-                        LayoutPlate(g.unit)
-                    end
+                    if g.unit then LayoutPlate(g.unit) end
                 end
             end
         end
@@ -2464,16 +2296,12 @@ end
 -- (platesOnly) is simply new; one that has its ghost for t already is not.
 -- Every table is the engine's scratch, read here and never kept.
 function GhostPool.OnGate(t, units, before, after, plateList, platesOnly)
-    if currentMode ~= MODE_LIVE then
-        return
-    end
+    if currentMode ~= MODE_LIVE then return end
     for i = 1, #plateList do
         local unitToken = plateList[i]
         if NAMEPLATE_UNITS[unitToken] and not GhostPool.Has(t, unitToken) and IsHostile(unitToken) then
             local owner, isCUI = ResolveHost(unitToken)
-            if owner then
-                GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
-            end
+            if owner then GhostPool.Show(t, unitToken, owner, isCUI, units, before, after) end
         end
     end
 end
@@ -2487,22 +2315,14 @@ end
 -- member's icon moves to the plate with their cooldown. Any other kick
 -- arrives through the gate packet instead and shows as a ghost (Ghosts).
 local function OnKick(unitToken, who, _, _, _, _)
-    if currentMode ~= MODE_LIVE or not who or not NAMEPLATE_UNITS[unitToken] then
-        return
-    end
+    if currentMode ~= MODE_LIVE or not who or not NAMEPLATE_UNITS[unitToken] then return end
     local nowTime = GetTime()
     local b = icons[who]
     -- Your cast and its landing a moment later, or two tokens of one mob.
-    if b and b.unit == unitToken and b.at and nowTime - b.at < DEDUPE then
-        return
-    end
-    if not IsHostile(unitToken) then
-        return
-    end
+    if b and b.unit == unitToken and b.at and nowTime - b.at < DEDUPE then return end
+    if not IsHostile(unitToken) then return end
     local owner, isCUI = ResolveHost(unitToken)
-    if not owner then
-        return
-    end
+    if not owner then return end
     local m = KE.Member(who)
     local classFile = (m and m.class) or UnitClassBase(who)
     local start, duration = KE.Cooldown(who)
@@ -2518,31 +2338,21 @@ end
 -- A member's modeled cooldown moved: their icon follows, wherever it sits,
 -- and their cells in older ghosts leave (Ghosts.Supersede).
 local function OnCooldown(kicker, start, duration)
-    if currentMode ~= MODE_LIVE then
-        return
-    end
+    if currentMode ~= MODE_LIVE then return end
     local b = icons[kicker]
-    if b then
-        PaintCooldown(b, start, duration)
-    end
+    if b then PaintCooldown(b, start, duration) end
     MarkRails.Cooldown(kicker, start, duration)
-    if GhostPool.live[1] then
-        GhostPool.Supersede(kicker, start)
-    end
+    if GhostPool.live[1] then GhostPool.Supersede(kicker, start) end
 end
 
 -- A member's spec or interrupt became known: their icon's picture may change.
 local function OnRoster()
-    if currentMode ~= MODE_LIVE then
-        return
-    end
+    if currentMode ~= MODE_LIVE then return end
     for key, b in pairs(icons) do
         if b.kicker then
             local m = KE.Member(b.kicker)
             local texture = KickerTexture(m)
-            if texture ~= b.kTex then
-                PaintKicker(b, (m and m.class) or b.kClass, texture)
-            end
+            if texture ~= b.kTex then PaintKicker(b, (m and m.class) or b.kClass, texture) end
         end
     end
     GhostPool.Repaint()
@@ -2556,23 +2366,15 @@ local HANDLERS = { kick = OnKick, cooldown = OnCooldown, roster = OnRoster, gate
 -- for the count gates of their live icon, their cells in the ghosts and
 -- their lanes (each fed only once its own cooldown is over).
 function HANDLERS.counts(T, units, after)
-    if currentMode ~= MODE_LIVE then
-        return
-    end
+    if currentMode ~= MODE_LIVE then return end
     for i = 1, #units do
         local u = units[i]
         local current = after[u]
         if current ~= nil then
             local b = icons[u]
-            if b and b.gate then
-                PlateGate.FeedIcon(b, u, current, T)
-            end
-            if GhostPool.live[1] then
-                GhostPool.Counts(u, current, T)
-            end
-            if MarkRails.count > 0 then
-                MarkRails.Counts(u, current, T)
-            end
+            if b and b.gate then PlateGate.FeedIcon(b, u, current, T) end
+            if GhostPool.live[1] then GhostPool.Counts(u, current, T) end
+            if MarkRails.count > 0 then MarkRails.Counts(u, current, T) end
         end
     end
 end
@@ -2625,25 +2427,17 @@ local REPLY_DELAY = 1 -- seconds an answer waits, so a burst of requests gets on
 -- tracker's own content (the Where bucket, read live), so nothing is sent or
 -- heard in a dungeon where the tracker never shows; nil anywhere else.
 local function MarkerInstance()
-    if MTWhere.Bucket() ~= "dungeon_mythic" then
-        return nil
-    end
+    if MTWhere.Bucket() ~= "dungeon_mythic" then return nil end
     local _, iType, _, _, _, _, _, instance = GetInstanceInfo()
-    if iType ~= "party" then
-        return nil
-    end
+    if iType ~= "party" then return nil end
     return instance
 end
 
 -- This character's saved record (CludesUIDB.kickMarkers[playerGUID]), or nil.
 local function SavedRecord()
-    if type(CludesUIDB) ~= "table" then
-        return nil
-    end
+    if type(CludesUIDB) ~= "table" then return nil end
     local myGuid = PlainString(UnitGUID("player"))
-    if not myGuid then
-        return nil
-    end
+    if not myGuid then return nil end
     local allPlates = CludesUIDB.kickMarkers
     if type(allPlates) ~= "table" then
         allPlates = {}
@@ -2660,9 +2454,7 @@ end
 -- Written only by Learn and Forget: a restore reads it and leaves it.
 local function SaveCache()
     local plateRec = SavedRecord()
-    if not plateRec then
-        return
-    end
+    if not plateRec then return end
     plateRec.inst = MarkRails.inst
     local m = {}
     for g, markerKey in pairs(MarkRails.markerOf) do
@@ -2679,9 +2471,7 @@ function MarkRails.SyncKickers()
     wipe(entries)
     wipe(laneOf)
     MarkRails.gen = MarkRails.gen + 1
-    if next(MarkRails.markerOf) == nil then
-        return
-    end
+    if next(MarkRails.markerOf) == nil then return end
     local usedSet
     local units = KE.GROUP_UNITS
     for i = 1, #units do
@@ -2725,7 +2515,13 @@ local function RestoreMarkers()
     local plateRec = SavedRecord()
     if plateRec and instance and plateRec.inst == instance and type(plateRec.m) == "table" then
         for g, markerKey in pairs(plateRec.m) do
-            if type(g) == "string" and type(markerKey) == "number" and markerKey >= 1 and markerKey <= 8 and markerKey == floor(markerKey) then
+            if
+                type(g) == "string"
+                and type(markerKey) == "number"
+                and markerKey >= 1
+                and markerKey <= 8
+                and markerKey == floor(markerKey)
+            then
                 MarkRails.markerOf[g] = markerKey
             end
         end
@@ -2740,27 +2536,17 @@ end
 -- Finder group alone, PARTY only brings back "You aren't in a party."); nil
 -- solo and in a raid.
 function MarkRails.Channel()
-    if IsInRaid() then
-        return nil
-    end
-    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
-        return "INSTANCE_CHAT"
-    end
-    if IsInGroup(LE_PARTY_CATEGORY_HOME) then
-        return "PARTY"
-    end
+    if IsInRaid() then return nil end
+    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end
+    if IsInGroup(LE_PARTY_CATEGORY_HOME) then return "PARTY" end
     return nil
 end
 
 -- Whether the group is a full party inside a Mythic dungeon or key: the request edges fire
 -- only then (owner 2026-10-21), the ready check whatever the count.
 local function FullPartyInDungeon()
-    if not MarkerInstance() then
-        return false
-    end
-    if not MarkRails.Channel() then
-        return false
-    end
+    if not MarkerInstance() then return false end
+    if not MarkRails.Channel() then return false end
     return GetNumGroupMembers() == 5
 end
 
@@ -2772,11 +2558,13 @@ end
 local function BroadcastMarker(kind)
     local myGuid = PlainString(UnitGUID("player"))
     local channelling = MarkRails.Channel()
-    if not (myGuid and channelling) then
-        return
-    end
+    if not (myGuid and channelling) then return end
     MarkRails.Learn(myGuid, MarkRails.marker)
-    C_ChatInfo.SendAddonMessage(MarkRails.PREFIX, kind .. "\t" .. MarkRails.marker .. "\t" .. myGuid, channelling)
+    C_ChatInfo.SendAddonMessage(
+        MarkRails.PREFIX,
+        kind .. "\t" .. MarkRails.marker .. "\t" .. myGuid,
+        channelling
+    )
 end
 
 -- A request on the edges where a client may have missed earlier sends: your
@@ -2788,13 +2576,9 @@ end
 -- covers the group as it stands and a member who arrives later asks on
 -- their own arrival.
 local function Request()
-    if not MarkRails.on or not FullPartyInDungeon() then
-        return
-    end
+    if not MarkRails.on or not FullPartyInDungeon() then return end
     local T = GetTime()
-    if MarkRails.askedT >= 0 and T - MarkRails.askedT < ASK_GAP then
-        return
-    end
+    if MarkRails.askedT >= 0 and T - MarkRails.askedT < ASK_GAP then return end
     MarkRails.askedT = T
     BroadcastMarker("R")
 end
@@ -2802,15 +2586,11 @@ end
 -- Someone asked: your marker goes out REPLY_DELAY later, one answer for every
 -- request of a burst (a group zoning in together asks five times).
 local function Reply()
-    if MarkRails.replyArmed then
-        return
-    end
+    if MarkRails.replyArmed then return end
     MarkRails.replyArmed = true
     C_Timer.After(REPLY_DELAY, function()
         MarkRails.replyArmed = false
-        if MarkRails.on and MarkerInstance() then
-            BroadcastMarker("F")
-        end
+        if MarkRails.on and MarkerInstance() then BroadcastMarker("F") end
     end)
 end
 
@@ -2891,14 +2671,10 @@ function MarkRails.LaneFeed(laneRec, unit, current, T)
         PlateGate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
         return
     end
-    if PlateGate.StillDownAt(unit, laneRec.cell.cdStart, laneRec.cell.cdDur, T) then
-        return
-    end
+    if PlateGate.StillDownAt(unit, laneRec.cell.cdStart, laneRec.cell.cdDur, T) then return end
     local m = KE.Member(unit)
     local base = GhostPool.LaneBase(m and m.guid)
-    if base == nil then
-        base = current
-    end
+    if base == nil then base = current end
     laneRec.cBase, laneRec.cCur = base, current
     PlateGate.FeedWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB, base, current)
 end
@@ -2960,9 +2736,11 @@ local function AnchorChain(track, chain, usedSet, goesLeft, from, fromPoint, off
         if p <= usedSet then
             local firstPlate, firstFill, secondary, secondFill
             if goesLeft then
-                firstPlate, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
+                firstPlate, firstFill, secondary, secondFill =
+                    plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
             else
-                firstPlate, firstFill, secondary, secondFill = plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
+                firstPlate, firstFill, secondary, secondFill =
+                    plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
             end
             firstPlate:SetMinMaxValues(plateRow.marker - 1, plateRow.marker)
             secondary:SetMinMaxValues(plateRow.marker, plateRow.marker + 1)
@@ -3040,9 +2818,7 @@ local function StyleRail(track)
         laneRec.gate:SetSize(2 * RAIL_SPAN * cellW, cellW)
         laneRec.gate:ClearAllPoints()
         laneRec.gate:SetPoint("LEFT", laneRec.clip, "LEFT", -RAIL_SPAN * cellW, 0)
-        if laneRec.cell.styleGen ~= styleStamp then
-            StyleIcon(laneRec.cell)
-        end
+        if laneRec.cell.styleGen ~= styleStamp then StyleIcon(laneRec.cell) end
         PlateGate.Size(laneRec.gateB, laneRec.cell, cellW)
         PlateGate.HangWhole(laneRec.clipB, laneRec.fillB, laneRec.gateB)
     end
@@ -3165,9 +2941,7 @@ LayoutRail = function(track, R, L, entries)
     end
     local most = 0
     for _, num in pairs(readyBy) do
-        if num > most then
-            most = num
-        end
+        if num > most then most = num end
     end
     local maxSlot = L + most
     for i = 1, #kickers do
@@ -3179,16 +2953,12 @@ LayoutRail = function(track, R, L, entries)
                 cdBy[k.marker] = num + 1
             end
             isShown = isShown + 1
-            if laneRec.slotNo > maxSlot then
-                maxSlot = laneRec.slotNo
-            end
+            if laneRec.slotNo > maxSlot then maxSlot = laneRec.slotNo end
         else
             laneRec.slotNo = 1
         end
     end
-    if maxSlot < 1 then
-        maxSlot = 1
-    end
+    if maxSlot < 1 then maxSlot = 1 end
     track.shownCount = isShown
     track:SetSize(cellW + (maxSlot - 1) * pitch, cellW)
     -- The start: after the ready live icons.
@@ -3248,9 +3018,7 @@ LayoutRail = function(track, R, L, entries)
     track.hug:SetPoint(goesLeft and "LEFT" or "RIGHT", from, fromPoint, off - result * wsum, 0)
     if (usedSet > 0 or usedHug > 0) and track.unit then
         local position = GetRaidTargetIndex(track.unit)
-        if type(position) == "number" then
-            FeedChain(track, position)
-        end
+        if type(position) == "number" then FeedChain(track, position) end
     end
 end
 
@@ -3270,9 +3038,7 @@ end
 
 function MarkRails.Release(unitToken)
     local track = MarkRails.railOf[unitToken]
-    if not track then
-        return
-    end
+    if not track then return end
     MarkRails.railOf[unitToken] = nil
     MarkRails.count = MarkRails.count - 1
     local backing = track.cuiPlate
@@ -3282,12 +3048,8 @@ function MarkRails.Release(unitToken)
     -- whole again from plain values (DressRail feeds it on the next plate).
     for i = 1, #track.lanes do
         local laneRec = track.lanes[i]
-        if laneRec.floor then
-            laneRec.gate:SetValue(laneRec.floor)
-        end
-        if laneRec.cCur ~= nil then
-            MarkRails.LaneFeed(laneRec, nil, nil, 0)
-        end
+        if laneRec.floor then laneRec.gate:SetValue(laneRec.floor) end
+        if laneRec.cCur ~= nil then MarkRails.LaneFeed(laneRec, nil, nil, 0) end
     end
     track.feed = nil
     track:Hide()
@@ -3300,13 +3062,9 @@ function MarkRails.Release(unitToken)
     MarkRails.free[#MarkRails.free + 1] = track
     -- Live icons still on the plate hung from the rail's shift edge: they
     -- take the bar again.
-    if onPlate[unitToken] then
-        LayoutPlate(unitToken)
-    end
+    if onPlate[unitToken] then LayoutPlate(unitToken) end
     ArrowsFollow(backing)
-    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
-        driverFrame:Hide()
-    end
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then driverFrame:Hide() end
 end
 
 function MarkRails.ReleaseAll()
@@ -3334,14 +3092,10 @@ function MarkRails.SyncPlate(unitToken)
     end
     Ready()
     local track = MarkRails.railOf[unitToken] or AcquireRail(unitToken)
-    if track.styleGen ~= styleStamp or track.kickGen ~= MarkRails.gen then
-        StyleRail(track)
-    end
+    if track.styleGen ~= styleStamp or track.kickGen ~= MarkRails.gen then StyleRail(track) end
     DressRail(track)
     track.unit = unitToken
-    if track.placedHost ~= owner or track.placedGen ~= styleStamp then
-        Place(track, owner, isCUI)
-    end
+    if track.placedHost ~= owner or track.placedGen ~= styleStamp then Place(track, owner, isCUI) end
     LayoutPlate(unitToken)
     FeedRail(track, position)
     track.feed = true
@@ -3373,38 +3127,26 @@ end
 -- again (the lane's slot and the chain changed).
 function MarkRails.SetLiveHidden(kicker, isHidden)
     isHidden = isHidden == true
-    if (MarkRails.liveHidden[kicker] == true) == isHidden then
-        return
-    end
+    if (MarkRails.liveHidden[kicker] == true) == isHidden then return end
     MarkRails.liveHidden[kicker] = isHidden or nil
-    if not MarkRails.laneOf[kicker] then
-        return
-    end
+    if not MarkRails.laneOf[kicker] then return end
     for unitToken, track in pairs(MarkRails.railOf) do
-        if track.placedHost then
-            LayoutPlate(unitToken)
-        end
+        if track.placedHost then LayoutPlate(unitToken) end
     end
     -- The lane back (the live icon's plate went): its count gate against the
     -- ghosts that may hold the kicker's kick meanwhile.
     if not isHidden then
         local current = KE.Count(kicker)
-        if current ~= nil then
-            MarkRails.Counts(kicker, current, GetTime())
-        end
+        if current ~= nil then MarkRails.Counts(kicker, current, GetTime()) end
     end
 end
 
 function MarkRails.Cooldown(kicker, start, duration)
     local i = MarkRails.laneOf[kicker]
-    if not i then
-        return
-    end
+    if not i then return end
     for _, track in pairs(MarkRails.railOf) do
         local laneRec = track.lanes[i]
-        if laneRec and laneRec.kicker == kicker then
-            PaintCooldown(laneRec.cell, start, duration)
-        end
+        if laneRec and laneRec.kicker == kicker then PaintCooldown(laneRec.cell, start, duration) end
     end
 end
 
@@ -3412,22 +3154,16 @@ end
 -- their lane on every rail fed their count as read now (Rails.LaneFeed).
 function MarkRails.Counts(unit, current, T)
     local i = MarkRails.laneOf[unit]
-    if not i then
-        return
-    end
+    if not i then return end
     for _, track in pairs(MarkRails.railOf) do
         local laneRec = track.lanes[i]
-        if laneRec and laneRec.kicker == unit then
-            MarkRails.LaneFeed(laneRec, unit, current, T)
-        end
+        if laneRec and laneRec.kicker == unit then MarkRails.LaneFeed(laneRec, unit, current, T) end
     end
 end
 
 -- The driver's pass: a rail follows its unit's plate as the icons do.
 function MarkRails.Follow(plateList)
-    if MarkRails.count == 0 then
-        return
-    end
+    if MarkRails.count == 0 then return end
     for unitToken, track in pairs(MarkRails.railOf) do
         local p = plateList and plateList[unitToken]
         if p ~= track.cuiPlate then
@@ -3443,9 +3179,7 @@ function MarkRails.Follow(plateList)
         if track.feed and MarkRails.railOf[unitToken] == track and track:IsVisible() then
             track.feed = nil
             local position = GetRaidTargetIndex(unitToken)
-            if type(position) == "number" then
-                FeedRail(track, position)
-            end
+            if type(position) == "number" then FeedRail(track, position) end
         end
     end
 end
@@ -3462,9 +3196,7 @@ end
 function MarkRails.OnPlate(backing)
     for _, track in pairs(MarkRails.railOf) do
         if track.cuiPlate == backing then
-            if track.shownCount > 0 then
-                return track
-            end
+            if track.shownCount > 0 then return track end
             return nil
         end
     end
@@ -3484,21 +3216,13 @@ local function OnMarkerEvent(_, event, a1, a2, a3)
             ForgetMarkers()
         end
     elseif event == "CHAT_MSG_ADDON" then
-        if a1 ~= MarkRails.PREFIX or (a3 ~= "PARTY" and a3 ~= "INSTANCE_CHAT") then
-            return
-        end
+        if a1 ~= MarkRails.PREFIX or (a3 ~= "PARTY" and a3 ~= "INSTANCE_CHAT") then return end
         local textValue = PlainString(a2)
-        if not textValue then
-            return
-        end
+        if not textValue then return end
         local kind, markerKey, unitGuid = textValue:match("^([FR])\t([0-8])\t(Player%-%d+%-%x+)$")
-        if not kind or unitGuid == PlainString(UnitGUID("player")) then
-            return
-        end
+        if not kind or unitGuid == PlainString(UnitGUID("player")) then return end
         MarkRails.Learn(unitGuid, tonumber(markerKey))
-        if kind == "R" then
-            Reply()
-        end
+        if kind == "R" then Reply() end
     elseif event == "GROUP_ROSTER_UPDATE" then
         Request()
     end
@@ -3511,9 +3235,7 @@ end
 -- and a zone-in or a fresh enable asks the group (ask).
 function MarkRails.Settled(ask)
     local frame = MarkRails.frame
-    if not frame then
-        return
-    end
+    if not frame then return end
     if MarkerInstance() then
         frame:RegisterEvent("CHAT_MSG_ADDON")
         frame:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -3525,9 +3247,7 @@ function MarkRails.Settled(ask)
         MarkRails.pendingRestore = false
         RestoreMarkers()
     end
-    if ask then
-        Request()
-    end
+    if ask then Request() end
 end
 
 -- From KT_Refresh: the marker frame and the addon prefix while the plates are
@@ -3536,9 +3256,7 @@ end
 function MarkRails.SyncEvents(on)
     if not on then
         MarkRails.on = false
-        if MarkRails.frame then
-            MarkRails.frame:UnregisterAllEvents()
-        end
+        if MarkRails.frame then MarkRails.frame:UnregisterAllEvents() end
         return
     end
     local fresh = not MarkRails.on
@@ -3563,13 +3281,9 @@ end
 --  countdown shows at different stages side by side.
 --------------------------------------------------------------------------------
 local function PreviewUnit(unitToken)
-    if not NAMEPLATE_UNITS[unitToken] or not IsHostile(unitToken) then
-        return
-    end
+    if not NAMEPLATE_UNITS[unitToken] or not IsHostile(unitToken) then return end
     local owner, isCUI = ResolveHost(unitToken)
-    if not owner then
-        return
-    end
+    if not owner then return end
     previewStep = previewStep + 1
     local off = ((previewStep - 1) % 3) * PREVIEW_CD / 3
     local classFile = PreviewClass(previewStep)
@@ -3593,9 +3307,7 @@ end
 local function SeedPreview()
     for i = 1, #NAMEPLATE_TOKENS do
         local u = NAMEPLATE_TOKENS[i]
-        if UnitExists(u) then
-            PreviewUnit(u)
-        end
+        if UnitExists(u) then PreviewUnit(u) end
     end
 end
 
@@ -3611,9 +3323,7 @@ local function OnPlateAdded(unitToken)
         PreviewUnit(unitToken)
         return
     end
-    if next(isDetached) == nil and GhostPool.nWaiting == 0 then
-        return
-    end
+    if next(isDetached) == nil and GhostPool.nWaiting == 0 then return end
     local g = PlainString(UnitGUID(unitToken))
     local isTarget = IsTargetPlate(unitToken)
     local owner, isCUI
@@ -3624,9 +3334,7 @@ local function OnPlateAdded(unitToken)
             end
             if owner then
                 isDetached[key] = nil
-                if b.styleGen ~= styleStamp then
-                    StyleIcon(b)
-                end
+                if b.styleGen ~= styleStamp then StyleIcon(b) end
                 PutOnPlate(b, unitToken, owner, isCUI)
                 PaintKicker(b, b.kClass, b.kTex)
                 PaintCooldown(b, b.cdStart, b.cdDur)
@@ -3638,9 +3346,7 @@ local function OnPlateAdded(unitToken)
             end
         end
     end
-    if GhostPool.nWaiting > 0 then
-        GhostPool.Return(unitToken, g, isTarget)
-    end
+    if GhostPool.nWaiting > 0 then GhostPool.Return(unitToken, g, isTarget) end
 end
 
 local function OnEvent(_, event, unitToken)
@@ -3662,20 +3368,12 @@ end
 -- Every mode change drops what is showing: leaving live clears its icons,
 -- entering preview replaces them with samples, leaving preview clears those.
 local function SwitchMode(mode)
-    if mode == currentMode then
-        return
-    end
-    if currentMode == MODE_LIVE then
-        KE.Unsubscribe(WHERE_KEY)
-    end
+    if mode == currentMode then return end
+    if currentMode == MODE_LIVE then KE.Unsubscribe(WHERE_KEY) end
     currentMode = mode
-    if evt then
-        evt:UnregisterAllEvents()
-    end
+    if evt then evt:UnregisterAllEvents() end
     ReleaseAll()
-    if mode == MODE_OFF then
-        return
-    end
+    if mode == MODE_OFF then return end
     if not evt then
         evt = CreateFrame("Frame")
         evt:SetScript("OnEvent", OnEvent)
@@ -3693,9 +3391,7 @@ local function SwitchMode(mode)
     end
 end
 
-local function Enabled(conf)
-    return conf and conf.enabled == true and conf.showPlates ~= false
-end
+local function Enabled(conf) return conf and conf.enabled == true and conf.showPlates ~= false end
 
 -- The preview owns the display while it runs: it ignores the Where to Show
 -- filter and real kicks. Leaving it re-applies the filter.
@@ -3720,13 +3416,9 @@ end
 -- Shared Where to Show watcher: zone and combat edges switch the display on
 -- or off; a loading screen clears every icon.
 local function OnWhere(event)
-    if event == "PLAYER_ENTERING_WORLD" then
-        ReleaseAll()
-    end
+    if event == "PLAYER_ENTERING_WORLD" then ReleaseAll() end
     SyncState()
-    if event == "RECHECK" then
-        MarkRails.Settled(true)
-    end
+    if event == "RECHECK" then MarkRails.Settled(true) end
     if event == "PLAYER_ENTERING_WORLD" and currentMode == MODE_PREVIEW and liveCount == 0 then
         SeedPreview()
     end
@@ -3736,9 +3428,7 @@ end
 -- re-places itself and repaints its kicker (the Icon setting may have moved)
 -- and the greying of its running cooldown; ghosts and rails likewise.
 local function RestyleLive()
-    if AK then
-        AK.Restyle(STYLE)
-    end
+    if AK then AK.Restyle(STYLE) end
     for key, b in pairs(icons) do
         if b.styleGen ~= styleStamp and b.unit then
             local owner, isCUI = ResolveHost(b.unit)
@@ -3769,9 +3459,7 @@ end
 --  options page pool's: the cells are foreign children and must stay.
 --------------------------------------------------------------------------------
 local function EnsureSamplePlate()
-    if samplePlate then
-        return samplePlate
-    end
+    if samplePlate then return samplePlate end
     local backing = CreateFrame("Frame", nil, UIParent)
     backing:SetSize(SAMPLE_PLATE_W, SAMPLE_PLATE_H)
     backing:Hide()
@@ -3821,9 +3509,7 @@ end
 
 -- The default line with {marker} where the raid marker goes: what Edit
 -- Announce Text shows while no line of the player's own is saved.
-function mod.KT_AnnounceDefault()
-    return (CludesUI.L("My Focus Kick is %s"):gsub("%%s", MARKER_TOKEN))
-end
+function mod.KT_AnnounceDefault() return (CludesUI.L("My Focus Kick is %s"):gsub("%%s", MARKER_TOKEN)) end
 
 -- The line sent for a marker: the player's own with {marker} swapped for the
 -- raid marker (a function replacement, so a % in their text stays a %), the
@@ -3833,25 +3519,17 @@ local function AnnounceLine(markerTex)
     local conf = Cfg()
     local custom = conf and conf.announceText
     if type(custom) == "string" and custom ~= "" then
-        local line, num = custom:gsub(MARKER_TOKEN, function()
-            return token
-        end)
-        if num == 0 then
-            line = line .. " " .. token
-        end
+        local line, num = custom:gsub(MARKER_TOKEN, function() return token end)
+        if num == 0 then line = line .. " " .. token end
         return line
     end
     return CludesUI.Lf("My Focus Kick is %s", token)
 end
 
 local function Announce(markerTex)
-    if not MythicDungeon() then
-        return
-    end
+    if not MythicDungeon() then return end
     local channelling = MarkRails.Channel()
-    if not channelling then
-        return
-    end
+    if not channelling then return end
     C_ChatInfo.SendChatMessage(AnnounceLine(markerTex), channelling)
     -- The same marker on the addon channel for the marker defaults (Rails):
     -- before the key starts, as here, it still goes through.
@@ -3863,28 +3541,20 @@ end
 -- (the marker defaults need no ready check for it).
 local function SyncAnnounce(conf)
     local markerTex = (conf and conf.enabled == true) and tonumber(conf.focusMarker) or 0
-    if not (markerTex and markerTex >= 1 and markerTex <= 8) then
-        markerTex = 0
-    end
+    if not (markerTex and markerTex >= 1 and markerTex <= 8) then markerTex = 0 end
     announceMarker = markerTex
     if markerTex ~= MarkRails.marker then
         MarkRails.marker = markerTex
-        if MarkRails.on and MarkerInstance() then
-            BroadcastMarker("F")
-        end
+        if MarkRails.on and MarkerInstance() then BroadcastMarker("F") end
     end
     if markerTex == 0 then
-        if announceFrame then
-            announceFrame:UnregisterEvent("READY_CHECK")
-        end
+        if announceFrame then announceFrame:UnregisterEvent("READY_CHECK") end
         return
     end
     if not announceFrame then
         announceFrame = CreateFrame("Frame")
         announceFrame:SetScript("OnEvent", function()
-            if announceMarker >= 1 then
-                Announce(announceMarker)
-            end
+            if announceMarker >= 1 then Announce(announceMarker) end
         end)
     end
     announceFrame:RegisterEvent("READY_CHECK")
@@ -3897,9 +3567,7 @@ end
 -- profile apply (_CUMT_Apply) after a profile switch or a Spec Override flip.
 function mod.KT_Refresh()
     -- The bars (CUI_MythicTimer_KickBars.lua) read the same settings table.
-    if mod.KTB_Refresh then
-        mod.KTB_Refresh()
-    end
+    if mod.KTB_Refresh then mod.KTB_Refresh() end
     local conf = Cfg()
     SyncAnnounce(conf)
     MarkRails.SyncEvents(Enabled(conf))
@@ -3910,9 +3578,7 @@ function mod.KT_Refresh()
         return
     end
     ReadSettings(conf)
-    if not RegisterStyle() then
-        return
-    end
+    if not RegisterStyle() then return end
     RegisterGuest()
     -- New settings: the icon size and every icon's style are rebuilt.
     MatchScale(true)
@@ -3930,17 +3596,13 @@ function mod.KT_SetPreview(on)
     mod.KT_Refresh()
 end
 
-function mod.KT_IsPreview()
-    return previewing
-end
+function mod.KT_IsPreview() return previewing end
 
 -- Where a kicker's icon sits: its plate unit, "waiting" while its plate is
 -- away, or nil. For /dump and the harness.
 function mod.KT_IconPlate(kicker)
     local b = icons[kicker]
-    if not b then
-        return nil
-    end
+    if not b then return nil end
     return b.unit or (isDetached[kicker] and "waiting") or nil
 end
 
@@ -3952,22 +3614,16 @@ function mod.KT_Defaults(unitToken)
     return track and #MarkRails.kickers or nil
 end
 
-function mod.KT_DefaultHidden(kicker)
-    return MarkRails.liveHidden[kicker] == true
-end
+function mod.KT_DefaultHidden(kicker) return MarkRails.liveHidden[kicker] == true end
 
-function mod.KT_MarkerOf(unitGuid)
-    return MarkRails.markerOf[unitGuid]
-end
+function mod.KT_MarkerOf(unitGuid) return MarkRails.markerOf[unitGuid] end
 
 -- The ghosts on a plate unit (with nil, every ghost, those waiting for their
 -- mob's plate included), for /dump and the harness.
 function mod.KT_Ghosts(unitToken)
     local liveSet, num = GhostPool.live, 0
     for i = 1, #liveSet do
-        if unitToken == nil or liveSet[i].unit == unitToken then
-            num = num + 1
-        end
+        if unitToken == nil or liveSet[i].unit == unitToken then num = num + 1 end
     end
     return num
 end
@@ -4078,9 +3734,7 @@ function mod.KT_Dump()
     end
 end
 SLASH_CUIKICKTRACKER1 = "/cuikt"
-SlashCmdList.CUIKICKTRACKER = function()
-    mod.KT_Dump()
-end
+SlashCmdList.CUIKICKTRACKER = function() mod.KT_Dump() end
 
 -- The options header's sample: the mock plate on `host` with two cells
 -- beside it at the current settings (a Warrior, ready; a Mage with
@@ -4094,24 +3748,18 @@ end
 -- column).
 function mod.KT_PaintSampleIcon(owner)
     local conf = Cfg()
-    if not conf then
-        return nil
-    end
+    if not conf then return nil end
     if not Enabled(conf) then
         -- Off: KT_Refresh left the snapshot and the style stale.
         ReadSettings(conf)
-        if not RegisterStyle() then
-            return nil
-        end
+        if not RegisterStyle() then return nil end
         EnsurePool()
         MatchScale(true)
         AK.Restyle(STYLE)
     else
         -- On: KT_Refresh registered the style on the last write.
         AK = AK or CludesUI.AuraKit
-        if not AK then
-            return nil
-        end
+        if not AK then return nil end
         EnsurePool()
         if MatchScale() then
             RegisterStyle()
@@ -4145,9 +3793,7 @@ function mod.KT_PaintSampleIcon(owner)
         widget.hang, widget.hangConst, widget.prevEl = false, 0, (i == 2) and sampleList[1] or false
         widget.iconFrame, widget.casting, widget.row = nil, false, nil
         widget.preview, widget.unit, widget.key = nil, nil, nil
-        if widget.styleGen ~= styleStamp then
-            StyleIcon(widget)
-        end
+        if widget.styleGen ~= styleStamp then StyleIcon(widget) end
         PlaceIcon(widget)
         local classFile = SAMPLE_CLASSES[i]
         PaintKicker(widget, classFile, PreviewTexture(classFile))
@@ -4184,11 +3830,7 @@ end
 -- Called from EMT:OnEnable with the Lite DB; the bars take it from here.
 function mod.KT_OnEnable(database)
     saved = database
-    if not saved then
-        return
-    end
-    if mod.KTB_OnEnable then
-        mod.KTB_OnEnable(database)
-    end
+    if not saved then return end
+    if mod.KTB_OnEnable then mod.KTB_OnEnable(database) end
     mod.KT_Refresh()
 end

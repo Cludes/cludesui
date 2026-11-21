@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Training.lua -- Training Planner (WoW Forever).
 --
@@ -19,17 +17,13 @@ local _, mod = ...
 local function Settings()
     CludesUIDB.foreverTraining = CludesUIDB.foreverTraining or {}
     local cfg = CludesUIDB.foreverTraining
-    if cfg.levelUpMessage == nil then
-        cfg.levelUpMessage = true
-    end
+    if cfg.levelUpMessage == nil then cfg.levelUpMessage = true end
     return cfg
 end
 mod.TrainingSettings = Settings
 
 local function Known(ident)
-    if C_SpellBook and C_SpellBook.IsSpellKnown then
-        return C_SpellBook.IsSpellKnown(ident)
-    end
+    if C_SpellBook and C_SpellBook.IsSpellKnown then return C_SpellBook.IsSpellKnown(ident) end
     return IsSpellKnown and IsSpellKnown(ident) or false
 end
 
@@ -37,16 +31,12 @@ end
 function mod.TrainingSpellLabel(ident)
     local name = C_Spell.GetSpellName(ident) or ("Spell " .. ident)
     local rank = C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(ident)
-    if type(rank) == "string" and rank ~= "" then
-        name = name .. " (" .. rank .. ")"
-    end
+    if type(rank) == "string" and rank ~= "" then name = name .. " (" .. rank .. ")" end
     return name
 end
 
 function mod.TrainingMoney(copper)
-    if GetCoinTextureString then
-        return GetCoinTextureString(copper)
-    end
+    if GetCoinTextureString then return GetCoinTextureString(copper) end
     return ("%dg %ds %dc"):format(math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100)
 end
 
@@ -63,9 +53,7 @@ function mod.TrainingPlan()
     local _, class = UnitClass("player")
     local payload = mod.TrainingData and mod.TrainingData[class]
     local plan = { now = {}, coming = {}, levels = {}, blocked = {}, nowCost = 0 }
-    if not payload then
-        return plan
-    end
+    if not payload then return plan end
     local level = UnitLevel("player")
 
     local sequence, sold = {}, {}
@@ -81,9 +69,7 @@ function mod.TrainingPlan()
     -- through them. `ready` holds what is trainable up to the current level,
     -- `later` what a coming level will make trainable.
     local ready, later, blockedBy = {}, {}, {}
-    local function Have(ident, upTo)
-        return Known(ident) or ready[ident] or (upTo > level and later[ident])
-    end
+    local function Have(ident, upTo) return Known(ident) or ready[ident] or (upTo > level and later[ident]) end
     for _, lvl in ipairs(sequence) do
         local changed = true
         while changed do -- a rank can wait on one listed after it at the same level
@@ -113,22 +99,16 @@ function mod.TrainingPlan()
     -- The first missing requirement that no trainer sells, for the label.
     local function Root(ident, seen)
         seen = seen or {}
-        if seen[ident] then
-            return nil
-        end
+        if seen[ident] then return nil end
         seen[ident] = true
         for lvl, rowList in pairs(payload) do
             for _, region in ipairs(rowList) do
                 if region[1] == ident then
                     for _, need in ipairs(region[3] or {}) do
                         if not Known(need) and not ready[need] and not later[need] then
-                            if not sold[need] then
-                                return need
-                            end
+                            if not sold[need] then return need end
                             local deeper = Root(need, seen)
-                            if deeper then
-                                return deeper
-                            end
+                            if deeper then return deeper end
                         end
                     end
                 end
@@ -172,15 +152,11 @@ end
 -- fires in bursts, so the rebuild waits for them to settle.
 local refreshQueued
 local function RefreshPage()
-    if refreshQueued then
-        return
-    end
+    if refreshQueued then return end
     refreshQueued = true
     C_Timer.After(0.5, function()
         refreshQueued = nil
-        if not CludesUI.InvalidateModulePageCache then
-            return
-        end
+        if not CludesUI.InvalidateModulePageCache then return end
         CludesUI:InvalidateModulePageCache("CludesUIForeverEssentials")
         if
             CludesUI.GetActiveModule
@@ -197,9 +173,7 @@ eventFrame:RegisterEvent("PLAYER_LEVEL_UP")
 eventFrame:RegisterEvent("SPELLS_CHANGED")
 eventFrame:SetScript("OnEvent", function(_, evt, newLevel)
     RefreshPage()
-    if evt ~= "PLAYER_LEVEL_UP" or not Settings().levelUpMessage then
-        return
-    end
+    if evt ~= "PLAYER_LEVEL_UP" or not Settings().levelUpMessage then return end
     C_Timer.After(2, function()
         local plan = mod.TrainingPlan()
         local fresh, cost = 0, 0

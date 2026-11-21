@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_RaidDebuffs.lua  (WoW Forever only)
 --  Raid Debuffs: a row of the raid debuffs you pick (Sunder Armor, Faerie
@@ -40,9 +36,7 @@ local built, pending = nil, false -- built = the picks key the current container
 local function Picked()
     local result = {}
     for _, skinData in ipairs(DEBUFFS) do
-        if Get("pick_" .. skinData.key) then
-            result[#result + 1] = skinData
-        end
+        if Get("pick_" .. skinData.key) then result[#result + 1] = skinData end
     end
     return result
 end
@@ -57,9 +51,7 @@ end
 
 local function Cell(index)
     local c = cells[index]
-    if c then
-        return c
-    end
+    if c then return c end
     c = CreateFrame("Frame", nil, holderFrame)
     c.missing = c:CreateTexture(nil, "BACKGROUND")
     c.missing:SetAllPoints()
@@ -81,14 +73,10 @@ end
 
 -- Builds (or rebuilds) the row for the current picks.
 local function Rebuild()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     local entries = Enabled() and Picked() or {}
     local key = PickKey(entries)
-    if key == built then
-        return
-    end
+    if key == built then return end
     if not CanBuild() then
         pending = true
         return
@@ -114,9 +102,7 @@ local function Rebuild()
         cells[index]:Hide()
     end
     holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
-    if #entries == 0 then
-        return
-    end
+    if #entries == 0 then return end
 
     AK.styles[STYLE] = { width = size, height = size }
     local success, err = pcall(function()
@@ -135,12 +121,8 @@ local function Rebuild()
                 extraInit = function(btnFrame)
                     btnFrame:SetAllPoints(cell)
                     -- Display only: an aura button takes the mouse by default.
-                    if btnFrame.SetMouseClickEnabled then
-                        btnFrame:SetMouseClickEnabled(false)
-                    end
-                    if btnFrame.SetMouseMotionEnabled then
-                        btnFrame:SetMouseMotionEnabled(false)
-                    end
+                    if btnFrame.SetMouseClickEnabled then btnFrame:SetMouseClickEnabled(false) end
+                    if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
                 end,
             })
         end
@@ -156,29 +138,19 @@ end
 -- Alpha only, which is safe in combat: shown with a living enemy targeted
 -- (and in a group, unless Group Only is off).
 local function UpdateShown()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     local show = Enabled() and UnitExists("target")
     if show then
         local enemy = UnitCanAttack("player", "target")
-        if not (issecretvalue and issecretvalue(enemy)) then
-            show = enemy and not UnitIsDead("target")
-        end
+        if not (issecretvalue and issecretvalue(enemy)) then show = enemy and not UnitIsDead("target") end
     end
-    if show and Get("groupOnly") then
-        show = IsInGroup()
-    end
-    if CludesUI._unlockActive then
-        show = Enabled()
-    end
+    if show and Get("groupOnly") then show = IsInGroup() end
+    if CludesUI._unlockActive then show = Enabled() end
     holderFrame:SetAlpha(show and 1 or 0)
 end
 
 local function Build()
-    if holderFrame then
-        return holderFrame
-    end
+    if holderFrame then return holderFrame end
     holderFrame = CreateFrame("Frame", "CludesUIRaidDebuffs", UIParent)
     holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
     return holderFrame
@@ -187,9 +159,7 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" or evt == "ADDON_RESTRICTION_STATE_CHANGED" then
-        if pending then
-            Rebuild()
-        end
+        if pending then Rebuild() end
     end
     UpdateShown()
 end)
@@ -208,9 +178,7 @@ local function Apply()
         pcall(eventFrame.RegisterEvent, eventFrame, "ADDON_RESTRICTION_STATE_CHANGED")
         eventFrame:RegisterUnitEvent("UNIT_FACTION", "target")
         eventFrame:RegisterUnitEvent("UNIT_FLAGS", "target")
-        if not CludesUI._unlockActive and not InCombatLockdown() then
-            F.Place(holderFrame)
-        end
+        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
     end

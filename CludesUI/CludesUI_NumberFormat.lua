@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_NumberFormat.lua
 --  Central "abbreviate a big number to K/M/B/etc." engine, shared by every module
@@ -128,30 +126,20 @@ end
 --   The ten-thousand-grouping glyphs for localeCode (default: the current effective
 --   locale), nil for K/M/B locales. For modules that build their own breakpoint
 --   table (a fixed decimal count, say) but must show the same units as this engine.
-function CludesUI.NumberAbbrevGlyphs(localeCode)
-    return CJK_GLYPHS[localeCode or CludesUI.LOCALE]
-end
+function CludesUI.NumberAbbrevGlyphs(localeCode) return CJK_GLYPHS[localeCode or CludesUI.LOCALE] end
 
 -- Locale-specific algorithms: [localeCode] -> breakpoint-table builder.
 local localeBuilders = {
-    zhCN = function()
-        return CJKBreakpoints(CJK_GLYPHS.zhCN)
-    end,
-    zhTW = function()
-        return CJKBreakpoints(CJK_GLYPHS.zhTW)
-    end,
-    koKR = function()
-        return CJKBreakpoints(CJK_GLYPHS.koKR)
-    end,
+    zhCN = function() return CJKBreakpoints(CJK_GLYPHS.zhCN) end,
+    zhTW = function() return CJKBreakpoints(CJK_GLYPHS.zhTW) end,
+    koKR = function() return CJKBreakpoints(CJK_GLYPHS.koKR) end,
 }
 
 -- A locale may add or replace its algorithm (e.g. from its CludesUILocales
 -- file). Only takes effect before the first AbbreviateNumber() call of the
 -- session, since the resolved config is cached below. It shapes Precision
 -- "standard" only; the other precisions build from CJK_GLYPHS or K/M/B.
-function CludesUI.RegisterNumberAbbreviation(localeCode, builderFn)
-    localeBuilders[localeCode] = builderFn
-end
+function CludesUI.RegisterNumberAbbreviation(localeCode, builderFn) localeBuilders[localeCode] = builderFn end
 
 -- CludesUI.LocaleHasNumberAbbreviation(localeCode) -> boolean
 --   True when localeCode (default: the current effective locale) has its own
@@ -189,9 +177,7 @@ local STANDARD_THRESHOLD = CludesUI.IS_FOREVER and 10000 or nil
 local DEFAULT_THRESHOLD = CludesUI.IS_FOREVER and 10000 or 1000
 
 local function NewConfig(rowList, threshold)
-    if threshold then
-        rowList = TrimTiers(rowList, threshold)
-    end
+    if threshold then rowList = TrimTiers(rowList, threshold) end
     return { config = CreateAbbreviateConfig(rowList) }
 end
 
@@ -242,12 +228,8 @@ end
 --                                      threshold = 1000|10000|100000 } } }
 function CludesUI.GetNumberFormatDB(create)
     local isActive = ActiveProfile()
-    if not isActive then
-        return nil
-    end
-    if create and not isActive.numberFormat then
-        isActive.numberFormat = {}
-    end
+    if not isActive then return nil end
+    if create and not isActive.numberFormat then isActive.numberFormat = {} end
     return isActive.numberFormat
 end
 
@@ -269,13 +251,9 @@ end
 local function TypeSettings(nf, valueType)
     local tbl = nf and nf.types and nf.types[valueType]
     local precision = tbl and tbl.precision
-    if not VALID_PRECISION[precision] then
-        precision = "standard"
-    end
+    if not VALID_PRECISION[precision] then precision = "standard" end
     local threshold = tbl and tbl.threshold
-    if not VALID_THRESHOLD[threshold] then
-        threshold = DEFAULT_THRESHOLD
-    end
+    if not VALID_THRESHOLD[threshold] then threshold = DEFAULT_THRESHOLD end
     return precision, threshold
 end
 
@@ -383,12 +361,8 @@ local function ResolveOptions(valueType, forceWestern)
     end
 
     if precision == "standard" then
-        if western then
-            return BuildConfig(true), isActive ~= nil
-        end
-        if valueType == "meter" then
-            return BuildConfig(false), isActive ~= nil
-        end
+        if western then return BuildConfig(true), isActive ~= nil end
+        if valueType == "meter" then return BuildConfig(false), isActive ~= nil end
         return false, isActive ~= nil
     end
 
@@ -420,9 +394,7 @@ function CludesUI.NumberFormatOptions(valueType, forceWestern)
     if o == nil then
         local cacheable
         o, cacheable = ResolveOptions(valueType, forceWestern)
-        if not lastSignature then
-            lastSignature = Signature()
-        end
+        if not lastSignature then lastSignature = Signature() end
         if cacheable then
             cache[valueType] = o
             if valueType == "meter" then
@@ -441,9 +413,7 @@ local NumberFormatOptions = CludesUI.NumberFormatOptions
 -- CludesUI.RegisterNumberFormatCallback(fn)
 --   fn() runs after every RefreshNumberFormat, for modules to redraw their text.
 local refreshCallbacks = {}
-function CludesUI.RegisterNumberFormatCallback(func)
-    refreshCallbacks[#refreshCallbacks + 1] = func
-end
+function CludesUI.RegisterNumberFormatCallback(func) refreshCallbacks[#refreshCallbacks + 1] = func end
 
 -- CludesUI.RefreshNumberFormat()
 --   Drops the resolved per-type options (after a settings change or a profile
@@ -457,14 +427,10 @@ function CludesUI.RefreshNumberFormat()
     wipe(optsByTypeW)
     meterOpts, meterOptsW = nil, nil
     local signature = Signature()
-    if signature == lastSignature then
-        return
-    end
+    if signature == lastSignature then return end
     local drawn = lastSignature ~= nil
     lastSignature = signature
-    if not drawn then
-        return
-    end
+    if not drawn then return end
     local handler = geterrorhandler()
     for idx = 1, #refreshCallbacks do
         xpcall(refreshCallbacks[idx], handler)
@@ -475,9 +441,7 @@ end
 --   The active profile back to the default Number Format, then redrawn.
 function CludesUI.ResetNumberFormat()
     local isActive = ActiveProfile()
-    if isActive then
-        isActive.numberFormat = nil
-    end
+    if isActive then isActive.numberFormat = nil end
     CludesUI.RefreshNumberFormat()
 end
 
@@ -500,12 +464,8 @@ end
 local IS_FOREVER = CludesUI.IS_FOREVER
 function CludesUI.AbbreviateValue(val, valueType)
     local options = NumberFormatOptions(valueType)
-    if options then
-        return AbbreviateNumbers(val, options)
-    end
-    if IS_FOREVER then
-        return AbbreviateNumbers(val, BuildConfig(false))
-    end
+    if options then return AbbreviateNumbers(val, options) end
+    if IS_FOREVER then return AbbreviateNumbers(val, BuildConfig(false)) end
     return AbbreviateNumbers(val)
 end
 
@@ -518,9 +478,7 @@ end
 do
     local probe
     function CludesUI.IsZeroValue(val)
-        if not issecretvalue(val) then
-            return val == 0
-        end
+        if not issecretvalue(val) then return val == 0 end
         if not probe then
             local holderFrame = CreateFrame("Frame")
             holderFrame:Hide()
@@ -544,9 +502,7 @@ end
 --------------------------------------------------------------------------------
 if CludesUI.IS_FOREVER then
     -- For a module's own breakpoint table (Unit Frames' decimal bands).
-    CludesUI.ForeverAbbrevTiers = function(rowList)
-        return TrimTiers(rowList, 10000)
-    end
+    CludesUI.ForeverAbbrevTiers = function(rowList) return TrimTiers(rowList, 10000) end
 
     -- CludesUI.ForeverAbbreviateNumbers(n, opts) / ForeverAbbreviateLargeNumbers(n, opts)
     --   The client's AbbreviateNumbers / AbbreviateLargeNumbers for modules that

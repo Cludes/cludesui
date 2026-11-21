@@ -1,13 +1,7 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -- Forever's swing API (Blizzard_APIDocumentationGenerated/SwingTimerDocumentation.lua).
-if not (C_SwingTimer and Enum and Enum.PlayerSwingType) then
-    return
-end
+if not (C_SwingTimer and Enum and Enum.PlayerSwingType) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_SwingTimer.lua  (WoW Forever only)
 --  Swing Timer: one bar per weapon that swings (Main Hand, Off Hand, Ranged).
@@ -43,25 +37,17 @@ local IDLE_AFTER = 0.4 -- seconds past a swing's end before its bar counts as id
 local holderFrame
 local barList = {} -- [swingType] = StatusBar with .started, .duration
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 -- Whether the player has a weapon for this swing type right now.
 local function HasWeapon(t)
-    if t == SWING.MainHand then
-        return true
-    end
+    if t == SWING.MainHand then return true end
     if t == SWING.OffHand then
-        if not Get("offHand") then
-            return false
-        end
+        if not Get("offHand") then return false end
         local _, oh = UnitAttackSpeed("player")
         return type(oh) == "number" and not (issecretvalue and issecretvalue(oh)) and oh > 0
     end
-    if not Get("ranged") then
-        return false
-    end
+    if not Get("ranged") then return false end
     local speed = UnitRangedDamage("player")
     return type(speed) == "number" and not (issecretvalue and issecretvalue(speed)) and speed > 0
 end
@@ -84,14 +70,10 @@ end
 
 local function Bar(t)
     local widget = barList[t]
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("StatusBar", nil, holderFrame)
     widget:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    if t == SWING.MainHand then
-        CludesUI.Kit.SyncAccent(COLOR[t])
-    end
+    if t == SWING.MainHand then CludesUI.Kit.SyncAccent(COLOR[t]) end
     widget:GetStatusBarTexture():SetVertexColor(unpack(COLOR[t]))
     CludesUI.Kit.Panel(widget, 0.85)
     widget:SetMinMaxValues(0, 1)
@@ -108,9 +90,7 @@ local function Bar(t)
 end
 
 local function Build()
-    if holderFrame then
-        return holderFrame
-    end
+    if holderFrame then return holderFrame end
     holderFrame = CreateFrame("Frame", "CludesUISwingTimer", UIParent)
     holderFrame:SetSize(Get("width"), Get("height"))
     for _, t in ipairs(ORDER) do
@@ -122,9 +102,7 @@ end
 --- Stacks the bars in use: a bar shows while it is swinging, or always when
 --- Hide When Idle is off (and the weapon is there), or while Layout Mode is up.
 function module.SwingLayout()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     local wid, hgt = Get("width"), Get("height")
     local preview = CludesUI._unlockActive
     local posY, isShown = 0, 0
@@ -162,9 +140,7 @@ eventFrame:SetScript("OnEvent", function(_, evt, duration, swingType)
         widget:SetMinMaxValues(0, duration)
         widget:SetValue(0)
         widget:SetScript("OnUpdate", OnUpdate)
-        if wasIdle then
-            module.SwingLayout()
-        end
+        if wasIdle then module.SwingLayout() end
     else
         module.SwingLayout() -- a weapon swap or login can add or drop a bar
     end
@@ -176,9 +152,7 @@ local function Apply()
         eventFrame:RegisterEvent("PLAYER_SWING")
         eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if not CludesUI._unlockActive then
-            F.Place(holderFrame)
-        end
+        if not CludesUI._unlockActive then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
         for _, bar in pairs(barList) do
@@ -202,9 +176,7 @@ F.Start(Apply, {
         end
         return holderFrame
     end,
-    size = function()
-        return Get("width"), Get("height") * 3 + GAP * 2
-    end,
+    size = function() return Get("width"), Get("height") * 3 + GAP * 2 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })

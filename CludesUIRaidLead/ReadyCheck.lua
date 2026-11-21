@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ReadyCheck.lua -- Raid Lead: gear and cooldown checks on ready check.
 --
@@ -37,15 +35,9 @@ function mod.ReadyCheckSettings()
     local profile = mod.RaidLeadDB()
     profile.readyCheck = profile.readyCheck or {}
     local cfg = profile.readyCheck
-    if cfg.enabled == nil then
-        cfg.enabled = true
-    end
-    if cfg.minDurability == nil then
-        cfg.minDurability = 30
-    end
-    if cfg.consumables == nil then
-        cfg.consumables = true
-    end
+    if cfg.enabled == nil then cfg.enabled = true end
+    if cfg.minDurability == nil then cfg.minDurability = 30 end
+    if cfg.consumables == nil then cfg.consumables = true end
     return cfg
 end
 
@@ -55,9 +47,7 @@ local function LowestDurability()
         local current, max = GetInventoryItemDurability(slot)
         if current and max and max > 0 then
             local pct = current / max * 100
-            if not low or pct < low then
-                low = pct
-            end
+            if not low or pct < low then low = pct end
         end
     end
     return math.floor((low or 100) + 0.5)
@@ -99,9 +89,7 @@ local function CooldownsNotReady()
                 and cd.duration > 1.5
             then
                 local name = C_Spell.GetSpellName(ident)
-                if type(name) == "string" then
-                    result[#result + 1] = name
-                end
+                if type(name) == "string" then result[#result + 1] = name end
             end
         end
     end
@@ -115,9 +103,7 @@ local HEALTHSTONES = { 5512, 224464 } -- Healthstone, Demonic Healthstone
 local function HasAnyAura(ids)
     for _, ident in ipairs(ids or {}) do
         local success, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, ident)
-        if success and aura then
-            return true
-        end
+        if success and aura then return true end
     end
     return false
 end
@@ -125,13 +111,9 @@ end
 local function WellFed()
     for idx = 1, 40 do
         local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
-        if not aura then
-            return false
-        end
+        if not aura then return false end
         local icon = aura.icon
-        if icon and not (issecretvalue and issecretvalue(icon)) and icon == WELL_FED_ICON then
-            return true
-        end
+        if icon and not (issecretvalue and issecretvalue(icon)) and icon == WELL_FED_ICON then return true end
     end
     return false
 end
@@ -140,30 +122,18 @@ end
 local function MissingConsumables()
     local restricted = InCombatLockdown()
         or (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted and CludesUI.AuraKit.AurasRestricted())
-    if restricted then
-        return "?"
-    end
+    if restricted then return "?" end
     local prep = CludesUI.RAID_PREP_IDS or {}
     local result = {}
-    if not HasAnyAura(prep.flask) then
-        result[#result + 1] = "Flask"
-    end
+    if not HasAnyAura(prep.flask) then result[#result + 1] = "Flask" end
     local success, fed = pcall(WellFed)
-    if not (success and fed) then
-        result[#result + 1] = "Food"
-    end
-    if not HasAnyAura(prep.rune) then
-        result[#result + 1] = "Rune"
-    end
+    if not (success and fed) then result[#result + 1] = "Food" end
+    if not HasAnyAura(prep.rune) then result[#result + 1] = "Rune" end
     local stone = false
     for _, ident in ipairs(HEALTHSTONES) do
-        if (C_Item.GetItemCount(ident) or 0) > 0 then
-            stone = true
-        end
+        if (C_Item.GetItemCount(ident) or 0) > 0 then stone = true end
     end
-    if not stone then
-        result[#result + 1] = "Healthstone"
-    end
+    if not stone then result[#result + 1] = "Healthstone" end
     return table.concat(result, ",")
 end
 mod.MissingConsumables = MissingConsumables
@@ -186,14 +156,10 @@ end
 local reports = {} -- name -> { dur, ilvl, enchants = {}, cds = {} }
 local window, rowList = nil, {}
 
-local function Font()
-    return CludesUI.GetFontPath(nil)
-end
+local function Font() return CludesUI.GetFontPath(nil) end
 
 local function BuildWindow()
-    if window then
-        return
-    end
+    if window then return end
     window = CreateFrame("Frame", "CludesUIRaidLeadReadyCheck", UIParent)
     window:SetSize(520, 60)
     window:SetPoint("TOP", UIParent, "TOP", 0, -140)
@@ -209,9 +175,7 @@ local function BuildWindow()
     title:SetText("Ready Check")
     CludesUI.Kit.AccentText(title)
     window.title = title
-    local close = CludesUI.Kit.Glyph(window, "x", function()
-        window:Hide()
-    end, nil, nil)
+    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, nil)
     close:SetPoint("TOPRIGHT", -5, -5)
     window:Hide()
     tinsert(UISpecialFrames, "CludesUIRaidLeadReadyCheck")
@@ -246,9 +210,7 @@ local function Members()
 end
 
 function mod.RefreshReadyWindow()
-    if not window then
-        return
-    end
+    if not window then return end
     local cfg = mod.ReadyCheckSettings()
     local lines = {}
     local silent = {}
@@ -285,9 +247,7 @@ function mod.RefreshReadyWindow()
         end
     end
     table.sort(lines, function(lhs, rhs)
-        if lhs.bad ~= rhs.bad then
-            return lhs.bad
-        end
+        if lhs.bad ~= rhs.bad then return lhs.bad end
         return lhs.text < rhs.text
     end)
     if #silent > 0 then
@@ -311,9 +271,7 @@ function mod.ReceiveReadyReport(name, report)
     if not dur then
         dur, ilvl, ench, cds = report:match("^(%d+)|(%d+)|([^|]*)|(.*)$")
     end
-    if not dur then
-        return
-    end
+    if not dur then return end
     local function List(text)
         local t = {}
         for val in text:gmatch("[^,]+") do
@@ -337,13 +295,9 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("READY_CHECK")
 eventFrame:SetScript("OnEvent", function()
-    if not mod.ReadyCheckSettings().enabled then
-        return
-    end
+    if not mod.ReadyCheckSettings().enabled then return end
     wipe(reports)
-    if mod.SendReadyReport then
-        mod.SendReadyReport(mod.MyReadyReport())
-    end
+    if mod.SendReadyReport then mod.SendReadyReport(mod.MyReadyReport()) end
     if UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") then
         BuildWindow()
         window:Show()

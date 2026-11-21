@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_GoldLedger.lua -- the one gold record shared by Bags and DataBars.
 --
@@ -41,9 +39,7 @@ local function Build()
     local type, pairs = type, pairs
     local issecretvalue = issecretvalue
 
-    local function IsUsable(val)
-        return type(val) == "number" and not (issecretvalue and issecretvalue(val))
-    end
+    local function IsUsable(val) return type(val) == "number" and not (issecretvalue and issecretvalue(val)) end
 
     -- "Name-Realm": a character name never contains a hyphen, a realm name can (Azjol-Nerub).
     local function SplitKey(key)
@@ -63,14 +59,17 @@ local function Build()
     --------------------------------------------------------------------------------
     local function MigrateLegacy(saved, ledger)
         local bags, dbars, wband = saved.characterGold, saved.dataBarsGold, saved.warbandGold
-        if bags == nil and dbars == nil and wband == nil then
-            return
-        end
+        if bags == nil and dbars == nil and wband == nil then return end
         local chars = ledger.chars
 
         if type(bags) == "table" then
             for key, bag in pairs(bags) do
-                if type(key) == "string" and type(bag) == "table" and IsUsable(bag.gold) and bag.gold >= 0 then
+                if
+                    type(key) == "string"
+                    and type(bag) == "table"
+                    and IsUsable(bag.gold)
+                    and bag.gold >= 0
+                then
                     local name, realm = SplitKey(key)
                     chars[key] = {
                         money = bag.gold,
@@ -118,16 +117,12 @@ local function Build()
     -- Absorbed once: a profile that had it off turns it off for the account, and the key goes.
     -- Later sessions skip it, so an imported profile cannot flip the account switch.
     local function AbsorbTrackingSwitch(saved, ledger)
-        if ledger.trackingMigrated or type(saved.profiles) ~= "table" then
-            return
-        end
+        if ledger.trackingMigrated or type(saved.profiles) ~= "table" then return end
         for _, pd in pairs(saved.profiles) do
             local addons = type(pd) == "table" and pd.addons
             local bags = type(addons) == "table" and addons.CludesUIBags
             if type(bags) == "table" and bags.enableGoldTracking ~= nil then
-                if bags.enableGoldTracking == false then
-                    ledger.tracking = false
-                end
+                if bags.enableGoldTracking == false then ledger.tracking = false end
                 bags.enableGoldTracking = nil
             end
         end
@@ -139,17 +134,13 @@ local function Build()
     --- shadow the real table).
     function Ledger.Data()
         local saved = _G.CludesUIDB
-        if type(saved) ~= "table" then
-            return { chars = {} }
-        end
+        if type(saved) ~= "table" then return { chars = {} } end
         local ledger = saved.goldLedger
         if type(ledger) ~= "table" then
             ledger = {}
             saved.goldLedger = ledger
         end
-        if type(ledger.chars) ~= "table" then
-            ledger.chars = {}
-        end
+        if type(ledger.chars) ~= "table" then ledger.chars = {} end
         MigrateLegacy(saved, ledger)
         AbsorbTrackingSwitch(saved, ledger)
         return ledger
@@ -158,9 +149,7 @@ local function Build()
     --- The current character's GUID, or nil while it cannot be read.
     function Ledger.CharKey()
         local unitGuid = UnitGUID("player")
-        if not unitGuid or (issecretvalue and issecretvalue(unitGuid)) then
-            return nil
-        end
+        if not unitGuid or (issecretvalue and issecretvalue(unitGuid)) then return nil end
         return unitGuid
     end
 
@@ -168,21 +157,15 @@ local function Build()
     -- read comes back nil, so no caller ever does arithmetic on one.
     local function LiveMoney()
         local money = GetMoney()
-        if IsUsable(money) then
-            return money
-        end
+        if IsUsable(money) then return money end
     end
 
     -- Readable at any time, not only with the warband bank open.
     local function LiveWarband()
         local bank = C_Bank
-        if not (bank and bank.FetchDepositedMoney and Enum and Enum.BankType) then
-            return nil
-        end
+        if not (bank and bank.FetchDepositedMoney and Enum and Enum.BankType) then return nil end
         local money = bank.FetchDepositedMoney(Enum.BankType.Account)
-        if IsUsable(money) then
-            return money
-        end
+        if IsUsable(money) then return money end
     end
 
     --- The current character's balance, for display. Does not write the ledger
@@ -190,9 +173,7 @@ local function Build()
     --- read is unusable, falls back to the last stored balance; nil if neither.
     function Ledger.Money()
         local money = LiveMoney()
-        if money then
-            return money
-        end
+        if money then return money end
         local key = Ledger.CharKey()
         local e = key and Ledger.Data().chars[key]
         return e and e.money
@@ -202,9 +183,7 @@ local function Build()
     --- otherwise the last stored balance; nil if never seen. Does not write.
     function Ledger.WarbandMoney()
         local money = LiveWarband()
-        if money then
-            return money
-        end
+        if money then return money end
         local wid = Ledger.Data().warband
         return wid and wid.money
     end
@@ -214,19 +193,11 @@ local function Build()
     --- number); a failed read never overwrites a good entry. Nothing is written
     --- while tracking is off, but the balance is still returned.
     function Ledger.RecordCharacter(money)
-        if money == nil then
-            money = LiveMoney()
-        end
-        if not IsUsable(money) then
-            return nil
-        end
-        if not Ledger.IsTracking() then
-            return money
-        end
+        if money == nil then money = LiveMoney() end
+        if not IsUsable(money) then return nil end
+        if not Ledger.IsTracking() then return money end
         local key = Ledger.CharKey()
-        if not key then
-            return money
-        end
+        if not key then return money end
         local chars = Ledger.Data().chars
         -- Drop the entries older builds filed under "Name-Realm".
         local short = UnitName("player")
@@ -250,13 +221,9 @@ local function Build()
     --- Store the warband bank balance. An unusable read (secret or not a number)
     --- changes nothing and the stored value stays.
     function Ledger.RecordWarband()
-        if not Ledger.IsTracking() then
-            return nil
-        end
+        if not Ledger.IsTracking() then return nil end
         local money = LiveWarband()
-        if not money then
-            return nil
-        end
+        if not money then return nil end
         local ledger = Ledger.Data()
         local wid = ledger.warband
         if not wid then
@@ -268,9 +235,7 @@ local function Build()
     end
 
     --- Account-wide tracking switch. On by default; only the off state is stored.
-    function Ledger.IsTracking()
-        return Ledger.Data().tracking ~= false
-    end
+    function Ledger.IsTracking() return Ledger.Data().tracking ~= false end
 
     function Ledger.SetTracking(enabled)
         local ledger = Ledger.Data()
@@ -302,13 +267,9 @@ local function Build()
     local eventFrame
 
     function Ledger.SyncEvents()
-        if not eventFrame then
-            return
-        end
+        if not eventFrame then return end
         eventFrame:UnregisterAllEvents()
-        if consumerCount == 0 then
-            return
-        end
+        if consumerCount == 0 then return end
         eventFrame:RegisterEvent("PLAYER_MONEY")
         if Ledger.IsTracking() then
             eventFrame:RegisterEvent("ACCOUNT_MONEY")
@@ -336,13 +297,9 @@ local function Build()
         local money
         if evt ~= "ACCOUNT_MONEY" and evt ~= "BANKFRAME_OPENED" then
             money = LiveMoney()
-            if Ledger.IsTracking() then
-                dirtyChar = true
-            end
+            if Ledger.IsTracking() then dirtyChar = true end
         end
-        if evt ~= "PLAYER_MONEY" then
-            dirtyWarband = true
-        end
+        if evt ~= "PLAYER_MONEY" then dirtyWarband = true end
         if (dirtyChar or dirtyWarband) and not flushQueued then
             flushQueued = true
             C_Timer.After(WRITE_DELAY, FlushWrites)
@@ -350,9 +307,7 @@ local function Build()
         for ownerFrame, func in pairs(consumers) do
             if func ~= true then
                 local success, err = pcall(func, evt, money)
-                if not success then
-                    geterrorhandler()(err)
-                end
+                if not success then geterrorhandler()(err) end
             end
         end
     end
@@ -360,9 +315,7 @@ local function Build()
     --- Start money tracking for `owner` (any unique key). `fn` is optional.
     --- Registering twice for one owner just replaces its callback.
     function Ledger.Register(ownerFrame, func)
-        if consumers[ownerFrame] == nil then
-            consumerCount = consumerCount + 1
-        end
+        if consumers[ownerFrame] == nil then consumerCount = consumerCount + 1 end
         consumers[ownerFrame] = func or true
         if not eventFrame then
             eventFrame = CreateFrame("Frame")
@@ -376,18 +329,14 @@ local function Build()
     end
 
     function Ledger.Unregister(ownerFrame)
-        if consumers[ownerFrame] == nil then
-            return
-        end
+        if consumers[ownerFrame] == nil then return end
         consumers[ownerFrame] = nil
         consumerCount = consumerCount - 1
         Ledger.SyncEvents()
     end
 
     --- Drop a character the player no longer has (renamed, deleted, transferred).
-    function Ledger.Forget(key)
-        Ledger.Data().chars[key] = nil
-    end
+    function Ledger.Forget(key) Ledger.Data().chars[key] = nil end
 
     --- Wipe every character and the warband figure.
     function Ledger.Reset()
@@ -400,8 +349,6 @@ local function Build()
 end
 
 function CUI.GetGoldLedger()
-    if not built then
-        built = Build()
-    end
+    if not built then built = Build() end
     return built
 end

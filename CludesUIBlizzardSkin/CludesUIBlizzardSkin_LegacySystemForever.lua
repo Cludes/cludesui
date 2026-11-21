@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  Progress Legacy on WoW Forever
 --
@@ -15,13 +13,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 local Skin = mod.WSkin
-if not (Skin and Skin.RegisterWindow and Skin.Shell) then
-    return
-end
+if not (Skin and Skin.RegisterWindow and Skin.Shell) then return end
 
 do
     -- Chrome atlases covering the shell: the metal frame and textured backdrops.
@@ -37,12 +31,8 @@ do
     local PAGES = { "RewardTrackPage", "ChallengesPage" }
 
     local function FadeArt(found, depth)
-        if depth > 5 or not found or found:IsForbidden() then
-            return
-        end
-        if depth > 0 and Skin.IsForeignFrame(found) then
-            return
-        end
+        if depth > 5 or not found or found:IsForbidden() then return end
+        if depth > 0 and Skin.IsForeignFrame(found) then return end
         local regionList = { found:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
@@ -66,18 +56,12 @@ do
     -- House font on every FontString under a page (the reward-track points, labels
     -- and progress), refreshed on each show.
     local function FontKids(found, depth)
-        if depth > 4 or not found or found:IsForbidden() then
-            return
-        end
-        if depth > 0 and Skin.IsForeignFrame(found) then
-            return
-        end
+        if depth > 4 or not found or found:IsForbidden() then return end
+        if depth > 0 and Skin.IsForeignFrame(found) then return end
         local regionList = { found:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region:GetObjectType() == "FontString" then
-                Skin.Font(region)
-            end
+            if region:GetObjectType() == "FontString" then Skin.Font(region) end
         end
         local children = { found:GetChildren() }
         for idx = 1, #children do
@@ -90,19 +74,16 @@ do
     -- switched to Blizz Default before the reload.
     local Skin_LegacySystem = Skin.WindowCallback("legacysystem", function()
         local frame = _G.LegacySystemFrame
-        if not frame then
-            return
-        end
+        if not frame then return end
         Skin.Shell("legacysystem", frame)
         Skin.RemovePortrait(frame)
         Skin.CommonChrome(frame, "LegacySystemFrame")
         -- The window's own file-texture backdrop, which the shell does not catch.
-        if _G.LegacySystemFrameBg then
-            _G.LegacySystemFrameBg:SetAlpha(0)
-        end
+        if _G.LegacySystemFrameBg then _G.LegacySystemFrameBg:SetAlpha(0) end
         FadeArt(frame, 0)
         Skin.CloseButton(frame.CloseButton or _G.LegacySystemFrameCloseButton)
-        local titleText = (frame.TitleContainer and frame.TitleContainer.TitleText) or _G.LegacySystemFrameTitleText
+        local titleText = (frame.TitleContainer and frame.TitleContainer.TitleText)
+            or _G.LegacySystemFrameTitleText
         if titleText then
             Skin.Font(titleText)
             Skin.White(titleText)
@@ -111,9 +92,7 @@ do
             Skin.SideTab(frame[tn])
         end
         for _, pn in ipairs(PAGES) do
-            if frame[pn] then
-                FontKids(frame[pn], 0)
-            end
+            if frame[pn] then FontKids(frame[pn], 0) end
         end
     end)
 
@@ -121,15 +100,11 @@ do
     -- frame once).
     local function InstallHooks()
         local frame = _G.LegacySystemFrame
-        if not frame then
-            return
-        end
+        if not frame then return end
         local repaint = Skin.Debounce(Skin_LegacySystem)
         Skin.HookShow(frame, repaint)
         for _, pn in ipairs(PAGES) do
-            if frame[pn] then
-                Skin.HookShow(frame[pn], repaint)
-            end
+            if frame[pn] then Skin.HookShow(frame[pn], repaint) end
         end
     end
 

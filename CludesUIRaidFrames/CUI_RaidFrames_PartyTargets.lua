@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PartyTargets.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local max = math.max
@@ -33,9 +29,7 @@ local GetClassicHealthCurve = Inner.GetClassicHealthCurve
 local GetSafeHealthPercent = Inner.GetSafeHealthPercent
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 -- Party Targets (opt-in, Party-only)
@@ -87,9 +81,7 @@ do
     local PT_BY_UNIT = {}
 
     -- The settings the target frames are styled from: the party ones, as the Beside Owner pets.
-    local function PT_Proxy()
-        return mod._scaledPartyProxy
-    end
+    local function PT_Proxy() return mod._scaledPartyProxy end
 
     -- "party1" -> "party1target", built once per token.
     local function PT_TargetOf(unit)
@@ -103,13 +95,9 @@ do
 
     -- Your raid token while the party frames run on raid units (arena, Small Raid), else nil.
     local function PT_Me()
-        if not IsInRaid() then
-            return nil
-        end
+        if not IsInRaid() then return nil end
         local index = UnitInRaid("player")
-        if issecretvalue(index) or not index then
-            return nil
-        end
+        if issecretvalue(index) or not index then return nil end
         return "raid" .. index
     end
 
@@ -128,12 +116,8 @@ do
         local old = widget._ptOwnerUnit
         local changed = old ~= key or widget._ptOwn ~= own
         if old ~= key then
-            if old and PT_BY_UNIT[old] == widget then
-                PT_BY_UNIT[old] = nil
-            end
-            if key then
-                PT_BY_UNIT[key] = widget
-            end
+            if old and PT_BY_UNIT[old] == widget then PT_BY_UNIT[old] = nil end
+            if key then PT_BY_UNIT[key] = widget end
             widget._ptOwnerUnit = key
         end
         widget._ptOwn = own
@@ -150,45 +134,31 @@ do
             local _, classTok = UnitClass(unit)
             if issecretvalue(classTok) then
                 local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(unit, classTok)
-                if success then
-                    return true, red, green, blue
-                end
+                if success then return true, red, green, blue end
                 local color = C_ClassColor.GetClassColor(classTok)
-                if color then
-                    return true, color.r, color.g, color.b
-                end
+                if color then return true, color.r, color.g, color.b end
                 return false
             end
             local cc = classTok and CUI.GetClassColor(classTok)
-            if cc then
-                return true, cc.r, cc.g, cc.b
-            end
+            if cc then return true, cc.r, cc.g, cc.b end
             return false
         end
         local tap = UnitIsTapDenied(unit)
         local re = UnitReaction(unit, "player")
-        if issecretvalue(re) then
-            re = nil
-        end
+        if issecretvalue(re) then re = nil end
         if widget then
             widget._ptNpc, widget._ptTap, widget._ptRe = true, tap, re
         end
-        if tap then
-            return true, 0.6, 0.6, 0.6
-        end
+        if tap then return true, 0.6, 0.6, 0.6 end
         local color = re and FACTION_BAR_COLORS[re]
-        if color then
-            return true, color.r, color.g, color.b
-        end
+        if color then return true, color.r, color.g, color.b end
         return false
     end
 
     -- The Classic gradient at the unit's current health (the engine evaluates the curve, secret-safe).
     local function PT_PaintClassic(health, unit)
         local c = UnitHealthPercent(unit, true, GetClassicHealthCurve())
-        if c and c.GetRGB then
-            health:SetStatusBarColor(c:GetRGB())
-        end
+        if c and c.GetRGB then health:SetStatusBarColor(c:GetRGB()) end
     end
 
     -- Identity paint: name, fill and background colours, and the value, which jumps (a new unit). Runs
@@ -197,23 +167,17 @@ do
         local u = widget._ptUnit
         -- Set again below only for a mob whose colour reads its tap and reaction.
         widget._ptNpc = nil
-        if not (u and UnitExists(u)) then
-            return
-        end
+        if not (u and UnitExists(u)) then return end
         widget._nameText:SetText(UnitName(u))
         local health, backdrop, mode = widget._health, widget._bg, PartyTgt.mode
         local fillTex = health:GetStatusBarTexture()
         if mode == "dark" then
             local red, green, blue, a = CUI.GetDarkModeFill()
             health:SetStatusBarColor(red, green, blue, 1)
-            if fillTex then
-                fillTex:SetAlpha(a)
-            end
+            if fillTex then fillTex:SetAlpha(a) end
             backdrop:SetColorTexture(CUI.GetDarkModeBg())
         else
-            if fillTex then
-                fillTex:SetAlpha(1)
-            end
+            if fillTex then fillTex:SetAlpha(1) end
             local success, red, green, blue = false
             if (mode ~= "classic" and mode ~= "custom") or PartyTgt.bgClass then
                 success, red, green, blue = PT_ClassRGB(u, widget)
@@ -246,21 +210,15 @@ do
         else
             health:SetValue(GetSafeHealthPercent(unit))
         end
-        if PartyTgt.mode == "classic" then
-            PT_PaintClassic(health, unit)
-        end
+        if PartyTgt.mode == "classic" then PT_PaintClassic(health, unit) end
     end
 
     -- Every target frame on screen, in full (settings pushes: a restyle, Dark Mode and class colours
     -- through ERF:UpdateAllFrames, roster edges). Nothing while off.
     mod._PT_RepaintVisible = function()
-        if not mod._ptEnabled then
-            return
-        end
+        if not mod._ptEnabled then return end
         for _, widget in ipairs(mod._partyTargetFrames) do
-            if widget:IsVisible() then
-                PT_Paint(widget)
-            end
+            if widget:IsVisible() then PT_Paint(widget) end
         end
     end
 
@@ -339,12 +297,8 @@ do
                 PT_PaintValue(frame, u)
                 if frame._ptNpc then
                     local re = UnitReaction(u, "player")
-                    if issecretvalue(re) then
-                        re = nil
-                    end
-                    if UnitIsTapDenied(u) ~= frame._ptTap or re ~= frame._ptRe then
-                        PT_Paint(frame)
-                    end
+                    if issecretvalue(re) then re = nil end
+                    if UnitIsTapDenied(u) ~= frame._ptTap or re ~= frame._ptRe then PT_Paint(frame) end
                 end
             end
         end
@@ -374,9 +328,7 @@ do
                 if widget:GetAttribute("pt-noself") ~= noself then
                     widget:SetAttribute("pt-noself", noself)
                 end
-                if widget:GetAttribute("pt-me") ~= me then
-                    widget:SetAttribute("pt-me", me)
-                end
+                if widget:GetAttribute("pt-me") ~= me then widget:SetAttribute("pt-me", me) end
                 local u = widget._ptOwner:GetAttribute("unit")
                 local show = not (noself and u ~= nil and (u == "player" or u == me))
                 if widget:GetAttribute("useparent-unit") ~= show then
@@ -390,9 +342,7 @@ do
     -- listeners, and a repaint of the frames on screen (a token can pass to another member). The
     -- attribute seed is a secure write: in combat it waits for the combat-end flush.
     mod._PT_RefreshAll = function()
-        if not mod._ptEnabled then
-            return
-        end
+        if not mod._ptEnabled then return end
         PartyTgt.me = PT_Me()
         for _, widget in ipairs(mod._partyTargetFrames) do
             PT_Classify(widget)
@@ -417,9 +367,7 @@ do
     local function PT_OnEvent(_, evt, unitToken)
         if evt == "UNIT_TARGET" then
             local widget = PT_BY_UNIT[unitToken]
-            if widget and widget:IsVisible() then
-                PT_Paint(widget)
-            end
+            if widget and widget:IsVisible() then PT_Paint(widget) end
         elseif mod._partyFramesVisible and not PartyTgt.flushQueued then
             PartyTgt.flushQueued = true
             C_Timer.After(0, PartyTgt.Flush)
@@ -443,9 +391,7 @@ do
             if side == "above" and mod.RF_PartyKit() then
                 local _, _, cs = mod.RF_PartyDims(cfg)
                 extra = cs - (cfg.partyKitSpacing or mod.RF_KIT_SPACING)
-                if extra < 0 then
-                    extra = 0
-                end
+                if extra < 0 then extra = 0 end
             end
             return side, extra, false
         end
@@ -464,9 +410,7 @@ do
     -- The gap to the frame: the party frames' spacing (under the kit its frame gap, without the buff
     -- lines RF_PartyDims adds above stacked frames).
     local function PT_Gap(cfg)
-        if mod.RF_PartyKit() then
-            return cfg.partyKitSpacing or mod.RF_KIT_SPACING
-        end
+        if mod.RF_PartyKit() then return cfg.partyKitSpacing or mod.RF_KIT_SPACING end
         local _, _, sp = mod.RF_PartyDims(cfg)
         return sp
     end
@@ -503,13 +447,9 @@ do
     -- sit past them, along it level with them, so there the farther reach counts.
     function mod.PT_Reserve(horizontal, before, pets)
         pets = pets or 0
-        if not (mod._ptEnabled and PartyTgt.w) then
-            return pets
-        end
+        if not (mod._ptEnabled and PartyTgt.w) then return pets end
         local region = PT_ReserveOf(PartyTgt, horizontal, before)
-        if PartyTgt.across then
-            return region + pets
-        end
+        if PartyTgt.across then return region + pets end
         return (region > pets) and region or pets
     end
 
@@ -529,19 +469,16 @@ do
 
     -- Only direction is needed here; calculating the gap would call RF_PartyDims again.
     function mod.PT_AlongStack(cfg, enabled)
-        if enabled == nil then
-            enabled = mod._ptEnabled
-        end
+        if enabled == nil then enabled = mod._ptEnabled end
         return enabled and mod.PT_PositionAlongStack(cfg.partyTargetPosition, cfg.partyHorizontal) or false
     end
 
     -- Target length on the stacking axis plus the party gap. Previews pass their enable state.
     function mod.PT_AlongPitch(cfg, enabled)
-        if not mod.PT_AlongStack(cfg, enabled) then
-            return 0
-        end
-        return PixelSnap(cfg.partyHorizontal and (cfg.partyTargetWidth or 70) or (cfg.partyTargetHeight or 33))
-            + PixelSnap(PT_Gap(cfg))
+        if not mod.PT_AlongStack(cfg, enabled) then return 0 end
+        return PixelSnap(
+            cfg.partyHorizontal and (cfg.partyTargetWidth or 70) or (cfg.partyTargetHeight or 33)
+        ) + PixelSnap(PT_Gap(cfg))
     end
 
     -- One target frame on its side of owner o: off from the owner's edge, then the offsets.
@@ -563,9 +500,7 @@ do
     local function PT_NotifyReserve()
         local FB = mod._FB
         local fontStr = FB.Settings()
-        if FB.built and fontStr and fontStr.showInDungeons == true then
-            FB.Anchor()
-        end
+        if FB.built and fontStr and fontStr.showInDungeons == true then FB.Anchor() end
         mod.PF_ReAnchor()
     end
 
@@ -574,9 +509,7 @@ do
     -- NotifyReserve) and the Width, Height, Position and offset settings run it. The size is absolute
     -- (never the kit's Frame Scale). A combat call is marked for the combat-end flush (ns.PF_Flush).
     mod._PT_Layout = function()
-        if not mod._ptEnabled then
-            return
-        end
+        if not mod._ptEnabled then return end
         if InCombatLockdown() then
             mod._ptLayoutDirty = true
             return
@@ -637,9 +570,7 @@ do
             end
             PT_Place(widget, widget._ptOwner, side, off, posX, posY)
         end
-        if reserve then
-            PT_NotifyReserve()
-        end
+        if reserve then PT_NotifyReserve() end
     end
 
     -- The target frames' own style inputs after the shared ones: Fill Color and its custom colour,
@@ -648,7 +579,8 @@ do
         local p, num = saved.profile, mod._PF.STYLE_N
         local fc = p.partyTargetCustomFillColor or PartyTgt.DEF_FILL
         local bc = p.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
-        tbl[num + 1], tbl[num + 2], tbl[num + 3], tbl[num + 4] = p.partyTargetHealthColorMode, fc.r, fc.g, fc.b
+        tbl[num + 1], tbl[num + 2], tbl[num + 3], tbl[num + 4] =
+            p.partyTargetHealthColorMode, fc.r, fc.g, fc.b
         tbl[num + 5], tbl[num + 6], tbl[num + 7], tbl[num + 8] = p.partyTargetBgClassColored, bc.r, bc.g, bc.b
         tbl[num + 9], tbl[num + 10] = p.partyTargetBgDarkness, PT_Proxy().smoothBars
     end
@@ -658,9 +590,7 @@ do
     local function PT_TexBg(widget)
         local s = PT_Proxy()
         local filePath = mod.RF_TexBgPath(s)
-        if not (filePath or widget._rfTexBg) then
-            return
-        end
+        if not (filePath or widget._rfTexBg) then return end
         widget._rfTexBg = filePath and true or nil
         local dark = saved.profile.partyTargetHealthColorMode == "dark"
         mod.RF_TexBgLayer(
@@ -668,16 +598,12 @@ do
             widget._bg,
             (not dark or mod.RF_TexBgOpaque(s, true)) and filePath or nil
         )
-        if filePath then
-            mod.RF_TexBgWatch()
-        end
+        if filePath then mod.RF_TexBgWatch() end
     end
     -- A colour push (ns.RF_TexBgRecheck): Dark Mode Fill can cross 100 with no restyle.
     -- ERF:UpdateAllFrames repaints the frames on screen right after.
     mod._PT_TexBgRecheck = function()
-        if not mod._ptEnabled then
-            return
-        end
+        if not mod._ptEnabled then return end
         for _, widget in ipairs(mod._partyTargetFrames) do
             PT_TexBg(widget)
         end
@@ -689,15 +615,11 @@ do
     -- when a shared input changed (a colour setting alone re-reads the colours). A change made while
     -- off lands on the enable edge. Combat-legal: nothing here touches the secure buttons.
     mod._PT_Restyle = function()
-        if not mod._ptEnabled then
-            return
-        end
+        if not mod._ptEnabled then return end
         local cfg = PT_Proxy()
         local texPath = ResolveHealthTexture(cfg)
         local changed, at = mod._PF.StyleChanged("pt", cfg, texPath, PT_FpExtra, PartyTgt.FP_N)
-        if not changed then
-            return
-        end
+        if not changed then return end
         local profile = saved.profile
         local fc = profile.partyTargetCustomFillColor or PartyTgt.DEF_FILL
         local bc = profile.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
@@ -748,23 +670,17 @@ do
     -- A frame coming on screen (its unit appeared, or its party frame showed): its unit re-read and a
     -- full paint. Going off screen: the listeners follow.
     local function PT_OnShow(self)
-        if not mod._ptEnabled then
-            return
-        end
+        if not mod._ptEnabled then return end
         PT_Classify(self)
         PT_Paint(self)
         PT_CountWanted()
     end
-    local function PT_OnHide(self)
-        PT_CountWanted(self)
-    end
+    local function PT_OnHide(self) PT_CountWanted(self) end
 
     -- The party header re-assigned an owner's unit (in combat too): its target frame follows at once.
     -- The same unit set again (every header pass) returns after the compare.
     local function PT_OwnerAttr(ownerFrame, name)
-        if name ~= "unit" or not mod._ptEnabled then
-            return
-        end
+        if name ~= "unit" or not mod._ptEnabled then return end
         local widget = PartyTgt.frameOf[ownerFrame]
         if widget and PT_Classify(widget) and widget:IsVisible() then
             PT_Paint(widget)
@@ -797,9 +713,7 @@ do
     -- The enable/disable edges, a new frame and a frame strata change while blocked: re-seat the
     -- blockers.
     mod._PT_RefreshPreviewBlock = function()
-        if PartyTgt.pvBlockOn then
-            mod._PT_SetPreviewBlock(true)
-        end
+        if PartyTgt.pvBlockOn then mod._PT_SetPreviewBlock(true) end
     end
 
     local function PT_Build(ownerFrame, globalName)
@@ -841,9 +755,7 @@ do
     -- it hides with the self button while that is unused), built the first time Include Own Target is
     -- on. True when built now. OOC only.
     local function PT_EnsureSelf()
-        if PartyTgt.selfFrame or not mod._partySelfButton then
-            return false
-        end
+        if PartyTgt.selfFrame or not mod._partySelfButton then return false end
         PartyTgt.selfFrame = PT_Build(mod._partySelfButton, "ERFPartyTargetSelf")
         -- New frames take the next restyle in full.
         mod._PF.fp.pt = nil
@@ -856,15 +768,11 @@ do
             mod._ptCreated = true
             for i = 1, 5 do
                 local ownerFrame = mod._partyHeader[i]
-                if ownerFrame then
-                    PT_Build(ownerFrame, "ERFPartyTarget" .. i)
-                end
+                if ownerFrame then PT_Build(ownerFrame, "ERFPartyTarget" .. i) end
             end
             mod._PF.fp.pt = nil
         end
-        if mod._ptInclDesired then
-            PT_EnsureSelf()
-        end
+        if mod._ptInclDesired then PT_EnsureSelf() end
     end
 
     -- Include Own Target, applied: the self button's frame (built on first use) watched only while on,
@@ -905,15 +813,11 @@ do
     -- The combat-end flush (ns.PF_Flush) of a deferred include edge or attribute seed.
     mod._PT_SyncSelf = function()
         mod._ptSelfDirty = nil
-        if mod._ptEnabled then
-            PT_SetInclude()
-        end
+        if mod._ptEnabled then PT_SetInclude() end
     end
 
     mod._PT_Apply = function()
-        if mod._ptDesired == mod._ptEnabled then
-            return
-        end
+        if mod._ptDesired == mod._ptEnabled then return end
         if InCombatLockdown() then
             mod.CombatQueue.Defer("PT_Apply", mod._PT_Apply)
             return
@@ -952,9 +856,7 @@ do
             mod._PT_RefreshAll()
             PT_SetInclude()
             for _, widget in ipairs(mod._partyTargetFrames) do
-                if widget ~= PartyTgt.selfFrame then
-                    RegisterUnitWatch(widget)
-                end
+                if widget ~= PartyTgt.selfFrame then RegisterUnitWatch(widget) end
             end
         else
             mod._ptEnabled = false
@@ -972,9 +874,7 @@ do
             mod.PF_SyncUnitSnippet()
             -- The party frames close the pitch the frames held along the stack, and the attached
             -- groups take the room back.
-            if (mod._ptPitchApplied or 0) ~= 0 then
-                mod._LayoutPartyFrames()
-            end
+            if (mod._ptPitchApplied or 0) ~= 0 then mod._LayoutPartyFrames() end
             PT_NotifyReserve()
         end
         mod._PT_RefreshPreviewBlock()
@@ -988,17 +888,13 @@ do
     -- Include Own Target (options, profile swaps): applied now while on, else on the enable edge.
     mod.PT_SetIncludeSelf = function(enabled)
         mod._ptInclDesired = enabled and true or false
-        if mod._ptEnabled then
-            PT_SetInclude()
-        end
+        if mod._ptEnabled then PT_SetInclude() end
     end
 
     -- A Fill Color or Background setting changed (the options): the fingerprint-gated restyle, which
     -- repaints the frames on screen when anything it reads changed. Nothing while off.
     mod.PT_Refresh = function()
-        if mod._ptEnabled then
-            mod._PT_Restyle()
-        end
+        if mod._ptEnabled then mod._PT_Restyle() end
     end
 
     -- Options preview: a made-up target beside each party preview frame while Party Targets is on, on
@@ -1018,9 +914,7 @@ do
     -- frame reaches past its party frame's edges (pads). s: the preview's view; pw, ph: its party
     -- frame size. One reused table.
     function mod.PT_PreviewSpec(cfg, pw, ph, petSpec)
-        if cfg.partyShowTargets ~= true then
-            return nil
-        end
+        if cfg.partyShowTargets ~= true then return nil end
         local tbl = PartyTgt.pvSpec
         local wid, hgt = PixelSnap(cfg.partyTargetWidth or 70), PixelSnap(cfg.partyTargetHeight or 33)
         local posX, posY = PixelSnap(cfg.partyTargetOffsetX or 0), PixelSnap(cfg.partyTargetOffsetY or 0)
@@ -1104,14 +998,10 @@ do
         if mode == "dark" then
             local red, green, blue, a = CUI.GetDarkModeFill()
             health:SetStatusBarColor(red, green, blue, 1)
-            if texture then
-                texture:SetAlpha(a)
-            end
+            if texture then texture:SetAlpha(a) end
             backdrop:SetColorTexture(CUI.GetDarkModeBg())
         else
-            if texture then
-                texture:SetAlpha(1)
-            end
+            if texture then texture:SetAlpha(1) end
             local rc = FACTION_BAR_COLORS[mock.re]
             if mode == "classic" then
                 local p = mock.hp / 100

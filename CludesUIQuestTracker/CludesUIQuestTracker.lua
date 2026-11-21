@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker.lua - the Quest Tracker module's core.
 --
@@ -111,24 +109,16 @@ end
 
 function EQT.DB()
     local qt = SavedSettings()
-    if qt then
-        return qt
-    end
+    if qt then return qt end
     -- Before the database is ready (login, a profile or spec switch): a stand-in
     -- that keeps the tracker shown. Without enabled and a visibility mode the
     -- visibility check would hide the tracker on any unrelated event meanwhile.
-    if not EQT._tmpDB then
-        EQT._tmpDB = { enabled = true, visibility = "always" }
-    end
+    if not EQT._tmpDB then EQT._tmpDB = { enabled = true, visibility = "always" } end
     return EQT._tmpDB
 end
 
-function EQT.Cfg(key)
-    return EQT.DB()[key]
-end
-function EQT.Set(key, value)
-    EQT.DB()[key] = value
-end
+function EQT.Cfg(key) return EQT.DB()[key] end
+function EQT.Set(key, value) EQT.DB()[key] = value end
 
 -- The style a profile's saved flags ask for: "cui" | "blizzard" | "classic".
 local function StyleOf(qt)
@@ -142,9 +132,7 @@ end
 function mod.QT_Style()
     if mod._qtStyle == nil then
         local qt = SavedSettings()
-        if not qt then
-            return "cui"
-        end
+        if not qt then return "cui" end
         mod._qtStyle = StyleOf(qt)
     end
     return mod._qtStyle
@@ -156,16 +144,10 @@ end
 -- false in the older customTracker key also counts as a pick; a true there
 -- never was one (that key read true for everyone who had not turned it off).
 function mod.CustomTrackerWanted(qt)
-    if CludesUI.IS_FOREVER ~= true then
-        return false
-    end
+    if CludesUI.IS_FOREVER ~= true then return false end
     local pick = qt.customTrackerPick
-    if pick == nil and qt.customTracker == false then
-        pick = false
-    end
-    if pick ~= nil then
-        return pick
-    end
+    if pick == nil and qt.customTracker == false then pick = false end
+    if pick ~= nil then return pick end
     return StyleOf(qt) == "cui"
 end
 
@@ -184,21 +166,15 @@ end
 function mod.UseCustomTracker()
     if mod._customTracker == nil then
         local qt = SavedSettings()
-        if not qt then
-            return false
-        end
+        if not qt then return false end
         mod._customTracker = mod.CustomTrackerWanted(qt)
     end
     return mod._customTracker
 end
 
 -- Either stock style: Blizzard's own tracker art and text.
-function EQT.Blizz()
-    return mod.QT_Style() ~= "cui"
-end
-function EQT.Classic()
-    return mod.QT_Style() == "classic"
-end
+function EQT.Blizz() return mod.QT_Style() ~= "cui" end
+function EQT.Classic() return mod.QT_Style() == "classic" end
 
 -------------------------------------------------------------------------------
 --  Suppression: another module (the M+ Timer's preview, say) can hide the
@@ -208,17 +184,11 @@ end
 -------------------------------------------------------------------------------
 local suppressors = {}
 function _G._CUQT_SetSuppressed(key, on)
-    if not key then
-        return
-    end
+    if not key then return end
     suppressors[key] = on and true or nil
-    if EQT.ApplySuppression then
-        EQT.ApplySuppression(next(suppressors) ~= nil)
-    end
+    if EQT.ApplySuppression then EQT.ApplySuppression(next(suppressors) ~= nil) end
 end
-function EQT.IsSuppressed()
-    return next(suppressors) ~= nil
-end
+function EQT.IsSuppressed() return next(suppressors) ~= nil end
 
 -------------------------------------------------------------------------------
 --  Start-up
@@ -226,37 +196,25 @@ end
 -- Blizzard_ObjectiveTracker is part of the base UI and loads before us, so
 -- its ADDON_LOADED is usually missed: check it is already there.
 local sawSelf, sawTracker, loggedIn = false, false, false
-if C_AddOns.IsAddOnLoaded("Blizzard_ObjectiveTracker") or _G.ObjectiveTrackerFrame then
-    sawTracker = true
-end
+if C_AddOns.IsAddOnLoaded("Blizzard_ObjectiveTracker") or _G.ObjectiveTrackerFrame then sawTracker = true end
 
 local starter = CreateFrame("Frame")
 starter:RegisterEvent("ADDON_LOADED")
 starter:RegisterEvent("PLAYER_LOGIN")
 
 local function Start()
-    if not (sawSelf and sawTracker and loggedIn) then
-        return
-    end
+    if not (sawSelf and sawTracker and loggedIn) then return end
     Database()
     local custom = mod.UseCustomTracker()
     if custom then
         EQT.InitCustom()
     else
-        if EQT.InitSkin then
-            EQT.InitSkin()
-        end
-        if EQT.InitVisibility then
-            EQT.InitVisibility()
-        end
+        if EQT.InitSkin then EQT.InitSkin() end
+        if EQT.InitVisibility then EQT.InitVisibility() end
     end
-    if EQT.InitQoL then
-        EQT.InitQoL()
-    end
+    if EQT.InitQoL then EQT.InitQoL() end
     -- Our tracker has its own mover; this one moves Blizzard's frame.
-    if EQT.InitPosition and not custom then
-        EQT.InitPosition()
-    end
+    if EQT.InitPosition and not custom then EQT.InitPosition() end
     starter:UnregisterAllEvents()
 end
 
@@ -296,9 +254,7 @@ local REFRESH_STEPS = {
 }
 _G._CUQT_RefreshAll = function()
     for _, step in ipairs(REFRESH_STEPS) do
-        if EQT[step] then
-            EQT[step]()
-        end
+        if EQT[step] then EQT[step]() end
     end
 end
 
@@ -307,9 +263,7 @@ end
 -------------------------------------------------------------------------------
 local function SetShown(on)
     EQT.Set("enabled", on)
-    if EQT.UpdateVisibility then
-        EQT.UpdateVisibility()
-    end
+    if EQT.UpdateVisibility then EQT.UpdateVisibility() end
 end
 
 SLASH_EQT1 = "/cqt"

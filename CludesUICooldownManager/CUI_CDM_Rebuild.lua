@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Rebuild.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ALL_RACIAL_SPELLS, ECME = Inner.ALL_RACIAL_SPELLS, Inner.ECME
@@ -41,26 +37,18 @@ local BuildAllCDMBars
 local _CDMApplyVisibility
 
 local _cdmInVehicle = false
-Inner.SetCdmInVehicle = function(val)
-    _cdmInVehicle = val
-end
+Inner.SetCdmInVehicle = function(val) _cdmInVehicle = val end
 local _inCombat = false
-Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val)
-    _inCombat = val
-end
+Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) _inCombat = val end
 
 -- Ghost bars: ensure both buff and CD ghost bars exist in the bars array. Called from BuildAllCDMBars before iterating bars.
 mod.GHOST_CD_BAR_KEY = GHOST_CD_BAR_KEY
 local function EnsureGhostBars()
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
-        return
-    end
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then return end
     local hasCD = false
     for _, bar in ipairs(profile.cdmBars.bars) do
-        if bar.key == GHOST_CD_BAR_KEY then
-            hasCD = true
-        end
+        if bar.key == GHOST_CD_BAR_KEY then hasCD = true end
     end
     if not hasCD then
         profile.cdmBars.bars[#profile.cdmBars.bars + 1] = {
@@ -101,17 +89,13 @@ local BuildCustomBarSpellSet -- forward declare (defined below)
 BuildCustomBarSpellSet = function()
     local set = {}
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
-        return set
-    end
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then return set end
     for _, edge in ipairs(profile.cdmBars.bars) do
         if not MAIN_BAR_KEYS[edge.key] then
             local spellData = mod.GetBarSpellData(edge.key)
             if spellData and spellData.assignedSpells then
                 for _, spellRef in ipairs(spellData.assignedSpells) do
-                    if spellRef and spellRef > 0 then
-                        set[spellRef] = true
-                    end
+                    if spellRef and spellRef > 0 then set[spellRef] = true end
                 end
             end
         end
@@ -138,24 +122,16 @@ local function UpdateAllCDMBars(dt) end
 function mod.BarUsesBuffViewer(barId)
     -- "Replace with Buff" frames come out of the BuffIcon pool too (route map
     -- Pass 3c records the bars); gated so non-users pay one boolean.
-    if mod._cdmAnyBuffReplace and mod._buffReplaceBars and mod._buffReplaceBars[barId] then
-        return true
-    end
+    if mod._cdmAnyBuffReplace and mod._buffReplaceBars and mod._buffReplaceBars[barId] then return true end
     local spellData = mod.GetBarSpellData and mod.GetBarSpellData(barId)
-    if not spellData then
-        return false
-    end
-    if spellData.hostedBuffSpellIDs and next(spellData.hostedBuffSpellIDs) then
-        return true
-    end
+    if not spellData then return false end
+    if spellData.hostedBuffSpellIDs and next(spellData.hostedBuffSpellIDs) then return true end
     return (mod.CollectCdClaimSet and mod.CollectCdClaimSet(spellData)) and true or false
 end
 
 _CDMApplyVisibility = function()
     local profile = ECME.db and ECME.db.profile
-    if not profile then
-        return
-    end
+    if not profile then return end
     local combatNow = _inCombat
     -- Full vehicle UI: hide all bars
     local inVehicle = _cdmInVehicle
@@ -240,9 +216,7 @@ _CDMApplyVisibility = function()
                             local iconFrame = iconList[ii]
                             if iconFrame then
                                 iconFrame:SetAlpha(0)
-                                if not icCombat then
-                                    iconFrame:EnableMouse(false)
-                                end
+                                if not icCombat then iconFrame:EnableMouse(false) end
                             end
                         end
                     end
@@ -257,9 +231,7 @@ _CDMApplyVisibility = function()
                     end
                     widget._visHidden = false
                     -- Cursor bars: resume the glue subscription the vis-hidden watch released; the resume snaps to the cursor immediately instead of waiting for the next 0.15s watch fire.
-                    if widget._mouseTrack and widget._mouseResume then
-                        widget._mouseResume()
-                    end
+                    if widget._mouseTrack and widget._mouseResume then widget._mouseResume() end
                     -- Apply opacity to icons every pass (idempotent, handles fresh loads where wasHidden is false). EffectiveBarAlpha folds in the out-of-combat fade when that option is on.
                     local visAlpha = EffectiveBarAlpha(barInfo)
                     local iconList = cdmBarIcons[barInfo.key]
@@ -287,7 +259,12 @@ _CDMApplyVisibility = function()
                                 if phHidden then
                                     -- Hide Icon: an Always-Show placeholder keeps its reserved layout slot but stays fully invisible (icon, border, bg).
                                     iconFrame:SetAlpha(0)
-                                elseif not (iconCache and (iconCache._cdStateHidden or iconCache._missingActiveHidden)) then
+                                elseif
+                                    not (
+                                        iconCache
+                                        and (iconCache._cdStateHidden or iconCache._missingActiveHidden)
+                                    )
+                                then
                                     iconFrame:SetAlpha(visAlpha)
                                 end
                             end
@@ -297,18 +274,14 @@ _CDMApplyVisibility = function()
                         -- Defer to a clean execution context: event handlers (PLAYER_TARGET_CHANGED, mount
                         -- events, etc.) can carry taint from the Blizzard dispatch chain. LayoutCDMBar calls SetSize/SetPoint which propagates the taint and triggers ADDON_ACTION_BLOCKED.
                         local pageBarKey = barInfo.key
-                        C_Timer.After(0, function()
-                            LayoutCDMBar(pageBarKey)
-                        end)
+                        C_Timer.After(0, function() LayoutCDMBar(pageBarKey) end)
                     end
                 end
             end -- unlockActive else
             -- Aura-tracked custom buffs render on a UIParent holder that mirrors
             -- the bar's alpha in its anchor pass; alpha edges fire no frame
             -- hooks, so poke it (no-op for bars without such buffs).
-            if mod._AuraCustomPoke then
-                mod._AuraCustomPoke(barInfo.key)
-            end
+            if mod._AuraCustomPoke then mod._AuraCustomPoke(barInfo.key) end
         end
     end
 
@@ -368,16 +341,10 @@ _G._CUCME_ApplyVisibility = _CDMApplyVisibility
 -- Live-apply bar opacity to a bar's frame + icons. Skips hidden bars so visibility state is never overridden (hidden stays at alpha 0).
 local function ApplyBarOpacity(barId)
     local widget = cdmBarFrames[barId]
-    if not widget or widget._visHidden then
-        return
-    end
+    if not widget or widget._visHidden then return end
     local barInfo = barDataByKey[barId]
-    if not barInfo then
-        return
-    end
-    if barId == FOCUSKICK_BAR_KEY then
-        return
-    end
+    if not barInfo then return end
+    if barId == FOCUSKICK_BAR_KEY then return end
     local a = EffectiveBarAlpha(barInfo)
     local iconList = cdmBarIcons[barId]
     if iconList then
@@ -396,16 +363,12 @@ local function ApplyBarOpacity(barId)
         end
     end
     -- The aura-tracked custom buff holder mirrors this opacity in its anchor pass.
-    if mod._AuraCustomPoke then
-        mod._AuraCustomPoke(barId)
-    end
+    if mod._AuraCustomPoke then mod._AuraCustomPoke(barId) end
 end
 mod.ApplyBarOpacity = ApplyBarOpacity
 
 -- Helper to get barData by key
-local function GetBarData(barId)
-    return barDataByKey[barId]
-end
+local function GetBarData(barId) return barDataByKey[barId] end
 mod.GetBarData = GetBarData
 
 -------------------------------------------------------------------------------
@@ -481,15 +444,11 @@ do
     local _stableMode = false
 
     local function FormatKeybindKey(barKey)
-        if not barKey or barKey == "" then
-            return nil
-        end
+        if not barKey or barKey == "" then return nil end
         -- Gamepad binds resolve to glyph markup (no atlas name matches a substitution
         -- below); keyboard binds keep the raw tokens the substitutions are written against.
         local resolved = GetBindingText(barKey, 1)
-        if resolved and resolved:find("|A:", 1, true) then
-            barKey = resolved
-        end
+        if resolved and resolved:find("|A:", 1, true) then barKey = resolved end
         barKey = barKey:gsub("SHIFT%-", "S")
         barKey = barKey:gsub("CTRL%-", "C")
         barKey = barKey:gsub("ALT%-", "A")
@@ -515,9 +474,7 @@ do
     -- bound sees the real spell's key. Equal rank keeps the first writer, which
     -- preserves scan order within a single bar.
     local function _SetKeybind(cacheKey, formattedText, rankNum)
-        if not formattedText then
-            return
-        end
+        if not formattedText then return end
         local current = _cdmKeybindRank[cacheKey]
         if current == nil or rankNum < current then
             _cdmKeybindCache[cacheKey] = formattedText
@@ -530,22 +487,14 @@ do
     -- hand through whatever GetActionInfo/GetMacroSpell returned, and writing a
     -- nil cache key would be a hard error.
     local function _SetSpellKeybind(spellId, formattedText, rankNum)
-        if not spellId then
-            return
-        end
+        if not spellId then return end
         _SetKeybind(spellId, formattedText, rankNum)
         local name = C_Spell.GetSpellName and C_Spell.GetSpellName(spellId)
-        if name then
-            _SetKeybind(name, formattedText, rankNum)
-        end
+        if name then _SetKeybind(name, formattedText, rankNum) end
         local ovr = C_Spell.GetOverrideSpell and C_Spell.GetOverrideSpell(spellId)
-        if ovr and ovr ~= spellId then
-            _SetKeybind(ovr, formattedText, rankNum)
-        end
+        if ovr and ovr ~= spellId then _SetKeybind(ovr, formattedText, rankNum) end
         local base = C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(spellId)
-        if base and base ~= spellId then
-            _SetKeybind(base, formattedText, rankNum)
-        end
+        if base and base ~= spellId then _SetKeybind(base, formattedText, rankNum) end
     end
 
     -- Macro commands whose arguments are a list of cast/use targets. English only:
@@ -563,9 +512,7 @@ do
     local function _RegisterMacroTarget(bindToken, formattedText, rankNum)
         -- Drop a leading castsequence reset clause ("reset=combat/5 Spell").
         bindToken = bindToken:gsub("^reset=%S*%s*", "")
-        if bindToken == "" then
-            return
-        end
+        if bindToken == "" then return end
         -- "item:NNNN" is macro-only shorthand for targeting an itemID directly. It
         -- is NOT a valid GetItemInfoInstant input (that wants a bare itemID, item
         -- name, or a full item link) -- pull the numeric ID out ourselves instead
@@ -590,20 +537,14 @@ do
             slotIndex = tonumber(slotIndex)
             if slotIndex >= 1 and slotIndex <= 19 then
                 local slotItem = GetInventoryItemID("player", slotIndex)
-                if slotItem then
-                    _SetKeybind(-slotItem, formattedText, rankNum)
-                end
+                if slotItem then _SetKeybind(-slotItem, formattedText, rankNum) end
             end
             return
         end
-        if tonumber(bindToken) then
-            return
-        end
+        if tonumber(bindToken) then return end
         -- Leftover bracket means the body had an unbalanced [condition] that the
         -- %b[] strip could not remove. Whatever is left is not a usable name.
-        if bindToken:find("[%[%]]") then
-            return
-        end
+        if bindToken:find("[%[%]]") then return end
         -- Store the raw name too: ApplyCachedKeybinds falls back to a name lookup,
         -- which still hits when the spell itself cannot be resolved right now.
         _SetKeybind(bindToken, formattedText, rankNum)
@@ -612,9 +553,7 @@ do
             _SetSpellKeybind(ident, formattedText, rankNum)
         else
             local iid = C_Item and C_Item.GetItemInfoInstant and C_Item.GetItemInfoInstant(bindToken)
-            if iid then
-                _SetKeybind(-iid, formattedText, rankNum)
-            end
+            if iid then _SetKeybind(-iid, formattedText, rankNum) end
         end
     end
 
@@ -656,9 +595,7 @@ do
     local function _RegisterLegacyMacroItem(macroIdx, formattedText, rankNum)
         local macroBody = GetMacroBody and GetMacroBody(macroIdx)
         local target = macroBody and macroBody:match("/use!?%s+([^\r\n]+)")
-        if not target then
-            return
-        end
+        if not target then return end
         target = target:gsub("^%[.-%]%s*", ""):match("^%s*(.-)%s*$")
         local itemId = target:match("^item:(%d+)")
         itemId = itemId and tonumber(itemId)
@@ -673,18 +610,14 @@ do
                 itemId = GetInventoryItemID("player", slotIndex)
             end
         end
-        if itemId then
-            _SetKeybind(-itemId, formattedText, rankNum)
-        end
+        if itemId then _SetKeybind(-itemId, formattedText, rankNum) end
     end
 
     -- Resolve one action slot under one binding key into cache entries, at the
     -- given priority tier. Pure lookups plus writes into the two cache tables.
     local function _ResolveSlotBinding(slot, barKey, tier)
         local formattedText = FormatKeybindKey(barKey)
-        if not formattedText then
-            return
-        end
+        if not formattedText then return end
         local macroRank = tier + _RANK_MACRO_PENALTY
         local slotType, ident, subType = GetActionInfo(slot)
         if slotType == "spell" then
@@ -698,16 +631,12 @@ do
                 -- Legacy took Blizzard's single answer as final. Stable mode falls
                 -- through to the body scan, which is the whole point: that answer
                 -- is state-dependent and hides the other branches.
-                if not _stableMode then
-                    return
-                end
+                if not _stableMode then return end
             elseif subType == "item" and ident then
                 -- Same contract, item side (e.g. "/use 13" trinket macros): `id`
                 -- is the actual itemID, straight from Blizzard, not the body scan.
                 _SetKeybind(-ident, formattedText, macroRank)
-                if not _stableMode then
-                    return
-                end
+                if not _stableMode then return end
             end
             -- For everything else `id` from GetActionInfo is NOT a reliable
             -- identifier -- resolve the real macro index via its name instead
@@ -716,14 +645,10 @@ do
             local macroIdx = macroName and GetMacroIndexByName(macroName)
             if macroIdx and macroIdx > 0 then
                 local live = GetMacroSpell(macroIdx)
-                if live then
-                    _SetSpellKeybind(live, formattedText, macroRank)
-                end
+                if live then _SetSpellKeybind(live, formattedText, macroRank) end
                 if _stableMode then
                     local macroBody = GetMacroBody and GetMacroBody(macroIdx)
-                    if macroBody then
-                        _RegisterMacroTargets(macroBody, formattedText, macroRank)
-                    end
+                    if macroBody then _RegisterMacroTargets(macroBody, formattedText, macroRank) end
                 elseif not live then
                     _RegisterLegacyMacroItem(macroIdx, formattedText, macroRank)
                 end
@@ -799,17 +724,13 @@ do
     _pageFlush:Hide()
     _pageFlush:SetScript("OnUpdate", function(self)
         self:Hide()
-        if not StableKeybindsEnabled() then
-            UpdateCDMKeybinds()
-        end
+        if not StableKeybindsEnabled() then UpdateCDMKeybinds() end
     end)
     local function OnBarAttributeChanged(_, name)
         -- Runs inside the state driver's secure pass: only queue the rebuild (the
         -- flush reads the setting itself, so a mode changed since the last rebuild
         -- cannot drop or add one).
-        if name == "state-page" then
-            _pageFlush:Show()
-        end
+        if name == "state-page" then _pageFlush:Show() end
     end
     local function HookBarPageEdges()
         for index = 1, #_PAGE_EDGE_BARS do
@@ -828,9 +749,7 @@ do
     -- state driver writes on its next update.
     function mod.CDMKeybindPageSwap()
         HookBarPageEdges()
-        if _pageEdgeHooked.EABBar_MainBar then
-            return
-        end
+        if _pageEdgeHooked.EABBar_MainBar then return end
         _pageFlush:Show()
     end
 
@@ -840,9 +759,7 @@ do
         -- Latch the mode for this whole rebuild so the multi-page scan and the
         -- macro body scan can never disagree about it mid-pass.
         _stableMode = StableKeybindsEnabled()
-        if not _stableMode then
-            HookBarPageEdges()
-        end
+        if not _stableMode then HookBarPageEdges() end
         for _, def in ipairs(_barBindingDefs) do
             for index = 1, 12 do
                 local barKey = GetBindingKey(def.prefix .. index)
@@ -859,9 +776,7 @@ do
                         -- loaded.
                         local button = _G["EABButton" .. slot]
                         local live = button and tonumber(button:GetAttribute("action"))
-                        if live then
-                            slot = live
-                        end
+                        if live then slot = live end
                     end
                     _ResolveSlotBinding(slot, barKey, def.tier)
                 end
@@ -870,9 +785,7 @@ do
         local scanMainBar = _stableMode and _ScanMainBarStable or _ScanMainBarLive
         for index = 1, 12 do
             local barKey = GetBindingKey("ACTIONBUTTON" .. index)
-            if barKey then
-                scanMainBar(index, barKey)
-            end
+            if barKey then scanMainBar(index, barKey) end
         end
     end
 
@@ -881,28 +794,20 @@ do
     -- The item and trinket fallbacks stay with the CDM icons below.
     local function ResolveCDMKeybind(spellRef)
         local barKey = _cdmKeybindCache[spellRef]
-        if barKey then
-            return barKey
-        end
+        if barKey then return barKey end
         local ovr = C_Spell.GetOverrideSpell(spellRef)
         if ovr and not issecretvalue(ovr) and ovr ~= spellRef then
             barKey = _cdmKeybindCache[ovr]
-            if barKey then
-                return barKey
-            end
+            if barKey then return barKey end
         end
         local base = C_Spell.GetBaseSpell(spellRef)
         if base and not issecretvalue(base) and base ~= spellRef then
             barKey = _cdmKeybindCache[base]
-            if barKey then
-                return barKey
-            end
+            if barKey then return barKey end
         end
         if spellRef > 0 then
             local name = C_Spell.GetSpellName(spellRef)
-            if name and not issecretvalue(name) then
-                return _cdmKeybindCache[name]
-            end
+            if name and not issecretvalue(name) then return _cdmKeybindCache[name] end
         end
     end
     mod.ResolveCDMKeybind = ResolveCDMKeybind
@@ -916,9 +821,7 @@ do
                 local keybindText = ifd and ifd.keybindText or iconTex._keybindText
                 local ifc = _ecmeFC[iconTex]
                 local spellRef = ifc and ifc.spellID
-                if ifc then
-                    ifc.keybindSid = spellRef
-                end
+                if ifc then ifc.keybindSid = spellRef end
                 if keybindText then
                     if edge and edge.showKeybind and spellRef then
                         local barKey = ResolveCDMKeybind(spellRef)
@@ -936,17 +839,13 @@ do
                         if not barKey and pdK and pdK.altItemIDs then
                             for _, altID in ipairs(pdK.altItemIDs) do
                                 barKey = _cdmKeybindCache[-altID]
-                                if barKey then
-                                    break
-                                end
+                                if barKey then break end
                             end
                         end
                         -- Trinkets: check by equipped item's action slot
                         if not barKey and iconTex._isTrinketFrame and iconTex._trinketSlot then
                             local itemId = GetInventoryItemID("player", iconTex._trinketSlot)
-                            if itemId then
-                                barKey = _cdmKeybindCache[-itemId]
-                            end
+                            if itemId then barKey = _cdmKeybindCache[-itemId] end
                         end
                         if barKey then
                             keybindText:SetText(barKey)
@@ -963,9 +862,7 @@ do
                 end
             end
         end
-        if mod.UpdateRotationAssistIconKeybind then
-            mod.UpdateRotationAssistIconKeybind()
-        end
+        if mod.UpdateRotationAssistIconKeybind then mod.UpdateRotationAssistIconKeybind() end
     end
 
     UpdateCDMKeybinds = function()
@@ -1002,16 +899,12 @@ BuildAllCDMBars = function()
     mod._cdmClaimGen = mod._cdmClaimGen + 1
     mod._cdmResGen = mod._cdmResGen + 1
     -- Hard guard: never build with an unknown spec. CDMFinishSetup is gated on GetActiveSpecKey() at OnEnable, so this is a defense in depth for any other path that calls BuildAllCDMBars too early.
-    if not mod.GetActiveSpecKey() then
-        return
-    end
+    if not mod.GetActiveSpecKey() then return end
 
     -- Mark CDM as rebuilding so width/height match propagation gates off (it would otherwise read
     -- transient bar widths sized for the previous spec's icon count and bake them into
     -- _matchPhysWidth on dependent bars). Cleared at the end of CollectAndReanchor when _pendingApplyOnReanchor fires the authoritative ApplyAllWidthHeightMatches pass.
-    if CludesUI then
-        CludesUI._cdmRebuilding = true
-    end
+    if CludesUI then CludesUI._cdmRebuilding = true end
 
     -- Ensure ghost bars exist before iterating bars
     EnsureGhostBars()
@@ -1044,9 +937,7 @@ BuildAllCDMBars = function()
     if type(profile.cdmBars.bars) == "table" then
         for index = #profile.cdmBars.bars, 1, -1 do
             local edge = profile.cdmBars.bars[index]
-            if type(edge) ~= "table" or not edge.key then
-                table.remove(profile.cdmBars.bars, index)
-            end
+            if type(edge) ~= "table" or not edge.key then table.remove(profile.cdmBars.bars, index) end
         end
     end
 
@@ -1060,21 +951,15 @@ BuildAllCDMBars = function()
     end
 
     -- Migrate the old global Always Show Buffs settings to per-bar before anything reads them (placeholder injection/desaturate ticker).
-    if mod.MigrateAlwaysShowBuffsToPerBar then
-        mod.MigrateAlwaysShowBuffsToPerBar()
-    end
+    if mod.MigrateAlwaysShowBuffsToPerBar then mod.MigrateAlwaysShowBuffsToPerBar() end
     -- Then merge legacy custom_buff (Auras) bars into the buff-family bars.
-    if mod.MigrateCustomBuffBarsToBuffBars then
-        mod.MigrateCustomBuffBarsToBuffBars()
-    end
+    if mod.MigrateCustomBuffBarsToBuffBars then mod.MigrateCustomBuffBarsToBuffBars() end
 
     -- Force Blizzard's EditMode CooldownViewer to "Always Visible" so hideWhenInactive and other viewer settings don't fight with CDM.
     EnforceCooldownViewerEditModeSettings()
 
     -- Hide Blizzard CDM
-    if profile.cdmBars.hideBlizzard then
-        HideBlizzardCDM()
-    end
+    if profile.cdmBars.hideBlizzard then HideBlizzardCDM() end
 
     -- If user wants Blizzard's tracking bars instead of TBB, restore the secondary
     -- BuffBarCooldownViewer that HideBlizzardCDM moved offscreen. This only affects the bar-style buff viewer; CDM icon bars are untouched.
@@ -1119,9 +1004,7 @@ BuildAllCDMBars = function()
         end
         BuildCDMBar(index)
         local widget = cdmBarFrames[barInfo.key]
-        if widget then
-            widget._prevVisibleCount = nil
-        end
+        if widget then widget._prevVisibleCount = nil end
         if hookActive and BLIZZ_CDM_FRAMES[barInfo.key] then
             -- Hooked default bar: skip icon state reset and layout. CollectAndReanchor will repopulate from viewer pools.
         else
@@ -1142,23 +1025,17 @@ BuildAllCDMBars = function()
         end
     end
     -- Resync the key-press-mirror fast enable-flag with the rebuilt bar list, so OnPress O(1)-gates instead of looping every bar per press (covers profile and spec swaps, not just the options toggle).
-    if mod.RefreshCdmPressMirrorFlag then
-        mod.RefreshCdmPressMirrorFlag()
-    end
+    if mod.RefreshCdmPressMirrorFlag then mod.RefreshCdmPressMirrorFlag() end
     -- Custom-aura containers re-evaluate here: icon size, shape, spacing and
     -- growth change the engine flow, which needs a rebuild rather than a
     -- restyle, and a hooked default bar skips RefreshCDMIconAppearance above.
-    if mod.UpdateCustomBuffAuraTracking then
-        mod.UpdateCustomBuffAuraTracking()
-    end
+    if mod.UpdateCustomBuffAuraTracking then mod.UpdateCustomBuffAuraTracking() end
     -- When hooks are active, queue a reanchor to repopulate default bars. The queued
     -- CollectAndReanchor will lift _cdmRebuilding when it finishes; if no reanchor is queued (hooks not yet installed) we must clear the flag here ourselves so width matching can run again.
     if hookActive and mod.QueueReanchor then
         mod.QueueReanchor()
     else
-        if CludesUI then
-            CludesUI._cdmRebuilding = nil
-        end
+        if CludesUI then CludesUI._cdmRebuilding = nil end
     end
     -- Re-apply saved positions now that LayoutCDMBar has set correct frame sizes. Positions are
     -- stored using the edge anchor directly (LEFT for RIGHT-grow, etc.), so SetPoint places the frame at its fixed edge and subsequent SetSize calls grow naturally from that edge.
@@ -1191,23 +1068,17 @@ BuildAllCDMBars = function()
     _CDMApplyVisibility()
 
     -- Every full rebuild re-evaluates the FocusKick demand gate, so assigning the first kick spell (or removing the last) flips the feature family on/off live.
-    if mod.RefreshFocusKickProxies then
-        mod.RefreshFocusKickProxies()
-    end
+    if mod.RefreshFocusKickProxies then mod.RefreshFocusKickProxies() end
 
     -- WoW Forever: the anti-clip glow (a bar's Pandemic Glow there) listens to
     -- your casts only while a bar uses it (CUI_CDM_ForeverAntiClip.lua).
-    if mod.CDM_AntiClipSync then
-        mod.CDM_AntiClipSync()
-    end
+    if mod.CDM_AntiClipSync then mod.CDM_AntiClipSync() end
 
     -- Match pads follow each bar's border settings: a bar whose pad changed is
     -- re-pushed through its matches once, deferred (compare-only here).
     if CludesUI.MatchPadChanged then
         for _, edge in ipairs(profile.cdmBars.bars) do
-            if edge.key then
-                CludesUI.MatchPadChanged(mod._cdmUKey[edge.key])
-            end
+            if edge.key then CludesUI.MatchPadChanged(mod._cdmUKey[edge.key]) end
         end
     end
 end
@@ -1250,13 +1121,9 @@ mod.HideBlizzardCDM = HideBlizzardCDM
 function mod.NormalizeRacialAssignments()
     -- Re-resolve now: at build time the spellbook is reliably populated, so the variant pick (Blood Fury/Arcane Torrent/Gift of the Naaru) is correct even if OnEnable ran before the spellbook loaded.
     local isActive = ResolveActiveRacial()
-    if not isActive or isActive <= 0 then
-        return
-    end
+    if not isActive or isActive <= 0 then return end
     local profile = ECME.db and ECME.db.profile
-    if not (profile and profile.cdmBars and profile.cdmBars.bars) then
-        return
-    end
+    if not (profile and profile.cdmBars and profile.cdmBars.bars) then return end
 
     -- Gather the non-buff bars' assigned lists once (in bar order), keeping
     -- each list's bar key so the keeper choice below can tell default bars
@@ -1283,9 +1150,7 @@ function mod.NormalizeRacialAssignments()
                 break
             end
         end
-        if activePresent then
-            break
-        end
+        if activePresent then break end
     end
 
     -- Keeper choice: prefer the copy on a CUSTOM bar. Lists iterate in bar
@@ -1307,9 +1172,7 @@ function mod.NormalizeRacialAssignments()
                     end
                 end
             end
-            if keeperList then
-                break
-            end
+            if keeperList then break end
         end
     end
 
@@ -1351,12 +1214,8 @@ function mod.FullCDMRebuild(reason)
     local isFullWipe = (reason == "talent_reconcile")
 
     -- 1. Wipe all caches
-    if mod.MarkCDMSpellCacheDirty then
-        mod.MarkCDMSpellCacheDirty()
-    end
-    if mod.InvalidateTBBFrameCache then
-        mod.InvalidateTBBFrameCache()
-    end
+    if mod.MarkCDMSpellCacheDirty then mod.MarkCDMSpellCacheDirty() end
+    if mod.InvalidateTBBFrameCache then mod.InvalidateTBBFrameCache() end
 
     -- 2. Clear old preset frames (trinkets, racials, custom spells)
     if mod._presetFrames then
@@ -1380,22 +1239,16 @@ function mod.FullCDMRebuild(reason)
 
     -- 2b. Normalize racial slots to this character's race BEFORE the route
     -- map and bar build read assignedSpells.
-    if mod.NormalizeRacialAssignments then
-        mod.NormalizeRacialAssignments()
-    end
+    if mod.NormalizeRacialAssignments then mod.NormalizeRacialAssignments() end
 
     -- 3. Rebuild route maps (must happen before BuildAllCDMBars)
-    if mod.RebuildSpellRouteMap then
-        mod.RebuildSpellRouteMap()
-    end
+    if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
 
     -- 4. Rebuild all bar frames
     BuildAllCDMBars()
 
     -- 5. Rebuild tracked buff bars
-    if mod.BuildTrackedBuffBars then
-        mod.BuildTrackedBuffBars()
-    end
+    if mod.BuildTrackedBuffBars then mod.BuildTrackedBuffBars() end
 
     -- 6. Full-wipe path: wipe per-frame caches + icon arrays + anchor
     -- state, then reanchor directly. Used by talent_reconcile when spell
@@ -1458,26 +1311,18 @@ function mod.FullCDMRebuild(reason)
         -- Cancel the reanchor BuildAllCDMBars queued -- we run our own direct one
         -- immediately below. Without this, the queued reanchor would fire ~200ms later
         -- and run the entire reanchor pipeline a second time.
-        if mod.ClearQueuedReanchor then
-            mod.ClearQueuedReanchor()
-        end
+        if mod.ClearQueuedReanchor then mod.ClearQueuedReanchor() end
         -- Direct reanchor for the freshly-wiped state
-        if mod.CollectAndReanchor then
-            mod.CollectAndReanchor()
-        end
+        if mod.CollectAndReanchor then mod.CollectAndReanchor() end
     end
 
     -- 7. Glows
-    if mod.RequestBarGlowUpdate then
-        mod.RequestBarGlowUpdate()
-    end
+    if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
     -- Re-evaluate CD ready glow state now that all frames are fully decorated.
     -- Decoration paths may have started glows during the loading-screen settle
     -- window (login/reload); this queued pass corrects them once the API is
     -- trustworthy again. No-ops instantly when no icon uses a ready-glow effect.
-    if mod.QueueCDGlowResourceCheck then
-        mod.QueueCDGlowResourceCheck()
-    end
+    if mod.QueueCDGlowResourceCheck then mod.QueueCDGlowResourceCheck() end
 end
 
 -- Interactive Preview Helpers loaded from CludesUICdmSpellPicker.lua

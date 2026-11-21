@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI or CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI or CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQoL_RaidBuffCheck.lua -- Raid Buff Check, part of Raid Tools
 --
@@ -74,16 +70,12 @@ local buffsX, blockW
 local colsKey = 0
 
 local function SetColumns(runeShown, vantusShown)
-    if buffsX and colShown[RUNE_COL] == runeShown and colShown[VANTUS_COL] == vantusShown then
-        return
-    end
+    if buffsX and colShown[RUNE_COL] == runeShown and colShown[VANTUS_COL] == vantusShown then return end
     colShown[RUNE_COL], colShown[VANTUS_COL] = runeShown, vantusShown
     local posX = NAME_W
     for key = 1, CELLS do
         colX[key] = posX
-        if colShown[key] then
-            posX = posX + CELL_W
-        end
+        if colShown[key] then posX = posX + CELL_W end
     end
     buffsX = posX + 4
     blockW = buffsX + BUFF_SLOTS * BUFF_STEP + 2
@@ -94,9 +86,7 @@ local providers = {} -- [classToken] = true for connected members
 local dirty, flushPending, rosterDirty = {}, false, false
 local runeReadable, vantusReadable -- every ID of the list is non-secret on this client; set on first open
 
-local function CDB()
-    return mod.RaidToolsProfile and mod.RaidToolsProfile()
-end
+local function CDB() return mod.RaidToolsProfile and mod.RaidToolsProfile() end
 
 local function Enabled()
     local cfg = CDB()
@@ -126,13 +116,9 @@ local function VantusRequired()
     return cfg and cfg.buffCheckVantusRequired == true or false
 end
 
-local function Restricted()
-    return CludesUI.AuraKit.AurasRestricted()
-end
+local function Restricted() return CludesUI.AuraKit.AurasRestricted() end
 
-local function Msg(textValue)
-    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. textValue)
-end
+local function Msg(textValue) CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. textValue) end
 
 -- On-screen text in the QoL font; Raid Tools' ApplyFonts keeps it current.
 local function Text(hostFrame, size, red, green, blue)
@@ -144,14 +130,10 @@ end
 -------------------------------------------------------------------------------
 local function AllReadable(ids)
     local should = C_Secrets and C_Secrets.ShouldSpellAuraBeSecret
-    if not should then
-        return true
-    end
+    if not should then return true end
     for index = 1, #ids do
         local success, secret = pcall(should, ids[index])
-        if not success or IsSecret(secret) or secret ~= false then
-            return false
-        end
+        if not success or IsSecret(secret) or secret ~= false then return false end
     end
     return true
 end
@@ -160,18 +142,14 @@ end
 -- secret or the aura never expires.
 local function Present(aura)
     local exp = aura.expirationTime
-    if exp == nil or IsSecret(exp) or exp == 0 then
-        return true
-    end
+    if exp == nil or IsSecret(exp) or exp == 0 then return true end
     return exp
 end
 
 -- Non-nil means the aura is there, even when its fields are secret.
 local function FindID(unitToken, ident)
     local success, aura = pcall(C_UnitAuras.GetUnitAuraBySpellID, unitToken, ident)
-    if success and aura ~= nil then
-        return Present(aura)
-    end
+    if success and aura ~= nil then return Present(aura) end
 end
 
 -- State values: true or an expiration time = has it, false = verified
@@ -179,63 +157,39 @@ end
 local function ListState(unitToken, ids, readable, restricted)
     for index = 1, #ids do
         local val = FindID(unitToken, ids[index])
-        if val then
-            return val
-        end
+        if val then return val end
     end
-    if restricted and not readable then
-        return nil
-    end
+    if restricted and not readable then return nil end
     return false
 end
 
 -- Seconds left when under EXPIRE_SOON, else nil.
 local function SoonLeft(val, nowTime)
-    if type(val) ~= "number" then
-        return nil
-    end
+    if type(val) ~= "number" then return nil end
     local leftX = val - nowTime
-    if leftX < EXPIRE_SOON then
-        return math.max(0, leftX)
-    end
+    if leftX < EXPIRE_SOON then return math.max(0, leftX) end
 end
 
-local function MinutesText(leftX)
-    return CludesUI.Lf("%dm", math.ceil(leftX / 60))
-end
+local function MinutesText(leftX) return CludesUI.Lf("%dm", math.ceil(leftX / 60)) end
 
 -- "eating" while the food channel is up.
 local function FoodState(unitToken, restricted)
-    if restricted then
-        return nil
-    end
+    if restricted then return nil end
     local sawReadable, eating = false, false
     for index = 1, AURA_SCAN_LIMIT do
         local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, unitToken, index, "HELPFUL")
-        if not success then
-            return nil
-        end
-        if not aura then
-            break
-        end
+        if not success then return nil end
+        if not aura then break end
         local ic = aura.icon
         if ic ~= nil and not IsSecret(ic) then
             sawReadable = true
-            if ic == WELL_FED_ICON then
-                return Present(aura)
-            end
+            if ic == WELL_FED_ICON then return Present(aura) end
             -- Eating only counts when no stat buff is up: refreshing one shows both.
-            if ic == EATING_ICON then
-                eating = true
-            end
+            if ic == EATING_ICON then eating = true end
         end
     end
-    if eating then
-        return "eating"
-    end
-    if not sawReadable then
-        return nil
-    end
+    if eating then return "eating" end
+    if not sawReadable then return nil end
     return false
 end
 
@@ -318,9 +272,7 @@ local function MakeRow(index)
 end
 
 local function PlaceRow(region)
-    if region._colsKey == colsKey then
-        return
-    end
+    if region._colsKey == colsKey then return end
     region._colsKey = colsKey
     region:SetWidth(blockW)
     for key = 1, CELLS do
@@ -338,9 +290,7 @@ local function PlaceRow(region)
 end
 
 local function PlaceHeader(hgt)
-    if hgt._colsKey == colsKey then
-        return
-    end
+    if hgt._colsKey == colsKey then return end
     hgt._colsKey = colsKey
     hgt:SetWidth(blockW)
     for key = 1, CELLS do
@@ -354,9 +304,7 @@ local function PlaceHeader(hgt)
 end
 
 local function PlaceTotals(tr)
-    if tr._colsKey == colsKey then
-        return
-    end
+    if tr._colsKey == colsKey then return end
     tr._colsKey = colsKey
     tr:SetWidth(blockW)
     for key = 1, CELLS do
@@ -383,12 +331,8 @@ local function MakeHeader(b)
         tex:SetTexture(texture)
         tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         hit:EnableMouse(true)
-        hit:SetScript("OnEnter", function(self)
-            CludesUI.ShowWidgetTooltip(self, tipText)
-        end)
-        hit:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        hit:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, tipText) end)
+        hit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
     end
     MakeIcon(C_Spell.GetSpellTexture(FLASK_BUFF_IDS[1]), CludesUI.L("Flask"))
     MakeIcon(WELL_FED_ICON, CludesUI.L("Food"))
@@ -403,9 +347,7 @@ end
 -- The window's events follow the window; READY_CHECK follows the option.
 local function Listen(isShown)
     eventFrame:UnregisterAllEvents()
-    if Enabled() and OpenOnReady() then
-        eventFrame:RegisterEvent("READY_CHECK")
-    end
+    if Enabled() and OpenOnReady() then eventFrame:RegisterEvent("READY_CHECK") end
     if isShown then
         eventFrame:RegisterEvent("UNIT_AURA")
         eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -418,13 +360,9 @@ end
 -- the filter, and the top-left corner must stay put while they do.
 local function SavePosition()
     local cfg = CDB()
-    if not cfg then
-        return
-    end
+    if not cfg then return end
     local leftX, topY = widget:GetLeft(), widget:GetTop()
-    if not (leftX and topY) then
-        return
-    end
+    if not (leftX and topY) then return end
     local posX, posY = leftX, topY - UIParent:GetTop()
     widget:ClearAllPoints()
     widget:SetPoint("TOPLEFT", UIParent, "TOPLEFT", posX, posY)
@@ -432,16 +370,12 @@ local function SavePosition()
 end
 
 local function StopWake()
-    if widget._wake then
-        widget._wake:Cancel()
-    end
+    if widget._wake then widget._wake:Cancel() end
     widget._wake, widget._wakeAt = nil, nil
 end
 
 local function Build()
-    if widget then
-        return
-    end
+    if widget then return end
     widget = CreateFrame("Frame", "CludesUIRaidBuffCheck", UIParent)
     widget:SetFrameStrata("MEDIUM")
     widget:SetClampedToScreen(true)
@@ -474,15 +408,9 @@ local function Build()
     cfs:SetPoint("CENTER", close, "CENTER", 0, 1)
     cfs:SetText("x")
     cfs:SetAlpha(0.7)
-    close:SetScript("OnEnter", function()
-        cfs:SetAlpha(1)
-    end)
-    close:SetScript("OnLeave", function()
-        cfs:SetAlpha(0.7)
-    end)
-    close:SetScript("OnClick", function()
-        widget:Hide()
-    end)
+    close:SetScript("OnEnter", function() cfs:SetAlpha(1) end)
+    close:SetScript("OnLeave", function() cfs:SetAlpha(0.7) end)
+    close:SetScript("OnClick", function() widget:Hide() end)
 
     -- Checkbox row above the note, left to right; each label is part of its
     -- box's hit rect.
@@ -508,25 +436,19 @@ local function Build()
     end
     widget.onlyBox = MakeCheckbox(CludesUI.L("Hide Fully Buffed"), function()
         local cfg = CDB()
-        if not cfg then
-            return
-        end
+        if not cfg then return end
         cfg.buffCheckOnlyMissing = not OnlyMissing()
         Render()
     end)
     widget.runeBox = MakeCheckbox(CludesUI.L("Require Augment Rune"), function()
         local cfg = CDB()
-        if not cfg then
-            return
-        end
+        if not cfg then return end
         cfg.buffCheckRuneRequired = not RuneRequired()
         Render()
     end)
     widget.vantusBox = MakeCheckbox(CludesUI.L("Require Vantus Rune"), function()
         local cfg = CDB()
-        if not cfg then
-            return
-        end
+        if not cfg then return end
         cfg.buffCheckVantusRequired = not VantusRequired()
         Render()
     end)
@@ -588,12 +510,8 @@ local sortName = {}
 local function SortByName(a, b)
     local na, nb = sortName[a], sortName[b]
     if na ~= nb then
-        if not na then
-            return false
-        end
-        if not nb then
-            return true
-        end
+        if not na then return false end
+        if not nb then return true end
         return na < nb
     end
     return a < b
@@ -606,35 +524,27 @@ local function CollectUnits()
     if IsInRaid() then
         for index = 1, GetNumGroupMembers() do
             local u = "raid" .. index
-            if UnitExists(u) then
-                units[#units + 1] = u
-            end
+            if UnitExists(u) then units[#units + 1] = u end
         end
     else
         units[1] = "player"
         for index = 1, GetNumSubgroupMembers() do
             local u = "party" .. index
-            if UnitExists(u) then
-                units[#units + 1] = u
-            end
+            if UnitExists(u) then units[#units + 1] = u end
         end
     end
     wipe(sortName)
     for index = 1, #units do
         local u = units[index]
         local name = PlainString(UnitName(u))
-        if name then
-            sortName[u] = strlower(name)
-        end
+        if name then sortName[u] = strlower(name) end
     end
     table.sort(units, SortByName)
     for index = 1, #units do
         local u = units[index]
         isMember[u] = true
         local cls = UnitIsConnected(u) and UnitClassToken(u)
-        if cls then
-            providers[cls] = true
-        end
+        if cls then providers[cls] = true end
     end
 end
 
@@ -647,15 +557,9 @@ local function ComputeState(unitToken, restricted)
     local online = UnitIsConnected(unitToken)
     local dead = UnitIsDeadOrGhost(unitToken)
     local visible = UnitIsVisible(unitToken)
-    if IsSecret(online) then
-        online = true
-    end
-    if IsSecret(dead) then
-        dead = false
-    end
-    if IsSecret(visible) then
-        visible = true
-    end
+    if IsSecret(online) then online = true end
+    if IsSecret(dead) then dead = false end
+    if IsSecret(visible) then visible = true end
     cfg.online = online
     cfg.missing = 0
     cfg.buffsExp = nil
@@ -670,9 +574,7 @@ local function ComputeState(unitToken, restricted)
     cfg.flask = ListState(unitToken, FLASK_BUFF_IDS, true, false)
     cfg.food = FoodState(unitToken, restricted)
     cfg.rune = ListState(unitToken, RUNE_IDS, runeReadable, restricted)
-    if not cfg.rune and ListState(unitToken, OLD_RUNE_IDS, true, false) then
-        cfg.rune = false
-    end
+    if not cfg.rune and ListState(unitToken, OLD_RUNE_IDS, true, false) then cfg.rune = false end
     cfg.vantus = ListState(unitToken, VANTUS_IDS, vantusReadable, restricted)
     local num = 0
     for _, buff in ipairs(RAID_BUFFS) do
@@ -681,9 +583,7 @@ local function ComputeState(unitToken, restricted)
             local ids = buff.buffIDs
             for key = 1, #ids do
                 has = FindID(unitToken, ids[key])
-                if has then
-                    break
-                end
+                if has then break end
             end
             if not has then
                 num = num + 1
@@ -701,12 +601,8 @@ end
 
 -- Missing, unknown (nil) and running out count; eating does not.
 local function NotFullyBuffed(cfg, nowTime, runeRequired, vantusRequired)
-    if runeRequired and (not cfg.rune or SoonLeft(cfg.rune, nowTime)) then
-        return true
-    end
-    if vantusRequired and (not cfg.vantus or SoonLeft(cfg.vantus, nowTime)) then
-        return true
-    end
+    if runeRequired and (not cfg.rune or SoonLeft(cfg.rune, nowTime)) then return true end
+    if vantusRequired and (not cfg.vantus or SoonLeft(cfg.vantus, nowTime)) then return true end
     return not cfg.flask
         or not cfg.food
         or cfg.missing > 0
@@ -759,9 +655,7 @@ end
 local function MinWidth()
     local wid = PAD + 4
     for index, callback in ipairs(widget.boxes) do
-        if index > 1 then
-            wid = wid + 16
-        end
+        if index > 1 then wid = wid + 16 end
         wid = wid + 14 + 6 + callback.label:GetStringWidth()
     end
     return math.max(MIN_W, wid + PAD)
@@ -824,16 +718,10 @@ end
 -- an earlier time.
 local wakeAt
 local function Wake(val, nowTime)
-    if type(val) ~= "number" then
-        return
-    end
+    if type(val) ~= "number" then return end
     local at = val - EXPIRE_SOON
-    if at <= nowTime then
-        at = nowTime + TICK
-    end
-    if not wakeAt or at < wakeAt then
-        wakeAt = at
-    end
+    if at <= nowTime then at = nowTime + TICK end
+    if not wakeAt or at < wakeAt then wakeAt = at end
 end
 
 local function OnWake()
@@ -871,12 +759,8 @@ function Render()
             end
             Wake(cfg.flask, nowTime)
             Wake(cfg.food, nowTime)
-            if runeRequired then
-                Wake(cfg.rune, nowTime)
-            end
-            if vantusRequired then
-                Wake(cfg.vantus, nowTime)
-            end
+            if runeRequired then Wake(cfg.rune, nowTime) end
+            if vantusRequired then Wake(cfg.vantus, nowTime) end
             Wake(cfg.buffsExp, nowTime)
             if not filter or NotFullyBuffed(cfg, nowTime, runeRequired, vantusRequired) then
                 shownUnits[#shownUnits + 1] = u
@@ -898,9 +782,7 @@ function Render()
             else
                 tr.counts[key]:SetTextColor(1, 0.3, 0.3)
                 -- A hidden column's count does not keep its row up.
-                if key > CELLS or colShown[key] then
-                    any = true
-                end
+                if key > CELLS or colShown[key] then any = true end
             end
         end
         tr:SetShown(any)
@@ -935,18 +817,14 @@ function Render()
         widget.note:SetText(CludesUI.L("? = unknown (offline, dead or out of range)"))
     end
     if wakeAt and (not widget._wakeAt or wakeAt < widget._wakeAt) then
-        if widget._wake then
-            widget._wake:Cancel()
-        end
+        if widget._wake then widget._wake:Cancel() end
         widget._wake = C_Timer.NewTimer(wakeAt - nowTime, OnWake)
         widget._wakeAt = wakeAt
     end
 end
 
 local function Rebuild()
-    if not widget or not widget:IsShown() or InCombatLockdown() then
-        return
-    end
+    if not widget or not widget:IsShown() or InCombatLockdown() then return end
     CollectUnits()
     local restricted = Restricted()
     widget._restricted = restricted
@@ -974,9 +852,7 @@ local function Flush()
     local restricted = Restricted()
     widget._restricted = restricted
     for unitToken in pairs(dirty) do
-        if isMember[unitToken] then
-            ComputeState(unitToken, restricted)
-        end
+        if isMember[unitToken] then ComputeState(unitToken, restricted) end
     end
     wipe(dirty)
     Render()
@@ -1009,24 +885,18 @@ end
 
 -- Called by RaidTools' Apply (login, settings, profile switch).
 function mod.BuffCheckSync()
-    if not Enabled() and widget then
-        widget:Hide()
-    end
+    if not Enabled() and widget then widget:Hide() end
     Listen(widget and widget:IsShown())
 end
 
 eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
     if evt == "UNIT_AURA" then
-        if not isMember[unitToken] then
-            return
-        end
+        if not isMember[unitToken] then return end
         dirty[unitToken] = true
         QueueFlush()
     elseif evt == "UNIT_CONNECTION" then
         -- Also who can provide the raid buffs.
-        if not isMember[unitToken] then
-            return
-        end
+        if not isMember[unitToken] then return end
         rosterDirty = true
         QueueFlush()
     elseif evt == "GROUP_ROSTER_UPDATE" then
@@ -1037,21 +907,15 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
         rosterDirty = true
         QueueFlush()
     elseif evt == "READY_CHECK" then
-        if RT.HasAssist() then
-            Open()
-        end
+        if RT.HasAssist() then Open() end
     elseif evt == "PLAYER_REGEN_DISABLED" then
-        if widget then
-            widget:Hide()
-        end
+        if widget then widget:Hide() end
     end
 end)
 
 -- The Buff Check button.
 function mod.ToggleBuffCheck()
-    if not Enabled() then
-        return
-    end
+    if not Enabled() then return end
     if widget and widget:IsShown() then
         widget:Hide()
         return

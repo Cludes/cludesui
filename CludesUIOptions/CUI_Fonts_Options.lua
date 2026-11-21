@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Fonts_Options.lua
 --
@@ -56,22 +54,16 @@ end
 local function FindModuleFontEntry(folder)
     local fontsDB = CludesUI.GetFontsDB()
     local entries = fontsDB.moduleFonts
-    if not entries then
-        return nil
-    end
+    if not entries then return nil end
     for i = 1, #entries do
-        if entries[i].folder == folder then
-            return entries[i], i
-        end
+        if entries[i].folder == folder then return entries[i], i end
     end
     return nil
 end
 
 local function EnsureModuleFontEntry(folder, display)
     local fontsDB = CludesUI.GetFontsDB()
-    if not fontsDB.moduleFonts then
-        fontsDB.moduleFonts = {}
-    end
+    if not fontsDB.moduleFonts then fontsDB.moduleFonts = {} end
     local record = FindModuleFontEntry(folder)
     if not record then
         record = { folder = folder, display = display, font = "__global", outline = "__global" }
@@ -120,9 +112,7 @@ local function ModuleOutlineCfg(folder, display)
         setValue = function(val)
             local record = FindModuleFontEntry(folder)
             local current = (record and record.outline) or "__global"
-            if val == current then
-                return
-            end
+            if val == current then return end
             if val == "__global" then
                 if record then
                     record.outline = "__global"
@@ -170,13 +160,9 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
             setValue = function(val)
                 local b = barList()
                 local cfg = b and b[barId]
-                if not cfg then
-                    return
-                end
+                if not cfg then return end
                 cfg.textSize = val
-                if mod.ApplyDataBarLayout then
-                    mod.ApplyDataBarLayout(barId)
-                end
+                if mod.ApplyDataBarLayout then mod.ApplyDataBarLayout(barId) end
             end,
         }
     end
@@ -230,9 +216,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return mod.db and mod.db.profile
-    end
+    local function saved() return mod.db and mod.db.profile end
     local DEF = mod.defaults or {}
     -- applyFn: named ns refresher when the module publishes one, otherwise the
     -- module-wide reapply (same repaint the module's own castbar size rows use).
@@ -246,21 +230,15 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             getValue = function()
                 local profile = saved()
                 local val = profile and profile[key]
-                if val == nil and legacyKey and profile then
-                    val = profile[legacyKey]
-                end
+                if val == nil and legacyKey and profile then val = profile[legacyKey] end
                 return val or DEF[key] or def
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
                 local func = (applyName and mod[applyName]) or mod.RefreshAllSettings
-                if func then
-                    func()
-                end
+                if func then func() end
             end,
         }
     end
@@ -332,16 +310,10 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.auraStackTextSize = val
-            if mod.RefreshAllSettings then
-                mod.RefreshAllSettings()
-            end
-            if mod.NPC_ReloadAll then
-                mod.NPC_ReloadAll()
-            end
+            if mod.RefreshAllSettings then mod.RefreshAllSettings() end
+            if mod.NPC_ReloadAll then mod.NPC_ReloadAll() end
         end,
     })
     cursorY = cursorY - height
@@ -390,9 +362,16 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             "Mini Frames",
             "HEALTH BAR"
         )
-        cursorY = LinkRow(hostFrame, cursorY, "Boss Frames Text Sizes", tile.folder, "Boss Frames", "HEALTH BAR")
         cursorY =
-            LinkRow(hostFrame, cursorY, "Player Aura Bars Text (per bar)", tile.folder, "Player Aura Bars", nil)
+            LinkRow(hostFrame, cursorY, "Boss Frames Text Sizes", tile.folder, "Boss Frames", "HEALTH BAR")
+        cursorY = LinkRow(
+            hostFrame,
+            cursorY,
+            "Player Aura Bars Text (per bar)",
+            tile.folder,
+            "Player Aura Bars",
+            nil
+        )
     else
         cursorY = NoteRow(
             hostFrame,
@@ -415,16 +394,10 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return mod.db and mod.db.profile
-    end
+    local function saved() return mod.db and mod.db.profile end
     local function RFApply()
-        if mod.ReloadFrames then
-            mod.ReloadFrames()
-        end
-        if mod.ReloadPartyFrames then
-            mod.ReloadPartyFrames()
-        end
+        if mod.ReloadFrames then mod.ReloadFrames() end
+        if mod.ReloadPartyFrames then mod.ReloadPartyFrames() end
     end
     local function sizeSlider(labelText, key, minV, maxV, def)
         return {
@@ -439,9 +412,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
                 RFApply()
             end,
@@ -488,12 +459,8 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
-            if not profile.healerMana then
-                profile.healerMana = {}
-            end
+            if not profile then return end
+            if not profile.healerMana then profile.healerMana = {} end
             profile.healerMana.textSize = val
             if mod.HM_Rebuild then
                 mod.HM_Rebuild()
@@ -504,8 +471,10 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     }, sizeSlider("Level Size", "levelTextSize", 6, 26, 10))
     cursorY = cursorY - height
     cursorY = LinkRow(hostFrame, cursorY, "Party-Specific Text Sizes", tile.folder, "Party", "TEXT DISPLAY")
-    cursorY = LinkRow(hostFrame, cursorY, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
-    cursorY = LinkRow(hostFrame, cursorY, "Debuff Manager Text (per tile)", tile.folder, "Debuff Manager", nil)
+    cursorY =
+        LinkRow(hostFrame, cursorY, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
+    cursorY =
+        LinkRow(hostFrame, cursorY, "Debuff Manager Text (per tile)", tile.folder, "Debuff Manager", nil)
     return cursorY
 end
 
@@ -553,13 +522,9 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return _G._CURB_AceDB and _G._CURB_AceDB.profile
-    end
+    local function saved() return _G._CURB_AceDB and _G._CURB_AceDB.profile end
     local function RBApply()
-        if _G._CURB_Apply then
-            _G._CURB_Apply()
-        end
+        if _G._CURB_Apply then _G._CURB_Apply() end
     end
     local function sizeSlider(labelText, tableKey, key, minV, maxV, def)
         return {
@@ -576,9 +541,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             setValue = function(val)
                 local profile = saved()
                 local tbl = profile and profile[tableKey]
-                if not tbl then
-                    return
-                end
+                if not tbl then return end
                 tbl[key] = val
                 RBApply()
             end,
@@ -605,7 +568,12 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         sizeSlider("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
     )
     cursorY = cursorY - height
-    _, height = W:DualRow(hostFrame, cursorY, sizeSlider("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
+    _, height = W:DualRow(
+        hostFrame,
+        cursorY,
+        sizeSlider("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11),
+        BLANK()
+    )
     cursorY = cursorY - height
     return cursorY
 end
@@ -622,9 +590,7 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return _G._CUABR_AceDB and _G._CUABR_AceDB.profile
-    end
+    local function saved() return _G._CUABR_AceDB and _G._CUABR_AceDB.profile end
     local nameFontValues, nameFontOrder = CludesUI.BuildFontDropdownData()
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
     cursorY = cursorY - height
@@ -639,13 +605,9 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.display) then
-                return
-            end
+            if not (profile and profile.display) then return end
             profile.display.nameFont = (val ~= "__global") and val or nil
-            if _G._CUABR_RequestRefresh then
-                _G._CUABR_RequestRefresh()
-            end
+            if _G._CUABR_RequestRefresh then _G._CUABR_RequestRefresh() end
         end,
     }, {
         type = "slider",
@@ -659,13 +621,9 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.display) then
-                return
-            end
+            if not (profile and profile.display) then return end
             profile.display.textSize = val
-            if _G._CUABR_RequestRefresh then
-                _G._CUABR_RequestRefresh()
-            end
+            if _G._CUABR_RequestRefresh then _G._CUABR_RequestRefresh() end
         end,
     })
     cursorY = cursorY - height
@@ -680,13 +638,9 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.display) then
-                return
-            end
+            if not (profile and profile.display) then return end
             profile.display.countFont = (val ~= "__global") and val or nil
-            if _G._CUABR_RequestRefresh then
-                _G._CUABR_RequestRefresh()
-            end
+            if _G._CUABR_RequestRefresh then _G._CUABR_RequestRefresh() end
         end,
     }, {
         type = "slider",
@@ -700,13 +654,9 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.display) then
-                return
-            end
+            if not (profile and profile.display) then return end
             profile.display.countSize = val
-            if _G._CUABR_RequestRefresh then
-                _G._CUABR_RequestRefresh()
-            end
+            if _G._CUABR_RequestRefresh then _G._CUABR_RequestRefresh() end
         end,
     })
     cursorY = cursorY - height
@@ -721,13 +671,9 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.consumables) then
-                return
-            end
+            if not (profile and profile.consumables) then return end
             profile.consumables.rcManaWarnFont = (val ~= "__global") and val or nil
-            if _G._CUABR_RCWarnApply then
-                _G._CUABR_RCWarnApply()
-            end
+            if _G._CUABR_RCWarnApply then _G._CUABR_RCWarnApply() end
         end,
     }, {
         type = "slider",
@@ -741,13 +687,9 @@ local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.consumables) then
-                return
-            end
+            if not (profile and profile.consumables) then return end
             profile.consumables.rcManaWarnSize = val
-            if _G._CUABR_RCWarnApply then
-                _G._CUABR_RCWarnApply()
-            end
+            if _G._CUABR_RCWarnApply then _G._CUABR_RCWarnApply() end
         end,
     })
     cursorY = cursorY - height
@@ -774,18 +716,12 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             min = minV,
             max = maxV,
             step = 1,
-            getValue = function()
-                return (CludesUIDB and CludesUIDB[key]) or def
-            end,
+            getValue = function() return (CludesUIDB and CludesUIDB[key]) or def end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
+                if not CludesUIDB then CludesUIDB = {} end
                 CludesUIDB[key] = val
                 local func = CludesUI[applyName]
-                if func then
-                    func()
-                end
+                if func then func() end
             end,
         }
     end
@@ -806,13 +742,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = brDB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
-                if _G._CUI_BattleRes_Apply then
-                    _G._CUI_BattleRes_Apply()
-                end
+                if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
             end,
         }
     end
@@ -835,13 +767,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local bl = blDB()
-                if not bl then
-                    return
-                end
+                if not bl then return end
                 bl[key] = val
-                if _G._CUI_Bloodlust_Apply then
-                    _G._CUI_Bloodlust_Apply()
-                end
+                if _G._CUI_Bloodlust_Apply then _G._CUI_Bloodlust_Apply() end
             end,
         }
     end
@@ -851,9 +779,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
     -- last slot.
     local FOREVER = CludesUI.IS_FOREVER
     local slots = {}
-    local function addSlot(rowConf)
-        slots[#slots + 1] = rowConf
-    end
+    local function addSlot(rowConf) slots[#slots + 1] = rowConf end
     addSlot(ModuleOutlineCfg(tile.folder, tile.display))
     addSlot(gsize("Map Coordinates Text Size", "mapCoordsTextSize", 8, 24, 12, "_applyMapCoords"))
     addSlot(gsize("Group Death Alert Text Size", "groupDeathTextSize", 14, 64, 34, "_applyGroupDeathAlert"))
@@ -865,22 +791,18 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         max = 30,
         step = 1,
         getValue = function()
-            if CludesUI.QoLExtrasGet then
-                return CludesUI.QoLExtrasGet("fpsTextSize") or 12
-            end
+            if CludesUI.QoLExtrasGet then return CludesUI.QoLExtrasGet("fpsTextSize") or 12 end
             return (CludesUIDB and CludesUIDB.fpsTextSize) or 12
         end,
         setValue = function(val)
-            if CludesUI.QoLExtrasSet then
-                CludesUI.QoLExtrasSet("fpsTextSize", val)
-            end
-            if CludesUI._applyFPSDisplay then
-                CludesUI._applyFPSDisplay()
-            end
+            if CludesUI.QoLExtrasSet then CludesUI.QoLExtrasSet("fpsTextSize", val) end
+            if CludesUI._applyFPSDisplay then CludesUI._applyFPSDisplay() end
         end,
     })
     addSlot(gsize("Durability Warning Text Size", "durWarnTextSize", 10, 50, 30, "_durWarnApplySettings"))
-    addSlot(gsize("Target Distance Text Size", "targetDistanceTextSize", 10, 48, 18, "_applyTargetDistanceFrame"))
+    addSlot(
+        gsize("Target Distance Text Size", "targetDistanceTextSize", 10, 48, 18, "_applyTargetDistanceFrame")
+    )
     if not FOREVER then
         addSlot({
             type = "slider",
@@ -893,16 +815,10 @@ local function TileQoL(hostFrame, cursorY, W, tile)
                 return (tbl and tbl.textSize) or 11
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                if not CludesUIDB.keystonePopup then
-                    CludesUIDB.keystonePopup = {}
-                end
+                if not CludesUIDB then CludesUIDB = {} end
+                if not CludesUIDB.keystonePopup then CludesUIDB.keystonePopup = {} end
                 CludesUIDB.keystonePopup.textSize = val
-                if _G._CUI_RefreshKeystonePopup then
-                    _G._CUI_RefreshKeystonePopup()
-                end
+                if _G._CUI_RefreshKeystonePopup then _G._CUI_RefreshKeystonePopup() end
             end,
         })
     end
@@ -922,13 +838,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = brDB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile.font = val
-                if _G._CUI_BattleRes_Apply then
-                    _G._CUI_BattleRes_Apply()
-                end
+                if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
             end,
         })
         addSlot({
@@ -947,13 +859,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = brDB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile.outlineMode = val
-                if _G._CUI_BattleRes_Apply then
-                    _G._CUI_BattleRes_Apply()
-                end
+                if _G._CUI_BattleRes_Apply then _G._CUI_BattleRes_Apply() end
             end,
         })
         addSlot(blSize("Bloodlust Duration Size", "durationSize", 8, 30, 12))
@@ -974,19 +882,11 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         setValue = function(val)
             local db = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
             local ma = db and db.profile and db.profile.movementAlert
-            if not ma then
-                return
-            end
+            if not ma then return end
             ma.textSize = val
-            if CludesUI._applyMovementAlert then
-                CludesUI._applyMovementAlert()
-            end
-            if CludesUI._applyTimeSpiral then
-                CludesUI._applyTimeSpiral()
-            end
-            if CludesUI._applyGateway then
-                CludesUI._applyGateway()
-            end
+            if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
+            if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
+            if CludesUI._applyGateway then CludesUI._applyGateway() end
         end,
     })
     for i = 1, #slots, 2 do
@@ -1009,9 +909,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
         )
     end
     local CHAT = mod.ECHAT
-    local function saved()
-        return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat
-    end
+    local function saved() return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
     -- Edit box picker: same faces plus a "Chat Font" inherit entry first,
     -- mirroring the module's own dropdown.
@@ -1038,9 +936,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.font = val
             ChatReload("Font changed. A UI reload is needed to apply the new font.")
         end,
@@ -1062,9 +958,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.outlineMode = val
             ChatReload("Outline mode changed. A UI reload is needed to apply.")
         end,
@@ -1076,27 +970,19 @@ local function TileChat(hostFrame, cursorY, W, tile)
         step = 1,
         getValue = function()
             local profile = saved()
-            if profile and profile.chatFontSize then
-                return profile.chatFontSize
-            end
+            if profile and profile.chatFontSize then return profile.chatFontSize end
             local castFrame = _G.ChatFrame1
             if castFrame and castFrame.GetFont then
                 local _, fh = castFrame:GetFont()
-                if fh and fh > 0 then
-                    return math.floor(fh + 0.5)
-                end
+                if fh and fh > 0 then return math.floor(fh + 0.5) end
             end
             return 14
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.chatFontSize = val
-            if CHAT and CHAT.ApplyChatFontSize then
-                CHAT.ApplyChatFontSize(val)
-            end
+            if CHAT and CHAT.ApplyChatFontSize then CHAT.ApplyChatFontSize(val) end
         end,
     })
     cursorY = cursorY - height
@@ -1104,9 +990,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
     -- tab font row hides there; Classic's painted tabs still use it.
     local BS = CludesUI.BlizzStyle
     local function TabFontGate(rowConf)
-        if BS and BS.Active("chat") == "blizzard" then
-            BS.Gate("chat", rowConf)
-        end
+        if BS and BS.Active("chat") == "blizzard" then BS.Gate("chat", rowConf) end
         return rowConf
     end
     _, height = W:DualRow(
@@ -1123,16 +1007,10 @@ local function TileChat(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile.tabFont = val
-                if CHAT and CHAT.ApplyTabAppearance then
-                    CHAT.ApplyTabAppearance()
-                end
-                if CHAT and CHAT.ApplyTabLayout then
-                    CHAT.ApplyTabLayout()
-                end
+                if CHAT and CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
+                if CHAT and CHAT.ApplyTabLayout then CHAT.ApplyTabLayout() end
             end,
         }),
         TabFontGate({
@@ -1147,16 +1025,10 @@ local function TileChat(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile.tabFontSize = val
-                if CHAT and CHAT.ApplyTabAppearance then
-                    CHAT.ApplyTabAppearance()
-                end
-                if CHAT and CHAT.ApplyTabLayout then
-                    CHAT.ApplyTabLayout()
-                end
+                if CHAT and CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
+                if CHAT and CHAT.ApplyTabLayout then CHAT.ApplyTabLayout() end
             end,
         })
     )
@@ -1172,13 +1044,9 @@ local function TileChat(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.editBoxFont = val
-            if CHAT and CHAT.ApplyFonts then
-                CHAT.ApplyFonts()
-            end
+            if CHAT and CHAT.ApplyFonts then CHAT.ApplyFonts() end
         end,
     }, {
         type = "slider",
@@ -1188,26 +1056,18 @@ local function TileChat(hostFrame, cursorY, W, tile)
         step = 1,
         getValue = function()
             local profile = saved()
-            if profile and profile.editBoxFontSize then
-                return profile.editBoxFontSize
-            end
+            if profile and profile.editBoxFontSize then return profile.editBoxFontSize end
             if FCF_GetChatWindowInfo then
                 local _, sz = FCF_GetChatWindowInfo(1)
-                if sz and sz > 0 then
-                    return math.floor(sz + 0.5)
-                end
+                if sz and sz > 0 then return math.floor(sz + 0.5) end
             end
             return 12
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.editBoxFontSize = val
-            if CHAT and CHAT.ApplyFonts then
-                CHAT.ApplyFonts()
-            end
+            if CHAT and CHAT.ApplyFonts then CHAT.ApplyFonts() end
         end,
     })
     cursorY = cursorY - height
@@ -1226,13 +1086,9 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return _G._CUMT_AceDB and _G._CUMT_AceDB.profile
-    end
+    local function saved() return _G._CUMT_AceDB and _G._CUMT_AceDB.profile end
     local function MTApply()
-        if _G._CUMT_ApplyTimer then
-            _G._CUMT_ApplyTimer()
-        end
+        if _G._CUMT_ApplyTimer then _G._CUMT_ApplyTimer() end
     end
     local function sizeSlider(labelText, key, minV, maxV, def, fallbackKey)
         return {
@@ -1243,16 +1099,12 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             step = 1,
             getValue = function()
                 local profile = saved()
-                if not profile then
-                    return def
-                end
+                if not profile then return def end
                 return profile[key] or (fallbackKey and profile[fallbackKey]) or def
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
                 MTApply()
             end,
@@ -1271,9 +1123,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local tbl = getT()
-                if not tbl then
-                    return
-                end
+                if not tbl then return end
                 tbl[key] = val
                 local func = mod[applyName]
                 if func then
@@ -1313,9 +1163,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.timerFont = val
             MTApply()
         end,
@@ -1406,9 +1254,7 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm
-    end
+    local function saved() return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm end
     _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "slider",
         text = "Header Text Size",
@@ -1421,13 +1267,9 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.hdrFontSize = val
-            if mod.ApplyHeader then
-                mod.ApplyHeader()
-            end
+            if mod.ApplyHeader then mod.ApplyHeader() end
         end,
     })
     cursorY = cursorY - height
@@ -1444,13 +1286,9 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
-                if mod.RefreshMeter then
-                    mod.RefreshMeter()
-                end
+                if mod.RefreshMeter then mod.RefreshMeter() end
             end,
         }
     end
@@ -1473,13 +1311,9 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.standaloneTimerSize = val
-            if mod.ApplySATimer then
-                mod.ApplySATimer()
-            end
+            if mod.ApplySATimer then mod.ApplySATimer() end
         end,
     }, {
         type = "slider",
@@ -1494,13 +1328,9 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not (profile and profile.spellHistory) then
-                return
-            end
+            if not (profile and profile.spellHistory) then return end
             profile.spellHistory.textSize = val
-            if mod.ApplySpellHistory then
-                mod.ApplySpellHistory()
-            end
+            if mod.ApplySpellHistory then mod.ApplySpellHistory() end
         end,
     })
     cursorY = cursorY - height
@@ -1519,16 +1349,10 @@ local function TileBags(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return CludesUI._bagsDB and CludesUI._bagsDB.profile
-    end
+    local function saved() return CludesUI._bagsDB and CludesUI._bagsDB.profile end
     local function TextSizes()
-        if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then
-            _G.CUI_Bags:RefreshTextSizes()
-        end
-        if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshTextSizes then
-            _G.CUI_BankFrame:RefreshTextSizes()
-        end
+        if _G.CUI_Bags and _G.CUI_Bags.RefreshTextSizes then _G.CUI_Bags:RefreshTextSizes() end
+        if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshTextSizes then _G.CUI_BankFrame:RefreshTextSizes() end
     end
     local function sizeSlider(labelText, key, minV, maxV, def, applyFn)
         return {
@@ -1543,9 +1367,7 @@ local function TileBags(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
                 applyFn()
             end,
@@ -1556,9 +1378,7 @@ local function TileBags(hostFrame, cursorY, W, tile)
         cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
         sizeSlider("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
-            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
-                _G.CUI_Bags:RefreshInventory()
-            end
+            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then _G.CUI_Bags:RefreshInventory() end
         end)
     )
     cursorY = cursorY - height
@@ -1580,12 +1400,8 @@ local function TileBags(hostFrame, cursorY, W, tile)
         hostFrame,
         cursorY,
         sizeSlider("List Text Size", "bagListFontSize", 8, 16, 11, function()
-            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
-                _G.CUI_Bags:RefreshInventory()
-            end
-            if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshBank then
-                _G.CUI_BankFrame:RefreshBank()
-            end
+            if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then _G.CUI_Bags:RefreshInventory() end
+            if _G.CUI_BankFrame and _G.CUI_BankFrame.RefreshBank then _G.CUI_BankFrame:RefreshBank() end
         end),
         BLANK()
     )
@@ -1605,9 +1421,7 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    local function saved()
-        return _G._CUMM_DB and _G._CUMM_DB.profile and _G._CUMM_DB.profile.minimap
-    end
+    local function saved() return _G._CUMM_DB and _G._CUMM_DB.profile and _G._CUMM_DB.profile.minimap end
     local function sizeSlider(labelText, key, minV, maxV, def)
         return {
             type = "slider",
@@ -1621,13 +1435,9 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
-                if _G._CUMM_ApplyMinimap then
-                    _G._CUMM_ApplyMinimap()
-                end
+                if _G._CUMM_ApplyMinimap then _G._CUMM_ApplyMinimap() end
             end,
         }
     end
@@ -1646,14 +1456,10 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
                 local frame = _G[frameName]
-                if frame and frame.SetScale then
-                    frame:SetScale(val)
-                end
+                if frame and frame.SetScale then frame:SetScale(val) end
             end,
         }
     end
@@ -1708,26 +1514,14 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
             )
         )
     end
-    local function saved()
-        return _G._CUQT_DB and _G._CUQT_DB.profile and _G._CUQT_DB.profile.questTracker
-    end
+    local function saved() return _G._CUQT_DB and _G._CUQT_DB.profile and _G._CUQT_DB.profile.questTracker end
     local function QTApply()
         local EQT = mod.EQT
-        if not EQT then
-            return
-        end
-        if EQT.RestyleAll then
-            EQT.RestyleAll()
-        end
-        if EQT.UpdateVisibility then
-            EQT.UpdateVisibility()
-        end
-        if EQT.ApplyBackground then
-            EQT.ApplyBackground()
-        end
-        if EQT.RefreshStateDriver then
-            EQT.RefreshStateDriver()
-        end
+        if not EQT then return end
+        if EQT.RestyleAll then EQT.RestyleAll() end
+        if EQT.UpdateVisibility then EQT.UpdateVisibility() end
+        if EQT.ApplyBackground then EQT.ApplyBackground() end
+        if EQT.RefreshStateDriver then EQT.RefreshStateDriver() end
     end
     local function sizeSlider(labelText, key, def)
         return {
@@ -1742,9 +1536,7 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
             end,
             setValue = function(val)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = val
                 QTApply()
             end,
@@ -1763,9 +1555,7 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.font = val
             -- The custom tracker (WoW Forever) restyles live.
             if mod.UseCustomTracker and mod.UseCustomTracker() then
@@ -1793,7 +1583,8 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
         )
         cursorY = cursorY - height
     else
-        _, height = W:DualRow(hostFrame, cursorY, sizeSlider("Objective Font Size", "objectiveFontSize", 10), BLANK())
+        _, height =
+            W:DualRow(hostFrame, cursorY, sizeSlider("Objective Font Size", "objectiveFontSize", 10), BLANK())
         cursorY = cursorY - height
     end
     return cursorY
@@ -1820,13 +1611,9 @@ local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
         format = "%.0f%%",
         displayMul = 100,
         tooltip = "Scales the text size of Blizzard tooltips.",
-        getValue = function()
-            return (CludesUIDB and CludesUIDB.tooltipFontScale) or 1.0
-        end,
+        getValue = function() return (CludesUIDB and CludesUIDB.tooltipFontScale) or 1.0 end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.tooltipFontScale = val
         end,
     })
@@ -1837,17 +1624,11 @@ local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
         min = 6,
         max = 20,
         step = 1,
-        getValue = function()
-            return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9
-        end,
+        getValue = function() return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9 end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.charSheetEnchantSize = val
-            if CludesUI._refreshCharSheetSlotLabels then
-                CludesUI._refreshCharSheetSlotLabels()
-            end
+            if CludesUI._refreshCharSheetSlotLabels then CludesUI._refreshCharSheetSlotLabels() end
         end,
     }
     -- WoW Forever has no skyriding (the Dragon Riding HUD never loads there),
@@ -1864,13 +1645,9 @@ local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
         end,
         setValue = function(val)
             local p = mod.edrDB and mod.edrDB.profile and mod.edrDB.profile.speedText
-            if not p then
-                return
-            end
+            if not p then return end
             p.size = val
-            if mod.edrRedraw then
-                mod.edrRedraw()
-            end
+            if mod.edrRedraw then mod.edrRedraw() end
         end,
     })
     cursorY = cursorY - height
@@ -1917,13 +1694,9 @@ local function TileCombatText(hostFrame, cursorY, W, tile)
         min = 0.5,
         max = 2.5,
         step = 0.1,
-        getValue = function()
-            return tonumber(GetCVar("WorldTextScale_v2")) or 1
-        end,
+        getValue = function() return tonumber(GetCVar("WorldTextScale_v2")) or 1 end,
         setValue = function(val)
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             val = math.floor(val * 10 + 0.5) / 10
             CludesUI.SetCVar("WorldTextScale_v2", val)
         end,
@@ -2041,44 +1814,44 @@ local function BuildFontCard(hostFrame, cursorY, W, tile)
         end,
         -- Module font dropdown on the header: the per-module override layer
         -- (the old PER ADDON FONTS entry), editable without expanding the card.
-        headerDD = tile.hasFontDD and function(heading)
-            local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-            local dropdown = CludesUI.BuildDropdownControl(
-                heading,
-                190,
-                heading:GetFrameLevel() + 2,
-                fontValues,
-                fontOrder,
-                function()
-                    local record = FindModuleFontEntry(tile.folder)
-                    return (record and record.font) or "__global"
-                end,
-                function(val)
-                    local record = FindModuleFontEntry(tile.folder)
-                    local current = (record and record.font) or "__global"
-                    if val == current then
-                        return
-                    end
-                    if val == "__global" then
-                        if record then
-                            record.font = "__global"
-                            PruneModuleFontEntry(tile.folder)
+        headerDD = tile.hasFontDD
+                and function(heading)
+                    local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
+                    local dropdown = CludesUI.BuildDropdownControl(
+                        heading,
+                        190,
+                        heading:GetFrameLevel() + 2,
+                        fontValues,
+                        fontOrder,
+                        function()
+                            local record = FindModuleFontEntry(tile.folder)
+                            return (record and record.font) or "__global"
+                        end,
+                        function(val)
+                            local record = FindModuleFontEntry(tile.folder)
+                            local current = (record and record.font) or "__global"
+                            if val == current then return end
+                            if val == "__global" then
+                                if record then
+                                    record.font = "__global"
+                                    PruneModuleFontEntry(tile.folder)
+                                end
+                            else
+                                EnsureModuleFontEntry(tile.folder, tile.display).font = val
+                            end
+                            AskFontReload()
                         end
-                    else
-                        EnsureModuleFontEntry(tile.folder, tile.display).font = val
+                    )
+                    CludesUI.PanelPP.Point(dropdown, "RIGHT", heading, "RIGHT", -44, 0)
+                    -- A module whose stock style keeps Blizzard's own text: the override
+                    -- has nothing to apply to there.
+                    local styleKey = TILE_STYLE_KEYS[tile.folder]
+                    if styleKey and CludesUI.BlizzStyle then
+                        CludesUI.BlizzStyle.BlockInline(styleKey, dropdown)
                     end
-                    AskFontReload()
+                    return dropdown
                 end
-            )
-            CludesUI.PanelPP.Point(dropdown, "RIGHT", heading, "RIGHT", -44, 0)
-            -- A module whose stock style keeps Blizzard's own text: the override
-            -- has nothing to apply to there.
-            local styleKey = TILE_STYLE_KEYS[tile.folder]
-            if styleKey and CludesUI.BlizzStyle then
-                CludesUI.BlizzStyle.BlockInline(styleKey, dropdown)
-            end
-            return dropdown
-        end or nil,
+            or nil,
     })
 end
 
@@ -2102,9 +1875,7 @@ do
                     changed = true
                 end
             end
-            if changed and CludesUI.InvalidatePageCache then
-                CludesUI:InvalidatePageCache()
-            end
+            if changed and CludesUI.InvalidatePageCache then CludesUI:InvalidatePageCache() end
         end
         return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
     end
@@ -2223,13 +1994,9 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             -- Cyrillic locales list Expressway as a normal entry, so an older
             -- __expressway opt-in collapses onto it (same file) instead of falling
             -- through to System Default and misreporting the active face.
-            if localeCyrillic and g == CludesUI.EXPRESSWAY_FORCED_KEY then
-                return "Expressway"
-            end
+            if localeCyrillic and g == CludesUI.EXPRESSWAY_FORCED_KEY then return "Expressway" end
             -- In glyph-restricted locales a stored Latin-only bundled font maps to the System Default entry; a chosen SM font shows as-is.
-            if localeRestricted and not fontDropValues[g] then
-                return CludesUI.SYSTEM_FONT_KEY
-            end
+            if localeRestricted and not fontDropValues[g] then return CludesUI.SYSTEM_FONT_KEY end
             return g
         end,
         setValue = function(val)
@@ -2250,9 +2017,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         order = outlineModeOrder,
         getValue = function()
             local val = CludesUI.GetFontsDB().outlineMode or "none"
-            if val == "shadow" then
-                val = "none"
-            end
+            if val == "shadow" then val = "none" end
             return val
         end,
         setValue = function(val)
@@ -2275,9 +2040,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Apply to All Game Text",
                     tooltip = "Applies your Global Font to Blizzard's default game text (menus, tooltips, quest log, character panes, and more). Requires a UI reload.",
-                    get = function()
-                        return CludesUI.GetFontsDB().applyToAllGameText == true
-                    end,
+                    get = function() return CludesUI.GetFontsDB().applyToAllGameText == true end,
                     set = function(val)
                         CludesUI.GetFontsDB().applyToAllGameText = val and true or false
                         AskFontReload()
@@ -2300,17 +2063,13 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         tooltip = "Forces a crisp outline on icon text (stack counts, durations, keybinds). Uncheck a module to make its icon text follow the Outline Mode setting above instead.",
         values = { ["_placeholder"] = "..." },
         order = { "_placeholder" },
-        getValue = function()
-            return "_placeholder"
-        end,
+        getValue = function() return "_placeholder" end,
         setValue = function() end,
     }, {
         type = "toggle",
         text = "Disable Slug Outline",
         tooltip = "Slug outline renders higher quality outlines compared to the base WoW outline mode but may make outline effects appear slightly thicker.",
-        getValue = function()
-            return CludesUI.IsSlugDisabled()
-        end,
+        getValue = function() return CludesUI.IsSlugDisabled() end,
         setValue = function(val)
             CludesUI.GetFontsDB().neverShowSlug = val and true or false
             AskFontReload()
@@ -2326,9 +2085,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             { key = "bags", label = "Bags Icons" },
         }
         local region = oitRow._leftRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             220,
@@ -2336,7 +2093,8 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             oitItems,
             function(keyName)
                 local fontsDB = CludesUI.GetFontsDB()
-                local tbl = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
+                local tbl = (fontsDB and fontsDB.outlineIconText)
+                    or (CludesUIDB and CludesUIDB.outlineIconText)
                 return not (tbl and tbl[keyName] == false)
             end,
             function(keyName, val)
@@ -2382,9 +2140,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                 if keyName ~= "---" or nameFontOrder[#nameFontOrder] ~= "---" then
                     nameFontOrder[#nameFontOrder + 1] = keyName
                 end
-                if keyName ~= "---" then
-                    nameFontValues[keyName] = fontDropValues[keyName]
-                end
+                if keyName ~= "---" then nameFontValues[keyName] = fontDropValues[keyName] end
             end
         end
     end
@@ -2409,9 +2165,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             order = nameFontOrder,
             getValue = function()
                 local num = CludesUI.GetFontsDB().unitNameFont
-                if not num or not nameFontValues[num] then
-                    return NAME_FONT_DEFAULT
-                end
+                if not num or not nameFontValues[num] then return NAME_FONT_DEFAULT end
                 return num
             end,
             setValue = function(val)
@@ -2434,19 +2188,13 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             max = 125,
             step = 5,
             tooltip = "Scales the size of Blizzard's default game text (menus, tooltips, quest log, and more). Requires a UI reload.",
-            getValue = function()
-                return CludesUI.GetFontsDB().gameTextScale or 100
-            end,
+            getValue = function() return CludesUI.GetFontsDB().gameTextScale or 100 end,
             setValue = function(val)
                 local fontsDB = CludesUI.GetFontsDB()
                 local changed = (fontsDB.gameTextScale or 100) ~= val
-                if changed then
-                    fontsDB.gameTextScale = val ~= 100 and val or nil
-                end
+                if changed then fontsDB.gameTextScale = val ~= 100 and val or nil end
                 if CludesUI._sliderDragging then
-                    if changed then
-                        gtsPending = true
-                    end
+                    if changed then gtsPending = true end
                     return
                 end
                 if changed or gtsPending then

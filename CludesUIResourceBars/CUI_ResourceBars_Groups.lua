@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Groups.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local Pix = CludesUI.PP
@@ -24,25 +20,15 @@ local IsVerticalOrientation, NormalizeAnchorKey = Inner.IsVerticalOrientation, I
 local ShouldShowBar, ShouldShowSecondary = Inner.ShouldShowBar, Inner.ShouldShowSecondary
 
 local mainFrame
-Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val)
-    mainFrame = val
-end
+Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val) mainFrame = val end
 local health
-Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
-    health = val
-end
+Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val) health = val end
 local primaryBar
-Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
-    primaryBar = val
-end
+Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val) primaryBar = val end
 local secondaryFrame
-Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val)
-    secondaryFrame = val
-end
+Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val) secondaryFrame = val end
 local castBarFrame
-Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val)
-    castBarFrame = val
-end
+Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val) castBarFrame = val end
 
 -------------------------------------------------------------------------------
 --  "Border Around All" (general.classicBorderAll, off by default; one key
@@ -68,17 +54,14 @@ mod._erbGrpMatchKeys = { "ERB_Health", "ERB_Power", "ERB_ClassResource" }
 mod._erbGrpMembers, mod._erbGrpLo, mod._erbGrpHi = {}, {}, {}
 function mod.ERB_GroupSettingOn(profile)
     profile = profile or (ERB.db and ERB.db.profile)
-    return (profile and profile.general and profile.general.classicBorderAll and mod.ERB_BarsBlizz()) and true or false
+    return (profile and profile.general and profile.general.classicBorderAll and mod.ERB_BarsBlizz()) and true
+        or false
 end
 -- The bar whose Border Size the group wears: health, else power, else the
 -- class resource (settings only, so the pads never flip at runtime).
 function mod.ERB_GroupLeadCfg(profile)
-    if profile.health and profile.health.enabled then
-        return profile.health
-    end
-    if profile.primary and profile.primary.enabled ~= false then
-        return profile.primary
-    end
+    if profile.health and profile.health.enabled then return profile.health end
+    if profile.primary and profile.primary.enabled ~= false then return profile.primary end
     return profile.secondary
 end
 -- A health, power or class resource bar's frame scale: the group's while
@@ -95,18 +78,12 @@ end
 -- links; the key itself when unmatched.
 function mod.ERB_GroupMatchRoot(key, vertical)
     local get = vertical and CludesUI.GetHeightMatchTarget or CludesUI.GetWidthMatchTarget
-    if not get then
-        return key
-    end
+    if not get then return key end
     for _ = 1, 16 do
         local nxt = get(key)
-        if not nxt then
-            break
-        end
+        if not nxt then break end
         -- A match with Extra Width/Height is not its target's length: root here.
-        if CludesUI.GetMatchExtra and CludesUI.GetMatchExtra(vertical and "h" or "w", key) then
-            break
-        end
+        if CludesUI.GetMatchExtra and CludesUI.GetMatchExtra(vertical and "h" or "w", key) then break end
         key = nxt
     end
     return key
@@ -118,9 +95,7 @@ end
 -- could never hold does not count: one riding the cursor, shown only on
 -- mouseover (revealed on its own) or set never to show.
 function mod.ERB_GroupCheck(profile)
-    if not profile then
-        return false, "count"
-    end
+    if not profile then return false, "count" end
     local g = profile.general or DEFAULTS.profile.general
     local hp, pp, sp = profile.health, profile.primary, profile.secondary
     local hasRes = GetSecondaryResource() ~= nil
@@ -187,12 +162,8 @@ function mod.ERB_GroupCheck(profile)
             end
         end
     end
-    if num < 2 then
-        return false, "count"
-    end
-    if not (sameRoot or sameLen) then
-        return false, "width"
-    end
+    if num < 2 then return false, "count" end
+    if not (sameRoot or sameLen) then return false, "width" end
     return true
 end
 mod._erbGrpChk = {}
@@ -202,18 +173,12 @@ mod._erbGrpChk = {}
 -- on by default under Classic WoW UI (ERB_SeedStockBars); the runtime check
 -- still decides each session whether the group frame holds.
 function mod.ERB_BarsAnchoredTight(p)
-    if not (p and mod.ERB_GroupCheck(p)) then
-        return false
-    end
+    if not (p and mod.ERB_GroupCheck(p)) then return false end
     local anchors = CludesUIDB and CludesUIDB.unlockAnchors
-    if not anchors then
-        return false
-    end
+    if not anchors then return false end
     local P = CludesUI.PP
     local ui = UIParent and UIParent:GetEffectiveScale() or 1
-    if not ui or ui <= 0 then
-        ui = 1
-    end
+    if not ui or ui <= 0 then ui = 1 end
     local tol = ((P and P.perfect) or 1) / ui + 0.01
     local keyList, members, vert = mod._erbGrpMatchKeys, mod._erbGrpChk, mod._erbGrpChkVert
     local total, linked = 0, 0
@@ -224,9 +189,7 @@ function mod.ERB_BarsAnchoredTight(p)
             local target = details and details.target
             local inGroup = false
             for jdx = 1, 3 do
-                if jdx ~= index and members[jdx] and keyList[jdx] == target then
-                    inGroup = true
-                end
+                if jdx ~= index and members[jdx] and keyList[jdx] == target then inGroup = true end
             end
             if inGroup then
                 local side = CludesUI.GetUnlockAnchorSide(details)
@@ -252,17 +215,11 @@ end
 -- aside while the group frame wears it (the per-bar pieces stay seated, so a
 -- fallback is instant).
 function mod.ERB_GroupSuppress(barFrame, grouped)
-    if not barFrame then
-        return
-    end
+    if not barFrame then return end
     grouped = grouped and true or nil
-    if barFrame._classicGrouped == grouped then
-        return
-    end
+    if barFrame._classicGrouped == grouped then return end
     barFrame._classicGrouped = grouped
-    if barFrame._classicArt then
-        barFrame._classicArt:SetShown(not grouped)
-    end
+    if barFrame._classicArt then barFrame._classicArt:SetShown(not grouped) end
     -- Blizzard Style: the atlas panel, or a vertical bar's nine pieces.
     local pcs = barFrame._blizzBar9On and barFrame._blizzBar9
     if pcs then
@@ -294,38 +251,28 @@ end
 -- one falls back, both retried on the next pass.
 function mod.ERB_GroupEval()
     if not mod._erbGroupOn then
-        if mod._erbGroupActive then
-            mod.ERB_GroupRelease()
-        end
+        if mod._erbGroupActive then mod.ERB_GroupRelease() end
         return
     end
     -- Members must share one opacity (bar opacity, out-of-combat fade): the
     -- frame rides the first member's alpha. Part of the stamp, so a fade edge
     -- re-judges the group.
     local aEq, a0 = true, nil
-    if mod._erbGrpH then
-        a0 = mod.ResolveBarAlpha(_G._CURB_ResolveHealthCfg())
-    end
+    if mod._erbGrpH then a0 = mod.ResolveBarAlpha(_G._CURB_ResolveHealthCfg()) end
     if mod._erbGrpP then
         local a = mod.ResolveBarAlpha(_G._CURB_ResolvePowerCfg())
-        if a0 and math.abs(a - a0) > 0.01 then
-            aEq = false
-        end
+        if a0 and math.abs(a - a0) > 0.01 then aEq = false end
         a0 = a0 or a
     end
     if mod._erbGrpS then
         local a = mod.ResolveBarAlpha(_G._CURB_ResolveSecondaryCfg())
-        if a0 and math.abs(a - a0) > 0.01 then
-            aEq = false
-        end
+        if a0 and math.abs(a - a0) > 0.01 then aEq = false end
     end
     local sig = (mod._erbGrpH and 1 or 0)
         + (mod._erbGrpP and 2 or 0)
         + (mod._erbGrpS and 4 or 0)
         + (aEq and 8 or 0)
-    if sig == mod._erbGrpLastSig and not mod._erbGrpGeomDirty then
-        return
-    end
+    if sig == mod._erbGrpLastSig and not mod._erbGrpGeomDirty then return end
     mod._erbGrpLastSig = sig
     mod._erbGrpGeomDirty = nil
     local profile = ERB.db and ERB.db.profile
@@ -396,9 +343,7 @@ function mod.ERB_GroupEval()
             return
         end
         lo[index], hi[index] = c1, c2
-        if c2 - c1 > thick then
-            thick = c2 - c1
-        end
+        if c2 - c1 > thick then thick = c2 - c1 end
     end
     -- Order along the cross axis (insertion sort on the member slots):
     -- horizontal bars stack top to bottom, vertical ones sit left to right.
@@ -437,9 +382,7 @@ function mod.ERB_GroupEval()
     if owner._gFirst ~= first or owner._gLast ~= last then
         owner._gFirst, owner._gLast = first, last
         -- A child of the first bar: its alpha, fade and hide carry the frame.
-        if owner:GetParent() ~= first then
-            owner:SetParent(first)
-        end
+        if owner:GetParent() ~= first then owner:SetParent(first) end
         owner:ClearAllPoints()
         owner:SetPoint("TOPLEFT", first, "TOPLEFT", 0, 0)
         owner:SetPoint("BOTTOMRIGHT", last, "BOTTOMRIGHT", 0, 0)
@@ -447,19 +390,13 @@ function mod.ERB_GroupEval()
     local lvl, minLvl = 0, nil
     for index = 1, num do
         local fl = m[index]:GetFrameLevel()
-        if fl > lvl then
-            lvl = fl
-        end
-        if not minLvl or fl < minLvl then
-            minLvl = fl
-        end
+        if fl > lvl then lvl = fl end
+        if not minLvl or fl < minLvl then minLvl = fl end
     end
     owner._blizzVertical = vertical or nil
     if classic then
         -- The vanilla frame rides above every member (its art at +9).
-        if owner:GetFrameLevel() ~= lvl then
-            owner:SetFrameLevel(lvl)
-        end
+        if owner:GetFrameLevel() ~= lvl then owner:SetFrameLevel(lvl) end
         local uw = vertical and (hi[num] - lo[1]) or (a2 - a1)
         local uh = vertical and (a2 - a1) or (hi[1] - lo[num])
         mod.ERB_ApplyClassicBarChrome(owner, nil, uw, uh, vertical, k)
@@ -467,9 +404,7 @@ function mod.ERB_GroupEval()
         -- The Blizzard panel sits under every member's own textures (as a
         -- bar's panel does under its fill); the separators ride above.
         local below = math.max(0, minLvl - 1)
-        if owner:GetFrameLevel() ~= below then
-            owner:SetFrameLevel(below)
-        end
+        if owner:GetFrameLevel() ~= below then owner:SetFrameLevel(below) end
         mod.ERB_ApplyBlizzGroupPanel(owner, vertical, lvl + 9)
     end
     mod.ERB_GroupSeatSeparators(owner, g, num, vertical)
@@ -563,9 +498,7 @@ function mod.ERB_ApplyBlizzGroupPanel(owner, vertical, sepLevel)
         sa:SetAllPoints(owner)
         owner._sepArt = sa
     end
-    if sa:GetFrameLevel() ~= sepLevel then
-        sa:SetFrameLevel(sepLevel)
-    end
+    if sa:GetFrameLevel() ~= sepLevel then sa:SetFrameLevel(sepLevel) end
     if not details then
         for index = 1, 9 do
             pcs[index]:Hide()
@@ -594,16 +527,15 @@ function mod.ERB_GroupSeatSeparators(owner, g, num, vertical)
         owner._seps = seps
     end
     local size = g.classicBorderAllSepSize
-    if size == nil then
-        size = 1
-    end
+    if size == nil then size = 1 end
     local af = owner._classicArt or owner._sepArt
     local used = 0
     if af and size > 0 then
         local m, lo, hi = mod._erbGrpMembers, mod._erbGrpLo, mod._erbGrpHi
         local px = ((Pix and Pix.perfect) or 1) / owner:GetEffectiveScale()
         local t = size * px
-        local red, green, blue = g.classicBorderAllSepR or 0, g.classicBorderAllSepG or 0, g.classicBorderAllSepB or 0
+        local red, green, blue =
+            g.classicBorderAllSepR or 0, g.classicBorderAllSepG or 0, g.classicBorderAllSepB or 0
         for index = 1, num - 1 do
             used = index
             local s = seps[index]
@@ -642,13 +574,9 @@ function mod.ERB_GroupFlush()
     mod.ERB_GroupEval()
 end
 function mod.ERB_GroupDirty()
-    if not (mod._erbGroupOn or mod._erbGroupActive) then
-        return
-    end
+    if not (mod._erbGroupOn or mod._erbGroupActive) then return end
     mod._erbGrpGeomDirty = true
-    if mod._erbGrpFlushPending then
-        return
-    end
+    if mod._erbGrpFlushPending then return end
     mod._erbGrpFlushPending = true
     C_Timer.After(0, mod.ERB_GroupFlush)
 end
@@ -659,13 +587,9 @@ end
 -- bar takes the nine-slice in ERB_ApplyBlizzBarChrome instead.)
 function mod.ERB_SeatBlizzBarBg(backdrop, vertical)
     vertical = vertical and true or false
-    if backdrop._blizzRot == vertical then
-        return
-    end
+    if backdrop._blizzRot == vertical then return end
     local details = C_Texture.GetAtlasInfo(mod.ERB_BLIZZ_BAR_BG)
-    if not details then
-        return
-    end
+    if not details then return end
     backdrop._blizzRot = vertical
     if vertical then
         backdrop:SetTexture(details.file or details.filename)
@@ -689,9 +613,7 @@ mod._erbShadeTop = CreateColor(0, 0, 0, 0.55)
 mod._erbShadeBottom = CreateColor(0, 0, 0, 0.30)
 mod._erbShadeEnd = CreateColor(0, 0, 0, 0.35)
 function mod.ERB_BlizzBarShadow(scrollBar, mask, fw, fh)
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
     local sh = scrollBar._blizzShadow
     if not sh then
         sh = {}
@@ -715,15 +637,9 @@ function mod.ERB_BlizzBarShadow(scrollBar, mask, fw, fh)
     local wid, hgt = fw or scrollBar:GetWidth(), fh or scrollBar:GetHeight()
     -- A bar carrying secret values reports secret sizes: leave the strips
     -- as they are (a later plain-sized pass lays them) rather than compare.
-    if issecretvalue and (issecretvalue(wid) or issecretvalue(hgt)) then
-        return
-    end
-    if not wid or wid <= 0 then
-        wid = 100
-    end
-    if not hgt or hgt <= 0 then
-        hgt = 10
-    end
+    if issecretvalue and (issecretvalue(wid) or issecretvalue(hgt)) then return end
+    if not wid or wid <= 0 then wid = 100 end
+    if not hgt or hgt <= 0 then hgt = 10 end
     local long, short = hgt, wid
     if vertical then
         long, short = wid, hgt
@@ -775,9 +691,7 @@ function mod.ERB_BlizzBarShadow(scrollBar, mask, fw, fh)
     end
     if mask and sh._mask ~= mask then
         for index = 1, 4 do
-            if sh._mask then
-                pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask)
-            end
+            if sh._mask then pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask) end
             sh[index]:AddMaskTexture(mask)
         end
         sh._mask = mask
@@ -799,9 +713,7 @@ end
 -- re-texture sites can re-seat (a path swap mints a new fill object); the
 -- per-object memo makes every other call free.
 function mod.ERB_MaskPip(pip, mask)
-    if not (pip and mask) then
-        return
-    end
+    if not (pip and mask) then return end
     pip._blizzMask = mask
     local M = mod.ERB_MaskTex
     M(pip._bg, mask)
@@ -815,21 +727,13 @@ function mod.ERB_MaskPip(pip, mask)
         M(c._right, mask)
     end
     local scrollBar = pip._secretBar
-    if scrollBar then
-        M(scrollBar:GetStatusBarTexture(), mask)
-    end
+    if scrollBar then M(scrollBar:GetStatusBarTexture(), mask) end
     scrollBar = pip._bandResetBar
-    if scrollBar then
-        M(scrollBar:GetStatusBarTexture(), mask)
-    end
+    if scrollBar then M(scrollBar:GetStatusBarTexture(), mask) end
     scrollBar = pip._secretThreshBar
-    if scrollBar then
-        M(scrollBar:GetStatusBarTexture(), mask)
-    end
+    if scrollBar then M(scrollBar:GetStatusBarTexture(), mask) end
     scrollBar = pip._rechargeBar
-    if scrollBar then
-        M(scrollBar:GetStatusBarTexture(), mask)
-    end
+    if scrollBar then M(scrollBar:GetStatusBarTexture(), mask) end
     local bands = pip._bandBars
     if bands then
         for k = 1, #bands do
@@ -843,9 +747,7 @@ end
 -- fill object, and AddMaskTexture is additive.
 function mod.ERB_SeatBlizzMask(owner, target)
     local mask = owner and owner._blizzBarMask
-    if not mask then
-        return
-    end
+    if not mask then return end
     target = target or owner
     local fillTex = target.GetStatusBarTexture and target:GetStatusBarTexture()
     if fillTex and target._blizzMaskedFill ~= fillTex then
@@ -862,9 +764,7 @@ end
 function mod.ERB_BlizzAtlas(key)
     local memo = mod._erbBlizzAtlasMemo
     local hit = memo[key]
-    if hit ~= nil then
-        return hit or nil
-    end
+    if hit ~= nil then return hit or nil end
     local entries = mod.ERB_CAST_BLIZZ[key]
     local found = false
     if entries and C_Texture and C_Texture.GetAtlasInfo then
@@ -895,13 +795,9 @@ function mod.ERB_CastIconW(callback)
 end
 -- Resolve lazily: Unit Frames can load after Resource Bars.
 function mod.ERB_CastIconPortrait(callback)
-    if not callback.iconOnPortrait or callback.showIcon == false then
-        return nil
-    end
+    if not callback.iconOnPortrait or callback.showIcon == false then return nil end
     local uf = CludesUI._ModuleNS["CludesUIUnitFrames"]
-    if uf and uf.UF_GetPlayerCastPortrait then
-        return uf.UF_GetPlayerCastPortrait()
-    end
+    if uf and uf.UF_GetPlayerCastPortrait then return uf.UF_GetPlayerCastPortrait() end
 end
 -- Icon Size / Offset: a custom size or any offset takes the icon out of the
 -- frame (ERB_CastIconW is 0) and it floats beside the bar with its own border.
@@ -910,15 +806,15 @@ function mod.ERB_CastIconFree(callback)
     if callback.showIcon == false or mod.ERB_CastIconPortrait(callback) or mod.ERB_CastStyle() ~= "cui" then
         return false
     end
-    return (callback.iconSize or 0) > 0 or (callback.iconOffsetX or 0) ~= 0 or (callback.iconOffsetY or 0) ~= 0
+    return (callback.iconSize or 0) > 0
+        or (callback.iconOffsetX or 0) ~= 0
+        or (callback.iconOffsetY or 0) ~= 0
 end
 -- Lays out a floating icon (live bar and options preview), or hides its border.
 function mod.ERB_LayoutFreeCastIcon(iconFrame, owner, callback, free)
     local P = CludesUI.PP
     if not free then
-        if P.GetBorders(iconFrame) then
-            P.HideBorder(iconFrame)
-        end
+        if P.GetBorders(iconFrame) then P.HideBorder(iconFrame) end
         return
     end
     local size = (callback.iconSize or 0) > 0 and callback.iconSize or callback.height
@@ -930,10 +826,14 @@ function mod.ERB_LayoutFreeCastIcon(iconFrame, owner, callback, free)
         iconFrame:SetPoint("RIGHT", owner, "LEFT", callback.iconOffsetX or 0, callback.iconOffsetY or 0)
     end
     if (callback.borderSize or 0) > 0 then
-        if not P.GetBorders(iconFrame) then
-            P.CreateBorder(iconFrame, 0, 0, 0, 1, 1)
-        end
-        P.SetBorderColor(iconFrame, callback.borderR or 0, callback.borderG or 0, callback.borderB or 0, callback.borderA or 1)
+        if not P.GetBorders(iconFrame) then P.CreateBorder(iconFrame, 0, 0, 0, 1, 1) end
+        P.SetBorderColor(
+            iconFrame,
+            callback.borderR or 0,
+            callback.borderG or 0,
+            callback.borderB or 0,
+            callback.borderA or 1
+        )
         P.ShowBorder(iconFrame)
     elseif P.GetBorders(iconFrame) then
         P.HideBorder(iconFrame)
@@ -943,16 +843,10 @@ end
 -- One field test when the style is off; a memo skips repeat atlas swaps.
 function mod.ERB_SetBlizzCastFill(kind)
     local frame = castBarFrame
-    if not frame or not frame._blizzFill then
-        return
-    end
-    if frame._blizzFillKind == kind then
-        return
-    end
+    if not frame or not frame._blizzFill then return end
+    if frame._blizzFillKind == kind then return end
     local atlas = mod.ERB_BlizzAtlas(kind)
-    if not atlas then
-        return
-    end
+    if not atlas then return end
     frame._blizzFillKind = kind
     frame._bar:GetStatusBarTexture():SetAtlas(atlas)
 end
@@ -962,9 +856,7 @@ end
 -- BuildCastBar pass; regions are created once.
 function mod.ERB_ApplyBlizzCastChrome(callback, barW)
     local frame = castBarFrame
-    if not frame then
-        return
-    end
+    if not frame then return end
     local clip = frame._barClip
     if not frame._blizzFrame then
         -- Own host above the bar and icon (the CUI border child is hidden by

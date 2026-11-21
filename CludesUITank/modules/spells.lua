@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 
 -- All Midnight raid tank spells, grouped by raid > boss, current tier first.
 -- threshold: default stack count to trigger a TAUNT alert.
@@ -500,9 +498,7 @@ function mod.SpellData.CustomAlerts(saved)
             entries[#entries + 1] = { id = ident, key = key, alert = alert }
         end
     end
-    table.sort(entries, function(lhs, rhs)
-        return lhs.id < rhs.id
-    end)
+    table.sort(entries, function(lhs, rhs) return lhs.id < rhs.id end)
     return entries
 end
 

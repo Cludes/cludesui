@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Runtime.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local min, max = math.min, math.max
@@ -41,21 +37,13 @@ local EnsureGates, EnsureLatticeGates = Inner.EnsureGates, Inner.EnsureLatticeGa
 local gatePools, SetDB, SetReleaseSecureState = Inner.gatePools, Inner.SetDB, Inner.SetReleaseSecureState
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local liveView
-Inner.liveViewSetters[#Inner.liveViewSetters + 1] = function(val)
-    liveView = val
-end
+Inner.liveViewSetters[#Inner.liveViewSetters + 1] = function(val) liveView = val end
 local scrollCatcher
-Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val)
-    scrollCatcher = val
-end
+Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val) scrollCatcher = val end
 local cancelButton
-Inner.cancelButtonSetters[#Inner.cancelButtonSetters + 1] = function(val)
-    cancelButton = val
-end
+Inner.cancelButtonSetters[#Inner.cancelButtonSetters + 1] = function(val) cancelButton = val end
 
 -- Assigned below; CUI_Quickdraw_Live.lua holds the forward declaration
 -- ns.Close calls through.
@@ -92,9 +80,7 @@ function ReleaseSecureState(index)
     end
     -- The screen is free again, so the next press of any key may take it. See
     -- the ownership test in SNIPPET_PRE.
-    if cancelButton then
-        cancelButton:SetAttribute("eqdOwner", nil)
-    end
+    if cancelButton then cancelButton:SetAttribute("eqdOwner", nil) end
 
     local button = index and secureButtons[index]
     if button then
@@ -106,31 +92,21 @@ function ReleaseSecureState(index)
         button:SetAttribute("eqdLatched", nil)
     end
     local pool = index and gatePools[index]
-    if not pool then
-        return
-    end
-    if pool.fgate then
-        pool.fgate:Hide()
-    end
+    if not pool then return end
+    if pool.fgate then pool.fgate:Hide() end
     for k = 1, pool.built do
         local pgate = pool.pgate[k]
-        if pgate then
-            pgate:Hide()
-        end
+        if pgate then pgate:Hide() end
         local rgates = pool.rgate[k]
         for region = 1, REGION_MAX do
             local rgate = rgates and rgates[region]
-            if rgate then
-                rgate:Hide()
-            end
+            if rgate then rgate:Hide() end
         end
     end
     if pool.lattice then
         for skinData = -MAX_LATTICE, MAX_LATTICE do
             local lg = pool.lattice[skinData]
-            if lg then
-                lg:Hide()
-            end
+            if lg then lg:Hide() end
         end
     end
 end
@@ -146,24 +122,18 @@ local RerollHearth
 -- Is the live view drawing the palette this button pushed? There is one view
 -- for every bound key, and only the button whose palette it is currently laid
 -- out on may read a cell out of it or close it.
-local function OwnsLiveView(self)
-    return liveView and liveView:GetPaletteIndex() == self._palette
-end
+local function OwnsLiveView(self) return liveView and liveView:GetPaletteIndex() == self._palette end
 
 local function OnPreClick(self, btnFrame, down)
     -- A latched menu's own two keys open nothing: the menu they answer is
     -- already up. Everything they do happens in the snippet and in OnPostClick.
-    if btnFrame == CONFIRM_BUTTON or btnFrame == CANCEL_BUTTON then
-        return
-    end
+    if btnFrame == CONFIRM_BUTTON or btnFrame == CANCEL_BUTTON then return end
     if down then
         -- A latched menu whose key is pressed again is toggling shut, not
         -- opening. Read before the snippet, which runs after this and is what
         -- clears the flag -- so this is the last moment it still says which of
         -- the two a press is.
-        if self:GetAttribute("eqdLatched") then
-            return
-        end
+        if self:GetAttribute("eqdLatched") then return end
         -- Between an edit and the coalescer's timer the palette DRAWS the new
         -- contents while the button would still fire the old ones. A press is
         -- the moment that stops being tolerable, so it lands the push itself.
@@ -190,9 +160,7 @@ local function OnPreClick(self, btnFrame, down)
         -- rather than hiding the catcher and dropping ESCAPE out from under
         -- the hold still going. The held key keeps the palette it opened until
         -- it is let go.
-        if liveView and liveView:GetFrame():IsShown() and not OwnsLiveView(self) then
-            return
-        end
+        if liveView and liveView:GetFrame():IsShown() and not OwnsLiveView(self) then return end
         -- Ahead of the open, which paints the pick, and of the snippet, which
         -- fires it.
         RerollHearth(self)
@@ -205,9 +173,7 @@ local function OnPreClick(self, btnFrame, down)
 end
 
 local function OnPostClick(self, _, down)
-    if down then
-        return
-    end
+    if down then return end
     -- Some kinds have no secure action type at all and fire from here. WHICH
     -- cell fires is the SNIPPET's answer, read back off the button, not the
     -- selection the live view happens to be drawing: the two part company on
@@ -230,33 +196,25 @@ local function OnPostClick(self, _, down)
     -- key's, and it neither fires a cell of somebody else's palette nor tears
     -- down a palette its owner is still holding.
     local why = self:GetAttribute("eqdWhy")
-    if not OwnsLiveView(self) then
-        return
-    end
+    if not OwnsLiveView(self) then return end
     -- The release that latched the menu open closes nothing. Every other value
     -- reaching here ends it, including "toggleclose" -- the second press of the
     -- palette's own key -- which fires nothing on its way out.
-    if why == "latched" then
-        return
-    end
+    if why == "latched" then return end
     if why == "fire" or why == "emptyslot" then
         local position = tonumber(self:GetAttribute("eqdIdx"))
         local slot = liveView:CellSlot(position)
         FireInsecure(slot)
         -- Only "fire" moved a cycle on: "emptyslot" is a kind the sandbox has
         -- no action type for, and it never reached the snippet's step.
-        if why == "fire" then
-            CyclePosBack(self, position, slot)
-        end
+        if why == "fire" then CyclePosBack(self, position, slot) end
     end
     mod.Close()
 end
 
 local function GetSecureButton(index)
     local button = secureButtons[index]
-    if button then
-        return button
-    end
+    if button then return button end
 
     button = CreateFrame("Button", "CUIQuickdrawButton" .. index, UIParent, "SecureActionButtonTemplate")
     button._palette = index
@@ -373,9 +331,7 @@ end
 -- one as before.
 RerollHearth = function(pressed)
     local own = pressed._hearthCells
-    if not (own and next(own)) or InCombatLockdown() then
-        return
-    end
+    if not (own and next(own)) or InCombatLockdown() then return end
     Inner.Hearth.Roll()
     for _, button in pairs(secureButtons) do
         local cells = button._hearthCells
@@ -391,15 +347,11 @@ RerollHearth = function(pressed)
 end
 
 local function PushPalette(index)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     local p = PA(index)
     local button = secureButtons[index]
     local palette = EnsurePalette(index)
-    if not p or not button or not palette then
-        return
-    end
+    if not p or not button or not palette then return end
 
     -- Every measurement below is the live view's, and a keybound palette is
     -- pushed long before it is ever opened, so the view has to exist by here
@@ -458,10 +410,16 @@ local function PushPalette(index)
     -- to the profile, which is where this one lives.
     button:SetAttribute("eqdToggle", p.toggleMode == true or nil)
     local confirmKey = p.confirmKey
-    button:SetAttribute("eqdConfirm", (type(confirmKey) == "string" and confirmKey ~= "") and confirmKey or nil)
+    button:SetAttribute(
+        "eqdConfirm",
+        (type(confirmKey) == "string" and confirmKey ~= "") and confirmKey or nil
+    )
     -- Same story for the cancel key, and from the same place in the profile.
     local cancelKey = p.cancelKey
-    button:SetAttribute("eqdCancelKey", (type(cancelKey) == "string" and cancelKey ~= "") and cancelKey or nil)
+    button:SetAttribute(
+        "eqdCancelKey",
+        (type(cancelKey) == "string" and cancelKey ~= "") and cancelKey or nil
+    )
 
     -- Pointer layouts: the cell centres, worked out here rather than in the
     -- snippet. GridDims and GridBase already encode the auto-column rule and the
@@ -648,9 +606,7 @@ local function PushPalette(index)
             button:SetAttribute("eqdClaimAt" .. claim.parent, k)
             button:SetAttribute("eqdCSlot" .. k, claim.parent)
         end
-        if claims then
-            EnsureLatticeGates(index, button)
-        end
+        if claims then EnsureLatticeGates(index, button) end
     end
 
     -- One ANGULAR claim per slot that opens a palette, and one RING per claim
@@ -719,9 +675,7 @@ local function PushPalettes()
     -- The one place usability answers are allowed to change -- see usableMemo.
     wipe(usableMemo)
     -- Same lifecycle, same reason -- see the Dynamic Profession section.
-    if mod.WipeProfessionCache then
-        mod.WipeProfessionCache()
-    end
+    if mod.WipeProfessionCache then mod.WipeProfessionCache() end
     -- And the WoW Forever top spell ranks (TopRank in CUI_Quickdraw_Actions.lua).
     mod.WipeRankCache()
     for i = 1, PaletteCount() do
@@ -748,18 +702,14 @@ local function QueuePush()
         pushDirty = true
         return
     end
-    if pushQueued then
-        return
-    end
+    if pushQueued then return end
     pushQueued = true
     C_Timer.After(PUSH_DELAY, function()
         -- A press already landed this one. The timer is left to run into the
         -- lowered flag rather than cancelled: that costs one comparison and
         -- keeps no timer handle anywhere for a later request to have to
         -- reason about.
-        if not pushQueued then
-            return
-        end
+        if not pushQueued then return end
         pushQueued = false
         PushPalettes()
     end)
@@ -774,9 +724,7 @@ end
 -- instead, so the pending state is handed to PLAYER_REGEN_ENABLED rather than
 -- dropped.
 FlushPendingPush = function()
-    if not pushQueued then
-        return
-    end
+    if not pushQueued then return end
     pushQueued = false
     PushPalettes()
 end
@@ -833,9 +781,7 @@ local MOD_STRIP = { "ALT-", "CTRL-", "SHIFT-", "META-" }
 local function BaseKey(key)
     for i = 1, #MOD_STRIP do
         local m = MOD_STRIP[i]
-        if key:sub(1, #m) == m then
-            key = key:sub(#m + 1)
-        end
+        if key:sub(1, #m) == m then key = key:sub(#m + 1) end
     end
     return key
 end
@@ -854,9 +800,7 @@ end
 -- would keep shadowing their new binding until a reload.
 local function KeyIsFree(key)
     local action = GetBindingAction(key)
-    if action == nil or action == "" then
-        return true
-    end
+    if action == nil or action == "" then return true end
     return action:find("^CLICK CUIQuickdrawButton") ~= nil
 end
 
@@ -865,9 +809,7 @@ end
 -- something else has to be handed straight back, and UPDATE_BINDINGS is the
 -- only notice of that arriving.
 local function ModifierSig(key)
-    if not key then
-        return ""
-    end
+    if not key then return "" end
     local base, result = BaseKey(key), "|"
     for i = 1, #MOD_COMBOS do
         result = result .. (KeyIsFree(MOD_COMBOS[i] .. base) and "1" or "0")
@@ -878,9 +820,7 @@ end
 -- `claimed` carries the keys already spoken for across the whole pass, so no
 -- palette's variant can land on top of a key another palette was given.
 local function BindWithModifiers(name, key, claimed)
-    if not key then
-        return
-    end
+    if not key then return end
     local base = BaseKey(key)
     -- What the player is already holding to press this key at all. Only
     -- combinations that keep ALL of it are ours: the point of the variants is
@@ -892,9 +832,7 @@ local function BindWithModifiers(name, key, claimed)
     -- META is in MOD_STRIP but not in MOD_COMBOS, so a key bound with it has no
     -- variant that keeps it. Pass 1 has already bound the key itself; leave it
     -- at that rather than hand out combinations that all drop the Command key.
-    if mods:find("META-", 1, true) then
-        return
-    end
+    if mods:find("META-", 1, true) then return end
     local alt = mods:find("ALT-", 1, true) ~= nil
     local ctrl = mods:find("CTRL-", 1, true) ~= nil
     local shift = mods:find("SHIFT-", 1, true) ~= nil
@@ -919,13 +857,9 @@ end
 -- and loads, if any -- the options page shares a key only between palettes
 -- that never load together. nil: the keys open nothing this spec.
 local function KeyTarget(i, count)
-    if mod.PaletteActive(i) then
-        return i
-    end
+    if mod.PaletteActive(i) then return i end
     for jdx = 1, count do
-        if jdx ~= i and mod.ShareOwner(jdx) == i and mod.PaletteActive(jdx) then
-            return jdx
-        end
+        if jdx ~= i and mod.ShareOwner(jdx) == i and mod.PaletteActive(jdx) then return jdx end
     end
     return nil
 end
@@ -943,9 +877,7 @@ end
 -- every slider tick.
 function mod.UpdateBindings()
     local profile = P()
-    if not profile then
-        return
-    end
+    if not profile then return end
 
     local sig = profile.enabled and "on" or "off"
     local count = PaletteCount()
@@ -954,13 +886,9 @@ function mod.UpdateBindings()
         sig = sig .. "|" .. (k1 or "") .. "/" .. (k2 or "")
         sig = sig .. ModifierSig(k1) .. ModifierSig(k2)
         -- Which palette the keys open this spec
-        if k1 or k2 then
-            sig = sig .. ">" .. (KeyTarget(i, count) or 0)
-        end
+        if k1 or k2 then sig = sig .. ">" .. (KeyTarget(i, count) or 0) end
     end
-    if sig == bindingSig then
-        return
-    end
+    if sig == bindingSig then return end
 
     if InCombatLockdown() then
         bindingsDirty = true
@@ -972,15 +900,9 @@ function mod.UpdateBindings()
     -- No owner means nothing has ever been bound through one, so there is
     -- nothing to clear -- and building one anyway is the single frame that
     -- would keep a never-enabled session from costing nothing at all.
-    if bindOwner then
-        ClearOverrideBindings(bindOwner)
-    end
-    if not profile.enabled then
-        return
-    end
-    if not bindOwner then
-        bindOwner = CreateFrame("Frame")
-    end
+    if bindOwner then ClearOverrideBindings(bindOwner) end
+    if not profile.enabled then return end
+    if not bindOwner then bindOwner = CreateFrame("Frame") end
 
     -- A button is built only for a palette a key opens, so a profile that
     -- binds two of its sixteen pays for two. PushPalette skips an index with no
@@ -1037,9 +959,7 @@ function mod.UpdateBindings()
     -- binding change that built it is not itself a reason for anything else to
     -- ask for a push. Without this, the first hold on a freshly bound key would
     -- open an empty palette.
-    if built then
-        QueuePush()
-    end
+    if built then QueuePush() end
 end
 
 -- Which palettes load right now, one character each: what a spec change or a
@@ -1061,18 +981,12 @@ end
 -- and every spec change of a profile that assigns no specs. The event also
 -- fires for group members (its unit payload): only the player's counts.
 local function SpecSync(_, _, unitToken)
-    if unitToken and unitToken ~= "player" then
-        return
-    end
+    if unitToken and unitToken ~= "player" then return end
     local profile = P()
-    if not (profile and profile.enabled) then
-        return
-    end
+    if not (profile and profile.enabled) then return end
     CludesUI._RefreshSpecID()
     local sig = ActiveSignature()
-    if sig == activeSig then
-        return
-    end
+    if sig == activeSig then return end
     activeSig = sig
     mod.UpdateBindings()
     QueuePush()
@@ -1095,28 +1009,20 @@ local eventsOn = false
 -- fight deferred has been paid off.
 local EventsWanted, SetEventsEnabled
 
-local function OnUpdateBindings()
-    mod.UpdateBindings()
-end
+local function OnUpdateBindings() mod.UpdateBindings() end
 
 local function OnRegenEnabled()
-    if bindingsDirty then
-        mod.UpdateBindings()
-    end
+    if bindingsDirty then mod.UpdateBindings() end
     -- Only when the fight actually refused one: a palette edited during it
     -- was skipped by PushPalette and the sandbox is still holding the old
     -- contents, but a fight nobody edited anything through needs nothing.
-    if pushDirty then
-        PushPalettes()
-    end
+    if pushDirty then PushPalettes() end
     -- A palette that closed unattended mid-fight could not give ESCAPE
     -- back at the time. Now it can. No live view means none was ever
     -- opened, which is still a reason to try: the binding belongs to the
     -- cancel button rather than to the view.
     local idle = not liveView or not liveView:GetFrame():IsShown()
-    if idle then
-        ReleaseEscape()
-    end
+    if idle then ReleaseEscape() end
     -- Same story for the catcher, the ownership stamp and the arming
     -- gates: a close the fight refused left them exactly as the hold had
     -- them, and a shown catcher goes on eating camera zoom until this runs.
@@ -1148,17 +1054,13 @@ end
 -- would strand the bindings live for the rest of the session.
 function EventsWanted()
     local profile = P()
-    if profile and profile.enabled then
-        return true
-    end
+    if profile and profile.enabled then return true end
     return bindingsDirty or pushDirty or secureCloseDirty ~= nil
 end
 
 function SetEventsEnabled(on)
     on = on and true or false
-    if on == eventsOn then
-        return
-    end
+    if on == eventsOn then return end
     eventsOn = on
     if on then
         EQD:RegisterEvent("UPDATE_BINDINGS", OnUpdateBindings)
@@ -1191,9 +1093,7 @@ function SetEventsEnabled(on)
         -- it: as one file the module's main chunk was at Lua's ceiling of 200
         -- locals.
         EQD:RegisterEvent("RAID_TARGET_UPDATE", function()
-            if liveView and liveView:GetFrame():IsShown() then
-                liveView:RefreshMarkerPips()
-            end
+            if liveView and liveView:GetFrame():IsShown() then liveView:RefreshMarkerPips() end
         end)
         -- What the "Last Used Mount" entry summons. Blizzard records no such
         -- thing -- the whole C_MountJournal surface answers only what is
@@ -1219,12 +1119,8 @@ function SetEventsEnabled(on)
         -- Inline for the reason the registration above it is: as one file the
         -- module's main chunk was at Lua's ceiling of 200 locals.
         EQD:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", function(_, _, unitToken, _, spellId)
-            if unitToken ~= "player" or InCombatLockdown() then
-                return
-            end
-            if type(spellId) ~= "number" or not C_MountJournal.GetMountFromSpell then
-                return
-            end
+            if unitToken ~= "player" or InCombatLockdown() then return end
+            if type(spellId) ~= "number" or not C_MountJournal.GetMountFromSpell then return end
             local mountID = C_MountJournal.GetMountFromSpell(spellId)
             local popFrame = P()
             if mountID and popFrame and popFrame.lastMountID ~= mountID then
@@ -1266,9 +1162,7 @@ function mod.Refresh()
     -- switched off, this module draws nothing, pushes nothing and schedules
     -- nothing at all.
     local profile = P()
-    if not profile or not profile.enabled then
-        return
-    end
+    if not profile or not profile.enabled then return end
 
     RefreshFonts()
     QueuePush()
@@ -1287,9 +1181,7 @@ function mod.Refresh()
     -- the options page's wrapper is torn down and re-parented around them.
     for i = 1, #views do
         local val = views[i]
-        if val ~= liveView and val:GetFrame():IsVisible() then
-            val:Layout(val:GetPaletteIndex())
-        end
+        if val ~= liveView and val:GetFrame():IsVisible() then val:Layout(val:GetPaletteIndex()) end
     end
 end
 
@@ -1320,9 +1212,7 @@ _G._CUQD_Apply = mod.Refresh
 -- whose addon no longer exists is never loaded -- it just sits inert.
 local function MigrateLegacySV()
     local profiles = CludesUIDB and CludesUIDB.profiles
-    if type(profiles) ~= "table" then
-        return
-    end
+    if type(profiles) ~= "table" then return end
     -- No live table to pour into at this point: NewDB has not run, so nothing
     -- holds a reference to any of these yet and the key may be repointed.
     for _, prof in pairs(profiles) do
@@ -1346,9 +1236,7 @@ end
 
 function EQD:OnEnable()
     local profile = P()
-    if not profile then
-        return
-    end
+    if not profile then return end
 
     -- Switched off, this is the whole of what the module does for the session.
     -- The three handlers, the secure buttons, the scroll catcher and the arming
@@ -1357,9 +1245,7 @@ function EQD:OnEnable()
     -- module on mid-session still gets combat-deferred rebinding and
     -- stuck-palette cleanup, without a session that never enables it paying for
     -- any of them. All it holds is the one empty frame the main file makes.
-    if not profile.enabled then
-        return
-    end
+    if not profile.enabled then return end
 
     for i = 1, PaletteCount() do
         EnsurePalette(i)

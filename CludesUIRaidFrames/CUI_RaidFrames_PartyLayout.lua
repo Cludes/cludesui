@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PartyLayout.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor = math.floor
@@ -35,26 +31,16 @@ local StartRangeTicker, StopGhostTicker = Inner.StartRangeTicker, Inner.StopGhos
 local StopRangeTicker, SetFramesVisible = Inner.StopRangeTicker, Inner.SetFramesVisible
 
 local store
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    store = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) store = val end
 local containerFrame
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val) containerFrame = val end
 local framesVisible = false
-Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val)
-    framesVisible = val
-end
+Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val) framesVisible = val end
 
 -- Layout party frames: apply unitGrowth direction and cell spacing to the header.
 mod._LayoutPartyFrames = function()
-    if not mod._partyHeader then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not mod._partyHeader then return end
+    if InCombatLockdown() then return end
 
     local cfg = store.profile
     local pw, ph, pcs = mod.RF_PartyDims(cfg)
@@ -89,21 +75,15 @@ mod._LayoutPartyFrames = function()
         or mod._partyHeader:GetAttribute("yOffset") ~= hdrYOff
     if needsRelayout then
         local wasShown = mod._partyHeader:IsShown()
-        if wasShown then
-            mod._partyHeader:Hide()
-        end
+        if wasShown then mod._partyHeader:Hide() end
         for index = 1, 5 do
             local button = mod._partyHeader[index]
-            if button then
-                button:ClearAllPoints()
-            end
+            if button then button:ClearAllPoints() end
         end
         mod._partyHeader:SetAttribute("point", hdrPoint)
         mod._partyHeader:SetAttribute("xOffset", hdrXOff)
         mod._partyHeader:SetAttribute("yOffset", hdrYOff)
-        if wasShown then
-            mod._partyHeader:Show()
-        end
+        if wasShown then mod._partyHeader:Show() end
     end
 
     -- Self button + header slot positioning (also sets the header's own size,
@@ -160,13 +140,9 @@ mod._LayoutPartyFrames = function()
             end
             if not wantNameList then
                 local pSelfFirst = cfg.partyShowSelfFirst
-                if pSelfFirst == nil then
-                    pSelfFirst = cfg.showSelfFirst
-                end
+                if pSelfFirst == nil then pSelfFirst = cfg.showSelfFirst end
                 local pSelfLast = cfg.partySelfLast
-                if pSelfLast == nil then
-                    pSelfLast = cfg.showSelfLast
-                end
+                if pSelfLast == nil then pSelfLast = cfg.showSelfLast end
                 wantNameList = mod._BuildArenaNameList(
                     hideSelf,
                     pSelfFirst,
@@ -195,7 +171,9 @@ mod._LayoutPartyFrames = function()
             -- Small Raid keeps its group-1 limit in a party too (every party member
             -- is subgroup 1 there), so a party the driver keeps shown as it turns
             -- into a small raid mid-fight shows group 1, not the first five raiders.
-            local fGroup = smallRaidGroup or ((cfg.partySmallRaid == true and not mod._InArena()) and 1) or nil
+            local fGroup = smallRaidGroup
+                or ((cfg.partySmallRaid == true and not mod._InArena()) and 1)
+                or nil
             wantGroupFilter = fGroup and tostring(fGroup) or "1,2,3,4,5,6,7,8"
         end
 
@@ -213,9 +191,7 @@ mod._LayoutPartyFrames = function()
             or (mod._partyHeader:GetAttribute("showPlayer") ~= wantShowPlayer)
             or (mod._partyHeader:GetAttribute("nameList") ~= wantNameList)
             or (mod._partyHeader:GetAttribute("groupFilter") ~= wantGroupFilter)
-        if needsHideShow then
-            mod._fsChanged = true
-        end
+        if needsHideShow then mod._fsChanged = true end
         if needsHideShow and mod._partyHeader:IsShown() then
             mod._partyHeader:Hide()
             ApplyAttrs()
@@ -237,9 +213,7 @@ mod._LayoutPartyFrames = function()
     -- while not in a raid, so every layout pass -- Horizontal Frames, Flip Growth, party size,
     -- cell spacing -- has to move it too. OOC only (this function bails in combat). In a raid the
     -- boss group hangs off the raid headers instead, so skip the re-anchor scan there.
-    if (not IsInRaid() or mod._PartyInRaid()) and mod.FB_ReAnchor then
-        mod.FB_ReAnchor()
-    end
+    if (not IsInRaid() or mod._PartyInRaid()) and mod.FB_ReAnchor then mod.FB_ReAnchor() end
     -- The party target frames ride FB_ReAnchor above; this covers the raid branch that skips it
     -- (delta-gated, a no-op after it).
     mod._PT_Layout()
@@ -273,24 +247,18 @@ mod._kitPortraitUnits = {
 }
 mod.RF_KitPortraitEvents = function(on)
     -- Before the unit trackers exist there is nothing to register yet.
-    if not unitTrackers.player then
-        return
-    end
+    if not unitTrackers.player then return end
     local kit = mod.RF_PartyKit()
     on = on and true or false
     -- Kit hide edge: its always-on power registrations go too.
     if kit and mod._kitShownEv ~= on then
         mod._kitShownEv = on
-        if not on and mod.UpdatePowerEventRegistration then
-            mod.UpdatePowerEventRegistration()
-        end
+        if not on and mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
     end
     local art = on and mod.RF_PtEventMode and mod.RF_PtEventMode(kit) or nil
     local wanted, wantModel = art ~= nil, art == "3d"
     local was, wasModel = mod._kitPortraitEv or false, mod._ptModelEv or false
-    if was == wanted and wasModel == wantModel then
-        return
-    end
+    if was == wanted and wasModel == wantModel then return end
     mod._kitPortraitEv, mod._ptModelEv = wanted, wantModel
     local units = mod._kitPortraitUnits
     for index = 1, #units do
@@ -317,35 +285,23 @@ mod.RF_KitPortraitEvents = function(on)
         eventFrame:RegisterEvent("PORTRAITS_UPDATED")
         -- 2D art and the kit socket repaint; a 3D model repaints on its own
         -- show edge (and on a settings swap through its cleared memos).
-        if mod.RF_PtRepaintAll then
-            mod.RF_PtRepaintAll("Resync")
-        end
+        if mod.RF_PtRepaintAll then mod.RF_PtRepaintAll("Resync") end
     elseif was and not wanted then
         eventFrame:UnregisterEvent("PORTRAITS_UPDATED")
     end
 end
 
 mod._UpdatePartyVisibility = function()
-    if not mod._partyHeader then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
-    if mod._partyPvActive or mod._raidPvActive then
-        return
-    end
+    if not mod._partyHeader then return end
+    if InCombatLockdown() then return end
+    if mod._partyPvActive or mod._raidPvActive then return end
     -- Defensive: re-assert full opacity unless a size preview is dimming the
     -- real frames (see UpdateVisibility). Out of combat only (bails above).
     if not mod._sizePreviewTier and mod._partyContainerFrame then
         local dimmed = mod._partyContainerFrame:GetAlpha() ~= 1
         mod._partyContainerFrame:SetAlpha(1)
-        if mod._ptModelOn then
-            mod.RF_PtContainerAlpha(1)
-        end
-        if dimmed then
-            mod._PF_AlphaSync()
-        end
+        if mod._ptModelOn then mod.RF_PtContainerAlpha(1) end
+        if dimmed then mod._PF_AlphaSync() end
     end
 
     local cfg = store.profile
@@ -355,18 +311,14 @@ mod._UpdatePartyVisibility = function()
     end
     -- An enable edge here refreshes the target frames itself (the show edge below then skips it).
     local ptWas = mod._ptEnabled
-    if mod._ptDesired ~= (cfg.partyShowTargets == true) then
-        mod.PT_SetEnabled(cfg.partyShowTargets)
-    end
+    if mod._ptDesired ~= (cfg.partyShowTargets == true) then mod.PT_SetEnabled(cfg.partyShowTargets) end
     -- Arena and Small Raid mode show party frames even though IsInRaid() is
     -- true. The header binds raid units via showRaid=true; the raid container
     -- is hidden there by UpdateVisibility.
     local _, visible = mod._RFVisWanted()
     local wasVisible = mod._partyFramesVisible
     mod._partyFramesVisible = visible
-    if mod._NotifyTrackerProviders then
-        mod._NotifyTrackerProviders()
-    end
+    if mod._NotifyTrackerProviders then mod._NotifyTrackerProviders() end
 
     -- Update showSolo attribute, but only when it changed -- re-setting a
     -- SecureGroupHeader attribute re-triggers a full child re-process even when
@@ -382,15 +334,11 @@ mod._UpdatePartyVisibility = function()
     mod._partyContainerFrame:SetShown(visible)
     if visible then
         -- Suppress Blizzard party frames
-        if mod._SuppressBlizzParty then
-            mod._SuppressBlizzParty()
-        end
+        if mod._SuppressBlizzParty then mod._SuppressBlizzParty() end
 
         mod._LayoutPartyFrames()
         mod._RebuildPartyUnitMap()
-        if mod.UpdatePowerEventRegistration then
-            mod.UpdatePowerEventRegistration()
-        end
+        if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
         mod._UpdateAllPartyButtons()
         mod.RF_KitPortraitEvents(true)
 
@@ -404,16 +352,12 @@ mod._UpdatePartyVisibility = function()
             StopGhostTicker()
         end
 
-        if wasVisible then
-            mod._RFForgetOccupants(mod._partyAllButtons)
-        end
+        if wasVisible then mod._RFForgetOccupants(mod._partyAllButtons) end
         wipe(mod._partyUnitToButton)
         mod.RF_KitPortraitEvents(false)
         -- A hidden set runs native (see _LayoutPartyFrames), so the driver can
         -- show it mid-fight with every member in place.
-        if mod._partyLaidVis ~= false then
-            mod._LayoutPartyFrames()
-        end
+        if mod._partyLaidVis ~= false then mod._LayoutPartyFrames() end
     end
 
     -- Attach-point edges the layout pass above cannot cover: the boss group's own roster pass can
@@ -422,17 +366,13 @@ mod._UpdatePartyVisibility = function()
     -- roster event.
     if mod._fbPartyAttachState ~= visible then
         mod._fbPartyAttachState = visible
-        if mod.FB_ReAnchor then
-            mod.FB_ReAnchor()
-        end
+        if mod.FB_ReAnchor then mod.FB_ReAnchor() end
     end
     -- Party target frames skip roster refreshes while the party frames are hidden: their show edge
     -- takes one (units, your raid token, the listeners). EDGE only.
     if mod._ptVisState ~= visible then
         mod._ptVisState = visible
-        if visible and ptWas then
-            mod._PT_RefreshAll()
-        end
+        if visible and ptWas then mod._PT_RefreshAll() end
     end
 end
 
@@ -448,9 +388,7 @@ mod._RFCombatVisEdge = function()
     local raid, party = mod._RFVisWanted()
     local raidEdge = raid ~= (framesVisible == true)
     local partyEdge = party ~= (mod._partyFramesVisible == true)
-    if not raidEdge and not partyEdge then
-        return
-    end
+    if not raidEdge and not partyEdge then return end
     mod._rosterDirtyInCombat = true
     if raidEdge then
         SetFramesVisible(raid)
@@ -477,12 +415,8 @@ mod._RFCombatVisEdge = function()
         StopRangeTicker()
         StopGhostTicker()
     end
-    if mod.UpdatePowerEventRegistration then
-        mod.UpdatePowerEventRegistration()
-    end
-    if mod._NotifyTrackerProviders then
-        mod._NotifyTrackerProviders()
-    end
+    if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
+    if mod._NotifyTrackerProviders then mod._NotifyTrackerProviders() end
 end
 
 -- Reload party frames: apply party-specific sizing then shared rendering.
@@ -490,15 +424,11 @@ end
 -- Anchor closures (captured db.profile at StyleButton time) need a temp-swap:
 -- we write party_ values onto db.profile, call the closures, then restore.
 mod.ReloadPartyFrames = function(skipButtons)
-    if not mod._partyHeader then
-        return
-    end
+    if not mod._partyHeader then return end
     -- Re-evaluate UNIT_FLAGS registration before the temp-swap below (which
     -- overwrites db.profile), so a section sync/unsync that flips the party's
     -- effective combat-icon state turns the party trackers on/off in step.
-    if mod.UpdateCombatEventRegistration then
-        mod.UpdateCombatEventRegistration()
-    end
+    if mod.UpdateCombatEventRegistration then mod.UpdateCombatEventRegistration() end
     local p = mod._partyProxy -- reads party_ keys with fallthrough
     local raw = store.profile
     -- Scaled reads for everything in INDICATOR_SCALE_KEYS (role/leader/marker
@@ -508,9 +438,7 @@ mod.ReloadPartyFrames = function(skipButtons)
 
     -- Recompute the party indicator/aura scale (Auto Resize) up front; the
     -- _UpdateAllPartyButtons() call at the end re-renders indicators with it.
-    if mod._UpdatePartyIndicatorScale then
-        mod._UpdatePartyIndicatorScale()
-    end
+    if mod._UpdatePartyIndicatorScale then mod._UpdatePartyIndicatorScale() end
 
     -- Temp-swap: write party overrides onto db.profile so anchor closures
     -- (which captured db.profile) read party values. Only for keys whose
@@ -558,9 +486,7 @@ mod.ReloadPartyFrames = function(skipButtons)
         end
 
         -- Window/initialConfigFunction own sizes in combat (see raid loop).
-        if not InCombatLockdown() then
-            button:SetSize(bw, bh)
-        end
+        if not InCombatLockdown() then button:SetSize(bw, bh) end
 
         -- Party portrait (CUI_RaidFrames_Portrait.lua; the kit keeps its own):
         -- ahead of the bar layout below, which hangs the bars off its area.
@@ -587,9 +513,7 @@ mod.ReloadPartyFrames = function(skipButtons)
         if skinData.health then
             skinData.health:SetStatusBarTexture(texPath)
             skinData.health:GetStatusBarTexture():SetHorizTile(false)
-            if skinData.ReanchorAbsorbToFill then
-                skinData.ReanchorAbsorbToFill()
-            end
+            if skinData.ReanchorAbsorbToFill then skinData.ReanchorAbsorbToFill() end
         end
 
         -- Background: through its stamped owner (dark-mode aware), AFTER the
@@ -597,9 +521,7 @@ mod.ReloadPartyFrames = function(skipButtons)
         if skinData.bg then
             skinData._bgSt, skinData._bgA = nil, nil
             local u = button:GetAttribute("unit")
-            if u and UnitExists(u) then
-                mod._ApplyHealthBg(skinData, skinData.health, raw, u)
-            end
+            if u and UnitExists(u) then mod._ApplyHealthBg(skinData, skinData.health, raw, u) end
         end
 
         -- Power bar (always hide here; UpdateButton handles per-role show). This is a
@@ -635,18 +557,14 @@ mod.ReloadPartyFrames = function(skipButtons)
             )
             skinData._pwBgTintType = nil
         end
-        if skinData.UpdatePowerBorder then
-            skinData.UpdatePowerBorder(true)
-        end
+        if skinData.UpdatePowerBorder then skinData.UpdatePowerBorder(true) end
 
         -- The texts: Power Text hidden with the bar above (not under the kit, whose
         -- mana bar stays shown) until _UpdateAllPartyButtons below shows it again; every
         -- text restyled and re-anchored, the name on the party bar width (the kit's is
         -- its own).
         if skinData.AnchorTexts then
-            if not skinData.kit then
-                mod.RF_TextPowerHide(skinData)
-            end
+            if not skinData.kit then mod.RF_TextPowerHide(skinData) end
             skinData.AnchorTexts()
             mod.RF_TextNameWidth(skinData, barW)
         end
@@ -656,18 +574,14 @@ mod.ReloadPartyFrames = function(skipButtons)
             local stc = raw.statusTextColor or { r = 1, g = 1, b = 1 }
             ApplyFont(skinData.statusText, pp.statusTextSize or 14)
             skinData.statusText:SetTextColor(stc.r, stc.g, stc.b)
-            if skinData.AnchorStatusText then
-                skinData.AnchorStatusText()
-            end
+            if skinData.AnchorStatusText then skinData.AnchorStatusText() end
         end
 
         -- Role icon
         if skinData.roleIcon then
             local riSz = PixelSnap(pp.roleIconSize or 14)
             skinData.roleIcon:SetSize(riSz, riSz)
-            if skinData.AnchorRoleIcon then
-                skinData.AnchorRoleIcon()
-            end
+            if skinData.AnchorRoleIcon then skinData.AnchorRoleIcon() end
         end
 
         -- Leader icon
@@ -688,50 +602,36 @@ mod.ReloadPartyFrames = function(skipButtons)
                 )
             end
             -- Re-assert the host's strata/level above the border
-            if skinData.leaderHost then
-                mod.ApplyLeaderStrata(skinData.leaderHost)
-            end
+            if skinData.leaderHost then mod.ApplyLeaderStrata(skinData.leaderHost) end
         end
 
         -- Raid marker
         if skinData.raidMarker then
             local rmSz = PixelSnap(pp.raidMarkerSize or 16)
             skinData.raidMarker:SetSize(rmSz, rmSz)
-            if skinData.AnchorRaidMarker then
-                skinData.AnchorRaidMarker()
-            end
+            if skinData.AnchorRaidMarker then skinData.AnchorRaidMarker() end
         end
 
         -- Ready check / summon
         if skinData.readyCheck then
             local rcSz = PixelSnap(pp.readyCheckSize or 20)
             skinData.readyCheck:SetSize(rcSz, rcSz)
-            if skinData.AnchorReadyCheck then
-                skinData.AnchorReadyCheck()
-            end
+            if skinData.AnchorReadyCheck then skinData.AnchorReadyCheck() end
         end
 
         -- Combat icon
         if skinData.combatIcon then
             local cciSz = PixelSnap(pp.combatIndicatorSize or 16)
             skinData.combatIcon:SetSize(cciSz, cciSz)
-            if skinData.AnchorCombatIcon then
-                skinData.AnchorCombatIcon()
-            end
+            if skinData.AnchorCombatIcon then skinData.AnchorCombatIcon() end
         end
 
         -- Ping marker
-        if skinData.pingFrame then
-            mod._RFAnchorPing(skinData)
-        end
-        if mod.RF_FvMissingAnchor then
-            mod.RF_FvMissingAnchor(button, skinData)
-        end
+        if skinData.pingFrame then mod._RFAnchorPing(skinData) end
+        if mod.RF_FvMissingAnchor then mod.RF_FvMissingAnchor(button, skinData) end
 
         -- Border
-        if skinData.UpdateBorder then
-            skinData.UpdateBorder()
-        end
+        if skinData.UpdateBorder then skinData.UpdateBorder() end
     end
 
     -- Restore db.profile to raid values (via `swapped`, so a nil raid value
@@ -747,21 +647,15 @@ mod.ReloadPartyFrames = function(skipButtons)
     -- (or a party-side role-flag edit) changes the party's effective power
     -- gating, same reasoning as UpdateCombatEventRegistration above. Must run
     -- after the temp-swap restore so raid reads see raid values.
-    if mod.UpdatePowerEventRegistration then
-        mod.UpdatePowerEventRegistration()
-    end
+    if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
     mod._UpdateAllPartyButtons()
 
     -- Aura containers read the party class through its scaled proxy; the
     -- fingerprint guards make this near-free when nothing party-side changed.
-    if mod.RFC_ReloadAll then
-        mod.RFC_ReloadAll()
-    end
+    if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
     -- Party Frames kit: an attached Friendly Boss group clears the kit's
     -- outside auras, which these settings move (out of combat only).
-    if mod.RF_PartyKit() and mod.FB_ReAnchor and not InCombatLockdown() then
-        mod.FB_ReAnchor()
-    end
+    if mod.RF_PartyKit() and mod.FB_ReAnchor and not InCombatLockdown() then mod.FB_ReAnchor() end
     -- Portrait events follow the portrait settings (a no-op when unchanged).
     mod.RF_KitPortraitEvents(mod._partyFramesVisible)
     -- Pets and target frames beside the party frames are styled from the party settings.
@@ -772,12 +666,8 @@ mod.ReloadPartyFrames = function(skipButtons)
 end
 
 local function RegisterWithUnlockMode()
-    if not (CludesUI and CludesUI.RegisterUnlockElements) then
-        return
-    end
-    if not containerFrame then
-        return
-    end
+    if not (CludesUI and CludesUI.RegisterUnlockElements) then return end
+    if not containerFrame then return end
 
     -- Snap saved positions to the physical pixel grid using each container's own
     -- effective scale, via the REAL PP (CludesUI.PP) -- the file-local PP is
@@ -808,12 +698,8 @@ local function RegisterWithUnlockMode()
             -- container so _ApplyTierOffset stays sole authority (mover/save/anchors unaffected).
             noInitHook = true,
 
-            getFrame = function()
-                return containerFrame
-            end,
-            getSize = function()
-                return containerFrame:GetWidth(), containerFrame:GetHeight()
-            end,
+            getFrame = function() return containerFrame end,
+            getSize = function() return containerFrame:GetWidth(), containerFrame:GetHeight() end,
 
             savePos = function(_, anchorPoint, relPoint, posX, posY, srcPoint, srcRelPoint)
                 -- srcPoint/srcRelPoint: the PRE-conversion anchor the unlock framework
@@ -837,20 +723,14 @@ local function RegisterWithUnlockMode()
                     y = snap(containerFrame, posY),
                 }
             end,
-            loadPos = function()
-                return store.profile.unlockPos
-            end,
-            clearPos = function()
-                store.profile.unlockPos = nil
-            end,
+            loadPos = function() return store.profile.unlockPos end,
+            clearPos = function() store.profile.unlockPos = nil end,
             applyPos = function()
                 -- Delegate to the tier-aware authority (base top-left + per-tier
                 -- offset) so any framework apply matches _ApplyTierOffset instead
                 -- of the old re-anchor-at-unlockPos.point scheme, which used the
                 -- current tier's container size and mispositioned non-20 sizes.
-                if mod._ApplyTierOffset then
-                    mod._ApplyTierOffset()
-                end
+                if mod._ApplyTierOffset then mod._ApplyTierOffset() end
             end,
         }),
         CludesUI.MakeUnlockElement({
@@ -860,9 +740,7 @@ local function RegisterWithUnlockMode()
             order = 501,
             noResize = true,
 
-            getFrame = function()
-                return mod._partyContainerFrame
-            end,
+            getFrame = function() return mod._partyContainerFrame end,
             getSize = function()
                 return mod._partyContainerFrame:GetWidth(), mod._partyContainerFrame:GetHeight()
             end,
@@ -875,12 +753,8 @@ local function RegisterWithUnlockMode()
                     y = snap(mod._partyContainerFrame, posY),
                 }
             end,
-            loadPos = function()
-                return store.profile.partyUnlockPos
-            end,
-            clearPos = function()
-                store.profile.partyUnlockPos = nil
-            end,
+            loadPos = function() return store.profile.partyUnlockPos end,
+            clearPos = function() store.profile.partyUnlockPos = nil end,
             applyPos = function()
                 -- Element-anchored: the anchor system owns the position. Only
                 -- apply the saved pos as a bootstrap while the frame has no
@@ -920,9 +794,7 @@ local function RegisterWithUnlockMode()
             end,
             getSize = function()
                 local c = mod._hmContainer
-                if c then
-                    return c:GetWidth(), c:GetHeight()
-                end
+                if c then return c:GetWidth(), c:GetHeight() end
                 return 50, 25
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -934,12 +806,8 @@ local function RegisterWithUnlockMode()
                     y = snap(mod._hmContainer, posY),
                 }
             end,
-            loadPos = function()
-                return mod._HMSet().unlockPos
-            end,
-            clearPos = function()
-                mod._HMSet().unlockPos = nil
-            end,
+            loadPos = function() return mod._HMSet().unlockPos end,
+            clearPos = function() mod._HMSet().unlockPos = nil end,
             applyPos = function()
                 local c = mod._hmContainer
                 local place = mod._HMSet().unlockPos
@@ -961,22 +829,16 @@ local function RegisterWithUnlockMode()
             group = "Raid & Party Frames",
             order = 503,
             noResize = true,
-            isHidden = function()
-                return not mod._PGSet().enabled
-            end,
+            isHidden = function() return not mod._PGSet().enabled end,
             -- Built only while enabled: the saved-position pass calls this
             -- for every element.
             getFrame = function()
-                if mod._PGSet().enabled then
-                    return mod._PGEnsureFrame()
-                end
+                if mod._PGSet().enabled then return mod._PGEnsureFrame() end
                 return mod._pgFrame
             end,
             getSize = function()
                 local frame = mod._pgFrame
-                if frame then
-                    return frame:GetWidth(), frame:GetHeight()
-                end
+                if frame then return frame:GetWidth(), frame:GetHeight() end
                 return 50, 25
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -987,15 +849,9 @@ local function RegisterWithUnlockMode()
                     y = snap(mod._pgFrame, posY),
                 }
             end,
-            loadPos = function()
-                return mod._PGSet().unlockPos
-            end,
-            clearPos = function()
-                mod._PGSet().unlockPos = nil
-            end,
-            applyPos = function()
-                mod._PGApplyPos()
-            end,
+            loadPos = function() return mod._PGSet().unlockPos end,
+            clearPos = function() mod._PGSet().unlockPos = nil end,
+            applyPos = function() mod._PGApplyPos() end,
         }),
     })
 end

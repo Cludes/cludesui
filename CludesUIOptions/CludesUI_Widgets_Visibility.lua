@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_Visibility.lua
 --  Unified visibility row and its checklist. Builds on the checkbox
@@ -222,9 +220,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     -- marker the capture gates drop as blacklisted, leaving it stranded in the shared
     -- profile with nothing owning it. On those pages the row simply behaves as it does
     -- outside a session.
-    local function OvSessionActive()
-        return (CUI.SpecOverrides_SlotOverridable()) and true or false
-    end
+    local function OvSessionActive() return (CUI.SpecOverrides_SlotOverridable()) and true or false end
     local OV_LOCK_TIP =
         "Not overridable. These conditions are shared and can only be changed while no override is being edited. An override replaces the Visibility setting outright -- Never, Always or Mouseover -- and ignores everything set here while it applies."
     local OV_PICK_TIP =
@@ -246,24 +242,16 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     -- which knows nothing about the option lanes. Never/Always stay clickable as the exit.
     local function OrphanScalar()
         local storage = options.getStore()
-        if not storage then
-            return nil
-        end
+        if not storage then return nil end
         -- Shared value (ignoreOverride): an orphan is a stored SCALAR this row cannot
         -- express, and an applied override neither creates nor cures one.
         local sel, isMulti = CUI.GetVisibilitySelection(storage, legacyKey, true)
-        if isMulti then
-            return nil
-        end
+        if isMulti then return nil end
         local current = next(sel)
-        if current and not listed[current] then
-            return current
-        end
+        if current and not listed[current] then return current end
         return nil
     end
-    local function OrphanActive()
-        return OrphanScalar() ~= nil
-    end
+    local function OrphanActive() return OrphanScalar() ~= nil end
 
     -- WoW Forever: a row flagged `forever` is left out unless this store has a lane on
     -- that still does something there -- the Show lane of a never-true condition (it
@@ -273,9 +261,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     local foreverSel
     local function ForeverLaneOn(def, keyName)
         if def.axis == "opt" then
-            if options.getOption then
-                return options.getOption(keyName) == true
-            end
+            if options.getOption then return options.getOption(keyName) == true end
             local storage = options.getStore()
             return (storage and storage[keyName]) == true
         end
@@ -286,9 +272,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         return foreverSel ~= false and foreverSel[keyName] == true
     end
     local function ForeverRowHidden(def)
-        if ForeverLaneOn(def, def.show) then
-            return false
-        end
+        if ForeverLaneOn(def, def.show) then return false end
         return not (def.forever == "always" and ForeverLaneOn(def, def.hide))
     end
 
@@ -327,9 +311,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
             -- Only the two airborne rows need the takeoff/landing edge; the mount row
             -- rides PLAYER_CAN_GLIDE_CHANGED, which is always registered.
             if caps.luaDragonriding and (def.key == "skyAirborne" or def.key == "notSkyAirborne") then
-                entry.lockedFn = function()
-                    return not CUI._hasGlidingEvent
-                end
+                entry.lockedFn = function() return not CUI._hasGlidingEvent end
                 entry.lockedTooltip = "Requires a client with gliding events."
             end
             if def.modifier then
@@ -339,21 +321,15 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
             end
             -- Rows whose tooltip states a combining rule have to restate it under Any.
             if def.tooltipAny then
-                entry.tooltip = function()
-                    return GetMatchAny() and def.tooltipAny or def.tooltip
-                end
+                entry.tooltip = function() return GetMatchAny() and def.tooltipAny or def.tooltip end
             end
             -- The three exclusive states behave differently inside a session, so they
             -- say so instead of showing their normal text.
             if def.key == "never" or def.key == "always" or def.key == "mouseover" then
                 local baseTip = entry.tooltip
                 entry.tooltip = function()
-                    if OvSessionActive() then
-                        return OV_PICK_TIP
-                    end
-                    if type(baseTip) == "function" then
-                        return baseTip()
-                    end
+                    if OvSessionActive() then return OV_PICK_TIP end
+                    if type(baseTip) == "function" then return baseTip() end
                     return baseTip
                 end
             end
@@ -382,18 +358,14 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 get = function()
                     local storage = options.getStore()
                     local val = storage and storage[keyName]
-                    if val == nil then
-                        return dflt
-                    end
+                    if val == nil then return dflt end
                     return val == true
                 end
             end
             if not set then
                 set = function(val)
                     local storage = options.getStore()
-                    if not storage then
-                        return
-                    end
+                    if not storage then return end
                     val = val == true
                     if val == dflt then
                         storage[keyName] = nil
@@ -424,15 +396,11 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     -- (two Show lanes are two disjuncts, a Hide lane is a veto), so those stores are left
     -- exactly as they are. Hide keys are "hide_" .. the show key, per VIS_MODE_AXES.
     local function NormalizeGroupHide(sel)
-        if GetMatchAny() then
-            return sel
-        end
+        if GetMatchAny() then return sel end
         local missing, isShown = nil, 0
         for idx = 1, #GROUP_KEYS do
             local keyName = GROUP_KEYS[idx]
-            if sel["hide_" .. keyName] then
-                return sel
-            end
+            if sel["hide_" .. keyName] then return sel end
             if sel[keyName] then
                 isShown = isShown + 1
             else
@@ -454,13 +422,9 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     -- returns first. The marker replaces the shared value, so it has to travel exactly as
     -- far as that value does, or the mirrored elements keep obeying what it took over.
     local function OverrideStores()
-        if options.getStores then
-            return options.getStores() or {}
-        end
+        if options.getStores then return options.getStores() or {} end
         local storage = options.getStore()
-        if not storage then
-            return {}
-        end
+        if not storage then return {} end
         return { storage }
     end
 
@@ -471,9 +435,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     -- the summary (ovHeldFn) and by GetChecked's exclusive-row branch, never from here.
     local function Sel()
         local storage = options.getStore()
-        if not storage then
-            return nil
-        end
+        if not storage then return nil end
         return NormalizeGroupHide(CUI.GetVisibilitySelection(storage, legacyKey, true)), storage
     end
 
@@ -486,9 +448,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     local _selCache, _selStore, _selModes, _selScalar, _selMatch, _selOv
     local function SelRead()
         local storage = options.getStore()
-        if not storage then
-            return nil, nil
-        end
+        if not storage then return nil, nil end
         if
             _selCache
             and storage == _selStore
@@ -508,9 +468,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
 
     local function WriteSel(sel, storage)
         -- Never-empty invariant: clearing the last condition means Always.
-        if not next(sel) then
-            sel.always = true
-        end
+        if not next(sel) then sel.always = true end
         -- A shared edit outside a session also clears a STRANDED override marker. Two
         -- ways one can be left behind: the management list's Remove drops the entry but
         -- deliberately leaves live values alone, and a profile exported while an override
@@ -550,15 +508,11 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         -- module's visibility pass to catch up. onOptionChanged, not onChanged: the light
         -- re-apply chain, none of whose callers rebuild the page. Deferred a frame anyway,
         -- so nothing runs a module refresh from inside the page build that started it.
-        if healed and options.onOptionChanged then
-            C_Timer.After(0, options.onOptionChanged)
-        end
+        if healed and options.onOptionChanged then C_Timer.After(0, options.onOptionChanged) end
     end
 
     local function GetOpt(keyName)
-        if options.getOption then
-            return options.getOption(keyName) == true
-        end
+        if options.getOption then return options.getOption(keyName) == true end
         local storage = options.getStore()
         return (storage and storage[keyName]) == true
     end
@@ -580,17 +534,13 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
             return
         end
         local storage = options.getStore()
-        if storage then
-            storage[keyName] = storedValue
-        end
+        if storage then storage[keyName] = storedValue end
     end
 
     -- The match is a store-level scalar, but it fans out like the option lanes do
     -- (Resource Bars writes health/primary/secondary through these hooks), so it rides them.
     GetMatchAny = function()
-        if options.getOption then
-            return options.getOption("visibilityMatch") == "any"
-        end
+        if options.getOption then return options.getOption("visibilityMatch") == "any" end
         local storage = options.getStore()
         return (storage and storage.visibilityMatch) == "any"
     end
@@ -601,9 +551,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
             return
         end
         local storage = options.getStore()
-        if storage then
-            storage.visibilityMatch = enabled and "any" or nil
-        end
+        if storage then storage.visibilityMatch = enabled and "any" or nil end
     end
 
     -- Option axes live outside the selection, so Always vs. an active Show lane (which
@@ -615,9 +563,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     local function OnlyHideLanes(sel)
         local hasHide = false
         for keyName in pairs(sel) do
-            if not CUI.VIS_MODE_HIDE_KEYS[keyName] then
-                return false
-            end
+            if not CUI.VIS_MODE_HIDE_KEYS[keyName] then return false end
             hasHide = true
         end
         return hasHide
@@ -625,9 +571,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
 
     local function AnyShowOptActive()
         for _, d in pairs(defs) do
-            if d.axis == "opt" and GetOpt(d.show) then
-                return true
-            end
+            if d.axis == "opt" and GetOpt(d.show) then return true end
         end
         return false
     end
@@ -645,40 +589,22 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     local function OnChoiceMade(closeMenu, isOption, alsoOther)
         local optionFn = (isOption or alsoOther) and options.onOptionChanged
         local modeFn = ((not isOption) or alsoOther) and options.onChanged
-        if optionFn then
-            optionFn()
-        end
-        if modeFn then
-            modeFn()
-        end
+        if optionFn then optionFn() end
+        if modeFn then modeFn() end
         -- A caller that supplies only onChanged still gets that chain for option writes.
-        if not optionFn and not modeFn and options.onChanged then
-            options.onChanged()
-        end
+        if not optionFn and not modeFn and options.onChanged then options.onChanged() end
         pendingRefresh = true
-        if closeMenu and checkDrop and checkDrop._ddMenu then
-            checkDrop._ddMenu:Hide()
-        end
+        if closeMenu and checkDrop and checkDrop._ddMenu then checkDrop._ddMenu:Hide() end
     end
 
     local function GetChecked(keyName, neg)
         local def = defs[keyName]
-        if not def then
-            return false
-        end
-        if def.modifier then
-            return (def.matchValue == "any") == GetMatchAny()
-        end
-        if def.axis == "extra" then
-            return def.get() == true
-        end
-        if def.axis == "opt" then
-            return GetOpt(neg and def.hide or def.show)
-        end
+        if not def then return false end
+        if def.modifier then return (def.matchValue == "any") == GetMatchAny() end
+        if def.axis == "extra" then return def.get() == true end
+        if def.axis == "opt" then return GetOpt(neg and def.hide or def.show) end
         local sel, storage = SelRead()
-        if not sel then
-            return keyName == "always"
-        end
+        if not sel then return keyName == "always" end
         -- While an override is being EDITED the three exclusive rows show what it holds.
         -- Outside a session they show the shared value again, because that is what these
         -- rows edit -- an applied override is announced by the summary and the panel's
@@ -688,16 +614,10 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         -- read), and inside a session such a write becomes a capture of its own.
         if OvSessionActive() and (keyName == "never" or keyName == "always" or keyName == "mouseover") then
             local shade = storage and CUI.VisOverrideValue(storage)
-            if shade then
-                return (not neg) and (keyName == shade)
-            end
+            if shade then return (not neg) and (keyName == shade) end
         end
-        if def.axis == "mode" then
-            return sel[neg and def.hide or def.show] == true
-        end
-        if def.axis == "group" then
-            return sel[neg and def.hide or def.key] == true
-        end
+        if def.axis == "mode" then return sel[neg and def.hide or def.show] == true end
+        if def.axis == "group" then return sel[neg and def.hide or def.key] == true end
         if keyName == "always" then
             return (sel.always == true or OnlyHideLanes(sel)) and not AnyShowOptActive()
         end
@@ -706,9 +626,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
 
     local function SetChecked(keyName, checked, neg)
         local def = defs[keyName]
-        if not def then
-            return
-        end
+        if not def then return end
 
         -- Inside an override session the three exclusive states are the only thing an
         -- override can carry, and they REPLACE the configuration instead of editing it.
@@ -719,9 +637,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         if (keyName == "never" or keyName == "always" or keyName == "mouseover") and OvSessionActive() then
             local stores = OverrideStores()
             local storage = stores[1]
-            if not storage then
-                return
-            end
+            if not storage then return end
             local held = CUI.VisOverrideValue(storage)
             if held == keyName then
                 -- Cleared on every store first, so the re-snapshot ClearStoreKey takes
@@ -760,9 +676,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 lane, other = def.hide, def.show
             end
             SetOpt(lane, checked)
-            if checked then
-                SetOpt(other, false)
-            end
+            if checked then SetOpt(other, false) end
             -- Checking a lane under Never leaves Never (WriteSel's never-empty invariant
             -- lands on Always, which the lane then narrows); unchecking one leaves Never alone.
             local clearedNever = false
@@ -779,16 +693,12 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         end
 
         local sel, storage = Sel()
-        if not storage then
-            return
-        end
+        if not storage then return end
         -- Any condition write clears the exclusive scalars (Never/Always/orphan) but
         -- combines with every other axis.
         if def.axis or keyName == "mouseover" then
             for key in pairs(sel) do
-                if not CUI.VIS_COMBINABLE_KEYS[key] then
-                    sel[key] = nil
-                end
+                if not CUI.VIS_COMBINABLE_KEYS[key] then sel[key] = nil end
             end
         end
 
@@ -798,9 +708,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 lane, other = def.hide, def.show
             end
             sel[lane] = checked or nil
-            if checked then
-                sel[other] = nil
-            end
+            if checked then sel[other] = nil end
             WriteSel(sel, storage)
             OnChoiceMade(false)
             return
@@ -812,9 +720,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 lane, other = def.hide, def.key
             end
             sel[lane] = checked or nil
-            if checked then
-                sel[other] = nil
-            end
+            if checked then sel[other] = nil end
             WriteSel(sel, storage)
             OnChoiceMade(false)
             return
@@ -832,13 +738,9 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
             -- side only -- a Hide lane survives it, exactly as an option Hide lane does.
             -- Never is terminal for everything, vetoes included.
             for key in pairs(sel) do
-                if keyName == "never" or not CUI.VIS_MODE_HIDE_KEYS[key] then
-                    sel[key] = nil
-                end
+                if keyName == "never" or not CUI.VIS_MODE_HIDE_KEYS[key] then sel[key] = nil end
             end
-            if checked then
-                sel[keyName] = true
-            end
+            if checked then sel[keyName] = true end
             WriteSel(sel, storage)
             -- Always clears the Show lanes (else GetChecked keeps its box unchecked and the
             -- click is a no-op); Hide lanes survive, and Never leaves every lane untouched.
@@ -876,9 +778,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
     end
 
     local leftRegion = regionFrame
-    if leftRegion._control then
-        leftRegion._control:Hide()
-    end
+    if leftRegion._control then leftRegion._control:Hide() end
     checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
         leftRegion,
         options.width or 210,
@@ -907,9 +807,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 return storage and CUI.VisOverrideValue(storage) or nil
             end,
             -- The separator reads the match live: under Any the conditions are OR'd.
-            separatorFn = function()
-                return GetMatchAny() and " or " or ", "
-            end,
+            separatorFn = function() return GetMatchAny() and " or " or ", " end,
             -- Every row follows the same rule now: a checked Hide lane hides while its
             -- condition holds, in both match modes.
             hideLaneTooltip = "Hide while this condition is true",
@@ -928,9 +826,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         text = options.label or "Visibility",
         getValue = function()
             local cfg = options.getStore()
-            if not cfg then
-                return "always"
-            end
+            if not cfg then return "always" end
             -- Both are read on purpose, and unconditionally: the gold walk traces what a
             -- getter READS, so a row whose override lives in either key has to touch both
             -- or it never marks itself as overridden. The override wins as the value,
@@ -940,9 +836,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
         end,
         setValue = function(val)
             local cfg = options.getStore()
-            if not cfg then
-                return
-            end
+            if not cfg then return end
             -- Round-trip with getValue above: while a marker is live the value this slot
             -- REPORTS is the override, so a value handed back belongs there too. Writing
             -- it into the shared scalar instead would replace a setting the override was
@@ -954,17 +848,10 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 for idx = 1, #stores do
                     stores[idx].visibilityOverride = ovIn
                 end
-                if options.onChanged then
-                    options.onChanged()
-                end
+                if options.onChanged then options.onChanged() end
                 return
             end
-            if
-                CUI.VIS_CONDITION_KEYS[val]
-                or val == "never"
-                or val == "always"
-                or val == "mouseover"
-            then
+            if CUI.VIS_CONDITION_KEYS[val] or val == "never" or val == "always" or val == "mouseover" then
                 local one = {}
                 one[val] = true
                 CUI.SetVisibilitySelection(cfg, legacyKey, one, options.applyScalarFn)
@@ -978,9 +865,7 @@ function CUI.AttachVisibilityChecklist(regionFrame, options)
                 -- Same reset as the row's orphan branch: Any cannot express an orphan.
                 SetMatchAny(false)
             end
-            if options.onChanged then
-                options.onChanged()
-            end
+            if options.onChanged then options.onChanged() end
         end,
     }
 
@@ -1007,9 +892,7 @@ function CUI.BuildVisibilityRow(W, hostFrame, cursorY, options, rightCfg)
             disabled = o.disabledFn,
             disabledTooltip = o.disabledTooltip,
             rawTooltip = o.rawTooltip,
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         }
     end
@@ -1035,14 +918,10 @@ function CUI.BuildVisibilityRow(W, hostFrame, cursorY, options, rightCfg)
 
     -- Search pre-build: the row is an absorber, so the chrome below would throw. The
     -- row's labels were already indexed by the factory stubs; nothing here registers.
-    if CUI._prebuilding then
-        return row, height
-    end
+    if CUI._prebuilding then return row, height end
 
     CUI.AttachVisibilityChecklist(leftCfg and row._rightRegion or row._leftRegion, options)
-    if rightVis and not leftCfg then
-        CUI.AttachVisibilityChecklist(row._rightRegion, rightVis)
-    end
+    if rightVis and not leftCfg then CUI.AttachVisibilityChecklist(row._rightRegion, rightVis) end
 
     return row, height
 end

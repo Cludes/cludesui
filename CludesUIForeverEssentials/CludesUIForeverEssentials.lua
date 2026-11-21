@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials.lua  (WoW Forever only)
 --  Essential tools for WoW Forever. Each feature lives in its own file, listed
@@ -38,13 +36,9 @@ mod.addon = CludesUI.Lite.NewAddon(ADDON_NAME)
 -------------------------------------------------------------------------------
 function mod.Feature(dbKey, defaultSet, defaultPos)
     local F, none = {}, {}
-    local function Read()
-        return CludesUIDB and CludesUIDB[dbKey] or none
-    end
+    local function Read() return CludesUIDB and CludesUIDB[dbKey] or none end
     local function Cfg()
-        if not CludesUIDB then
-            return {}
-        end
+        if not CludesUIDB then return {} end
         local c = CludesUIDB[dbKey]
         if not c then
             c = {}
@@ -54,14 +48,10 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
     end
     local function Get(key)
         local val = Read()[key]
-        if val == nil then
-            return defaultSet[key]
-        end
+        if val == nil then return defaultSet[key] end
         return val
     end
-    local function Enabled()
-        return Get("enabled") == true
-    end
+    local function Enabled() return Get("enabled") == true end
     local function SavedPos()
         local place = Read().pos
         return place and place.point and place or defaultPos
@@ -69,9 +59,7 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
     -- A frame not built yet (nil) has nothing to place. snap: a CENTER point
     -- lands on the pixel grid for the frame's size, as unlock mode places it.
     local function Place(widget, snap)
-        if not widget then
-            return
-        end
+        if not widget then return end
         local place = SavedPos()
         local posX, posY = place.x or 0, place.y or 0
         if snap and place.point == "CENTER" then
@@ -107,9 +95,7 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
         boot:SetScript("OnEvent", function(self)
             self:UnregisterAllEvents()
             apply()
-            if not unit then
-                return
-            end
+            if not unit then return end
             local Shown = unit.shown or Enabled
             local e = {
                 key = unit.key,
@@ -118,20 +104,12 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
                 order = unit.order,
                 noAnchorTarget = unit.noAnchorTarget,
                 noSizeMatchTarget = unit.noSizeMatchTarget,
-                isHidden = function()
-                    return not Shown()
-                end,
-                getFrame = function()
-                    return Shown() and unit.frame(true) or nil
-                end,
+                isHidden = function() return not Shown() end,
+                getFrame = function() return Shown() and unit.frame(true) or nil end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
-                    if not anchorPoint then
-                        return
-                    end
+                    if not anchorPoint then return end
                     Cfg().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if not CludesUI._unlockActive then
-                        Place(unit.frame(), unit.snap)
-                    end
+                    if not CludesUI._unlockActive then Place(unit.frame(), unit.snap) end
                 end,
                 loadPos = SavedPos,
                 clearPos = function()
@@ -139,18 +117,14 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
                     Place(unit.frame(), unit.snap)
                 end,
                 applyPos = function()
-                    if Shown() then
-                        Place(unit.frame(true), unit.snap)
-                    end
+                    if Shown() then Place(unit.frame(true), unit.snap) end
                 end,
             }
             if unit.size then
                 e.noResize = true
                 e.getSize = unit.size
             else
-                e.getSize = function()
-                    return Get("width"), unit.height()
-                end
+                e.getSize = function() return Get("width"), unit.height() end
                 e.setWidth = function(_, wid)
                     Cfg().width = math.max(unit.minWidth, CludesUI.PP.Snap(wid))
                     unit.applyStyle()
@@ -179,9 +153,7 @@ end
 -- routing is blocked in combat on every frame; nil without the button.
 function mod.MicroClickLayer(microName, onClick)
     local micro = _G[microName]
-    if not micro or InCombatLockdown() then
-        return nil
-    end
+    if not micro or InCombatLockdown() then return nil end
     local layer = CreateFrame("Button", nil, micro)
     layer:SetAllPoints(micro)
     layer:SetFrameLevel(micro:GetFrameLevel() + 5)
@@ -189,9 +161,7 @@ function mod.MicroClickLayer(microName, onClick)
     layer:SetPropagateMouseMotion(true)
     layer:SetPassThroughButtons("MiddleButton", "Button4", "Button5")
     layer:SetScript("OnClick", function()
-        if micro:IsEnabled() then
-            onClick()
-        end
+        if micro:IsEnabled() then onClick() end
     end)
     return layer
 end
@@ -208,11 +178,7 @@ end
 -- What Auctionator last saw one of the item listed for, when it has a price.
 function mod.AuctionPrice(itemLink)
     local api = mod.AuctionAPI()
-    if not api then
-        return
-    end
+    if not api then return end
     local success, price = pcall(api.GetAuctionPriceByItemLink, "CludesUI", itemLink)
-    if success and type(price) == "number" and price > 0 then
-        return price
-    end
+    if success and type(price) == "number" and price > 0 then return price end
 end

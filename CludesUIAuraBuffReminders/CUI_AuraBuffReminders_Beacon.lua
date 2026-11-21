@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Beacon.lua
 --
@@ -11,9 +9,7 @@ local _, mod = ...
 local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor = math.floor
@@ -27,21 +23,13 @@ local ICON_SIZE, RemoveGlow, LayoutIcons = Inner.ICON_SIZE, Inner.RemoveGlow, In
 local CursorAttachActive, ReleaseCursorAnchor = Inner.CursorAttachActive, Inner.ReleaseCursorAnchor
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local cuiPanelOpen = false
-Inner.panelOpenSetters[#Inner.panelOpenSetters + 1] = function(val)
-    cuiPanelOpen = val
-end
+Inner.panelOpenSetters[#Inner.panelOpenSetters + 1] = function(val) cuiPanelOpen = val end
 local combatAnchor
-Inner.combatAnchorSetters[#Inner.combatAnchorSetters + 1] = function(val)
-    combatAnchor = val
-end
+Inner.combatAnchorSetters[#Inner.combatAnchorSetters + 1] = function(val) combatAnchor = val end
 local cursorAnchor
-Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val)
-    cursorAnchor = val
-end
+Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val) cursorAnchor = val end
 
 -------------------------------------------------------------------------------
 --  Last-Used Item Tracking (per-character)
@@ -61,9 +49,7 @@ do
         weSet[we.itemID] = true
     end
     TrackItemUse = function(itemId)
-        if not saved or not saved.profile then
-            return
-        end
+        if not saved or not saved.profile then return end
         -- All persistent use-tracking lives in db.profile (this DB layer has no `char` namespace).
         if flaskSet[itemId] then
             saved.profile.lastUsedFlask = itemId
@@ -158,9 +144,7 @@ end
 
 local function BeaconLayoutIcons()
     -- Beacon icons are merged into the main LayoutIcons row; the separate beacon anchor is hidden (unused).
-    if _B.anchor then
-        CludesUI.SetElementVisibility(_B.anchor, false)
-    end
+    if _B.anchor then CludesUI.SetElementVisibility(_B.anchor, false) end
 
     -- When cursor-attached, position beacon icons at the cursor anchor
     local useCursor = saved and CursorAttachActive(saved.profile.display) and cursorAnchor
@@ -261,9 +245,7 @@ end
 
 local function ShowBeaconIcon(spellId, show)
     local frame = _B.icons[spellId]
-    if not frame then
-        return
-    end
+    if not frame then return end
     local changed = false
     if show then
         if not _B.iconState[spellId] then
@@ -282,15 +264,11 @@ local function ShowBeaconIcon(spellId, show)
             changed = true
         end
     end
-    if changed then
-        BeaconLayoutIcons()
-    end
+    if changed then BeaconLayoutIcons() end
 end
 
 local function SyncBeacons()
-    if not _B.isPaladin then
-        return
-    end
+    if not _B.isPaladin then return end
     if cuiPanelOpen or not IsSpellOverlayed then
         ShowBeaconIcon(_B.BOL, false)
         ShowBeaconIcon(_B.BOF, false)
@@ -322,19 +300,13 @@ end
 -- row and the cursor. Their layout otherwise runs only when one shows or
 -- hides. Nothing to do for a non-Paladin or with the option off.
 local function BeaconCombatEdge()
-    if not _B.isPaladin then
-        return
-    end
+    if not _B.isPaladin then return end
     local p = saved and saved.profile.display
-    if p and p.cursorAttach and p.cursorAttachCombatOnly then
-        BeaconLayoutIcons()
-    end
+    if p and p.cursorAttach and p.cursorAttachCombatOnly then BeaconLayoutIcons() end
 end
 
 local function BeaconRefreshSoon()
-    if _B.refreshPending then
-        return
-    end
+    if _B.refreshPending then return end
     _B.refreshPending = true
     C_Timer.After(0, function()
         _B.refreshPending = false
@@ -345,9 +317,7 @@ end
 local function BeaconInit()
     local _, class = UnitClass("player")
     _B.isPaladin = (class == "PALADIN")
-    if not _B.isPaladin then
-        return
-    end
+    if not _B.isPaladin then return end
 
     _B.icons[_B.BOL] = BeaconMakeIcon(_B.BOL)
     _B.icons[_B.BOF] = BeaconMakeIcon(_B.BOF)
@@ -386,13 +356,9 @@ if not REMIND.FOREVER then
     _B.frame:RegisterEvent("PLAYER_LEVEL_CHANGED")
 end
 _B.frame:SetScript("OnEvent", function(_, e, ident)
-    if not _B.isPaladin then
-        return
-    end
+    if not _B.isPaladin then return end
     if e == "SPELL_ACTIVATION_OVERLAY_GLOW_SHOW" or e == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
-        if ident == _B.BOL or ident == _B.BOF then
-            SyncBeacons()
-        end
+        if ident == _B.BOL or ident == _B.BOF then SyncBeacons() end
         return
     end
     if e == "PLAYER_ENTERING_WORLD" or e == "ZONE_CHANGED_NEW_AREA" or e == "GROUP_ROSTER_UPDATE" then
@@ -415,9 +381,7 @@ _B.frame:SetScript("OnEvent", function(_, e, ident)
             local frame = _B.icons[spellRef]
             if frame and frame._icon then
                 local t = Tex(spellRef)
-                if t then
-                    frame._icon:SetTexture(t)
-                end
+                if t then frame._icon:SetTexture(t) end
             end
         end
         BeaconRefreshSoon()

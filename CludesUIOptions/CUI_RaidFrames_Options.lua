@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Options.lua
 --  Registers the Raid Frames module with CludesUI options panel.
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIRaidFrames"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (a kept page wrapper or popup and every frame it hands out) are reset
@@ -46,12 +42,8 @@ function mod.RF_OptPartyKit()
         or false
 end
 function mod.RF_PartyKitGate(rowConf)
-    if not rowConf or not mod.RF_OptPartyKit() then
-        return rowConf
-    end
-    rowConf.disabled = function()
-        return true
-    end
+    if not rowConf or not mod.RF_OptPartyKit() then return rowConf end
+    rowConf.disabled = function() return true end
     rowConf.disabledTooltip = "Frame Style: Party Frames"
     rowConf.requireState = "disabled"
     rowConf.rawTooltip = nil
@@ -65,9 +57,7 @@ end
 -- with enabledTip, the group's own switch, which also dims rgn's plain label while off. Nothing is
 -- built during the search prebuild; returns the button.
 function mod.RF_OptMoveFramesButton(row, region, options)
-    if CludesUI._prebuilding then
-        return
-    end
+    if CludesUI._prebuilding then return end
     local button = CreateFrame("Button", nil, row)
     button:SetSize(140, 26)
     button:SetPoint("RIGHT", region, "RIGHT", -20, 0)
@@ -84,9 +74,7 @@ function mod.RF_OptMoveFramesButton(row, region, options)
         labelFS:SetText(options.isShown() and CludesUI.L("Stop Moving") or CludesUI.L("Move Frames"))
         button:SetAlpha(options.allowed() and 1 or 0.35)
         -- Plain-label slots have no native disabled handling.
-        if enabled and region._label then
-            region._label:SetAlpha(enabled() and 1 or 0.3)
-        end
+        if enabled and region._label then region._label:SetAlpha(enabled() and 1 or 0.3) end
     end
     button:SetScript("OnEnter", function(self)
         if enabled and not enabled() then
@@ -103,13 +91,9 @@ function mod.RF_OptMoveFramesButton(row, region, options)
             )
         end
     end)
-    button:SetScript("OnLeave", function()
-        CludesUI.HideWidgetTooltip()
-    end)
+    button:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
     button:SetScript("OnClick", function()
-        if not options.allowed() then
-            return
-        end
+        if not options.allowed() then return end
         options.setShown(not options.isShown())
         Update()
     end)
@@ -130,27 +114,17 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     local _, height
     local function ProfileVal(keyName, d)
         local value = db.profile[keyName]
-        if value == nil then
-            return d
-        end
+        if value == nil then return d end
         return value
     end
     -- A row getter over PV: the key's value, or the default given.
     local function PVRow(key, default)
-        return function()
-            return ProfileVal(key, default)
-        end
+        return function() return ProfileVal(key, default) end
     end
     local function SyncProxyModes()
-        if mod._RefreshProxyModes then
-            mod._RefreshProxyModes()
-        end
-        if mod.RF_PtRefreshAll then
-            mod.RF_PtRefreshAll()
-        end
-        if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
-            mod.ShowPartyPreview()
-        end
+        if mod._RefreshProxyModes then mod._RefreshProxyModes() end
+        if mod.RF_PtRefreshAll then mod.RF_PtRefreshAll() end
+        if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then mod.ShowPartyPreview() end
     end
     local function PtSet(keyName, value)
         db.profile[keyName] = value
@@ -158,9 +132,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
-        return function(value)
-            PtSet(key, value)
-        end
+        return function(value) PtSet(key, value) end
     end
     local function RunWidgetRefresh()
         C_Timer.After(0, function()
@@ -188,12 +160,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             profile.partyPortraitShape = "none"
         end
         if value ~= "3d" then
-            if profile.partyPortraitShape == "none" then
-                profile.partyPortraitShape = "portrait"
-            end
-            if IsInside(profile.partyPortraitSide) then
-                profile.partyPortraitSide = "left"
-            end
+            if profile.partyPortraitShape == "none" then profile.partyPortraitShape = "portrait" end
+            if IsInside(profile.partyPortraitSide) then profile.partyPortraitSide = "left" end
         end
         SyncProxyModes()
     end
@@ -229,9 +197,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     local c = ct
                         and CludesUI.CLASS_ICON_SPRITE_COORDS
                         and CludesUI.CLASS_ICON_SPRITE_COORDS[ct]
-                    if not c then
-                        return nil
-                    end
+                    if not c then return nil end
                     return "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\" .. key .. ".tga",
                         c[1],
                         c[2],
@@ -255,26 +221,20 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             values = { none = "None", attached = "Attached", detached = "Detached" },
             order = { "none", "attached", "detached" },
             getValue = function()
-                if kit then
-                    return "attached"
-                end
+                if kit then return "attached" end
                 return ProfileVal("partyPortraitStyle", "none")
             end,
             setValue = function(value)
                 local profile = db.profile
                 local prev = profile.partyPortraitStyle or "none"
-                if value == prev then
-                    return
-                end
+                if value == prev then return end
                 if value == "detached" and (profile.partyPortraitMode or "2d") == "3d" then
                     profile.partyPortraitShape = "none"
                 end
                 if value ~= "detached" then
                     profile.partyPortraitSize = 0
                     local sd = profile.partyPortraitSide
-                    if sd == "top" or IsInside(sd) then
-                        profile.partyPortraitSide = "left"
-                    end
+                    if sd == "top" or IsInside(sd) then profile.partyPortraitSide = "left" end
                 end
                 PSSet("partyPortraitStyle", value)
                 CludesUI:RefreshPage(true)
@@ -285,29 +245,19 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             text = "Art Style",
             values = artValues,
             order = { "3d", "2d", "class" },
-            disabled = function()
-                return not kit and ProfileVal("partyPortraitStyle", "none") == "none"
-            end,
+            disabled = function() return not kit and ProfileVal("partyPortraitStyle", "none") == "none" end,
             disabledTooltip = "Portrait Mode is set to None",
             rawTooltip = true,
             -- A model cannot take the stock socket's round mask.
-            itemDisabled = function(value)
-                return kit and value == "3d"
-            end,
+            itemDisabled = function(value) return kit and value == "3d" end,
             itemDisabledTooltip = function(value)
-                if value == "3d" then
-                    return "Frame Style: Party Frames"
-                end
+                if value == "3d" then return "Frame Style: Party Frames" end
             end,
             itemRequireState = "disabled",
             getValue = function()
                 local m = ProfileVal("partyPortraitMode", "2d")
-                if m == "class" then
-                    return ProfileVal("partyPortraitClassStyle", "modern")
-                end
-                if kit and m == "3d" then
-                    return "2d"
-                end
+                if m == "class" then return ProfileVal("partyPortraitClassStyle", "modern") end
+                if kit and m == "3d" then return "2d" end
                 return m
             end,
             setValue = function(value)
@@ -322,16 +272,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                         confirmText = "Enable",
                         cancelText = "Cancel",
                         onConfirm = function()
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
+                            if not CludesUIDB then CludesUIDB = {} end
                             CludesUIDB.dismissed3DWarning = true
                             SetArt("3d")
                             CludesUI:RefreshPage(true)
                         end,
-                        onCancel = function()
-                            CludesUI:RefreshPage()
-                        end,
+                        onCancel = function() CludesUI:RefreshPage() end,
                     })
                     return
                 end
@@ -344,18 +290,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     -- Portrait Settings (Detached only): Clickable Portrait, Background Color.
     CludesUI.BuildInlineCog(modeRow._leftRegion, {
         title = "Portrait Settings",
-        disabled = function()
-            return kit or ProfileVal("partyPortraitStyle", "none") ~= "detached"
-        end,
+        disabled = function() return kit or ProfileVal("partyPortraitStyle", "none") ~= "detached" end,
         disabledTooltip = function()
-            if kit then
-                return "Frame Style: Party Frames"
-            end
+            if kit then return "Frame Style: Party Frames" end
             return "This option requires Portrait Mode to be set to Detached."
         end,
-        rawTooltip = function()
-            return not kit
-        end,
+        rawTooltip = function() return not kit end,
         requireState = "disabled",
         rows = {
             {
@@ -363,25 +303,19 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
                 get = PVRow("partyPortraitClickable", false),
-                set = function(value)
-                    PtSet("partyPortraitClickable", value or nil)
-                end,
+                set = function(value) PtSet("partyPortraitClickable", value or nil) end,
             },
             {
                 type = "colorpicker",
                 label = "Background Color",
                 hasAlpha = true,
                 tooltip = "Fill color behind the detached portrait.",
-                disabled = function()
-                    return ProfileVal("partyPortraitShape", "portrait") == "none"
-                end,
+                disabled = function() return ProfileVal("partyPortraitShape", "portrait") == "none" end,
                 disabledTooltip = "This option requires a Shape other than None.",
                 rawTooltip = true,
                 get = function()
                     local color = db.profile.partyPortraitBgColor
-                    if color then
-                        return color.r, color.g, color.b, color.a or 1
-                    end
+                    if color then return color.r, color.g, color.b, color.a or 1 end
                     return 0.1, 0.1, 0.1, 1
                 end,
                 set = function(red, green, blue, a)
@@ -391,9 +325,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         },
     })
 
-    if kit or ProfileVal("partyPortraitStyle", "none") == "none" then
-        return cursorY
-    end
+    if kit or ProfileVal("partyPortraitStyle", "none") == "none" then return cursorY end
 
     -- Row 2: Size | Position.
     local sizePosRow
@@ -425,23 +357,15 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         order = { "left", "right", "top", "insideleft", "insideright", "insidecenter" },
         itemDisabled = function(value)
             local st = ProfileVal("partyPortraitStyle", "none")
-            if value == "top" and st == "attached" then
-                return true
-            end
+            if value == "top" and st == "attached" then return true end
             if IsInside(value) then
-                if ProfileVal("partyPortraitMode", "2d") ~= "3d" then
-                    return true
-                end
-                if st ~= "detached" then
-                    return true
-                end
+                if ProfileVal("partyPortraitMode", "2d") ~= "3d" then return true end
+                if st ~= "detached" then return true end
             end
             return false
         end,
         itemDisabledTooltip = function(value)
-            if value == "top" then
-                return "Top position is only available in Detached mode"
-            end
+            if value == "top" then return "Top position is only available in Detached mode" end
             if IsInside(value) then
                 if ProfileVal("partyPortraitMode", "2d") ~= "3d" then
                     return "Inside positions require 3D Art Style"
@@ -517,15 +441,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 set = PtSetRow("partyPortraitY"),
             },
         },
-        disabled = function()
-            return ProfileVal("partyPortraitStyle", "none") ~= "detached"
-        end,
+        disabled = function() return ProfileVal("partyPortraitStyle", "none") ~= "detached" end,
         disabledTooltip = "This option requires Portrait Mode to be set to Detached.",
     })
 
-    if ProfileVal("partyPortraitStyle", "none") ~= "detached" then
-        return cursorY
-    end
+    if ProfileVal("partyPortraitStyle", "none") ~= "detached" then return cursorY end
 
     -- Row 3 (Detached): Shape | Shape Border (custom colour or class coloured).
     local shapeRow
@@ -547,9 +467,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             return value == "none" and ProfileVal("partyPortraitMode", "2d") ~= "3d"
         end,
         itemDisabledTooltip = function(value)
-            if value == "none" then
-                return "None shape requires 3D Art Style"
-            end
+            if value == "none" then return "None shape requires 3D Art Style" end
         end,
         getValue = PVRow("partyPortraitShape", "portrait"),
         setValue = PtSetRow("partyPortraitShape"),
@@ -573,9 +491,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                         CludesUI:RefreshPage()
                         return
                     end
-                    if self._eabOrigClick then
-                        self._eabOrigClick(self)
-                    end
+                    if self._eabOrigClick then self._eabOrigClick(self) end
                 end,
                 refreshAlpha = function()
                     return ProfileVal("partyPortraitBorderClassColor", true) and 0.3 or 1
@@ -587,9 +503,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 getValue = function()
                     local _, ct = UnitClass("player")
                     local color = ct and RAID_CLASS_COLORS[ct]
-                    if color then
-                        return color.r, color.g, color.b
-                    end
+                    if color then return color.r, color.g, color.b end
                     return 1, 1, 1
                 end,
                 setValue = function() end,
@@ -641,22 +555,16 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     local _, height, row
     local function ProfileVal(keyName, d)
         local value = db.profile[keyName]
-        if value == nil then
-            return d
-        end
+        if value == nil then return d end
         return value
     end
     -- A row getter over PV: the key's value, or the default given.
     local function PVRow(key, default)
-        return function()
-            return ProfileVal(key, default)
-        end
+        return function() return ProfileVal(key, default) end
     end
     -- The party preview draws its own target frames (the real ones are dimmed under it).
     local function ShowActivePreview()
-        if mod.partyPvActive() then
-            mod.ShowPartyPreview()
-        end
+        if mod.partyPvActive() then mod.ShowPartyPreview() end
     end
     -- Colour and background: the fingerprint-gated restyle and repaint.
     local function PtSet(keyName, value)
@@ -666,9 +574,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
-        return function(value)
-            PtSet(key, value)
-        end
+        return function(value) PtSet(key, value) end
     end
     -- Size, side and offsets: the delta-gated layout (combat-deferred).
     local function LaySet(keyName, value)
@@ -691,17 +597,15 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         tooltip = "Show a smaller secure target button beside each party frame. Left-click a button to target that party member's current target.",
         disabled = function()
             local profile = db.profile
-            return not profile.partyShowTargets and profile.partyCompactMode and mod.PT_AlongStack(profile, true)
+            return not profile.partyShowTargets
+                and profile.partyCompactMode
+                and mod.PT_AlongStack(profile, true)
         end,
         disabledTooltip = "Move Party Targets beside the frame stack or turn off Compact Mode.",
         rawTooltip = true,
-        getValue = function()
-            return db.profile.partyShowTargets or false
-        end,
+        getValue = function() return db.profile.partyShowTargets or false end,
         setValue = CludesUI.SectionToggleSetValue(function(value)
-            if value and db.profile.partyCompactMode and mod.PT_AlongStack(db.profile, true) then
-                return
-            end
+            if value and db.profile.partyCompactMode and mod.PT_AlongStack(db.profile, true) then return end
             db.profile.partyShowTargets = value
             mod.PT_SetEnabled(value)
             ShowActivePreview()
@@ -711,14 +615,10 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         text = "Include Own Target",
         tooltip = "Also show your own target beside your frame.",
         -- Hide Self leaves no frame of yours to attach to.
-        disabled = function()
-            return db.profile.partyHideSelf == true
-        end,
+        disabled = function() return db.profile.partyHideSelf == true end,
         disabledTooltip = "Hide Self",
         requireState = "disabled",
-        getValue = function()
-            return db.profile.partyTargetIncludeSelf or false
-        end,
+        getValue = function() return db.profile.partyTargetIncludeSelf or false end,
         setValue = function(value)
             db.profile.partyTargetIncludeSelf = value
             mod.PT_SetIncludeSelf(value)
@@ -727,9 +627,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     } or BLANK())
     cursorY = cursorY - height
 
-    if not on then
-        return cursorY
-    end
+    if not on then return cursorY end
 
     -- Row 2: Fill Color | Background (the Health Bar row's controls on the
     -- target frames' own keys).
@@ -750,9 +648,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         min = 0,
         max = 100,
         step = 1,
-        disabled = function()
-            return ProfileVal("partyTargetHealthColorMode", "class") == "dark"
-        end,
+        disabled = function() return ProfileVal("partyTargetHealthColorMode", "class") == "dark" end,
         disabledTooltip = DARK_TIP,
         rawTooltip = true,
         getValue = PVRow("partyTargetBgDarkness", 50),
@@ -762,25 +658,27 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     -- Custom fill swatch: live only in Custom mode, dimmed and blocked otherwise.
     if not CludesUI._prebuilding then
         local region = row._leftRegion
-        local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local color = db.profile.partyTargetCustomFillColor
-            if color then
-                return color.r, color.g, color.b, 1
-            end
-            return 37 / 255, 193 / 255, 29 / 255, 1
-        end, function(red, green, blue)
-            PtSet("partyTargetCustomFillColor", { r = red, g = green, b = blue })
-        end, false, 20)
+        local colorSwatch = CludesUI.BuildColorSwatch(
+            region,
+            row:GetFrameLevel() + 3,
+            function()
+                local color = db.profile.partyTargetCustomFillColor
+                if color then return color.r, color.g, color.b, 1 end
+                return 37 / 255, 193 / 255, 29 / 255, 1
+            end,
+            function(red, green, blue) PtSet("partyTargetCustomFillColor", { r = red, g = green, b = blue }) end,
+            false,
+            20
+        )
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
         local block = CludesUI.NewSwatchBlocker(colorSwatch)
-        block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color")
-        end)
-        block:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        block:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color") end
+        )
+        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         local function UpdateSwatchVis()
             if ProfileVal("partyTargetHealthColorMode", "class") == "custom" then
                 colorSwatch:SetAlpha(1)
@@ -800,33 +698,33 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local _, classTok = UnitClass("player")
             local classColor = classTok and CludesUI.GetClassColor(classTok)
-            if classColor then
-                return classColor.r, classColor.g, classColor.b, 1
-            end
+            if classColor then return classColor.r, classColor.g, classColor.b, 1 end
             return 1, 1, 1, 1
         end, function() end, false, 20)
         bgClassSwatch:SetScript("OnClick", function()
             PtSet("partyTargetBgClassColored", true)
             CludesUI:RefreshPage()
         end)
-        bgClassSwatch:HookScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(bgClassSwatch, "Class Colored Background")
-        end)
-        bgClassSwatch:HookScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        bgClassSwatch:HookScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(bgClassSwatch, "Class Colored Background") end
+        )
+        bgClassSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         bgClassSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = bgClassSwatch
 
-        local bgSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local color = db.profile.partyTargetCustomBgColor
-            if color then
-                return color.r, color.g, color.b, 1
-            end
-            return 17 / 255, 17 / 255, 17 / 255, 1
-        end, function(red, green, blue)
-            PtSet("partyTargetCustomBgColor", { r = red, g = green, b = blue })
-        end, false, 20)
+        local bgSwatch = CludesUI.BuildColorSwatch(
+            region,
+            row:GetFrameLevel() + 3,
+            function()
+                local color = db.profile.partyTargetCustomBgColor
+                if color then return color.r, color.g, color.b, 1 end
+                return 17 / 255, 17 / 255, 17 / 255, 1
+            end,
+            function(red, green, blue) PtSet("partyTargetCustomBgColor", { r = red, g = green, b = blue }) end,
+            false,
+            20
+        )
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
             if ProfileVal("partyTargetBgClassColored", false) then
@@ -834,16 +732,13 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 CludesUI:RefreshPage()
                 return
             end
-            if self._eabOrigClick then
-                self._eabOrigClick(self)
-            end
+            if self._eabOrigClick then self._eabOrigClick(self) end
         end)
-        bgSwatch:HookScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Background Color")
-        end)
-        bgSwatch:HookScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        bgSwatch:HookScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(bgSwatch, "Custom Background Color") end
+        )
+        bgSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = bgSwatch
         -- Blocking overlay spans BOTH swatches: Dark Mode has no background.
@@ -852,12 +747,8 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         bgBlock:SetPoint("BOTTOMRIGHT", bgClassSwatch, "BOTTOMRIGHT", 0, 0)
         bgBlock:SetFrameLevel(bgClassSwatch:GetFrameLevel() + 10)
         bgBlock:EnableMouse(true)
-        bgBlock:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(bgSwatch, DARK_TIP)
-        end)
-        bgBlock:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        bgBlock:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(bgSwatch, DARK_TIP) end)
+        bgBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         local function UpdateBgSwatchVis()
             if ProfileVal("partyTargetHealthColorMode", "class") == "dark" then
                 bgSwatch:SetAlpha(0.3)
@@ -882,9 +773,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         max = 300,
         step = 1,
         getValue = PVRow("partyTargetWidth", 70),
-        setValue = function(value)
-            LaySet("partyTargetWidth", value)
-        end,
+        setValue = function(value) LaySet("partyTargetWidth", value) end,
     }, {
         type = "slider",
         text = "Height",
@@ -892,9 +781,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         max = 150,
         step = 1,
         getValue = PVRow("partyTargetHeight", 33),
-        setValue = function(value)
-            LaySet("partyTargetHeight", value)
-        end,
+        setValue = function(value) LaySet("partyTargetHeight", value) end,
     })
     cursorY = cursorY - height
 
@@ -914,26 +801,24 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
             if profile.partyCompactMode and mod.PT_PositionAlongStack(value, profile.partyHorizontal) then
                 return true
             end
-            if profile.partyHorizontal or not mod.RF_PartyKit() then
-                return false
-            end
+            if profile.partyHorizontal or not mod.RF_PartyKit() then return false end
             local m = mod.RF_KitBuffMode(profile)
             return (m == "RIGHT" and value == "right") or (m == "LEFT" and value == "left")
         end,
         itemDisabledTooltip = function(value)
-            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(value, db.profile.partyHorizontal) then
+            if
+                db.profile.partyCompactMode and mod.PT_PositionAlongStack(value, db.profile.partyHorizontal)
+            then
                 return "Compact Mode"
             end
-            if value == "left" or value == "right" then
-                return "Frame Style: Party Frames"
-            end
+            if value == "left" or value == "right" then return "Frame Style: Party Frames" end
         end,
         itemRequireState = "disabled",
-        getValue = function()
-            return mod.PT_ShownSide()
-        end,
+        getValue = function() return mod.PT_ShownSide() end,
         setValue = function(value)
-            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(value, db.profile.partyHorizontal) then
+            if
+                db.profile.partyCompactMode and mod.PT_PositionAlongStack(value, db.profile.partyHorizontal)
+            then
                 return
             end
             LaySet("partyTargetPosition", (value ~= mod.PT_ShownSide(true)) and value or nil)
@@ -950,9 +835,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 max = 100,
                 step = 1,
                 get = PVRow("partyTargetOffsetX", 0),
-                set = function(value)
-                    LaySet("partyTargetOffsetX", value)
-                end,
+                set = function(value) LaySet("partyTargetOffsetX", value) end,
             },
             {
                 type = "slider",
@@ -961,9 +844,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 max = 100,
                 step = 1,
                 get = PVRow("partyTargetOffsetY", 0),
-                set = function(value)
-                    LaySet("partyTargetOffsetY", value)
-                end,
+                set = function(value) LaySet("partyTargetOffsetY", value) end,
             },
         },
     })
@@ -972,12 +853,8 @@ end
 
 CludesUI.AtLogin(function()
     mod._InitCUIModule = function()
-        if not CludesUI or not CludesUI.RegisterModule then
-            return
-        end
-        if not mod.db then
-            return
-        end
+        if not CludesUI or not CludesUI.RegisterModule then return end
+        if not mod.db then return end
 
         local Pix = CludesUI.PanelPP
         local db = mod.db
@@ -990,23 +867,15 @@ CludesUI.AtLogin(function()
         local GetFFD = mod.GetFFD
 
         local function ReloadAndUpdate()
-            if ReloadFrames then
-                ReloadFrames()
-            end
+            if ReloadFrames then ReloadFrames() end
             -- Preview refresh keeps health values, updates layout/colors.
-            if mod.previewActive and mod.previewActive() and mod.ShowPreview then
-                mod.ShowPreview()
-            end
+            if mod.previewActive and mod.previewActive() and mod.ShowPreview then mod.ShowPreview() end
             if mod._sizePreviewTier and mod._ShowSizePreview then
                 mod._ShowSizePreview(mod._sizePreviewTier)
             end
-            if mod.RefreshPvAuraVisuals then
-                mod.RefreshPvAuraVisuals()
-            end
+            if mod.RefreshPvAuraVisuals then mod.RefreshPvAuraVisuals() end
             -- Party frames share all settings except width/height.
-            if mod.ReloadPartyFrames then
-                mod.ReloadPartyFrames()
-            end
+            if mod.ReloadPartyFrames then mod.ReloadPartyFrames() end
             if mod.partyPvActive and mod.partyPvActive() and mod.ShowPartyPreview then
                 mod.ShowPartyPreview()
             end
@@ -1031,9 +900,7 @@ CludesUI.AtLogin(function()
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
                 local preview = db.profile["party_" .. key]
-                if preview ~= nil then
-                    return preview
-                end
+                if preview ~= nil then return preview end
             end
             return db.profile[key]
         end
@@ -1047,9 +914,7 @@ CludesUI.AtLogin(function()
             else
                 db.profile[key] = val
             end
-            if mod._BumpAbsorbGen then
-                mod._BumpAbsorbGen()
-            end
+            if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
             ReloadAndUpdate()
         end
         local function SVal(key, default)
@@ -1059,14 +924,10 @@ CludesUI.AtLogin(function()
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
                 local preview = db.profile["party_" .. key]
-                if preview ~= nil then
-                    return preview
-                end
+                if preview ~= nil then return preview end
             end
             local value = db.profile[key]
-            if value ~= nil then
-                return value
-            end
+            if value ~= nil then return value end
             return default
         end
         -- Context-aware direct write, for color swatches that bypass SSet.
@@ -1080,9 +941,7 @@ CludesUI.AtLogin(function()
             else
                 db.profile[key] = val
             end
-            if mod._BumpAbsorbGen then
-                mod._BumpAbsorbGen()
-            end
+            if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
         end
         -- A border's exact-size companion (<sib>Px) is ONE setting with its legacy
         -- sibling, the party proxy's rule: on the party tab a stored party sibling
@@ -1113,9 +972,7 @@ CludesUI.AtLogin(function()
                     caps = { mode = true, params = true, bg = true },
                     defaultColor = CludesUI.Glows.DEFAULT_COLOR,
                     onChange = ReloadAndUpdate,
-                    disabled = function()
-                        return read("showMissingBuffs", true) == false
-                    end,
+                    disabled = function() return read("showMissingBuffs", true) == false end,
                     disabledTooltip = "Missing Buffs",
                     get = function(f)
                         if f == "style" then
@@ -1171,13 +1028,9 @@ CludesUI.AtLogin(function()
                 highlight = "Missing Buffs",
                 desc = MissingGlowDesc(function(key, default)
                     local value = db.profile[key]
-                    if value == nil then
-                        return default
-                    end
+                    if value == nil then return default end
                     return value
-                end, function(key, value)
-                    db.profile[key] = value
-                end),
+                end, function(key, value) db.profile[key] = value end),
             })
         end
 
@@ -1200,16 +1053,12 @@ CludesUI.AtLogin(function()
             local texOrder2 = mod.healthBarTextureOrder or {}
             local texLookup = mod.healthBarTextures or {}
             for _, key in ipairs(texOrder2) do
-                if key ~= "---" then
-                    hbtValues[key] = texNames[key] or key
-                end
+                if key ~= "---" then hbtValues[key] = texNames[key] or key end
                 hbtOrder[#hbtOrder + 1] = key
             end
             hbtValues._menuOpts = {
                 itemHeight = 28,
-                background = function(key)
-                    return texLookup[key]
-                end,
+                background = function(key) return texLookup[key] end,
             }
         end
 
@@ -1331,15 +1180,11 @@ CludesUI.AtLogin(function()
             absorbStyleValues._menuOpts = {
                 itemHeight = 28,
                 background = function(key)
-                    if not key or key == "---" or key == "none" then
-                        return nil
-                    end
+                    if not key or key == "---" or key == "none" then return nil end
                     if key == "blizzardModern" then
                         return mod.ResolveAbsorbStyleTex("striped"), modernSwatch
                     end
-                    if key == "maxHealthStripes" then
-                        return CludesUI.MAX_HEALTH_STRIPES_TEX
-                    end
+                    if key == "maxHealthStripes" then return CludesUI.MAX_HEALTH_STRIPES_TEX end
                     return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
                 end,
             }
@@ -1372,9 +1217,7 @@ CludesUI.AtLogin(function()
         -- runtime). Report what actually renders instead of showing a value the
         -- merged grid ignores.
         local function ReadGroupGrowth(value)
-            if value == "DOWNRIGHT" and SVal("mergeGroups", false) then
-                return "RIGHT"
-            end
+            if value == "DOWNRIGHT" and SVal("mergeGroups", false) then return "RIGHT" end
             return value
         end
 
@@ -1407,16 +1250,12 @@ CludesUI.AtLogin(function()
         -- An entry of either list is its build's only while the dropdown control
         -- keeps the dress generation it was stored at (the options page pool):
         -- a control dressed again since is another row's now, and is skipped.
-        local function PvEntryLive(e)
-            return PoolGen(e.ctrl) == e.gen
-        end
+        local function PvEntryLive(e) return PoolGen(e.ctrl) == e.gen end
 
         -- Gold border + tooltip on every Preview Mode control while the REAL preview renders an override's effective values (spec group or applied conditional). State comes from the runtime resolvers, NEVER the panel's view flags, so it always matches what the real preview shows.
         -- Recomputed at row build time and from ns._RebuildPvOverlay (view/spec/conditional changes).
         function mod._UpdatePvModeChrome()
-            if not next(pvModeCtrls) then
-                return
-            end
+            if not next(pvModeCtrls) then return end
             local textValue
             if (db.profile.previewMode or "overlay") == "real" then
                 -- Editing-as session: preview shows THAT session's values (effective overlay off there by design), so name it.
@@ -1443,9 +1282,7 @@ CludesUI.AtLogin(function()
         end
 
         -- True when preview is disabled; eyeball toggles gray out.
-        local function IsPreviewOff()
-            return (db.profile.previewMode or "overlay") == "none"
-        end
+        local function IsPreviewOff() return (db.profile.previewMode or "overlay") == "none" end
 
         -- Builds the "Preview Mode" row at the top of a page; returns the new y.
         local function BuildPreviewModeRow(hostFrame, cursorY)
@@ -1479,33 +1316,21 @@ CludesUI.AtLogin(function()
                 modeRow:GetFrameLevel() + 2,
                 previewModeValues,
                 previewModeOrder,
-                function()
-                    return db.profile.previewMode or "overlay"
-                end,
+                function() return db.profile.previewMode or "overlay" end,
                 function(value)
                     db.profile.previewMode = value
                     -- Apply to whichever preview the current tab owns.
                     local page = CludesUI:GetActivePage()
                     if page == PAGE_PARTY then
                         if value == "none" then
-                            if mod.HidePartyPreview then
-                                mod.HidePartyPreview()
-                            end
+                            if mod.HidePartyPreview then mod.HidePartyPreview() end
                         else
-                            if mod.HidePreview then
-                                mod.HidePreview()
-                            end
-                            if mod.ShowPartyPreview then
-                                mod.ShowPartyPreview()
-                            end
+                            if mod.HidePreview then mod.HidePreview() end
+                            if mod.ShowPartyPreview then mod.ShowPartyPreview() end
                         end
                     else
-                        if mod.ApplyPreviewMode then
-                            mod.ApplyPreviewMode()
-                        end
-                        if mod.HidePartyPreview then
-                            mod.HidePartyPreview()
-                        end
+                        if mod.ApplyPreviewMode then mod.ApplyPreviewMode() end
+                        if mod.HidePartyPreview then mod.HidePartyPreview() end
                     end
                     for _, dropdown in pairs(pvModeDropdowns) do
                         if PvEntryLive(dropdown) then
@@ -1544,9 +1369,7 @@ CludesUI.AtLogin(function()
                     e.ctrl, e.gold, e.gen = ddCtrl, host, PoolGen(ddCtrl)
                 end
             end
-            if mod._UpdatePvModeChrome then
-                mod._UpdatePvModeChrome()
-            end
+            if mod._UpdatePvModeChrome then mod._UpdatePvModeChrome() end
 
             mod._previewMode = db.profile.previewMode or "overlay"
             return cursorY
@@ -1585,9 +1408,7 @@ CludesUI.AtLogin(function()
         local function BuildBuffManagerPage(pageName, hostFrame, yOffset)
             -- Buff Manager v2 runs INSIDE the legacy page shell.
             -- The from-scratch replacement page was rejected in field review and is not routed to; do not wire it up.
-            if mod.BM_BuildPage then
-                return mod.BM_BuildPage(pageName, hostFrame, yOffset)
-            end
+            if mod.BM_BuildPage then return mod.BM_BuildPage(pageName, hostFrame, yOffset) end
             return math.abs(yOffset)
         end
 
@@ -1609,9 +1430,7 @@ CludesUI.AtLogin(function()
                     fadeOutA:SetFromAlpha(1)
                     fadeOutA:SetToAlpha(0)
                     fadeOutA:SetDuration(0.3)
-                    fadeOutAG:SetScript("OnFinished", function()
-                        testModeFrame:Hide()
-                    end)
+                    fadeOutAG:SetScript("OnFinished", function() testModeFrame:Hide() end)
                     testModeFrame._fadeOut = fadeOutAG
                 end
                 testModeFrame:SetAlpha(0)
@@ -1621,9 +1440,7 @@ CludesUI.AtLogin(function()
             mod._dispelsVisible = false
             mod._defensivesPreviewVisible = false
             mod._debuffsPreviewVisible = false
-            if mod._stopHealthAnim and mod._healthAnimActive then
-                mod._stopHealthAnim()
-            end
+            if mod._stopHealthAnim and mod._healthAnimActive then mod._stopHealthAnim() end
             mod._healthAnimActive = false
             mod._bmFrameEffectsVisible = false
             mod._testReducedMaxHealth = false
@@ -1632,24 +1449,16 @@ CludesUI.AtLogin(function()
             mod._testHealPrediction = nil
             mod._testThreat = nil
             mod._testBuffsVisible = false
-            if mod.StopPvBuffTicker then
-                mod.StopPvBuffTicker()
-            end
+            if mod.StopPvBuffTicker then mod.StopPvBuffTicker() end
             -- Hide the container immediately; the dimmer fade masks it.
-            if mod._overlayContainer then
-                mod._overlayContainer:Hide()
-            end
-            if mod.HidePreview then
-                mod.HidePreview()
-            end
+            if mod._overlayContainer then mod._overlayContainer:Hide() end
+            if mod.HidePreview then mod.HidePreview() end
             local activePage = CludesUI:GetActivePage()
             if activePage == PAGE_MAIN then
                 local mode = db.profile.previewMode or "overlay"
                 if mode ~= "none" and mod.ShowPreview then
                     C_Timer.After(0, function()
-                        if mod.ShowPreview then
-                            mod.ShowPreview()
-                        end
+                        if mod.ShowPreview then mod.ShowPreview() end
                     end)
                 end
             end
@@ -1745,12 +1554,8 @@ CludesUI.AtLogin(function()
                     for _, func in ipairs(allRefreshFns) do
                         func()
                     end
-                    if mod._applyTestState then
-                        mod._applyTestState()
-                    end
-                    if mod.ShowPreview then
-                        mod.ShowPreview()
-                    end
+                    if mod._applyTestState then mod._applyTestState() end
+                    if mod.ShowPreview then mod.ShowPreview() end
                 end
 
                 checkBtn:SetScript("OnClick", DoToggle)
@@ -1794,9 +1599,7 @@ CludesUI.AtLogin(function()
                             if editTarget.key then
                                 C_Timer.After(0.1, function()
                                     local target = mod._editTargets and mod._editTargets[editTarget.key]
-                                    if not target then
-                                        return
-                                    end
+                                    if not target then return end
                                     -- A row the page rebuilt since is dressed again (maybe as
                                     -- another row): the glow below is for this dress only.
                                     local targetGen = PoolGen(target)
@@ -1875,26 +1678,16 @@ CludesUI.AtLogin(function()
                 mod._testBuffsVisible = not indOn and testState.buffs
                 local wantAnim = not indOn and testState.animateBars
                 if wantAnim then
-                    if mod._startHealthAnim and not mod._healthAnimActive then
-                        mod._startHealthAnim()
-                    end
+                    if mod._startHealthAnim and not mod._healthAnimActive then mod._startHealthAnim() end
                 else
-                    if mod._stopHealthAnim and mod._healthAnimActive then
-                        mod._stopHealthAnim()
-                    end
+                    if mod._stopHealthAnim and mod._healthAnimActive then mod._stopHealthAnim() end
                 end
                 -- Restart so debuff/defensive icons hide/show immediately.
-                if mod.RestartPvAuraTicker then
-                    mod.RestartPvAuraTicker()
-                end
+                if mod.RestartPvAuraTicker then mod.RestartPvAuraTicker() end
                 -- Always stop first so re-init picks up new preview frames.
-                if mod.StopPvBuffTicker then
-                    mod.StopPvBuffTicker()
-                end
+                if mod.StopPvBuffTicker then mod.StopPvBuffTicker() end
                 local wantBuffs = not indOn and testState.buffs
-                if wantBuffs and mod.StartPvBuffTicker then
-                    mod.StartPvBuffTicker()
-                end
+                if wantBuffs and mod.StartPvBuffTicker then mod.StartPvBuffTicker() end
             end
 
             ---------------------------------------------------------------
@@ -1903,56 +1696,62 @@ CludesUI.AtLogin(function()
             SectionHeader("HEALTH & POWER BARS")
 
             do
-                local _, _, r = CheckboxRow("Animate Bars", function()
-                    return testState.animateBars
-                end, function(value)
-                    testState.animateBars = value
-                end, { page = PAGE_MAIN, key = "animateBars" })
+                local _, _, r = CheckboxRow(
+                    "Animate Bars",
+                    function() return testState.animateBars end,
+                    function(value) testState.animateBars = value end,
+                    { page = PAGE_MAIN, key = "animateBars" }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Absorbs", function()
-                    return testState.absorbs
-                end, function(value)
-                    testState.absorbs = value
-                end, { page = PAGE_MAIN, key = "absorbs" })
+                local _, _, r = CheckboxRow(
+                    "Absorbs",
+                    function() return testState.absorbs end,
+                    function(value) testState.absorbs = value end,
+                    { page = PAGE_MAIN, key = "absorbs" }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Healing Absorbs", function()
-                    return testState.healAbsorbs
-                end, function(value)
-                    testState.healAbsorbs = value
-                end, { page = PAGE_MAIN, key = "healAbsorbs" })
+                local _, _, r = CheckboxRow(
+                    "Healing Absorbs",
+                    function() return testState.healAbsorbs end,
+                    function(value) testState.healAbsorbs = value end,
+                    { page = PAGE_MAIN, key = "healAbsorbs" }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Heal Prediction", function()
-                    return testState.healPrediction
-                end, function(value)
-                    testState.healPrediction = value
-                end, { page = PAGE_MAIN, key = "healPrediction" })
+                local _, _, r = CheckboxRow(
+                    "Heal Prediction",
+                    function() return testState.healPrediction end,
+                    function(value) testState.healPrediction = value end,
+                    { page = PAGE_MAIN, key = "healPrediction" }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Threat Indicator", function()
-                    return testState.threat
-                end, function(value)
-                    testState.threat = value
-                end, { page = PAGE_MAIN, key = "threat" })
+                local _, _, r = CheckboxRow(
+                    "Threat Indicator",
+                    function() return testState.threat end,
+                    function(value) testState.threat = value end,
+                    { page = PAGE_MAIN, key = "threat" }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Reduced Max Health", function()
-                    return testState.reducedMaxHealth
-                end, function(value)
-                    testState.reducedMaxHealth = value
-                end, { page = PAGE_MAIN, key = "absorbs" })
+                local _, _, r = CheckboxRow(
+                    "Reduced Max Health",
+                    function() return testState.reducedMaxHealth end,
+                    function(value) testState.reducedMaxHealth = value end,
+                    { page = PAGE_MAIN, key = "absorbs" }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
@@ -1962,42 +1761,54 @@ CludesUI.AtLogin(function()
             SectionHeader("AURAS")
 
             do
-                local _, _, r = CheckboxRow("Dispels", function()
-                    return testState.dispels
-                end, function(value)
-                    testState.dispels = value
-                    mod._applyTestState()
-                end, { page = PAGE_MAIN })
+                local _, _, r = CheckboxRow(
+                    "Dispels",
+                    function() return testState.dispels end,
+                    function(value)
+                        testState.dispels = value
+                        mod._applyTestState()
+                    end,
+                    { page = PAGE_MAIN }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Debuffs", function()
-                    return testState.debuffs
-                end, function(value)
-                    testState.debuffs = value
-                    mod._applyTestState()
-                end, { page = PAGE_DM })
+                local _, _, r = CheckboxRow(
+                    "Debuffs",
+                    function() return testState.debuffs end,
+                    function(value)
+                        testState.debuffs = value
+                        mod._applyTestState()
+                    end,
+                    { page = PAGE_DM }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Defensives & Externals", function()
-                    return testState.defensives
-                end, function(value)
-                    testState.defensives = value
-                    mod._applyTestState()
-                end, { page = PAGE_BUFFS })
+                local _, _, r = CheckboxRow(
+                    "Defensives & Externals",
+                    function() return testState.defensives end,
+                    function(value)
+                        testState.defensives = value
+                        mod._applyTestState()
+                    end,
+                    { page = PAGE_BUFFS }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
             do
-                local _, _, r = CheckboxRow("Configured Buffs", function()
-                    return testState.buffs
-                end, function(value)
-                    testState.buffs = value
-                    mod._applyTestState()
-                end, { page = PAGE_BUFFS })
+                local _, _, r = CheckboxRow(
+                    "Configured Buffs",
+                    function() return testState.buffs end,
+                    function(value)
+                        testState.buffs = value
+                        mod._applyTestState()
+                    end,
+                    { page = PAGE_BUFFS }
+                )
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
 
@@ -2013,9 +1824,7 @@ CludesUI.AtLogin(function()
                 end
             end
 
-            CheckboxRow("Show All", function()
-                return testState.indicators
-            end, function(value)
+            CheckboxRow("Show All", function() return testState.indicators end, function(value)
                 testState.indicators = value
                 SetNonIndicatorRowsEnabled(not value)
                 mod._applyTestState()
@@ -2047,16 +1856,12 @@ CludesUI.AtLogin(function()
             -- Dead space closes.
             testModeFrame:SetScript("OnMouseDown", function()
                 local oc = mod._overlayContainer
-                if (panelFrame and panelFrame:IsMouseOver()) or (oc and oc:IsMouseOver()) then
-                    return
-                end
+                if (panelFrame and panelFrame:IsMouseOver()) or (oc and oc:IsMouseOver()) then return end
                 EndTestMode()
             end)
 
             testModeFrame:SetScript("OnKeyDown", function(self, key)
-                if InCombatLockdown() then
-                    return
-                end
+                if InCombatLockdown() then return end
                 if key == "ESCAPE" then
                     self:SetPropagateKeyboardInput(false)
                     EndTestMode()
@@ -2089,9 +1894,7 @@ CludesUI.AtLogin(function()
                     row2:EnableMouse(false)
                 end
                 -- Indicators may already be on from a previous open.
-                if testState.indicators then
-                    SetNonIndicatorRowsEnabled(false)
-                end
+                if testState.indicators then SetNonIndicatorRowsEnabled(false) end
                 panelFrame:ClearAllPoints()
                 panelFrame:SetPoint("LEFT", testModeFrame, "LEFT", 40, 0)
                 panelFrame:SetAlpha(1)
@@ -2141,21 +1944,15 @@ CludesUI.AtLogin(function()
             fadeInAG:Play()
 
             -- Force the preview up; ns._testMode forces overlay mode.
-            if mod.HidePreview then
-                mod.HidePreview()
-            end
+            if mod.HidePreview then mod.HidePreview() end
             C_Timer.After(0, function()
                 if mod.ShowPreview and mod._testMode then
                     mod.ShowPreview()
                     -- Re-apply now that preview frames exist and previewActive is true.
-                    if mod._applyTestState then
-                        mod._applyTestState()
-                    end
+                    if mod._applyTestState then mod._applyTestState() end
                     -- Reanchor + fade in the sidebar once the container is placed.
                     C_Timer.After(0, function()
-                        if not mod._testMode then
-                            return
-                        end
+                        if not mod._testMode then return end
                         local oc = mod._overlayContainer
                         if oc and oc:IsShown() and mod._testPanel then
                             mod._testPanel:ClearAllPoints()
@@ -2169,9 +1966,7 @@ CludesUI.AtLogin(function()
                 end
             end)
 
-            if not mod._testPanel then
-                BuildTestPanel(Pix, fontFile, accentColor, s)
-            end
+            if not mod._testPanel then BuildTestPanel(Pix, fontFile, accentColor, s) end
             mod._testPanel._redress(fontFile, accentColor)
             mod._applyTestState()
         end
@@ -2185,13 +1980,9 @@ CludesUI.AtLogin(function()
             hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
                 if folderName == "CludesUIRaidFrames" then
                     local tb = CludesUI._tabBar
-                    if not tb or not tb._tabButtons then
-                        return
-                    end
+                    if not tb or not tb._tabButtons then return end
                     local lastBtn = tb._tabButtons[#tb._tabButtons]
-                    if not lastBtn then
-                        return
-                    end
+                    if not lastBtn then return end
 
                     if testTabBtn then
                         -- The tab bar rebuilds on module switch, so re-anchor.
@@ -2224,24 +2015,24 @@ CludesUI.AtLogin(function()
                     testTabBtn:SetWidth(textW + 30)
                     testTabBtn:SetPoint("BOTTOMLEFT", lastBtn, "BOTTOMRIGHT", 6, 0)
 
-                    testTabBtn:SetScript("OnEnter", function(self)
-                        self._label:SetTextColor(1, 1, 1, 0.86)
-                    end)
-                    testTabBtn:SetScript("OnLeave", function(self)
-                        self._label:SetTextColor(
-                            CludesUI.TEXT_DIM_R or 0.65,
-                            CludesUI.TEXT_DIM_G or 0.65,
-                            CludesUI.TEXT_DIM_B or 0.65,
-                            CludesUI.TEXT_DIM_A or 0.65
-                        )
-                    end)
-                    testTabBtn:SetScript("OnClick", function()
-                        OpenTestMode()
-                    end)
+                    testTabBtn:SetScript(
+                        "OnEnter",
+                        function(self) self._label:SetTextColor(1, 1, 1, 0.86) end
+                    )
+                    testTabBtn:SetScript(
+                        "OnLeave",
+                        function(self)
+                            self._label:SetTextColor(
+                                CludesUI.TEXT_DIM_R or 0.65,
+                                CludesUI.TEXT_DIM_G or 0.65,
+                                CludesUI.TEXT_DIM_B or 0.65,
+                                CludesUI.TEXT_DIM_A or 0.65
+                            )
+                        end
+                    )
+                    testTabBtn:SetScript("OnClick", function() OpenTestMode() end)
                 else
-                    if testTabBtn then
-                        testTabBtn:Hide()
-                    end
+                    if testTabBtn then testTabBtn:Hide() end
                 end
             end)
         end
@@ -2250,20 +2041,14 @@ CludesUI.AtLogin(function()
         -- Settings > Textures. read(key, default) / write(key, value): the page's own
         -- settings access (the Textures card reads and writes the raid keys).
         local function TexBgRowCfg(read, write)
-            local function Dark()
-                return read("healthColorMode", "class") == "dark"
-            end
+            local function Dark() return read("healthColorMode", "class") == "dark" end
             return {
                 type = "toggle",
                 label = "Textured Background",
                 tooltip = "Draws the bar texture on the health and power backgrounds too.",
                 disabled = function()
-                    if read("healthBarTexture", "atrocity") == "none" then
-                        return true
-                    end
-                    if Dark() then
-                        return not mod.RF_TexBgOpaque(nil, true)
-                    end
+                    if read("healthBarTexture", "atrocity") == "none" then return true end
+                    if Dark() then return not mod.RF_TexBgOpaque(nil, true) end
                     return read("healthBarOpacity", 100) < 100
                 end,
                 disabledTooltip = function()
@@ -2275,12 +2060,8 @@ CludesUI.AtLogin(function()
                     end
                     return "This option requires a Fill Opacity of 100."
                 end,
-                get = function()
-                    return read("textureBg", false) == true
-                end,
-                set = function(value)
-                    write("textureBg", value and true or false)
-                end,
+                get = function() return read("textureBg", false) == true end,
+                set = function(value) write("textureBg", value and true or false) end,
             }
         end
 
@@ -2377,18 +2158,14 @@ CludesUI.AtLogin(function()
         -- the DM root drops. stripAlways: hide the CC spell strip (parented to
         -- the panel, not the CC root; kept for the next build) even with no CC root.
         local function DropManagerPanels(keepPage, popups, stripAlways)
-            if popups == true and mod._addNewPopup then
-                mod._addNewPopup:Hide()
-            end
+            if popups == true and mod._addNewPopup then mod._addNewPopup:Hide() end
             if keepPage ~= PAGE_BUFFS and mod._bmRoot then
                 ParkRoot(mod._bmRoot)
                 mod._bmRoot = nil
             end
             local dropDm = keepPage ~= PAGE_DM and mod._dmRoot
             if popups == true or (popups == "dm" and dropDm) then
-                if mod._dmAddPopup then
-                    mod._dmAddPopup:Hide()
-                end
+                if mod._dmAddPopup then mod._dmAddPopup:Hide() end
                 if mod._bm2FilterEditor then
                     mod._bm2FilterEditor:Hide()
                     mod._bm2FilterEditor = nil
@@ -2419,9 +2196,7 @@ CludesUI.AtLogin(function()
                     mod._ccRoot = nil
                 end
             end
-            if (dropCc or stripAlways) and mod._ccSpellStrip then
-                mod._ccSpellStrip:Hide()
-            end
+            if (dropCc or stripAlways) and mod._ccSpellStrip then mod._ccSpellStrip:Hide() end
         end
 
         -- A manager root's deferred build runs only while its page still shows: a
@@ -2430,14 +2205,10 @@ CludesUI.AtLogin(function()
             return CludesUI:GetActiveModule() == "CludesUIRaidFrames" and CludesUI:GetActivePage() == page
         end
 
-        local function WithStack(err)
-            return tostring(err) .. "\n" .. debugstack(2)
-        end
+        local function WithStack(err) return tostring(err) .. "\n" .. debugstack(2) end
         local function RestorePartyCtx(saved, success, ...)
             optionState._partyCtx = saved
-            if not success then
-                error((...), 0)
-            end
+            if not success then error((...), 0) end
             return ...
         end
 
@@ -2471,14 +2242,10 @@ CludesUI.AtLogin(function()
                 if pageName == PAGE_MAIN then
                     local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore keeps real party frames hidden under the preview so they don't flash on return to the party tab; restore only for "none", where real frames are meant to be visible.
-                    if mod.HidePartyPreview then
-                        mod.HidePartyPreview(mode ~= "none")
-                    end
+                    if mod.HidePartyPreview then mod.HidePartyPreview(mode ~= "none") end
                     if mode ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
-                            if mod.ShowPreview then
-                                mod.ShowPreview()
-                            end
+                            if mod.ShowPreview then mod.ShowPreview() end
                         end)
                     elseif mode == "none" and mod.HidePreview then
                         mod.HidePreview()
@@ -2486,26 +2253,18 @@ CludesUI.AtLogin(function()
                 elseif pageName == PAGE_PARTY then
                     local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore avoids a one-frame flash of the real frames before the deferred ShowPartyPreview.
-                    if mod.HidePreview then
-                        mod.HidePreview(mode ~= "none")
-                    end
+                    if mod.HidePreview then mod.HidePreview(mode ~= "none") end
                     if mode ~= "none" and mod.ShowPartyPreview then
                         C_Timer.After(0, function()
-                            if mod.ShowPartyPreview then
-                                mod.ShowPartyPreview()
-                            end
+                            if mod.ShowPartyPreview then mod.ShowPartyPreview() end
                         end)
                     elseif mode == "none" and mod.HidePartyPreview then
                         mod.HidePartyPreview()
                     end
                 else
                     -- BUFFS / CLICKCAST show no preview, so FULL restore both real containers: a skip-restore here would strand the party container under the hidden preview parent with nothing to reparent it back.
-                    if mod.HidePreview then
-                        mod.HidePreview()
-                    end
-                    if mod.HidePartyPreview then
-                        mod.HidePartyPreview()
-                    end
+                    if mod.HidePreview then mod.HidePreview() end
+                    if mod.HidePartyPreview then mod.HidePartyPreview() end
                 end
                 -- Set party context BEFORE building any page so SGet/SSet/SVal read the correct keys during widget construction.
                 optionState._partyCtx = (pageName == PAGE_PARTY)
@@ -2515,16 +2274,12 @@ CludesUI.AtLogin(function()
                 elseif pageName == PAGE_PARTY then
                     return mod.RFO_BuildPartyPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_DM then
-                    if mod.DMP_BuildPage then
-                        return mod.DMP_BuildPage(pageName, hostFrame, yOffset)
-                    end
+                    if mod.DMP_BuildPage then return mod.DMP_BuildPage(pageName, hostFrame, yOffset) end
                     return math.abs(yOffset)
                 elseif pageName == PAGE_BUFFS then
                     return BuildBuffManagerPage(pageName, hostFrame, yOffset)
                 elseif pageName == PAGE_CLICKCAST then
-                    if mod.CC_BuildPage then
-                        return mod.CC_BuildPage(pageName, hostFrame, yOffset)
-                    end
+                    if mod.CC_BuildPage then return mod.CC_BuildPage(pageName, hostFrame, yOffset) end
                     return math.abs(yOffset)
                 end
             end,
@@ -2537,22 +2292,16 @@ CludesUI.AtLogin(function()
                 local textCheck = mod._rfTextChecks and mod._rfTextChecks[pageName]
                 if textCheck and textCheck() then
                     C_Timer.After(0, function()
-                        if RFPageShown(pageName) then
-                            CludesUI:RefreshPage(true)
-                        end
+                        if RFPageShown(pageName) then CludesUI:RefreshPage(true) end
                     end)
                 end
                 if pageName == PAGE_MAIN then
                     local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore; see buildPage.
-                    if mod.HidePartyPreview then
-                        mod.HidePartyPreview(mode ~= "none")
-                    end
+                    if mod.HidePartyPreview then mod.HidePartyPreview(mode ~= "none") end
                     if mode ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
-                            if mod.ShowPreview then
-                                mod.ShowPreview()
-                            end
+                            if mod.ShowPreview then mod.ShowPreview() end
                         end)
                     elseif mode == "none" and mod.HidePreview then
                         mod.HidePreview()
@@ -2560,39 +2309,25 @@ CludesUI.AtLogin(function()
                 elseif pageName == PAGE_PARTY then
                     local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore avoids a one-frame flash of the real frames before the deferred ShowPartyPreview.
-                    if mod.HidePreview then
-                        mod.HidePreview(mode ~= "none")
-                    end
+                    if mod.HidePreview then mod.HidePreview(mode ~= "none") end
                     if mode ~= "none" and mod.ShowPartyPreview then
                         C_Timer.After(0, function()
-                            if mod.ShowPartyPreview then
-                                mod.ShowPartyPreview()
-                            end
+                            if mod.ShowPartyPreview then mod.ShowPartyPreview() end
                         end)
                     elseif mode == "none" and mod.HidePartyPreview then
                         mod.HidePartyPreview()
                     end
                 elseif pageName == PAGE_BUFFS then
-                    if mod.HidePreview then
-                        mod.HidePreview()
-                    end
-                    if mod.HidePartyPreview then
-                        mod.HidePartyPreview()
-                    end
+                    if mod.HidePreview then mod.HidePreview() end
+                    if mod.HidePartyPreview then mod.HidePartyPreview() end
                     if not mod._bmRoot then
                         C_Timer.After(0, function()
-                            if RFPageShown(pageName) then
-                                BuildBuffManagerPage(pageName, nil, -6)
-                            end
+                            if RFPageShown(pageName) then BuildBuffManagerPage(pageName, nil, -6) end
                         end)
                     end
                 elseif pageName == PAGE_DM then
-                    if mod.HidePreview then
-                        mod.HidePreview()
-                    end
-                    if mod.HidePartyPreview then
-                        mod.HidePartyPreview()
-                    end
+                    if mod.HidePreview then mod.HidePreview() end
+                    if mod.HidePartyPreview then mod.HidePartyPreview() end
                     if not mod._dmRoot then
                         C_Timer.After(0, function()
                             if RFPageShown(PAGE_DM) and mod.DMP_BuildPage then
@@ -2601,9 +2336,7 @@ CludesUI.AtLogin(function()
                         end)
                     end
                 elseif pageName == PAGE_CLICKCAST then
-                    if mod.HidePreview then
-                        mod.HidePreview()
-                    end
+                    if mod.HidePreview then mod.HidePreview() end
                     if not mod._ccRoot then
                         C_Timer.After(0, function()
                             if RFPageShown(PAGE_CLICKCAST) and mod.CC_BuildPage then
@@ -2615,34 +2348,20 @@ CludesUI.AtLogin(function()
             end,
             onReset = function()
                 -- Clearing the first-install flag re-captures position on reload.
-                if db.sv then
-                    db.sv._capturedOnce_RF = nil
-                end
+                if db.sv then db.sv._capturedOnce_RF = nil end
                 db:ResetProfile()
                 -- No reload here: Reset CUI Module Settings reloads after this returns.
             end,
             -- Tears down all 6 Raid Frames preview mechanisms on cross-module
             -- switch (Real/Party/Size/HealthAnim/PowerAnim/HM previews).
             onModuleLeave = function()
-                if mod.HidePreview then
-                    mod.HidePreview()
-                end
-                if mod.HidePartyPreview then
-                    mod.HidePartyPreview()
-                end
+                if mod.HidePreview then mod.HidePreview() end
+                if mod.HidePartyPreview then mod.HidePartyPreview() end
                 mod._sizePreviewTier = nil
-                if mod._HideSizePreview then
-                    mod._HideSizePreview()
-                end
-                if mod._healthAnimActive and mod.StopHealthAnim then
-                    mod.StopHealthAnim()
-                end
-                if mod._powerAnimActive and mod.StopPowerAnim then
-                    mod.StopPowerAnim()
-                end
-                if mod._hmPreview and mod.HM_SetPreview then
-                    mod.HM_SetPreview(false)
-                end
+                if mod._HideSizePreview then mod._HideSizePreview() end
+                if mod._healthAnimActive and mod.StopHealthAnim then mod.StopHealthAnim() end
+                if mod._powerAnimActive and mod.StopPowerAnim then mod.StopPowerAnim() end
+                if mod._hmPreview and mod.HM_SetPreview then mod.HM_SetPreview(false) end
             end,
         })
 
@@ -2652,22 +2371,16 @@ CludesUI.AtLogin(function()
                 local page = CludesUI:GetActivePage()
                 if page == PAGE_MAIN then
                     local mode = db.profile.previewMode or "overlay"
-                    if mode ~= "none" and mod.ShowPreview then
-                        mod.ShowPreview()
-                    end
+                    if mode ~= "none" and mod.ShowPreview then mod.ShowPreview() end
                 elseif page == PAGE_PARTY then
                     local mode = db.profile.previewMode or "overlay"
-                    if mode ~= "none" and mod.ShowPartyPreview then
-                        mod.ShowPartyPreview()
-                    end
+                    if mode ~= "none" and mod.ShowPartyPreview then mod.ShowPartyPreview() end
                 elseif page == PAGE_BUFFS then
                     -- Panel opening on Buffs counts as entering it (WoW Forever: All Specs).
                     mod.BM_EnterAllSpecs()
                     if not mod._bmRoot then
                         C_Timer.After(0, function()
-                            if RFPageShown(PAGE_BUFFS) then
-                                BuildBuffManagerPage(PAGE_BUFFS, nil, -6)
-                            end
+                            if RFPageShown(PAGE_BUFFS) then BuildBuffManagerPage(PAGE_BUFFS, nil, -6) end
                         end)
                     end
                 elseif page == PAGE_DM then
@@ -2692,19 +2405,13 @@ CludesUI.AtLogin(function()
         -- Panel close: hide preview and clean up BM/CC.
         if CludesUI.RegisterOnHide then
             CludesUI:RegisterOnHide(function()
-                if mod._rfEyeHintTip then
-                    mod._rfEyeHintTip:Hide()
-                end
+                if mod._rfEyeHintTip then mod._rfEyeHintTip:Hide() end
                 -- HARD INVARIANT against "frames vanish after closing options": both real containers get reparented to UIParent and their visibility recomputed even if a skip-restore tab swap or a post-close deferred ShowPreview orphaned one under the hidden preview parent.
                 -- Self-defers to PLAYER_REGEN_ENABLED in combat.
-                if mod.EnsureRealFramesRestored then
-                    mod.EnsureRealFramesRestored()
-                end
+                if mod.EnsureRealFramesRestored then mod.EnsureRealFramesRestored() end
                 if mod._sizePreviewTier then
                     mod._sizePreviewTier = nil
-                    if mod._HideSizePreview then
-                        mod._HideSizePreview()
-                    end
+                    if mod._HideSizePreview then mod._HideSizePreview() end
                 end
                 -- BM root + Add New popup: the popup is DIALOG strata and otherwise persists after close.
                 DropManagerPanels(nil, true, true)
@@ -2713,22 +2420,16 @@ CludesUI.AtLogin(function()
 
         -- HideAllChildren callback: BM/CC intentionally bypass the scroll child, so their scrollFrame-parented roots need explicit cleanup.
         -- Registered beside the other modules' scroll-root hiders (never in place of them).
-        local function HideManagerRoots()
-            DropManagerPanels(nil, true, true)
-        end
+        local function HideManagerRoots() DropManagerPanels(nil, true, true) end
         CludesUI._AddScrollRootHider(HideManagerRoots)
 
         -- Module switch: drop the BM/CC roots and hide the preview.
         if CludesUI.SelectModule then
             hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
                 if folderName ~= "CludesUIRaidFrames" then
-                    if mod._rfEyeHintTip then
-                        mod._rfEyeHintTip:Hide()
-                    end
+                    if mod._rfEyeHintTip then mod._rfEyeHintTip:Hide() end
                     -- Tear down previews and guarantee the real containers return to UIParent, including the orphaned-flag-false cases.
-                    if mod.EnsureRealFramesRestored then
-                        mod.EnsureRealFramesRestored()
-                    end
+                    if mod.EnsureRealFramesRestored then mod.EnsureRealFramesRestored() end
                     DropManagerPanels(nil, true)
                 end
             end)
@@ -2748,21 +2449,15 @@ CludesUI.AtLogin(function()
         }
         mod._PartySearchExclude = function(sectionName)
             local key = mod._PARTY_SEARCH_SECTION_KEY[sectionName]
-            if not key then
-                return false
-            end
-            if not db or not db.profile then
-                return false
-            end
+            if not key then return false end
+            if not db or not db.profile then return false end
             local ss = db.profile.partySyncSections
             return (not ss) or ss[key] ~= false -- synced (default = all synced)
         end
 
         -- Party sync overlays track the inline search: hidden while a search is active (those sections are excluded), restored to their per-section sync state when empty. Overlays carry _searchIgnore so the generic search never re-anchors them.
         mod._PartySearchOverlaySync = function(query)
-            if not mod._syncOverlays then
-                return
-            end
+            if not mod._syncOverlays then return end
             local searching = query and query ~= ""
             local ss = db and db.profile and db.profile.partySyncSections
             for key, shade in pairs(mod._syncOverlays) do
@@ -2833,33 +2528,23 @@ CludesUI.AtLogin(function()
                     for _, eye in pairs(eyes) do
                         for idx = 1, #TAB_RESET_EYES do
                             local refresh = eye[TAB_RESET_EYES[idx]]
-                            if refresh then
-                                refresh()
-                            end
+                            if refresh then refresh() end
                         end
                     end
                 end
                 mod._bmFrameEffectsVisible = false
-                if mod.RestartPvAuraTicker then
-                    mod.RestartPvAuraTicker()
-                end
-                if mod.ResetPreviewRandomization then
-                    mod.ResetPreviewRandomization()
-                end
+                if mod.RestartPvAuraTicker then mod.RestartPvAuraTicker() end
+                if mod.ResetPreviewRandomization then mod.ResetPreviewRandomization() end
 
                 -- Manager/HoverCast tabs show no raid frame preview.
                 if pageName == PAGE_BUFFS or pageName == PAGE_DM or pageName == PAGE_CLICKCAST then
-                    if mod.HidePreview then
-                        mod.HidePreview()
-                    end
+                    if mod.HidePreview then mod.HidePreview() end
                 end
                 if pageName == PAGE_MAIN then
                     local mode = db.profile.previewMode or "overlay"
                     if mode ~= "none" and mod.ShowPreview then
                         C_Timer.After(0, function()
-                            if mod.ShowPreview then
-                                mod.ShowPreview()
-                            end
+                            if mod.ShowPreview then mod.ShowPreview() end
                         end)
                     end
                 end
@@ -2889,7 +2574,5 @@ CludesUI.AtLogin(function()
     end -- ns._InitCUIModule
 
     -- SetupOptionsPanel may already have run before PLAYER_LOGIN.
-    if mod.db then
-        mod._InitCUIModule()
-    end
+    if mod.db then mod._InitCUIModule() end
 end)

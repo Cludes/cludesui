@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_Locale.lua
 --  Central multi-language engine for the CludesUI options panel, unlock mode,
@@ -75,25 +73,13 @@ local reverse = {}
 -- values, pure numbers, letterless strings like hex/coords) before the lookup.
 local function L(text)
     local category = activeCatalog
-    if not category then
-        return text
-    end
-    if type(text) ~= "string" or text == "" then
-        return text
-    end
-    if issecretvalue and issecretvalue(text) then
-        return text
-    end
-    if tonumber(text) ~= nil then
-        return text
-    end
-    if not text:find("%a") then
-        return text
-    end
+    if not category then return text end
+    if type(text) ~= "string" or text == "" then return text end
+    if issecretvalue and issecretvalue(text) then return text end
+    if tonumber(text) ~= nil then return text end
+    if not text:find("%a") then return text end
     local val = category[text]
-    if type(val) == "string" then
-        return val
-    end
+    if type(val) == "string" then return val end
     return text -- untranslated key -> silent English fallback
 end
 CludesUI.L = L
@@ -102,9 +88,7 @@ CludesUI.L = L
 -- specifiers so translators can reorder placeholders for other word orders.
 CludesUI.Lf = function(s, ...)
     local text = L(s)
-    if type(text) ~= "string" or select("#", ...) == 0 then
-        return text
-    end
+    if type(text) ~= "string" or select("#", ...) == 0 then return text end
     return text:format(...)
 end
 
@@ -112,9 +96,7 @@ end
 -- and compares it to an English literal, EnKey maps the on-screen translation
 -- back to English so the comparison still matches. Identity on English.
 CludesUI.EnKey = function(s)
-    if type(s) ~= "string" then
-        return s
-    end
+    if type(s) ~= "string" then return s end
     return reverse[s] or s
 end
 
@@ -128,9 +110,7 @@ local effectiveLocale = nil
 -- builds (each locale file returns on nil). A load before then gets a table
 -- for every code; the engine selects the active one in Activate().
 CludesUI.RegisterLocale = function(code)
-    if effectiveLocale and code ~= effectiveLocale and code ~= FALLBACK[effectiveLocale] then
-        return nil
-    end
+    if effectiveLocale and code ~= effectiveLocale and code ~= FALLBACK[effectiveLocale] then return nil end
     local t = localeData[code]
     if not t then
         t = {}
@@ -146,12 +126,8 @@ end
 -- loads, after RegisterLocale.
 CludesUI.LocaleModuleLoads = function(folder)
     local held = CludesUI.HELD_BACK_ADDONS
-    if held and held[folder] then
-        return false
-    end
-    if not (C_AddOns and C_AddOns.IsAddOnLoadable) then
-        return true
-    end
+    if held and held[folder] then return false end
+    if not (C_AddOns and C_AddOns.IsAddOnLoadable) then return true end
     return C_AddOns.IsAddOnLoadable(folder, UnitName("player")) == true
 end
 
@@ -179,12 +155,8 @@ end
 -- bundled faces carry the full Cyrillic block, so ruRU can honour a bundled pick
 -- (see CludesUI.FONT_CYRILLIC), while no bundled face has CJK coverage at all.
 local function GlyphScript(locale)
-    if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then
-        return "cjk"
-    end
-    if locale == "ruRU" then
-        return "cyrillic"
-    end
+    if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then return "cjk" end
+    if locale == "ruRU" then return "cyrillic" end
     return nil
 end
 -- Per-locale glyph font for callers that pin a font to a locale other than the
@@ -193,18 +165,12 @@ CludesUI.LocaleGlyphFont = GlyphFont
 
 local function Activate()
     local client = GetLocale()
-    if client == "enGB" then
-        client = "enUS"
-    end
-    if not SUPPORTED[client] then
-        client = "enUS"
-    end
+    if client == "enGB" then client = "enUS" end
+    if not SUPPORTED[client] then client = "enUS" end
 
     -- Manual override (global saved var; nil/unavailable falls back to client).
     local override = CludesUIDB and CludesUIDB.displayLocale
-    if override == "auto" or not SUPPORTED[override or ""] then
-        override = nil
-    end
+    if override == "auto" or not SUPPORTED[override or ""] then override = nil end
 
     local locale = override or client
     CludesUI.LOCALE = locale
@@ -228,9 +194,7 @@ local function Activate()
                 localeData[locale] = source
             end
             for key, val in pairs(fb) do
-                if source[key] == nil then
-                    source[key] = val
-                end
+                if source[key] == nil then source[key] = val end
             end
             localeData[fbCode] = nil
         end
@@ -279,13 +243,9 @@ frame:SetScript("OnEvent", function(self, _, loaded)
     if loaded == ADDON_NAME then
         self:UnregisterEvent("ADDON_LOADED")
         local client = GetLocale()
-        if client == "enGB" then
-            client = "enUS"
-        end
+        if client == "enGB" then client = "enUS" end
         local override = CludesUIDB and CludesUIDB.displayLocale
-        if override == "auto" or not SUPPORTED[override or ""] then
-            override = nil
-        end
+        if override == "auto" or not SUPPORTED[override or ""] then override = nil end
         local locale = override or client
         effectiveLocale = locale
         if
@@ -300,8 +260,6 @@ frame:SetScript("OnEvent", function(self, _, loaded)
         Activate()
         -- CludesUI.lua's font system captured _localeFont/_localeScript before
         -- this override-aware Activate() ran; re-sync it now that they're final.
-        if CludesUI.RefreshLocaleFontFallback then
-            CludesUI.RefreshLocaleFontFallback()
-        end
+        if CludesUI.RefreshLocaleFontFallback then CludesUI.RefreshLocaleFontFallback() end
     end
 end)

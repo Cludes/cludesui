@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIChat_SidebarStock.lua
 --
@@ -26,9 +24,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local CUI = _G.CludesUI
 local CHAT = mod.ECHAT
-if not CHAT or not CUI then
-    return
-end
+if not CHAT or not CUI then return end
 local CFD = CUI._chatCFD
 local issecretvalue = _G.issecretvalue
 
@@ -38,17 +34,13 @@ local GOLD_R, GOLD_G, GOLD_B = 1, 0.82, 0
 
 -- Our glyph drawn whole at 18x18 in gold (the ink fills 60-83% of the box,
 -- about Blizzard's 15px icon atlas).
-local function PNG(name)
-    return { file = MEDIA .. name, w = 18, h = 18, gold = true }
-end
+local function PNG(name) return { file = MEDIA .. name, w = 18, h = 18, gold = true } end
 -- A kit entry: the base button's fields, then the entry's own.
 local function Entry(base, tbl)
     tbl = tbl or {}
     if base then
         for key, val in pairs(base) do
-            if tbl[key] == nil then
-                tbl[key] = val
-            end
+            if tbl[key] == nil then tbl[key] = val end
         end
     end
     return tbl
@@ -241,9 +233,7 @@ CHAT._sbBdMemo = {}
 function CHAT.SB_Latch()
     local key = mod.ChatStock and mod.ChatStock() and mod.ChatStyle()
     -- WoW Forever: the kit's bronze square buttons.
-    if key and mod.ChatForever() and CHAT.SB_KITS.forever then
-        key = "forever"
-    end
+    if key and mod.ChatForever() and CHAT.SB_KITS.forever then key = "forever" end
     local kit = key and CHAT.SB_KITS[key] or nil
     CHAT.SB_KIT = kit
     CHAT.SB_SyncBackdrop = (kit and kit.backdrop) and CHAT._SB_SyncBackdropImpl or nil
@@ -253,9 +243,7 @@ end
 -- Art present in this client (memoised on our own data table, once per
 -- session): atlases through GetAtlasInfo, probed files through their id.
 function CHAT.SB_ArtOK(e)
-    if not e then
-        return false
-    end
+    if not e then return false end
     if e._ok == nil then
         if e.atlas then
             e._ok = (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(e.atlas)) and true
@@ -276,9 +264,7 @@ local function Pick(e)
     return e
 end
 local function SetStateArt(button, which, e, blend)
-    if not e then
-        return
-    end
+    if not e then return end
     if which == "Highlight" then
         if e.atlas then
             if blend then
@@ -296,18 +282,14 @@ local function SetStateArt(button, which, e, blend)
     else
         button["Set" .. which .. "Texture"](button, e.file)
         local t = button["Get" .. which .. "Texture"](button)
-        if t and e.desat then
-            t:SetDesaturated(true)
-        end
+        if t and e.desat then t:SetDesaturated(true) end
     end
 end
 
 -- Default sidebar width: Blizzard's 29px column (30 = the slider minimum),
 -- or the kit's own column, following Icon Size; 40 on the CludesUI look.
 function CHAT.SidebarWidthDefault()
-    if not CHAT.SB_KIT then
-        return 40
-    end
+    if not CHAT.SB_KIT then return 40 end
     return math.max(30, math.floor((CHAT.SB_KIT.colW or 29) * (CHAT.DB().sidebarIconScale or 1) + 0.5))
 end
 
@@ -379,9 +361,7 @@ function CHAT.SB_BuildBackdrop(sidebar, skinData)
     topY:SetPoint("TOPRIGHT", tr, "TOPLEFT")
     skinData.sbBackdrop, skinData.sbFill = edge, fillTex
     skinData.sbRims = { tl, bl, tr, br, leftX, right, bottom, topY }
-    if CHAT.SB_SyncBackdrop then
-        CHAT.SB_SyncBackdrop(true)
-    end
+    if CHAT.SB_SyncBackdrop then CHAT.SB_SyncBackdrop(true) end
 end
 
 -- The backdrop in the SELECTED window's stored colour and opacity (what
@@ -390,34 +370,22 @@ function CHAT._SB_SyncBackdropImpl(force)
     local cf1 = _G.ChatFrame1
     local skinData = cf1 and CFD(cf1)
     local fillTex = skinData and skinData.sbFill
-    if not fillTex then
-        return
-    end
+    if not fillTex then return end
     -- Hidden (Hide Sidebar Background): nothing to paint; showing it again
     -- forces a sync.
-    if not force and not skinData.sbBackdrop:IsShown() then
-        return
-    end
+    if not force and not skinData.sbBackdrop:IsShown() then return end
     local ident = 1
     local sel = GENERAL_CHAT_DOCK
         and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
     local cc = Constants and Constants.ChatFrameConstants
     local spellRef = sel and sel.GetID and sel:GetID()
-    if spellRef and spellRef >= 1 and spellRef <= ((cc and cc.MaxChatWindows) or 10) then
-        ident = spellRef
-    end
-    if not GetChatWindowInfo then
-        return
-    end
+    if spellRef and spellRef >= 1 and spellRef <= ((cc and cc.MaxChatWindows) or 10) then ident = spellRef end
+    if not GetChatWindowInfo then return end
     local _, _, red, green, blue, a = GetChatWindowInfo(ident)
-    if type(a) ~= "number" or (issecretvalue and (issecretvalue(red) or issecretvalue(a))) then
-        return
-    end
+    if type(a) ~= "number" or (issecretvalue and (issecretvalue(red) or issecretvalue(a))) then return end
     local m = CHAT._sbBdMemo
-    if not force and m[1] == red and m[2] == green and m[3] == blue and m[4] == a then
-        return
-    end
+    if not force and m[1] == red and m[2] == green and m[3] == blue and m[4] == a then return end
     m[1], m[2], m[3], m[4] = red, green, blue, a
     fillTex:SetColorTexture(red, green, blue, a)
     local rims = skinData.sbRims
@@ -430,9 +398,7 @@ end
 -- glyph the same way). Shared functions on our buttons, no closures.
 -- _sbGYs = a kit glyph's own lift at the current Icon Size (nil = centred).
 function CHAT.SB_GlyphDown(self, btnFrame)
-    if btnFrame and btnFrame ~= "LeftButton" then
-        return
-    end
+    if btnFrame and btnFrame ~= "LeftButton" then return end
     local ic = self._icon
     if ic and self._sbGlyph then
         self._sbPushed = true
@@ -444,9 +410,7 @@ end
 -- Also on OnHide (a press can end off the button): only a pressed glyph has
 -- anything to put back.
 function CHAT.SB_GlyphUp(self)
-    if not self._sbPushed then
-        return
-    end
+    if not self._sbPushed then return end
     self._sbPushed = nil
     local ic = self._icon
     if ic and self._sbGlyph then
@@ -459,9 +423,7 @@ end
 -- pressed, idle).
 function CHAT.SB_GearPaint(self)
     local ic = self._icon
-    if not ic then
-        return
-    end
+    if not ic then return end
     local a = (self._sbDown and self._sbOver and GEAR.both)
         or (self._sbOver and GEAR.over)
         or (self._sbDown and GEAR.down)
@@ -480,9 +442,7 @@ function CHAT.SB_GearLeave(self)
     CHAT.SB_GearPaint(self)
 end
 function CHAT.SB_GearDown(self, btnFrame)
-    if btnFrame and btnFrame ~= "LeftButton" then
-        return
-    end
+    if btnFrame and btnFrame ~= "LeftButton" then return end
     self._sbDown = true
     CHAT.SB_GearPaint(self)
 end
@@ -495,15 +455,9 @@ end
 function CHAT.SB_Dress(button, key)
     local kit = CHAT.SB_KIT
     local e = kit and kit[key]
-    if not e then
-        return
-    end
-    if e.withChatMenu and CHAT.SB_ChatMenuOn then
-        e = e.withChatMenu
-    end
-    if e.gear and not CHAT.SB_ArtOK(GEAR_PROBE) then
-        e = e.alt
-    end
+    if not e then return end
+    if e.withChatMenu and CHAT.SB_ChatMenuOn then e = e.withChatMenu end
+    if e.gear and not CHAT.SB_ArtOK(GEAR_PROBE) then e = e.alt end
     button._sbEntry = e
     button._sbKey = key
     button._sbTailInside = (e.count == "inside") or nil
@@ -526,9 +480,7 @@ function CHAT.SB_Dress(button, key)
     SetStateArt(button, "Pushed", Pick(e.p))
     SetStateArt(button, "Highlight", Pick(e.hl), e.hlBlend)
     -- WoW Forever: the kit's bronze plate under the glyph (our frames).
-    if e.plate then
-        CHAT.FV_Plate(button, true)
-    end
+    if e.plate then CHAT.FV_Plate(button, true) end
     if e.inset then
         local tex = button:CreateTexture(nil, "BACKGROUND")
         tex:SetColorTexture(0, 0, 0, e.inset)
@@ -590,22 +542,16 @@ end
 function CHAT.SB_DressScroll(button, seat)
     local kit = CHAT.SB_KIT
     local e = kit and kit.scroll and kit.scroll[seat]
-    if not e then
-        return
-    end
+    if not e then return end
     button._sbEntry = e
-    if button._icon then
-        button._icon:Hide()
-    end
+    if button._icon then button._icon:Hide() end
     SetStateArt(button, "Normal", Pick(e.n))
     SetStateArt(button, "Pushed", Pick(e.p))
     SetStateArt(button, "Highlight", Pick(e.hl), e.hlBlend)
     -- WoW Forever: the bronze plate and a tinted glyph in the sidebar seat
     -- (re-run on every seat change; the chat seat wears plain art, which a
     -- move back to the plate clears).
-    if e.plate or button._fvPlate then
-        CHAT.FV_Plate(button, e.plate == true)
-    end
+    if e.plate or button._fvPlate then CHAT.FV_Plate(button, e.plate == true) end
     if e.plate and button.ClearNormalTexture then
         button:ClearNormalTexture()
         button:ClearPushedTexture()
@@ -714,9 +660,7 @@ function CHAT.SB_ApplyScale(skinData, s, force)
     -- the font alone).
     local font = CHAT.GetFont()
     local rescaled = skinData._sbScale ~= s
-    if not force and not rescaled and skinData._sbFont == font then
-        return
-    end
+    if not force and not rescaled and skinData._sbFont == font then return end
     skinData._sbScale, skinData._sbFont = s, font
     for _, ref in pairs(CHAT.SB_REF) do
         local button = skinData[ref]
@@ -726,9 +670,7 @@ function CHAT.SB_ApplyScale(skinData, s, force)
             button._freeMoveH = e.h * s
             button._sbPadT = (e.padT or 0) * s
             button._sbPadB = (e.padB or 0) * s
-            if button._sbGW and button._icon then
-                button._icon:SetSize(button._sbGW * s, button._sbGH * s)
-            end
+            if button._sbGW and button._icon then button._icon:SetSize(button._sbGW * s, button._sbGH * s) end
             -- A lifted kit glyph keeps its lift in step with Icon Size.
             if button._sbGY and button._icon then
                 button._sbGYs = button._sbGY * s
@@ -775,15 +717,11 @@ function CHAT.SB_ApplyScale(skinData, s, force)
         sbtn:SetSize(se.w * s, se.h * s)
         sbtn._freeMoveH = se.h * s
         -- A glyph seat (WoW Forever's sidebar seat) sizes its glyph too.
-        if sbtn._sbGW and sbtn._icon then
-            sbtn._icon:SetSize(sbtn._sbGW * s, sbtn._sbGH * s)
-        end
+        if sbtn._sbGW and sbtn._icon then sbtn._icon:SetSize(sbtn._sbGW * s, sbtn._sbGH * s) end
     end
     -- A font-only change re-fonts the counts and stops; a new scale re-runs
     -- the chain once (the width pass already reaches ApplySidebarIcons).
-    if force or not rescaled then
-        return
-    end
+    if force or not rescaled then return end
     if CHAT.DB().sidebarWidth == nil and CHAT.ApplySidebarWidth then
         CHAT.ApplySidebarWidth()
     elseif CHAT.ApplySidebarIcons then
@@ -794,9 +732,7 @@ end
 -- Durability doll tint from the worst equipment alert (0 fine, 1 damaged,
 -- 2 broken); paints on change only.
 function CHAT.SB_DurabilityAlert(button)
-    if not (button and button._icon and GetInventoryAlertStatus) then
-        return
-    end
+    if not (button and button._icon and GetInventoryAlertStatus) then return end
     local worst = 0
     for index = 1, 11 do
         local st = GetInventoryAlertStatus(index)
@@ -804,12 +740,8 @@ function CHAT.SB_DurabilityAlert(button)
             worst = st
         end
     end
-    if worst > 2 then
-        worst = 2
-    end
-    if button._sbAlert == worst then
-        return
-    end
+    if worst > 2 then worst = 2 end
+    if button._sbAlert == worst then return end
     button._sbAlert = worst
     local e = button._sbEntry
     local color = ((e and e.alertColors) or CHAT.SB_ALERT)[worst]
@@ -820,14 +752,10 @@ end
 -- the voice-chat icon otherwise (Blizzard's own two events).
 function CHAT.SB_PaintVoice()
     local button = CHAT._sbVoiceBtn
-    if not (button and button._icon and button._sbGW) then
-        return
-    end
+    if not (button and button._icon and button._sbGW) then return end
     local enabled = C_VoiceChat and C_VoiceChat.GetActiveChannelID and C_VoiceChat.GetActiveChannelID() ~= nil
         or false
-    if button._sbVoiceOn == enabled then
-        return
-    end
+    if button._sbVoiceOn == enabled then return end
     button._sbVoiceOn = enabled
     button._icon:SetAtlas(enabled and "chatframe-button-icon-headset" or "chatframe-button-icon-voicechat")
 end
@@ -851,18 +779,14 @@ function CHAT._SB_FlashSyncImpl()
     local skinData = cf1 and CFD(cf1)
     local button = skinData and skinData.scrollBtn
     local fl, ag = button and button._sbFlash, button and button._sbFlashAG
-    if not (fl and ag) then
-        return
-    end
+    if not (fl and ag) then return end
     local sel = (
         GENERAL_CHAT_DOCK
         and FCFDock_GetSelectedWindow
         and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
     ) or cf1
     local enabled = (CHAT.EngineIsScrolled and CHAT.EngineIsScrolled(sel)) and true or false
-    if button._sbFlashing == enabled then
-        return
-    end
+    if button._sbFlashing == enabled then return end
     button._sbFlashing = enabled
     if enabled then
         fl:Show()

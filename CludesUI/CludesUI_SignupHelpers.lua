@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then
-    return
-end -- no premade group list on WoW Forever: no hooks, no API (the option rows are not built there)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then return end -- no premade group list on WoW Forever: no hooks, no API (the option rows are not built there)
 -------------------------------------------------------------------------------
 --  CludesUI_SignupHelpers.lua
 --  Premade group sign-up helpers. Quality of Life's and Group Finder's option
@@ -39,29 +35,19 @@ local installed = false -- hooks are installed ONCE, on first enable
 local roleFrame -- Dungeon Finder role-check listener (created on install)
 
 local function InstallQuickSignupHooks()
-    if installed then
-        return
-    end
+    if installed then return end
     installed = true
 
     hooksecurefunc("LFGListSearchEntry_OnClick", function(record, btnFrame)
-        if not (CludesUIDB and CludesUIDB.quickSignup) then
-            return
-        end
-        if btnFrame == "RightButton" then
-            return
-        end
+        if not (CludesUIDB and CludesUIDB.quickSignup) then return end
+        if btnFrame == "RightButton" then return end
 
         local panelFrame = LFGListFrame and LFGListFrame.SearchPanel
-        if not panelFrame then
-            return
-        end
+        if not panelFrame then return end
         -- Blizzard's select check tests the result's fields, which are secret
         -- during chat messaging lockdown: stand down instead of erroring.
         local resultID = record.resultID
-        if issecretvalue(resultID) then
-            return
-        end
+        if issecretvalue(resultID) then return end
         local details = C_LFGList.GetSearchResultInfo(resultID)
         if
             type(details) ~= "table"
@@ -71,12 +57,8 @@ local function InstallQuickSignupHooks()
         then
             return
         end
-        if not LFGListSearchPanelUtil_CanSelectResult(resultID) then
-            return
-        end
-        if not panelFrame.SignUpButton or not panelFrame.SignUpButton:IsEnabled() then
-            return
-        end
+        if not LFGListSearchPanelUtil_CanSelectResult(resultID) then return end
+        if not panelFrame.SignUpButton or not panelFrame.SignUpButton:IsEnabled() then return end
 
         local nowTime = GetTime()
         if lastClickEntry == resultID and (nowTime - lastClickTime) < DOUBLE_CLICK_THRESHOLD then
@@ -96,28 +78,18 @@ local function InstallQuickSignupHooks()
     -- signup note).
     if LFGListApplicationDialog then
         LFGListApplicationDialog:HookScript("OnShow", function(self)
-            if not (CludesUIDB and CludesUIDB.quickSignup) then
-                return
-            end
-            if self.SignUpButton:IsEnabled() and not IsShiftKeyDown() then
-                self.SignUpButton:Click()
-            end
+            if not (CludesUIDB and CludesUIDB.quickSignup) then return end
+            if self.SignUpButton:IsEnabled() and not IsShiftKeyDown() then self.SignUpButton:Click() end
         end)
     end
 
     -- Dungeon Finder role check
     roleFrame = CreateFrame("Frame")
     roleFrame:SetScript("OnEvent", function()
-        if not (CludesUIDB and CludesUIDB.quickSignup) then
-            return
-        end
-        if not UnitInParty("player") then
-            return
-        end
+        if not (CludesUIDB and CludesUIDB.quickSignup) then return end
+        if not UnitInParty("player") then return end
         -- Holding Shift skips the auto role-check accept
-        if IsShiftKeyDown() then
-            return
-        end
+        if IsShiftKeyDown() then return end
         local leader, tank, healer, dps = GetLFGRoles()
         if LFDRoleCheckPopupRoleButtonTank.checkButton:IsEnabled() then
             LFDRoleCheckPopupRoleButtonTank.checkButton:SetChecked(tank)
@@ -136,13 +108,9 @@ end
 -- Installs the hooks on first enable and matches the role-check event to the
 -- setting.
 CludesUI._applyQuickSignup = function()
-    if not ready then
-        return
-    end
+    if not ready then return end
     local enabled = CludesUIDB and CludesUIDB.quickSignup
-    if enabled then
-        InstallQuickSignupHooks()
-    end
+    if enabled then InstallQuickSignupHooks() end
     if roleFrame then
         if enabled then
             roleFrame:RegisterEvent("LFG_ROLE_CHECK_SHOW")
@@ -162,17 +130,13 @@ local copyHelper
 local hidingCopyField = false
 
 local function LimitNote(textValue)
-    if type(textValue) ~= "string" then
-        return ""
-    end
+    if type(textValue) ~= "string" then return "" end
     textValue = textValue:gsub("[\r\n]+", " ")
     local bytes, position, total, last = #textValue, 1, 0, 0
     while position <= bytes and total < 63 do
         local byte = textValue:byte(position)
         local width = byte < 128 and 1 or byte < 224 and 2 or byte < 240 and 3 or 4
-        if position + width - 1 > bytes then
-            break
-        end
+        if position + width - 1 > bytes then break end
         last = position + width - 1
         position = last + 1
         total = total + 1
@@ -180,18 +144,12 @@ local function LimitNote(textValue)
     return textValue:sub(1, last)
 end
 
-local function SavedNote()
-    return LimitNote(CludesUIDB and CludesUIDB.signupNote)
-end
+local function SavedNote() return LimitNote(CludesUIDB and CludesUIDB.signupNote) end
 
-local function NoteEnabled()
-    return CludesUIDB and CludesUIDB.persistSignupNote
-end
+local function NoteEnabled() return CludesUIDB and CludesUIDB.persistSignupNote end
 
 local function CloseCopyField(focusTarget)
-    if not copyHelper then
-        return
-    end
+    if not copyHelper then return end
     copyHelper.buttonText:SetText(CludesUI.L("Copy"))
     if copyHelper.copyBox:IsShown() then
         hidingCopyField = true
@@ -199,24 +157,16 @@ local function CloseCopyField(focusTarget)
         copyHelper.copyBox:ClearFocus()
         hidingCopyField = false
     end
-    if focusTarget and copyHelper.targetEditBox then
-        copyHelper.targetEditBox:SetFocus()
-    end
+    if focusTarget and copyHelper.targetEditBox then copyHelper.targetEditBox:SetFocus() end
 end
 
 local function RefreshCopyHelper(dialog)
-    if not NoteEnabled() or not dialog or not dialog:IsShown() then
-        return
-    end
+    if not NoteEnabled() or not dialog or not dialog:IsShown() then return end
     local description = dialog and dialog.Description
     local editBox = description and description.EditBox
-    if not editBox then
-        return
-    end
+    if not editBox then return end
     if SavedNote() == "" then
-        if copyHelper then
-            copyHelper:Hide()
-        end
+        if copyHelper then copyHelper:Hide() end
         return
     end
 
@@ -262,14 +212,10 @@ local function RefreshCopyHelper(dialog)
         copyBox:Hide()
 
         copyBox:SetScript("OnEditFocusLost", function()
-            if not hidingCopyField and not btnFrame:IsMouseOver() then
-                CloseCopyField(false)
-            end
+            if not hidingCopyField and not btnFrame:IsMouseOver() then CloseCopyField(false) end
         end)
         copyBox:SetScript("OnKeyUp", function(_, key)
-            if key == "C" and IsControlKeyDown() then
-                CloseCopyField(true)
-            end
+            if key == "C" and IsControlKeyDown() then CloseCopyField(true) end
         end)
 
         btnFrame:SetScript("OnEnter", function()
@@ -286,9 +232,7 @@ local function RefreshCopyHelper(dialog)
                 return
             end
             local note = SavedNote()
-            if note == "" then
-                return
-            end
+            if note == "" then return end
             copyBox:SetText(note)
             copyBox:Show()
             copyBox:SetFocus()
@@ -321,18 +265,12 @@ local function PatchedShow(self, resultID)
             -- Cleared up-front so a mid-read throw can't leave a stale activityID from a previous dialog open.
             self.activityID = nil
             local details = C_LFGList.GetSearchResultInfo(resultID)
-            if type(details) ~= "table" then
-                return
-            end
+            if type(details) ~= "table" then return end
             local aid = details.activityID
-            if issecretvalue(aid) then
-                aid = nil
-            end
+            if issecretvalue(aid) then aid = nil end
             if aid == nil and details.activityIDs and not issecretvalue(details.activityIDs) then
                 aid = details.activityIDs[1]
-                if issecretvalue(aid) then
-                    aid = nil
-                end
+                if issecretvalue(aid) then aid = nil end
             end
             self.activityID = aid
         end)
@@ -341,14 +279,10 @@ local function PatchedShow(self, resultID)
     StaticPopupSpecial_Show(self)
 end
 
-CludesUI.GetPersistentSignupNote = function()
-    return SavedNote()
-end
+CludesUI.GetPersistentSignupNote = function() return SavedNote() end
 
 local function SyncPatch()
-    if not ready then
-        return
-    end
+    if not ready then return end
     if NoteEnabled() then
         if not patched then
             LFGListApplicationDialog_Show = PatchedShow
@@ -362,21 +296,15 @@ local function SyncPatch()
         RefreshCopyHelper(LFGListApplicationDialog)
     else
         if patched then
-            if LFGListApplicationDialog_Show == PatchedShow then
-                LFGListApplicationDialog_Show = vanilla
-            end
+            if LFGListApplicationDialog_Show == PatchedShow then LFGListApplicationDialog_Show = vanilla end
             patched = false
         end
-        if copyHelper then
-            copyHelper:Hide()
-        end
+        if copyHelper then copyHelper:Hide() end
     end
 end
 
 CludesUI.SetPersistentSignupNote = function(note)
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.signupNote = LimitNote(note)
     SyncPatch()
 end
@@ -393,9 +321,7 @@ boot:SetScript("OnEvent", function(self)
     -- Only while a module with the option rows is loaded; with neither, the
     -- API stays inert and nothing is hooked.
     local hosts = CludesUI._ModuleNS
-    if not (hosts.CludesUIQoL or hosts.CludesUIGroupFinder) then
-        return
-    end
+    if not (hosts.CludesUIQoL or hosts.CludesUIGroupFinder) then return end
     vanilla = LFGListApplicationDialog_Show
     ready = true
     CludesUI._applyQuickSignup()

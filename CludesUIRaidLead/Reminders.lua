@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Reminders.lua -- Raid Lead: encounter reminders.
 --
@@ -26,24 +24,12 @@ local function Settings()
     profile.reminders = profile.reminders or {}
     local r = profile.reminders
     r.notes = r.notes or {}
-    if r.lead == nil then
-        r.lead = 5
-    end
-    if r.tts == nil then
-        r.tts = true
-    end
-    if r.sound == nil then
-        r.sound = "RobotBlip.ogg"
-    end
-    if r.acceptShared == nil then
-        r.acceptShared = true
-    end
-    if r.enabled == nil then
-        r.enabled = true
-    end
-    if r.fontSize == nil then
-        r.fontSize = 26
-    end
+    if r.lead == nil then r.lead = 5 end
+    if r.tts == nil then r.tts = true end
+    if r.sound == nil then r.sound = "RobotBlip.ogg" end
+    if r.acceptShared == nil then r.acceptShared = true end
+    if r.enabled == nil then r.enabled = true end
+    if r.fontSize == nil then r.fontSize = 26 end
     return r
 end
 mod.ReminderSettings = Settings
@@ -56,24 +42,16 @@ local function SpellName(ident)
     return (type(num) == "string" and num ~= "") and num or nil
 end
 
-local function Clean(s)
-    return (s or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-end
+local function Clean(s) return (s or ""):lower():gsub("^%s+", ""):gsub("%s+$", "") end
 
 --- The note that would run for a boss name: a shared one first, then yours.
 function mod.NoteFor(bossName)
     local key = Clean(bossName)
-    if shared[key] then
-        return shared[key].text, shared[key].from
-    end
-    if shared.any then
-        return shared.any.text, shared.any.from
-    end
+    if shared[key] then return shared[key].text, shared[key].from end
+    if shared.any then return shared.any.text, shared.any.from end
     for _, num in ipairs(Settings().notes) do
         local b = Clean(num.boss)
-        if b == key or b == "any" then
-            return num.text, nil
-        end
+        if b == key or b == "any" then return num.text, nil end
     end
     return nil
 end
@@ -84,14 +62,10 @@ end
 local anchor, lines = nil, {}
 local isActive = {} -- { text, at (GetTime when due) }
 
-local function Font()
-    return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT
-end
+local function Font() return (CludesUI.GetFontPath and CludesUI.GetFontPath()) or STANDARD_TEXT_FONT end
 
 local function BuildDisplay()
-    if anchor then
-        return
-    end
+    if anchor then return end
     anchor = CreateFrame("Frame", "CludesUIRaidLeadReminders", UIParent)
     anchor:SetSize(420, 40 * MAX_LINES)
     anchor:SetFrameStrata("HIGH")
@@ -105,9 +79,7 @@ local function BuildDisplay()
 end
 
 function mod.ApplyReminderLook()
-    if not anchor then
-        return
-    end
+    if not anchor then return end
     local r = Settings()
     local p = r.pos
     if not InCombatLockdown() then
@@ -127,9 +99,7 @@ end
 local function Repaint()
     local nowTime = GetTime()
     for idx = #isActive, 1, -1 do
-        if nowTime > isActive[idx].at + HOLD then
-            table.remove(isActive, idx)
-        end
+        if nowTime > isActive[idx].at + HOLD then table.remove(isActive, idx) end
     end
     for idx = 1, MAX_LINES do
         local a = isActive[idx]
@@ -143,39 +113,27 @@ local function Repaint()
             lines[idx]:Hide()
         end
     end
-    if #isActive == 0 then
-        anchor:SetScript("OnUpdate", nil)
-    end
+    if #isActive == 0 then anchor:SetScript("OnUpdate", nil) end
 end
 
 local function Speak(textValue)
-    if not (C_VoiceChat and C_VoiceChat.SpeakText) then
-        return
-    end
+    if not (C_VoiceChat and C_VoiceChat.SpeakText) then return end
     local voice
     if C_TTSSettings and C_TTSSettings.GetVoiceOptionID and Enum and Enum.TtsVoiceType then
         local success, val = pcall(C_TTSSettings.GetVoiceOptionID, Enum.TtsVoiceType.Standard)
-        if success then
-            voice = val
-        end
+        if success then voice = val end
     end
     if not voice and C_VoiceChat.GetTtsVoices then
         local entries = C_VoiceChat.GetTtsVoices()
         voice = entries and entries[1] and entries[1].voiceID
     end
-    if not voice then
-        return
-    end
+    if not voice then return end
     local rate, volume = 0, 100
     if C_TTSSettings then
         local ok1, r = pcall(C_TTSSettings.GetSpeechRate)
-        if ok1 and type(r) == "number" then
-            rate = r
-        end
+        if ok1 and type(r) == "number" then rate = r end
         local ok2, val = pcall(C_TTSSettings.GetSpeechVolume)
-        if ok2 and type(val) == "number" then
-            volume = val
-        end
+        if ok2 and type(val) == "number" then volume = val end
     end
     pcall(C_VoiceChat.SpeakText, voice, (textValue:gsub("{rt%d}", ""):gsub("|T.-|t", "")), rate, volume, true)
 end
@@ -190,12 +148,8 @@ local function Show(record)
     while #isActive > MAX_LINES do
         table.remove(isActive, 1)
     end
-    if r.tts then
-        Speak(record.text)
-    end
-    if r.sound and r.sound ~= "" then
-        PlaySoundFile(SOUND_DIR .. r.sound, "Master")
-    end
+    if r.tts then Speak(record.text) end
+    if r.sound and r.sound ~= "" then PlaySoundFile(SOUND_DIR .. r.sound, "Master") end
     anchor:SetScript("OnUpdate", Repaint)
     Repaint()
 end
@@ -209,13 +163,9 @@ function mod.ShowReminder(textValue, at, speak, sound)
     while #isActive > MAX_LINES do
         table.remove(isActive, 1)
     end
-    if speak then
-        Speak(type(speak) == "string" and speak or textValue)
-    end
+    if speak then Speak(type(speak) == "string" and speak or textValue) end
     local r = Settings()
-    if sound and r.sound and r.sound ~= "" then
-        PlaySoundFile(SOUND_DIR .. r.sound, "Master")
-    end
+    if sound and r.sound and r.sound ~= "" then PlaySoundFile(SOUND_DIR .. r.sound, "Master") end
     anchor:SetScript("OnUpdate", Repaint)
     Repaint()
 end
@@ -257,9 +207,7 @@ function mod.RunNote(textValue)
             total = total + 1
             local delay = math.max(0, entry.at - Settings().lead)
             C_Timer.After(delay, function()
-                if run == mine then
-                    Show(entry)
-                end
+                if run == mine then Show(entry) end
             end)
         end
     end
@@ -269,35 +217,23 @@ end
 function mod.StopReminders()
     run = run + 1
     wipe(isActive)
-    if anchor then
-        Repaint()
-    end
+    if anchor then Repaint() end
 end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("ENCOUNTER_START")
 events:RegisterEvent("ENCOUNTER_END")
 events:SetScript("OnEvent", function(_, evt, _, encounterName)
-    if evt == "ENCOUNTER_END" then
-        return mod.StopReminders()
-    end
-    if not Settings().enabled then
-        return
-    end
-    if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then
-        return
-    end
+    if evt == "ENCOUNTER_END" then return mod.StopReminders() end
+    if not Settings().enabled then return end
+    if type(encounterName) ~= "string" or (issecretvalue and issecretvalue(encounterName)) then return end
     local textValue = mod.NoteFor(encounterName)
-    if textValue then
-        mod.RunNote(textValue)
-    end
+    if textValue then mod.RunNote(textValue) end
 end)
 
 --- Called by Comms.lua when the leader sends a note.
 function mod.ReceiveSharedNote(from, boss, textValue)
-    if not Settings().acceptShared then
-        return
-    end
+    if not Settings().acceptShared then return end
     shared[Clean(boss)] = { from = from, text = textValue }
     local entries, skipped = Parser.Parse(textValue, SpellName)
     CludesUI.Print(
@@ -310,9 +246,7 @@ function mod.ReceiveSharedNote(from, boss, textValue)
                 or ""
         )
     )
-    if mod.OnSharedChanged then
-        mod.OnSharedChanged()
-    end
+    if mod.OnSharedChanged then mod.OnSharedChanged() end
 end
 
 -------------------------------------------------------------------------------
@@ -322,9 +256,7 @@ local registered = false
 local reg = CreateFrame("Frame")
 reg:RegisterEvent("PLAYER_ENTERING_WORLD")
 reg:SetScript("OnEvent", function()
-    if registered or not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
-        return
-    end
+    if registered or not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
     registered = true
     BuildDisplay()
     CludesUI:RegisterUnlockElements({
@@ -335,25 +267,17 @@ reg:SetScript("OnEvent", function()
             order = 660,
             noAnchorTarget = true,
             noResize = true,
-            isHidden = function()
-                return not Settings().enabled
-            end,
+            isHidden = function() return not Settings().enabled end,
             getFrame = function()
                 BuildDisplay()
                 return anchor
             end,
-            getSize = function()
-                return 420, (Settings().fontSize + 12) * 2
-            end,
+            getSize = function() return 420, (Settings().fontSize + 12) * 2 end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 Settings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
-            loadPos = function()
-                return Settings().pos
-            end,
-            clearPos = function()
-                Settings().pos = nil
-            end,
+            loadPos = function() return Settings().pos end,
+            clearPos = function() Settings().pos = nil end,
             applyPos = mod.ApplyReminderLook,
         }),
     }, "CludesUIRaidLead")

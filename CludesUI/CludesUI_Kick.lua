@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_Kick.lua
 --  Shared interrupt spell lookup and cast-bar tint helpers for nameplates
@@ -44,20 +42,14 @@ local foreverKicksByClass = {
 
 local function InList(entries, value)
     for idx = 1, #entries do
-        if entries[idx] == value then
-            return true
-        end
+        if entries[idx] == value then return true end
     end
     return false
 end
 
 local function KickGroupFormOk(set)
-    if set.stances then
-        return InList(set.stances, GetShapeshiftForm())
-    end
-    if set.formIds then
-        return InList(set.formIds, GetShapeshiftFormID())
-    end
+    if set.stances then return InList(set.stances, GetShapeshiftForm()) end
+    if set.formIds then return InList(set.formIds, GetShapeshiftFormID()) end
     return true
 end
 
@@ -99,9 +91,7 @@ local function RefreshKickAbility()
     local kicks = isForever and foreverKicksByClass or kickSpellsByClass
     local classKicks = kicks[playerClass]
     activeKickSpell = nil
-    if not classKicks then
-        return
-    end
+    if not classKicks then return end
     local petHit, playerHit
     -- Retail entries are bare spell ids; Forever entries are rank groups.
     for idx = 1, #classKicks do
@@ -123,19 +113,13 @@ local function RefreshKickAbility()
 end
 
 local function ComputeCastBarTint(readyTint, baseTint)
-    if not activeKickSpell then
-        return baseTint.r, baseTint.g, baseTint.b
-    end
-    if not (C_Spell and C_Spell.GetSpellCooldownDuration) then
-        return baseTint.r, baseTint.g, baseTint.b
-    end
+    if not activeKickSpell then return baseTint.r, baseTint.g, baseTint.b end
+    if not (C_Spell and C_Spell.GetSpellCooldownDuration) then return baseTint.r, baseTint.g, baseTint.b end
     if not (C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean) then
         return baseTint.r, baseTint.g, baseTint.b
     end
     local cdTime = C_Spell.GetSpellCooldownDuration(activeKickSpell)
-    if not (cdTime and cdTime.IsZero) then
-        return baseTint.r, baseTint.g, baseTint.b
-    end
+    if not (cdTime and cdTime.IsZero) then return baseTint.r, baseTint.g, baseTint.b end
     local offCooldown = cdTime:IsZero()
     local rVal = C_CurveUtil.EvaluateColorValueFromBoolean(offCooldown, baseTint.r, readyTint.r)
     local gVal = C_CurveUtil.EvaluateColorValueFromBoolean(offCooldown, baseTint.g, readyTint.g)
@@ -144,9 +128,7 @@ local function ComputeCastBarTint(readyTint, baseTint)
 end
 
 CludesUI = CludesUI or {}
-CludesUI.GetActiveKickSpell = function()
-    return activeKickSpell
-end
+CludesUI.GetActiveKickSpell = function() return activeKickSpell end
 CludesUI.RefreshKickAbility = RefreshKickAbility
 CludesUI.ComputeCastBarTint = ComputeCastBarTint
 
@@ -192,34 +174,20 @@ CludesUI.ComputeCastBarTint = ComputeCastBarTint
 -- with the first menu proxy; zero cost until a menu actually opens.
 local menuFixHooked = false
 local function InstallMenuClassifierFix()
-    if menuFixHooked or type(UnitPopup_OpenMenu) ~= "function" then
-        return
-    end
+    if menuFixHooked or type(UnitPopup_OpenMenu) ~= "function" then return end
     menuFixHooked = true
     local reopening = false
     hooksecurefunc("UnitPopup_OpenMenu", function(which, contextData)
-        if reopening then
-            return
-        end
-        if which ~= "PET" and which ~= "OTHERPET" and which ~= "OTHERBATTLEPET" then
-            return
-        end
+        if reopening then return end
+        if which ~= "PET" and which ~= "OTHERPET" and which ~= "OTHERBATTLEPET" then return end
         local unitToken = contextData and contextData.unit
-        if type(unitToken) ~= "string" then
-            return
-        end
+        if type(unitToken) ~= "string" then return end
         local lu = unitToken:lower()
         local isRaidToken = lu:match("^raid[0-9]+$") ~= nil
-        if not isRaidToken and not lu:match("^party[0-9]+$") then
-            return
-        end
+        if not isRaidToken and not lu:match("^party[0-9]+$") then return end
         local unitGuid = UnitGUID(unitToken)
-        if issecretvalue and issecretvalue(unitGuid) then
-            return
-        end
-        if type(unitGuid) ~= "string" or not unitGuid:find("^Player%-") then
-            return
-        end
+        if issecretvalue and issecretvalue(unitGuid) then return end
+        if type(unitGuid) ~= "string" or not unitGuid:find("^Player%-") then return end
         reopening = true
         -- Menu.ModifyMenu callbacks run synchronously inside this call; the
         -- flag lets CludesUI_MenuFallbacks.lua swap the protected items of
@@ -234,9 +202,7 @@ local function InstallMenuClassifierFix()
         UnitPopup_OpenMenu(isRaidToken and "RAID_PLAYER" or "PARTY", { unit = unitToken })
         CludesUI._menuReopenUnit = nil
         reopening = false
-        if CludesUI._ShowReopenedMenuExtras then
-            CludesUI._ShowReopenedMenuExtras(unitToken)
-        end
+        if CludesUI._ShowReopenedMenuExtras then CludesUI._ShowReopenedMenuExtras(unitToken) end
     end)
 end
 
@@ -253,9 +219,7 @@ local proxyCounter = 0
 -- Use this when wiring a SPECIFIC click/key binding to the menu -- it does NOT
 -- touch the frame's own type attributes (so it won't clobber other bindings).
 function CludesUI.GetSecureMenuProxy(widget)
-    if not widget then
-        return
-    end
+    if not widget then return end
     InstallMenuClassifierFix()
     local proxy = menuProxies[widget]
     if not proxy then
@@ -294,9 +258,7 @@ end
 -- them. Used only for non-left-click target bindings (see ClickCast).
 local targetProxies = setmetatable({}, { __mode = "k" })
 function CludesUI.GetSecureTargetProxy(widget)
-    if not widget then
-        return
-    end
+    if not widget then return end
     local proxy = targetProxies[widget]
     if not proxy then
         local proxyName
@@ -331,9 +293,7 @@ end
 -- Route a unit button's default RIGHT-CLICK to the secure menu proxy via the
 -- macro transport. Clears any specific type2 so the wildcard governs.
 function CludesUI.AttachSecureUnitMenu(widget)
-    if not widget then
-        return
-    end
+    if not widget then return end
     local proxy = CludesUI.GetSecureMenuProxy(widget)
     widget:SetAttribute("type2", nil)
     -- Macro transport instead of the "click" action: the 12.1 click action
@@ -364,10 +324,6 @@ if CludesUI.IS_FOREVER == true then
         kickFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
     end
 end
-kickFrame:SetScript("OnEvent", function()
-    RefreshKickAbility()
-end)
+kickFrame:SetScript("OnEvent", function() RefreshKickAbility() end)
 
-if UnitGUID("player") then
-    RefreshKickAbility()
-end
+if UnitGUID("player") then RefreshKickAbility() end

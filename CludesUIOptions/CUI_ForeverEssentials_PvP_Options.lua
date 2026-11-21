@@ -1,35 +1,25 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_PvP_Options.lua
 --  Forever Tools > PvP: enemy detection, Kill on Sight, sharing and extras.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
-    return
-end
+if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end
 
 function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
     local P = CludesUI._PvP
-    if not P then
-        return 0
-    end
+    if not P then return 0 end
     local W = CludesUI.Widgets
     local cursorY = yOffset
     local _, height
     local rowConf = P.Cfg()
-    local function Off()
-        return not P.Get("enabled")
-    end
+    local function Off() return not P.Get("enabled") end
     local function Tog(key, textValue, tipText, off)
         return {
             type = "toggle",
             text = textValue,
             tooltip = tipText,
             disabled = off,
-            getValue = function()
-                return P.Get(key)
-            end,
+            getValue = function() return P.Get(key) end,
             setValue = function(val)
                 rowConf[key] = val and true or false
                 P.Apply()
@@ -63,18 +53,14 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         buttonText = "Open",
         width = 90,
         tooltip = "Shows who is nearby, who you saw in the last hour, your Kill on Sight list and your ignore list. Click a name to target them. You can also type /cpvp.",
-        onClick = function()
-            P.Show()
-        end,
+        onClick = function() P.Show() end,
     }, {
         type = "labeledButton",
         text = "Statistics",
         buttonText = "Open",
         width = 90,
         tooltip = "Every enemy you have run into, with your wins and losses against each one. Searchable. You can also type /cpvp stats.",
-        onClick = function()
-            P.Stats()
-        end,
+        onClick = function() P.Stats() end,
     })
     cursorY = cursorY - height
     _, height = W:DualRow(hostFrame, cursorY, {
@@ -86,12 +72,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         isPercent = false,
         disabled = Off,
         tooltip = "Seconds an enemy stays on the Nearby list after you last saw them.",
-        getValue = function()
-            return P.Get("removeAfter")
-        end,
-        setValue = function(val)
-            rowConf.removeAfter = math.floor(val + 0.5)
-        end,
+        getValue = function() return P.Get("removeAfter") end,
+        setValue = function(val) rowConf.removeAfter = math.floor(val + 0.5) end,
     }, {
         type = "slider",
         text = "Rows in the List",
@@ -101,12 +83,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         step = 1,
         isPercent = false,
         disabled = Off,
-        getValue = function()
-            return P.Get("rows")
-        end,
-        setValue = function(val)
-            rowConf.rows = math.floor(val + 0.5)
-        end,
+        getValue = function() return P.Get("rows") end,
+        setValue = function(val) rowConf.rows = math.floor(val + 0.5) end,
     })
     cursorY = cursorY - height
     _, height = W:DualRow(
@@ -244,12 +222,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             placeholder = "Booty Bay, Gadgetzan",
             tooltip = "Zones or subzones, separated by commas, where enemy detection pauses (a city you idle in, for example).",
             disabled = Off,
-            getValue = function()
-                return P.Get("offZones")
-            end,
-            setValue = function(textValue)
-                rowConf.offZones = textValue or ""
-            end,
+            getValue = function() return P.Get("offZones") end,
+            setValue = function(textValue) rowConf.offZones = textValue or "" end,
         }
     )
     cursorY = cursorY - height

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\LivePreview_Options.lua
 --  Cooldown Manager options: the interactive bar preview in the content header
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  helpers come from ns._CDMO_OptEnv (filled by CUI_CooldownManager_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
 -- host (a reused header) is handed out again reset to fresh; anywhere else this
@@ -33,14 +29,10 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         environ.StopActiveStatePreview,
         environ.UpdateCDMPreviewAndResize
     local profile = DB()
-    if not profile or not profile.cdmBars then
-        return 0
-    end
+    if not profile or not profile.cdmBars then return 0 end
 
     local barInfo = SelectedCDMBar()
-    if not barInfo then
-        return 0
-    end
+    if not barInfo then return 0 end
 
     local barId = barInfo.key
     local PAD = CludesUI.CONTENT_PAD or 10
@@ -120,9 +112,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     local _buffIdToCd, _buffIdToCdSpec = nil, nil
     local function GetBuffIdToCdid()
         local specKey = (mod.GetActiveSpecKey and mod.GetActiveSpecKey()) or "?"
-        if _buffIdToCdSpec == specKey then
-            return _buffIdToCd
-        end
+        if _buffIdToCdSpec == specKey then return _buffIdToCd end
         _buffIdToCdSpec = specKey
         local map
         local gcs = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet
@@ -145,9 +135,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                             end
                             if details.linkedSpellIDs then
                                 for _, l in ipairs(details.linkedSpellIDs) do
-                                    if type(l) == "number" and l > 0 then
-                                        map[l] = cdID
-                                    end
+                                    if type(l) == "number" and l > 0 then map[l] = cdID end
                                 end
                             end
                         end
@@ -197,9 +185,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     local dragEndTime = 0 -- GetTime() when drag finished, suppresses OnClick
 
     local function EnsureDragGhost()
-        if dragGhost then
-            return dragGhost
-        end
+        if dragGhost then return dragGhost end
         -- One ghost frame for the session, dressed again by the first drag of
         -- each preview build.
         local g = PoolKept(optionState, "cdmDragGhost", "Frame", UIParent)
@@ -238,18 +224,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     local ANIM_SPEED = 48
     local animRunning = false
 
-    local function StopAnimTicker()
-        animRunning = false
-    end
+    local function StopAnimTicker() animRunning = false end
 
-    local function StartAnimTicker()
-        animRunning = true
-    end
+    local function StartAnimTicker() animRunning = true end
 
     local function TickAnimation(dt)
-        if not animRunning then
-            return
-        end
+        if not animRunning then return end
         local allDone = true
         for i = 1, MAX_PREVIEW_ICONS do
             local s = slotList[i]
@@ -276,9 +256,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 end
             end
         end
-        if allDone then
-            animRunning = false
-        end
+        if allDone then animRunning = false end
     end
 
     local function ClearInsertIndicator()
@@ -288,9 +266,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- Clear swap highlight
         if swapIdx then
             local cfg = slotList[swapIdx]
-            if cfg and cfg._hlBrd then
-                cfg._hlBrd:Hide()
-            end
+            if cfg and cfg._hlBrd then cfg._hlBrd:Hide() end
             swapIdx = nil
         end
         dragMode = nil
@@ -314,9 +290,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     --- cx, cy are in screen units (GetCursorPosition / UIParent:GetEffectiveScale)
     local function FindDragTarget(cx, cy, slotTotal, sourceIdx)
         local edge = SelectedCDMBar()
-        if not edge then
-            return nil, nil
-        end
+        if not edge then return nil, nil end
         local iconSz = edge.iconSize or 36
         -- Match the preview render: width-matched bars use a fixed icon size.
         if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget("CDM_" .. edge.key) then
@@ -352,9 +326,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     end
                 end
             end
-            if not colX or colDist > iconSz then
-                return nil, nil
-            end
+            if not colX or colDist > iconSz then return nil, nil end
             -- Each icon's band reaches half the spacing past its edges (+1 so rounding
             -- leaves no seam; an overlap resolves to the same insert either way).
             local pad = gap * 0.5 + 1
@@ -369,19 +341,18 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     if localY <= topY + pad and localY > topY - height - pad then
                         local midY = topY - height / 2
                         local isBlank = not s._icon or not s._icon:GetTexture()
-                        if i ~= sourceIdx and math.abs(localY - midY) < height * (isBlank and 0.45 or 0.2) then
+                        if
+                            i ~= sourceIdx
+                            and math.abs(localY - midY) < height * (isBlank and 0.45 or 0.2)
+                        then
                             return "swap", i
                         end
                         return "insert", (localY > midY) and i or (i + 1)
                     end
                 end
             end
-            if not firstIdx then
-                return nil, nil
-            end
-            if localY > slotList[firstIdx]._baseY then
-                return "insert", firstIdx
-            end
+            if not firstIdx then return nil, nil end
+            if localY > slotList[firstIdx]._baseY then return "insert", firstIdx end
             return "insert", lastIdx + 1
         end
 
@@ -411,9 +382,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
         -- Check Y range
         local refSlot = slotList[bestRowStart]
-        if not refSlot or not refSlot:IsShown() or not refSlot._baseY then
-            return nil, nil
-        end
+        if not refSlot or not refSlot:IsShown() or not refSlot._baseY then return nil, nil end
         if localY > refSlot._baseY + iconSz * 0.5 or localY < refSlot._baseY - iconSz * 1.5 then
             return nil, nil
         end
@@ -423,14 +392,10 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         local rowSlots = {}
         for i = bestRowStart, bestRowEnd do
             local s = slotList[i]
-            if s and s:IsShown() and s._baseX then
-                rowSlots[#rowSlots + 1] = { slot = s, idx = i }
-            end
+            if s and s:IsShown() and s._baseX then rowSlots[#rowSlots + 1] = { slot = s, idx = i } end
         end
         -- Sort by _baseX ascending (left to right on screen)
-        table.sort(rowSlots, function(lhs, rhs)
-            return lhs.slot._baseX < rhs.slot._baseX
-        end)
+        table.sort(rowSlots, function(lhs, rhs) return lhs.slot._baseX < rhs.slot._baseX end)
 
         local swapZone = iconSz * 0.2
         local blankSwapZone = iconSz * 0.45
@@ -497,22 +462,16 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             dropLine:Hide()
             if swapIdx and swapIdx ~= goalIdx then
                 local cfg = slotList[swapIdx]
-                if cfg and cfg._hlBrd then
-                    cfg._hlBrd:Hide()
-                end
+                if cfg and cfg._hlBrd then cfg._hlBrd:Hide() end
             end
             if lastInsertIdx then
                 for i = 1, slotTotal do
                     local s = slotList[i]
                     if s and s._baseX then
                         s._targetOffX = 0
-                        if not s._currentOffX then
-                            s._currentOffX = 0
-                        end
+                        if not s._currentOffX then s._currentOffX = 0 end
                         s._targetOffY = 0
-                        if i ~= sourceIdx then
-                            s:SetAlpha(1)
-                        end
+                        if i ~= sourceIdx then s:SetAlpha(1) end
                     end
                 end
                 StartAnimTicker()
@@ -520,29 +479,21 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
             swapIdx = goalIdx
             local cfg = slotList[goalIdx]
-            if cfg and cfg._hlBrd then
-                cfg._hlBrd:Show()
-            end
+            if cfg and cfg._hlBrd then cfg._hlBrd:Show() end
             return
         end
 
         -- Insert mode: clear swap highlight first
         if swapIdx then
             local cfg = slotList[swapIdx]
-            if cfg and cfg._hlBrd then
-                cfg._hlBrd:Hide()
-            end
+            if cfg and cfg._hlBrd then cfg._hlBrd:Hide() end
             swapIdx = nil
         end
 
-        if goalIdx == lastInsertIdx then
-            return
-        end
+        if goalIdx == lastInsertIdx then return end
         lastInsertIdx = goalIdx
 
-        if not edge then
-            return
-        end
+        if not edge then return end
         local iconSz = edge.iconSize or 36
         -- Match the preview render: width-matched bars use a fixed icon size.
         if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget("CDM_" .. edge.key) then
@@ -565,48 +516,34 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         local targetRowY = nil
         if goalIdx >= 1 and goalIdx <= slotTotal then
             local ts = slotList[goalIdx]
-            if ts and ts._baseY then
-                targetRowY = ts._baseY
-            end
+            if ts and ts._baseY then targetRowY = ts._baseY end
         end
         -- Fallback: check the slot just before targetIdx (insert at end of row)
         if not targetRowY and goalIdx > 1 and goalIdx - 1 <= slotTotal then
             local ts = slotList[goalIdx - 1]
-            if ts and ts._baseY then
-                targetRowY = ts._baseY
-            end
+            if ts and ts._baseY then targetRowY = ts._baseY end
         end
 
         for i = 1, slotTotal do
             local s = slotList[i]
             if not s or not s._baseX then
-                if s then
-                    s:SetAlpha(i == sourceIdx and 0.3 or 1)
-                end
+                if s then s:SetAlpha(i == sourceIdx and 0.3 or 1) end
             elseif i == sourceIdx then
                 s:SetAlpha(0.3)
                 s._targetOffX = 0
-                if not s._currentOffX then
-                    s._currentOffX = 0
-                end
+                if not s._currentOffX then s._currentOffX = 0 end
             else
                 -- Only shift slots on the same row as the target
                 local onTargetRow = targetRowY and s._baseY and math.abs(s._baseY - targetRowY) < 1
                 if not onTargetRow then
                     s._targetOffX = 0
-                    if not s._currentOffX then
-                        s._currentOffX = 0
-                    end
+                    if not s._currentOffX then s._currentOffX = 0 end
                     s:SetAlpha(1)
                 else
                     local virtualPos = i
-                    if i > sourceIdx then
-                        virtualPos = i - 1
-                    end
+                    if i > sourceIdx then virtualPos = i - 1 end
                     local virtualInsert = goalIdx
-                    if goalIdx > sourceIdx then
-                        virtualInsert = goalIdx - 1
-                    end
+                    if goalIdx > sourceIdx then virtualInsert = goalIdx - 1 end
 
                     local offX = 0
                     if virtualPos >= virtualInsert then
@@ -616,9 +553,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     end
 
                     s._targetOffX = offX
-                    if not s._currentOffX then
-                        s._currentOffX = 0
-                    end
+                    if not s._currentOffX then s._currentOffX = 0 end
                     s:SetAlpha(1)
                 end
             end
@@ -633,16 +568,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             local ts = slotList[(goalIdx <= slotTotal) and goalIdx or (goalIdx - 1)]
             local colX = ts and ts._baseX
             local virtualInsert = goalIdx
-            if goalIdx > sourceIdx then
-                virtualInsert = goalIdx - 1
-            end
+            if goalIdx > sourceIdx then virtualInsert = goalIdx - 1 end
             for i = 1, slotTotal do
                 local s = slotList[i]
                 if s and s._baseX then
                     s._targetOffX = 0
-                    if not s._currentOffX then
-                        s._currentOffX = 0
-                    end
+                    if not s._currentOffX then s._currentOffX = 0 end
                     if i == sourceIdx then
                         s:SetAlpha(0.3)
                         s._targetOffY = 0
@@ -650,9 +581,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         s:SetAlpha(1)
                         if colX and math.abs(s._baseX - colX) < 1 then
                             local virtualPos = i
-                            if i > sourceIdx then
-                                virtualPos = i - 1
-                            end
+                            if i > sourceIdx then virtualPos = i - 1 end
                             s._targetOffY = (virtualPos >= virtualInsert) and towardEndY or -towardEndY
                         else
                             s._targetOffY = 0
@@ -791,9 +720,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         elseif slotFrame._previewTipItemID then
             name = C_Item.GetItemNameByID(slotFrame._previewTipItemID)
         end
-        if not name then
-            return
-        end
+        if not name then return end
         if slotFrame._previewBlizzHidden then
             name = name
                 .. "\n"
@@ -848,9 +775,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
         local sEdges = {}
         local Pix = CludesUI and CludesUI.PP
-        if Pix then
-            Pix.CreateBorder(slotFrame, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        end
+        if Pix then Pix.CreateBorder(slotFrame, 0, 0, 0, 1, 1, "OVERLAY", 7) end
         slotFrame._edges = sEdges -- empty; borders managed by PP
 
         -- Hosted-buff marker border: gold (same color as the buff "+" add button), same 2px
@@ -861,19 +786,25 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         slotHostCont:SetAllPoints()
         slotHostCont:SetFrameLevel(slotFrame:GetFrameLevel() + 1)
         local hostBrd = slotPP and slotPP.CreateBorder(slotHostCont, 1, 0.82, 0.25, 1, 2, "OVERLAY", 7)
-        if hostBrd then
-            hostBrd:Hide()
-        end
+        if hostBrd then hostBrd:Hide() end
         slotFrame._hostBrd = hostBrd
         -- Hover highlight (2px accent border, child container avoids conflict with existing PP border)
         local accentGreen = CludesUI.CLUDES_GREEN
         local slotHlCont = CreateFrame("Frame", nil, slotFrame)
         slotHlCont:SetAllPoints()
         slotHlCont:SetFrameLevel(slotFrame:GetFrameLevel() + 2)
-        local slotBrd = slotPP and slotPP.CreateBorder(slotHlCont, accentGreen.r, accentGreen.g, accentGreen.b, 1, 2, "OVERLAY", 7)
-        if slotBrd then
-            slotBrd:Hide()
-        end
+        local slotBrd = slotPP
+            and slotPP.CreateBorder(
+                slotHlCont,
+                accentGreen.r,
+                accentGreen.g,
+                accentGreen.b,
+                1,
+                2,
+                "OVERLAY",
+                7
+            )
+        if slotBrd then slotBrd:Hide() end
         slotFrame._hlBrd = slotBrd
         -- Text overlay (renders above border)
         local pvTextOvr = CreateFrame("Frame", nil, slotFrame)
@@ -901,25 +832,19 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         slotFrame._keybindText = kbTxt
 
         slotFrame:SetScript("OnEnter", function()
-            if dragSlot then
-                return
-            end
+            if dragSlot then return end
             local bdHov = SelectedCDMBar()
             -- Custom shapes: tint the shape border instead of square edges
             if slotFrame._shapeBorder and slotFrame._shapeBorder:IsShown() then
                 slotFrame._shapeBorder:SetVertexColor(accentGreen.r, accentGreen.g, accentGreen.b, 1)
             else
-                if slotBrd then
-                    slotBrd:Show()
-                end
+                if slotBrd then slotBrd:Show() end
             end
             ShowSlotTip(slotFrame)
         end)
         slotFrame:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
-            if dragSlot then
-                return
-            end
+            if dragSlot then return end
             local bdHov = SelectedCDMBar()
             if slotFrame._shapeBorder and slotFrame._shapeBorder:IsShown() then
                 if slotFrame._previewHostedBuff then
@@ -943,9 +868,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     slotFrame._shapeBorder:SetVertexColor(bR, bG, bB, 1)
                 end
             else
-                if slotBrd then
-                    slotBrd:Hide()
-                end
+                if slotBrd then slotBrd:Hide() end
             end
         end)
 
@@ -954,14 +877,10 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- Right-click: spell picker to replace; Middle-click: remove
         -- Default buff bar: no interaction (Blizzard controls the list)
         slotFrame:SetScript("OnClick", function(self, btnFrame)
-            if GetTime() - dragEndTime < 0.2 then
-                return
-            end
+            if GetTime() - dragEndTime < 0.2 then return end
             CludesUI.HideWidgetTooltip()
             local edge = SelectedCDMBar()
-            if not edge then
-                return
-            end
+            if not edge then return end
             local isDefaultBuffs = (edge.key == "buffs")
 
             if btnFrame == "MiddleButton" then
@@ -978,47 +897,31 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     -- key off the marker, not assignedSpells[si].
                     if self._previewItemID then
                         mod.RemoveSpellFromBar(edge.key, -self._previewItemID)
-                        if mod.RebuildSpellRouteMap then
-                            mod.RebuildSpellRouteMap()
-                        end
-                        if mod.QueueReanchor then
-                            mod.QueueReanchor()
-                        end
+                        if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+                        if mod.QueueReanchor then mod.QueueReanchor() end
                         RefreshCDPreview()
                         return
                     end
                     -- Main buffs bar: only injected custom/preset buffs can be deleted
                     -- (Blizzard-tracked buffs are managed in Blizzard's CDM). Remove by spellID since slotIndex maps to the mixed preview list (Blizzard buffs + customs), not assignedSpells.
                     local spellRef = self._previewSpellID
-                    if not spellRef then
-                        return
-                    end
+                    if not spellRef then return end
                     local sdMid = mod.GetBarSpellData(edge.key)
                     local isInj = sdMid
                         and (
                             (sdMid.spellDurations and (sdMid.spellDurations[spellRef] or 0) > 0)
                             or (sdMid.customSpellIDs and sdMid.customSpellIDs[spellRef])
                         )
-                    if not isInj then
-                        return
-                    end
+                    if not isInj then return end
                     mod.RemoveSpellFromBar(edge.key, spellRef)
-                    if sdMid.spellDurations then
-                        sdMid.spellDurations[spellRef] = nil
-                    end
-                    if mod.RebuildSpellRouteMap then
-                        mod.RebuildSpellRouteMap()
-                    end
-                    if mod.QueueReanchor then
-                        mod.QueueReanchor()
-                    end
+                    if sdMid.spellDurations then sdMid.spellDurations[spellRef] = nil end
+                    if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+                    if mod.QueueReanchor then mod.QueueReanchor() end
                     RefreshCDPreview()
                     return
                 end
                 local sdMid = mod.CDMO_EnsureAssignedSpells(edge.key)
-                if not sdMid or not sdMid.assignedSpells then
-                    return
-                end
+                if not sdMid or not sdMid.assignedSpells then return end
                 local tbl = sdMid.assignedSpells
                 -- Remove every assignedSpells entry collapsed into this preview slot. A legacy
                 -- duplicate buff maps >1 stored id to one slot; a normal slot maps exactly one (plain remove). Highest index first keeps the lower indices valid across removes.
@@ -1027,9 +930,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 for _, value in ipairs(grp) do
                     sequence[#sequence + 1] = value
                 end
-                table.sort(sequence, function(lhs, rhs)
-                    return lhs > rhs
-                end)
+                table.sort(sequence, function(lhs, rhs) return lhs > rhs end)
                 local removedAny = false
                 for _, position in ipairs(sequence) do
                     if tbl[position] and tbl[position] ~= 0 then
@@ -1037,17 +938,13 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         removedAny = true
                     end
                 end
-                if not removedAny then
-                    return
-                end
+                if not removedAny then return end
                 RefreshCDPreview()
             elseif btnFrame == "RightButton" or btnFrame == "LeftButton" then
                 local si = self._slotIdx
                 -- Custom item slots (default buffs bar) have no per-icon settings and don't
                 -- map to assignedSpells[si]; middle-click removes them. Ignore left/right-click to avoid a mis-indexed settings menu.
-                if isDefaultBuffs and self._previewItemID then
-                    return
-                end
+                if isDefaultBuffs and self._previewItemID then return end
                 -- Translate the preview slot to its underlying assignedSpells index (identity
                 -- unless this buff slot collapsed a duplicate).
                 local dataIdx = BuffDataIdx(si)
@@ -1058,9 +955,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     and sdClick.assignedSpells
                     and sdClick.assignedSpells[dataIdx]
                     and sdClick.assignedSpells[dataIdx] ~= 0
-                if not hasAssigned and not self._previewSpellID then
-                    return
-                end
+                if not hasAssigned and not self._previewSpellID then return end
 
                 -- Show remove-only dropdown (per-icon settings + Remove)
                 mod.CDMO_ShowSpellPicker(self, edge.key, dataIdx, {}, function()
@@ -1113,14 +1008,10 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
         -- Drop handler: called when mouse is released during a drag
         local function FinishDrag()
-            if not dragSlot then
-                return
-            end
+            if not dragSlot then return end
             local self = dragSlot
             local edge = SelectedCDMBar()
-            if dragGhost then
-                dragGhost:Hide()
-            end
+            if dragGhost then dragGhost:Hide() end
             self:SetAlpha(1)
             self:SetFrameLevel(popFrame:GetFrameLevel() + 1)
             local didChange = false
@@ -1130,9 +1021,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     local s = slotList[i]
                     if s and s:IsShown() and s._baseX then
                         local texture = s._icon and s._icon:GetTexture()
-                        if texture then
-                            oldPos[texture] = s._baseX + (s._currentOffX or 0)
-                        end
+                        if texture then oldPos[texture] = s._baseX + (s._currentOffX or 0) end
                     end
                 end
 
@@ -1158,9 +1047,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     local di = BuffDataIdx(dispIdx)
                     local sdChk = mod.GetBarSpellData and mod.GetBarSpellData(edge.key)
                     local num = sdChk and sdChk.assignedSpells and #sdChk.assignedSpells or 0
-                    if di < 1 or di > num then
-                        return nil
-                    end
+                    if di < 1 or di > num then return nil end
                     return di
                 end
                 if dragMode == "swap" then
@@ -1187,9 +1074,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     end
                 else
                     local toIdx = dropIdx
-                    if toIdx > dragIdx then
-                        toIdx = toIdx - 1
-                    end
+                    if toIdx > dragIdx then toIdx = toIdx - 1 end
                     if toIdx ~= dragIdx then
                         if isDefBuffs then
                             local sk = popFrame._buffSlotKeys
@@ -1204,9 +1089,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                                         rk[num] = sk[i]
                                     end
                                 end
-                                if mod.MoveBuffDisplayKey(sk[dragIdx], rk[toIdx]) then
-                                    didChange = true
-                                end
+                                if mod.MoveBuffDisplayKey(sk[dragIdx], rk[toIdx]) then didChange = true end
                             end
                         else
                             local a, b = SafeDataIdx(dragIdx), SafeDataIdx(toIdx)
@@ -1224,18 +1107,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         droppedIdx = dropIdx
                     else
                         local toIdx = dropIdx
-                        if toIdx > dragIdx then
-                            toIdx = toIdx - 1
-                        end
+                        if toIdx > dragIdx then toIdx = toIdx - 1 end
                         droppedIdx = toIdx
                     end
 
                     dropLine:Hide()
                     if swapIdx then
                         local sw = slotList[swapIdx]
-                        if sw and sw._hlBrd then
-                            sw._hlBrd:Hide()
-                        end
+                        if sw and sw._hlBrd then sw._hlBrd:Hide() end
                         swapIdx = nil
                     end
 
@@ -1251,9 +1130,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     animRunning = false
 
                     Refresh()
-                    if popFrame.Update then
-                        popFrame:Update()
-                    end
+                    if popFrame.Update then popFrame:Update() end
                     UpdateCDMPreviewAndResize()
 
                     for i = 1, MAX_PREVIEW_ICONS do
@@ -1283,9 +1160,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     animRunning = true
                     popFrame:SetScript("OnUpdate", function(_, elapsed)
                         TickAnimation(elapsed)
-                        if not animRunning then
-                            popFrame:SetScript("OnUpdate", nil)
-                        end
+                        if not animRunning then popFrame:SetScript("OnUpdate", nil) end
                     end)
                     dragSlot = nil
                     dragIdx = nil
@@ -1308,9 +1183,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
         local function BeginDrag(self)
             local edge = SelectedCDMBar()
-            if not edge then
-                return
-            end
+            if not edge then return end
             local sdDrag = mod.GetBarSpellData(edge.key)
             local si = self._slotIdx
             if edge.key == "buffs" then
@@ -1325,9 +1198,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             else
                 local tbl = sdDrag and sdDrag.assignedSpells or {}
                 local di = BuffDataIdx(si)
-                if not tbl[di] or tbl[di] == 0 then
-                    return
-                end
+                if not tbl[di] or tbl[di] == 0 then return end
             end
             dragSlot = self
             dragIdx = si
@@ -1370,9 +1241,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     FinishDrag()
                     return
                 end
-                if not dragGhost or not dragGhost:IsShown() then
-                    return
-                end
+                if not dragGhost or not dragGhost:IsShown() then return end
                 local curX, curY = GetCursorPosition()
                 local uiScale = UIParent:GetEffectiveScale()
                 curX, curY = curX / uiScale, curY / uiScale
@@ -1387,9 +1256,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     if tBd.key == "buffs" then
                         -- Rendered slot count, NOT #buffDisplayOrder: the stored
                         -- order keeps absent keys and can exceed what is shown.
-                        if popFrame._buffSlotKeys then
-                            tCount = #popFrame._buffSlotKeys
-                        end
+                        if popFrame._buffSlotKeys then tCount = #popFrame._buffSlotKeys end
                     elseif sdT and sdT.assignedSpells then
                         tCount = #sdT.assignedSpells
                     end
@@ -1400,12 +1267,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     local isNoop = false
                     if newMode == "insert" then
                         local effTo = newTarget
-                        if effTo > dragIdx then
-                            effTo = effTo - 1
-                        end
-                        if effTo == dragIdx then
-                            isNoop = true
-                        end
+                        if effTo > dragIdx then effTo = effTo - 1 end
+                        if effTo == dragIdx then isNoop = true end
                     elseif newMode == "swap" and newTarget == dragIdx then
                         isNoop = true
                     end
@@ -1423,18 +1286,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         end
 
         slotFrame:SetScript("OnMouseDown", function(self, btnFrame)
-            if btnFrame ~= "LeftButton" then
-                return
-            end
+            if btnFrame ~= "LeftButton" then return end
             -- Buff-family drag-reorder: extra/custom buff bars reorder via
             -- assignedSpells (1:1 preview), the default buffs bar via its
             -- dedicated buffDisplayOrder (stable cooldownID-keyed, reconciled
             -- from the live viewer pool). Only FocusKick stays locked -- its
             -- icon order is driven by nameplate state, not user order.
             local bdDrag = SelectedCDMBar()
-            if bdDrag and bdDrag.key == mod.FOCUSKICK_BAR_KEY then
-                return
-            end
+            if bdDrag and bdDrag.key == mod.FOCUSKICK_BAR_KEY then return end
             local curX, curY = GetCursorPosition()
             pendingDragSlot = self
             pendingStartX = curX
@@ -1483,9 +1342,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         addBg:SetSnapToPixelGrid(false)
         addBg:SetTexelSnappingBias(0)
     end
-    if Pix then
-        Pix.CreateBorder(addBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7)
-    end
+    if Pix then Pix.CreateBorder(addBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7) end
     local addLbl = addBtn:CreateFontString(nil, "OVERLAY")
     addLbl:SetFont(FONT_PATH, 22, GetCDMOptOutline())
     addLbl:SetPoint("CENTER", 0, 1)
@@ -1497,17 +1354,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     addHlCont:SetAllPoints()
     addHlCont:SetFrameLevel(addBtn:GetFrameLevel() + 1)
     local addPP = CludesUI and CludesUI.PP
-    local addBrd = addPP and addPP.CreateBorder(addHlCont, accentGreen.r, accentGreen.g, accentGreen.b, 1, 2, "OVERLAY", 7)
-    if addBrd then
-        addBrd:Hide()
-    end
+    local addBrd = addPP
+        and addPP.CreateBorder(addHlCont, accentGreen.r, accentGreen.g, accentGreen.b, 1, 2, "OVERLAY", 7)
+    if addBrd then addBrd:Hide() end
 
     addBtn:SetScript("OnEnter", function()
         local accR, accG, accB = CludesUI.GetAccentColor()
         addLbl:SetTextColor(accR, accG, accB, 1)
-        if addBrd then
-            addBrd:Show()
-        end
+        if addBrd then addBrd:Show() end
         if CludesUI.ShowWidgetTooltip then
             -- This same button adds buffs on buff-family bars, so the tip
             -- follows the selected bar rather than hard-coding CD/Utility.
@@ -1524,34 +1378,24 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     addBtn:SetScript("OnLeave", function()
         local accR, accG, accB = CludesUI.GetAccentColor()
         addLbl:SetTextColor(accR, accG, accB, 0.6)
-        if addBrd then
-            addBrd:Hide()
-        end
+        if addBrd then addBrd:Hide() end
         CludesUI.HideWidgetTooltip()
     end)
     addBtn:SetScript("OnClick", function(self)
         local edge = SelectedCDMBar()
-        if not edge then
-            return
-        end
+        if not edge then return end
 
         -- Shared post-add finalization for ALL families (buff + CD/util). Forces an
         -- immediate reanchor so source bars (where the spell got auto-removed from) re-render without waiting for the throttled queue. Then schedules a +0.05s preview refresh.
         local function FinalizeAdd()
-            if mod.CollectAndReanchor then
-                mod.CollectAndReanchor()
-            end
+            if mod.CollectAndReanchor then mod.CollectAndReanchor() end
             -- pf's own pass only while it is still this build's preview (a
             -- reused header dresses the frame again for a new build); the
             -- current preview is updated either way.
             local pfGen = PoolGen(popFrame)
             C_Timer.After(0.05, function()
-                if mod.CDMApplyVisibility then
-                    mod.CDMApplyVisibility()
-                end
-                if PoolGen(popFrame) == pfGen and popFrame.Update then
-                    popFrame:Update()
-                end
+                if mod.CDMApplyVisibility then mod.CDMApplyVisibility() end
+                if PoolGen(popFrame) == pfGen and popFrame.Update then popFrame:Update() end
                 UpdateCDMPreviewAndResize()
             end)
         end
@@ -1583,9 +1427,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     -- (e.g. Lay on Hands 633 -> 471195) are recognized.
                     if _FindOvr and spellRef > 0 then
                         local ovr = _FindOvr(spellRef)
-                        if ovr and ovr > 0 then
-                            excl[ovr] = true
-                        end
+                        if ovr and ovr > 0 then excl[ovr] = true end
                     end
                 end
             end
@@ -1611,9 +1453,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         buffAddBg:SetTexelSnappingBias(0)
     end
     -- Resting border matches the standard add button (neutral gray, not gold) -- the gold "+" glyph alone marks this as the buff-add button.
-    if Pix then
-        Pix.CreateBorder(addBuffBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7)
-    end
+    if Pix then Pix.CreateBorder(addBuffBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7) end
     local buffAddLbl = addBuffBtn:CreateFontString(nil, "OVERLAY")
     buffAddLbl:SetFont(FONT_PATH, 22, GetCDMOptOutline())
     buffAddLbl:SetPoint("CENTER", 0, 1)
@@ -1626,48 +1466,32 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     local buffAddBrd = CludesUI
         and CludesUI.PP
         and CludesUI.PP.CreateBorder(buffAddHlCont, BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 1, 2, "OVERLAY", 7)
-    if buffAddBrd then
-        buffAddBrd:Hide()
-    end
+    if buffAddBrd then buffAddBrd:Hide() end
 
     addBuffBtn:SetScript("OnEnter", function()
         buffAddLbl:SetTextColor(BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 1)
-        if buffAddBrd then
-            buffAddBrd:Show()
-        end
+        if buffAddBrd then buffAddBrd:Show() end
         CludesUI.ShowWidgetTooltip(addBuffBtn, CludesUI.L("Add a Buff Spell"))
     end)
     addBuffBtn:SetScript("OnLeave", function()
         buffAddLbl:SetTextColor(BUFF_ADD_R, BUFF_ADD_G, BUFF_ADD_B, 0.7)
-        if buffAddBrd then
-            buffAddBrd:Hide()
-        end
+        if buffAddBrd then buffAddBrd:Hide() end
         CludesUI.HideWidgetTooltip()
     end)
     addBuffBtn:SetScript("OnClick", function(self)
         local edge = SelectedCDMBar()
-        if not edge then
-            return
-        end
+        if not edge then return end
         -- CD/utility bars only (defensive: the button is hidden elsewhere).
-        if mod.IsBarBuffFamily(edge) or edge.barType == "custom_buff" then
-            return
-        end
+        if mod.IsBarBuffFamily(edge) or edge.barType == "custom_buff" then return end
         mod.CDMO_ShowBuffToCDPicker(self, edge.key, function()
-            if mod.CollectAndReanchor then
-                mod.CollectAndReanchor()
-            end
+            if mod.CollectAndReanchor then mod.CollectAndReanchor() end
             -- The buff-mirror walk (10Hz) binds to the freshly-created icon on
             -- its own next tick; no re-arm needed. pf's own pass only while it
             -- is still this build's preview (as in FinalizeAdd).
             local pfGen = PoolGen(popFrame)
             C_Timer.After(0.05, function()
-                if mod.CDMApplyVisibility then
-                    mod.CDMApplyVisibility()
-                end
-                if PoolGen(popFrame) == pfGen and popFrame.Update then
-                    popFrame:Update()
-                end
+                if mod.CDMApplyVisibility then mod.CDMApplyVisibility() end
+                if PoolGen(popFrame) == pfGen and popFrame.Update then popFrame:Update() end
                 UpdateCDMPreviewAndResize()
             end)
         end)
@@ -1694,16 +1518,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         end
         local iconHeight = iconPx
         local pvShape = edge.iconShape or "none"
-        if pvShape == "cropped" then
-            iconHeight = math.floor(iconPx * mod.CdmCropFactor(edge) + 0.5)
-        end
+        if pvShape == "cropped" then iconHeight = math.floor(iconPx * mod.CdmCropFactor(edge) + 0.5) end
         local gap = edge.spacing or 2
         local zoom = edge.iconZoom or 0.08
         local grow = edge.growDirection or "RIGHT"
         local numRows = edge.numRows or 1
-        if numRows < 1 then
-            numRows = 1
-        end
+        if numRows < 1 then numRows = 1 end
 
         local isBuffBar = mod.IsBarBuffFamily(edge)
         local isCustomBuffBar = (edge.barType == "custom_buff")
@@ -1718,9 +1538,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         popFrame._buffDispGroups = nil
         popFrame._buffSlotKeys = nil
         if edge.key == "buffs" then
-            if mod.ReconcileBuffDisplayOrder then
-                mod.ReconcileBuffDisplayOrder()
-            end
+            if mod.ReconcileBuffDisplayOrder then mod.ReconcileBuffDisplayOrder() end
             local entries = mod.CollectDefaultBuffTrackEntries and mod.CollectDefaultBuffTrackEntries() or {}
             isTracked = {}
             trackedCd = {}
@@ -1777,7 +1595,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                             -- active since): fall back to cooldownInfo. Each
                             -- field is vetted on its own -- never `or`-chain
                             -- possibly-secret values (truthiness taints).
-                            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                            local getCdInfo = C_CooldownViewer
+                                and C_CooldownViewer.GetCooldownViewerCooldownInfo
                             local details = getCdInfo and getCdInfo(cdID)
                             local raw2 = details and details.overrideSpellID
                             if
@@ -1829,9 +1648,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             and not isFocusKick
             and IsPlayerSpell
         then
-            if mod._cdmAnyTalentCond then
-                tcSet = mod.TalentCondPreviewSet(edge.key, isTracked)
-            end
+            if mod._cdmAnyTalentCond then tcSet = mod.TalentCondPreviewSet(edge.key, isTracked) end
             local sdUn = mod.GetBarSpellData(edge.key)
             local customUn = sdUn and sdUn.customSpellIDs
             local cdursUn = sdUn and sdUn.customSpellDurations
@@ -1860,9 +1677,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         unlearnedSet = unlearnedSet or {}
                         unlearnedSet[ident] = true
                     else
-                        if dh == nil then
-                            dh = mod.CDMDefaultHiddenSet() or false
-                        end
+                        if dh == nil then dh = mod.CDMDefaultHiddenSet() or false end
                         if dh and mod.CDMIsDefaultHidden(dh, ident) then
                             blizzHiddenSet = blizzHiddenSet or {}
                             blizzHiddenSet[ident] = true
@@ -1909,9 +1724,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 then
                     local base, live = NormalizeToBase(ident), ResolveToLive(ident)
                     if not (known(ident) or known(base) or known(live)) then
-                        if listedFv == nil then
-                            listedFv = mod.CDMForeverListedSet() or false
-                        end
+                        if listedFv == nil then listedFv = mod.CDMForeverListedSet() or false end
                         unseen = listedFv and not (listedFv[ident] or listedFv[base] or listedFv[live])
                             or false
                     end
@@ -1949,9 +1762,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
         end
         if customTop ~= nil then
-            if customTop < 0 then
-                customTop = 0
-            end
+            if customTop < 0 then customTop = 0 end
             topRowCount = customTop
             local bottomCount = total - topRowCount
             if bottomCount <= 0 or topRowCount <= 0 then
@@ -1965,13 +1776,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
         else
             step = math.ceil(total / numRows)
-            if step < 1 then
-                step = 1
-            end
+            if step < 1 then step = 1 end
             topRowCount = total - (numRows - 1) * step
-            if topRowCount < 0 then
-                topRowCount = 0
-            end
+            if topRowCount < 0 then topRowCount = 0 end
         end
         local gridSlots = (total > 0) and (step * numRows) or 0
         self._stride = step
@@ -1979,15 +1786,11 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         self._gridSlots = gridSlots
 
         local bottomRowCount = total - topRowCount
-        if bottomRowCount < 0 then
-            bottomRowCount = 0
-        end
+        if bottomRowCount < 0 then bottomRowCount = 0 end
 
         -- Per-row icon count for centering
         local function RowIconCount(line)
-            if line == 0 then
-                return topRowCount
-            end
+            if line == 0 then return topRowCount end
             return bottomRowCount
         end
 
@@ -2013,9 +1816,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- CDM preview: no scale-to-fit -- SetClipsChildren on the content
         -- header clips any overflow so icon scale remains accurate.
         local curParentW = (hostFrame:GetWidth() - PAD * 2) / previewScale
-        if curParentW > 0 then
-            self:SetWidth(curParentW)
-        end
+        if curParentW > 0 then self:SetWidth(curParentW) end
         local startX = math.floor((curParentW - totalW) / 2)
         local startY = -5
 
@@ -2030,18 +1831,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             local vRow = pvReversed and (numRows - 1 - line) or line
             local rowOffset = 0
             if isVert then
-                if rowHasLess then
-                    rowOffset = math.floor((step - rowCount) * (iconHeight + gap) / 2)
-                end
+                if rowHasLess then rowOffset = math.floor((step - rowCount) * (iconHeight + gap) / 2) end
                 local px = startX + vRow * (iconPx + gap)
                 local py = startY - col * (iconHeight + gap) - rowOffset
                 Pix.Point(widget, "TOPLEFT", self, "TOPLEFT", px, py)
                 widget._baseX = px
                 widget._baseY = py
             else
-                if rowHasLess then
-                    rowOffset = math.floor((step - rowCount) * (iconPx + gap) / 2)
-                end
+                if rowHasLess then rowOffset = math.floor((step - rowCount) * (iconPx + gap) / 2) end
                 local px = startX + col * (iconPx + gap) + rowOffset
                 local py = startY - vRow * (iconHeight + gap)
                 Pix.Point(widget, "TOPLEFT", self, "TOPLEFT", px, py)
@@ -2116,7 +1913,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         -- + cooldownInfo fallback as the buff-bar preview.
                         local cdSpellId = mod._cdmCleanSidByCDID and mod._cdmCleanSidByCDID[cdClaim]
                         if not (type(cdSpellId) == "number" and cdSpellId > 0) then
-                            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                            local getCdInfo = C_CooldownViewer
+                                and C_CooldownViewer.GetCooldownViewerCooldownInfo
                             local details = getCdInfo and getCdInfo(cdClaim)
                             local raw2 = details and details.overrideSpellID
                             if
@@ -2149,7 +1947,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         else
                             -- Tracked trinket row with its buff down reads no
                             -- spellID: show the item worn in that slot.
-                            local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
+                            local getCdInfo = C_CooldownViewer
+                                and C_CooldownViewer.GetCooldownViewerCooldownInfo
                             local details = getCdInfo and getCdInfo(cdClaim)
                             local eqSlot = details and details.equipSlot
                             if type(eqSlot) == "number" and not issecretvalue(eqSlot) then
@@ -2229,9 +2028,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             -- The art inset follows an exact Solid size (borderSizePx) so the border keeps sitting outside the art here.
             local bTex = edge.borderTexture or "solid"
             local bPx = CludesUI.BorderPx(edge.borderSizePx, bSz, bTex)
-            if bPx and bTex == "solid" then
-                bSz = bPx
-            end
+            if bPx and bTex == "solid" then bSz = bPx end
             slotFrame._icon:ClearAllPoints()
             Pix.Point(slotFrame._icon, "TOPLEFT", slotFrame, "TOPLEFT", bSz, -bSz)
             Pix.Point(slotFrame._icon, "BOTTOMRIGHT", slotFrame, "BOTTOMRIGHT", -bSz, bSz)
@@ -2241,7 +2038,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 Pix.SetBorderColor(slotFrame, bR, bG, bB, 1)
                 Pix.SetBorderSize(slotFrame, bSz)
             end
-            slotFrame._bg:SetColorTexture(edge.bgR or 0.08, edge.bgG or 0.08, edge.bgB or 0.08, edge.bgA or 0.6)
+            slotFrame._bg:SetColorTexture(
+                edge.bgR or 0.08,
+                edge.bgG or 0.08,
+                edge.bgB or 0.08,
+                edge.bgA or 0.6
+            )
             if slotFrame._bg.SetSnapToPixelGrid then
                 slotFrame._bg:SetSnapToPixelGrid(false)
                 slotFrame._bg:SetTexelSnappingBias(0)
@@ -2254,24 +2056,14 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             -- hover and hosted-buff borders, glow) move above the ring, at
             -- the levels their live counterparts use.
             if CludesUI.BlizzStyle.Get("cdmicons") and mod.CdmApplyBlizzIconArt then
-                if Pix.GetBorders(slotFrame) then
-                    Pix.HideBorder(slotFrame)
-                end
+                if Pix.GetBorders(slotFrame) then Pix.HideBorder(slotFrame) end
                 slotFrame._bg:Hide()
                 mod.CdmApplyBlizzIconArt(slotFrame)
                 local lvl = slotFrame:GetFrameLevel()
-                if slotFrame._pvTextOverlay then
-                    slotFrame._pvTextOverlay:SetFrameLevel(lvl + 23)
-                end
-                if slotFrame._hlBrd then
-                    slotFrame._hlBrd:GetParent():SetFrameLevel(lvl + 17)
-                end
-                if slotFrame._hostBrd then
-                    slotFrame._hostBrd:GetParent():SetFrameLevel(lvl + 16)
-                end
-                if slotFrame._glowOverlay then
-                    slotFrame._glowOverlay:SetFrameLevel(lvl + 16)
-                end
+                if slotFrame._pvTextOverlay then slotFrame._pvTextOverlay:SetFrameLevel(lvl + 23) end
+                if slotFrame._hlBrd then slotFrame._hlBrd:GetParent():SetFrameLevel(lvl + 17) end
+                if slotFrame._hostBrd then slotFrame._hostBrd:GetParent():SetFrameLevel(lvl + 16) end
+                if slotFrame._glowOverlay then slotFrame._glowOverlay:SetFrameLevel(lvl + 16) end
             end
             -- Talent Conditions corner mark (built on first use; slots are shared across bars, so always
             -- repainted once it exists). After the style pass: it sits just under the text overlay's level.
@@ -2295,13 +2087,20 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             -- gold strips; masked shapes tint the shape border instead
             -- (their square strips are hidden, like the hover highlight).
             if slotFrame._hostBrd then
-                if slotFrame._previewHostedBuff and not (slotFrame._shapeBorder and slotFrame._shapeBorder:IsShown()) then
+                if
+                    slotFrame._previewHostedBuff
+                    and not (slotFrame._shapeBorder and slotFrame._shapeBorder:IsShown())
+                then
                     slotFrame._hostBrd:Show()
                 else
                     slotFrame._hostBrd:Hide()
                 end
             end
-            if slotFrame._previewHostedBuff and slotFrame._shapeBorder and slotFrame._shapeBorder:IsShown() then
+            if
+                slotFrame._previewHostedBuff
+                and slotFrame._shapeBorder
+                and slotFrame._shapeBorder:IsShown()
+            then
                 slotFrame._shapeBorder:SetVertexColor(1, 0.82, 0.25, 1)
             end
 
@@ -2432,9 +2231,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         Pix.Size(addBtn, iconPx, iconHeight)
         addBtn:ClearAllPoints()
         Pix.Point(addBtn, "TOPLEFT", self, "TOPLEFT", addPx, addPy)
-        if Pix.GetBorders(addBtn) then
-            Pix.SetBorderSize(addBtn, 1)
-        end
+        if Pix.GetBorders(addBtn) then Pix.SetBorderSize(addBtn, 1) end
         local accR, accG, accB = CludesUI.GetAccentColor()
 
         addLbl:SetTextColor(accR, accG, accB, 0.6)
@@ -2445,9 +2242,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             Pix.Size(addBuffBtn, iconPx, iconHeight)
             addBuffBtn:ClearAllPoints()
             Pix.Point(addBuffBtn, "TOPLEFT", self, "TOPLEFT", addPx + iconPx + gap, addPy)
-            if Pix.GetBorders(addBuffBtn) then
-                Pix.SetBorderSize(addBuffBtn, 1)
-            end
+            if Pix.GetBorders(addBuffBtn) then Pix.SetBorderSize(addBuffBtn, 1) end
             addBuffBtn:Show()
         else
             addBuffBtn:Hide()
@@ -2513,37 +2308,23 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         end
 
         if isBuffBar then
-            if self._buffInfoText then
-                self._buffInfoText:Hide()
-            end
-            if self._buffInfoClick then
-                self._buffInfoClick:Hide()
-            end
+            if self._buffInfoText then self._buffInfoText:Hide() end
+            if self._buffInfoClick then self._buffInfoClick:Hide() end
             -- Hide any stale hidden rows
             if self._hiddenRows then
                 for _, hr in ipairs(self._hiddenRows) do
                     hr:Hide()
                 end
             end
-            if self._hiddenHeader then
-                self._hiddenHeader:Hide()
-            end
-            if self._focusKickInfoText then
-                self._focusKickInfoText:Hide()
-            end
+            if self._hiddenHeader then self._hiddenHeader:Hide() end
+            if self._focusKickInfoText then self._focusKickInfoText:Hide() end
             ShowReorderHint(
                 "Drag to Reorder. Click to override display settings and add custom effects per icon."
             )
         elseif isFocusKick then
-            if self._buffInfoText then
-                self._buffInfoText:Hide()
-            end
-            if self._buffInfoClick then
-                self._buffInfoClick:Hide()
-            end
-            if self._reorderHintText then
-                self._reorderHintText:Hide()
-            end
+            if self._buffInfoText then self._buffInfoText:Hide() end
+            if self._buffInfoClick then self._buffInfoClick:Hide() end
+            if self._reorderHintText then self._reorderHintText:Hide() end
             if not self._focusKickInfoText then
                 local kickText = self:CreateFontString(nil, "OVERLAY")
                 kickText:SetFont(FONT_PATH, 11, GetCDMOptOutline())
@@ -2576,15 +2357,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             kickText:Show()
             self:SetHeight(totalH + 10 + kickText:GetStringHeight() + 20)
         else
-            if self._buffInfoText then
-                self._buffInfoText:Hide()
-            end
-            if self._buffInfoClick then
-                self._buffInfoClick:Hide()
-            end
-            if self._focusKickInfoText then
-                self._focusKickInfoText:Hide()
-            end
+            if self._buffInfoText then self._buffInfoText:Hide() end
+            if self._buffInfoClick then self._buffInfoClick:Hide() end
+            if self._focusKickInfoText then self._focusKickInfoText:Hide() end
             ShowReorderHint(
                 "Drag to Reorder. Click to add custom glows, active/cooldown state effects and more."
             )
@@ -2604,10 +2379,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             local rowStep = iconHeight + gap
             local gridBottomLocal = topInset + stackRows * iconHeight + (stackRows - 1) * gap
             if gridBottomLocal * self._previewScale > maxH then
-                local visibleRows = math.max(
-                    1,
-                    math.floor((maxH / self._previewScale - topInset + gap) / rowStep + 0.001)
-                )
+                local visibleRows =
+                    math.max(1, math.floor((maxH / self._previewScale - topInset + gap) / rowStep + 0.001))
                 visibleRows = math.min(visibleRows, stackRows)
                 local cappedLocalH = topInset + visibleRows * iconHeight + (visibleRows - 1) * gap
                 self._wrapper:SetHeight(math.min(maxH, cappedLocalH * self._previewScale))
@@ -2616,13 +2389,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             end
         else
             self._wrapper:SetHeight(parentH)
-            if self._scrollFrame then
-                self._scrollFrame:SetVerticalScroll(0)
-            end
+            if self._scrollFrame then self._scrollFrame:SetVerticalScroll(0) end
         end
-        if self._updatePVThumb then
-            self._updatePVThumb()
-        end
+        if self._updatePVThumb then self._updatePVThumb() end
 
         -- Restart active state preview on first icon if toggled on
         if _cdmActivePreviewOn then
@@ -2640,9 +2409,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     CludesUI._cdmHeaderPreview = popFrame
     CludesUI._contentHeaderPreview = popFrame
     -- Start active state preview if toggled on
-    if _cdmActivePreviewOn then
-        StartActiveStatePreview()
-    end
+    if _cdmActivePreviewOn then StartActiveStatePreview() end
     -- Return wrapper height (already capped by Update's resize logic)
     return wrapper:GetHeight()
 end

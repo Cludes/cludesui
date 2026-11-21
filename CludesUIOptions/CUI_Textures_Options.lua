@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Textures_Options.lua
 --
@@ -63,9 +61,7 @@ local function CopyBarDD(nameList, sequence, lookup, dropSep, bgFn)
     local values, ord = {}, {}
     for _, key in ipairs(sequence or {}) do
         if key == "---" then
-            if not dropSep then
-                ord[#ord + 1] = "---"
-            end
+            if not dropSep then ord[#ord + 1] = "---" end
         else
             values[key] = (nameList and nameList[key]) or key
             ord[#ord + 1] = key
@@ -73,9 +69,7 @@ local function CopyBarDD(nameList, sequence, lookup, dropSep, bgFn)
     end
     values._menuOpts = {
         itemHeight = 28,
-        background = bgFn or function(key)
-            return lookup and lookup[key]
-        end,
+        background = bgFn or function(key) return lookup and lookup[key] end,
     }
     return values, ord
 end
@@ -118,18 +112,12 @@ end
 -- (rowFn builds it; nil while the module's options are not loaded), greyed while
 -- the Blizzard Style of styleKey draws its stock art there instead.
 local function AddTexBgCog(region, rowFn, styleKey)
-    if CludesUI._prebuilding then
-        return
-    end
+    if CludesUI._prebuilding then return end
     local row = rowFn()
-    if not row then
-        return
-    end
+    if not row then return end
     local blizzOn = styleKey and CludesUI.BlizzStyle.Active(styleKey) == "blizzard"
     CludesUI.BuildInlineCog(region, {
-        disabled = blizzOn and function()
-            return true
-        end or nil,
+        disabled = blizzOn and function() return true end or nil,
         disabledTooltip = blizzOn and CludesUI.BlizzStyle.Label(styleKey) or nil,
         requireState = blizzOn and "disabled" or nil,
         title = "Texture Settings",
@@ -143,9 +131,7 @@ end
 
 local function TileActionBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local ABAR = mod.EAB
     CludesUI.AppendSharedMediaTextures(
         mod.dataBarTextureNames or {},
@@ -161,9 +147,7 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
         lookup,
         false,
         function(key)
-            if not key or key == "---" or key == "none" then
-                return nil
-            end
+            if not key or key == "---" or key == "none" then return nil end
             return CludesUI.ResolveTexturePath(lookup, key, nil)
         end
     )
@@ -181,13 +165,9 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
             setValue = function(value)
                 local barList = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
                 local cfg = barList and barList[barId]
-                if not cfg then
-                    return
-                end
+                if not cfg then return end
                 cfg.barTexture = value
-                if mod.ApplyDataBarLayout then
-                    mod.ApplyDataBarLayout(barId)
-                end
+                if mod.ApplyDataBarLayout then mod.ApplyDataBarLayout(barId) end
             end,
         }
     end
@@ -217,12 +197,8 @@ end
 
 local function TileNameplates(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    local function saved()
-        return mod.db and mod.db.profile
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    local function saved() return mod.db and mod.db.profile end
     local DEF = mod.defaults or {}
     CludesUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
@@ -235,17 +211,11 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     -- Health + cast bar textures repaint live plates the way the module's own
     -- RefreshAllTextures does: full reapply plus the friendly-plate loop.
     local function NPTexApply()
-        if mod.RefreshAllSettings then
-            mod.RefreshAllSettings()
-        end
+        if mod.RefreshAllSettings then mod.RefreshAllSettings() end
         if mod.friendlyPlates then
             for _, pl in pairs(mod.friendlyPlates) do
-                if mod.ApplyHealthBarTexture then
-                    mod.ApplyHealthBarTexture(pl)
-                end
-                if mod.ApplyCastBarTexture then
-                    mod.ApplyCastBarTexture(pl)
-                end
+                if mod.ApplyHealthBarTexture then mod.ApplyHealthBarTexture(pl) end
+                if mod.ApplyCastBarTexture then mod.ApplyCastBarTexture(pl) end
             end
         end
     end
@@ -261,9 +231,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = value
                 NPTexApply()
             end,
@@ -309,9 +277,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     absorbStyleValues._menuOpts = {
         itemHeight = 28,
         background = function(key)
-            if not key or key == "---" then
-                return nil
-            end
+            if not key or key == "---" then return nil end
             return (mod.NP_ABSORB_STYLE_TEX and mod.NP_ABSORB_STYLE_TEX[key])
                 or (mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(key))
         end,
@@ -337,9 +303,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         ["striped-tiny"] = "Tiny Stripes",
     }
     local function OverlayBg(key)
-        if not key or key == "---" or key == "none" then
-            return nil
-        end
+        if not key or key == "---" or key == "none" then return nil end
         if mod.OVERLAY_STRIPE_KEYS and mod.OVERLAY_STRIPE_KEYS[key] and mod.ResolveOverlayTexPath then
             return mod.ResolveOverlayTexPath(key)
         end
@@ -353,9 +317,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     ovtOrder[#ovtOrder + 1] = "---"
     for _, keyName in ipairs(hbtOrder) do
         ovtOrder[#ovtOrder + 1] = keyName
-        if keyName ~= "---" then
-            ovtValues[keyName] = hbtValues[keyName]
-        end
+        if keyName ~= "---" then ovtValues[keyName] = hbtValues[keyName] end
     end
     ovtValues._menuOpts = { itemHeight = 28, background = OverlayBg }
     local hovValues, hovOrder = {}, {}
@@ -370,9 +332,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     for _, keyName in ipairs(hbtOrder) do
         if keyName ~= "none" then
             hovOrder[#hovOrder + 1] = keyName
-            if keyName ~= "---" then
-                hovValues[keyName] = hbtValues[keyName]
-            end
+            if keyName ~= "---" then hovValues[keyName] = hbtValues[keyName] end
         end
     end
     hovValues._menuOpts = { itemHeight = 28, background = OverlayBg }
@@ -389,9 +349,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = value
                 local func = mod[applyName]
                 if func then
@@ -431,16 +389,12 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.absorbStyle = value
             profile.absorbAlpha = math.floor(
                 (((mod.NP_ABSORB_STYLE_ALPHA and mod.NP_ABSORB_STYLE_ALPHA[value]) or 0.8) * 100) + 0.5
             )
-            if mod.ApplyAbsorbStyleAll then
-                mod.ApplyAbsorbStyleAll()
-            end
+            if mod.ApplyAbsorbStyleAll then mod.ApplyAbsorbStyleAll() end
         end,
     }, overlayCfg("Hover Texture", "hoverOverlayTexture", "RefreshHoverEffect"))
     cursorY = cursorY - height
@@ -465,12 +419,8 @@ end
 
 local function TileUnitFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    local function saved()
-        return mod.db and mod.db.profile
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    local function saved() return mod.db and mod.db.profile end
     CludesUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
         mod.healthBarTextureOrder or {},
@@ -495,9 +445,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
     absorbStyleValues._menuOpts = {
         itemHeight = 28,
         background = function(key)
-            if not key or key == "---" or key == "none" then
-                return nil
-            end
+            if not key or key == "---" or key == "none" then return nil end
             return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
         end,
     }
@@ -509,9 +457,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
         return profile and profile[unit]
     end
     local function ReloadUnitFrames()
-        if mod.ReloadFrames then
-            mod.ReloadFrames()
-        end
+        if mod.ReloadFrames then mod.ReloadFrames() end
     end
     local function barTexCfg(unit)
         return {
@@ -525,9 +471,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local ut = unitTable(unit)
-                if not ut then
-                    return
-                end
+                if not ut then return end
                 ut.healthBarTexture = value
                 ReloadUnitFrames()
             end,
@@ -545,9 +489,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local ut = unitTable(unit)
-                if not ut then
-                    return
-                end
+                if not ut then return end
                 ut.absorbOpacity = (value == "clean") and 30 or 90
                 ut.showPlayerAbsorb = value
                 ReloadUnitFrames()
@@ -566,9 +508,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local ut = unitTable(unit)
-                if not ut then
-                    return
-                end
+                if not ut then return end
                 ut.healAbsorbOpacity = (value == "clean") and 50 or 75
                 ut.healAbsorbStyle = value
                 ReloadUnitFrames()
@@ -597,9 +537,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.castBarTexture = value
             ReloadUnitFrames()
         end,
@@ -623,9 +561,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
     local function TexRowCfg(unit)
         return function()
             return environ
-                and environ.TexBgRowCfg(unit and function()
-                    return unitTable(unit)
-                end, ReloadUnitFrames)
+                and environ.TexBgRowCfg(unit and function() return unitTable(unit) end, ReloadUnitFrames)
         end
     end
     AddTexBgCog(ptRow._leftRegion, TexRowCfg("player"))
@@ -655,12 +591,8 @@ end
 
 local function TileRaidFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    local function saved()
-        return mod.db and mod.db.profile
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    local function saved() return mod.db and mod.db.profile end
     CludesUI.AppendSharedMediaTextures(
         mod.healthBarTextureNames or {},
         mod.healthBarTextureOrder or {},
@@ -671,12 +603,8 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     local hbtValues, hbtOrder =
         CopyBarDD(mod.healthBarTextureNames, mod.healthBarTextureOrder, mod.healthBarTextures, false)
     local function ReloadRaidFrames()
-        if mod.ReloadFrames then
-            mod.ReloadFrames()
-        end
-        if mod.ReloadPartyFrames then
-            mod.ReloadPartyFrames()
-        end
+        if mod.ReloadFrames then mod.ReloadFrames() end
+        if mod.ReloadPartyFrames then mod.ReloadPartyFrames() end
     end
 
     local absorbStyleValues = {
@@ -759,15 +687,11 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     absorbStyleValues._menuOpts = {
         itemHeight = 28,
         background = function(key)
-            if not key or key == "---" or key == "none" then
-                return nil
-            end
+            if not key or key == "---" or key == "none" then return nil end
             if key == "blizzardModern" then
                 return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex("striped"), modernSwatch
             end
-            if key == "maxHealthStripes" then
-                return CludesUI.MAX_HEALTH_STRIPES_TEX
-            end
+            if key == "maxHealthStripes" then return CludesUI.MAX_HEALTH_STRIPES_TEX end
             return mod.ResolveAbsorbStyleTex and mod.ResolveAbsorbStyleTex(key) or nil
         end,
     }
@@ -786,13 +710,9 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.healthBarTexture = value
-            if mod._BumpAbsorbGen then
-                mod._BumpAbsorbGen()
-            end
+            if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
             ReloadRaidFrames()
         end,
     }, {
@@ -806,9 +726,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             -- Blizzard Glow Line follows the pick (see the Raid & Party Frames page).
             if value == "blizzardModern" then
                 profile.absorbGlowLine = true
@@ -829,20 +747,14 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     local function RaidRead(key, default)
         local profile = saved()
         local value = profile and profile[key]
-        if value == nil then
-            return default
-        end
+        if value == nil then return default end
         return value
     end
     local function RaidWrite(key, value)
         local profile = saved()
-        if not profile then
-            return
-        end
+        if not profile then return end
         profile[key] = value
-        if mod._BumpAbsorbGen then
-            mod._BumpAbsorbGen()
-        end
+        if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
         ReloadRaidFrames()
     end
     AddTexBgCog(texRow._leftRegion, function()
@@ -860,9 +772,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.healAbsorbStyle = value
             profile.healAbsorbOpacity = (value == "clean") and 50 or 75
             ReloadRaidFrames()
@@ -878,9 +788,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.maxHealthStyle = value
             ReloadRaidFrames()
         end,
@@ -895,16 +803,21 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         "HEALTH BAR",
         "Health Bar Texture"
     )
-    cursorY =
-        LinkRow(hostFrame, cursorY, "Frame Border Style", tile.folder, "Frames", "FRAME DISPLAY", "Border Style")
+    cursorY = LinkRow(
+        hostFrame,
+        cursorY,
+        "Frame Border Style",
+        tile.folder,
+        "Frames",
+        "FRAME DISPLAY",
+        "Border Style"
+    )
     return cursorY
 end
 
 local function TileCooldownManager(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     cursorY = LinkRow(
         hostFrame,
         cursorY,
@@ -928,16 +841,10 @@ end
 
 local function TileResourceBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    local function saved()
-        return _G._CURB_AceDB and _G._CURB_AceDB.profile
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    local function saved() return _G._CURB_AceDB and _G._CURB_AceDB.profile end
     local function RBApply()
-        if _G._CURB_Apply then
-            _G._CURB_Apply()
-        end
+        if _G._CURB_Apply then _G._CURB_Apply() end
     end
     if CludesUI.AppendSharedMediaTextures then
         CludesUI.AppendSharedMediaTextures(
@@ -978,9 +885,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not (profile and profile.general) then
-                return
-            end
+            if not (profile and profile.general) then return end
             profile.general.barTexture = value
             RBApply()
         end,
@@ -995,23 +900,17 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not (profile and profile.castBar) then
-                return
-            end
+            if not (profile and profile.castBar) then return end
             profile.castBar.texture = value
             RBApply()
-            if CludesUI.NotifyElementResized then
-                CludesUI.NotifyElementResized("ERB_CastBar")
-            end
+            if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_CastBar") end
         end,
     })
     cursorY = cursorY - height
     -- Textured Background cogs.
     local environ = mod._CURB_OptEnv
     local function TexRowCfg(kind)
-        return function()
-            return environ and environ.TexBgRowCfg(kind, RBApply)
-        end
+        return function() return environ and environ.TexBgRowCfg(kind, RBApply) end
     end
     AddTexBgCog(barTexRow._leftRegion, TexRowCfg("bars"))
     AddTexBgCog(barTexRow._rightRegion, TexRowCfg("cast"), "castbar")
@@ -1033,15 +932,11 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
                 end,
                 setValue = function(val)
                     local profile = saved()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     mod.ERB_SetBarTexture(profile, barId, val ~= "__match" and val)
                     RBApply()
                     -- Neither bar has its own texture any more: the row goes.
-                    if profile.splitTex ~= true then
-                        CludesUI:RefreshPage(true)
-                    end
+                    if profile.splitTex ~= true then CludesUI:RefreshPage(true) end
                 end,
             }
         end
@@ -1066,14 +961,10 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not (profile and profile.gcdBar) then
-                return
-            end
+            if not (profile and profile.gcdBar) then return end
             profile.gcdBar.texture = value
             RBApply()
-            if CludesUI.NotifyElementResized then
-                CludesUI.NotifyElementResized("ERB_GCDBar")
-            end
+            if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_GCDBar") end
         end,
     }, BLANK())
     cursorY = cursorY - height
@@ -1092,13 +983,9 @@ end
 
 local function TileChat(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local CHAT = mod.ECHAT
-    local function saved()
-        return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat
-    end
+    local function saved() return _G._CUCHAT_DB and _G._CUCHAT_DB.profile and _G._CUCHAT_DB.profile.chat end
     -- Stock styles (Style page): Blizzard's own chat background, and either
     -- Blizzard's tabs or the painted vanilla tab sheet -- none take a texture,
     -- and the linked border row is hidden there too.
@@ -1113,9 +1000,7 @@ local function TileChat(hostFrame, cursorY, W, tile)
             )
         )
     end
-    if CHAT and CHAT.RefreshBgTextureCatalogue then
-        CHAT.RefreshBgTextureCatalogue()
-    end
+    if CHAT and CHAT.RefreshBgTextureCatalogue then CHAT.RefreshBgTextureCatalogue() end
     -- Chat's own copies drop the separator.
     local btValues, btOrder =
         CopyBarDD(mod.chatBgTextureNames, mod.chatBgTextureOrder, mod.chatBgTextures, true)
@@ -1133,13 +1018,9 @@ local function TileChat(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.bgTexture = value
-            if CHAT and CHAT.ApplyBackground then
-                CHAT.ApplyBackground()
-            end
+            if CHAT and CHAT.ApplyBackground then CHAT.ApplyBackground() end
         end,
     }, {
         type = "dropdown",
@@ -1153,26 +1034,27 @@ local function TileChat(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.tabBackgroundTexture = value
-            if CHAT and CHAT.ApplyTabAppearance then
-                CHAT.ApplyTabAppearance()
-            end
+            if CHAT and CHAT.ApplyTabAppearance then CHAT.ApplyTabAppearance() end
         end,
     })
     cursorY = cursorY - height
-    cursorY =
-        LinkRow(hostFrame, cursorY, "Panel & Tab Border Styles", tile.folder, "Chat", "DISPLAY", "Border Style")
+    cursorY = LinkRow(
+        hostFrame,
+        cursorY,
+        "Panel & Tab Border Styles",
+        tile.folder,
+        "Chat",
+        "DISPLAY",
+        "Border Style"
+    )
     return cursorY
 end
 
 local function TileQoL(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     -- Movement alert bar texture: module-owned registered tables.
     local mt = CludesUI._MovementBarTextures
     local maCfg
@@ -1193,19 +1075,11 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             setValue = function(value)
                 local db = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
                 local ma = db and db.profile and db.profile.movementAlert
-                if not ma then
-                    return
-                end
+                if not ma then return end
                 ma.barTexture = value
-                if CludesUI._applyMovementAlert then
-                    CludesUI._applyMovementAlert()
-                end
-                if CludesUI._applyTimeSpiral then
-                    CludesUI._applyTimeSpiral()
-                end
-                if CludesUI._applyGateway then
-                    CludesUI._applyGateway()
-                end
+                if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
+                if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
+                if CludesUI._applyGateway then CludesUI._applyGateway() end
             end,
         }
     end
@@ -1213,9 +1087,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
     -- Cursor art pickers: bespoke ring art, hand-built lists mirroring the
     -- Cursor page exactly (note the ring_ prefix difference between the
     -- cursor texture and the two ring pickers).
-    local function cursorDB()
-        return _G._CUCL_AceDB and _G._CUCL_AceDB.profile
-    end
+    local function cursorDB() return _G._CUCL_AceDB and _G._CUCL_AceDB.profile end
     local cursorCfg = {
         type = "dropdown",
         text = "Cursor Texture",
@@ -1234,13 +1106,9 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = cursorDB()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.texture = value
-            if _G._CUCL_Apply then
-                _G._CUCL_Apply()
-            end
+            if _G._CUCL_Apply then _G._CUCL_Apply() end
         end,
     }
     local ringValues = {
@@ -1264,16 +1132,10 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         setValue = function(value)
             local profile = cursorDB()
             local g = profile and profile.gcd
-            if not g then
-                return
-            end
+            if not g then return end
             g.ringTex = value
-            if _G._CUCL_ApplyGCDCircle then
-                _G._CUCL_ApplyGCDCircle()
-            end
-            if _G._CUCL_RegisterUnlock then
-                _G._CUCL_RegisterUnlock()
-            end
+            if _G._CUCL_ApplyGCDCircle then _G._CUCL_ApplyGCDCircle() end
+            if _G._CUCL_RegisterUnlock then _G._CUCL_RegisterUnlock() end
         end,
     }
     local castRingCfg = {
@@ -1289,16 +1151,10 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         setValue = function(value)
             local profile = cursorDB()
             local c = profile and profile.castCircle
-            if not c then
-                return
-            end
+            if not c then return end
             c.ringTex = value
-            if _G._CUCL_ApplyCastCircle then
-                _G._CUCL_ApplyCastCircle()
-            end
-            if _G._CUCL_RegisterUnlock then
-                _G._CUCL_RegisterUnlock()
-            end
+            if _G._CUCL_ApplyCastCircle then _G._CUCL_ApplyCastCircle() end
+            if _G._CUCL_RegisterUnlock then _G._CUCL_RegisterUnlock() end
         end,
     }
 
@@ -1311,16 +1167,10 @@ end
 
 local function TileMythicTimer(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    local function saved()
-        return _G._CUMT_AceDB and _G._CUMT_AceDB.profile
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    local function saved() return _G._CUMT_AceDB and _G._CUMT_AceDB.profile end
     local function MTApply()
-        if _G._CUMT_ApplyTimer then
-            _G._CUMT_ApplyTimer()
-        end
+        if _G._CUMT_ApplyTimer then _G._CUMT_ApplyTimer() end
     end
     -- MT's registered tables live in module/options locals; own memoized
     -- core-set catalogue (registered once), separator dropped like MT's own.
@@ -1338,9 +1188,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local profile = saved()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile[key] = value
                 MTApply()
             end,
@@ -1358,9 +1206,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             end,
             setValue = function(value)
                 local tbl = getT()
-                if not tbl then
-                    return
-                end
+                if not tbl then return end
                 tbl.texture = value
                 local func = mod[applyName]
                 if func then
@@ -1420,12 +1266,8 @@ end
 
 local function TileDamageMeters(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    local function saved()
-        return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    local function saved() return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm end
     CludesUI.AppendSharedMediaTextures(
         _G._CUDM_BarTextureNames or {},
         _G._CUDM_BarTextureOrder or {},
@@ -1452,16 +1294,10 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.barTexture = value
-            if mod.RefreshMeter then
-                mod.RefreshMeter()
-            end
-            if mod.ApplySpellHistory then
-                mod.ApplySpellHistory()
-            end
+            if mod.RefreshMeter then mod.RefreshMeter() end
+            if mod.ApplySpellHistory then mod.ApplySpellHistory() end
         end,
     }, {
         type = "dropdown",
@@ -1474,13 +1310,9 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.breakdownBarTexture = value
-            if mod.RefreshMeter then
-                mod.RefreshMeter()
-            end
+            if mod.RefreshMeter then mod.RefreshMeter() end
         end,
     })
     cursorY = cursorY - height
@@ -1496,16 +1328,10 @@ local function TileDamageMeters(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local profile = saved()
-            if not profile then
-                return
-            end
-            if not profile.spellHistory then
-                profile.spellHistory = {}
-            end
+            if not profile then return end
+            if not profile.spellHistory then profile.spellHistory = {} end
             profile.spellHistory.spellHistoryBarTexture = value
-            if mod.ApplySpellHistory then
-                mod.ApplySpellHistory()
-            end
+            if mod.ApplySpellHistory then mod.ApplySpellHistory() end
         end,
     }, BLANK())
     cursorY = cursorY - height
@@ -1523,9 +1349,7 @@ end
 
 local function TileDataBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     cursorY = LinkRow(
         hostFrame,
         cursorY,
@@ -1540,9 +1364,7 @@ end
 
 local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
     local category = OwnBarCatalogue("edr", nil)
     local values, sequence = CopyBarDD(category.names, category.order, category.lookup, true)
     local _, height = W:DualRow(hostFrame, cursorY, {
@@ -1556,13 +1378,9 @@ local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
         end,
         setValue = function(value)
             local p = mod.edrDB and mod.edrDB.profile
-            if not p then
-                return
-            end
+            if not p then return end
             p.barTexture = value
-            if mod.edrRedraw then
-                mod.edrRedraw()
-            end
+            if mod.edrRedraw then mod.edrRedraw() end
         end,
     }, BLANK())
     cursorY = cursorY - height
@@ -1580,10 +1398,9 @@ end
 
 local function TileMinimap(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    if not mod then
-        return DisabledTile(hostFrame, cursorY, W, tile)
-    end
-    cursorY = LinkRow(hostFrame, cursorY, "Minimap Border Style", tile.folder, "Minimap", "DISPLAY", "Border Style")
+    if not mod then return DisabledTile(hostFrame, cursorY, W, tile) end
+    cursorY =
+        LinkRow(hostFrame, cursorY, "Minimap Border Style", tile.folder, "Minimap", "DISPLAY", "Border Style")
     return cursorY
 end
 
@@ -1677,9 +1494,7 @@ do
                     changed = true
                 end
             end
-            if changed and CludesUI.InvalidatePageCache then
-                CludesUI:InvalidatePageCache()
-            end
+            if changed and CludesUI.InvalidatePageCache then CludesUI:InvalidatePageCache() end
         end
         return origNav(self, moduleName, page, sectionName, preSelectFn, highlightText)
     end

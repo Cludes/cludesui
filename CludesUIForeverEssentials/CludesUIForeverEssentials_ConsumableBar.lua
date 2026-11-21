@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ConsumableBar.lua  (WoW Forever only)
 --  Consumable Bar: the consumables in your bags on a bar you can click,
@@ -53,9 +49,7 @@ local holderFrame
 local buttons = {}
 local dirty = true
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 -- subclass -> category order index, for the categories turned on.
 local function WantedSubs()
@@ -87,9 +81,7 @@ local function Collect()
         end
     end
     table.sort(entries, function(lhs, rhs)
-        if lhs.order ~= rhs.order then
-            return lhs.order < rhs.order
-        end
+        if lhs.order ~= rhs.order then return lhs.order < rhs.order end
         return lhs.id < rhs.id
     end)
     return entries
@@ -97,9 +89,7 @@ end
 
 local function Button(index)
     local widget = buttons[index]
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
     widget:RegisterForClicks("AnyUp", "AnyDown")
     widget:SetAttribute("type", "item")
@@ -116,16 +106,12 @@ local function Button(index)
     CludesUI.Kit.Font(widget.count, 11, "essentials")
     widget.count:SetPoint("BOTTOMRIGHT", -2, 2)
     widget:SetScript("OnEnter", function(self)
-        if not self.itemID then
-            return
-        end
+        if not self.itemID then return end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetItemByID(self.itemID)
         GameTooltip:Show()
     end)
-    widget:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
     buttons[index] = widget
     return widget
 end
@@ -149,9 +135,7 @@ end
 
 -- Lays the row out again; out of combat only, the buttons are secure.
 local function Layout()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     if InCombatLockdown() then
         dirty = true
         Paint()
@@ -181,9 +165,7 @@ local function Layout()
 end
 
 local function Build()
-    if holderFrame then
-        return holderFrame
-    end
+    if holderFrame then return holderFrame end
     holderFrame = CreateFrame("Frame", "CludesUIConsumableBar", UIParent)
     holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
     return holderFrame
@@ -192,15 +174,9 @@ end
 local eventFrame = CreateFrame("Frame")
 local queued
 eventFrame:SetScript("OnEvent", function(_, evt)
-    if evt == "BAG_UPDATE_COOLDOWN" then
-        return Paint()
-    end
-    if evt == "PLAYER_REGEN_ENABLED" and not dirty then
-        return
-    end
-    if queued then
-        return
-    end
+    if evt == "BAG_UPDATE_COOLDOWN" then return Paint() end
+    if evt == "PLAYER_REGEN_ENABLED" and not dirty then return end
+    if queued then return end
     queued = true
     C_Timer.After(0.3, function()
         queued = nil
@@ -216,9 +192,7 @@ local function Apply()
         eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
         eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-        if not CludesUI._unlockActive and not InCombatLockdown() then
-            F.Place(holderFrame)
-        end
+        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
     end
@@ -232,9 +206,7 @@ F.Start(Apply, {
     label = "Consumable Bar",
     order = 738,
     frame = function(build)
-        if build then
-            Build()
-        end
+        if build then Build() end
         return holderFrame
     end,
     size = function()

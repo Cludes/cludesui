@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end
 local _, mod = ...
 
 -- CUI_DEBUFF_COLORS: declarative aura slots own visibility. Never read aura
@@ -38,9 +36,7 @@ end
 
 local function ColorVal(colorKey)
     local p = mod.NP_GetProfile()
-    if p and p[colorKey] ~= nil then
-        return p[colorKey]
-    end
+    if p and p[colorKey] ~= nil then return p[colorKey] end
     return mod.defaults[colorKey]
 end
 
@@ -65,45 +61,31 @@ local DC = {
 }
 mod.DebuffColorKit = DC
 
-function DC.Key(class)
-    return "debuffColors" .. class
-end
+function DC.Key(class) return "debuffColors" .. class end
 
 function DC.SpellID(val)
     local ident = tonumber(val)
-    if ident and ident > 0 and ident == math.floor(ident) then
-        return ident
-    end
+    if ident and ident > 0 and ident == math.floor(ident) then return ident end
 end
 
 local function ParseColor(text, skinData)
     local red, green, blue = text:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
     red, green, blue = tonumber(red), tonumber(green), tonumber(blue)
-    if not (red and green and blue) then
-        return { r = skinData.r, g = skinData.g, b = skinData.b }
-    end
+    if not (red and green and blue) then return { r = skinData.r, g = skinData.g, b = skinData.b } end
     return { r = math.min(red, 1), g = math.min(green, 1), b = math.min(blue, 1) }
 end
 
-local function Num(val)
-    return (string.format("%.4f", val):gsub("%.?0+$", ""))
-end
-local function ColorText(color)
-    return Num(color.r) .. "," .. Num(color.g) .. "," .. Num(color.b)
-end
+local function Num(val) return (string.format("%.4f", val):gsub("%.?0+$", "")) end
+local function ColorText(color) return Num(color.r) .. "," .. Num(color.g) .. "," .. Num(color.b) end
 
 -- A saved list as fresh tables: singles = { { spell, color, missing } },
 -- combos = { { spells = { ids }, color } }.
 function DC.Parse(text)
     local singles, comboList = {}, {}
-    if type(text) ~= "string" then
-        return singles, comboList
-    end
+    if type(text) ~= "string" then return singles, comboList end
     local singlePart, comboPart = text:match("^([^/]*)/?(.*)$")
     for record in singlePart:gmatch("[^;]+") do
-        if #singles == DC.MAX_SINGLES then
-            break
-        end
+        if #singles == DC.MAX_SINGLES then break end
         local miss, ident, rgb = record:match("^(!?)(%d*):?(.*)$")
         singles[#singles + 1] = {
             spell = DC.SpellID(ident) or 0,
@@ -112,16 +94,12 @@ function DC.Parse(text)
         }
     end
     for record in comboPart:gmatch("[^;]+") do
-        if #comboList == DC.MAX_COMBOS then
-            break
-        end
+        if #comboList == DC.MAX_COMBOS then break end
         local ids, rgb = record:match("^([%d%+]*):?(.*)$")
         local spellSet = {}
         for ident in ids:gmatch("%d+") do
             ident = DC.SpellID(ident)
-            if ident and #spellSet < DC.MAX_COMBO_SPELLS then
-                spellSet[#spellSet + 1] = ident
-            end
+            if ident and #spellSet < DC.MAX_COMBO_SPELLS then spellSet[#spellSet + 1] = ident end
         end
         comboList[#comboList + 1] = { spells = spellSet, color = ParseColor(rgb, DC.COMBO_COLOR) }
     end
@@ -130,9 +108,7 @@ end
 
 -- The string to save (nil once both lists are empty).
 function DC.Encode(singles, comboList)
-    if #singles == 0 and #comboList == 0 then
-        return nil
-    end
+    if #singles == 0 and #comboList == 0 then return nil end
     local s, c = {}, {}
     for index, entry in ipairs(singles) do
         s[index] = (entry.missing and "!" or "") .. entry.spell .. ":" .. ColorText(entry.color)
@@ -144,9 +120,7 @@ function DC.Encode(singles, comboList)
 end
 
 -- A class's lists; get reads the caller's profile (the plates' by default).
-function DC.Read(class, get)
-    return DC.Parse((get or ColorVal)(DC.Key(class)))
-end
+function DC.Read(class, get) return DC.Parse((get or ColorVal)(DC.Key(class))) end
 
 -- What the color goes on: "nameplate" (the health fill, in the bar's texture),
 -- "texture" (the health fill, in debuffColorsTexture), "border" or "name". A
@@ -155,9 +129,7 @@ end
 function DC.Mode(get)
     get = get or ColorVal
     local m = get("debuffColorsMode")
-    if m == "texture" or m == "name" then
-        return m
-    end
+    if m == "texture" or m == "name" then return m end
     return get("debuffColorsBorder") == true and "border" or "nameplate"
 end
 
@@ -185,16 +157,12 @@ end
 -- into. nil while the plate draws no CUI border (Border None, a stock style,
 -- size 0, an unresolved texture): then there is nothing to color.
 local function BorderSpec()
-    if mod.NP_Blizz() then
-        return nil
-    end
+    if mod.NP_Blizz() then return nil end
     local s
     if mod.IsCustomBorderEnabled() then
         local texture = ColorVal("customBorderTexture")
         local size = ColorVal("customBorderSize") or 0
-        if size <= 0 then
-            return nil
-        end
+        if size <= 0 then return nil end
         local px = CludesUI.BorderPx(ColorVal("customBorderSizePx"), size, texture)
         -- On MEDIUM strata. The border frame sits one level above the bar (one
         -- below it when drawn behind); a textured border draws on that frame,
@@ -212,9 +180,7 @@ local function BorderSpec()
             }
         else
             local filePath = CludesUI.ResolveBorderTexture(texture)
-            if not filePath then
-                return nil
-            end
+            if not filePath then return nil end
             s = {
                 kind = "slices",
                 path = filePath,
@@ -282,9 +248,7 @@ local function ReadConfig()
         c.name, c.channel = true, "name"
     else
         local colorKey = ColorVal("healthBarTexture")
-        if mode == "texture" then
-            colorKey = ColorVal("debuffColorsTexture") or colorKey
-        end
+        if mode == "texture" then colorKey = ColorVal("debuffColorsTexture") or colorKey end
         c.texture = CludesUI.ResolveTexturePath(mod.healthBarTextures, colorKey, WHITE)
         c.channel = "health"
         parts[#parts + 1] = tostring(c.texture)
@@ -317,9 +281,7 @@ local function ReadConfig()
             missing = e.missing,
         }
         parts[#parts + 1] = (e.missing and "m" or "s") .. e.spell .. ":" .. ColorText(e.color)
-        if e.missing then
-            c.anyMissing = true
-        end
+        if e.missing then c.anyMissing = true end
     end
     for index = #comboList, 1, -1 do
         local spellSet = Distinct(comboList[index].spells)
@@ -355,9 +317,7 @@ local function GroupComboRuns(comboList)
                     both[ident], any = true, true
                 end
             end
-            if not any then
-                break
-            end
+            if not any then break end
             common, jdx = both, jdx + 1
         end
         -- The run's first combo keeps its own spell order where it can, so a
@@ -373,9 +333,7 @@ local function GroupComboRuns(comboList)
         for k = index, jdx do
             local spellSet = { first }
             for _, ident in ipairs(comboList[k].spells) do
-                if ident ~= first then
-                    spellSet[#spellSet + 1] = ident
-                end
+                if ident ~= first then spellSet[#spellSet + 1] = ident end
             end
             run[#run + 1] = { spells = spellSet, color = comboList[k].color }
         end
@@ -448,9 +406,7 @@ local function Engaged(unitToken)
         end
     end
     for index = 1, #engagers do
-        if type(UnitThreatSituation(engagers[index], unitToken)) ~= "nil" then
-            return true
-        end
+        if type(UnitThreatSituation(engagers[index], unitToken)) ~= "nil" then return true end
     end
     return false
 end
@@ -462,9 +418,7 @@ local function SyncGate(colorKit)
     if open ~= colorKit.open then
         colorKit.open = open
         colorKit.gate:SetShown(open)
-        if colorKit.nameGated then
-            colorKit.nameGated:SetShown(open)
-        end
+        if colorKit.nameGated then colorKit.nameGated:SetShown(open) end
     end
 end
 
@@ -472,9 +426,7 @@ local function RunResync(self)
     self:Hide()
     self:SetScript("OnUpdate", nil)
     for _, colorKit in pairs(kits) do
-        if colorKit.unit then
-            SyncGate(colorKit)
-        end
+        if colorKit.unit then SyncGate(colorKit) end
     end
 end
 
@@ -493,9 +445,7 @@ end
 
 local function Kit(backing)
     local colorKit = kits[backing]
-    if colorKit then
-        return colorKit
-    end
+    if colorKit then return colorKit end
     -- Only aspect-bearing objects may anchor to a container that holds a group,
     -- and the aspect is inherited at creation: the masks are born in the gate,
     -- and so is the host the Missing rows draw on (DressLook).
@@ -509,9 +459,7 @@ local function Kit(backing)
     local owner = CreateFrame("Frame", nil, gate)
     owner:SetAllPoints(gate)
     colorKit = { gate = gate, hider = hider, host = owner, sensors = {}, looks = {}, used = 0 }
-    gate:SetScript("OnEvent", function()
-        SyncGate(colorKit)
-    end)
+    gate:SetScript("OnEvent", function() SyncGate(colorKit) end)
     kits[backing] = colorKit
     return colorKit
 end
@@ -534,9 +482,7 @@ local function PointSensor(colorKit, num, spell)
             style = STYLE,
             candidateFilters = ids,
             layout = { elementWidth = SPAN, elementHeight = 1 },
-            extraInit = function(btnFrame)
-                btnFrame:EnableMouse(false)
-            end,
+            extraInit = function(btnFrame) btnFrame:EnableMouse(false) end,
         })
         local maskTex = colorKit.gate:CreateMaskTexture()
         maskTex:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
@@ -585,18 +531,14 @@ local function ParkKit(colorKit)
     colorKit.gate:UnregisterAllEvents()
     colorKit.gate:Hide()
     colorKit.hider:Hide()
-    if colorKit.nameGated then
-        colorKit.nameGated:Hide()
-    end
+    if colorKit.nameGated then colorKit.nameGated:Hide() end
 end
 
 -- A bundle a settings change replaces can never be freed (frames are permanent);
 -- releasing its containers keeps their engine slots out of AuraKit's restyle
 -- registry. Refresh runs this out of combat only.
 local function ReleaseBundle(b)
-    if b.holder then
-        b.holder:Hide()
-    end
+    if b.holder then b.holder:Hide() end
     for _, boxHolder in ipairs(b.containers) do
         boxHolder:SetEnabled(false)
         CludesUI.AuraKit.ReleaseContainer(boxHolder)
@@ -605,9 +547,7 @@ local function ReleaseBundle(b)
         b.nameKit.attached = nil
         b.nameKit.root:Hide()
     end
-    if b.kit then
-        ParkKit(b.kit)
-    end
+    if b.kit then ParkKit(b.kit) end
 end
 
 -- Containers are born enabled on unit "none" and stay enabled: the holder's
@@ -647,9 +587,7 @@ end
 local function MakeTintInit(b, rgb, subLayer)
     local initialized = setmetatable({}, { __mode = "k" })
     return function(btnFrame)
-        if initialized[btnFrame] then
-            return
-        end
+        if initialized[btnFrame] then return end
         initialized[btnFrame] = true
         -- Only creation-window decoration. Once owned by the aura engine, these
         -- regions may become forbidden; never read or repaint them on rebind.
@@ -657,9 +595,7 @@ local function MakeTintInit(b, rgb, subLayer)
         btnFrame:EnableMouse(false)
         local tintTex = btnFrame:CreateTexture(nil, "ARTWORK", nil, subLayer)
         PaintTint(tintTex, b, rgb)
-        if b.mask then
-            tintTex:AddMaskTexture(b.mask)
-        end
+        if b.mask then tintTex:AddMaskTexture(b.mask) end
     end
 end
 
@@ -680,9 +616,7 @@ end
 -- the bar).
 local function CopyLevel(b, specInfo, rank)
     local base = b.level
-    if specInfo.behind ~= nil then
-        base = specInfo.behind and math.max(1, b.level - 1) or (b.level + 1)
-    end
+    if specInfo.behind ~= nil then base = specInfo.behind and math.max(1, b.level - 1) or (b.level + 1) end
     return base + specInfo.up + rank
 end
 
@@ -693,9 +627,7 @@ end
 local function NewBorderCopy(hostFrame, specInfo, sensorMask)
     local frame = CreateFrame("Frame", nil, hostFrame)
     frame:EnableMouse(false)
-    if specInfo.strata then
-        frame:SetFrameStrata(specInfo.strata)
-    end
+    if specInfo.strata then frame:SetFrameStrata(specInfo.strata) end
     local maskTex
     if sensorMask then
         maskTex = frame:CreateMaskTexture()
@@ -749,9 +681,7 @@ local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, rgb, subLaye
     end
     if specInfo.kind == "strips" then
         local success, es = pcall(frame.GetEffectiveScale, frame)
-        if not (success and es and es > 0) then
-            es = 1
-        end
+        if not (success and es and es > 0) then es = 1 end
         local one = CludesUI.PP.perfect / es
         local t = math.max(one, math.floor(specInfo.px + 0.5) * one)
         for _, texture in ipairs(pieces) do
@@ -792,9 +722,7 @@ local function MakeBorderInit(b, rgb, subLayer)
         subLayer = 7
     end
     return function(btnFrame)
-        if initialized[btnFrame] then
-            return
-        end
+        if initialized[btnFrame] then return end
         initialized[btnFrame] = true
         btnFrame:SetFrameLevel(b.level)
         btnFrame:EnableMouse(false)
@@ -808,9 +736,7 @@ end
 -- What a slot shows while its debuffs are up: the health fill's tint (Color
 -- Nameplate) or the border in the color (Color Border).
 local function ColorInit(b, rgb, subLayer)
-    if b.config.border then
-        return MakeBorderInit(b, rgb, subLayer)
-    end
+    if b.config.border then return MakeBorderInit(b, rgb, subLayer) end
     return MakeTintInit(b, rgb, subLayer)
 end
 
@@ -831,9 +757,7 @@ local function DressLook(b, sensor, rgb, subLayer)
         local tintTex = look.tint
         if not tintTex then
             tintTex = colorKit.host:CreateTexture(nil, "OVERLAY")
-            if b.mask then
-                tintTex:AddMaskTexture(b.mask)
-            end
+            if b.mask then tintTex:AddMaskTexture(b.mask) end
             tintTex:AddMaskTexture(sensor.mask)
             look.tint = tintTex
         end
@@ -860,9 +784,7 @@ end
 
 local function HideLooks(colorKit)
     for _, look in ipairs(colorKit.looks) do
-        if look.tint then
-            look.tint:Hide()
-        end
+        if look.tint then look.tint:Hide() end
         for _, copy in pairs(look.copies) do
             copy.frame:Hide()
         end
@@ -884,17 +806,13 @@ end
 local function MakeNestInit(b, declare)
     local initialized = setmetatable({}, { __mode = "k" })
     return function(btnFrame)
-        if initialized[btnFrame] then
-            return
-        end
+        if initialized[btnFrame] then return end
         initialized[btnFrame] = true
         btnFrame:SetFrameLevel(b.level)
         btnFrame:EnableMouse(false)
         local nested = CreateTintContainer(b, btnFrame)
         declare(nested)
-        if b.unit then
-            nested:SetUnit(b.unit)
-        end
+        if b.unit then nested:SetUnit(b.unit) end
     end
 end
 
@@ -912,9 +830,7 @@ local function AddComboSlot(b, boxHolder, colorKey, combo, depth)
         boxHolder,
         colorKey .. "_" .. depth,
         spell,
-        MakeNestInit(b, function(nested)
-            AddComboSlot(b, nested, colorKey, combo, depth + 1)
-        end)
+        MakeNestInit(b, function(nested) AddComboSlot(b, nested, colorKey, combo, depth + 1) end)
     )
 end
 
@@ -1047,27 +963,19 @@ end
 local function MirrorName(backing, shownOnly)
     local b = bundles[backing]
     local kitKey = b and b.nameKit
-    if not kitKey then
-        return
-    end
+    if not kitKey then return end
     local name, root = backing.name, kitKey.root
     root:SetShown(kitKey.attached == true and name:IsShown())
-    if shownOnly then
-        return
-    end
+    if shownOnly then return end
     -- The host's own strata change (SlotTextHost) reaches its children, so the
     -- strata and levels are set again on every pass.
     local owner = name:GetParent()
-    if root:GetParent() ~= owner then
-        root:SetParent(owner)
-    end
+    if root:GetParent() ~= owner then root:SetParent(owner) end
     root:SetFrameStrata(owner:GetFrameStrata())
     root:SetFrameLevel(owner:GetFrameLevel() + 1)
     LevelChains(kitKey)
     local fam = name:GetFontObject()
-    if not (fam and CludesUI._fontFamilySet[fam]) then
-        fam = nil
-    end
+    if not (fam and CludesUI._fontFamilySet[fam]) then fam = nil end
     local font, size, flags
     if not fam then
         font, size, flags = name:GetFont()
@@ -1080,9 +988,7 @@ local function MirrorName(backing, shownOnly)
     for index = 1, kitKey.used do
         local fontStr = kitKey.chains[index].copy
         if fam then
-            if fontStr:GetFontObject() ~= fam then
-                fontStr:SetFontObject(fam)
-            end
+            if fontStr:GetFontObject() ~= fam then fontStr:SetFontObject(fam) end
         elseif font then
             fontStr:SetFont(font, size, flags or "")
         end
@@ -1111,9 +1017,7 @@ local function NameEntries(cfg)
     for _, combo in ipairs(cfg.combos) do
         result[#result + 1] = { spells = combo.spells, color = combo.color }
     end
-    table.sort(missing, function(posX, posY)
-        return posX.sublevel < posY.sublevel
-    end)
+    table.sort(missing, function(posX, posY) return posX.sublevel < posY.sublevel end)
     for _, entry in ipairs(missing) do
         result[#result + 1] = { spells = { entry.spell }, color = entry.color, missing = true }
     end
@@ -1160,9 +1064,7 @@ end
 -- The tints share one frame level (the target/focus/hover patterns sit one
 -- level up), so a later-declared slot draws on top: ReadConfig orders them.
 local function CreateBundle(backing)
-    if settings.name then
-        return CreateNameBundle(backing)
-    end
+    if settings.name then return CreateNameBundle(backing) end
     local b = {
         config = settings,
         fill = backing.health:GetStatusBarTexture(),
@@ -1199,9 +1101,7 @@ local function CreateBundle(backing)
             )
         end
     end
-    if colorKit then
-        ParkSensors(colorKit)
-    end
+    if colorKit then ParkSensors(colorKit) end
     for index, run in ipairs(settings.comboRuns) do
         AddComboRun(b, root, "CUI_DEBUFF_COMBO_" .. index, run)
     end
@@ -1228,9 +1128,7 @@ local function ApplyThreat(b, backing)
     else
         a = backing._dcThreatH
     end
-    if type(a) == "nil" then
-        a = 1
-    end
+    if type(a) == "nil" then a = 1 end
     if issecretvalue(a) then
         b.threatA = nil
     elseif a == b.threatA then
@@ -1238,23 +1136,15 @@ local function ApplyThreat(b, backing)
     else
         b.threatA = a
     end
-    if b.holder then
-        b.holder:SetAlpha(a)
-    end
-    if b.kit then
-        b.kit.host:SetAlpha(a)
-    end
-    if b.nameKit then
-        b.nameKit.root:SetAlpha(a)
-    end
+    if b.holder then b.holder:SetAlpha(a) end
+    if b.kit then b.kit.host:SetAlpha(a) end
+    if b.nameKit then b.nameKit.root:SetAlpha(a) end
 end
 
 local function Threat(backing, healthA, borderA, nameA)
     backing._dcThreatH, backing._dcThreatB, backing._dcThreatN = healthA, borderA, nameA
     local b = bundles[backing]
-    if b then
-        ApplyThreat(b, backing)
-    end
+    if b then ApplyThreat(b, backing) end
 end
 
 local function Attach(backing, unitToken)
@@ -1270,9 +1160,7 @@ local function Attach(backing, unitToken)
     -- holder; a nested container inherits its secure AuraButton's restrictions.
     b.level = backing.health:GetFrameLevel()
     b.holder:SetFrameLevel(b.level)
-    if b.kit then
-        BindKit(b.kit, unitToken)
-    end
+    if b.kit then BindKit(b.kit, unitToken) end
     BindBundle(b, unitToken)
     ApplyThreat(b, backing)
 end
@@ -1283,25 +1171,17 @@ end
 local function Detach(backing)
     backing._dcThreatH, backing._dcThreatB, backing._dcThreatN = nil, nil, nil
     local b = bundles[backing]
-    if not b then
-        return
-    end
-    if b.holder then
-        b.holder:Hide()
-    end
+    if not b then return end
+    if b.holder then b.holder:Hide() end
     if b.nameKit then
         b.nameKit.attached = nil
         b.nameKit.root:Hide()
     end
-    if b.kit then
-        ParkKit(b.kit)
-    end
+    if b.kit then ParkKit(b.kit) end
 end
 
 local function EnsureWorker()
-    if job then
-        return job
-    end
+    if job then return job end
     job = CreateFrame("Frame")
     job:Hide()
     -- PLAYER_REGEN_ENABLED, held only while a combat-deferred refresh waits;
@@ -1325,17 +1205,13 @@ local function EnsureWorker()
             return
         end
         self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-        if pendingRefresh then
-            mod.DebuffColors_Refresh()
-        end
+        if pendingRefresh then mod.DebuffColors_Refresh() end
     end)
     return job
 end
 
 function mod.DebuffColors_Refresh()
-    if not settings and ColorVal("debuffColorsEnabled") ~= true then
-        return
-    end
+    if not settings and ColorVal("debuffColorsEnabled") ~= true then return end
     -- Profile/spec swaps can arrive in combat. Rebuilding secure decoration is
     -- deferred; the new configuration is applied on PLAYER_REGEN_ENABLED.
     if InCombatLockdown() then
@@ -1345,9 +1221,7 @@ function mod.DebuffColors_Refresh()
     end
     pendingRefresh = false
     local nextConfig = ReadConfig()
-    if settings and settings.fingerprint == nextConfig.fingerprint then
-        return
-    end
+    if settings and settings.fingerprint == nextConfig.fingerprint then return end
     settings = nextConfig
     -- Clear active AND currently pooled bundles so a later plate reuse cannot bind
     -- a previous profile's spells or colors.
@@ -1357,9 +1231,7 @@ function mod.DebuffColors_Refresh()
     end
     if settings.enabled and settings.any then
         settings.comboRuns = GroupComboRuns(settings.combos)
-        if settings.name then
-            settings.nameEntries = NameEntries(settings)
-        end
+        if settings.name then settings.nameEntries = NameEntries(settings) end
         local AK = CludesUI.AuraKit
         AK.styles[STYLE] = AK.styles[STYLE] or { noRegions = true, noTooltips = true }
         mod.DebuffColors_Attach, mod.DebuffColors_Detach = Attach, Detach
@@ -1377,9 +1249,7 @@ function mod.DebuffColors_Refresh()
         -- applied state the next refresh compares against.
         mod.DebuffColors_Attach, mod.DebuffColors_Detach = nil, nil
         mod.DebuffColors_Threat, mod.DebuffColors_NameChanged = nil, nil
-        if not settings.enabled then
-            settings = nil
-        end
+        if not settings.enabled then settings = nil end
         if job then
             job:UnregisterEvent("PLAYER_REGEN_ENABLED")
             job:SetScript("OnUpdate", nil)
@@ -1426,9 +1296,7 @@ end
 -- bundle, so while one is dragged the refresh waits for its release (the
 -- slider runs the deferred checks once).
 function mod.DebuffColors_RequestRefresh()
-    if not settings and ColorVal("debuffColorsEnabled") ~= true then
-        return
-    end
+    if not settings and ColorVal("debuffColorsEnabled") ~= true then return end
     if CludesUI._sliderDragging then
         local checks = CludesUI._deferredDriftChecks
         if not checks then

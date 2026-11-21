@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI Shared Ticker
 --
@@ -63,9 +61,7 @@ CludesUI.Tick = Tick
 -- their own main chunk and pass it in. The nil fallback creates a parent-stamped frame
 -- here: everything still works, but the work is billed to the parent.
 local function NewDriver(frame)
-    if not frame then
-        frame = CreateFrame("Frame")
-    end
+    if not frame then frame = CreateFrame("Frame") end
     local reg = {} -- dense array of keys
     local regFn = {} -- parallel array of tick functions
     local index = {} -- key -> position in reg
@@ -82,24 +78,16 @@ local function NewDriver(frame)
         while i <= count do
             local key = reg[i]
             local fn = regFn[i]
-            if fn then
-                fn(elapsed)
-            end
-            if reg[i] == key then
-                i = i + 1
-            end
+            if fn then fn(elapsed) end
+            if reg[i] == key then i = i + 1 end
         end
-        if count == 0 then
-            self:Hide()
-        end
+        if count == 0 then self:Hide() end
     end)
 
     -- Register (or replace) the tick function for a key. Arms the driver on
     -- the 0 -> 1 transition.
     function drv.Add(key, fn)
-        if not key or type(fn) ~= "function" then
-            return
-        end
+        if not key or type(fn) ~= "function" then return end
         local i = index[key]
         if i then
             regFn[i] = fn
@@ -109,18 +97,14 @@ local function NewDriver(frame)
         reg[count] = key
         regFn[count] = fn
         index[key] = count
-        if count == 1 then
-            frame:Show()
-        end
+        if count == 1 then frame:Show() end
     end
 
     -- Unregister a key. Swap-removes so churn stays O(1). Hides the driver
     -- once the last subscriber leaves, which is what makes idle free.
     function drv.Remove(key)
         local i = index[key]
-        if not i then
-            return
-        end
+        if not i then return end
         local lastKey = reg[count]
         reg[i] = lastKey
         regFn[i] = regFn[count]
@@ -129,19 +113,13 @@ local function NewDriver(frame)
         regFn[count] = nil
         count = count - 1
         index[key] = nil
-        if count == 0 then
-            frame:Hide()
-        end
+        if count == 0 then frame:Hide() end
     end
 
-    function drv.Has(key)
-        return index[key] ~= nil
-    end
+    function drv.Has(key) return index[key] ~= nil end
 
     -- Number of live subscribers. Zero means no per-frame code is running.
-    function drv.Count()
-        return count
-    end
+    function drv.Count() return count end
 
     return drv
 end
@@ -159,33 +137,23 @@ Tick.NewDriver = NewDriver
 -- indiscriminate. As with NewDriver, pass a frame created in the SUBSCRIBING
 -- addon's main chunk so the engine bills that addon.
 function Tick.NewAnimTicker(frame, fn, interval)
-    if not frame then
-        frame = CreateFrame("Frame")
-    end
+    if not frame then frame = CreateFrame("Frame") end
     local ag = frame:CreateAnimationGroup()
     ag:SetLooping("REPEAT")
     local anim = ag:CreateAnimation("Animation")
     anim:SetDuration(interval or 0.05)
     local tbl = {}
     ag:SetScript("OnLoop", function()
-        if not fn() then
-            ag:Stop()
-        end
+        if not fn() then ag:Stop() end
     end)
     function tbl.Start(newInterval)
         if not ag:IsPlaying() then
-            if newInterval then
-                anim:SetDuration(newInterval)
-            end
+            if newInterval then anim:SetDuration(newInterval) end
             ag:Play()
         end
     end
-    function tbl.Stop()
-        ag:Stop()
-    end
-    function tbl.IsPlaying()
-        return ag:IsPlaying()
-    end
+    function tbl.Stop() ag:Stop() end
+    function tbl.IsPlaying() return ag:IsPlaying() end
     return tbl
 end
 
@@ -199,14 +167,10 @@ end
 -- waits for the NEXT combat end. There is no cancel, and queues drain in no set order
 -- relative to each other, so a queued fn must re-read live state when it runs. Each
 -- child uses its own ns queue; CludesUI.CombatQueue is for the parent's files.
-local function QueueErrorHandler(err)
-    return geterrorhandler()(err)
-end
+local function QueueErrorHandler(err) return geterrorhandler()(err) end
 
 function CludesUI.NewCombatQueue(frame)
-    if not frame then
-        frame = CreateFrame("Frame")
-    end
+    if not frame then frame = CreateFrame("Frame") end
     local fns, index, count = {}, {}, 0
     local q = {}
 
@@ -220,9 +184,7 @@ function CludesUI.NewCombatQueue(frame)
     end)
 
     function q.Defer(key, fn)
-        if not key or type(fn) ~= "function" then
-            return
-        end
+        if not key or type(fn) ~= "function" then return end
         local i = index[key]
         if i then
             fns[i] = fn
@@ -231,14 +193,10 @@ function CludesUI.NewCombatQueue(frame)
         count = count + 1
         fns[count] = fn
         index[key] = count
-        if count == 1 then
-            frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        end
+        if count == 1 then frame:RegisterEvent("PLAYER_REGEN_ENABLED") end
     end
 
-    function q.Has(key)
-        return index[key] ~= nil
-    end
+    function q.Has(key) return index[key] ~= nil end
 
     return q
 end

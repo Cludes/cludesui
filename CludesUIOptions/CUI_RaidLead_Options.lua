@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidLead_Options.lua
 --  The Raid Lead page of the CludesUI settings panel: the setup manager's
@@ -8,19 +6,14 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIRaidLead"
 local mod = CludesUI._ModuleNS[ADDON_NAME]
-if not mod then
-    return
-end
+if not mod then return end
 
 local PAGE = "Setup"
 
 CludesUI.AtOptionsLogin(function()
-
     local function Run(cmd)
         return function()
-            if mod.Command then
-                mod.Command(cmd)
-            end
+            if mod.Command then mod.Command(cmd) end
         end
     end
 
@@ -84,21 +77,15 @@ CludesUI.AtOptionsLogin(function()
             inputWidth = 220,
             placeholder = "Name, Name-Realm, ...",
             tooltip = "Everyone to invite, separated by commas or spaces. Press Enter to save.",
-            getValue = function()
-                return inv.list
-            end,
-            setValue = function(val)
-                inv.list = val or ""
-            end,
+            getValue = function() return inv.list end,
+            setValue = function(val) inv.list = val or "" end,
         }, {
             type = "labeledButton",
             text = "Invite the Roster",
             buttonText = "Invite",
             width = 90,
             tooltip = "Invites everyone on the roster who is not in the group yet. A party becomes a raid when it needs to.",
-            onClick = function()
-                mod.InviteList()
-            end,
+            onClick = function() mod.InviteList() end,
         })
         cursorY = cursorY - height
 
@@ -108,20 +95,14 @@ CludesUI.AtOptionsLogin(function()
             inputWidth = 220,
             placeholder = "Name, Name, ...",
             tooltip = "Players to make raid assistants. Press Enter to save.",
-            getValue = function()
-                return inv.promote
-            end,
-            setValue = function(val)
-                inv.promote = val or ""
-            end,
+            getValue = function() return inv.promote end,
+            setValue = function(val) inv.promote = val or "" end,
         }, {
             type = "labeledButton",
             text = "Promote Assistants Now",
             buttonText = "Promote",
             width = 90,
-            onClick = function()
-                mod.PromoteList(false)
-            end,
+            onClick = function() mod.PromoteList(false) end,
         })
         cursorY = cursorY - height
 
@@ -129,12 +110,8 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Promote Assistants When They Join",
             tooltip = "While you lead the raid, everyone on the assistants list is promoted as they join.",
-            getValue = function()
-                return inv.autoPromote
-            end,
-            setValue = function(val)
-                inv.autoPromote = val and true or false
-            end,
+            getValue = function() return inv.autoPromote end,
+            setValue = function(val) inv.autoPromote = val and true or false end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
 
@@ -146,24 +123,16 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Gear and Cooldown Check",
             tooltip = "On every ready check, CludesUI users report their durability, item level, missing enchants and raid cooldowns that are not ready. The leader and assistants see a list.",
-            getValue = function()
-                return rc.enabled
-            end,
-            setValue = function(val)
-                rc.enabled = val and true or false
-            end,
+            getValue = function() return rc.enabled end,
+            setValue = function(val) rc.enabled = val and true or false end,
         }, {
             type = "slider",
             text = "Flag Durability Below",
             min = 0,
             max = 100,
             step = 5,
-            getValue = function()
-                return rc.minDurability
-            end,
-            setValue = function(val)
-                rc.minDurability = math.floor(val + 0.5)
-            end,
+            getValue = function() return rc.minDurability end,
+            setValue = function(val) rc.minDurability = math.floor(val + 0.5) end,
         })
         cursorY = cursorY - height
 
@@ -173,19 +142,13 @@ CludesUI.AtOptionsLogin(function()
             buttonText = "Show",
             width = 90,
             tooltip = "Opens the ready check list with just your own report.",
-            onClick = function()
-                mod.ShowReadyWindow()
-            end,
+            onClick = function() mod.ShowReadyWindow() end,
         }, {
             type = "toggle",
             text = "Consumables Check",
             tooltip = "Adds missing flask, food, augment rune and healthstone to each report. Food counts any buff with the Well Fed icon. If the game is hiding buffs from addons at that moment, the report says so.",
-            getValue = function()
-                return rc.consumables
-            end,
-            setValue = function(val)
-                rc.consumables = val and true or false
-            end,
+            getValue = function() return rc.consumables end,
+            setValue = function(val) rc.consumables = val and true or false end,
         })
         cursorY = cursorY - height
 
@@ -196,21 +159,13 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Break Timers",
             tooltip = "When the leader or an assistant starts a break, a bar counts it down for every CludesUI user in the group. Move it in Layout Mode.",
-            getValue = function()
-                return bt.enabled
-            end,
-            setValue = function(val)
-                bt.enabled = val and true or false
-            end,
+            getValue = function() return bt.enabled end,
+            setValue = function(val) bt.enabled = val and true or false end,
         }, {
             type = "toggle",
             text = "Sound When It Ends",
-            getValue = function()
-                return bt.sound
-            end,
-            setValue = function(val)
-                bt.sound = val and true or false
-            end,
+            getValue = function() return bt.sound end,
+            setValue = function(val) bt.sound = val and true or false end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -219,17 +174,13 @@ CludesUI.AtOptionsLogin(function()
             buttonText = "5 min",
             width = 90,
             tooltip = "Starts a 5 minute break for the group. /raidlead break 10 starts one of any length.",
-            onClick = function()
-                mod.StartBreak(5)
-            end,
+            onClick = function() mod.StartBreak(5) end,
         }, {
             type = "labeledButton",
             text = "End the Break",
             buttonText = "End",
             width = 90,
-            onClick = function()
-                mod.StartBreak(0)
-            end,
+            onClick = function() mod.StartBreak(0) end,
         })
         cursorY = cursorY - height
 
@@ -240,24 +191,16 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Kick Rotation",
             tooltip = "Shows whose interrupt is next. The order comes from an intstart / intend block in the boss's note (one line of names per rotation), or the Kick Order below for other fights. Each cast of the tracked unit moves the turn on.",
-            getValue = function()
-                return ks.enabled
-            end,
-            setValue = function(val)
-                ks.enabled = val and true or false
-            end,
+            getValue = function() return ks.enabled end,
+            setValue = function(val) ks.enabled = val and true or false end,
         }, {
             type = "segmented",
             text = "Track",
             values = { focus = "Focus", boss1 = "Boss 1" },
             order = { "focus", "boss1" },
             tooltip = "The unit whose casts count. Put the mob you kick on focus.",
-            getValue = function()
-                return ks.unit
-            end,
-            setValue = function(val)
-                ks.unit = val
-            end,
+            getValue = function() return ks.unit end,
+            setValue = function(val) ks.unit = val end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -267,32 +210,22 @@ CludesUI.AtOptionsLogin(function()
             inputStyle = "popup",
             placeholder = "Alice Bob Carol",
             tooltip = "Names in kick order, separated by spaces, for fights without a note block. Nicknames work.",
-            getValue = function()
-                return ks.order
-            end,
-            setValue = function(textValue)
-                ks.order = (textValue or ""):match("^%s*(.-)%s*$")
-            end,
+            getValue = function() return ks.order end,
+            setValue = function(textValue) ks.order = (textValue or ""):match("^%s*(.-)%s*$") end,
         }, {
             type = "labeledButton",
             text = "Preview",
             buttonText = "Show",
             width = 90,
             tooltip = "Shows the box for a few seconds so you can place it in Layout Mode.",
-            onClick = function()
-                mod.PreviewKicks()
-            end,
+            onClick = function() mod.PreviewKicks() end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Sound on Your Turn",
-            getValue = function()
-                return ks.sound
-            end,
-            setValue = function(val)
-                ks.sound = val and true or false
-            end,
+            getValue = function() return ks.sound end,
+            setValue = function(val) ks.sound = val and true or false end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
 
@@ -305,9 +238,7 @@ CludesUI.AtOptionsLogin(function()
             buttonText = "Check",
             width = 90,
             tooltip = "Asks everyone in the group which CludesUI version they run. The answer prints in chat after a few seconds.",
-            onClick = function()
-                mod.VersionCheck()
-            end,
+            onClick = function() mod.VersionCheck() end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
 
@@ -339,9 +270,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Immunities on You",
             tooltip = "Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you. Works in combat. Move it in Layout Mode.",
-            getValue = function()
-                return im.enabled
-            end,
+            getValue = function() return im.enabled end,
             setValue = function(val)
                 im.enabled = val and true or false
                 mod.RefreshImmunities()
@@ -352,9 +281,7 @@ CludesUI.AtOptionsLogin(function()
             min = 20,
             max = 64,
             step = 1,
-            getValue = function()
-                return im.size
-            end,
+            getValue = function() return im.size end,
             setValue = function(val)
                 im.size = math.floor(val + 0.5)
                 mod.RefreshImmunities()
@@ -373,9 +300,7 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Spell ID",
             inputWidth = 110,
             tooltip = "The spell ID of another immunity buff to show.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 local ident = tonumber(textValue)
                 if ident and ident > 0 then
@@ -409,9 +334,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Aura Glows",
             tooltip = "While an aura you add here is on you, its icon shows with a glowing border and its time. Works in boss fights. Changes apply out of combat. Move it in Layout Mode.",
-            getValue = function()
-                return ag.enabled
-            end,
+            getValue = function() return ag.enabled end,
             setValue = function(val)
                 ag.enabled = val and true or false
                 mod.RebuildAuraGlows()
@@ -422,9 +345,7 @@ CludesUI.AtOptionsLogin(function()
             min = 20,
             max = 80,
             step = 1,
-            getValue = function()
-                return ag.size
-            end,
+            getValue = function() return ag.size end,
             setValue = function(val)
                 ag.size = math.floor(val + 0.5)
                 mod.RebuildAuraGlows()
@@ -438,9 +359,7 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Spell IDs",
             inputWidth = 110,
             tooltip = "The spell ID of a buff or debuff to glow for. Several, separated by commas or spaces, work too.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 for _, ident in ipairs(mod.ParseSpellIDs(textValue)) do
                     table.insert(ag.spells, ident)
@@ -472,43 +391,27 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Feast and Cauldron Alerts",
             tooltip = "A chat line naming who dropped a feast, cauldron, Soulwell or repair bot. Only drops by CludesUI users are seen: the game shows addons no one else's casts.",
-            getValue = function()
-                return hs.drops
-            end,
-            setValue = function(val)
-                HSet("drops", val)
-            end,
+            getValue = function() return hs.drops end,
+            setValue = function(val) HSet("drops", val) end,
         }, {
             type = "toggle",
             text = "Alert Sound",
-            getValue = function()
-                return hs.dropSound
-            end,
-            setValue = function(val)
-                HSet("dropSound", val)
-            end,
+            getValue = function() return hs.dropSound end,
+            setValue = function(val) HSet("dropSound", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Gateway Usable",
             tooltip = "Gateway usable shows while you are close enough to a warlock's Demonic Gateway to click it. Move it in Layout Mode.",
-            getValue = function()
-                return hs.gateway
-            end,
-            setValue = function(val)
-                HSet("gateway", val)
-            end,
+            getValue = function() return hs.gateway end,
+            setValue = function(val) HSet("gateway", val) end,
         }, {
             type = "toggle",
             text = "Stats Panel",
             tooltip = "Your crit, haste, mastery and versatility on screen, kept up to date through procs. Move it in Layout Mode.",
-            getValue = function()
-                return hs.stats
-            end,
-            setValue = function(val)
-                HSet("stats", val)
-            end,
+            getValue = function() return hs.stats end,
+            setValue = function(val) HSet("stats", val) end,
         })
         cursorY = cursorY - height
 
@@ -518,12 +421,8 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Boss Pace",
             tooltip = "A bar with the boss's health and a marker for where it should be to kill it in your target time: green while ahead, red while behind. The pace is a straight line, so phases and intermissions throw it off. Move it in Layout Mode.",
-            getValue = function()
-                return pace.enabled
-            end,
-            setValue = function(val)
-                pace.enabled = val and true or false
-            end,
+            getValue = function() return pace.enabled end,
+            setValue = function(val) pace.enabled = val and true or false end,
         }, {
             type = "input",
             text = "Add a Boss",
@@ -531,9 +430,7 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Boss name",
             inputWidth = 160,
             tooltip = "The boss's name as the game shows it at the pull. Set its target kill time below.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
                 if textValue ~= "" then
@@ -550,14 +447,10 @@ CludesUI.AtOptionsLogin(function()
                 inputWidth = 80,
                 placeholder = "5:00",
                 tooltip = "Minutes and seconds, like 5:30. Press Enter to save.",
-                getValue = function()
-                    return mod.FormatDuration(t.seconds)
-                end,
+                getValue = function() return mod.FormatDuration(t.seconds) end,
                 setValue = function(textValue)
                     local s = mod.ParseDuration(textValue)
-                    if s and s > 0 then
-                        t.seconds = s
-                    end
+                    if s and s > 0 then t.seconds = s end
                 end,
             }, {
                 type = "labeledButton",
@@ -565,9 +458,7 @@ CludesUI.AtOptionsLogin(function()
                 buttonText = "Test",
                 width = 70,
                 tooltip = "Shows the bar for this boss now, with your target as the clock. With no boss targeted the bar stays empty.",
-                onClick = function()
-                    mod.StartPace(t.boss, t.seconds)
-                end,
+                onClick = function() mod.StartPace(t.boss, t.seconds) end,
             })
             cursorY = cursorY - height
             _, height = W:DualRow(hostFrame, cursorY, {
@@ -591,44 +482,28 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Upcoming Ability Bars",
                 tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Layout Mode.",
-                getValue = function()
-                    return tl.bars
-                end,
-                setValue = function(val)
-                    tl.bars = val and true or false
-                end,
+                getValue = function() return tl.bars end,
+                setValue = function(val) tl.bars = val and true or false end,
             }, {
                 type = "toggle",
                 text = "Encounter Alerts",
                 tooltip = "Timed calls on the reminder display a few seconds before each mechanic (Soak, Spread, Defensives), only the ones for your role, restarted at each phase change.",
-                getValue = function()
-                    return tl.alerts
-                end,
-                setValue = function(val)
-                    tl.alerts = val and true or false
-                end,
+                getValue = function() return tl.alerts end,
+                setValue = function(val) tl.alerts = val and true or false end,
             })
             cursorY = cursorY - height
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only My Role",
                 tooltip = "Bars and the timeline window show only the mechanics for your role: raid damage and soaks for healers, tankbusters and frontals for tanks.",
-                getValue = function()
-                    return tl.mine
-                end,
-                setValue = function(val)
-                    tl.mine = val and true or false
-                end,
+                getValue = function() return tl.mine end,
+                setValue = function(val) tl.mine = val and true or false end,
             }, {
                 type = "toggle",
                 text = "Speak Alerts",
                 tooltip = "Text to speech says each alert as it shows.",
-                getValue = function()
-                    return tl.tts
-                end,
-                setValue = function(val)
-                    tl.tts = val and true or false
-                end,
+                getValue = function() return tl.tts end,
+                setValue = function(val) tl.tts = val and true or false end,
             })
             cursorY = cursorY - height
             _, height = W:DualRow(hostFrame, cursorY, {
@@ -638,12 +513,8 @@ CludesUI.AtOptionsLogin(function()
                 max = 12,
                 step = 1,
                 isPercent = false,
-                getValue = function()
-                    return tl.count
-                end,
-                setValue = function(val)
-                    tl.count = math.floor(val + 0.5)
-                end,
+                getValue = function() return tl.count end,
+                setValue = function(val) tl.count = math.floor(val + 0.5) end,
             }, {
                 type = "slider",
                 text = "Look Ahead (seconds)",
@@ -651,12 +522,8 @@ CludesUI.AtOptionsLogin(function()
                 max = 60,
                 step = 5,
                 isPercent = false,
-                getValue = function()
-                    return tl.ahead
-                end,
-                setValue = function(val)
-                    tl.ahead = math.floor(val + 0.5)
-                end,
+                getValue = function() return tl.ahead end,
+                setValue = function(val) tl.ahead = math.floor(val + 0.5) end,
             })
             cursorY = cursorY - height
             _, height = W:DualRow(hostFrame, cursorY, {
@@ -665,19 +532,13 @@ CludesUI.AtOptionsLogin(function()
                 buttonText = "Open",
                 width = 90,
                 tooltip = "Each boss's abilities and when they come, Heroic or Mythic, with Test to run one as if pulled. Also /cbt.",
-                onClick = function()
-                    mod.OpenTimeline()
-                end,
+                onClick = function() mod.OpenTimeline() end,
             }, {
                 type = "toggle",
                 text = "Say Phase Changes",
                 tooltip = "A chat line when a phase change is read, to check the timings against the fight.",
-                getValue = function()
-                    return tl.phaseChat
-                end,
-                setValue = function(val)
-                    tl.phaseChat = val and true or false
-                end,
+                getValue = function() return tl.phaseChat end,
+                setValue = function(val) tl.phaseChat = val and true or false end,
             })
             cursorY = cursorY - height
         end
@@ -700,9 +561,7 @@ CludesUI.AtOptionsLogin(function()
             inputWidth = 160,
             placeholder = "Nickname",
             tooltip = "Sent to your guild when you log in and to your group when it changes. Other CludesUI users see it on their raid and unit frames. Press Enter to save.",
-            getValue = function()
-                return mod.MyNickname()
-            end,
+            getValue = function() return mod.MyNickname() end,
             setValue = function(textValue)
                 mod.SetMyNickname(textValue)
                 Refresh()
@@ -711,12 +570,8 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show CludesUI Nicknames",
             tooltip = "Raid frames show nicknames in place of character names. Unit frames also need their own Show Nicknames setting on.",
-            getValue = function()
-                return not CludesUIDB.cuiNicknamesOff
-            end,
-            setValue = function(val)
-                CludesUIDB.cuiNicknamesOff = not val or nil
-            end,
+            getValue = function() return not CludesUIDB.cuiNicknamesOff end,
+            setValue = function(val) CludesUIDB.cuiNicknamesOff = not val or nil end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -750,9 +605,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI:RefreshPage(true)
     end
     mod.OnSharedChanged = function()
-        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
-            Redraw()
-        end
+        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then Redraw() end
     end
 
     local function Summary(textValue)
@@ -782,22 +635,14 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Encounter Reminders",
             tooltip = "When a boss is pulled, its note's lines for you appear before their time with a countdown. Move them in Layout Mode.",
-            getValue = function()
-                return r.enabled
-            end,
-            setValue = function(val)
-                r.enabled = val and true or false
-            end,
+            getValue = function() return r.enabled end,
+            setValue = function(val) r.enabled = val and true or false end,
         }, {
             type = "toggle",
             text = "Accept Reminders From the Raid Leader",
             tooltip = "Notes the leader or an assistant sends replace your own for that boss, for this session.",
-            getValue = function()
-                return r.acceptShared
-            end,
-            setValue = function(val)
-                r.acceptShared = val and true or false
-            end,
+            getValue = function() return r.acceptShared end,
+            setValue = function(val) r.acceptShared = val and true or false end,
         })
         cursorY = cursorY - height
 
@@ -807,21 +652,15 @@ CludesUI.AtOptionsLogin(function()
             min = 1,
             max = 10,
             step = 1,
-            getValue = function()
-                return r.lead
-            end,
-            setValue = function(val)
-                r.lead = math.floor(val + 0.5)
-            end,
+            getValue = function() return r.lead end,
+            setValue = function(val) r.lead = math.floor(val + 0.5) end,
         }, {
             type = "slider",
             text = "Text Size",
             min = 14,
             max = 48,
             step = 1,
-            getValue = function()
-                return r.fontSize
-            end,
+            getValue = function() return r.fontSize end,
             setValue = function(val)
                 r.fontSize = math.floor(val + 0.5)
                 mod.ApplyReminderLook()
@@ -838,25 +677,17 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Speak Reminders",
             tooltip = "Reads each reminder aloud with the game's text to speech voice.",
-            getValue = function()
-                return r.tts
-            end,
-            setValue = function(val)
-                r.tts = val and true or false
-            end,
+            getValue = function() return r.tts end,
+            setValue = function(val) r.tts = val and true or false end,
         }, {
             type = "dropdown",
             text = "Reminder Sound",
             values = soundValues,
             order = soundOrder,
-            getValue = function()
-                return r.sound or ""
-            end,
+            getValue = function() return r.sound or "" end,
             setValue = function(val)
                 r.sound = val
-                if val ~= "" then
-                    mod.PreviewSound(val)
-                end
+                if val ~= "" then mod.PreviewSound(val) end
             end,
         })
         cursorY = cursorY - height
@@ -871,14 +702,10 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Boss name",
             inputWidth = 160,
             tooltip = 'The boss\'s name as the game shows it at the pull. Use "any" for a note that runs on every boss.',
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 textValue = textValue and textValue:match("^%s*(.-)%s*$") or ""
-                if textValue == "" then
-                    return
-                end
+                if textValue == "" then return end
                 table.insert(r.notes, { boss = textValue, text = "" })
                 Redraw()
             end,
@@ -889,7 +716,8 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         for idx, note in ipairs(r.notes) do
-            _, height = W:SectionHeader(hostFrame, note.boss:upper() .. "  -  " .. Summary(note.text), cursorY)
+            _, height =
+                W:SectionHeader(hostFrame, note.boss:upper() .. "  -  " .. Summary(note.text), cursorY)
             cursorY = cursorY - height
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
@@ -928,9 +756,7 @@ CludesUI.AtOptionsLogin(function()
                 buttonText = "Send",
                 width = 90,
                 tooltip = "Sends this note to everyone in the group who runs CludesUI. Leader or assistant only.",
-                onClick = function()
-                    mod.ShareNote(note.boss, note.text)
-                end,
+                onClick = function() mod.ShareNote(note.boss, note.text) end,
             }, {
                 type = "labeledButton",
                 text = "Remove This Note",
@@ -995,9 +821,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function SpellName(ident)
         local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
-        if type(name) == "string" and name ~= "" then
-            return name
-        end
+        if type(name) == "string" and name ~= "" then return name end
         return "Spell " .. ident
     end
 
@@ -1019,14 +843,10 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Spell ID",
             inputWidth = 110,
             tooltip = "The spell ID of a buff or debuff that lands on you. It plays a siren when applied; change that below. The game plays these itself, so they work in boss fights.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 local ident = tonumber(textValue)
-                if not ident or ident <= 0 then
-                    return
-                end
+                if not ident or ident <= 0 then return end
                 entries[#entries + 1] =
                     { id = math.floor(ident), when = "added", sound = "WarningSiren.ogg", on = true }
                 Rebuild()
@@ -1042,9 +862,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Play a Sound for " .. name,
                 tooltip = "Spell ID " .. entry.id,
-                getValue = function()
-                    return entry.on ~= false
-                end,
+                getValue = function() return entry.on ~= false end,
                 setValue = function(val)
                     entry.on = val and true or false
                     mod.RebuildAuraSounds()
@@ -1054,9 +872,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Play When",
                 values = whenValues,
                 order = whenOrder,
-                getValue = function()
-                    return entry.when or "added"
-                end,
+                getValue = function() return entry.when or "added" end,
                 setValue = function(val)
                     entry.when = val
                     mod.RebuildAuraSounds()
@@ -1068,9 +884,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Sound",
                 values = soundValues,
                 order = soundOrder,
-                getValue = function()
-                    return entry.sound or "WarningSiren.ogg"
-                end,
+                getValue = function() return entry.sound or "WarningSiren.ogg" end,
                 setValue = function(val)
                     entry.sound = val
                     mod.PreviewSound(val)
@@ -1097,21 +911,11 @@ CludesUI.AtOptionsLogin(function()
         description = "Tools for raid leaders: sort or split the raid, and sounds for auras on you.",
         pages = { PAGE, PAGE_REMINDERS, PAGE_TRACKING, PAGE_SOUNDS, PAGE_NICKNAMES },
         buildPage = function(page, hostFrame, yOffset)
-            if page == PAGE then
-                return BuildPage(page, hostFrame, yOffset)
-            end
-            if page == PAGE_REMINDERS then
-                return BuildRemindersPage(page, hostFrame, yOffset)
-            end
-            if page == PAGE_TRACKING then
-                return BuildTrackingPage(page, hostFrame, yOffset)
-            end
-            if page == PAGE_NICKNAMES then
-                return BuildNicknamesPage(page, hostFrame, yOffset)
-            end
-            if page == PAGE_SOUNDS then
-                return BuildSoundsPage(page, hostFrame, yOffset)
-            end
+            if page == PAGE then return BuildPage(page, hostFrame, yOffset) end
+            if page == PAGE_REMINDERS then return BuildRemindersPage(page, hostFrame, yOffset) end
+            if page == PAGE_TRACKING then return BuildTrackingPage(page, hostFrame, yOffset) end
+            if page == PAGE_NICKNAMES then return BuildNicknamesPage(page, hostFrame, yOffset) end
+            if page == PAGE_SOUNDS then return BuildSoundsPage(page, hostFrame, yOffset) end
         end,
     })
 end)

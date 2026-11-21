@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Interrupts.lua -- Raid Lead: kick rotation.
 --
@@ -28,24 +26,14 @@ function mod.KickSettings()
     local profile = mod.RaidLeadDB()
     profile.kicks = profile.kicks or {}
     local cfg = profile.kicks
-    if cfg.enabled == nil then
-        cfg.enabled = true
-    end
-    if cfg.unit == nil then
-        cfg.unit = "focus"
-    end
-    if cfg.sound == nil then
-        cfg.sound = true
-    end
-    if cfg.order == nil then
-        cfg.order = ""
-    end
+    if cfg.enabled == nil then cfg.enabled = true end
+    if cfg.unit == nil then cfg.unit = "focus" end
+    if cfg.sound == nil then cfg.sound = true end
+    if cfg.order == nil then cfg.order = "" end
     return cfg
 end
 
-local function Lower(s)
-    return (s or ""):lower()
-end
+local function Lower(s) return (s or ""):lower() end
 
 --- The rotation lines between intstart and intend in a note.
 function mod.ParseKickBlock(textValue)
@@ -62,9 +50,7 @@ function mod.ParseKickBlock(textValue)
             for n in line:gmatch("%S+") do
                 nameList[#nameList + 1] = n
             end
-            if #nameList > 0 then
-                lines[#lines + 1] = nameList
-            end
+            if #nameList > 0 then lines[#lines + 1] = nameList end
         end
     end
     return lines
@@ -91,9 +77,7 @@ function mod.MyKickRotation(noteText)
     end
     for _, nameList in ipairs(lines) do
         for idx, n in ipairs(nameList) do
-            if IsMe(n) then
-                return nameList, idx
-            end
+            if IsMe(n) then return nameList, idx end
         end
     end
     return nil
@@ -105,14 +89,10 @@ end
 local box, num, labelText
 local rot -- { names, mine, count, casting }
 
-local function Font()
-    return CludesUI.GetFontPath(nil)
-end
+local function Font() return CludesUI.GetFontPath(nil) end
 
 local function Build()
-    if box then
-        return
-    end
+    if box then return end
     box = CreateFrame("Frame", "CludesUIRaidLeadKicks", UIParent)
     box:SetSize(W, H)
     CludesUI.Kit.Panel(box)
@@ -127,9 +107,7 @@ local function Build()
 end
 
 function mod.ApplyKickPosition()
-    if not box or InCombatLockdown() then
-        return
-    end
+    if not box or InCombatLockdown() then return end
     local p = mod.KickSettings().pos
     box:ClearAllPoints()
     if p then
@@ -140,9 +118,7 @@ function mod.ApplyKickPosition()
 end
 
 local function Paint()
-    if not (box and rot) then
-        return
-    end
+    if not (box and rot) then return end
     local n = #rot.names
     local who = rot.names[rot.count]
     local nextUp = rot.count % n + 1
@@ -173,22 +149,16 @@ local function Stop()
     eventFrame:UnregisterEvent("UNIT_SPELLCAST_STOP")
     eventFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
     eventFrame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-    if box then
-        box:Hide()
-    end
+    if box then box:Hide() end
 end
 mod.StopKicks = Stop
 
 --- Starts the rotation from a note (nil: the typed order).
 function mod.StartKicks(noteText)
     local cfg = mod.KickSettings()
-    if not cfg.enabled then
-        return
-    end
+    if not cfg.enabled then return end
     local nameList, mine = mod.MyKickRotation(noteText)
-    if not nameList then
-        return Stop()
-    end
+    if not nameList then return Stop() end
     Build()
     rot = { names = nameList, mine = mine, count = 1, casting = false }
     for _, event in ipairs({
@@ -204,12 +174,8 @@ function mod.StartKicks(noteText)
 end
 
 eventFrame:SetScript("OnEvent", function(_, evt)
-    if evt == "ENCOUNTER_START" or evt == "PLAYER_REGEN_DISABLED" then
-        return
-    end
-    if not rot then
-        return
-    end
+    if evt == "ENCOUNTER_START" or evt == "PLAYER_REGEN_DISABLED" then return end
+    if not rot then return end
     if evt == "UNIT_SPELLCAST_START" or evt == "UNIT_SPELLCAST_CHANNEL_START" then
         rot.casting = true
         if rot.count == rot.mine and mod.KickSettings().sound then
@@ -232,9 +198,7 @@ boss:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered, inEncounter
 boss:SetScript("OnEvent", function(_, evt, _, encounterName)
     if evt == "PLAYER_ENTERING_WORLD" then
-        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
-            return
-        end
+        if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
         Build()
         registered = true
         CludesUI:RegisterUnlockElements({
@@ -245,24 +209,14 @@ boss:SetScript("OnEvent", function(_, evt, _, encounterName)
                 order = 664,
                 noAnchorTarget = true,
                 noResize = true,
-                isHidden = function()
-                    return not mod.KickSettings().enabled
-                end,
-                getFrame = function()
-                    return box
-                end,
-                getSize = function()
-                    return W, H
-                end,
+                isHidden = function() return not mod.KickSettings().enabled end,
+                getFrame = function() return box end,
+                getSize = function() return W, H end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     mod.KickSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 end,
-                loadPos = function()
-                    return mod.KickSettings().pos
-                end,
-                clearPos = function()
-                    mod.KickSettings().pos = nil
-                end,
+                loadPos = function() return mod.KickSettings().pos end,
+                clearPos = function() mod.KickSettings().pos = nil end,
                 applyPos = mod.ApplyKickPosition,
             }),
         }, "CludesUIRaidLead")
@@ -278,13 +232,9 @@ boss:SetScript("OnEvent", function(_, evt, _, encounterName)
         Stop()
     elseif evt == "PLAYER_REGEN_DISABLED" then
         -- Trash and keys: the typed order runs for any fight in a group.
-        if not inEncounter and IsInGroup() and mod.KickSettings().order ~= "" then
-            mod.StartKicks(nil)
-        end
+        if not inEncounter and IsInGroup() and mod.KickSettings().order ~= "" then mod.StartKicks(nil) end
     elseif evt == "PLAYER_REGEN_ENABLED" then
-        if not inEncounter then
-            Stop()
-        end
+        if not inEncounter then Stop() end
     end
 end)
 
@@ -294,8 +244,6 @@ function mod.PreviewKicks()
     rot = { names = { UnitName("player"), "Alice", "Bob" }, mine = 1, count = 1, casting = false }
     Paint()
     C_Timer.After(8, function()
-        if rot and rot.names[2] == "Alice" then
-            Stop()
-        end
+        if rot and rot.names[2] == "Alice" then Stop() end
     end)
 end

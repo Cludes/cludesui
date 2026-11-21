@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Range.lua
 --
@@ -47,13 +45,9 @@ local _range = {
 -- (index + (page - 1) * 12, ns._eabBuildPageChildSnippet).
 local function GetButtonActionSlot(button)
     local details = buttonToBar[button]
-    if not details then
-        return nil
-    end
+    if not details then return nil end
     local off = BAR_SLOT_OFFSETS[details.barKey]
-    if not off then
-        return nil
-    end
+    if not off then return nil end
     if details.barKey == "MainBar" then
         -- actionpage is set by the _onstate-page handler in the restricted env
         -- and reflects vehicle/override/form pages, unlike
@@ -65,9 +59,7 @@ local function GetButtonActionSlot(button)
         local widget = barFrames[details.barKey]
         if widget and widget._eabPagingConds then
             local page = tonumber(widget:GetAttribute("actionpage"))
-            if page then
-                off = (page - 1) * NUM_ACTIONBAR_BUTTONS
-            end
+            if page then off = (page - 1) * NUM_ACTIONBAR_BUTTONS end
         end
     end
     return off + details.index
@@ -76,9 +68,7 @@ end
 -- Apply or remove the range tint on a single button
 local function ApplyRangeTint(button, outOfRange, barSettings)
     local ico = button.icon or button.Icon
-    if not ico then
-        return
-    end
+    if not ico then return end
     local rfd = EFD(button)
     if outOfRange and barSettings.outOfRangeColoring then
         local color = barSettings.outOfRangeColor or { r = 0.7, g = 0.2, b = 0.2 }
@@ -108,9 +98,7 @@ end
 -- IS what was acquired, immune to page drift). On ns, not a local.
 mod._eabReleaseRangeSlots = function(barId)
     local held = _range.barSlots[barId]
-    if not held then
-        return
-    end
+    if not held then return end
     _range.barSlots[barId] = nil
     for slot in pairs(held) do
         local num = _range.slots[slot]
@@ -135,12 +123,8 @@ end
 mod._eabRangeSweepBar = function(barId)
     local buttons = barButtons[barId]
     local cfg = ABAR.db.profile.bars[barId]
-    if not buttons or not cfg or not cfg.outOfRangeColoring then
-        return
-    end
-    if mod._eabBarDormant[barId] then
-        return
-    end
+    if not buttons or not cfg or not cfg.outOfRangeColoring then return end
+    if mod._eabBarDormant[barId] then return end
     for _, button in ipairs(buttons) do
         local slot = GetButtonActionSlot(button)
         if slot and HasAction(slot) then
@@ -158,17 +142,11 @@ end
 -- Enable range checking for all active button slots on a bar
 local function EnableRangeCheckForBar(barId)
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     local cfg = ABAR.db.profile.bars[barId]
-    if not cfg or not cfg.outOfRangeColoring then
-        return
-    end
+    if not cfg or not cfg.outOfRangeColoring then return end
     -- Dormant bars acquire nothing; the show edge re-runs this.
-    if mod._eabBarDormant[barId] then
-        return
-    end
+    if mod._eabBarDormant[barId] then return end
     -- Re-acquire from scratch: releasing the old snapshot first makes this
     -- idempotent under page flips (debounced SLOT_CHANGED re-enable and the
     -- PAGE_CHANGED pass both land here).
@@ -213,13 +191,9 @@ local function FlushPageEdges()
 end
 -- On ns, not a local: the hook lives in CUI_ActionBars_Bars.lua.
 mod._eabRangePageEdge = function(barId)
-    if not _range.anyEnabled then
-        return
-    end
+    if not _range.anyEnabled then return end
     local cfg = ABAR.db.profile.bars[barId]
-    if not (cfg and cfg.outOfRangeColoring) then
-        return
-    end
+    if not (cfg and cfg.outOfRangeColoring) then return end
     _range.pageBars[barId] = true
     if not _range.pagePending then
         _range.pagePending = true
@@ -231,9 +205,7 @@ end
 local function DisableRangeCheckForBar(barId)
     mod._eabReleaseRangeSlots(barId)
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     for _, button in ipairs(buttons) do
         local rfd = EFD(button)
         if rfd.rangeTinted then
@@ -242,9 +214,7 @@ local function DisableRangeCheckForBar(barId)
                 button:UpdateUsable()
             else
                 local ico = button.icon or button.Icon
-                if ico then
-                    ico:SetVertexColor(1, 1, 1)
-                end
+                if ico then ico:SetVertexColor(1, 1, 1) end
             end
         end
     end
@@ -276,9 +246,7 @@ function ABAR:ApplyRangeColoring()
         _range.eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         _range.eventFrame:SetScript("OnEvent", function(_, evt, slot, inRange, checksRange)
             if evt == "ACTION_RANGE_CHECK_UPDATE" then
-                if not _range.slots[slot] then
-                    return
-                end
+                if not _range.slots[slot] then return end
                 local wasOut = _range.outOfRange[slot]
                 local isOut = checksRange and not inRange
                 local changed = false
@@ -289,9 +257,7 @@ function ABAR:ApplyRangeColoring()
                     _range.outOfRange[slot] = nil
                     changed = true
                 end
-                if not changed then
-                    return
-                end
+                if not changed then return end
                 local barList = ABAR.db.profile.bars
                 -- Slot->buttons map fast path (dispatcher-maintained) avoids
                 -- scanning all bars x all buttons per flip. Belt: re-verify
@@ -321,13 +287,16 @@ function ABAR:ApplyRangeColoring()
                     -- the slot's NEXT transition, accumulating into
                     -- permanently stale bars, so fail OPEN with the full scan
                     -- and retire the map for the next SLOT_CHANGED to rebuild.
-                    if mapClean then
-                        mod._slotBtnMapDirty = true
-                    end
+                    if mapClean then mod._slotBtnMapDirty = true end
                     for _, details in ipairs(BAR_CONFIG) do
                         local btns = barButtons[details.key]
                         local cfg = barList[details.key]
-                        if btns and cfg and cfg.outOfRangeColoring and not mod._eabBarDormant[details.key] then
+                        if
+                            btns
+                            and cfg
+                            and cfg.outOfRangeColoring
+                            and not mod._eabBarDormant[details.key]
+                        then
                             for _, button in ipairs(btns) do
                                 if GetButtonActionSlot(button) == slot then
                                     ApplyRangeTint(button, isOut, cfg)
@@ -355,15 +324,11 @@ function ABAR:ApplyRangeColoring()
                                 if GetButtonActionSlot(btn2) == slot then
                                     local bInfo2 = buttonToBar[btn2]
                                     local s2 = bInfo2 and bars2[bInfo2.barKey]
-                                    if s2 then
-                                        ApplyRangeTint(btn2, false, s2)
-                                    end
+                                    if s2 then ApplyRangeTint(btn2, false, s2) end
                                 end
                             end
                         else
-                            if mapClean2 then
-                                mod._slotBtnMapDirty = true
-                            end
+                            if mapClean2 then mod._slotBtnMapDirty = true end
                             for _, info2 in ipairs(BAR_CONFIG) do
                                 local btns2 = barButtons[info2.key]
                                 local s2 = bars2[info2.key]
@@ -390,9 +355,7 @@ function ABAR:ApplyRangeColoring()
                         _range.slotPending = false
                         for _, details in ipairs(BAR_CONFIG) do
                             local cfg = ABAR.db.profile.bars[details.key]
-                            if cfg and cfg.outOfRangeColoring then
-                                EnableRangeCheckForBar(details.key)
-                            end
+                            if cfg and cfg.outOfRangeColoring then EnableRangeCheckForBar(details.key) end
                         end
                     end)
                 end
@@ -407,17 +370,13 @@ function ABAR:ApplyRangeColoring()
                 -- Blizzard resets icon vertex colors on usability changes;
                 -- re-apply range tint on any out-of-range buttons.
                 -- Bail fast when nothing is out of range (common case).
-                if not next(_range.outOfRange) then
-                    return
-                end
+                if not next(_range.outOfRange) then return end
                 for _, details in ipairs(BAR_CONFIG) do
                     local btns = barButtons[details.key]
                     local cfg = ABAR.db.profile.bars[details.key]
                     if btns and cfg and cfg.outOfRangeColoring and not mod._eabBarDormant[details.key] then
                         for _, button in ipairs(btns) do
-                            if EFD(button).rangeTinted then
-                                ApplyRangeTint(button, true, cfg)
-                            end
+                            if EFD(button).rangeTinted then ApplyRangeTint(button, true, cfg) end
                         end
                     end
                 end
@@ -425,9 +384,7 @@ function ABAR:ApplyRangeColoring()
                 -- Form shifts can fire ACTION_RANGE_CHECK_UPDATE with stale data
                 -- before Blizzard settles, so defer a manual IsActionInRange
                 -- poll. anyEnabled gate: feature fully off = no closure, no poll.
-                if not _range.anyEnabled then
-                    return
-                end
+                if not _range.anyEnabled then return end
                 C_Timer_After(0, function()
                     local barList = ABAR.db.profile.bars
                     for _, details in ipairs(BAR_CONFIG) do
@@ -443,9 +400,7 @@ function ABAR:ApplyRangeColoring()
                                         _range.outOfRange[sl] = isOut or nil
                                         ApplyRangeTint(button, isOut, cfg)
                                     else
-                                        if sl then
-                                            _range.outOfRange[sl] = nil
-                                        end
+                                        if sl then _range.outOfRange[sl] = nil end
                                         ApplyRangeTint(button, false, cfg)
                                     end
                                 end
@@ -484,16 +439,12 @@ function ABAR:ApplyRangeColoring()
                 if not EFD(button).rangeHooked and button.UpdateUsable then
                     EFD(button).rangeHooked = true
                     hooksecurefunc(button, "UpdateUsable", function(self)
-                        if not EFD(self).rangeTinted then
-                            return
-                        end
+                        if not EFD(self).rangeTinted then return end
                         local slot = GetButtonActionSlot(self)
                         if slot and _range.outOfRange[slot] then
                             local bInfo = buttonToBar[self]
                             local cfg = bInfo and ABAR.db.profile.bars[bInfo.barKey]
-                            if cfg and cfg.outOfRangeColoring then
-                                ApplyRangeTint(self, true, cfg)
-                            end
+                            if cfg and cfg.outOfRangeColoring then ApplyRangeTint(self, true, cfg) end
                         end
                     end)
                 end

@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_BiS.lua  (WoW Forever only)
 --  Best in Slot: your own BiS list, one item per gear slot, shared by every
@@ -27,15 +23,9 @@ local _, module = ...
 local F = module.Feature("bis", { enabled = true, tooltip = true, alert = true })
 local Get = F.Get
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0BiS:|r " .. textValue)
-end
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0BiS:|r " .. textValue) end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local SLOTS = { -- inventory slot, name, in window order
     { 1, "Head" },
@@ -102,21 +92,15 @@ end
 local Refresh -- the window's repaint, set below
 
 local function IDFrom(val)
-    if type(val) == "number" then
-        return val
-    end
-    if type(val) ~= "string" then
-        return nil
-    end
+    if type(val) == "number" then return val end
+    if type(val) ~= "string" then return nil end
     return tonumber(val:match("item:(%d+)") or val:match("^%s*(%d+)%s*$"))
 end
 
 --- The slot this item has on the list, if any.
 function module.BisSlotOf(itemId)
     for slot, ident in pairs(List()) do
-        if ident == itemId then
-            return slot
-        end
+        if ident == itemId then return slot end
     end
 end
 
@@ -127,23 +111,17 @@ end
 --- Adds an item to its slot (or takes it off when it is already listed).
 function module.ToggleBis(itemLink)
     local ident = IDFrom(itemLink)
-    if not ident then
-        return Say("that is not an item.")
-    end
+    if not ident then return Say("that is not an item.") end
     local slot = module.BisSlotOf(ident)
     if slot then
         List()[slot] = nil
         Say(("took %s off your list."):format(select(2, C_Item.GetItemInfo(ident)) or ("item " .. ident)))
-        if Refresh then
-            Refresh()
-        end
+        if Refresh then Refresh() end
         return
     end
     local _, _, _, equipLoc = C_Item.GetItemInfoInstant(ident)
     local slots = BY_EQUIP[equipLoc or ""]
-    if not slots then
-        return Say("that item is not gear.")
-    end
+    if not slots then return Say("that item is not gear.") end
     local target = slots[1]
     for _, slot in ipairs(slots) do
         if not List()[slot] then
@@ -158,30 +136,22 @@ function module.ToggleBis(itemLink)
             SLOT_NAME[target]
         )
     )
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end
 
 function module.ExportBis()
     local parts = {}
     for _, slot in ipairs(SLOTS) do
         local ident = List()[slot[1]]
-        if ident then
-            parts[#parts + 1] = slot[1] .. "=" .. ident
-        end
+        if ident then parts[#parts + 1] = slot[1] .. "=" .. ident end
     end
     return "CUIBIS1:" .. CLASS .. ":" .. table.concat(parts, ",")
 end
 
 function module.ImportBis(textValue)
     local class, body = (textValue or ""):match("^%s*CUIBIS1:(%u+):([%d=,]*)%s*$")
-    if not class then
-        return Say("that is not a CludesUI BiS line.")
-    end
-    if class ~= CLASS then
-        return Say("that list is for another class.")
-    end
+    if not class then return Say("that is not a CludesUI BiS line.") end
+    if class ~= CLASS then return Say("that list is for another class.") end
     local entries, num = {}, 0
     for slot, ident in body:gmatch("(%d+)=(%d+)") do
         slot, ident = tonumber(slot), tonumber(ident)
@@ -192,9 +162,7 @@ function module.ImportBis(textValue)
     end
     F.Cfg().lists[CLASS] = entries
     Say(("imported %d pick%s."):format(num, num == 1 and "" or "s"))
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end
 
 -------------------------------------------------------------------------------
@@ -202,12 +170,8 @@ end
 -------------------------------------------------------------------------------
 if HandleModifiedItemClick then
     hooksecurefunc("HandleModifiedItemClick", function(itemLink)
-        if not (Get("enabled") and IsAltKeyDown() and IsShiftKeyDown()) then
-            return
-        end
-        if type(itemLink) ~= "string" or Secret(itemLink) or not itemLink:find("item:") then
-            return
-        end
+        if not (Get("enabled") and IsAltKeyDown() and IsShiftKeyDown()) then return end
+        if type(itemLink) ~= "string" or Secret(itemLink) or not itemLink:find("item:") then return end
         module.ToggleBis(itemLink)
     end)
 end
@@ -217,13 +181,9 @@ end
 -------------------------------------------------------------------------------
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, payload)
-        if not (Get("enabled") and Get("tooltip")) or not payload then
-            return
-        end
+        if not (Get("enabled") and Get("tooltip")) or not payload then return end
         local ident = payload.id
-        if type(ident) ~= "number" or Secret(ident) then
-            return
-        end
+        if type(ident) ~= "number" or Secret(ident) then return end
         local slot = module.BisSlotOf(ident)
         if slot then
             tooltip:AddLine(
@@ -242,20 +202,12 @@ end
 -------------------------------------------------------------------------------
 local said = {}
 local function Announce(itemLink)
-    if not (Get("enabled") and Get("alert")) then
-        return
-    end
+    if not (Get("enabled") and Get("alert")) then return end
     local ident = IDFrom(itemLink)
-    if not ident or module.Owned(ident) then
-        return
-    end
+    if not ident or module.Owned(ident) then return end
     local slot = module.BisSlotOf(ident)
-    if not slot then
-        return
-    end
-    if said[ident] and GetTime() - said[ident] < 30 then
-        return
-    end
+    if not slot then return end
+    if said[ident] and GetTime() - said[ident] < 30 then return end
     said[ident] = GetTime()
     local textValue = ("BiS dropped: %s (%s)"):format(itemLink, SLOT_NAME[slot])
     if RaidNotice_AddMessage and RaidWarningFrame then
@@ -278,22 +230,16 @@ eventFrame:SetScript("OnEvent", function(_, evt, a1)
     if evt == "START_LOOT_ROLL" then
         -- Not seen in Forever's own UI code: used only where the client has it.
         local itemLink = GetLootRollItemLink and GetLootRollItemLink(a1)
-        if itemLink and not Secret(itemLink) then
-            Announce(itemLink)
-        end
+        if itemLink and not Secret(itemLink) then Announce(itemLink) end
     elseif evt == "LOOT_OPENED" then
         for index = 1, GetNumLootItems() do
             local itemLink = GetLootSlotLink(index)
-            if itemLink and not Secret(itemLink) then
-                Announce(itemLink)
-            end
+            if itemLink and not Secret(itemLink) then Announce(itemLink) end
         end
     elseif evt == "CHAT_MSG_LOOT" then
         if type(a1) == "string" and not Secret(a1) then
             local itemLink = a1:match("|c%x+|Hitem:.-|h.-|h|r")
-            if itemLink then
-                Announce(itemLink)
-            end
+            if itemLink then Announce(itemLink) end
         end
     elseif Refresh then
         Refresh()
@@ -307,9 +253,7 @@ local ROW_H = 22
 local window, rowList = nil, {}
 
 local function Build()
-    if window then
-        return
-    end
+    if window then return end
     window = CreateFrame("Frame", "CludesUIBiSWindow", UIParent)
     window:SetSize(420, 74 + #SLOTS * ROW_H)
     window:SetPoint("CENTER", 0, 40)
@@ -323,9 +267,7 @@ local function Build()
     window.title = window:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(window.title, 15, "essentials")
     window.title:SetPoint("TOPLEFT", 10, -8)
-    local close = CludesUI.Kit.Glyph(window, "x", function()
-        window:Hide()
-    end, nil, "essentials")
+    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window.hint = window:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(window.hint, 11, "essentials")
@@ -366,23 +308,17 @@ local function Build()
                 Refresh()
             elseif ident and IsModifiedClick("CHATLINK") then
                 local itemLink = select(2, C_Item.GetItemInfo(ident))
-                if itemLink then
-                    ChatEdit_InsertLink(itemLink)
-                end
+                if itemLink then ChatEdit_InsertLink(itemLink) end
             end
         end)
         region:SetScript("OnEnter", function(self)
             local ident = List()[self.slot]
-            if not ident then
-                return
-            end
+            if not ident then return end
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetItemByID(ident)
             GameTooltip:Show()
         end)
-        region:SetScript("OnLeave", function()
-            GameTooltip:Hide()
-        end)
+        region:SetScript("OnLeave", function() GameTooltip:Hide() end)
         rowList[index] = region
     end
     window:Hide()
@@ -390,9 +326,7 @@ local function Build()
 end
 
 Refresh = function()
-    if not (window and window:IsShown()) then
-        return
-    end
+    if not (window and window:IsShown()) then return end
     local have, sum = 0, 0
     for _, region in ipairs(rowList) do
         local ident = List()[region.slot]
@@ -402,9 +336,7 @@ Refresh = function()
             region.icon:SetTexture(C_Item.GetItemIconByID(ident))
             region.icon:Show()
             local mine = module.Owned(ident)
-            if mine then
-                have = have + 1
-            end
+            if mine then have = have + 1 end
             local gain = not mine and module.ItemGain and module.ItemGain(ident, itemLink)
             region.text:SetText(
                 (itemLink or name or ("item " .. ident))
@@ -431,9 +363,7 @@ end
 local nameEv = CreateFrame("Frame")
 nameEv:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 nameEv:SetScript("OnEvent", function()
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end)
 
 CludesUI._BiS = {
@@ -448,9 +378,7 @@ CludesUI._BiS = {
 SLASH_CUIBIS1 = "/cbis"
 SlashCmdList.CUIBIS = function(message)
     message = (message or ""):match("^%s*(.-)%s*$")
-    if message ~= "" then
-        return module.ToggleBis(message)
-    end
+    if message ~= "" then return module.ToggleBis(message) end
     if window and window:IsShown() then
         window:Hide()
     else

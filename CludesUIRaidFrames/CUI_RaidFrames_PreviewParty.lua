@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewParty.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs = ipairs
@@ -35,17 +31,11 @@ local previewPowerValues, HidePreview = Inner.previewPowerValues, Inner.HidePrev
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local saved
-RF.dbSetters[#RF.dbSetters + 1] = function(val)
-    saved = val
-end
+RF.dbSetters[#RF.dbSetters + 1] = function(val) saved = val end
 local containerFrame
-RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+RF.containerFrameSetters[#RF.containerFrameSetters + 1] = function(val) containerFrame = val end
 local previewActive = false
-Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val)
-    previewActive = val
-end
+Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val) previewActive = val end
 
 -------------------------------------------------------------------------------
 --  Party preview (5-player, 1 group)
@@ -73,9 +63,7 @@ local function BuildPartyPreviewRoles()
 
     -- Effective role: the player's spec wins over a stale assigned role
     local playerRole = CludesUI.UnitEffectiveRole("player")
-    if playerRole ~= "TANK" and playerRole ~= "HEALER" then
-        playerRole = "DAMAGER"
-    end
+    if playerRole ~= "TANK" and playerRole ~= "HEALER" then playerRole = "DAMAGER" end
 
     -- Slot 1 = player
     mod._partyPvRoles[1] = playerRole
@@ -109,16 +97,10 @@ local function BuildPartyPreviewRoles()
     -- Sort by role order + self-first (reads party-specific settings)
     local sortMode = saved.profile.partySortMode or saved.profile.sortMode or "INDEX"
     local showSelfFirst = saved.profile.partyShowSelfFirst
-    if showSelfFirst == nil then
-        showSelfFirst = saved.profile.showSelfFirst
-    end
+    if showSelfFirst == nil then showSelfFirst = saved.profile.showSelfFirst end
     local selfLast = saved.profile.partySelfLast
-    if selfLast == nil then
-        selfLast = saved.profile.showSelfLast
-    end
-    if selfLast then
-        showSelfFirst = true
-    end -- self ordering active either way
+    if selfLast == nil then selfLast = saved.profile.showSelfLast end
+    if selfLast then showSelfFirst = true end -- self ordering active either way
     local prioritizeClass = saved.profile.partyPrioritizeClass
     if sortMode == "ROLE" or showSelfFirst or prioritizeClass then
         local set = {}
@@ -153,15 +135,11 @@ local function BuildPartyPreviewRoles()
             table.sort(set, function(lhs, rhs)
                 if sortByRole then
                     local ra, rb = rolePri[lhs.role] or 99, rolePri[rhs.role] or 99
-                    if ra ~= rb then
-                        return ra < rb
-                    end
+                    if ra ~= rb then return ra < rb end
                 end
                 if classPri then
                     local ca, callback = classPri[lhs.classToken] or 99, classPri[rhs.classToken] or 99
-                    if ca ~= callback then
-                        return ca < callback
-                    end
+                    if ca ~= callback then return ca < callback end
                 end
                 return lhs.idx < rhs.idx
             end)
@@ -187,9 +165,7 @@ local function BuildPartyPreviewRoles()
         for u = 1, 5 do
             mod._partyPvRoles[u] = set[u].role
             mod._partyPvCT[u] = set[u].classToken
-            if set[u].isPlayer then
-                mod._partyPvRoles._playerSlot = u
-            end
+            if set[u].isPlayer then mod._partyPvRoles._playerSlot = u end
         end
     end
 
@@ -198,9 +174,7 @@ local function BuildPartyPreviewRoles()
         mod._partyPvRoles._randomized = true
         local tanks = {}
         for i = 1, 5 do
-            if mod._partyPvRoles[i] == "TANK" then
-                tanks[#tanks + 1] = i
-            end
+            if mod._partyPvRoles[i] == "TANK" then tanks[#tanks + 1] = i end
         end
         mod._partyPvRoles._threatIndex = tanks[math.random(#tanks)] or 1
         -- Marker on the player (slot 1) so each of the four status indicators
@@ -230,9 +204,7 @@ local function BuildPartyPreviewRoles()
 end
 
 local function InitPartyPreviewHealthValues()
-    if mod._partyPvInit then
-        return
-    end
+    if mod._partyPvInit then return end
     mod._partyPvInit = true
     for i = 1, 5 do
         mod._partyPvHV[i] = 40 + math.random(60)
@@ -245,9 +217,7 @@ local function InitPartyPreviewHealthValues()
     mod.partyPvAbsorbValues[slot1] = 5 + math.random(25)
     if math.random() > 0.5 then
         local slot2 = math.random(5)
-        if mod.partyPvAbsorbValues[slot2] == 0 then
-            mod.partyPvAbsorbValues[slot2] = 3 + math.random(15)
-        end
+        if mod.partyPvAbsorbValues[slot2] == 0 then mod.partyPvAbsorbValues[slot2] = 3 + math.random(15) end
     end
     -- 1 heal absorb
     local haSlot = math.random(2, 5)
@@ -273,15 +243,11 @@ local function InitPartyPreviewHealthValues()
 end
 
 local function GetOrCreatePartyPvFrame(index)
-    if mod._partyPvFrames[index] then
-        return mod._partyPvFrames[index]
-    end
+    if mod._partyPvFrames[index] then return mod._partyPvFrames[index] end
     local frame = CreatePreviewFrame(index, true)
     frame._isParty = true
     -- Reparent from raid preview container to party overlay container
-    if mod._partyOC then
-        frame:SetParent(mod._partyOC)
-    end
+    if mod._partyOC then frame:SetParent(mod._partyOC) end
     mod._partyPvFrames[index] = frame
     return frame
 end
@@ -375,9 +341,7 @@ end
 mod._partyOC = nil
 
 local function GetOrCreatePartyOverlayContainer()
-    if mod._partyOC then
-        return mod._partyOC
-    end
+    if mod._partyOC then return mod._partyOC end
 
     local oc = CreateFrame("Frame", nil, UIParent)
     oc:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -393,17 +357,11 @@ local function GetOrCreatePartyOverlayContainer()
 end
 
 local function RefreshPartyPreview()
-    if not mod._partyPvActive then
-        return
-    end
-    if mod._RebuildPvOverlay then
-        mod._RebuildPvOverlay()
-    end
+    if not mod._partyPvActive then return end
+    if mod._RebuildPvOverlay then mod._RebuildPvOverlay() end
     -- Recompute party indicator/aura scale before applying preview data so the
     -- party preview reflects Auto Resize live (preview reads _scaledPartyProxy).
-    if mod._UpdatePartyIndicatorScale then
-        mod._UpdatePartyIndicatorScale()
-    end
+    if mod._UpdatePartyIndicatorScale then mod._UpdatePartyIndicatorScale() end
     local cfg = mod._pvOverlayProxy or saved.profile
     local pw, ph, pcs = mod.RF_PartyDims(cfg)
     local wid, hgt, spacing = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
@@ -440,9 +398,7 @@ local function RefreshPartyPreview()
     -- side; pets beside the party frames clear them); the overlay grows to hold them.
     local ptSpec = mod.PT_PreviewSpec(cfg, wid, hgt)
     local petSpec = isOverlay and mod.PF_PreviewSpec(true, cfg, wid, hgt, spacing, totalW, totalH, ptSpec)
-    if ptSpec and petSpec and petSpec.owner then
-        ptSpec = mod.PT_PreviewSpec(cfg, wid, hgt, petSpec)
-    end
+    if ptSpec and petSpec and petSpec.owner then ptSpec = mod.PT_PreviewSpec(cfg, wid, hgt, petSpec) end
     local padL, padT, padR, padB = 0, 0, 0, 0
     if petSpec and petSpec.owner then
         padL, padT, padR, padB = petSpec.padL, petSpec.padT, petSpec.padR, petSpec.padB
@@ -466,9 +422,7 @@ local function RefreshPartyPreview()
         parentFrame = mod._partyOC
     else
         parentFrame = UIParent
-        if mod._partyOC then
-            mod._partyOC:Hide()
-        end
+        if mod._partyOC then mod._partyOC:Hide() end
     end
 
     local slot = 0 -- running layout position; skips the hidden player frame
@@ -479,9 +433,7 @@ local function RefreshPartyPreview()
             frame:Hide()
         else
             lastF = frame
-            if frame:GetParent() ~= parentFrame then
-                frame:SetParent(parentFrame)
-            end
+            if frame:GetParent() ~= parentFrame then frame:SetParent(parentFrame) end
             frame:SetFrameStrata(isOverlay and "FULLSCREEN_DIALOG" or "HIGH")
             frame:ClearAllPoints()
             if isVert then
@@ -508,9 +460,7 @@ local function RefreshPartyPreview()
                 end
             else
                 local xOff = slot * (wid + pitch)
-                if unitGrowth == "LEFT" then
-                    xOff = -xOff
-                end
+                if unitGrowth == "LEFT" then xOff = -xOff end
                 if unitGrowth == "RIGHT" then
                     frame:SetPoint(
                         "TOPLEFT",
@@ -633,9 +583,7 @@ local function RefreshPartyPreview()
             -- container. The preview always shows a full party, so shown is 5, or 4
             -- with Hide Self (the real layout subtracts the hidden self the same way).
             local centerShift = 0
-            if cfg.partyFlipGrowth == "centered" then
-                centerShift = (5 - shownCount) / 2
-            end
+            if cfg.partyFlipGrowth == "centered" then centerShift = (5 - shownCount) / 2 end
             local cShiftX = PixelSnap(stepX * centerShift)
             local cShiftY = PixelSnap(stepY * centerShift)
             local position = 0 -- running position; skips the hidden player frame
@@ -667,36 +615,26 @@ local function ShowPartyPreview()
     -- See ShowPreview: never engage the preview (which reparents the real
     -- containers under a hidden frame) unless the options window is open and we
     -- are out of combat. Guards against deferred post-close ShowPartyPreview.
-    if not mod._testMode and not (CludesUI:IsShown()) then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not mod._testMode and not (CludesUI:IsShown()) then return end
+    if InCombatLockdown() then return end
     -- Kill any active size preview
     if mod._sizePreviewTier then
         mod._sizePreviewTier = nil
-        if mod._HideSizePreview then
-            mod._HideSizePreview()
-        end
+        if mod._HideSizePreview then mod._HideSizePreview() end
     end
     if mod._partyPvActive then
         RefreshPartyPreview()
         return
     end
     local mode = saved.profile.previewMode or "overlay"
-    if mode == "none" then
-        return
-    end
+    if mode == "none" then return end
 
     mod._partyPvActive = true
     -- Hide the real containers via alpha (combat-reversible); see ShowPreview.
     -- Never reparent secure-header containers (the restore would be blocked in
     -- combat and strand the frames for the whole pull).
     mod._SetRealFramesPreviewHidden(true)
-    if mode == "overlay" then
-        GetOrCreatePartyOverlayContainer()
-    end
+    if mode == "overlay" then GetOrCreatePartyOverlayContainer() end
     InitPartyPreviewHealthValues()
     BuildPartyPreviewRoles()
     RefreshPartyPreview()
@@ -707,48 +645,34 @@ end
 -- next frame -- restoring here would flash the real frames for one frame before
 -- the deferred ShowPreview re-hides them. Panel close restores explicitly.
 local function HidePartyPreview(skipRestore)
-    if not mod._partyPvActive then
-        return
-    end
+    if not mod._partyPvActive then return end
     mod.RF_PreviewCompact(nil, nil, true)
     -- Stop the aura ticker while still party-active so it clears the party aura
     -- icons (PvFrames resolves to the party set here), then deactivate.
     StopPvAuraTicker()
     mod._partyPvActive = false
     for i = 1, 5 do
-        if mod._partyPvFrames[i] then
-            mod._partyPvFrames[i]:Hide()
-        end
+        if mod._partyPvFrames[i] then mod._partyPvFrames[i]:Hide() end
     end
-    if mod._partyOC then
-        mod._partyOC:Hide()
-    end
+    if mod._partyOC then mod._partyOC:Hide() end
     mod.PF_HidePreview()
     mod.PT_HidePreview()
-    if skipRestore then
-        return
-    end
+    if skipRestore then return end
     -- The containers were only alpha-hidden (never reparented or moved); restore
     -- is a combat-legal SetAlpha(1) plus dropping the mouse blockers. See
     -- HidePreview. No combat gate, no SetParent/SetPoint, no ns._restorePending.
     mod._SetRealFramesPreviewHidden(false)
     if not InCombatLockdown() then
         LayoutGroups()
-        if mod._ApplyTierOffset then
-            mod._ApplyTierOffset()
-        end
+        if mod._ApplyTierOffset then mod._ApplyTierOffset() end
     end
     UpdateVisibility()
-    if mod._UpdatePartyVisibility then
-        mod._UpdatePartyVisibility()
-    end
+    if mod._UpdatePartyVisibility then mod._UpdatePartyVisibility() end
 end
 
 mod.ShowPartyPreview = ShowPartyPreview
 mod.HidePartyPreview = HidePartyPreview
-mod.partyPvActive = function()
-    return mod._partyPvActive
-end
+mod.partyPvActive = function() return mod._partyPvActive end
 
 -- Guaranteed restore invariant. Ensures both real containers are parented to UIParent
 -- and their visibility recomputed whenever no preview should be active (e.g. the
@@ -757,19 +681,13 @@ end
 -- post-close deferred ShowPreview. Defers to PLAYER_REGEN_ENABLED in combat
 -- (reparenting secure-header containers is a protected action).
 function mod.EnsureRealFramesRestored()
-    if not containerFrame then
-        return
-    end
+    if not containerFrame then return end
     -- Tear down any genuinely-active preview FIRST. HidePreview/HidePartyPreview
     -- now restore container alpha and drop the mouse blockers via combat-legal
     -- ops only (SetAlpha on our containers; Hide/SetParent on our own non-secure
     -- preview frames), so they never defer anything.
-    if previewActive then
-        HidePreview()
-    end
-    if mod._partyPvActive then
-        HidePartyPreview()
-    end
+    if previewActive then HidePreview() end
+    if mod._partyPvActive then HidePartyPreview() end
     -- Hard guarantee: force both real containers fully opaque and drop any mouse
     -- blockers, unconditionally. SetAlpha is not protected, so this is valid in
     -- combat and heals the "left alpha-hidden with the flags already false" cases
@@ -779,22 +697,16 @@ function mod.EnsureRealFramesRestored()
     -- The layout/visibility recompute below SetPoints/Shows secure headers, so
     -- out of combat only. The alpha restore above already makes the frames
     -- visible during combat.
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     UpdateVisibility()
-    if mod._UpdatePartyVisibility then
-        mod._UpdatePartyVisibility()
-    end
+    if mod._UpdatePartyVisibility then mod._UpdatePartyVisibility() end
 end
 
 -- Fade out overlay previews when entering unlock mode
 do
     local FADE_DUR = 0.1
     local function FadeOutFrame(widget)
-        if not widget or not widget:IsShown() then
-            return
-        end
+        if not widget or not widget:IsShown() then return end
         local startAlpha = widget:GetAlpha()
         local elapsed = 0
         widget:SetScript("OnUpdate", function(self, dt)

@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ClassicSpellbook.lua  (WoW Forever only)
 --  The vanilla spellbook, drawn with the client's own art: school tabs down
@@ -47,15 +43,9 @@ local pushed -- the snippet text the snippets last ran
 -- A search matches a spell's name, rank text or description.
 local function Matches(slotBtn)
     local spellInfo = C_SpellBook.GetSpellBookItemInfo(slotBtn, BANK)
-    if not spellInfo then
-        return false
-    end
-    if spellInfo.name:lower():find(searchText, 1, true) then
-        return true
-    end
-    if spellInfo.subName and spellInfo.subName:lower():find(searchText, 1, true) then
-        return true
-    end
+    if not spellInfo then return false end
+    if spellInfo.name:lower():find(searchText, 1, true) then return true end
+    if spellInfo.subName and spellInfo.subName:lower():find(searchText, 1, true) then return true end
     local label = C_SpellBook.GetSpellBookItemDescription(slotBtn, BANK)
     return label ~= nil and label:lower():find(searchText, 1, true) ~= nil
 end
@@ -79,24 +69,18 @@ local function ReadLines()
                     and (passives or not C_SpellBook.IsSpellBookItemPassive(slotBtn, BANK))
                 then
                     slotList[#slotList + 1] = slotBtn
-                    if searchText and Matches(slotBtn) then
-                        found.slots[#found.slots + 1] = slotBtn
-                    end
+                    if searchText and Matches(slotBtn) then found.slots[#found.slots + 1] = slotBtn end
                 end
             end
             lineList[#lineList + 1] = { name = spellInfo.name, icon = spellInfo.iconID, slots = slotList }
         end
     end
-    if line > #lineList then
-        line = 1
-    end
+    if line > #lineList then line = 1 end
 end
 
 -- The line on show: the search results while searching.
 local function Shown()
-    if searchText then
-        return found, 0
-    end
+    if searchText then return found, 0 end
     return lineList[line], line
 end
 
@@ -109,22 +93,16 @@ end
 --  Spell buttons
 -------------------------------------------------------------------------------
 local function SpellEnter(b)
-    if not b.slot then
-        return
-    end
+    if not b.slot then return end
     GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
     GameTooltip:SetSpellBookItem(b.slot, BANK)
     GameTooltip:Show()
 end
 
-local function SpellLeave()
-    GameTooltip:Hide()
-end
+local function SpellLeave() GameTooltip:Hide() end
 
 local function SpellDrag(b)
-    if b.spellID and not b.passive and not InCombatLockdown() then
-        C_Spell.PickupSpell(b.spellID)
-    end
+    if b.spellID and not b.passive and not InCombatLockdown() then C_Spell.PickupSpell(b.spellID) end
 end
 
 local function NewSpellButton(i)
@@ -152,7 +130,8 @@ local function NewSpellButton(i)
     widget.name:SetMaxLines(3)
     widget.name:SetPoint("LEFT", widget, "RIGHT", 5, 3)
 
-    widget.sub = widget:CreateFontString(nil, "BORDER", SubSpellFont and "SubSpellFont" or "GameFontHighlightSmall")
+    widget.sub =
+        widget:CreateFontString(nil, "BORDER", SubSpellFont and "SubSpellFont" or "GameFontHighlightSmall")
     widget.sub:SetJustifyH("LEFT")
     widget.sub:SetPoint("TOPLEFT", widget.name, "BOTTOMLEFT", 0, -2)
 
@@ -189,12 +168,8 @@ local function FillSpellButton(b, slotBtn)
     b.name:SetText(spellInfo.name)
     b.name:Show()
     local sub = spellInfo.subName
-    if not sub or sub == "" then
-        sub = C_Spell.GetSpellSubtext(spellID)
-    end
-    if (not sub or sub == "") and spellInfo.isPassive then
-        sub = SPELL_PASSIVE
-    end
+    if not sub or sub == "" then sub = C_Spell.GetSpellSubtext(spellID) end
+    if (not sub or sub == "") and spellInfo.isPassive then sub = SPELL_PASSIVE end
     b.sub:SetText(sub or "")
     b.sub:Show()
     local color = spellInfo.isPassive and PASSIVE_SPELL_FONT_COLOR or NORMAL_FONT_COLOR
@@ -249,18 +224,12 @@ local AIM = [[
     BOOK:CallMethod("Painted", LINE, page)
 ]]
 
-local function TabEnter(tabBtn)
-    CludesUI.ShowWidgetTooltip(tabBtn, tabBtn.tooltip, { anchor = "right" })
-end
+local function TabEnter(tabBtn) CludesUI.ShowWidgetTooltip(tabBtn, tabBtn.tooltip, { anchor = "right" }) end
 
-local function TabLeave()
-    CludesUI.HideWidgetTooltip()
-end
+local function TabLeave() CludesUI.HideWidgetTooltip() end
 
 local function TurnSound(b)
-    if not b.idle then
-        PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN)
-    end
+    if not b.idle then PlaySound(SOUNDKIT.IG_ABILITY_PAGE_TURN) end
 end
 
 -- Out of combat only, like every frame made here. A click shows its line.
@@ -348,7 +317,11 @@ end
 
 -- One line of the LINES table, as snippet text.
 local function LineText(result, spellKey, slotList)
-    result[#result + 1] = ("local t = newtable() LINES[%d] = t COUNTS[%d] = %d"):format(spellKey, spellKey, #slotList)
+    result[#result + 1] = ("local t = newtable() LINES[%d] = t COUNTS[%d] = %d"):format(
+        spellKey,
+        spellKey,
+        #slotList
+    )
     for i, slotBtn in ipairs(slotList) do
         local spellInfo = C_SpellBook.GetSpellBookItemInfo(slotBtn, BANK)
         local id = spellInfo and not spellInfo.isPassive and spellInfo.spellID or 0
@@ -376,13 +349,9 @@ local function Push()
     for i, data in ipairs(lineList) do
         LineText(result, i, data.slots)
     end
-    if searchText then
-        LineText(result, 0, found.slots)
-    end
+    if searchText then LineText(result, 0, found.slots) end
     local reset = newSearch
-    if reset then
-        result[#result + 1] = "PAGES[0] = 1"
-    end
+    if reset then result[#result + 1] = "PAGES[0] = 1" end
     newSearch = nil
     result[#result + 1] = ("LINE = %d"):format(searchText and 0 or line)
     result[#result + 1] = AIM
@@ -399,9 +368,7 @@ end
 
 -- Rereads the spellbook and repaints; waits out combat.
 local function Refresh()
-    if not bookFrame then
-        return
-    end
+    if not bookFrame then return end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer(QUEUE_KEY, Refresh)
         return
@@ -415,9 +382,7 @@ end
 -- closes (the book is protected, so it is the one that never moves).
 local function PlaceTalents()
     local talents = CludesUI._ClassicTalents
-    if talents then
-        talents.Place()
-    end
+    if talents then talents.Place() end
 end
 
 -- Cooldowns are followed only while the book is open.
@@ -437,27 +402,21 @@ end
 
 -- A search or an option changed in combat applies when the fight ends.
 local function Changed()
-    if InCombatLockdown() then
-        UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1, 0.1, 0.1)
-    end
+    if InCombatLockdown() then UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1, 0.1, 0.1) end
     Refresh()
 end
 
 local function SearchChanged(box)
     local label = strtrim(box:GetText()):lower()
     label = label ~= "" and label or nil
-    if label == searchText then
-        return
-    end
+    if label == searchText then return end
     searchText, newSearch = label, true
     Changed()
 end
 
 -- A spellbook option of the game's: a checkbox over its console variable.
 local function Option(root, label, cvar)
-    root:CreateCheckbox(label, function()
-        return GetCVarBool(cvar)
-    end, function()
+    root:CreateCheckbox(label, function() return GetCVarBool(cvar) end, function()
         SetCVar(cvar, not GetCVarBool(cvar))
         Changed()
     end)
@@ -489,9 +448,7 @@ local microButtons
 local route
 
 local function Build()
-    if bookFrame then
-        return
-    end
+    if bookFrame then return end
     bookFrame = CreateFrame("Frame", "CUI_ClassicSpellbook", UIParent, "SecureHandlerShowHideTemplate")
     bookFrame:Hide()
     bookFrame:SetSize(384, 512)
@@ -538,9 +495,7 @@ local function Build()
     escape:SetAttribute("_onclick", [[ self:GetFrameRef("book"):Hide() ]])
     escape:SetScript("PostClick", function()
         local talents = CludesUI._ClassicTalents
-        if talents then
-            talents.Close()
-        end
+        if talents then talents.Close() end
     end)
 
     local closeBtn = CreateFrame("Button", nil, bookFrame, "SecureHandlerClickTemplate")
@@ -576,16 +531,12 @@ local function Build()
     ]])
     bookFrame.prev = NewArrow("Prev", 50, -1)
     bookFrame.next = NewArrow("Next", 314, 1)
-    if CludesUI._ShifterAdopt then
-        CludesUI._ShifterAdopt("CUI_ClassicSpellbook")
-    end
+    if CludesUI._ShifterAdopt then CludesUI._ShifterAdopt("CUI_ClassicSpellbook") end
 end
 
 -- The click layer's click: out of combat, where an addon may show the book.
 local function MicroToggle()
-    if not bookFrame or InCombatLockdown() then
-        return
-    end
+    if not bookFrame or InCombatLockdown() then return end
     if bookFrame:IsShown() then
         bookFrame:Hide()
     else
@@ -594,21 +545,15 @@ local function MicroToggle()
 end
 
 local function MicroClicksBack()
-    if microButtons then
-        microButtons:SetMouseClickEnabled(true)
-    end
+    if microButtons then microButtons:SetMouseClickEnabled(true) end
 end
 
 -- The route clicks the book's toggle while the feature is on, else the game's
 -- micro button. Out of combat only (Apply defers itself).
 local function AimRoute(on)
-    if not route then
-        return
-    end
+    if not route then return end
     local target = on and toggle or _G.SpellbookMicroButton
-    if route:GetAttribute("clickbutton") ~= target then
-        route:SetAttribute("clickbutton", target)
-    end
+    if route:GetAttribute("clickbutton") ~= target then route:SetAttribute("clickbutton", target) end
 end
 
 if not InCombatLockdown() then
@@ -628,13 +573,9 @@ local function Bind()
         CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Bind", Bind)
         return
     end
-    if not toggle then
-        return
-    end
+    if not toggle then return end
     local keys = F.Enabled() and table.concat({ GetBindingKey("TOGGLESPELLBOOK") }, " ") or ""
-    if keys == boundKeys then
-        return
-    end
+    if keys == boundKeys then return end
     boundKeys = keys
     ClearOverrideBindings(toggle)
     for spellKey in keys:gmatch("%S+") do
@@ -651,9 +592,7 @@ local function OnEvent(_, event)
     elseif event == "SPELL_UPDATE_COOLDOWN" then
         PaintCooldowns()
     elseif event == "PLAYER_REGEN_DISABLED" then
-        if stale then
-            Refresh()
-        end
+        if stale then Refresh() end
         if bookFrame then
             bookFrame.prev:SetEnabled(true)
             bookFrame.next:SetEnabled(true)
@@ -675,17 +614,11 @@ local function Apply()
         CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Apply", Apply)
         return
     end
-    if eventList then
-        eventList:UnregisterAllEvents()
-    end
+    if eventList then eventList:UnregisterAllEvents() end
     if not F.Enabled() then
-        if microButtons then
-            microButtons:Hide()
-        end
+        if microButtons then microButtons:Hide() end
         AimRoute(false)
-        if bookFrame then
-            bookFrame:Hide()
-        end
+        if bookFrame then bookFrame:Hide() end
         Bind()
         return
     end
@@ -695,9 +628,7 @@ local function Apply()
     end
     Build()
     AimRoute(true)
-    if not microButtons then
-        microButtons = module.MicroClickLayer("SpellbookMicroButton", MicroToggle)
-    end
+    if not microButtons then microButtons = module.MicroClickLayer("SpellbookMicroButton", MicroToggle) end
     if microButtons then
         microButtons:SetMouseClickEnabled(true)
         microButtons:Show()
@@ -706,9 +637,7 @@ local function Apply()
     eventList:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
     eventList:RegisterEvent("UPDATE_BINDINGS")
     eventList:RegisterEvent("PLAYER_REGEN_DISABLED")
-    if bookFrame:IsShown() then
-        eventList:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-    end
+    if bookFrame:IsShown() then eventList:RegisterEvent("SPELL_UPDATE_COOLDOWN") end
     Bind()
     Refresh()
 end

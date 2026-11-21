@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\XPRep.lua - Info Bar block: an XP or reputation bar.
 --
@@ -25,22 +23,18 @@ local K = mod.BlockKit
 local InCombatLockdown = InCombatLockdown
 local floor, max, min = math.floor, math.max, math.min
 
-function mod.GetXPRepTextDisplay(settings)
-    return settings.textDisplay or "percentage"
-end
+function mod.GetXPRepTextDisplay(settings) return settings.textDisplay or "percentage" end
 
-local function Number(n)
-    return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or n
-end
+local function Number(n) return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or n end
 
 -- The watched faction: the old global where it exists (WoW Forever), else
 -- C_Reputation's table, as name, reaction, min, max, current, faction id.
 local function Watched()
     local legacy = rawget(_G, "GetWatchedFactionInfo")
-    if legacy then
-        return legacy()
-    end
-    local skinData = C_Reputation and C_Reputation.GetWatchedFactionData and C_Reputation.GetWatchedFactionData()
+    if legacy then return legacy() end
+    local skinData = C_Reputation
+        and C_Reputation.GetWatchedFactionData
+        and C_Reputation.GetWatchedFactionData()
     if skinData then
         return skinData.name,
             skinData.reaction,
@@ -60,13 +54,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "PLAYER_XP_UPDATE", "UPDATE_FACTION", "PLAYER_ENTERING_WORLD" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
-    local function NoXP()
-        return K.AtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled())
-    end
+    local function NoXP() return K.AtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) end
 
     -- "xp" or "rep": the setting, or automatic (XP while there is XP to earn).
     local mode = "rep"
@@ -83,13 +73,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     local function Label(current, total)
         local cfg = Settings()
         local display = mod.GetXPRepTextDisplay(cfg)
-        if display == "off" then
-            return "", false
-        end
+        if display == "off" then return "", false end
         local context = cfg.textFormat ~= "plain"
-        if display == "values" then
-            return Number(current) .. " / " .. Number(total), context, true
-        end
+        if display == "values" then return Number(current) .. " / " .. Number(total), context, true end
         return floor(current / max(1, total) * 100) .. "%", context
     end
 
@@ -98,22 +84,16 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             -- Automatic mode hides the block here. A mode the player chose
             -- must still show: the block is the only place to right-click back,
             -- and a hidden block cannot be clicked.
-            if Settings().mode ~= "xp" then
-                return nil
-            end
+            if Settings().mode ~= "xp" then return nil end
             local off = IsXPUserDisabled and IsXPUserDisabled()
             return Grey(CludesUI.L(off and "XP Off (Right-Click: Rep)" or "Max Level (Right-Click: Rep)"))
         end
         local maxXP = UnitXPMax("player") or 1
-        if maxXP <= 0 then
-            maxXP = 1
-        end
+        if maxXP <= 0 then maxXP = 1 end
         local current = max(0, min(maxXP, UnitXP("player") or 0))
         local level = UnitLevel and UnitLevel("player") or 0
         local label, context, values = Label(current, maxXP)
-        if context then
-            label = label .. (values and " XP" or "") .. " to level " .. (level + 1)
-        end
+        if context then label = label .. (values and " XP" or "") .. " to level " .. (level + 1) end
         local red, green, blue = mod.GetAccent()
         return {
             label = label,
@@ -133,9 +113,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         local name, reaction, low, high, current, factionID = Watched()
         if not name then
             -- As above: hidden in automatic mode only.
-            if Settings().mode ~= "rep" then
-                return nil
-            end
+            if Settings().mode ~= "rep" then return nil end
             return Grey(CludesUI.L("No Rep Tracked"))
         end
         -- A friendship's thresholds come back equal (a permanent 0%); its own
@@ -162,15 +140,18 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             end
         end
         -- Counted from the bottom of the current standing.
-        if type(low) == "number" and type(high) == "number" and type(current) == "number" and high - low > 0 then
+        if
+            type(low) == "number"
+            and type(high) == "number"
+            and type(current) == "number"
+            and high - low > 0
+        then
             low, high, current = 0, high - low, current - low
         end
         low = type(low) == "number" and low or 0
         high = type(high) == "number" and high or 1
         current = type(current) == "number" and current or 0
-        if high <= low then
-            high = low + 1
-        end
+        if high <= low then high = low + 1 end
         current = max(low, min(high, current))
 
         local label, context = Label(current - low, high - low)
@@ -202,9 +183,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     -- it always agrees with the bar.
     local function State()
         PickMode()
-        if mode == "xp" then
-            return XPState()
-        end
+        if mode == "xp" then return XPState() end
         return RepState()
     end
 
@@ -348,9 +327,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     end)
     hit:SetScript("OnEnter", function()
         local state = State()
-        if not state then
-            return
-        end
+        if not state then return end
         local red, green, blue = mod.GetAccent()
         mod.Tip_Begin(hit)
         -- With the text off there is no label, so the bar is named instead.
@@ -375,9 +352,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end)
-    hit:SetScript("OnLeave", function()
-        mod.Tip_Hide(hit)
-    end)
+    hit:SetScript("OnLeave", function() mod.Tip_Hide(hit) end)
 
     function inst:Enable()
         content:Show()
@@ -391,17 +366,11 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
 
     function inst:GetAutoLength()
         -- Hidden (nothing to show): no length, so the bar keeps no empty gap.
-        if not content:IsShown() then
-            return 0
-        end
-        if barCtx.IsVertical() then
-            return max(content:GetHeight() or 40, 40)
-        end
+        if not content:IsShown() then return 0 end
+        if barCtx.IsVertical() then return max(content:GetHeight() or 40, 40) end
         -- The label's width (the bar matches it), plus XP's 40px.
         local width = label:GetStringWidth() or 0
-        if width < 20 then
-            width = 120
-        end
+        if width < 20 then width = 120 end
         return width + (self._xpExtend or 0)
     end
 

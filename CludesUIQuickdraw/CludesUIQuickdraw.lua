@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQuickdraw.lua  --  hold-to-open action palette for CludesUI
 --
@@ -391,9 +389,7 @@ mod.DB_DEFAULTS = DB_DEFAULTS
 -- The name a palette carries until the user types one of their own. It is also
 -- what an emptied name box reverts to, and the only name the legacy rename
 -- below may replace, so all three read it from here.
-local function AutoPaletteName(index)
-    return "Action Menu " .. index
-end
+local function AutoPaletteName(index) return "Action Menu " .. index end
 mod.AutoPaletteName = AutoPaletteName
 
 -- Names the module has outgrown, converted in place. The defaults have already
@@ -412,9 +408,7 @@ local function MigrateNames(profile)
 
     -- RADIAL was what the arc was called while a full circle was the only thing
     -- it could draw. The layout is unchanged; only the word for it is.
-    if profile.layout == "RADIAL" then
-        profile.layout = "ARC"
-    end
+    if profile.layout == "RADIAL" then profile.layout = "ARC" end
 
     -- A set of actions was a "ring" for the same reason, and stopped being one
     -- the moment it could be drawn as a strip or a grid.
@@ -426,20 +420,14 @@ local function MigrateNames(profile)
     end
     -- Auto-generated names only. A palette the user has named keeps its name.
     for i, palette in pairs(profile.palettes or {}) do
-        if palette.name == "Ring " .. i then
-            palette.name = AutoPaletteName(i)
-        end
-        if palette.name == "Palette " .. i then
-            palette.name = AutoPaletteName(i)
-        end
+        if palette.name == "Ring " .. i then palette.name = AutoPaletteName(i) end
+        if palette.name == "Palette " .. i then palette.name = AutoPaletteName(i) end
         -- A nested entry used to be handed a COPY of the palette's name when it
         -- was created, which then went stale the moment that palette was
         -- renamed. SlotDisplay reads the palette's own name whenever the entry
         -- carries none, so the copy is simply dropped.
         for _, slot in pairs(palette.slots or {}) do
-            if slot.kind == "palette" then
-                slot.name = nil
-            end
+            if slot.kind == "palette" then slot.name = nil end
             -- Toys dragged in from the Collections/Toy Box frame before
             -- SlotFromCursor reclassified them landed here as kind="item",
             -- which runs SlotUsability through C_Item.IsUsableItem -- always
@@ -484,9 +472,7 @@ mod.Profile = P
 -- always holds the whole defaults table and would never read as empty.
 local function HasPalettes(blob)
     local palettes = type(blob) == "table" and blob.palettes
-    if type(palettes) ~= "table" then
-        return false
-    end
+    if type(palettes) ~= "table" then return false end
     for _, palette in pairs(palettes) do
         if type(palette) == "table" and type(palette.slots) == "table" and next(palette.slots) ~= nil then
             return true
@@ -510,9 +496,7 @@ local LEGACY_ADDON_KEYS = { "CludesUIActionPalette", "CludesUIRadialWheel" }
 
 local function MigrateLegacyProfile(prof, live)
     local addons = type(prof) == "table" and prof.addons
-    if type(addons) ~= "table" then
-        return
-    end
+    if type(addons) ~= "table" then return end
     for _, key in ipairs(LEGACY_ADDON_KEYS) do
         local legacy = addons[key]
         if type(legacy) == "table" then
@@ -529,9 +513,7 @@ local function MigrateLegacyProfile(prof, live)
                 end
             else
                 local dest = addons.CludesUIQuickdraw
-                if type(dest) ~= "table" or next(dest) == nil then
-                    addons.CludesUIQuickdraw = legacy
-                end
+                if type(dest) ~= "table" or next(dest) == nil then addons.CludesUIQuickdraw = legacy end
             end
         end
         addons[key] = nil
@@ -542,9 +524,7 @@ end
 -- pre-rename build heals when it is applied rather than at the next login.
 local function MigrateActiveProfile()
     local live = saved and saved.profile
-    if not live then
-        return
-    end
+    if not live then return end
     local profiles = CludesUIDB and CludesUIDB.profiles
     local prof = profiles and saved._profileName and profiles[saved._profileName]
     MigrateLegacyProfile(prof, live)
@@ -559,20 +539,14 @@ local function EnsurePalette(index)
     -- its callers pass it straight through on their way to the question-mark
     -- fallback. Comparing it would take the paint of the whole containing
     -- palette down with it.
-    if not profile or not index or index < 1 or index > MAX_PALETTES then
-        return nil
-    end
-    if not profile.palettes then
-        profile.palettes = {}
-    end
+    if not profile or not index or index < 1 or index > MAX_PALETTES then return nil end
+    if not profile.palettes then profile.palettes = {} end
     local palette = profile.palettes[index]
     if not palette then
         palette = { name = AutoPaletteName(index), slots = {} }
         profile.palettes[index] = palette
     end
-    if type(palette.slots) ~= "table" then
-        palette.slots = {}
-    end
+    if type(palette.slots) ~= "table" then palette.slots = {} end
 
     -- Self-healing compaction. The array must have no holes for #slots to be
     -- meaningful, and a hole is exactly what a cleared slot used to leave
@@ -603,16 +577,10 @@ mod.EnsurePalette = EnsurePalette
 -- EnsurePalette, so what this reads is always compact by the time it exists.
 local function ReadPalette(index)
     local profile = P()
-    if not profile or not index or index < 1 or index > MAX_PALETTES then
-        return nil
-    end
+    if not profile or not index or index < 1 or index > MAX_PALETTES then return nil end
     local palette = profile.palettes and profile.palettes[index]
-    if type(palette) ~= "table" then
-        return nil
-    end
-    if type(palette.slots) ~= "table" then
-        return nil
-    end
+    if type(palette) ~= "table" then return nil end
+    if type(palette.slots) ~= "table" then return nil end
     return palette
 end
 
@@ -696,17 +664,13 @@ local appearanceViews = {}
 
 local function PA(paletteIndex)
     local profile = P()
-    if not profile then
-        return nil
-    end
+    if not profile then return nil end
     -- Straight off p.palettes, NOT through EnsurePalette: this runs several
     -- times per frame on every steered layout, and EnsurePalette rebuilds the
     -- slot array to compact it. A palette that has never been ensured has no
     -- overrides to read anyway, so the profile is the whole answer.
     local palette = paletteIndex and profile.palettes and profile.palettes[paletteIndex]
-    if type(palette) ~= "table" then
-        return profile
-    end
+    if type(palette) ~= "table" then return profile end
 
     local view = appearanceViews[palette]
     if not view then
@@ -714,9 +678,7 @@ local function PA(paletteIndex)
             __index = function(_, key)
                 if APPEARANCE_KEYS[key] then
                     local val = palette.appearance and palette.appearance[key]
-                    if val ~= nil then
-                        return val
-                    end
+                    if val ~= nil then return val end
                 end
                 -- P() rather than a captured profile: a palette table outlives
                 -- nothing, but reading through the accessor keeps the migration
@@ -726,9 +688,7 @@ local function PA(paletteIndex)
             end,
             -- Nothing writes through this, and a write that slipped in would
             -- land on the view and be invisible to the saved variables.
-            __newindex = function()
-                error("Action Wheel appearance view is read-only", 2)
-            end,
+            __newindex = function() error("Action Wheel appearance view is read-only", 2) end,
         })
         appearanceViews[palette] = view
     end
@@ -739,20 +699,14 @@ mod.PaletteProfile = PA
 -- Ordered mutations. All three keep the array dense so #slots stays the
 -- authoritative entry count.
 function mod.AddSlot(palette, slot)
-    if not palette or not slot then
-        return nil
-    end
-    if #palette.slots >= MAX_SLOTS then
-        return nil
-    end
+    if not palette or not slot then return nil end
+    if #palette.slots >= MAX_SLOTS then return nil end
     palette.slots[#palette.slots + 1] = slot
     return #palette.slots
 end
 
 function mod.RemoveSlot(palette, index)
-    if not palette or not palette.slots[index] then
-        return false
-    end
+    if not palette or not palette.slots[index] then return false end
     tremove(palette.slots, index)
     return true
 end
@@ -760,13 +714,9 @@ end
 -- Move, not swap: dragging an icon between two others should insert it there
 -- and shuffle the rest along, which is what a reorder is.
 function mod.MoveSlot(palette, from, to)
-    if not palette then
-        return false
-    end
+    if not palette then return false end
     local num = #palette.slots
-    if from == to or from < 1 or from > num or to < 1 or to > num then
-        return false
-    end
+    if from == to or from < 1 or from > num or to < 1 or to > num then return false end
     tinsert(palette.slots, to, tremove(palette.slots, from))
     return true
 end
@@ -804,13 +754,9 @@ mod.PaletteCount = PaletteCount
 
 -- The palette a slot opens, or nil for a slot that fires an action.
 local function ChildIndex(slot)
-    if not slot or slot.kind ~= "palette" then
-        return nil
-    end
+    if not slot or slot.kind ~= "palette" then return nil end
     local position = tonumber(slot.palette)
-    if not position or position < 1 or position > MAX_PALETTES then
-        return nil
-    end
+    if not position or position < 1 or position > MAX_PALETTES then return nil end
     return position
 end
 mod.ChildIndex = ChildIndex
@@ -828,9 +774,7 @@ local UsableSlots
 -- every layout can manage. See NestChildCap.
 local function ChildSlots(paletteIndex, cap)
     local palette = paletteIndex and EnsurePalette(paletteIndex)
-    if not palette then
-        return nil
-    end
+    if not palette then return nil end
     local slots = UsableSlots(palette, PA(paletteIndex))
     local result = {}
     for i = 1, min(cap or MAX_CHILDREN, #slots) do
@@ -852,9 +796,7 @@ mod.ChildSlots = ChildSlots
 local function NestChildCap(parentIndex)
     local p = PA(parentIndex)
     local layout = (p and p.layout) or "ARC"
-    if layout == "GRID" and p and p.gridNestStyle == "HALO" then
-        return MAX_CHILDREN
-    end
+    if layout == "GRID" and p and p.gridNestStyle == "HALO" then return MAX_CHILDREN end
     return MAX_SLOTS
 end
 mod.NestChildCap = NestChildCap
@@ -864,12 +806,8 @@ mod.NestChildCap = NestChildCap
 -- the slot is CREATED rather than when it is walked: a stored cycle would send
 -- every push and every draw of that palette round until the client gave out.
 function mod.CanNest(parentIndex, childIndex)
-    if not parentIndex or not childIndex then
-        return false
-    end
-    if parentIndex == childIndex then
-        return false
-    end
+    if not parentIndex or not childIndex then return false end
+    if parentIndex == childIndex then return false end
 
     -- Walk down from the candidate child. Reaching the parent means the parent
     -- already sits somewhere below it, so nesting it would close the loop. The
@@ -878,9 +816,7 @@ function mod.CanNest(parentIndex, childIndex)
     local seen, stack = { [childIndex] = true }, { childIndex }
     while #stack > 0 do
         local position = tremove(stack)
-        if position == parentIndex then
-            return false
-        end
+        if position == parentIndex then return false end
         local palette = EnsurePalette(position)
         for i = 1, (palette and #palette.slots or 0) do
             local c = ChildIndex(palette.slots[i])
@@ -912,21 +848,15 @@ function mod.PaletteSpecs(index)
     local profile = P()
     local palette = profile and index and profile.palettes and profile.palettes[index]
     local specs = type(palette) == "table" and palette.specs
-    if type(specs) ~= "table" or next(specs) == nil then
-        return nil
-    end
+    if type(specs) ~= "table" or next(specs) == nil then return nil end
     return specs
 end
 
 function mod.PaletteActive(index)
     local specs = mod.PaletteSpecs(index)
-    if not specs then
-        return true
-    end
+    if not specs then return true end
     for ident in pairs(specs) do
-        if CludesUI.IsPlayerSpec(ident) then
-            return true
-        end
+        if CludesUI.IsPlayerSpec(ident) then return true end
     end
     return false
 end
@@ -936,26 +866,20 @@ end
 -- class in both (the player counts as every spec of the class there).
 function mod.PalettesExclusive(a, b)
     local sa, scrollBar = mod.PaletteSpecs(a), mod.PaletteSpecs(b)
-    if not sa or not scrollBar then
-        return false
-    end
+    if not sa or not scrollBar then return false end
     if CludesUI.IS_FOREVER then
         for ida in pairs(sa) do
             local cls = CludesUI.SpecClassOf(ida)
             if cls then
                 for idb in pairs(scrollBar) do
-                    if CludesUI.SpecClassOf(idb) == cls then
-                        return false
-                    end
+                    if CludesUI.SpecClassOf(idb) == cls then return false end
                 end
             end
         end
         return true
     end
     for ident in pairs(sa) do
-        if scrollBar[ident] then
-            return false
-        end
+        if scrollBar[ident] then return false end
     end
     return true
 end
@@ -971,9 +895,7 @@ function mod.ShareOwner(index)
         return nil
     end
     local held = palettes[ownerFrame]
-    if type(held) == "table" and held.keyShare ~= nil then
-        return nil
-    end
+    if type(held) == "table" and held.keyShare ~= nil then return nil end
     return ownerFrame
 end
 
@@ -983,9 +905,7 @@ local function SelectColor(profile)
     profile = profile or P()
     if profile and profile.useClassColor then
         local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-        if color then
-            return color.r, color.g, color.b
-        end
+        if color then return color.r, color.g, color.b end
     end
     -- Accent unless a custom color has been chosen: the suite accent is the
     -- default, resolved live so theme and accent changes carry straight
@@ -994,9 +914,7 @@ local function SelectColor(profile)
         return CludesUI.ResolveActiveAccent()
     end
     local sc = profile and profile.selectColor
-    if sc then
-        return sc[1] or 1, sc[2] or 1, sc[3] or 1
-    end
+    if sc then return sc[1] or 1, sc[2] or 1, sc[3] or 1 end
     return 0.298, 0.788, 0.941
 end
 mod.SelectColor = SelectColor
@@ -1039,16 +957,12 @@ CludesUI.NewInternals(mod, "_qdInternals", {
     SelectColor = SelectColor,
     TWO_PI = TWO_PI,
     dbSetters = {
-        function(val)
-            saved = val
-        end,
+        function(val) saved = val end,
     },
     liveViewSetters = {},
     scrollCatcherSetters = {},
     cancelButtonSetters = {},
-    SetUsableSlots = function(frame)
-        UsableSlots = frame
-    end,
+    SetUsableSlots = function(frame) UsableSlots = frame end,
 }, {
     SetDB = "dbSetters",
     SetLiveView = "liveViewSetters",

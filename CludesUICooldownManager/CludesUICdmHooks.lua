@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmHooks.lua  (v5 -- Mixin Hook Architecture)
 --
@@ -49,12 +47,8 @@ mod._hookFrameData = hookFrameData
 do
     local function StackGlowSize(iconTex)
         local width, height = iconTex:GetWidth(), iconTex:GetHeight()
-        if not width or width < 5 then
-            width = 36
-        end
-        if not height or height < 5 then
-            height = width
-        end
+        if not width or width < 5 then width = 36 end
+        if not height or height < 5 then height = width end
         return width, height
     end
 
@@ -64,9 +58,7 @@ do
     local function SizeStackGlowMask(st, width, height)
         local wid, hgt = width + st.pad * 2, height + st.pad * 2
         st.mask:SetSize(wid, hgt)
-        if st.mask2 then
-            st.mask2:SetSize(wid, hgt)
-        end
+        if st.mask2 then st.mask2:SetSize(wid, hgt) end
     end
 
     local function NewStackGlowGate(iconTex, pad)
@@ -75,9 +67,7 @@ do
         gate:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", pad, -pad)
         gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         local fillTex = gate:GetStatusBarTexture()
-        if fillTex then
-            fillTex:SetAlpha(0)
-        end
+        if fillTex then fillTex:SetAlpha(0) end
         gate:EnableMouse(false)
         local mask = gate:CreateMaskTexture()
         mask:SetTexture(
@@ -90,18 +80,10 @@ do
     end
 
     local function StackGlowMatches(value, operator, threshold)
-        if operator == "lt" then
-            return value < threshold
-        end
-        if operator == "lte" then
-            return value <= threshold
-        end
-        if operator == "eq" then
-            return value == threshold
-        end
-        if operator == "gt" then
-            return value > threshold
-        end
+        if operator == "lt" then return value < threshold end
+        if operator == "lte" then return value <= threshold end
+        if operator == "eq" then return value == threshold end
+        if operator == "gt" then return value > threshold end
         return value >= threshold
     end
 
@@ -123,22 +105,16 @@ do
                 local success, payload = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unitToken, iid)
                 if success and payload then
                     local a = payload.applications
-                    if (issecretvalue and issecretvalue(a)) or a ~= nil then
-                        return a
-                    end
+                    if (issecretvalue and issecretvalue(a)) or a ~= nil then return a end
                 end
             end
         end
         local ad = widget.auraDataCached
         -- The whole cached aura can be a secret table (restricted unit
         -- auras): indexing it is a hard error, so it reads as unknown.
-        if issecretvalue and issecretvalue(ad) then
-            return nil
-        end
+        if issecretvalue and issecretvalue(ad) then return nil end
         local apps = ad and ad.applications
-        if (issecretvalue and issecretvalue(apps)) or apps ~= nil then
-            return apps
-        end
+        if (issecretvalue and issecretvalue(apps)) or apps ~= nil then return apps end
         return nil
     end
     -- Exported for the aura active-cache below (Bar Glows stack threshold):
@@ -171,23 +147,15 @@ do
         end
         -- Unconditional: the wrapper is created at alpha 1, so anything an
         -- engine left on it would show through a gate that never opened.
-        if st.glow then
-            st.glow:SetAlpha(0)
-        end
-        if st.gate then
-            st.gate:SetValue(st.closeValue or 0)
-        end
-        if st.gate2 then
-            st.gate2:SetValue(st.closeValue2 or 0)
-        end
+        if st.glow then st.glow:SetAlpha(0) end
+        if st.gate then st.gate:SetValue(st.closeValue or 0) end
+        if st.gate2 then st.gate2:SetValue(st.closeValue2 or 0) end
     end
 
     local function StackGlowOnHide(iconTex)
         local fd = hookFrameData[iconTex]
         local st = fd and fd.stackGlow
-        if st then
-            EndStackGlow(st)
-        end
+        if st then EndStackGlow(st) end
     end
 
     -- (Re)configure or retire an icon's threshold controller. Called from
@@ -195,9 +163,7 @@ do
     -- the icon to tear down (toggle off, frame pooled onto a non-buff spell).
     function mod.StackGlow_Configure(iconTex, threshold, operator, style, red, green, blue, prefs)
         local fd = iconTex and hookFrameData[iconTex]
-        if not fd then
-            return
-        end
+        if not fd then return end
         local st = fd.stackGlow
         threshold, style = tonumber(threshold), tonumber(style)
         if
@@ -214,9 +180,7 @@ do
                 st.threshold = nil
                 EndStackGlow(st)
                 mod._btDirty = true
-                if mod.ArmBuffTicker then
-                    mod.ArmBuffTicker()
-                end
+                if mod.ArmBuffTicker then mod.ArmBuffTicker() end
             end
             return
         end
@@ -237,9 +201,7 @@ do
             -- edges (flipbook/pixel padding); proportional so big icons keep
             -- their fringe too.
             local pad = math.ceil(math.max(StackGlowSize(iconTex)) * 0.4)
-            if pad < 12 then
-                pad = 12
-            end
+            if pad < 12 then pad = 12 end
             st.pad = pad
             st.gate, st.mask, st.fill = NewStackGlowGate(iconTex, pad)
 
@@ -299,9 +261,7 @@ do
             EndStackGlow(st)
         end
         mod._btDirty = true
-        if mod.ArmBuffTicker then
-            mod.ArmBuffTicker()
-        end
+        if mod.ArmBuffTicker then mod.ArmBuffTicker() end
     end
 
     -- Buff-tick feed for thresholded icons (the normal buff glow is suppressed
@@ -310,9 +270,7 @@ do
     function mod.StackGlow_Feed(iconTex, isActive)
         local fd = iconTex and hookFrameData[iconTex]
         local st = fd and fd.stackGlow
-        if not (st and st.threshold) then
-            return
-        end
+        if not (st and st.threshold) then return end
         if not isActive then
             EndStackGlow(st)
             return
@@ -330,9 +288,7 @@ do
             end
         end
         st.gate:SetValue(applications)
-        if st.gate2 then
-            st.gate2:SetValue(st.operator == "eq" and applications or 1)
-        end
+        if st.gate2 then st.gate2:SetValue(st.operator == "eq" and applications or 1) end
         st.glow:SetFrameLevel(iconTex:GetFrameLevel() + 16)
         local width, height = StackGlowSize(iconTex)
         if
@@ -345,9 +301,7 @@ do
             -- glow fringe -- the creation-time pad may have come from the
             -- pre-layout fallback size, and icons resize with settings.
             local pad = math.ceil(math.max(width, height) * 0.4)
-            if pad < 12 then
-                pad = 12
-            end
+            if pad < 12 then pad = 12 end
             if pad ~= st.pad then
                 st.pad = pad
                 st.gate:ClearAllPoints()
@@ -374,9 +328,7 @@ function mod.RefreshBuffGlows()
         for fi = 1, #icons do
             local widget = icons[fi]
             local fd = widget and hookFrameData[widget]
-            if fd and fd.buffGlowActive then
-                fd.buffGlowActive = false
-            end
+            if fd and fd.buffGlowActive then fd.buffGlowActive = false end
         end
     end
 end
@@ -412,9 +364,7 @@ function mod._PandemicIconHide(self)
     local fd = hookFrameData[self]
     if fd then
         if fd.pandemicGlowActive then
-            if fd.pandemicOverlay then
-                mod.StopNativeGlow(fd.pandemicOverlay)
-            end
+            if fd.pandemicOverlay then mod.StopNativeGlow(fd.pandemicOverlay) end
             fd.pandemicGlowActive = false
         end
         -- auraInstanceID can be SECRET in instanced combat; comparing a
@@ -422,13 +372,9 @@ function mod._PandemicIconHide(self)
         -- testing. A secret ID means the aura state is unknowable: take the
         -- conservative path (not stale), same bias as the visibility toggle.
         local aid = self.auraInstanceID
-        if not (_G.issecretvalue and _G.issecretvalue(aid)) and aid == nil then
-            fd._panStale = true
-        end
+        if not (_G.issecretvalue and _G.issecretvalue(aid)) and aid == nil then fd._panStale = true end
     end
-    if mod._pandemicState then
-        mod._pandemicState[self] = nil
-    end
+    if mod._pandemicState then mod._pandemicState[self] = nil end
 end
 
 -- Blizzard recomputed the pandemic window, so the flag describes the aura that is
@@ -436,9 +382,7 @@ end
 -- the window itself opens.
 function mod._PandemicWindowSet(self)
     local fd = hookFrameData[self]
-    if fd then
-        fd._panStale = nil
-    end
+    if fd then fd._panStale = nil end
 end
 
 mod.FD = FD
@@ -460,23 +404,17 @@ do
     local function ReadExpiration(widget)
         local td = widget.totemData
         local source = td or widget.auraDataCached
-        if issecretvalue(source) or not source then
-            return nil
-        end
+        if issecretvalue(source) or not source then return nil end
         local exp = source.expirationTime
         -- Secret probe first: any other test on a secret is a hard error.
-        if issecretvalue(exp) or type(exp) ~= "number" or exp <= 0 then
-            return nil
-        end
+        if issecretvalue(exp) or type(exp) ~= "number" or exp <= 0 then return nil end
         local rate
         if td then
             rate = source.modRate
         else
             rate = source.timeMod
         end
-        if issecretvalue(rate) or type(rate) ~= "number" or rate <= 0 then
-            rate = 1
-        end
+        if issecretvalue(rate) or type(rate) ~= "number" or rate <= 0 then rate = 1 end
         return exp, rate
     end
     -- The WoW Forever anti-clip glow reads it too (CUI_CDM_ForeverAntiClip.lua).
@@ -495,9 +433,7 @@ do
     -- One timer per icon, memoized on the aura's expiration (a new N disarms
     -- first, in ns.MissingShowBelow).
     local function Arm(widget, fc, exp, delay)
-        if fc._missingTimer and fc._missingExp == exp then
-            return
-        end
+        if fc._missingTimer and fc._missingExp == exp then return end
         DisarmMissing(fc)
         fc._missingExp = exp
         fc._missingTimer = C_Timer.NewTimer(delay, function()
@@ -551,9 +487,7 @@ do
     -- Re-check one icon and flip it when its state changed.
     local function Recheck(widget, fc)
         local show = mod.MissingShowBelow(widget, fc, fc._missingN)
-        if show == (fc._missingActiveHidden and true or false) then
-            mod.MissingFlip(widget, fc, not show)
-        end
+        if show == (fc._missingActiveHidden and true or false) then mod.MissingFlip(widget, fc, not show) end
     end
 
     -- A deadline: the same aura on a shown, routed frame flips in place; any
@@ -572,9 +506,7 @@ do
     -- once instead of at its old deadline.
     function mod.MissingRecheck(widget, fc)
         local exp = ReadExpiration(widget)
-        if exp and exp == fc._missingExp then
-            return
-        end
+        if exp and exp == fc._missingExp then return end
         Recheck(widget, fc)
     end
 end
@@ -592,9 +524,7 @@ end
 -------------------------------------------------------------------------------
 local _spellPowerCostCache = {}
 
-local function InvalidateSpellPowerCostCache()
-    wipe(_spellPowerCostCache)
-end
+local function InvalidateSpellPowerCostCache() wipe(_spellPowerCostCache) end
 mod.InvalidateSpellPowerCostCache = InvalidateSpellPowerCostCache
 
 do
@@ -605,9 +535,7 @@ do
 end
 
 local function HasEnoughResources(spellId)
-    if not (C_Spell and C_Spell.GetSpellPowerCost) then
-        return true
-    end
+    if not (C_Spell and C_Spell.GetSpellPowerCost) then return true end
     -- nil = not yet checked, false = no cost (always enough), table = cost list.
     local cached = _spellPowerCostCache[spellId]
     if cached == nil then
@@ -629,19 +557,13 @@ local function HasEnoughResources(spellId)
                 -- Power can be SECRET in tainted combat: uncomparable, so default
                 -- to castable rather than throw.
                 local maxP = UnitPowerMax("player", powerType)
-                if issecretvalue and issecretvalue(maxP) then
-                    return true
-                end
+                if issecretvalue and issecretvalue(maxP) then return true end
                 cost = math.max(cost, (c.costPercent / 100) * maxP)
             end
             if cost > 0 then
                 local current = UnitPower("player", powerType)
-                if issecretvalue and issecretvalue(current) then
-                    return true
-                end
-                if current < cost then
-                    return false
-                end
+                if issecretvalue and issecretvalue(current) then return true end
+                if current < cost then return false end
             end
         end
     end
@@ -672,9 +594,7 @@ local function GetViewerFrame(vi)
     local frame = _viewerFrameCache[vi]
     if not frame then
         frame = _G[VIEWER_NAMES[vi]]
-        if frame then
-            _viewerFrameCache[vi] = frame
-        end
+        if frame then _viewerFrameCache[vi] = frame end
     end
     return frame
 end
@@ -687,9 +607,7 @@ local VIEWER_TO_BAR = {
 
 -- Master guard: suspend ALL hook logic while Blizzard CDM settings is open.
 -- Any interaction with frames during settings editing causes taint.
-local function IsCDMSettingsOpen()
-    return CooldownViewerSettings and CooldownViewerSettings:IsShown()
-end
+local function IsCDMSettingsOpen() return CooldownViewerSettings and CooldownViewerSettings:IsShown() end
 
 -- Main-chunk locals the CUI_CDM_Hook*.lua files re-import by name.
 CludesUI.NewInternals(mod, "_hookInternals", {

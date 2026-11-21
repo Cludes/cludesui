@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_ForeverSeals.lua
 --
@@ -23,16 +21,10 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  aura icon engine and its hooks stay for custom buffs.
 -------------------------------------------------------------------------------
 local _, mod = ...
-if CludesUI.IS_FOREVER ~= true then
-    return
-end
+if CludesUI.IS_FOREVER ~= true then return end
 local _, playerClass = UnitClass("player")
-if playerClass ~= "PALADIN" then
-    return
-end
-if not mod.CDM_AuraIconProvider then
-    return
-end
+if playerClass ~= "PALADIN" then return end
+if not mod.CDM_AuraIconProvider then return end
 
 -- Blizzard's Seals entry on WoW Forever (its spell).
 local SEALS = 1323522
@@ -72,9 +64,7 @@ local function IsSealsInfo(details)
 end
 
 local function IsSealsCd(cdID)
-    if type(cdID) ~= "number" or IsSecret(cdID) then
-        return false
-    end
+    if type(cdID) ~= "number" or IsSecret(cdID) then return false end
     local known = S.cd[cdID]
     if known == nil then
         local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
@@ -104,12 +94,8 @@ local function Aliases()
                 if details and IsSealsInfo(details) then
                     S.cd[cdID] = true
                     local a, b = details.spellID, details.overrideSpellID
-                    if type(a) == "number" and a > 0 and a ~= SEALS then
-                        ids[#ids + 1] = a
-                    end
-                    if type(b) == "number" and b > 0 and b ~= SEALS then
-                        ids[#ids + 1] = b
-                    end
+                    if type(a) == "number" and a > 0 and a ~= SEALS then ids[#ids + 1] = a end
+                    if type(b) == "number" and b > 0 and b ~= SEALS then ids[#ids + 1] = b end
                     if type(details.linkedSpellIDs) == "table" then
                         for index = 1, #details.linkedSpellIDs do
                             linked[#linked + 1] = details.linkedSpellIDs[index]
@@ -124,14 +110,10 @@ local function Aliases()
 end
 
 local function AddID(set, nameList, ident)
-    if type(ident) ~= "number" or IsSecret(ident) or ident <= 0 then
-        return
-    end
+    if type(ident) ~= "number" or IsSecret(ident) or ident <= 0 then return end
     set[ident] = true
     local name = C_Spell.GetSpellName(ident)
-    if name then
-        nameList[name] = true
-    end
+    if name then nameList[name] = true end
 end
 
 -- Every seal id: the seeds, the entry's linked spells, and every spellbook
@@ -181,9 +163,7 @@ local function Icon()
     if not S.art then
         S.art = C_Spell.GetSpellTexture(SEALS)
         for index = 1, #SEAL_SEEDS do
-            if S.art then
-                break
-            end
+            if S.art then break end
             S.art = C_Spell.GetSpellTexture(SEAL_SEEDS[index])
         end
     end
@@ -194,21 +174,20 @@ end
 -- bar means its fix landed, so the stand-in stands down for the session (the
 -- next reanchor drops its frames).
 local function Placed()
-    if S.native then
-        return
-    end
+    if S.native then return end
     local icons = mod.cdmBarIcons
-    if not icons then
-        return
-    end
+    if not icons then return end
     for _, entries in pairs(icons) do
         for index = 1, #entries do
             local frame = entries[index]
-            if frame and not frame._isPresetFrame and not frame._isPlaceholderFrame and IsSealsCd(frame.cooldownID) then
+            if
+                frame
+                and not frame._isPresetFrame
+                and not frame._isPlaceholderFrame
+                and IsSealsCd(frame.cooldownID)
+            then
                 S.native = true
-                if mod.QueueReanchor then
-                    mod.QueueReanchor()
-                end
+                if mod.QueueReanchor then mod.QueueReanchor() end
                 return
             end
         end
@@ -221,12 +200,8 @@ mod.CDM_AuraIconProvider(SEALS, {
     Include = Include,
     Icon = Icon,
     -- Grey only while no seal is known; a seal that is down is the Seals icon.
-    Desaturate = function()
-        return not S.known
-    end,
-    Off = function()
-        return S.native
-    end,
+    Desaturate = function() return not S.known end,
+    Off = function() return S.native end,
     Aliases = Aliases,
     Placed = Placed,
 })

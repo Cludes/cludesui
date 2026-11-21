@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmBarGlowConditions.lua
 --  Extra conditions on a Bar Glow entry, evaluated after the entry's own
@@ -28,9 +26,7 @@ local _, mod = ...
 local function ActiveHeroTree()
     local CT = C_ClassTalents
     local ident = CT and CT.GetActiveHeroTalentSpec and CT.GetActiveHeroTalentSpec()
-    if type(ident) == "number" and ident > 0 then
-        return ident
-    end
+    if type(ident) == "number" and ident > 0 then return ident end
     return nil
 end
 
@@ -39,14 +35,10 @@ end
 function mod.BarGlowHeroTrees()
     local result = {}
     local CT = C_ClassTalents
-    if not (CT and CT.GetHeroTalentSpecsForClassSpec and CT.GetActiveConfigID) then
-        return result
-    end
+    if not (CT and CT.GetHeroTalentSpecsForClassSpec and CT.GetActiveConfigID) then return result end
     local configID = CT.GetActiveConfigID()
     local success, ids = pcall(CT.GetHeroTalentSpecsForClassSpec, configID)
-    if not success or type(ids) ~= "table" then
-        return result
-    end
+    if not success or type(ids) ~= "table" then return result end
     for _, ident in ipairs(ids) do
         local details = configID
             and C_Traits
@@ -60,17 +52,11 @@ end
 -- The entry's final glow state, given its own Glow When result `main`.
 function mod.BarGlowCombine(record, main, cache)
     local hero = record.heroTree
-    if hero and not CludesUI.IS_FOREVER and ActiveHeroTree() ~= hero then
-        return false
-    end
-    if record.andMode ~= "and" then
-        return main
-    end
+    if hero and not CludesUI.IS_FOREVER and ActiveHeroTree() ~= hero then return false end
+    if record.andMode ~= "and" then return main end
     local c = type(record.conditions) == "table" and record.conditions[1]
     local spellRef = type(c) == "table" and tonumber(c.spellID)
-    if not spellRef or spellRef <= 0 then
-        return main
-    end
+    if not spellRef or spellRef <= 0 then return main end
     local isActive = (cache ~= nil and cache[spellRef] == true)
     local success
     if c.state == "missing" then

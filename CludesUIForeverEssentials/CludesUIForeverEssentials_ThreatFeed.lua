@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_ThreatFeed.lua  (WoW Forever only)
 --  The threat list for the Damage Meters "Threat" meter type: the threat
@@ -49,17 +45,11 @@ local RANKS = setmetatable({}, {
 local specIcons = {}
 local function SpecIcon(unitToken, class)
     local iconTex = specIcons[class]
-    if iconTex then
-        return iconTex
-    end
+    if iconTex then return iconTex end
     local _, _, classID = UnitClass(unitToken)
-    if issecretvalue(classID) or type(classID) ~= "number" then
-        return nil
-    end
+    if issecretvalue(classID) or type(classID) ~= "number" then return nil end
     local _, _, _, fileID = GetSpecializationInfoForClassID(classID, 1)
-    if issecretvalue(fileID) or type(fileID) ~= "number" then
-        return nil
-    end
+    if issecretvalue(fileID) or type(fileID) ~= "number" then return nil end
     specIcons[class] = fileID
     return fileID
 end
@@ -67,9 +57,7 @@ end
 -- The threat settings the rows use, read once after each settings change
 -- (ns.FeedChanged drops it; the meter's settings writes all pass there).
 local function Settings()
-    if conf then
-        return conf
-    end
+    if conf then return conf end
     conf = {
         pets = Get("pets"),
         pullBar = Get("pullBar"),
@@ -94,9 +82,7 @@ local function FillRow(region, e, rank, cfg)
     else
         local class = mod.ClassOf(unitToken)
         local name = CUI.WithSurname(UnitName(unitToken))
-        if not issecretvalue(name) and name == nil then
-            name = unitToken
-        end
+        if not issecretvalue(name) and name == nil then name = unitToken end
         region.name, region.classFilename = name, class
         if e.isPet then
             region.specIconID = PET_ICON
@@ -119,7 +105,13 @@ local function FillRow(region, e, rank, cfg)
             pct = e.rawPct
         end
     end
-    if region.threatText == nil or region._raw ~= raw or region._pct ~= pct or region._units ~= units or region._fmt ~= fmtGen then
+    if
+        region.threatText == nil
+        or region._raw ~= raw
+        or region._pct ~= pct
+        or region._units ~= units
+        or region._fmt ~= fmtGen
+    then
         region._raw, region._pct, region._units, region._fmt = raw, pct, units, fmtGen
         if raw and pct then
             region.threatText = format("%s  %.0f%%", CUI.AbbreviateNumber(raw, units), pct)
@@ -142,9 +134,7 @@ local function Build()
     if mob then
         local me, tankRaw = collector.Collect(mob, c.pets)
         if #entries > 0 then
-            if c.pullBar then
-                collector.AddPullEntry(me, tankRaw)
-            end
+            if c.pullBar then collector.AddPullEntry(me, tankRaw) end
             collector.Sort()
         end
         total = #entries
@@ -153,9 +143,7 @@ local function Build()
     local rank = 0
     for index = 1, total do
         local entry = entries[index]
-        if not entry.pull then
-            rank = rank + 1
-        end
+        if not entry.pull then rank = rank + 1 end
         local region = pool[index]
         if not region then
             region = {}
@@ -183,9 +171,7 @@ end
 -- The two threat events fire for every unit in every fight nearby, so they are
 -- registered only while a mob resolves (as the meter window does).
 local function SetThreatEvents(enabled)
-    if enabled == threatOn then
-        return
-    end
+    if enabled == threatOn then return end
     threatOn = enabled
     if enabled then
         events:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
@@ -200,9 +186,7 @@ end
 -- what a friendly unit is fighting, re-read on a short interval, in combat only.
 local function SetFollow(enabled)
     if enabled then
-        if not followTicker then
-            followTicker = C_Timer.NewTicker(FOLLOW_INTERVAL, RequestUpdate)
-        end
+        if not followTicker then followTicker = C_Timer.NewTicker(FOLLOW_INTERVAL, RequestUpdate) end
     elseif followTicker then
         followTicker:Cancel()
         followTicker = nil
@@ -211,9 +195,7 @@ end
 
 local function Update()
     pending = false
-    if not isActive then
-        return
-    end
+    if not isActive then return end
     local tracked = mod.GetTrackedUnit()
     if tracked ~= flagsUnit then
         events:RegisterUnitEvent("UNIT_FLAGS", "pet", tracked)
@@ -229,16 +211,12 @@ end
 -- A list that stayed empty under the same title has nothing to repaint.
 local function Tick()
     local changed = Update()
-    if changed and isActive and notify then
-        notify()
-    end
+    if changed and isActive and notify then notify() end
 end
 
 -- A raid pull is a burst of per-unit updates: one rebuild per short window.
 RequestUpdate = function()
-    if pending then
-        return
-    end
+    if pending then return end
     pending = true
     C_Timer.After(UPDATE_DELAY, Tick)
 end
@@ -252,37 +230,23 @@ local function OnEvent(_, evt, unitToken)
     if evt == "GROUP_ROSTER_UPDATE" then
         mod.RosterChanged()
     elseif evt == "PLAYER_TARGET_CHANGED" or evt == "PLAYER_FOCUS_CHANGED" then
-        if (evt == "PLAYER_FOCUS_CHANGED") ~= (mod.GetTrackedUnit() == "focus") then
-            return
-        end
+        if (evt == "PLAYER_FOCUS_CHANGED") ~= (mod.GetTrackedUnit() == "focus") then return end
     end
-    if pending then
-        return
-    end
+    if pending then return end
     if evt == "UNIT_THREAT_LIST_UPDATE" then
         local mob = mobUnit
-        if not mob then
-            return
-        end
+        if not mob then return end
         if unitToken ~= mob then
             local same = UnitIsUnit(unitToken, mob)
-            if not issecretvalue(same) and not same then
-                return
-            end
+            if not issecretvalue(same) and not same then return end
         end
     elseif evt == "UNIT_THREAT_SITUATION_UPDATE" then
-        if not (mod.MEMBER_UNITS[unitToken] or (mod.PET_UNITS[unitToken] and Settings().pets)) then
-            return
-        end
+        if not (mod.MEMBER_UNITS[unitToken] or (mod.PET_UNITS[unitToken] and Settings().pets)) then return end
     elseif evt == "UNIT_PET" then
-        if not (mod.MEMBER_UNITS[unitToken] and Settings().pets) then
-            return
-        end
+        if not (mod.MEMBER_UNITS[unitToken] and Settings().pets) then return end
     elseif evt == "UNIT_TARGET" or evt == "UNIT_FLAGS" then
         if unitToken == "pet" then
-            if not Settings().pets then
-                return
-            end
+            if not Settings().pets then return end
         elseif unitToken ~= mod.GetTrackedUnit() then
             return
         end
@@ -294,9 +258,7 @@ end
 -- return (the caller paints them).
 local function Start(onUpdate)
     notify = onUpdate
-    if isActive then
-        return
-    end
+    if isActive then return end
     isActive = true
     if not events then
         events = CreateFrame("Frame")
@@ -312,16 +274,12 @@ local function Start(onUpdate)
     flagsUnit = nil
     -- The roster memos missed every change made while nothing listened (the
     -- threat meter window keeps them current while it is on).
-    if not Get("enabled") then
-        mod.RosterChanged()
-    end
+    if not Get("enabled") then mod.RosterChanged() end
     Update()
 end
 
 local function Stop()
-    if not isActive then
-        return
-    end
+    if not isActive then return end
     isActive = false
     events:UnregisterAllEvents()
     threatOn, flagsUnit, mobUnit, titleName = false, nil, nil, nil
@@ -335,24 +293,18 @@ end
 -- A threat setting changed (the meter's options, its header menu, /cuitm).
 function mod.FeedChanged()
     conf = nil
-    if isActive then
-        RequestUpdate()
-    end
+    if isActive then RequestUpdate() end
 end
 
 CUI.RegisterNumberFormatCallback(function()
     fmtGen = fmtGen + 1
-    if isActive then
-        RequestUpdate()
-    end
+    if isActive then RequestUpdate() end
 end)
 
 CUI._ThreatFeed = {
     Start = Start,
     Stop = Stop,
-    IsActive = function()
-        return isActive == true
-    end,
+    IsActive = function() return isActive == true end,
     -- eng: the window's Force English Units; a change rebuilds the value texts.
     Session = function(eng)
         eng = eng == true
@@ -363,7 +315,5 @@ CUI._ThreatFeed = {
         return session
     end,
     -- Tracked unit, displayed value and pets, for the window's settings menu.
-    MenuItems = function(itemList)
-        return mod.DataMenuItems(itemList)
-    end,
+    MenuItems = function(itemList) return mod.DataMenuItems(itemList) end,
 }

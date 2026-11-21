@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_QuestRewards.lua  (WoW Forever only)
 --  Most Valuable Reward: among a quest's reward choices (quest window, quest
@@ -42,9 +38,7 @@ end
 
 local function Coin(btnFrame)
     local coin = coins[btnFrame]
-    if coin then
-        return coin
-    end
+    if coin then return coin end
     local holderFrame = CreateFrame("Frame", nil, btnFrame)
     holderFrame:SetAllPoints()
     holderFrame:SetFrameLevel(btnFrame:GetFrameLevel() + 2)
@@ -61,9 +55,7 @@ local function WaitForItems()
         waiter = CreateFrame("Frame")
         waiter:SetScript("OnEvent", function(self)
             self:UnregisterAllEvents()
-            if QuestInfoFrame.rewardsFrame and QuestInfoFrame.rewardsFrame:IsVisible() then
-                Update()
-            end
+            if QuestInfoFrame.rewardsFrame and QuestInfoFrame.rewardsFrame:IsVisible() then Update() end
         end)
     end
     waiter:RegisterEvent("GET_ITEM_INFO_RECEIVED")
@@ -72,16 +64,12 @@ end
 -- The coin on the shown choice that sells for most. Off, Apply has hidden
 -- the coins.
 function Update()
-    if not F.Enabled() then
-        return
-    end
+    if not F.Enabled() then return end
     for _, coin in pairs(coins) do
         coin:Hide()
     end
     local rewards = QuestInfoFrame.rewardsFrame
-    if not (rewards and rewards.RewardButtons) then
-        return
-    end
+    if not (rewards and rewards.RewardButtons) then return end
     local best, bestValue, missing = nil, 0, false
     for _, btnFrame in ipairs(rewards.RewardButtons) do
         if btnFrame:IsShown() and btnFrame.type == "choice" and btnFrame.objectType == "item" then
@@ -96,12 +84,8 @@ function Update()
             end
         end
     end
-    if missing then
-        WaitForItems()
-    end
-    if best then
-        Coin(best):Show()
-    end
+    if missing then WaitForItems() end
+    if best then Coin(best):Show() end
 end
 
 -- The hook goes in the first time the setting is on; off, it hides the coin

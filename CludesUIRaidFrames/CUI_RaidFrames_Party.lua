@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Party.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -30,13 +26,9 @@ local GetFFD, PixelSnap, UpdateButton = Inner.GetFFD, Inner.PixelSnap, Inner.Upd
 local UpdateReadyCheck = Inner.UpdateReadyCheck
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(v)
-    saved = v
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(v) saved = v end
 local containerFrame
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(v)
-    containerFrame = v
-end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(v) containerFrame = v end
 
 -------------------------------------------------------------------------------
 --  Unlock mode registration
@@ -386,22 +378,16 @@ mod._PARTY_PX_SIBLING = {
 }
 
 mod._IsPartySectionCustom = function(section)
-    if not saved or not saved.profile then
-        return false
-    end
+    if not saved or not saved.profile then return false end
     local ss = saved.profile.partySyncSections
-    if not ss then
-        return false
-    end
+    if not ss then return false end
     return ss[section] == false
 end
 
 -- Party inherits raid strata unless its Extras section is unsynced.
 function mod._ResolveFrameStrata(isParty)
     local strata
-    if isParty and mod._IsPartySectionCustom("rangeTooltip") then
-        strata = saved.profile.party_frameStrata
-    end
+    if isParty and mod._IsPartySectionCustom("rangeTooltip") then strata = saved.profile.party_frameStrata end
     strata = strata or saved.profile.frameStrata or "LOW"
     if
         strata ~= "BACKGROUND"
@@ -416,9 +402,7 @@ function mod._ResolveFrameStrata(isParty)
 end
 
 function mod.ApplyFrameStrata()
-    if not saved or not saved.profile then
-        return false
-    end
+    if not saved or not saved.profile then return false end
     if InCombatLockdown() then
         mod._frameStrataDirty = true
         return false
@@ -437,9 +421,7 @@ function mod.ApplyFrameStrata()
         mod._partyContainerFrame:SetFrameStrata(partyStrata)
         changed = true
     end
-    if changed and mod._RefreshPreviewMouseBlockStrata then
-        mod._RefreshPreviewMouseBlockStrata()
-    end
+    if changed and mod._RefreshPreviewMouseBlockStrata then mod._RefreshPreviewMouseBlockStrata() end
 
     return changed
 end
@@ -449,18 +431,12 @@ end
 -- that governed those settings at the time. Idempotent (only fills a nil key)
 -- and runs on every enable/profile swap, so imported profiles are covered too.
 mod._NormalizePartySyncSections = function()
-    if not (saved and saved.profile) then
-        return
-    end
+    if not (saved and saved.profile) then return end
     local ss = saved.profile.partySyncSections
-    if ss and ss.absorbs == nil and ss.healthBar == false then
-        ss.absorbs = false
-    end
+    if ss and ss.absorbs == nil and ss.healthBar == false then ss.absorbs = false end
     -- Enable/profile-swap chokepoint: recompute the proxy fast modes against
     -- the (possibly new) profile table and section state.
-    if mod._RefreshProxyModes then
-        mod._RefreshProxyModes()
-    end
+    if mod._RefreshProxyModes then mod._RefreshProxyModes() end
 end
 
 mod._partyProxy = setmetatable({}, {
@@ -472,9 +448,7 @@ mod._partyProxy = setmetatable({}, {
                 return rawget(saved.profile, "party_" .. key)
             end
             local pv = rawget(saved.profile, "party_" .. key)
-            if pv ~= nil then
-                return pv
-            end
+            if pv ~= nil then return pv end
         end
         return saved and saved.profile and saved.profile[key]
     end,
@@ -571,12 +545,8 @@ end
 mod._scaledProfile = setmetatable({}, {
     __index = function(_, key)
         -- Return active tier dimensions so all rendering uses the correct size
-        if key == "frameWidth" and mod._activeSizeW then
-            return mod._activeSizeW
-        end
-        if key == "frameHeight" and mod._activeSizeH then
-            return mod._activeSizeH
-        end
+        if key == "frameWidth" and mod._activeSizeW then return mod._activeSizeW end
+        if key == "frameHeight" and mod._activeSizeH then return mod._activeSizeH end
         local val = saved and saved.profile and saved.profile[key]
         if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and mod._indicatorScale ~= 1 then
             return val * mod._indicatorScale
@@ -606,14 +576,10 @@ mod._scaledPartyProxy = setmetatable({}, {
         -- panel view swap is active; it falls through to db.profile itself.
         if key == "frameWidth" or key == "frameHeight" then
             local p = mod._pvOverlayProxy or (saved and saved.profile)
-            if not p then
-                return nil
-            end
+            if not p then return nil end
             -- The bars' width: an attached portrait's share of the box is not theirs.
             local wid, hgt, _, res = mod.RF_PartyDims(p)
-            if key == "frameWidth" then
-                return wid - (res or 0)
-            end
+            if key == "frameWidth" then return wid - (res or 0) end
             return hgt
         end
         -- Party Frames kit: the settings its layout decides (neutral keys, the
@@ -622,9 +588,7 @@ mod._scaledPartyProxy = setmetatable({}, {
         local ovp = mod._pvOverlayProxy
         if ovp and mod.RF_PartyKit() then
             local kv = mod.RF_KitViewKeys(ovp)
-            if kv and kv[key] ~= nil then
-                return kv[key]
-            end
+            if kv and kv[key] ~= nil then return kv[key] end
         end
         local val
         local resolved = false
@@ -636,9 +600,7 @@ mod._scaledPartyProxy = setmetatable({}, {
         if shade then
             local pv
             local section = mod._PARTY_KEY_SECTION[key]
-            if section and mod._IsPartySectionCustom(section) then
-                pv = shade["party_" .. key]
-            end
+            if section and mod._IsPartySectionCustom(section) then pv = shade["party_" .. key] end
             if pv == nil then
                 -- An exact-size companion whose party sibling is stored, and whose
                 -- raid sibling the overlay does not own, stays unresolved so the
@@ -658,14 +620,10 @@ mod._scaledPartyProxy = setmetatable({}, {
             end
             if pv ~= nil then
                 resolved = true
-                if pv ~= CludesUI.SPECOV_NIL then
-                    val = pv
-                end
+                if pv ~= CludesUI.SPECOV_NIL then val = pv end
             end
         end
-        if not resolved then
-            val = mod._partyProxy[key]
-        end
+        if not resolved then val = mod._partyProxy[key] end
         if INDICATOR_SCALE_KEYS[key] and type(val) == "number" and mod._partyIndicatorScale ~= 1 then
             return val * mod._partyIndicatorScale
         end
@@ -688,9 +646,7 @@ mod._scaledPartyProxy = setmetatable({}, {
 -- _BumpAbsorbGen (the SSet/SWrite options funnel).
 function mod._RefreshProxyModes()
     local profile = saved and saved.profile
-    if not profile then
-        return
-    end
+    if not profile then return end
     local scaleKeys = INDICATOR_SCALE_KEYS
 
     -- _partyProxy: base profile + party_ overrides for custom sections.
@@ -728,12 +684,8 @@ function mod._RefreshProxyModes()
             rawset(sp, key, val)
         end
     end
-    if mod._activeSizeW then
-        rawset(sp, "frameWidth", mod._activeSizeW)
-    end
-    if mod._activeSizeH then
-        rawset(sp, "frameHeight", mod._activeSizeH)
-    end
+    if mod._activeSizeW then rawset(sp, "frameWidth", mod._activeSizeW) end
+    if mod._activeSizeH then rawset(sp, "frameHeight", mod._activeSizeH) end
 
     -- _scaledPartyProxy: party view + party dimensions + party scale.
     -- Overlay active = stay empty (full-chain fallthrough serves the panel).
@@ -778,17 +730,11 @@ function mod._RefreshProxyModes()
     -- settings pushes inside UpdateAbsorb).
     mod._absorbGen = (mod._absorbGen or 0) + 1
     -- The text plans are rebuilt on their next use (CUI_RaidFrames_TextPaint.lua).
-    if mod.RF_TextPlanDirty then
-        mod.RF_TextPlanDirty()
-    end
+    if mod.RF_TextPlanDirty then mod.RF_TextPlanDirty() end
     -- The level's event follows the views (defined once the unit trackers exist).
-    if mod._RFSyncLevelRegistration then
-        mod._RFSyncLevelRegistration()
-    end
+    if mod._RFSyncLevelRegistration then mod._RFSyncLevelRegistration() end
     -- Custom texts' UNIT_TARGET and power events follow the views too (Lifecycle).
-    if mod._RFSyncCustomRegistration then
-        mod._RFSyncCustomRegistration()
-    end
+    if mod._RFSyncCustomRegistration then mod._RFSyncCustomRegistration() end
 end
 mod._RefreshProxyModes()
 
@@ -802,9 +748,7 @@ mod._BumpAbsorbGen = function()
     mod._paintGen = (mod._paintGen or 0) + 1
     -- Heal-prediction toggles ride this same funnel: re-sync the conditional
     -- UNIT_HEAL_PREDICTION registrations (idempotent, 45 trackers).
-    if mod._RFSyncPredRegistration then
-        mod._RFSyncPredRegistration()
-    end
+    if mod._RFSyncPredRegistration then mod._RFSyncPredRegistration() end
 end
 
 -- Compute the party indicator/aura scale (mirrors the raid auto-resize in
@@ -812,9 +756,7 @@ end
 -- party frame size relative to the configured raid base, clamped to [0.7, 1.5].
 -- Independent of raid: gated on partyAutoResizeIndicators (default off).
 mod._UpdatePartyIndicatorScale = function()
-    if not (saved and saved.profile) then
-        return
-    end
+    if not (saved and saved.profile) then return end
     local cfg = saved.profile
     local scale
     if mod.RF_PartyKit() then
@@ -836,17 +778,13 @@ mod._UpdatePartyIndicatorScale = function()
     -- hardcoded always-on behavior.
     mod._partyBmScale = (cfg.partyAutoResizeTrackedBuffs ~= false) and scale or 1
     mod._partyIndicatorScale = cfg.partyAutoResizeIndicators and scale or 1
-    if mod._RefreshProxyModes then
-        mod._RefreshProxyModes()
-    end
+    if mod._RefreshProxyModes then mod._RefreshProxyModes() end
 end
 
 -- Create a single SecureGroupHeader for party frames (5 buttons max).
 -- Called once from OnEnable.
 mod._CreatePartyHeader = function()
-    if mod._partyHeader then
-        return
-    end
+    if mod._partyHeader then return end
     local cfg = saved.profile
     local pw, ph, pcs = mod.RF_PartyDims(cfg)
     local bw, bh, cs = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
@@ -941,9 +879,7 @@ end
 
 -- Full update for all visible party buttons (shared rendering functions).
 mod._UpdateAllPartyButtons = function()
-    if mod._partyPvActive then
-        return
-    end
+    if mod._partyPvActive then return end
     for _, button in ipairs(mod._partyAllButtons) do
         local u = button:GetAttribute("unit")
         if u and button:IsVisible() then
@@ -960,18 +896,12 @@ end
 -- the header stack and the header's centered child anchors keep growing around the
 -- stale width. Returns useSelf for the caller's showPlayer attribute logic.
 mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
-    if not mod._partyHeader then
-        return false
-    end
+    if not mod._partyHeader then return false end
     local cfg = saved.profile
     local pSelfFirst = cfg.partyShowSelfFirst
-    if pSelfFirst == nil then
-        pSelfFirst = cfg.showSelfFirst
-    end
+    if pSelfFirst == nil then pSelfFirst = cfg.showSelfFirst end
     local pSelfLast = cfg.partySelfLast
-    if pSelfLast == nil then
-        pSelfLast = cfg.showSelfLast
-    end
+    if pSelfLast == nil then pSelfLast = cfg.showSelfLast end
     local hideSelf = cfg.partyHideSelf
     -- Party-in-raid mode (arena, Small Raid) binds the header to raid units,
     -- which include the player, and showPlayer=false cannot exclude the player
@@ -1026,20 +956,12 @@ mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
     if not live then
         -- Hidden set: the stack starts at the first slot (see useSelf above).
     elseif not IsInGroup() then
-        if centered or cfg.partyCenterWhenSolo then
-            centerShift = 2
-        end
+        if centered or cfg.partyCenterWhenSolo then centerShift = 2 end
     elseif centered then
         local isShown = GetNumGroupMembers() or 0
-        if isShown > 5 then
-            isShown = 5
-        end
-        if hideSelf then
-            isShown = isShown - 1
-        end
-        if isShown < 1 then
-            isShown = 1
-        end
+        if isShown > 5 then isShown = 5 end
+        if hideSelf then isShown = isShown - 1 end
+        if isShown < 1 then isShown = 1 end
         centerShift = (5 - isShown) / 2
     end
     local cShiftX = PixelSnap(slotStepX * centerShift)
@@ -1050,9 +972,7 @@ mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
         local selfSlot, hdrSlot = 0, 1
         if pSelfLast then
             local numOthers = (GetNumGroupMembers() or 1) - 1
-            if numOthers < 0 then
-                numOthers = 0
-            end
+            if numOthers < 0 then numOthers = 0 end
             selfSlot, hdrSlot = numOthers, 0
         end
         if scrollBar then
@@ -1065,9 +985,7 @@ mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
                 PixelSnap(slotStepX * selfSlot) + cShiftX,
                 PixelSnap(slotStepY * selfSlot) + cShiftY
             )
-            if not InCombatLockdown() then
-                scrollBar:Show()
-            end
+            if not InCombatLockdown() then scrollBar:Show() end
         end
         mod._partyHeader:ClearAllPoints()
         mod._partyHeader:SetPoint(
@@ -1078,9 +996,7 @@ mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
             PixelSnap(slotStepY * hdrSlot) + cShiftY
         )
     else
-        if scrollBar and not InCombatLockdown() then
-            scrollBar:Hide()
-        end
+        if scrollBar and not InCombatLockdown() then scrollBar:Hide() end
         mod._partyHeader:ClearAllPoints()
         mod._partyHeader:SetPoint(basePoint, mod._partyContainerFrame, basePoint, cShiftX, cShiftY)
     end
@@ -1100,9 +1016,7 @@ end
 mod._PartyGrowth = function(cfg)
     -- (Party Frames kit: horizontal frames carry their buffs above each
     -- frame -- ns.RF_KitBmView -- so the next frame beside it stays clear.)
-    if cfg.partyHorizontal then
-        return (cfg.partyFlipGrowth == true) and "LEFT" or "RIGHT"
-    end
+    if cfg.partyHorizontal then return (cfg.partyFlipGrowth == true) and "LEFT" or "RIGHT" end
     return (cfg.partyFlipGrowth == true) and "UP" or "DOWN"
 end
 
@@ -1117,9 +1031,7 @@ end
 -- Out of combat only (callers gate).
 mod._SizePartyContainer = function(bw, bh, cs, unitGrowth)
     local c = mod._partyContainerFrame
-    if not c then
-        return
-    end
+    if not c then return end
     local cw, ch
     if unitGrowth == "RIGHT" or unitGrowth == "LEFT" then
         cw, ch = 5 * bw + 4 * cs, bh
@@ -1131,13 +1043,9 @@ mod._SizePartyContainer = function(bw, bh, cs, unitGrowth)
     if math.abs((curW or 0) - cw) > 0.01 or math.abs((curH or 0) - ch) > 0.01 then
         local heading = mod._partyHeader
         local isShown = heading and heading:IsShown()
-        if isShown then
-            heading:Hide()
-        end
+        if isShown then heading:Hide() end
         c:SetSize(cw, ch)
-        if isShown then
-            heading:Show()
-        end
+        if isShown then heading:Show() end
     end
 end
 

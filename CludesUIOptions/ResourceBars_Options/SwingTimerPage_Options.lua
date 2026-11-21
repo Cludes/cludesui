@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\SwingTimerPage_Options.lua
 --  Resource Bars options: Swing Timer page. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
@@ -66,16 +62,12 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         local texOrder2 = _G._CURB_BarTextureOrder or {}
         local texLookup = _G._CURB_BarTextures or {}
         for _, key in ipairs(texOrder2) do
-            if key ~= "---" then
-                texValues[key] = texNames[key] or key
-            end
+            if key ~= "---" then texValues[key] = texNames[key] or key end
             texOrder[#texOrder + 1] = key
         end
         texValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return texLookup[key]
-            end,
+            background = function(key) return texLookup[key] end,
         }
     end
 
@@ -86,21 +78,15 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
 
     local function ApplySwingTimer()
-        if _G._CURB_Apply then
-            _G._CURB_Apply()
-        end
-        if CludesUI.NotifyElementResized then
-            CludesUI.NotifyElementResized("ERB_SwingTimer")
-        end
+        if _G._CURB_Apply then _G._CURB_Apply() end
+        if CludesUI.NotifyElementResized then CludesUI.NotifyElementResized("ERB_SwingTimer") end
     end
     -- A setting row's getter for one swing timer key: its value, or default when
     -- it is unset (no default: the value as stored, nil without a profile).
     local function Getter(key, default)
         return function()
             local profile = DB()
-            if default == nil then
-                return profile and profile.swingTimer[key]
-            end
+            if default == nil then return profile and profile.swingTimer[key] end
             return profile and profile.swingTimer[key] or default
         end
     end
@@ -109,14 +95,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local function Setter(key, alsoPage)
         return function(val)
             local profile = DB()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.swingTimer[key] = val
             ApplySwingTimer()
-            if alsoPage then
-                CludesUI:RefreshPage()
-            end
+            if alsoPage then CludesUI:RefreshPage() end
         end
     end
 
@@ -170,9 +152,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     step = 1,
                     get = function()
                         local profile = DB()
-                        if not profile then
-                            return 0
-                        end
+                        if not profile then return 0 end
                         local swingCfg = profile.swingTimer
                         if swingCfg.unlockPos and swingCfg.unlockPos.point then
                             return swingCfg.unlockPos.x or 0
@@ -181,9 +161,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local swingCfg = profile.swingTimer
                         if swingCfg.unlockPos and swingCfg.unlockPos.point then
                             swingCfg.unlockPos.x = val
@@ -201,9 +179,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     step = 1,
                     get = function()
                         local profile = DB()
-                        if not profile then
-                            return 0
-                        end
+                        if not profile then return 0 end
                         local swingCfg = profile.swingTimer
                         if swingCfg.unlockPos and swingCfg.unlockPos.point then
                             return swingCfg.unlockPos.y or 0
@@ -212,9 +188,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local swingCfg = profile.swingTimer
                         if swingCfg.unlockPos and swingCfg.unlockPos.point then
                             swingCfg.unlockPos.y = val
@@ -298,9 +272,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
                 set = function(val)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.swingTimer[key] = val
                     ApplySwingTimer()
                 end,
@@ -330,12 +302,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         caps = { partyIncludesRaid = false, luaDragonriding = true },
         disabledFn = stOff,
         disabledTooltip = SWING_TIP,
-        onChanged = function()
-            ApplySwingTimer()
-        end,
-        onOptionChanged = function()
-            ApplySwingTimer()
-        end,
+        onChanged = function() ApplySwingTimer() end,
+        onOptionChanged = function() ApplySwingTimer() end,
     }, {
         type = "toggle",
         text = "Hide When Idle",
@@ -359,13 +327,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         local condShow
         local function OpenTalents()
             local popFrame = condShow and condShow._popupFrame
-            if popFrame and popFrame:IsShown() then
-                popFrame:Hide()
-            end
+            if popFrame and popFrame:IsShown() then popFrame:Hide() end
             local g = STCfg()
-            if not g then
-                return
-            end
+            if not g then return end
             local _, class = UnitClass("player")
             local byClass = g.classTalentConditions
             CludesUI.ShowTalentConditionsPopup({
@@ -375,9 +339,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 fontKey = "resourceBars",
                 onConfirm = function(entries)
                     local q = STCfg()
-                    if not q then
-                        return
-                    end
+                    if not q then return end
                     local tbl = q.classTalentConditions
                     if entries then
                         if not tbl then
@@ -387,9 +349,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         tbl[class] = entries
                     elseif tbl then
                         tbl[class] = nil
-                        if not next(tbl) then
-                            q.classTalentConditions = nil
-                        end
+                        if not next(tbl) then q.classTalentConditions = nil end
                     end
                     ApplySwingTimer()
                 end,
@@ -428,9 +388,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         if val then
                             profile.swingTimer.idleShowFill = true
                         else
@@ -455,14 +413,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local stStock = mod.ST_Style() ~= "cui"
     local stClassic = stStock and mod.ERB_BarsClassic()
     local function Gate(rowConf)
-        if stStock then
-            return CludesUI.BlizzStyle.Gate("resourcebars", rowConf)
-        end
+        if stStock then return CludesUI.BlizzStyle.Gate("resourcebars", rowConf) end
         return rowConf
     end
-    if stStock then
-        cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "resourcebars")
-    end
+    if stStock then cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "resourcebars") end
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog).
     -- Classic WoW UI: the Border Size slot sizes the vanilla frame instead.
@@ -482,9 +436,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 getValue = Getter("borderTexture", "solid"),
                 setValue = function(val)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     local swingCfg = profile.swingTimer
                     swingCfg.borderTexture = val
                     swingCfg.borderTextureOffset = nil
@@ -498,12 +450,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     swingCfg.borderA = 1
                     swingCfg.borderBehind = _bbehind
                     local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
-                    if defSz then
-                        swingCfg.borderSize = defSz
-                    end
-                    if swingCfg.borderSizePx then
-                        swingCfg.borderSizePx = false
-                    end
+                    if defSz then swingCfg.borderSize = defSz end
+                    if swingCfg.borderSizePx then swingCfg.borderSizePx = false end
                     ApplySwingTimer()
                     CludesUI:RefreshPage(true)
                 end,
@@ -514,9 +462,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return profile and profile.swingTimer.stockBorderScale
                     end, function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         profile.swingTimer.stockBorderScale = val
                         ApplySwingTimer()
                         CludesUI.ReapplyMatchPads("ERB_SwingTimer")
@@ -532,9 +478,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     setStep = function(val)
                         local profile = DB()
-                        if profile then
-                            profile.swingTimer.borderSize = val
-                        end
+                        if profile then profile.swingTimer.borderSize = val end
                     end,
                     getTex = function()
                         local profile = DB()
@@ -546,9 +490,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     setPx = function(val)
                         local profile = DB()
-                        if profile then
-                            profile.swingTimer.borderSizePx = val
-                        end
+                        if profile then profile.swingTimer.borderSizePx = val end
                     end,
                     apply = function()
                         ApplySwingTimer()
@@ -586,9 +528,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     setX = function(val)
                         local profile = DB()
-                        if profile then
-                            profile.swingTimer.borderTextureOffset = val
-                        end
+                        if profile then profile.swingTimer.borderTextureOffset = val end
                     end,
                     getY = function()
                         local profile = DB()
@@ -596,9 +536,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     setY = function(val)
                         local profile = DB()
-                        if profile then
-                            profile.swingTimer.borderTextureOffsetY = val
-                        end
+                        if profile then profile.swingTimer.borderTextureOffsetY = val end
                     end,
                     apply = function()
                         ApplySwingTimer()
@@ -620,24 +558,16 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 title = "Corner Radius",
                 tip = "Corner Radius",
                 disabled = function()
-                    if stOff() or stStock then
-                        return true
-                    end
+                    if stOff() or stStock then return true end
                     local profile = DB()
                     return not CludesUI.RoundedStyleOK(profile and profile.swingTimer.borderTexture)
                 end,
                 disabledTooltip = function()
-                    if stStock then
-                        return CludesUI.BlizzStyle.Label("resourcebars")
-                    end
-                    if stOff() then
-                        return SWING_TIP
-                    end
+                    if stStock then return CludesUI.BlizzStyle.Label("resourcebars") end
+                    if stOff() then return SWING_TIP end
                     return "This option requires the Solid, Glow or Shadow border style."
                 end,
-                requireState = function()
-                    return stStock and "disabled" or "enabled"
-                end,
+                requireState = function() return stStock and "disabled" or "enabled" end,
                 rows = CludesUI.RoundedCornerRows({
                     {
                         type = "slider",
@@ -653,9 +583,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     return profile and profile.swingTimer.cornerMask
                 end, function(val)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.swingTimer.cornerMask = val
                     ApplySwingTimer()
                 end),
@@ -666,12 +594,14 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     hasAlpha = true,
                     disabled = function()
                         local profile = DB()
-                        return not (profile and profile.swingTimer.enabled and (profile.swingTimer.borderSize or 0) > 0)
+                        return not (
+                            profile
+                            and profile.swingTimer.enabled
+                            and (profile.swingTimer.borderSize or 0) > 0
+                        )
                     end,
                     disabledTooltip = function()
-                        if stOff() then
-                            return SWING_TIP
-                        end
+                        if stOff() then return SWING_TIP end
                         return "This option requires a Border Size above 0."
                     end,
                     getValue = function()
@@ -683,9 +613,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(red, green, blue, a)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         profile.swingTimer.borderR, profile.swingTimer.borderG, profile.swingTimer.borderB, profile.swingTimer.borderA =
                             red, green, blue, a
                         ApplySwingTimer()
@@ -707,13 +635,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         step = 1,
                         get = function()
                             local profile = DB()
-                            if not profile then
-                                return 0
-                            end
+                            if not profile then return 0 end
                             local val = profile.swingTimer.borderTextureShiftX
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local _, _, dsx = CludesUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.swingTimer.borderTexture or "solid",
@@ -723,9 +647,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         end,
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             profile.swingTimer.borderTextureShiftX = val == 0 and nil or val
                             ApplySwingTimer()
                             CludesUI:RefreshPage()
@@ -739,13 +661,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         step = 1,
                         get = function()
                             local profile = DB()
-                            if not profile then
-                                return 0
-                            end
+                            if not profile then return 0 end
                             local val = profile.swingTimer.borderTextureShiftY
-                            if val then
-                                return val
-                            end
+                            if val then return val end
                             local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                 "resourcebars",
                                 profile.swingTimer.borderTexture or "solid",
@@ -755,9 +673,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         end,
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             profile.swingTimer.borderTextureShiftY = val == 0 and nil or val
                             ApplySwingTimer()
                             CludesUI:RefreshPage()
@@ -769,9 +685,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         get = Getter("borderBehind", false),
                         set = function(val)
                             local profile = DB()
-                            if not profile then
-                                return
-                            end
+                            if not profile then return end
                             profile.swingTimer.borderBehind = val == false and nil or val
                             ApplySwingTimer()
                             CludesUI:RefreshPage()
@@ -800,40 +714,33 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             hasAlpha = true,
             getValue = function()
                 local profile = DB()
-                if not profile then
-                    return 1, 1, 1, 1
-                end
+                if not profile then return 1, 1, 1, 1 end
                 local swingCfg = profile.swingTimer
-                return swingCfg[prefixText .. "R"], swingCfg[prefixText .. "G"], swingCfg[prefixText .. "B"], swingCfg[prefixText .. "A"]
+                return swingCfg[prefixText .. "R"],
+                    swingCfg[prefixText .. "G"],
+                    swingCfg[prefixText .. "B"],
+                    swingCfg[prefixText .. "A"]
             end,
             setValue = function(r, gg, b, a)
                 local profile = DB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 local swingCfg = profile.swingTimer
                 swingCfg[prefixText .. "R"], swingCfg[prefixText .. "G"], swingCfg[prefixText .. "B"], swingCfg[prefixText .. "A"] =
                     r, gg, b, a
-                if swingCfg.classColored then
-                    swingCfg.classColored = false
-                end
+                if swingCfg.classColored then swingCfg.classColored = false end
                 ApplySwingTimer()
                 CludesUI:RefreshPage()
             end,
             onClick = function(self)
                 local profile = DB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 if profile.swingTimer.classColored then
                     profile.swingTimer.classColored = false
                     ApplySwingTimer()
                     CludesUI:RefreshPage()
                     return
                 end
-                if self._eabOrigClick then
-                    self._eabOrigClick(self)
-                end
+                if self._eabOrigClick then self._eabOrigClick(self) end
             end,
             refreshAlpha = function()
                 local profile = DB()
@@ -856,16 +763,12 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     return not (profile and profile.swingTimer.gradientEnabled)
                 end,
                 disabledTooltip = function()
-                    if stOff() then
-                        return SWING_TIP
-                    end
+                    if stOff() then return SWING_TIP end
                     return "Gradient"
                 end,
                 getValue = function()
                     local profile = DB()
-                    if not profile then
-                        return 0.20, 0.20, 0.80, 1
-                    end
+                    if not profile then return 0.20, 0.20, 0.80, 1 end
                     return profile.swingTimer.gradientR,
                         profile.swingTimer.gradientG,
                         profile.swingTimer.gradientB,
@@ -873,9 +776,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(red, green, blue, a)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.swingTimer.gradientR, profile.swingTimer.gradientG, profile.swingTimer.gradientB, profile.swingTimer.gradientA =
                         red, green, blue, a
                     ApplySwingTimer()
@@ -889,17 +790,13 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 getValue = function()
                     local _, classFile = UnitClass("player")
                     local classColor = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                    if classColor then
-                        return classColor.r, classColor.g, classColor.b, 1
-                    end
+                    if classColor then return classColor.r, classColor.g, classColor.b, 1 end
                     return 1, 0.70, 0, 1
                 end,
                 setValue = function() end,
                 onClick = function()
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.swingTimer.classColored = true
                     ApplySwingTimer()
                     CludesUI:RefreshPage()
@@ -924,9 +821,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             local profile = DB()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.swingTimer.bgA = val / 100
             ApplySwingTimer()
         end,
@@ -971,9 +866,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(red, green, blue)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     profile.swingTimer.bgR, profile.swingTimer.bgG, profile.swingTimer.bgB = red, green, blue
                     ApplySwingTimer()
                 end,
@@ -1020,9 +913,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = SWING_TIP,
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
     cursorY = cursorY - height
@@ -1032,25 +923,19 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         -- shows the colour the bar paints (ST_SparkColor). A pick of the unset
         -- colour (white, or a combined off hand's fill) stores nothing, so the
         -- picker's Cancel leaves an unset spark following its default.
-        local function Near(posX, cursorY)
-            return math.abs(posX - cursorY) < 0.002
-        end
+        local function Near(posX, cursorY) return math.abs(posX - cursorY) < 0.002 end
         local function SparkSwatch(name, key)
             local prefixText = key .. "Spark"
             return {
                 tooltip = name,
                 hasAlpha = true,
                 getValue = function()
-                    if mod.ST_SparkColor then
-                        return mod.ST_SparkColor(key)
-                    end
+                    if mod.ST_SparkColor then return mod.ST_SparkColor(key) end
                     return 1, 1, 1, 1
                 end,
                 setValue = function(r, gg, b, a)
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     a = a or 1
                     if mod.ST_SparkColor then
                         local ur, ug, ub, ua = mod.ST_SparkColor(key, true)
@@ -1104,9 +989,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
     if not CludesUI._prebuilding then
         local region = sparkRow._rightRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         -- Checked = the row shows. The keys are the per-row toggles this
         -- list replaces (nil = on), so every profile carries over as is.
         local WEAPON_ITEMS = {
@@ -1125,9 +1008,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             end,
             function(keyName, val)
                 local profile = DB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 profile.swingTimer[keyName] = val
                 -- The cog's Combine Hands greys out while a hand is off.
                 ApplySwingTimer()
@@ -1192,7 +1073,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     tooltip = "Show the off hand as a spark on the Main Hand bar instead of its own row.",
                     disabled = function()
                         local profile = DB()
-                        return profile and (profile.swingTimer.showMH == false or profile.swingTimer.showOH == false)
+                        return profile
+                            and (profile.swingTimer.showMH == false or profile.swingTimer.showOH == false)
                     end,
                     disabledTooltip = function()
                         local profile = DB()
@@ -1248,13 +1130,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             get = function()
                 local profile = DB()
                 local g = profile and profile.swingTimer
-                if not g then
-                    return def[1], def[2], def[3], def[4]
-                end
+                if not g then return def[1], def[2], def[3], def[4] end
                 local keyName = prefixText
-                if shared and g[prefixText .. "R"] == nil then
-                    keyName = shared
-                end
+                if shared and g[prefixText .. "R"] == nil then keyName = shared end
                 return g[keyName .. "R"] or def[1],
                     g[keyName .. "G"] or def[2],
                     g[keyName .. "B"] or def[3],
@@ -1262,9 +1140,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             end,
             set = function(r, gg, b, a)
                 local profile = DB()
-                if not profile then
-                    return
-                end
+                if not profile then return end
                 local swingCfg = profile.swingTimer
                 swingCfg[prefixText .. "R"], swingCfg[prefixText .. "G"], swingCfg[prefixText .. "B"], swingCfg[prefixText .. "A"] =
                     r, gg, b, a
@@ -1395,13 +1271,13 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     tooltip = "Opacity of a row whose target is out of range.",
                     get = function()
                         local profile = DB()
-                        return math.floor(((profile and profile.swingTimer.outOfRangeAlpha or 0.4) * 100) + 0.5)
+                        return math.floor(
+                            ((profile and profile.swingTimer.outOfRangeAlpha or 0.4) * 100) + 0.5
+                        )
                     end,
                     set = function(val)
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         profile.swingTimer.outOfRangeAlpha = val / 100
                         ApplySwingTimer()
                     end,
@@ -1426,13 +1302,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(guideRow._leftRegion, {
-            disabled = function()
-                return stOff() or guideOff()
-            end,
+            disabled = function() return stOff() or guideOff() end,
             disabledTooltip = function()
-                if stOff() then
-                    return SWING_TIP
-                end
+                if stOff() then return SWING_TIP end
                 return "Movement Guide"
             end,
             title = "Movement Guide",

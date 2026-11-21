@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_BlizzardParty.lua
 --  Shared "Hide Blizzard Party Panel" feature.
@@ -27,13 +25,9 @@ local _partyOrigParent
 local function ApplyHideBlizzardPartyFrame()
     local shouldHide = CludesUIDB and CludesUIDB.hideBlizzardPartyFrame
     -- Never hidden this session and not wanted hidden: nothing to apply.
-    if not shouldHide and not _partyOrigParent then
-        return
-    end
+    if not shouldHide and not _partyOrigParent then return end
     local mgr = CompactRaidFrameManager
-    if not mgr then
-        return
-    end
+    if not mgr then return end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("BlizzardPartyPanel", ApplyHideBlizzardPartyFrame)
         return
@@ -44,12 +38,8 @@ local function ApplyHideBlizzardPartyFrame()
             _partyHiddenParent = CreateFrame("Frame")
             _partyHiddenParent:Hide()
         end
-        if not _partyOrigParent then
-            _partyOrigParent = mgr:GetParent()
-        end
-        if mgr:GetParent() ~= _partyHiddenParent then
-            mgr:SetParent(_partyHiddenParent)
-        end
+        if not _partyOrigParent then _partyOrigParent = mgr:GetParent() end
+        if mgr:GetParent() ~= _partyHiddenParent then mgr:SetParent(_partyHiddenParent) end
     elseif mgr:GetParent() ~= _partyOrigParent then
         mgr:SetParent(_partyOrigParent)
     end
@@ -61,8 +51,6 @@ local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 initFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 initFrame:SetScript("OnEvent", function(self, evt)
-    if evt == "PLAYER_ENTERING_WORLD" then
-        self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-    end
+    if evt == "PLAYER_ENTERING_WORLD" then self:UnregisterEvent("PLAYER_ENTERING_WORLD") end
     ApplyHideBlizzardPartyFrame()
 end)

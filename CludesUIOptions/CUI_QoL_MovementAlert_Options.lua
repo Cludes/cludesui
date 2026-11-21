@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_QoL_MovementAlert_Options.lua
 --  Options page for Movement Alert (registered as a page under the
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  rather than in-page sliders, matching how Combat Alert/BattleRes work.
 -------------------------------------------------------------------------------
 
-if not CludesUI._ModuleNS["CludesUIQoL"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
@@ -31,24 +27,12 @@ local function MA()
 end
 
 local function ApplyMovementAlert()
-    if CludesUI._applyMovementAlert then
-        CludesUI._applyMovementAlert()
-    end
-    if CludesUI._applyTimeSpiral then
-        CludesUI._applyTimeSpiral()
-    end
-    if CludesUI._applyGateway then
-        CludesUI._applyGateway()
-    end
-    if CludesUI._UpdateMovementAlertEvents then
-        CludesUI._UpdateMovementAlertEvents()
-    end
-    if CludesUI._CheckMovementCooldown then
-        CludesUI._CheckMovementCooldown()
-    end
-    if CludesUI._CheckGatewayUsable then
-        CludesUI._CheckGatewayUsable()
-    end
+    if CludesUI._applyMovementAlert then CludesUI._applyMovementAlert() end
+    if CludesUI._applyTimeSpiral then CludesUI._applyTimeSpiral() end
+    if CludesUI._applyGateway then CludesUI._applyGateway() end
+    if CludesUI._UpdateMovementAlertEvents then CludesUI._UpdateMovementAlertEvents() end
+    if CludesUI._CheckMovementCooldown then CludesUI._CheckMovementCooldown() end
+    if CludesUI._CheckGatewayUsable then CludesUI._CheckGatewayUsable() end
 end
 
 -- The legacy stored "text" value displays and renders as text_dn (its old
@@ -157,20 +141,14 @@ local function TTSVoiceDropdownValues()
     values._menuOpts = {
         itemHeight = 26,
         maxTextWidthPct = 0.8,
-        iconAtlas = function()
-            return CludesUI.SOUND_ICON_ATLAS
-        end,
-        iconPressedAtlas = function()
-            return CludesUI.SOUND_ICON_PRESSED_ATLAS
-        end,
+        iconAtlas = function() return CludesUI.SOUND_ICON_ATLAS end,
+        iconPressedAtlas = function() return CludesUI.SOUND_ICON_PRESSED_ATLAS end,
         iconOnClick = function(key)
             if C_VoiceChat and C_VoiceChat.SpeakText then
                 pcall(C_VoiceChat.SpeakText, key, "This is a voice preview", 1, 100, true)
             end
         end,
-        iconTooltip = function()
-            return "Preview Voice"
-        end,
+        iconTooltip = function() return "Preview Voice" end,
     }
     return values, sequence
 end
@@ -262,20 +240,14 @@ local function ShowAddSpellPopup(onAdded)
             end
             sidBox:SetText("")
             shade:Hide()
-            if dialog._onAdded then
-                dialog._onAdded(ident)
-            end
+            if dialog._onAdded then dialog._onAdded(ident) end
         end
         addBtn:SetScript("OnClick", TryAdd)
         sidBox:SetScript("OnEnterPressed", TryAdd)
-        sidBox:SetScript("OnEscapePressed", function(self)
-            self:ClearFocus()
-        end)
+        sidBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
 
         shade:SetScript("OnMouseDown", function(self)
-            if not dialog:IsMouseOver() then
-                self:Hide()
-            end
+            if not dialog:IsMouseOver() then self:Hide() end
         end)
 
         dialog._dimmer = shade
@@ -364,20 +336,14 @@ local function ShowCustomTextPopup(titleText, initial, onSave)
 
         local function Commit()
             shade:Hide()
-            if dialog._onSave then
-                dialog._onSave(dialog._box:GetText() or "")
-            end
+            if dialog._onSave then dialog._onSave(dialog._box:GetText() or "") end
         end
         saveBtn:SetScript("OnClick", Commit)
         boxFrame:SetScript("OnEnterPressed", Commit)
-        boxFrame:SetScript("OnEscapePressed", function()
-            shade:Hide()
-        end)
+        boxFrame:SetScript("OnEscapePressed", function() shade:Hide() end)
 
         shade:SetScript("OnMouseDown", function(self)
-            if not dialog:IsMouseOver() then
-                self:Hide()
-            end
+            if not dialog:IsMouseOver() then self:Hide() end
         end)
 
         dialog._dimmer = shade
@@ -402,9 +368,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     local ma = MA()
     -- Row accessors over ma: a key read (or its default) and written.
     local function MaField(key)
-        return function(value)
-            ma[key] = value
-        end
+        return function(value) ma[key] = value end
     end
     local function MaFieldThen(key)
         return function(value)
@@ -413,13 +377,9 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         end
     end
     local function MaFieldOr(key, default)
-        return function()
-            return ma[key] or default
-        end
+        return function() return ma[key] or default end
     end
-    if not ma then
-        return 0
-    end
+    if not ma then return 0 end
     local cursorY = yOffset
     local _, height, heading
 
@@ -440,13 +400,9 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     end
     local previewBtnFrame
     previewBtnFrame, height = W:WideButton(hostFrame, PreviewLabel(), cursorY, function()
-        if not CludesUI._MovementAlertPreview then
-            return
-        end
+        if not CludesUI._MovementAlertPreview then return end
         CludesUI._MovementAlertPreview(not CludesUI._MovementAlertPreviewActive())
-        if previewBtnLbl then
-            previewBtnLbl:SetText(PreviewLabel())
-        end
+        if previewBtnLbl then previewBtnLbl:SetText(PreviewLabel()) end
     end)
     cursorY = cursorY - height
     if not CludesUI._prebuilding then
@@ -470,9 +426,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         end
         -- Keep the label truthful if the preview self-terminated meanwhile.
         CludesUI.RegisterWidgetRefresh(function()
-            if previewBtnLbl then
-                previewBtnLbl:SetText(PreviewLabel())
-            end
+            if previewBtnLbl then previewBtnLbl:SetText(PreviewLabel()) end
         end)
     end
     if not _previewOnHideRegistered and CludesUI.RegisterOnHide then
@@ -500,9 +454,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     -- Off = no class checked at all (enabledClasses nil), the Totem Bar
     -- convention -- the page stays configurable while ANY class is checked;
     -- the backend additionally gates runtime on the player's own class.
-    local function maOff()
-        return not ma.enabledClasses
-    end
+    local function maOff() return not ma.enabledClasses end
     CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_MovementAlert",
         disabled = maOff,
@@ -522,9 +474,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         disabled = maOff,
         disabledTooltip = "Select a class above",
         rawTooltip = true,
-        getValue = function()
-            return ma.combatOnly == true
-        end,
+        getValue = function() return ma.combatOnly == true end,
         setValue = MaFieldThen("combatOnly"),
     })
     cursorY = cursorY - height
@@ -550,36 +500,26 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             210,
             leftRegion:GetFrameLevel() + 2,
             classItems,
-            function(key)
-                return ma.enabledClasses and ma.enabledClasses[key] or false
-            end,
+            function(key) return ma.enabledClasses and ma.enabledClasses[key] or false end,
             function(key, val)
                 -- Zero classes checked collapses the set back to nil, which is THE
                 -- disabled state: the backend's MovementEnabled() gate drops every
                 -- event/cache/poll, same as the old master toggle being off.
-                if not ma.enabledClasses then
-                    ma.enabledClasses = {}
-                end
+                if not ma.enabledClasses then ma.enabledClasses = {} end
                 ma.enabledClasses[key] = val or nil
-                if not next(ma.enabledClasses) then
-                    ma.enabledClasses = nil
-                end
+                if not next(ma.enabledClasses) then ma.enabledClasses = nil end
                 local ddMenu = checkDrop._ddMenu
                 if ddMenu then
                     for _, scrollFrame in ipairs({ ddMenu:GetChildren() }) do
                         local sc = scrollFrame.GetScrollChild and scrollFrame:GetScrollChild()
                         if sc then
                             for _, row in ipairs({ sc:GetChildren() }) do
-                                if row._updateCheck then
-                                    row._updateCheck()
-                                end
+                                if row._updateCheck then row._updateCheck() end
                             end
                         end
                     end
                 end
-                if CludesUI._UpdateMovementAlertEvents then
-                    CludesUI._UpdateMovementAlertEvents()
-                end
+                if CludesUI._UpdateMovementAlertEvents then CludesUI._UpdateMovementAlertEvents() end
                 ApplyMovementAlert()
                 CludesUI:RefreshPage()
             end,
@@ -606,16 +546,12 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         if mt then
             CludesUI.AppendSharedMediaTextures(mt.names, mt.order, nil, mt.lookup)
             for _, key in ipairs(mt.order) do
-                if key ~= "---" then
-                    barTexValues[key] = mt.names[key] or key
-                end
+                if key ~= "---" then barTexValues[key] = mt.names[key] or key end
                 barTexOrder[#barTexOrder + 1] = key
             end
             barTexValues._menuOpts = {
                 itemHeight = 28,
-                background = function(key)
-                    return mt.lookup[key]
-                end,
+                background = function(key) return mt.lookup[key] end,
             }
         end
     end
@@ -628,24 +564,16 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         local mo = ttsValues._menuOpts
         local origAtlas, origPressed, origClick = mo.iconAtlas, mo.iconPressedAtlas, mo.iconOnClick
         mo.iconAtlas = function(key)
-            if key == "NONE" then
-                return nil
-            end
+            if key == "NONE" then return nil end
             return origAtlas and origAtlas(key)
         end
         mo.iconPressedAtlas = function(key)
-            if key == "NONE" then
-                return nil
-            end
+            if key == "NONE" then return nil end
             return origPressed and origPressed(key)
         end
         mo.iconOnClick = function(key)
-            if key == "NONE" then
-                return
-            end
-            if origClick then
-                origClick(key)
-            end
+            if key == "NONE" then return end
+            if origClick then origClick(key) end
         end
     end
 
@@ -656,9 +584,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         local val = ma.displayMode or "text"
         return val == "text" or val == "text_nd" or val == "text_dn" or val == "text_d"
     end
-    local function DMSwatchesDisabled()
-        return maOff() or ma.displayMode == "icon"
-    end
+    local function DMSwatchesDisabled() return maOff() or ma.displayMode == "icon" end
 
     local dmRow
     dmRow, height = W:DualRow(hostFrame, cursorY, {
@@ -671,9 +597,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         rawTooltip = true,
         getValue = function()
             local val = ma.displayMode or "text"
-            if val == "text" then
-                val = "text_dn"
-            end
+            if val == "text" then val = "text_dn" end
             return val
         end,
         setValue = function(val)
@@ -682,9 +606,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             -- Crossing the text <-> bar/icon boundary re-seeds Text Size
             -- to that family's default (text 24, bar/icon 12).
             local isText = (val == "text_nd" or val == "text_dn" or val == "text_d")
-            if wasText ~= isText then
-                ma.textSize = isText and 24 or 12
-            end
+            if wasText ~= isText then ma.textSize = isText and 24 or 12 end
             ApplyMovementAlert()
             CludesUI:RefreshPage()
         end,
@@ -693,9 +615,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         text = "Bar Texture",
         values = barTexValues,
         order = barTexOrder,
-        disabled = function()
-            return maOff() or ma.displayMode ~= "bar"
-        end,
+        disabled = function() return maOff() or ma.displayMode ~= "bar" end,
         disabledTooltip = "Requires Bar display mode",
         rawTooltip = true,
         getValue = MaFieldOr("barTexture", "none"),
@@ -706,26 +626,20 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     -- Bar settings cog on the Bar Texture slot: Show Icon on Bar lives here.
     if not CludesUI._prebuilding then
         local region = dmRow._rightRegion
-        local function BarCogOff()
-            return maOff() or ma.displayMode ~= "bar"
-        end
+        local function BarCogOff() return maOff() or ma.displayMode ~= "bar" end
         CludesUI.BuildInlineCog(region, {
             title = "Bar Settings",
             rows = {
                 {
                     type = "toggle",
                     label = "Show Icon on Bar",
-                    get = function()
-                        return ma.barShowIcon ~= false
-                    end,
+                    get = function() return ma.barShowIcon ~= false end,
                     set = MaFieldThen("barShowIcon"),
                 },
                 {
                     type = "toggle",
                     label = "Show Duration Text",
-                    get = function()
-                        return ma.barShowDuration ~= false
-                    end,
+                    get = function() return ma.barShowDuration ~= false end,
                     set = MaFieldThen("barShowDuration"),
                 },
             },
@@ -764,9 +678,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     min = 16,
                     max = 128,
                     step = 1,
-                    disabled = function()
-                        return ma.displayMode ~= "icon"
-                    end,
+                    disabled = function() return ma.displayMode ~= "icon" end,
                     disabledTooltip = "Requires the Icon display mode",
                     rawTooltip = true,
                     get = MaFieldOr("iconSize", 40),
@@ -777,18 +689,14 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Show Decimal",
-                    disabled = function()
-                        return ma.displayMode == "icon"
-                    end,
+                    disabled = function() return ma.displayMode == "icon" end,
                     disabledTooltip = "Not used in Icon display mode",
                     rawTooltip = true,
                     -- tonumber guard: an older numeric-input build could store
                     -- precision as a string ("1"), and `"1" > 0` is a hard error
                     -- in Lua 5.1 -- it would throw here before set could run, so
                     -- the toggle silently did nothing until a value was written.
-                    get = function()
-                        return (tonumber(ma.precision) or 1) > 0
-                    end,
+                    get = function() return (tonumber(ma.precision) or 1) > 0 end,
                     set = function(val)
                         ma.precision = val and 1 or 0
                         ApplyMovementAlert()
@@ -809,9 +717,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             function()
                 local _, class = UnitClass("player")
                 local classColor = class and CludesUI.GetClassColor(class)
-                if classColor then
-                    return classColor.r, classColor.g, classColor.b
-                end
+                if classColor then return classColor.r, classColor.g, classColor.b end
                 return 1, 1, 1
             end,
             function() end,
@@ -820,9 +726,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         )
         Pix.Point(dmClassSwatch, "RIGHT", dmAnchor, "LEFT", -8, 0)
         dmClassSwatch:SetScript("OnClick", function()
-            if DMSwatchesDisabled() then
-                return
-            end
+            if DMSwatchesDisabled() then return end
             ma.textColorUseClass = true
             ApplyMovementAlert()
             CludesUI:RefreshPage()
@@ -834,9 +738,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         local dmSwatch, dmUpdateSwatch = CludesUI.BuildColorSwatch(
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
-            function()
-                return ma.textColorR or 1, ma.textColorG or 1, ma.textColorB or 1
-            end,
+            function() return ma.textColorR or 1, ma.textColorG or 1, ma.textColorB or 1 end,
             function(red, green, blue)
                 ma.textColorR, ma.textColorG, ma.textColorB = red, green, blue
                 ApplyMovementAlert()
@@ -848,18 +750,14 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         leftRegion._lastInline = dmSwatch
         local dmOrigClick = dmSwatch:GetScript("OnClick")
         dmSwatch:SetScript("OnClick", function(self, ...)
-            if DMSwatchesDisabled() then
-                return
-            end
+            if DMSwatchesDisabled() then return end
             if ma.textColorUseClass then
                 ma.textColorUseClass = false
                 ApplyMovementAlert()
                 CludesUI:RefreshPage()
                 return
             end
-            if dmOrigClick then
-                dmOrigClick(self, ...)
-            end
+            if dmOrigClick then dmOrigClick(self, ...) end
         end)
         CludesUI.HoverTip(dmSwatch, "Custom Colored")
         local function UpdateDmSwatches()
@@ -885,9 +783,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         text = "Sound",
         values = sndValues,
         order = sndOrder,
-        disabled = function()
-            return maOff() or ma.maTtsEnabled == true
-        end,
+        disabled = function() return maOff() or ma.maTtsEnabled == true end,
         disabledTooltip = "Text-to-Speech is enabled and takes priority over Sound.",
         rawTooltip = true,
         getValue = MaFieldOr("maSoundKey", "none"),
@@ -902,9 +798,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         disabledTooltip = "Select a class above",
         rawTooltip = true,
         getValue = function()
-            if not ma.maTtsEnabled then
-                return "NONE"
-            end
+            if not ma.maTtsEnabled then return "NONE" end
             return ma.maTtsVoiceID or 0
         end,
         setValue = function(val)
@@ -921,9 +815,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
 
     if not CludesUI._prebuilding then
         local leftRegion = ttsRow._rightRegion
-        local function TtsCogOff()
-            return maOff() or not ma.maTtsEnabled
-        end
+        local function TtsCogOff() return maOff() or not ma.maTtsEnabled end
         CludesUI.BuildInlineCog(leftRegion, {
             title = "Text-to-Speech Settings",
             rows = {
@@ -965,17 +857,11 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         local GRID_PAD = CludesUI.CONTENT_PAD or 16
         local GRID_SIDE_PAD = 20
         local playerClass = select(2, UnitClass("player"))
-        if not ma.spellOverrides then
-            ma.spellOverrides = {}
-        end
+        if not ma.spellOverrides then ma.spellOverrides = {} end
 
         local function GridChanged()
-            if CludesUI._RebuildMovementSpellLookup then
-                CludesUI._RebuildMovementSpellLookup()
-            end
-            if CludesUI._CacheMovementSpells then
-                CludesUI._CacheMovementSpells()
-            end
+            if CludesUI._RebuildMovementSpellLookup then CludesUI._RebuildMovementSpellLookup() end
+            if CludesUI._CacheMovementSpells then CludesUI._CacheMovementSpells() end
             ApplyMovementAlert()
         end
 
@@ -1015,9 +901,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         ids = cellIds,
                         getVal = function()
                             local o = ma.spellOverrides[primary]
-                            if o and o.enabled ~= nil then
-                                return o.enabled ~= false
-                            end
+                            if o and o.enabled ~= nil then return o.enabled ~= false end
                             return not MOVEMENT_DEFAULT_OFF[primary]
                         end,
                         setVal = function(val)
@@ -1055,9 +939,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 end,
                 setVal = function(val)
                     local shade = ma.spellOverrides[spellId]
-                    if shade then
-                        shade.enabled = val
-                    end
+                    if shade then shade.enabled = val end
                 end,
             }
         end
@@ -1090,9 +972,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             for col = 0, GRID_COLS - 1 do
                 local position = row * GRID_COLS + col + 1
                 local entry = itemList[position]
-                if not entry then
-                    break
-                end
+                if not entry then break end
 
                 local cell = CreateFrame("Frame", nil, rowFrame)
                 cell:SetSize(colW, GRID_ROW_H)
@@ -1126,9 +1006,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             CludesUI.DD_BG_B,
                             CludesUI.DD_BG_HA
                         )
-                        if addBrd and addBrd.SetColor then
-                            addBrd:SetColor(1, 1, 1, 0.3)
-                        end
+                        if addBrd and addBrd.SetColor then addBrd:SetColor(1, 1, 1, 0.3) end
                     end)
                     addBtn:SetScript("OnLeave", function()
                         addBg:SetColorTexture(
@@ -1137,9 +1015,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             CludesUI.DD_BG_B,
                             CludesUI.DD_BG_A
                         )
-                        if addBrd and addBrd.SetColor then
-                            addBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
-                        end
+                        if addBrd and addBrd.SetColor then addBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A) end
                     end)
                     addBtn:SetScript("OnClick", function()
                         ShowAddSpellPopup(function(spellId)
@@ -1197,12 +1073,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     -- so stale entries can still be cleaned up.
                     local function CellDisabled()
                         local ec = ma.enabledClasses
-                        if not ec then
-                            return true
-                        end
-                        if entry.classToken then
-                            return not ec[entry.classToken]
-                        end
+                        if not ec then return true end
+                        if entry.classToken then return not ec[entry.classToken] end
                         return false
                     end
 
@@ -1227,9 +1099,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     PaintCell()
 
                     button:SetScript("OnClick", function(_, mouseButton)
-                        if CellDisabled() then
-                            return
-                        end
+                        if CellDisabled() then return end
                         if mouseButton == "RightButton" then
                             local shade = ma.spellOverrides[entry.spellId]
                             ShowCustomTextPopup(entry.label, shade and shade.customText or "", function(txt)
@@ -1238,9 +1108,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                                     ma.spellOverrides[ident] = ma.spellOverrides[ident] or {}
                                     ma.spellOverrides[ident].customText = (txt ~= "") and txt or nil
                                 end
-                                if CludesUI._CacheMovementSpells then
-                                    CludesUI._CacheMovementSpells()
-                                end
+                                if CludesUI._CacheMovementSpells then CludesUI._CacheMovementSpells() end
                                 ApplyMovementAlert()
                             end)
                             return
@@ -1257,9 +1125,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             )
                             return
                         end
-                        if not entry.getVal() then
-                            labelText:SetAlpha(0.8)
-                        end
+                        if not entry.getVal() then labelText:SetAlpha(0.8) end
                         CludesUI.ShowWidgetTooltip(cell, CludesUI.L("Right-Click to set custom alert text."))
                     end)
                     button:SetScript("OnLeave", function()
@@ -1278,12 +1144,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         delIcon:SetAllPoints()
                         delIcon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
                         delIcon:SetAlpha(0.4)
-                        delBtn:SetScript("OnEnter", function()
-                            delIcon:SetAlpha(0.9)
-                        end)
-                        delBtn:SetScript("OnLeave", function()
-                            delIcon:SetAlpha(0.4)
-                        end)
+                        delBtn:SetScript("OnEnter", function() delIcon:SetAlpha(0.9) end)
+                        delBtn:SetScript("OnLeave", function() delIcon:SetAlpha(0.4) end)
                         delBtn:SetScript("OnClick", function()
                             ma.spellOverrides[entry.spellId] = nil
                             GridChanged()
@@ -1306,12 +1168,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     -- The two sibling trackers' master toggles, each carrying its full settings cog.
-    local function tsOff()
-        return not ma.tsEnabled
-    end
-    local function gwOff()
-        return not ma.gwEnabled
-    end
+    local function tsOff() return not ma.tsEnabled end
+    local function gwOff() return not ma.gwEnabled end
     -- Time Spiral is the section's first mover, so the header's button takes
     -- it; the Gateway Shard mover stays reachable through its cog's footer.
     CludesUI.BuildSectionUnlockJump(
@@ -1324,14 +1182,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enable Time Spiral Tracker",
         tooltip = "Flashes a banner whenever a tracked mobility spell's cooldown is proc-reset. Use Layout Mode to reposition/resize.",
-        getValue = function()
-            return ma.tsEnabled == true
-        end,
+        getValue = function() return ma.tsEnabled == true end,
         setValue = function(val)
             ma.tsEnabled = val
-            if CludesUI._UpdateMovementAlertEvents then
-                CludesUI._UpdateMovementAlertEvents()
-            end
+            if CludesUI._UpdateMovementAlertEvents then CludesUI._UpdateMovementAlertEvents() end
             ApplyMovementAlert()
             CludesUI:RefreshPage()
         end,
@@ -1339,14 +1193,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enable Gateway Shard Alert",
         tooltip = "Warlock only. Alerts when your Gateway Control Shard is usable. Use Layout Mode to reposition/resize.",
-        getValue = function()
-            return ma.gwEnabled == true
-        end,
+        getValue = function() return ma.gwEnabled == true end,
         setValue = function(val)
             ma.gwEnabled = val
-            if CludesUI._UpdateMovementAlertEvents then
-                CludesUI._UpdateMovementAlertEvents()
-            end
+            if CludesUI._UpdateMovementAlertEvents then CludesUI._UpdateMovementAlertEvents() end
             ApplyMovementAlert()
             CludesUI:RefreshPage()
         end,
@@ -1371,14 +1221,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "colorpicker",
                     label = "Color",
-                    disabled = function()
-                        return ma.tsColorUseClass
-                    end,
+                    disabled = function() return ma.tsColorUseClass end,
                     disabledTooltip = "Disable Class Color to pick a custom color.",
                     rawTooltip = true,
-                    get = function()
-                        return ma.tsColorR or 0.53, ma.tsColorG or 1, ma.tsColorB or 0
-                    end,
+                    get = function() return ma.tsColorR or 0.53, ma.tsColorG or 1, ma.tsColorB or 0 end,
                     set = function(red, green, blue)
                         ma.tsColorR, ma.tsColorG, ma.tsColorB = red, green, blue
                         ApplyMovementAlert()
@@ -1387,9 +1233,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Use Class Color",
-                    get = function()
-                        return ma.tsColorUseClass == true
-                    end,
+                    get = function() return ma.tsColorUseClass == true end,
                     set = MaFieldThen("tsColorUseClass"),
                 },
                 {
@@ -1397,9 +1241,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     label = "Sound",
                     values = sndValues2,
                     order = sndOrder2,
-                    disabled = function()
-                        return ma.tsTtsEnabled == true
-                    end,
+                    disabled = function() return ma.tsTtsEnabled == true end,
                     disabledTooltip = "Text-to-Speech is enabled below and takes priority over Sound.",
                     rawTooltip = true,
                     get = MaFieldOr("tsSoundKey", "none"),
@@ -1408,9 +1250,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Use Text-to-Speech",
-                    get = function()
-                        return ma.tsTtsEnabled == true
-                    end,
+                    get = function() return ma.tsTtsEnabled == true end,
                     set = MaField("tsTtsEnabled"),
                 },
                 {
@@ -1418,9 +1258,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     label = "TTS Voice",
                     values = ttsValues2,
                     order = ttsOrder2,
-                    disabled = function()
-                        return not ma.tsTtsEnabled
-                    end,
+                    disabled = function() return not ma.tsTtsEnabled end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
                     get = MaFieldOr("tsTtsVoiceID", 0),
@@ -1429,9 +1267,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "input",
                     label = "TTS Message",
-                    disabled = function()
-                        return not ma.tsTtsEnabled
-                    end,
+                    disabled = function() return not ma.tsTtsEnabled end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
                     get = MaFieldOr("tsTtsMessage", "Free movement"),
@@ -1443,9 +1279,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     min = 0,
                     max = 100,
                     step = 5,
-                    disabled = function()
-                        return not ma.tsTtsEnabled
-                    end,
+                    disabled = function() return not ma.tsTtsEnabled end,
                     get = MaFieldOr("tsTtsVolume", 100),
                     set = MaField("tsTtsVolume"),
                 },
@@ -1470,9 +1304,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Combat Only",
                     tooltip = "Only show the alert while in combat.",
-                    get = function()
-                        return ma.gwCombatOnly == true
-                    end,
+                    get = function() return ma.gwCombatOnly == true end,
                     set = MaFieldThen("gwCombatOnly"),
                 },
                 {
@@ -1484,14 +1316,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "colorpicker",
                     label = "Color",
-                    disabled = function()
-                        return ma.gwColorUseClass
-                    end,
+                    disabled = function() return ma.gwColorUseClass end,
                     disabledTooltip = "Disable Class Color to pick a custom color.",
                     rawTooltip = true,
-                    get = function()
-                        return ma.gwColorR or 0.7, ma.gwColorG or 0, ma.gwColorB or 1
-                    end,
+                    get = function() return ma.gwColorR or 0.7, ma.gwColorG or 0, ma.gwColorB or 1 end,
                     set = function(red, green, blue)
                         ma.gwColorR, ma.gwColorG, ma.gwColorB = red, green, blue
                         ApplyMovementAlert()
@@ -1500,9 +1328,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Use Class Color",
-                    get = function()
-                        return ma.gwColorUseClass == true
-                    end,
+                    get = function() return ma.gwColorUseClass == true end,
                     set = MaFieldThen("gwColorUseClass"),
                 },
                 {
@@ -1510,9 +1336,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     label = "Sound",
                     values = sndValues2,
                     order = sndOrder2,
-                    disabled = function()
-                        return ma.gwTtsEnabled == true
-                    end,
+                    disabled = function() return ma.gwTtsEnabled == true end,
                     disabledTooltip = "Text-to-Speech is enabled below and takes priority over Sound.",
                     rawTooltip = true,
                     get = MaFieldOr("gwSoundKey", "none"),
@@ -1521,9 +1345,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Use Text-to-Speech",
-                    get = function()
-                        return ma.gwTtsEnabled == true
-                    end,
+                    get = function() return ma.gwTtsEnabled == true end,
                     set = MaField("gwTtsEnabled"),
                 },
                 {
@@ -1531,9 +1353,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     label = "TTS Voice",
                     values = ttsValues2,
                     order = ttsOrder2,
-                    disabled = function()
-                        return not ma.gwTtsEnabled
-                    end,
+                    disabled = function() return not ma.gwTtsEnabled end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
                     get = MaFieldOr("gwTtsVoiceID", 0),
@@ -1542,9 +1362,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "input",
                     label = "TTS Message",
-                    disabled = function()
-                        return not ma.gwTtsEnabled
-                    end,
+                    disabled = function() return not ma.gwTtsEnabled end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
                     get = MaFieldOr("gwTtsMessage", "Gateway ready"),
@@ -1556,9 +1374,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     min = 0,
                     max = 100,
                     step = 5,
-                    disabled = function()
-                        return not ma.gwTtsEnabled
-                    end,
+                    disabled = function() return not ma.gwTtsEnabled end,
                     get = MaFieldOr("gwTtsVolume", 100),
                     set = MaField("gwTtsVolume"),
                 },

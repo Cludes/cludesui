@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_SelfCombatText.lua - your own combat text, above your frame.
 --
@@ -91,9 +89,7 @@ end
 local function SctGet(key)
     local tbl = Profile().selfCombatText
     local value = tbl and tbl[key]
-    if value == nil then
-        return DEFAULTS[key]
-    end
+    if value == nil then return DEFAULTS[key] end
     return value
 end
 
@@ -103,9 +99,7 @@ local function Own()
     return profile.selfCombatText
 end
 
-local function Wanted()
-    return SctGet("enabled") == true
-end
+local function Wanted() return SctGet("enabled") == true end
 
 -- The font follows these settings only (a global or QoL font change asks
 -- for a reload).
@@ -143,9 +137,7 @@ end
 --  Where the box sits (Layout Mode's once moved)
 -------------------------------------------------------------------------------
 local function Place()
-    if not box then
-        return
-    end
+    if not box then return end
     local position = SctGet("pos")
     box:ClearAllPoints()
     if position then
@@ -168,35 +160,28 @@ local function AddToLayoutMode()
             group = "Utilities",
             order = 730,
             noResize = true,
-            isHidden = function()
-                return not Wanted()
-            end,
-            getFrame = function()
-                return on and box or nil
-            end,
-            getSize = function()
-                return BOX_W, BOX_H
-            end,
+            isHidden = function() return not Wanted() end,
+            getFrame = function() return on and box or nil end,
+            getSize = function() return BOX_W, BOX_H end,
             savePos = function(_, point, relPoint, x, y)
-                if not point then
-                    return
-                end
+                if not point then return end
                 Own().pos = { point = point, relPoint = relPoint or point, x = x, y = y }
-                if not CUI._unlockActive then
-                    Place()
-                end
+                if not CUI._unlockActive then Place() end
             end,
             loadPos = function()
                 local position = SctGet("pos")
                 if position then
-                    return { point = position.point, relPoint = position.relPoint or position.point, x = position.x, y = position.y }
+                    return {
+                        point = position.point,
+                        relPoint = position.relPoint or position.point,
+                        x = position.x,
+                        y = position.y,
+                    }
                 end
             end,
             clearPos = function()
                 local tbl = Profile().selfCombatText
-                if tbl then
-                    tbl.pos = nil
-                end
+                if tbl then tbl.pos = nil end
                 Place()
             end,
             applyPos = Place,
@@ -262,18 +247,12 @@ end
 -- straight is linear, the fountain follows its arc's height (its points are
 -- evenly spaced in time), static does not move.
 local function Progress(m, now)
-    if S.anim == "static" then
-        return 0
-    end
+    if S.anim == "static" then return 0 end
     local t = math.min((now - m.t0) / S.duration, 1)
-    if S.anim ~= "fountain" then
-        return t
-    end
+    if S.anim ~= "fountain" then return t end
     local at = t * #ARC
     local i = math.floor(at)
-    if i >= #ARC then
-        return ARC[#ARC][2]
-    end
+    if i >= #ARC then return ARC[#ARC][2] end
     local from = i > 0 and ARC[i][2] or 0
     return from + (ARC[i + 1][2] - from) * (at - i)
 end
@@ -294,15 +273,11 @@ local function MakeRoom(lane, h)
             end
         end
     end
-    if not nearest then
-        return
-    end
+    if not nearest then return end
     -- Rising, the new one's top must clear the nearest's bottom; falling, the
     -- nearest's top must clear the box.
     local need = (direction > 0 and h or nearest.h) + GAP - distance
-    if need <= 0 then
-        return
-    end
+    if need <= 0 then return end
     for _, m in ipairs(messages) do
         if m.live and m.lane == lane and now - m.t0 < time then
             m.y0 = m.y0 + direction * need
@@ -327,9 +302,7 @@ local function Show(format, value, color, crit)
     end
     local size = crit and S.critSize or S.size
     local h = size * LINE
-    if S.stagger then
-        MakeRoom(lane, h)
-    end
+    if S.stagger then MakeRoom(lane, h) end
     m.t0, m.y0, m.h, m.lane, m.live = GetTime(), 0, h, lane, true
     m:ClearAllPoints()
     m:SetPoint("BOTTOM", box, "BOTTOM", 0, 0)
@@ -350,9 +323,7 @@ end
 
 -- Both are the game's own formatters, which take secret numbers.
 local function Amount(n)
-    if S.abbreviate then
-        return Abbreviate(n)
-    end
+    if S.abbreviate then return Abbreviate(n) end
     return BreakUpLargeNumbers(n)
 end
 
@@ -360,9 +331,7 @@ local function OnEvent(_, event, kind, inVehicle)
     if event == "COMBAT_TEXT_UPDATE" then
         local crit = DAMAGE[kind]
         if crit ~= nil then
-            if S.damage then
-                Show("-%s", Amount(C_CombatText.GetCurrentEventInfo()), S.damageColor, crit)
-            end
+            if S.damage then Show("-%s", Amount(C_CombatText.GetCurrentEventInfo()), S.damageColor, crit) end
             return
         end
         crit = HEAL[kind]
@@ -375,9 +344,7 @@ local function OnEvent(_, event, kind, inVehicle)
             return
         end
         local word = S.avoid and avoidWord[kind]
-        if word then
-            Show("%s", word, S.avoidColor, false)
-        end
+        if word then Show("%s", word, S.avoidColor, false) end
     elseif event == "PLAYER_REGEN_DISABLED" then
         Show("%s", _G.ENTERING_COMBAT or "+Combat", S.combatColor, false)
     elseif event == "PLAYER_REGEN_ENABLED" then
@@ -424,9 +391,7 @@ local function Refresh()
     end
     on = want
     if want then
-        if not box then
-            Build()
-        end
+        if not box then Build() end
         ReadSettings()
         Tune()
         box:Show()
@@ -441,9 +406,7 @@ local function Refresh()
     else
         listener:UnregisterAllEvents()
         box:Hide()
-        if _G.CombatText then
-            _G.CombatText:Show()
-        end
+        if _G.CombatText then _G.CombatText:Show() end
     end
 end
 
@@ -460,9 +423,7 @@ end
 -- Layout Mode anchor link dropped.
 function mod.SCT_Reset()
     Profile().selfCombatText = nil
-    if CludesUIDB.unlockAnchors then
-        CludesUIDB.unlockAnchors[LAYOUT_KEY] = nil
-    end
+    if CludesUIDB.unlockAnchors then CludesUIDB.unlockAnchors[LAYOUT_KEY] = nil end
     Refresh()
     Place()
 end

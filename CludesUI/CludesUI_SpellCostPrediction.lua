@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUI_SpellCostPrediction.lua
 -- WoW FOREVER ONLY: Spell Cost Prediction on mana power bars.
@@ -36,9 +34,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 
 local MANA = Enum.PowerType.Mana
 local WHITE = "Interface\\Buttons\\WHITE8X8"
@@ -64,13 +60,9 @@ CUI.SpellCostPrediction = SCP
 -- Custom color, else Blizzard's mana prediction color, else a light blue.
 function SCP.Color(cfg)
     local color = cfg and cfg.powerCostColor
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     local widget = POWERBAR_PREDICTION_COLOR_MANA
-    if widget and widget.GetRGB then
-        return widget:GetRGB()
-    end
+    if widget and widget.GetRGB then return widget:GetRGB() end
     return 0.40, 0.70, 1
 end
 
@@ -104,9 +96,7 @@ local function Show(h)
     local ptype = cb.PowerType(power)
     local cost = pfill and not issecretvalue(ptype) and ptype == MANA and CastCost()
     if not cost then
-        if seg then
-            seg:Hide()
-        end
+        if seg then seg:Hide() end
         return
     end
     if not seg then
@@ -125,21 +115,15 @@ local function Show(h)
         h.texPath = filePath
         seg:SetStatusBarTexture(filePath)
         local fill = seg:GetStatusBarTexture()
-        if fill then
-            CUI.PP.DisablePixelSnap(fill)
-        end
+        if fill then CUI.PP.DisablePixelSnap(fill) end
     end
     local fill = seg:GetStatusBarTexture()
     local mask = cb.Mask and cb.Mask(power) or nil
     if fill then
         -- AddMaskTexture is additive: the mask the last draw seated comes
         -- off first (a no-op on a new fill object), then the current one.
-        if h.mask then
-            pcall(fill.RemoveMaskTexture, fill, h.mask)
-        end
-        if mask then
-            pcall(fill.AddMaskTexture, fill, mask)
-        end
+        if h.mask then pcall(fill.RemoveMaskTexture, fill, h.mask) end
+        if mask then pcall(fill.AddMaskTexture, fill, mask) end
     end
     h.mask = mask
     -- Two points on the fill's leading edge span the bar's thickness; the
@@ -185,9 +169,7 @@ end
 -- one drawn, or an input of that draw moved (the bar's fill object or
 -- texture, its direction or level, the color, the mask).
 local function Stale(h)
-    if h.drawn ~= castSeq or not h.seg:IsShown() then
-        return true
-    end
+    if h.drawn ~= castSeq or not h.seg:IsShown() then return true end
     local bar, cb = h.bar, h.cb
     local pfill = bar:GetStatusBarTexture()
     if
@@ -207,9 +189,7 @@ end
 
 local function HideAll()
     for _, h in pairs(hosts) do
-        if h.seg then
-            h.seg:Hide()
-        end
+        if h.seg then h.seg:Hide() end
     end
 end
 
@@ -218,20 +198,14 @@ local function OnEvent(_, evt, _, unitGuid, spellId)
         castGUID, castSpell, costRead = unitGuid, spellId, false
         castSeq = castSeq + 1
         for _, h in pairs(hosts) do
-            if h.bar:IsVisible() then
-                Show(h)
-            end
+            if h.bar:IsVisible() then Show(h) end
         end
         return
     end
     local current = castGUID
-    if current == nil then
-        return
-    end
+    if current == nil then return end
     -- Player cast GUIDs are never secret; if one is, end on any stop.
-    if not (issecretvalue(unitGuid) or issecretvalue(current)) and unitGuid ~= current then
-        return
-    end
+    if not (issecretvalue(unitGuid) or issecretvalue(current)) and unitGuid ~= current then return end
     castGUID, castSpell, castCost = nil, nil, nil
     HideAll()
 end
@@ -246,9 +220,7 @@ local function SyncListeners()
             break
         end
     end
-    if enabled == listening then
-        return
-    end
+    if enabled == listening then return end
     listening = enabled
     if enabled then
         for idx = 1, #EVENTS do
@@ -267,17 +239,13 @@ local function OnHostShow(bar)
     local h = built[bar]
     if hosts[h.key] == h then
         SyncListeners()
-        if castGUID then
-            Show(h)
-        end
+        if castGUID then Show(h) end
     end
 end
 
 local function OnHostHide(bar)
     local h = built[bar]
-    if hosts[h.key] == h then
-        SyncListeners()
-    end
+    if hosts[h.key] == h then SyncListeners() end
 end
 
 -- A resize during a cast (a style pass, a scale change) keeps the segment's
@@ -313,28 +281,20 @@ function SCP.Attach(key, bar, cb)
     local old = hosts[key]
     local fresh = old ~= h or h.cb ~= cb
     if fresh then
-        if old and old ~= h and old.seg then
-            old.seg:Hide()
-        end
+        if old and old ~= h and old.seg then old.seg:Hide() end
         h.cb, h.key = cb, key
         hosts[key] = h
         SyncListeners()
     end
     -- A cast already in flight is laid out again when this attach is new or
     -- the rebuild behind it moved an input of the last draw.
-    if castGUID and bar:IsVisible() and (fresh or Stale(h)) then
-        Show(h)
-    end
+    if castGUID and bar:IsVisible() and (fresh or Stale(h)) then Show(h) end
 end
 
 function SCP.Detach(key)
     local h = hosts[key]
-    if not h then
-        return
-    end
+    if not h then return end
     hosts[key] = nil
-    if h.seg then
-        h.seg:Hide()
-    end
+    if h.seg then h.seg:Hide() end
     SyncListeners()
 end

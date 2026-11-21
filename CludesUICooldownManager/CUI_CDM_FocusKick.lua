@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_FocusKick.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local GetTime = GetTime
@@ -30,9 +26,7 @@ local FOCUSKICK_BAR_KEY = "focuskick"
 mod.FOCUSKICK_BAR_KEY = FOCUSKICK_BAR_KEY
 local function EnsureFocusKickBar()
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
-        return
-    end
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then return end
     -- Desired position: directly after the "buffs" default bar and before any custom bars (skipping ghost bars).
     local barList = profile.cdmBars.bars
     local goalIdx
@@ -42,9 +36,7 @@ local function EnsureFocusKickBar()
             break
         end
     end
-    if not goalIdx then
-        goalIdx = #barList + 1
-    end
+    if not goalIdx then goalIdx = #barList + 1 end
     local foundIdx
     for index, bar in ipairs(barList) do
         if bar.key == FOCUSKICK_BAR_KEY then
@@ -54,17 +46,13 @@ local function EnsureFocusKickBar()
     end
     if foundIdx then
         -- Backfill suppressGCD on existing FocusKick bars (default to on)
-        if barList[foundIdx].suppressGCD == nil then
-            barList[foundIdx].suppressGCD = true
-        end
+        if barList[foundIdx].suppressGCD == nil then barList[foundIdx].suppressGCD = true end
         if foundIdx == goalIdx or foundIdx == goalIdx - 1 then
             -- Already in the right spot relative to "buffs"
             return
         end
         local record = table.remove(barList, foundIdx)
-        if foundIdx < goalIdx then
-            goalIdx = goalIdx - 1
-        end
+        if foundIdx < goalIdx then goalIdx = goalIdx - 1 end
         table.insert(barList, goalIdx, record)
         return
     end
@@ -139,9 +127,7 @@ local function EnsureFocusKickBar()
         growDirection = "RIGHT",
     })
     local spellData = mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
-    if spellData then
-        spellData.assignedSpells = {}
-    end
+    if spellData then spellData.assignedSpells = {} end
 end
 mod.EnsureFocusKickBar = EnsureFocusKickBar
 
@@ -167,9 +153,7 @@ local function SetFocusKickAlpha(a)
     local icons = cdmBarIcons and cdmBarIcons[FOCUSKICK_BAR_KEY]
     if icons then
         for index = 1, #icons do
-            if icons[index] then
-                icons[index]:SetAlpha(a)
-            end
+            if icons[index] then icons[index]:SetAlpha(a) end
         end
     end
 end
@@ -179,15 +163,11 @@ end
 -- Nameplate"/"Scale Nameplate On Cast" via NameplateFrame:ApplyScale(); the Blizzard plate itself
 -- does NOT scale, so anchoring to the plate ignores those settings. Walk the plate's children for the mixed-in frame's visible health bar (correct scaled bounds). Returns (healthFrame, scaledParent) or nil.
 local function GetScaledPlateHealth(backing)
-    if not backing then
-        return nil
-    end
+    if not backing then return nil end
     local children = { backing:GetChildren() }
     for index = 1, #children do
         local child = children[index]
-        if child and child._mixedIn and child.health then
-            return child.health, child
-        end
+        if child and child._mixedIn and child.health then return child.health, child end
     end
     return nil
 end
@@ -196,14 +176,10 @@ end
 -- nameplate add/remove, and nameplate moves. The stored nameplateAnchorSide picks the plate side (LEFT/RIGHT/TOP/BOTTOM); stored offsets shift from that anchor point.
 local function PlaceFocusKick()
     local widget = cdmBarFrames[FOCUSKICK_BAR_KEY]
-    if not widget then
-        return
-    end
+    if not widget then return end
     local profile = ECME.db and ECME.db.profile
     local edge = profile and barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY]
-    if not edge then
-        return
-    end
+    if not edge then return end
     local kickUnit = GetFocusKickUnit()
     local backing = C_NamePlate
         and C_NamePlate.GetNamePlateForUnit
@@ -246,9 +222,7 @@ local _FOCUSKICK_TICK_INTERVAL = 0.1
 -- demand gate unregisters its events), and with the plate-visibility cache cleared as
 -- every proxy event clears it, so the plate watch re-applies the fade alpha.
 mod.ReapplyFocusKick = function()
-    if not (_focusKickProxy and _focusKickProxy:IsEventRegistered("PLAYER_FOCUS_CHANGED")) then
-        return
-    end
+    if not (_focusKickProxy and _focusKickProxy:IsEventRegistered("PLAYER_FOCUS_CHANGED")) then return end
     _focusKickLastPlateVisible = nil
     PlaceFocusKick()
 end
@@ -260,9 +234,7 @@ local function EnsureFocusKickProxy()
         _focusKickProxy:RegisterEvent("PLAYER_TARGET_CHANGED")
         _focusKickProxy:RegisterEvent("NAME_PLATE_UNIT_ADDED")
         _focusKickProxy:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-        if _focusKickProxy._arm then
-            _focusKickProxy._arm()
-        end
+        if _focusKickProxy._arm then _focusKickProxy._arm() end
         return _focusKickProxy
     end
     _focusKickProxy = mod.TakeShell()
@@ -273,23 +245,15 @@ local function EnsureFocusKickProxy()
     _focusKickProxy:SetScript("OnEvent", function(self, evt, unitToken)
         local kickUnit = GetFocusKickUnit()
         if evt == "PLAYER_FOCUS_CHANGED" then
-            if kickUnit ~= "focus" then
-                return
-            end
+            if kickUnit ~= "focus" then return end
             _focusKickLastPlateVisible = nil
             PlaceFocusKick()
-            if self._arm then
-                self._arm()
-            end
+            if self._arm then self._arm() end
         elseif evt == "PLAYER_TARGET_CHANGED" then
-            if kickUnit ~= "target" then
-                return
-            end
+            if kickUnit ~= "target" then return end
             _focusKickLastPlateVisible = nil
             PlaceFocusKick()
-            if self._arm then
-                self._arm()
-            end
+            if self._arm then self._arm() end
         elseif evt == "NAME_PLATE_UNIT_REMOVED" then
             -- Only react when the tracked unit's plate is removed. Reacting to every plate removal caused the bar to flicker off during AoE when unrelated mobs died or faded.
             if unitToken and (unitToken == kickUnit or UnitIsUnit(unitToken, kickUnit)) then
@@ -300,9 +264,7 @@ local function EnsureFocusKickProxy()
             if unitToken and (unitToken == kickUnit or UnitIsUnit(unitToken, kickUnit)) then
                 _focusKickLastPlateVisible = nil
                 PlaceFocusKick()
-                if self._arm then
-                    self._arm()
-                end
+                if self._arm then self._arm() end
             end
         end
     end)
@@ -312,9 +274,7 @@ local function EnsureFocusKickProxy()
     local kickTicker
     local function FocusKickTick()
         local kickUnit = GetFocusKickUnit()
-        if not UnitExists(kickUnit) then
-            return false
-        end
+        if not UnitExists(kickUnit) then return false end
         local backing = C_NamePlate
             and C_NamePlate.GetNamePlateForUnit
             and C_NamePlate.GetNamePlateForUnit(kickUnit)
@@ -338,9 +298,7 @@ local function EnsureFocusKickProxy()
         kickTicker.Start()
     end
     _focusKickProxy._stop = function()
-        if kickTicker then
-            kickTicker.Stop()
-        end
+        if kickTicker then kickTicker.Stop() end
     end
     _focusKickProxy._arm()
     return _focusKickProxy
@@ -362,9 +320,7 @@ local function RefreshFocusCastProxyUnit()
         -- only builds on its hasContent branch, and its ONLY callers are setup and the tail of
         -- BuildAllCDMBars). Adding a spell in the options writes assignedSpells without re-arming
         -- anything, which left the sound dead on a fully populated bar -- so run the full refresh here instead of returning, letting this path create the proxy.
-        if mod.RefreshFocusKickProxies then
-            mod.RefreshFocusKickProxies()
-        end
+        if mod.RefreshFocusKickProxies then mod.RefreshFocusKickProxies() end
         return
     end
     local unitToken = GetFocusKickUnit()
@@ -375,9 +331,7 @@ end
 mod.RefreshFocusCastProxyUnit = RefreshFocusCastProxyUnit
 
 function mod.IsSpellInPlayerBook(ident, includeOverrides)
-    if IsPlayerSpell and IsPlayerSpell(ident) then
-        return true
-    end
+    if IsPlayerSpell and IsPlayerSpell(ident) then return true end
     if
         C_SpellBook
         and C_SpellBook.IsSpellKnownOrInSpellBook
@@ -401,27 +355,19 @@ end
 -- check both banks. Returning the resolved id (not a boolean) is the point: a talent swap moves an
 -- interrupt between base and override forms while the stored id stays put; answering "known" but leaving the caller the un-castable form would feed the readiness gate an id that is never on cooldown.
 function mod.ResolveCastableInterrupt(spellRef)
-    if type(spellRef) ~= "number" or spellRef <= 0 then
-        return nil
-    end
+    if type(spellRef) ~= "number" or spellRef <= 0 then return nil end
     local knownInBook = mod.IsSpellInPlayerBook
     -- Resolve replacements first: Command Demon can remain known while its
     -- active pet command has the cooldown we need to check.
     if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
         local ovr = C_SpellBook.FindSpellOverrideByID(spellRef)
-        if ovr and ovr > 0 and ovr ~= spellRef and knownInBook(ovr) then
-            return ovr
-        end
+        if ovr and ovr > 0 and ovr ~= spellRef and knownInBook(ovr) then return ovr end
     end
-    if knownInBook(spellRef) then
-        return spellRef
-    end
+    if knownInBook(spellRef) then return spellRef end
     -- Talented back out, stored id is the replacement form.
     if C_Spell and C_Spell.GetBaseSpell then
         local base = C_Spell.GetBaseSpell(spellRef)
-        if base and base > 0 and base ~= spellRef and knownInBook(base) then
-            return base
-        end
+        if base and base > 0 and base ~= spellRef and knownInBook(base) then return base end
     end
     -- Pet bank last: it has no override/base indirection to walk.
     if
@@ -453,33 +399,21 @@ local function EnsureFocusCastProxy()
         -- count, it must exist, and it is never the player (no focus set, or
         -- focus/target on yourself, must stay silent).
         local kickUnit = GetFocusKickUnit()
-        if castUnit ~= kickUnit then
-            return
-        end
-        if not UnitExists(kickUnit) or UnitIsUnit(kickUnit, "player") then
-            return
-        end
+        if castUnit ~= kickUnit then return end
+        if not UnitExists(kickUnit) or UnitIsUnit(kickUnit, "player") then return end
         -- Enemies only: a friendly focus (raid member) casts constantly. A secret
         -- answer (protected content) cannot vouch either way, so it plays rather
         -- than silencing a real enemy focus.
         local attackable = UnitCanAttack("player", kickUnit)
-        if not (issecretvalue and issecretvalue(attackable)) and not attackable then
-            return
-        end
+        if not (issecretvalue and issecretvalue(attackable)) and not attackable then return end
         local edge = barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY]
-        if not edge then
-            return
-        end
+        if not edge then return end
         local soundKey = edge.focusCastSoundKey or "none"
-        if soundKey == "none" then
-            return
-        end
+        if soundKey == "none" then return end
         -- Sound-only mode ("Any Cast"): no interrupt lookup, no cooldown gate.
         if edge.focusCastSoundAnyCast == true then
             local anyPath = FOCUSKICK_SOUND_PATHS[soundKey]
-            if anyPath then
-                PlaySoundFile(anyPath, "Master")
-            end
+            if anyPath then PlaySoundFile(anyPath, "Master") end
             return
         end
         local spellId = edge.focusKickInterruptSpellID
@@ -489,9 +423,7 @@ local function EnsureFocusCastProxy()
         -- cast. Deliberately checked HERE and not at arming time: arming runs during loading
         -- screens, when the spellbook reads empty for reasons unrelated to spec, and folding "not
         -- loaded yet" into "cannot cast it" silently unregisters a working proxy. This handler only runs on a live cast, by which point the spellbook is settled.
-        if spellId then
-            spellId = mod.ResolveCastableInterrupt(spellId)
-        end
+        if spellId then spellId = mod.ResolveCastableInterrupt(spellId) end
         -- Auto-fallback: with no explicit pick, use the first CASTABLE positive spell on the bar
         -- (the picker exists for users who want a specific one). The bar's own list needs the same
         -- castability check -- not because it crosses specs (assignedSpells is per-spec) but
@@ -511,9 +443,7 @@ local function EnsureFocusCastProxy()
                 end
             end
         end
-        if not spellId or spellId <= 0 then
-            return
-        end
+        if not spellId or spellId <= 0 then return end
 
         -- No interruptible check. The kickProtected flag on UnitCastingInfo and UnitChannelInfo is
         -- a secret boolean in Midnight and any laundering path that returns a value back into Lua
@@ -523,14 +453,10 @@ local function EnsureFocusCastProxy()
         -- the duration/startTime fields are secret in Midnight and can't be compared in Lua, but isActive is safe.
         if C_Spell and C_Spell.GetSpellCooldown then
             local cdInfo = C_Spell.GetSpellCooldown(spellId)
-            if cdInfo and cdInfo.isActive then
-                return
-            end
+            if cdInfo and cdInfo.isActive then return end
         end
         local filePath = FOCUSKICK_SOUND_PATHS[soundKey]
-        if not filePath then
-            return
-        end
+        if not filePath then return end
         PlaySoundFile(filePath, "Master")
     end)
     return _focusCastProxy
@@ -588,33 +514,21 @@ do
                 k = mod.FindTBBSoundKey(frame, spellRef, field)
                 owned = k == false
             end
-            if not k and not owned then
-                k = mod.FindBuffSoundKey(spellRef, field)
-            end
-            if not k and tbbOn and not barFrame then
-                k = mod.FindTBBSoundKey(frame, spellRef, field)
-            end
+            if not k and not owned then k = mod.FindBuffSoundKey(spellRef, field) end
+            if not k and tbbOn and not barFrame then k = mod.FindTBBSoundKey(frame, spellRef, field) end
         end
-        if not k or k == "none" then
-            return nil
-        end
+        if not k or k == "none" then return nil end
         return k
     end
 
     local function PlayThrottled(key, spellRef, throttle)
-        if not key then
-            return
-        end
+        if not key then return end
         local nowTime = GetTime()
         local last = throttle[spellRef]
-        if last and (nowTime - last) < SOUND_MIN_GAP then
-            return
-        end
+        if last and (nowTime - last) < SOUND_MIN_GAP then return end
         throttle[spellRef] = nowTime
         local filePath = FOCUSKICK_SOUND_PATHS[key]
-        if filePath then
-            PlaySoundFile(filePath, "Master")
-        end
+        if filePath then PlaySoundFile(filePath, "Master") end
     end
 
     -- Edge entry point for Tracking Bars' self-timed presets (Bloodlust, Time
@@ -622,12 +536,8 @@ do
     -- start/stop hands the cue here: same loading-screen suppression, same 0.3s
     -- overlap guard (id is a "tbb:<preset>" string, clear of spell ids).
     function mod.PlayBuffSoundEdge(key, ident, gainEdge)
-        if not key or key == "none" then
-            return
-        end
-        if mod._cdmSoundSuppressed and mod._cdmSoundSuppressed() then
-            return
-        end
+        if not key or key == "none" then return end
+        if mod._cdmSoundSuppressed and mod._cdmSoundSuppressed() then return end
         PlayThrottled(key, ident, gainEdge and _soundThrottle or _soundThrottleLost)
     end
 
@@ -650,9 +560,7 @@ do
             -- the gain loop below instead of being cancelled here too.
             local paired = _pendGain[spellRef] ~= nil
             _pendLoss[spellRef] = nil
-            if not paired then
-                PlayThrottled(key, spellRef, _soundThrottleLost)
-            end
+            if not paired then PlayThrottled(key, spellRef, _soundThrottleLost) end
         end
         for spellRef, key in pairs(_pendGain) do
             _pendGain[spellRef] = nil
@@ -664,13 +572,9 @@ do
     local function RecordBuffEdge(frame, gainEdge)
         -- Loading screen / login settle: buffs re-apply and viewer frames re-show
         -- across a zone/login, firing phantom apply/remove alerts. Drop them.
-        if mod._cdmSoundSuppressed and mod._cdmSoundSuppressed() then
-            return
-        end
+        if mod._cdmSoundSuppressed and mod._cdmSoundSuppressed() then return end
         local spellRef = mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(frame)
-        if not spellRef then
-            return
-        end
+        if not spellRef then return end
         -- Preferred: the frame's decorated context (fast; ResolveSpellSettings also
         -- handles variant/override spells). Falls back to an id-only lookup for the
         -- FIRST gain after login, whose alert fires before DecorateFrame populates
@@ -680,14 +584,25 @@ do
         local barId = fc and fc.barKey
         if barId then
             local spellData = mod.GetBarSpellData and mod.GetBarSpellData(barId)
-            spellSettings = mod.ResolveSpellSettings and mod.ResolveSpellSettings(frame, spellRef, spellData, barId)
+            spellSettings = mod.ResolveSpellSettings
+                and mod.ResolveSpellSettings(frame, spellRef, spellData, barId)
         end
         -- A silent edge still has to be recorded so it can cancel its partner, but only
         -- when the OTHER edge has a cue -- so the second lookup runs only on that path.
-        local key = PickBuffSoundKey(spellSettings, spellRef, gainEdge and "buffActiveSoundKey" or "buffLostSoundKey", frame)
+        local key = PickBuffSoundKey(
+            spellSettings,
+            spellRef,
+            gainEdge and "buffActiveSoundKey" or "buffLostSoundKey",
+            frame
+        )
         if
             not key
-            and not PickBuffSoundKey(spellSettings, spellRef, gainEdge and "buffLostSoundKey" or "buffActiveSoundKey", frame)
+            and not PickBuffSoundKey(
+                spellSettings,
+                spellRef,
+                gainEdge and "buffLostSoundKey" or "buffActiveSoundKey",
+                frame
+            )
         then
             return
         end
@@ -710,9 +625,7 @@ do
     end
 
     function mod.EnsureBuffSoundHook(widget)
-        if not widget or _soundHooked[widget] then
-            return
-        end
+        if not widget or _soundHooked[widget] then return end
         -- Own placeholder/custom frames (and anything that isn't a Blizzard buff
         -- viewer item) have no aura alert -- mark hooked so we never retry.
         if type(widget.TriggerAuraAppliedAlert) ~= "function" then
@@ -720,14 +633,14 @@ do
             return
         end
         _soundHooked[widget] = true
-        hooksecurefunc(widget, "TriggerAuraAppliedAlert", function(frame)
-            RecordBuffEdge(frame, true)
-        end)
+        hooksecurefunc(widget, "TriggerAuraAppliedAlert", function(frame) RecordBuffEdge(frame, true) end)
         -- Loss edge: Blizzard fires TriggerAuraRemovedAlert when the buff drops.
         if type(widget.TriggerAuraRemovedAlert) == "function" then
-            hooksecurefunc(widget, "TriggerAuraRemovedAlert", function(frame)
-                RecordBuffEdge(frame, false)
-            end)
+            hooksecurefunc(
+                widget,
+                "TriggerAuraRemovedAlert",
+                function(frame) RecordBuffEdge(frame, false) end
+            )
         end
     end
 end
@@ -758,79 +671,51 @@ local _FR_FALLBACK_FONT = "Fonts/FRIZQT__.TTF"
 -- paths, fall back to FRIZQT, and (if SetFont still fails) try alternate
 -- separators / Blizzard's default font.
 local function FRSafeFont(p)
-    if not p or p == "" then
-        return _FR_FALLBACK_FONT
-    end
+    if not p or p == "" then return _FR_FALLBACK_FONT end
     local ext = p:match("%.(%a+)$")
-    if ext and ext:lower() == "otf" then
-        return _FR_FALLBACK_FONT
-    end
+    if ext and ext:lower() == "otf" then return _FR_FALLBACK_FONT end
     return p
 end
 local function FRGlobalFont()
-    if CludesUI and CludesUI.GetFontPath then
-        return FRSafeFont(CludesUI.GetFontPath("cdm"))
-    end
+    if CludesUI and CludesUI.GetFontPath then return FRSafeFont(CludesUI.GetFontPath("cdm")) end
     return _FR_FALLBACK_FONT
 end
 local function FROutlineFlag()
     if CludesUI and CludesUI.GetFontOutlineFlag then
         local frame = CludesUI.GetFontOutlineFlag("cdm")
-        if frame and frame ~= "" then
-            return frame
-        end
+        if frame and frame ~= "" then return frame end
     end
     return "NONE"
 end
 local function FRSetFontSafe(fontStr, filePath, size, flags)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local safe = FRSafeFont(filePath)
     size = size or 11
-    if flags == "NONE" then
-        flags = ""
-    end
+    if flags == "NONE" then flags = "" end
     flags = flags or ""
     local curPath, curSize, curFlags = fontStr:GetFont()
-    if curPath == safe and curSize == size and (curFlags or "") == flags then
-        return
-    end
+    if curPath == safe and curSize == size and (curFlags or "") == flags then return end
     fontStr:SetFont(safe, size, flags)
-    if not fontStr:GetFont() then
-        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, flags)
-    end
-    if not fontStr:GetFont() then
-        fontStr:SetFont("Fonts\\FRIZQT__.TTF", size, flags)
-    end
+    if not fontStr:GetFont() then fontStr:SetFont("Fonts/FRIZQT__.TTF", size, flags) end
+    if not fontStr:GetFont() then fontStr:SetFont("Fonts\\FRIZQT__.TTF", size, flags) end
     if not fontStr:GetFont() then
         local gf = GameFontNormal and GameFontNormal:GetFont()
-        if gf then
-            fontStr:SetFont(gf, size, flags)
-        end
+        if gf then fontStr:SetFont(gf, size, flags) end
     end
 end
 local function FRApplyFontShadow(fontStr)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local useShadow = (CludesUI.GetFontUseShadow("cdm")) and true or false
     -- Font is set by FRSetFontSafe before this call; capture and restore it so
     -- priming the shadow FontObject does not change the typeface.
     local _pf, _ps, _pfl = fontStr:GetFont()
     CludesUI.PrimeFontShadow(fontStr, useShadow)
-    if _pf then
-        fontStr:SetFont(_pf, _ps, _pfl)
-    end
+    if _pf then fontStr:SetFont(_pf, _ps, _pfl) end
 end
 
-local function GetFocusKickBarData()
-    return barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY]
-end
+local function GetFocusKickBarData() return barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY] end
 local function FocusReminderUnitMatches(unitToken)
-    if not unitToken then
-        return false
-    end
+    if not unitToken then return false end
     -- Caster = the unit actually has a mana pool (12.1 moved caster marking
     -- off the old internal "PALADIN" class tag; same lane as the nameplate
     -- caster color). Second arg is the typed PowerType enum NUMBER, not the
@@ -844,31 +729,23 @@ local function FocusReminderUnitMatches(unitToken)
     -- compared -- this arm quietly stands down there while the mana arm
     -- above keeps carrying the feature.
     local classFile = UnitClassification and UnitClassification(unitToken)
-    if issecretvalue and issecretvalue(classFile) then
-        classFile = nil
-    end
+    if issecretvalue and issecretvalue(classFile) then classFile = nil end
     if classFile == "elite" or classFile == "rareelite" or classFile == "worldboss" then
         local lvl = UnitLevel(unitToken)
         local playerLevel = UnitLevel("player")
         local lvlClean = lvl and not (issecretvalue and issecretvalue(lvl))
         local plvlClean = playerLevel and not (issecretvalue and issecretvalue(playerLevel))
-        if lvlClean and (lvl == -1 or (plvlClean and lvl >= playerLevel + 1)) then
-            return true
-        end
+        if lvlClean and (lvl == -1 or (plvlClean and lvl >= playerLevel + 1)) then return true end
     end
     return false
 end
 local function HideFocusReminder(unitToken)
     local fontStr = _focusReminders[unitToken]
-    if fontStr and fontStr:IsShown() then
-        fontStr:Hide()
-    end
+    if fontStr and fontStr:IsShown() then fontStr:Hide() end
 end
 local function HideAllFocusReminders()
     for _, fontStr in pairs(_focusReminders) do
-        if fontStr and fontStr:IsShown() then
-            fontStr:Hide()
-        end
+        if fontStr and fontStr:IsShown() then fontStr:Hide() end
     end
 end
 local function ShowFocusReminder(unitToken)
@@ -894,7 +771,9 @@ local function ShowFocusReminder(unitToken)
         HideFocusReminder(unitToken)
         return
     end
-    local backing = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unitToken)
+    local backing = C_NamePlate
+        and C_NamePlate.GetNamePlateForUnit
+        and C_NamePlate.GetNamePlateForUnit(unitToken)
     if not backing then
         HideFocusReminder(unitToken)
         return
@@ -963,33 +842,21 @@ local function ShowFocusReminder(unitToken)
         fontStr._lastR, fontStr._lastG, fontStr._lastB = red, green, blue
     end
 
-    if not fontStr:IsShown() then
-        fontStr:Show()
-    end
+    if not fontStr:IsShown() then fontStr:Show() end
 end
 
 local function RefreshFocusReminders()
     -- Clear all, then re-show for currently visible nameplates. Iterate unit tokens directly:
     -- plate.namePlateUnitToken can be nil when polled outside of NAME_PLATE_UNIT_ADDED events, so the safer path is to walk nameplate1..nameplate40 and let UnitExists filter.
     HideAllFocusReminders()
-    if _focusKickHasFocus then
-        return
-    end
-    if not _focusKickInDungeon then
-        return
-    end
-    if _focusKickNoKick then
-        return
-    end
+    if _focusKickHasFocus then return end
+    if not _focusKickInDungeon then return end
+    if _focusKickNoKick then return end
     local edge = GetFocusKickBarData()
-    if not edge or edge.focusReminderEnabled ~= true then
-        return
-    end
+    if not edge or edge.focusReminderEnabled ~= true then return end
     for index = 1, 40 do
         local unitToken = "nameplate" .. index
-        if UnitExists(unitToken) then
-            ShowFocusReminder(unitToken)
-        end
+        if UnitExists(unitToken) then ShowFocusReminder(unitToken) end
     end
 end
 mod.RefreshFocusReminders = RefreshFocusReminders
@@ -1016,9 +883,7 @@ local function UpdateFocusKickContext()
     local changed = (inDungeonNow ~= _focusKickInDungeon) or (nowNoKick ~= _focusKickNoKick)
     _focusKickInDungeon = inDungeonNow
     _focusKickNoKick = nowNoKick
-    if changed then
-        RefreshFocusReminders()
-    end
+    if changed then RefreshFocusReminders() end
 end
 mod.UpdateFocusKickContext = UpdateFocusKickContext
 
@@ -1049,9 +914,7 @@ local function EnsureFocusReminderProxy()
         if evt == "PLAYER_FOCUS_CHANGED" then
             local hadFocus = _focusKickHasFocus
             _focusKickHasFocus = UnitExists("focus") and true or false
-            if hadFocus ~= _focusKickHasFocus then
-                RefreshFocusReminders()
-            end
+            if hadFocus ~= _focusKickHasFocus then RefreshFocusReminders() end
         elseif
             evt == "PLAYER_ENTERING_WORLD"
             or evt == "ZONE_CHANGED_NEW_AREA"
@@ -1059,15 +922,9 @@ local function EnsureFocusReminderProxy()
         then
             UpdateFocusKickContext()
         elseif evt == "NAME_PLATE_UNIT_ADDED" then
-            if _focusKickHasFocus then
-                return
-            end
-            if not _focusKickInDungeon then
-                return
-            end
-            if _focusKickNoKick then
-                return
-            end
+            if _focusKickHasFocus then return end
+            if not _focusKickInDungeon then return end
+            if _focusKickNoKick then return end
             ShowFocusReminder(unitToken)
         elseif evt == "NAME_PLATE_UNIT_REMOVED" then
             HideFocusReminder(unitToken)
@@ -1090,9 +947,7 @@ function mod.RefreshFocusKickProxies()
     local storeReady, playSound = true, false
     if edge and edge.enabled ~= false then
         local spellData = mod.GetBarSpellData and mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
-        if not spellData then
-            storeReady = false
-        end
+        if not spellData then storeReady = false end
         local spells = spellData and spellData.assignedSpells
         if spells then
             for _, spellRef in ipairs(spells) do
@@ -1120,17 +975,13 @@ function mod.RefreshFocusKickProxies()
         -- may still be correct, and COME BACK -- arming is otherwise a one-shot (its only callers
         -- are setup and the tail of BuildAllCDMBars), so a login/zone where the spec key has not
         -- resolved yet would leave the proxy unbuilt all session on a fully populated bar. An explicit interrupt spell id lives on the bar data, not the spell store, so the sound can arm right now; only the bar-content dependent parts have to wait.
-        if playSound then
-            EnsureFocusCastProxy()
-        end
+        if playSound then EnsureFocusCastProxy() end
         -- One pending retry at a time, self-cancelling.
         if not mod._fkRearmPending then
             mod._fkRearmPending = true
             C_Timer.After(2, function()
                 mod._fkRearmPending = nil
-                if mod.RefreshFocusKickProxies then
-                    mod.RefreshFocusKickProxies()
-                end
+                if mod.RefreshFocusKickProxies then mod.RefreshFocusKickProxies() end
             end)
         end
         return
@@ -1145,9 +996,7 @@ function mod.RefreshFocusKickProxies()
     else
         if _focusKickProxy then
             _focusKickProxy:UnregisterAllEvents()
-            if _focusKickProxy._stop then
-                _focusKickProxy._stop()
-            end
+            if _focusKickProxy._stop then _focusKickProxy._stop() end
             SetFocusKickAlpha(0)
         end
         if _focusReminderProxy then

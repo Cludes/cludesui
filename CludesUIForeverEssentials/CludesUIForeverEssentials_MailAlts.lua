@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MailAlts.lua  (WoW Forever only)
 --  Your characters on this realm and faction, remembered as you log in on
@@ -30,19 +26,13 @@ local EXPIRY_WARN = 3 * DAY
 local TRADE_GOODS = Enum.ItemClass.Tradegoods
 local GEAR = { [Enum.ItemClass.Weapon] = true, [Enum.ItemClass.Armor] = true }
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Mail:|r " .. textValue)
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Mail:|r " .. textValue) end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 local function ClassName(name, class)
     local color = class and C_ClassColor and C_ClassColor.GetClassColor(class)
     return color and color:WrapTextInColorCode(name) or name
 end
-local function Coins(copper)
-    return C_CurrencyInfo.GetCoinTextureString(copper, 12)
-end
+local function Coins(copper) return C_CurrencyInfo.GetCoinTextureString(copper, 12) end
 
 -------------------------------------------------------------------------------
 --  Characters
@@ -74,9 +64,7 @@ local function Me()
     return realm[name]
 end
 
-local function RosterOn()
-    return Get("altCounts") or Get("mailAlts") or Get("expiry")
-end
+local function RosterOn() return Get("altCounts") or Get("mailAlts") or Get("expiry") end
 
 local function UpdateRoster()
     local c = Me()
@@ -109,12 +97,8 @@ end
 local function ScanBank()
     local into = Emptied(Me(), "bank")
     local first, last = Enum.BagIndex.CharacterBankTab_1, Enum.BagIndex.CharacterBankTab_9
-    if first and last then
-        return Count(into, first, last)
-    end
-    if BANK_CONTAINER then
-        Count(into, BANK_CONTAINER, BANK_CONTAINER)
-    end
+    if first and last then return Count(into, first, last) end
+    if BANK_CONTAINER then Count(into, BANK_CONTAINER, BANK_CONTAINER) end
     if NUM_BAG_SLOTS and NUM_BANKBAGSLOTS then
         Count(into, NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS)
     end
@@ -123,25 +107,19 @@ end
 local mailPending
 local function ScanMail()
     mailPending = nil
-    if not RosterOn() then
-        return
-    end
+    if not RosterOn() then return end
     local isShown, sum = GetInboxNumItems()
     local itemList, soonest, nowTime = {}, nil, time()
     for index = 1, isShown do
         local _, _, _, _, _, _, daysLeft, itemCount = GetInboxHeaderInfo(index)
         if daysLeft then
             local expires = nowTime + math.floor(daysLeft * DAY)
-            if not soonest or expires < soonest then
-                soonest = expires
-            end
+            if not soonest or expires < soonest then soonest = expires end
         end
         if itemCount and itemCount > 0 then
             for a = 1, MAIL_ATTACHMENTS do
                 local _, ident, _, count = GetInboxItem(index, a)
-                if ident then
-                    itemList[ident] = (itemList[ident] or 0) + (count or 1)
-                end
+                if ident then itemList[ident] = (itemList[ident] or 0) + (count or 1) end
             end
         end
     end
@@ -153,12 +131,8 @@ local bankOpen
 local rEv = CreateFrame("Frame")
 rEv:SetScript("OnEvent", function(_, evt, arg)
     if evt == "BAG_UPDATE_DELAYED" then
-        if Get("altCounts") then
-            ScanBags()
-        end
-        if bankOpen then
-            ScanBank()
-        end
+        if Get("altCounts") then ScanBags() end
+        if bankOpen then ScanBank() end
     elseif evt == "BANKFRAME_OPENED" then
         bankOpen = true
         ScanBank()
@@ -206,9 +180,7 @@ local function AltList()
         end
     end
     table.sort(entries, function(lhs, rhs)
-        if lhs.level ~= rhs.level then
-            return lhs.level > rhs.level
-        end
+        if lhs.level ~= rhs.level then return lhs.level > rhs.level end
         return lhs.name < rhs.name
     end)
     return entries
@@ -217,13 +189,9 @@ end
 -- Alt Item Counts on item tooltips.
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, payload)
-        if not Get("altCounts") then
-            return
-        end
+        if not Get("altCounts") then return end
         local ident = payload and payload.id
-        if not ident or Secret(ident) then
-            return
-        end
+        if not ident or Secret(ident) then return end
         local rowList, sum, elsewhere, mine = {}, 0, false, MyName()
         for name, c in pairs(Realm()) do
             local bags, bank, mail =
@@ -231,29 +199,17 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
             local count = bags + bank + mail
             if count > 0 then
                 sum = sum + count
-                if name ~= mine or bank > 0 or mail > 0 then
-                    elsewhere = true
-                end
+                if name ~= mine or bank > 0 or mail > 0 then elsewhere = true end
                 local parts = {}
-                if bags > 0 then
-                    parts[#parts + 1] = bags .. " bags"
-                end
-                if bank > 0 then
-                    parts[#parts + 1] = bank .. " bank"
-                end
-                if mail > 0 then
-                    parts[#parts + 1] = mail .. " mail"
-                end
+                if bags > 0 then parts[#parts + 1] = bags .. " bags" end
+                if bank > 0 then parts[#parts + 1] = bank .. " bank" end
+                if mail > 0 then parts[#parts + 1] = mail .. " mail" end
                 rowList[#rowList + 1] =
                     { name = name, class = c.class, count = count, text = table.concat(parts, ", ") }
             end
         end
-        if not elsewhere then
-            return
-        end
-        table.sort(rowList, function(lhs, rhs)
-            return lhs.count > rhs.count
-        end)
+        if not elsewhere then return end
+        table.sort(rowList, function(lhs, rhs) return lhs.count > rhs.count end)
         tooltip:AddDoubleLine("Total owned", sum, 1, 1, 1, 1, 1, 1)
         for index = 1, math.min(#rowList, 8) do
             tooltip:AddDoubleLine(
@@ -280,9 +236,7 @@ local pendingSlot, pendingItem, pendingBag, pendingBagSlot
 local clicking = false
 local mEv = CreateFrame("Frame")
 
-local function Menu(ownerFrame, fillTex)
-    CludesUI.Kit.ContextMenu(ownerFrame, fillTex)
-end
+local function Menu(ownerFrame, fillTex) CludesUI.Kit.ContextMenu(ownerFrame, fillTex) end
 
 local function OpenAltsMenu(ownerFrame)
     local entries = AltList()
@@ -305,9 +259,7 @@ local function OpenAltsMenu(ownerFrame)
                     SendMailSubjectEditBox:SetFocus()
                 end
             )
-            if not alt.full then
-                firstOnly = true
-            end
+            if not alt.full then firstOnly = true end
         end
         if firstOnly then
             root:CreateTitle(
@@ -320,9 +272,7 @@ end
 
 local function FreeSlot()
     for index = 1, SEND_SLOTS do
-        if not HasSendMailItem(index) then
-            return index
-        end
+        if not HasSendMailItem(index) then return index end
     end
 end
 
@@ -336,27 +286,17 @@ end
 
 local function Mailable(bag, slot)
     local ident = C_Container.GetContainerItemID(bag, slot)
-    if not ident then
-        return
-    end
+    if not ident then return end
     local _, _, subType, _, _, classID, subClassID = C_Item.GetItemInfoInstant(ident)
-    if classID ~= TRADE_GOODS and not GEAR[classID] then
-        return
-    end
+    if classID ~= TRADE_GOODS and not GEAR[classID] then return end
     local details = C_Container.GetContainerItemInfo(bag, slot)
-    if not details or details.isBound or details.isLocked or details.itemID ~= ident then
-        return
-    end
-    if GEAR[classID] and (details.quality or 0) < Enum.ItemQuality.Uncommon then
-        return
-    end
+    if not details or details.isBound or details.isLocked or details.itemID ~= ident then return end
+    if GEAR[classID] and (details.quality or 0) < Enum.ItemQuality.Uncommon then return end
     return ident, classID, subClassID or -1, subType
 end
 
 local function Matches(key, classID, subClassID)
-    if key == "gear" then
-        return GEAR[classID]
-    end
+    if key == "gear" then return GEAR[classID] end
     return classID == TRADE_GOODS and (key == "all" or key == subClassID)
 end
 
@@ -371,21 +311,15 @@ local function StillPending()
         return false
     end
     local details = C_Container.GetContainerItemInfo(pendingBag, pendingBagSlot)
-    if not GetCursorInfo() and not (details and details.isLocked) then
-        StopAttaching()
-    end
+    if not GetCursorInfo() and not (details and details.isLocked) then StopAttaching() end
     return true
 end
 
 -- One item per mail-slot update: the game takes a moment to place each.
 local function AttachNext()
-    if clicking then
-        return
-    end
+    if clicking then return end
     while true do
-        if pendingSlot and StillPending() then
-            return
-        end
+        if pendingSlot and StillPending() then return end
         if qHead > qCount or GetCursorInfo() then
             StopAttaching()
             return
@@ -410,9 +344,7 @@ local function AttachNext()
             C_Container.PickupContainerItem(bag, bagSlot)
             local held, kind = OnCursor(ident)
             if not held then
-                if kind then
-                    ClearCursor()
-                end
+                if kind then ClearCursor() end
                 StopAttaching()
                 return
             end
@@ -441,9 +373,7 @@ local function Attach(key)
             end
         end
     end
-    if num == 0 then
-        return
-    end
+    if num == 0 then return end
     qHead, qCount = 1, num
     mEv:RegisterEvent("MAIL_SEND_INFO_UPDATE")
     mEv:RegisterEvent("MAIL_SEND_SUCCESS")
@@ -480,9 +410,10 @@ local function OpenAttachMenu(ownerFrame)
         end
         for _, key in ipairs(sequence) do
             local num = counts[key]
-            root:CreateButton(("%s (%d stack%s)"):format(labels[key], num, num == 1 and "" or "s"), function()
-                Attach(key)
-            end)
+            root:CreateButton(
+                ("%s (%d stack%s)"):format(labels[key], num, num == 1 and "" or "s"),
+                function() Attach(key) end
+            )
         end
     end)
 end
@@ -494,30 +425,22 @@ local function MailButton(textValue, tipText, func)
 end
 
 local function BuildButtons()
-    if altsButton or not (SendMailFrame and MailFrame) then
-        return
-    end
+    if altsButton or not (SendMailFrame and MailFrame) then return end
     altsButton = MailButton(
         "Alts",
         "Your characters on this realm and faction with their level and gold. Pick one to fill the To box.",
-        function(self)
-            OpenAltsMenu(self)
-        end
+        function(self) OpenAltsMenu(self) end
     )
     altsButton:SetPoint("TOPLEFT", MailFrame, "TOPRIGHT", 4, -30)
     attachButton = MailButton(
         "Attach",
         "Attach every trade good, one type of trade good, or your unbound gear from your bags, up to the 12 attachment slots.",
-        function(self)
-            OpenAttachMenu(self)
-        end
+        function(self) OpenAttachMenu(self) end
     )
 end
 
 local function PlaceButtons()
-    if not altsButton then
-        return
-    end
+    if not altsButton then return end
     altsButton:SetShown(Get("mailAlts"))
     attachButton:ClearAllPoints()
     if altsButton:IsShown() then
@@ -559,9 +482,7 @@ mEv:SetScript("OnEvent", function(_, evt, isLogin)
         StopAttaching()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         mEv:UnregisterEvent("PLAYER_ENTERING_WORLD")
-        if isLogin and Get("expiry") then
-            C_Timer.After(5, WarnExpiring)
-        end
+        if isLogin and Get("expiry") then C_Timer.After(5, WarnExpiring) end
     end
 end)
 
@@ -590,16 +511,12 @@ local function ForgetMenu(ownerFrame)
                 any = true
                 root:CreateButton(ClassName(name, c.class) .. "  |cff808080" .. realm .. "|r", function()
                     chars[name] = nil
-                    if not next(chars) then
-                        All()[realm] = nil
-                    end
+                    if not next(chars) then All()[realm] = nil end
                     Say("forgot " .. name .. ". It comes back the next time you log in on it.")
                 end)
             end
         end
-        if not any then
-            root:CreateTitle("No characters recorded yet.", WHITE_FONT_COLOR)
-        end
+        if not any then root:CreateTitle("No characters recorded yet.", WHITE_FONT_COLOR) end
     end)
 end
 
@@ -607,7 +524,5 @@ CludesUI._MailAlts = { Get = Get, Cfg = F.Cfg, Apply = Apply, Forget = ForgetMen
 
 F.Start(function()
     Apply()
-    if Get("expiry") then
-        mEv:RegisterEvent("PLAYER_ENTERING_WORLD")
-    end
+    if Get("expiry") then mEv:RegisterEvent("PLAYER_ENTERING_WORLD") end
 end)

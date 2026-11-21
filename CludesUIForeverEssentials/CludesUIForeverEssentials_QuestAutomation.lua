@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_QuestAutomation.lua  (WoW Forever only)
 --  Quest Automation, each part with its own switch:
@@ -24,21 +20,15 @@ local F = module.Feature(
 )
 local Get, Enabled = F.Get, F.Enabled
 
-local function Paused()
-    return IsShiftKeyDown()
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Paused() return IsShiftKeyDown() end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local eventFrame = CreateFrame("Frame")
 
 local function OnGossip()
     if Get("turnIn") then
         for _, q in ipairs(C_GossipInfo.GetActiveQuests() or {}) do
-            if q.isComplete and q.questID then
-                return C_GossipInfo.SelectActiveQuest(q.questID)
-            end
+            if q.isComplete and q.questID then return C_GossipInfo.SelectActiveQuest(q.questID) end
         end
     end
     if Get("accept") then
@@ -55,17 +45,13 @@ local function OnGreeting()
     if Get("turnIn") then
         for index = 1, GetNumActiveQuests() do
             local _, complete = GetActiveTitle(index)
-            if complete then
-                return SelectActiveQuest(index)
-            end
+            if complete then return SelectActiveQuest(index) end
         end
     end
     if Get("accept") then
         for index = 1, GetNumAvailableQuests() do
             local trivial = IsAvailableQuestTrivial and IsAvailableQuestTrivial(index)
-            if not (Get("skipGrey") and trivial) then
-                return SelectAvailableQuest(index)
-            end
+            if not (Get("skipGrey") and trivial) then return SelectAvailableQuest(index) end
         end
     end
 end
@@ -73,27 +59,17 @@ end
 local lastSaid = {}
 eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
     if evt == "UI_INFO_MESSAGE" then
-        if not (Get("progress") and IsInGroup(LE_PARTY_CATEGORY_HOME) and not IsInRaid()) then
-            return
-        end
+        if not (Get("progress") and IsInGroup(LE_PARTY_CATEGORY_HOME) and not IsInRaid()) then return end
         local message = a2
-        if type(message) ~= "string" or Secret(message) then
-            return
-        end
+        if type(message) ~= "string" or Secret(message) then return end
         local done, need = message:match(": (%d+)/(%d+)$")
-        if not done then
-            return
-        end
-        if lastSaid[message] and GetTime() - lastSaid[message] < 2 then
-            return
-        end
+        if not done then return end
+        if lastSaid[message] and GetTime() - lastSaid[message] < 2 then return end
         lastSaid[message] = GetTime()
         SendChatMessage(message, "PARTY")
         return
     end
-    if Paused() then
-        return
-    end
+    if Paused() then return end
     if evt == "GOSSIP_SHOW" then
         OnGossip()
     elseif evt == "QUEST_GREETING" then
@@ -104,17 +80,11 @@ eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
         end
     elseif evt == "QUEST_ACCEPT_CONFIRM" then
         -- An escort quest started by a group member.
-        if Get("accept") then
-            ConfirmAcceptQuest()
-        end
+        if Get("accept") then ConfirmAcceptQuest() end
     elseif evt == "QUEST_PROGRESS" then
-        if Get("turnIn") and IsQuestCompletable() then
-            CompleteQuest()
-        end
+        if Get("turnIn") and IsQuestCompletable() then CompleteQuest() end
     elseif evt == "QUEST_COMPLETE" then
-        if Get("turnIn") and GetNumQuestChoices() <= 1 then
-            GetQuestReward(GetNumQuestChoices())
-        end
+        if Get("turnIn") and GetNumQuestChoices() <= 1 then GetQuestReward(GetNumQuestChoices()) end
     end
 end)
 

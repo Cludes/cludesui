@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not CludesUI.IS_FOREVER then return end
 -------------------------------------------------------------------------------
 --  CludesUIQuestTracker_QuestAudio.lua - the quest voice-over addon's Play
 --  button on our tracker (WoW Forever; the owner's pick, 7 Nov 2026).
@@ -29,13 +25,9 @@ local ORIGIN = "CludesUI's quest tracker" -- how the addon's debug log names the
 local function VoiceOverAddon()
     local environ, spoken = _G.VoiceOver, _G.Spoken
     local ui = type(environ) == "table" and rawget(environ, "QuestOverlayUI")
-    if type(ui) ~= "table" or type(spoken) ~= "table" then
-        return nil
-    end
+    if type(ui) ~= "table" or type(spoken) ~= "table" then return nil end
     for _, fn in ipairs({ "ShowsTrackerButton", "BindPlayButton", "SetPlayButtonState", "FollowQueue" }) do
-        if type(ui[fn]) ~= "function" then
-            return nil
-        end
+        if type(ui[fn]) ~= "function" then return nil end
     end
     if type(spoken.DressBoxButton) ~= "function" or type(spoken.RegisterCallback) ~= "function" then
         return nil
@@ -44,13 +36,9 @@ local function VoiceOverAddon()
 end
 
 local function Install()
-    if not mod.UseCustomTracker() then
-        return
-    end
+    if not mod.UseCustomTracker() then return end
     local ui, spoken = VoiceOverAddon()
-    if not ui then
-        return
-    end
+    if not ui then return end
 
     local buttons = {} -- row -> its button
     local voiced = {} -- questID -> whether the addon offers Play for it
@@ -85,9 +73,7 @@ local function Install()
     local function Dress(row, questID)
         local button = buttons[row]
         if not Voiced(questID) then
-            if button then
-                button:Hide()
-            end
+            if button then button:Hide() end
             return
         end
         if not button then
@@ -105,9 +91,7 @@ local function Install()
     end
 
     local function Row(row, questID)
-        if broken then
-            return
-        end
+        if broken then return end
         if not pcall(Dress, row, questID) then
             broken = true
             for _, button in pairs(buttons) do
@@ -117,9 +101,7 @@ local function Install()
     end
     -- Registered under the addon's own name: should it add a row hook of its
     -- own, the first one stands and the other is refused, so no row gets two.
-    if not CludesUI.RegisterQuestTrackerRow("Spoken", Row, ROOM) then
-        return
-    end
+    if not CludesUI.RegisterQuestTrackerRow("Spoken", Row, ROOM) then return end
 
     -- What Voiced reads can change: the voice packs load after login, the
     -- addon's quest part can be switched, and its tracker button setting
@@ -130,9 +112,7 @@ local function Install()
     end
     spoken:RegisterCallback("VOICE_PACKS_LOADED", AskAgain)
     spoken:RegisterCallback("PART_SWITCHED", function(part)
-        if part == "quests" then
-            AskAgain()
-        end
+        if part == "quests" then AskAgain() end
     end)
     if type(ui.UpdateTrackerButtons) == "function" then
         hooksecurefunc(ui, "UpdateTrackerButtons", AskAgain)

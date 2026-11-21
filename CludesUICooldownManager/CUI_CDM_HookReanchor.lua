@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_HookReanchor.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._hookInternals
 -- CludesUICdmHooks.lua or an earlier hook file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ECME = mod.ECME
@@ -89,9 +85,7 @@ local _scratch_cdFrames = {} -- CD/utility: barKey -> {frame, frame, ...}
 -- Phase 4 sweep must leave these alone rather than park them offscreen.
 local _scratch_unresolved = {}
 
-local function _sortByLayoutIndex(a, b)
-    return (a.layoutIndex or 0) < (b.layoutIndex or 0)
-end
+local function _sortByLayoutIndex(a, b) return (a.layoutIndex or 0) < (b.layoutIndex or 0) end
 -- CD/utility sort: by sort order stored on the FC cache during collection.
 -- Tiebreak by Blizzard's layoutIndex so frames with no user-defined order
 -- (e.g. default bar with empty assignedSpells) render in Blizzard's natural
@@ -101,9 +95,7 @@ local function _sortByCDOrder(a, b)
     local fcB = _ecmeFC[b]
     local keyA = (fcA and fcA.sortOrder) or 99999
     local keyB = (fcB and fcB.sortOrder) or 99999
-    if keyA ~= keyB then
-        return keyA < keyB
-    end
+    if keyA ~= keyB then return keyA < keyB end
     local liA = a.layoutIndex or 99999
     local liB = b.layoutIndex or 99999
     return liA < liB
@@ -114,9 +106,7 @@ end
 local function _sortByBuffOrder(a, b)
     local keyA = a.sortOrder or 99999
     local keyB = b.sortOrder or 99999
-    if keyA ~= keyB then
-        return keyA < keyB
-    end
+    if keyA ~= keyB then return keyA < keyB end
     return (a.layoutIndex or 99999) < (b.layoutIndex or 99999)
 end
 
@@ -148,22 +138,16 @@ mod._missingFlipBars = {}
 
 local function CollectAndReanchor()
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars or not profile.cdmBars.enabled then
-        return
-    end
+    if not profile or not profile.cdmBars or not profile.cdmBars.enabled then return end
 
-    if mod.RebuildCDMSpellCaches then
-        mod.RebuildCDMSpellCaches()
-    end
+    if mod.RebuildCDMSpellCaches then mod.RebuildCDMSpellCaches() end
 
     -- Safety: if RebuildSpellRouteMap has never run successfully (API was
     -- unavailable during zone-in rebuild, e.g. fast arena transitions),
     -- attempt a fresh rebuild now. Test the build sentinel, NOT the
     -- diversion maps (which can legitimately be empty for users with no
     -- diversions) and NOT _cdidRouteMap (lazy cache, empty post-build).
-    if not IsRouteMapBuilt() and mod.RebuildSpellRouteMap then
-        mod.RebuildSpellRouteMap()
-    end
+    if not IsRouteMapBuilt() and mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
 
     wipe(_scratch_usedFrames)
     wipe(_scratch_activeFrames)
@@ -257,9 +241,7 @@ local function CollectAndReanchor()
                                         -- is set here (the buff path doesn't otherwise); it then enters
                                         -- _globalClaimSet (built from cdFrames) so Phase 3 never injects
                                         -- a duplicate. Phase 4 still treats it hands-off (viewerFrame).
-                                        if not cdFrames[targetBar] then
-                                            cdFrames[targetBar] = {}
-                                        end
+                                        if not cdFrames[targetBar] then cdFrames[targetBar] = {} end
                                         local castFrame = cdFrames[targetBar]
                                         castFrame[#castFrame + 1] = widget
                                         local frameCache = FC(widget)
@@ -296,9 +278,7 @@ local function CollectAndReanchor()
                                             frameCache.isHostedBuff = true
                                         end
                                     else
-                                        if not perBarLists[targetBar] then
-                                            perBarLists[targetBar] = {}
-                                        end
+                                        if not perBarLists[targetBar] then perBarLists[targetBar] = {} end
                                         perBarLists[targetBar][#perBarLists[targetBar] + 1] = AcquireEntry(
                                             widget,
                                             shownSpellId,
@@ -319,8 +299,12 @@ local function CollectAndReanchor()
                                         local missingMode, belowSec = false, nil
                                         if tbd and not tbd.hidePlaceholderIcon then
                                             local sdMV = mod.GetBarSpellData(targetBar)
-                                            local ssMV =
-                                                mod.ResolveSpellSettings(widget, shownSpellId, sdMV, targetBar)
+                                            local ssMV = mod.ResolveSpellSettings(
+                                                widget,
+                                                shownSpellId,
+                                                sdMV,
+                                                targetBar
+                                            )
                                             missingMode = (ssMV and ssMV.alwaysShow == "missing") and true
                                                 or false
                                             belowSec = missingMode and tonumber(ssMV.missingShowBelow) or nil
@@ -345,9 +329,7 @@ local function CollectAndReanchor()
                                         if wasHidden ~= (fcMV._missingActiveHidden and true or false) then
                                             mod._missingFlipBars[targetBar] = true
                                             mod._btDirty = true
-                                            if mod.ArmBuffTicker then
-                                                mod.ArmBuffTicker()
-                                            end
+                                            if mod.ArmBuffTicker then mod.ArmBuffTicker() end
                                         end
                                     end
                                     seenOnBar[uniqueKey] = true
@@ -455,9 +437,7 @@ local function CollectAndReanchor()
                                         or false
                                     -- A replacement buff never reserves a slot of its own: while it
                                     -- is missing, the cooldown it stands in for owns the slot.
-                                    if hostCD and not repSpellId then
-                                        showInactive = true
-                                    end
+                                    if hostCD and not repSpellId then showInactive = true end
                                     -- Hosted "Visibility When Missing" (per-spell, BUFF family
                                     -- store; hosted entries never chain to bar tiers, so this can
                                     -- never come from Apply-to-Bar). Resolved via the pooled
@@ -511,9 +491,7 @@ local function CollectAndReanchor()
                                             end
                                         end
                                     end
-                                    if repSpellId then
-                                        showInactive = false
-                                    end
+                                    if repSpellId then showInactive = false end
                                     if
                                         edge
                                         and edge.enabled
@@ -542,8 +520,12 @@ local function CollectAndReanchor()
                                             if not iconTex and _GetTex and dispSID ~= realSID then
                                                 iconTex = _GetTex(realSID)
                                             end
-                                            local ph =
-                                                GetOrCreatePlaceholderFrame(targetBar, dispSID, iconTex, phIdent)
+                                            local ph = GetOrCreatePlaceholderFrame(
+                                                targetBar,
+                                                dispSID,
+                                                iconTex,
+                                                phIdent
+                                            )
                                             -- Per-spell missing-visibility mark (our own
                                             -- frame): "hidden" renders alpha-0 via the
                                             -- opacity passes while the slot stays
@@ -570,9 +552,7 @@ local function CollectAndReanchor()
                                                 -- Hosted-buff placeholder -> CD pipeline (Phase 3);
                                                 -- FC.spellID lets Phase 3 slot it by assignedSpells
                                                 -- (via the hosted MARKER rank, like the live frame).
-                                                if not cdFrames[targetBar] then
-                                                    cdFrames[targetBar] = {}
-                                                end
+                                                if not cdFrames[targetBar] then cdFrames[targetBar] = {} end
                                                 local castFrame = cdFrames[targetBar]
                                                 castFrame[#castFrame + 1] = ph
                                                 local frameCache = FC(ph)
@@ -583,12 +563,13 @@ local function CollectAndReanchor()
                                                 if not perBarLists[targetBar] then
                                                     perBarLists[targetBar] = {}
                                                 end
-                                                perBarLists[targetBar][#perBarLists[targetBar] + 1] = AcquireEntry(
-                                                    ph,
-                                                    realSID,
-                                                    realSID,
-                                                    widget.layoutIndex or 0
-                                                )
+                                                perBarLists[targetBar][#perBarLists[targetBar] + 1] =
+                                                    AcquireEntry(
+                                                        ph,
+                                                        realSID,
+                                                        realSID,
+                                                        widget.layoutIndex or 0
+                                                    )
                                             end
                                         end
                                         seenOnBar[uniqueKey] = true
@@ -632,9 +613,7 @@ local function CollectAndReanchor()
                                 -- its first use.
                                 local nativeKey, racialRow = mod.NativeItemKeyFor(eqInfo, widget)
                                 if nativeKey then
-                                    if not cdFrames[barId] then
-                                        cdFrames[barId] = {}
-                                    end
+                                    if not cdFrames[barId] then cdFrames[barId] = {} end
                                     local frameList = cdFrames[barId]
                                     frameList[#frameList + 1] = widget
                                     local frameCache = FC(widget)
@@ -646,7 +625,8 @@ local function CollectAndReanchor()
                                     -- its last occupant: none of it describes an item
                                     -- row (the claim set and the settings identity
                                     -- set read these).
-                                    frameCache.baseSpellID, frameCache.resolvedSid, frameCache.overrideSid = nil, nil, nil
+                                    frameCache.baseSpellID, frameCache.resolvedSid, frameCache.overrideSid =
+                                        nil, nil, nil
                                     frameCache.linkedSpellIDs, frameCache.cachedCdID = nil, nil
                                 -- Equipment rows and every other category row pin
                                 -- inert, except a category row whose live frame
@@ -657,9 +637,7 @@ local function CollectAndReanchor()
                                     eqInfo
                                     and (eqInfo.equipSlot or (eqInfo.spellCategoryID and not racialRow))
                                 then
-                                    if not cdFrames[barId] then
-                                        cdFrames[barId] = {}
-                                    end
+                                    if not cdFrames[barId] then cdFrames[barId] = {} end
                                     local frameList = cdFrames[barId]
                                     frameList[#frameList + 1] = widget
                                     local frameCache = FC(widget)
@@ -669,9 +647,7 @@ local function CollectAndReanchor()
                                 else
                                     local shownSpellId, baseSID = ResolveFrameSpellID(widget)
                                     if shownSpellId and shownSpellId > 0 then
-                                        if not cdFrames[barId] then
-                                            cdFrames[barId] = {}
-                                        end
+                                        if not cdFrames[barId] then cdFrames[barId] = {} end
                                         local frameList = cdFrames[barId]
                                         frameList[#frameList + 1] = widget
                                         local frameCache = FC(widget)
@@ -705,9 +681,7 @@ local function CollectAndReanchor()
                                         -- re-key items onto slot ids: the managed-native
                                         -- arbitration that required was the 8.8.7 dupe bug.
                                         if catInfo and (catInfo.spellCategoryID or catInfo.equipSlot) then
-                                            if not cdFrames[barId] then
-                                                cdFrames[barId] = {}
-                                            end
+                                            if not cdFrames[barId] then cdFrames[barId] = {} end
                                             local frameList = cdFrames[barId]
                                             frameList[#frameList + 1] = widget
                                             local frameCache = FC(widget)
@@ -797,7 +771,12 @@ local function CollectAndReanchor()
                                 -- direct family-store hit resolves without it (matches PlayPresetBuffGainSound).
                                 if mod._cdmAnyThresholdText and mod.ApplyThresholdFormatter then
                                     local ssB = mod.ResolveThresholdTextSettings
-                                        and mod.ResolveThresholdTextSettings(nil, spellRef, sdInj, injectedKey)
+                                        and mod.ResolveThresholdTextSettings(
+                                            nil,
+                                            spellRef,
+                                            sdInj,
+                                            injectedKey
+                                        )
                                     mod.ApplyThresholdFormatter(frame._cooldown, ssB)
                                 end
                                 frame:Show()
@@ -805,9 +784,7 @@ local function CollectAndReanchor()
                                 local frameCache = FC(frame)
                                 frameCache.barKey = injectedKey
                                 frameCache.spellID = spellRef
-                                if not perBarLists[injectedKey] then
-                                    perBarLists[injectedKey] = {}
-                                end
+                                if not perBarLists[injectedKey] then perBarLists[injectedKey] = {} end
                                 perBarLists[injectedKey][#perBarLists[injectedKey] + 1] =
                                     AcquireEntry(frame, spellRef, spellRef, frame.layoutIndex)
                             elseif injectPlaceholder then
@@ -832,9 +809,7 @@ local function CollectAndReanchor()
                                 local frameCache = FC(ph)
                                 frameCache.barKey = injectedKey
                                 frameCache.spellID = spellRef
-                                if not perBarLists[injectedKey] then
-                                    perBarLists[injectedKey] = {}
-                                end
+                                if not perBarLists[injectedKey] then perBarLists[injectedKey] = {} end
                                 perBarLists[injectedKey][#perBarLists[injectedKey] + 1] =
                                     AcquireEntry(ph, spellRef, spellRef, ph.layoutIndex)
                             end
@@ -902,7 +877,11 @@ local function CollectAndReanchor()
                                 if skipMissing then
                                     frame:Hide()
                                 else
-                                    if frame._cdStart and frame._cdDur and (GetTime() < frame._cdStart + frame._cdDur) then
+                                    if
+                                        frame._cdStart
+                                        and frame._cdDur
+                                        and (GetTime() < frame._cdStart + frame._cdDur)
+                                    then
                                         frame._cooldown:SetCooldown(frame._cdStart, frame._cdDur)
                                     end
                                     if frame._lastDesat ~= nil and frame._tex then
@@ -919,9 +898,7 @@ local function CollectAndReanchor()
                                     local frameCache = FC(frame)
                                     frameCache.barKey = injectedKey
                                     frameCache.spellID = spellRef
-                                    if not perBarLists[injectedKey] then
-                                        perBarLists[injectedKey] = {}
-                                    end
+                                    if not perBarLists[injectedKey] then perBarLists[injectedKey] = {} end
                                     perBarLists[injectedKey][#perBarLists[injectedKey] + 1] =
                                         AcquireEntry(frame, spellRef, spellRef, frame.layoutIndex)
                                 end
@@ -970,9 +947,7 @@ local function CollectAndReanchor()
                     if not mod._spellOrderDirty and boxHolder._cachedBuffOrder then
                         buffOrder = boxHolder._cachedBuffOrder
                     else
-                        if not boxHolder._cachedBuffOrder then
-                            boxHolder._cachedBuffOrder = {}
-                        end
+                        if not boxHolder._cachedBuffOrder then boxHolder._cachedBuffOrder = {} end
                         buffOrder = boxHolder._cachedBuffOrder
                         wipe(buffOrder)
                         local sdOrder = mod.GetBarSpellData(barId)
@@ -988,15 +963,11 @@ local function CollectAndReanchor()
                             local orderList = sdOrder and sdOrder.buffDisplayOrder
                             -- Ignore the pre-stable-key format (raw spellID numbers);
                             -- the options preview reconcile re-seeds it cleanly.
-                            if orderList and type(orderList[1]) == "number" then
-                                orderList = nil
-                            end
+                            if orderList and type(orderList[1]) == "number" then orderList = nil end
                             if orderList then
                                 for i = 1, #orderList do
                                     local barKey = orderList[i]
-                                    if buffOrder[barKey] == nil then
-                                        buffOrder[barKey] = i
-                                    end
+                                    if buffOrder[barKey] == nil then buffOrder[barKey] = i end
                                 end
                             end
                         else
@@ -1015,21 +986,15 @@ local function CollectAndReanchor()
                                     if cdClaim then
                                         orderIndex = orderIndex + 1
                                         local barKey = "c" .. cdClaim
-                                        if not buffOrder[barKey] then
-                                            buffOrder[barKey] = orderIndex
-                                        end
+                                        if not buffOrder[barKey] then buffOrder[barKey] = orderIndex end
                                     -- Negative IDs are custom-item markers: order them
                                     -- by their slot too (no override/base variants).
                                     elseif type(spellRef) == "number" and spellRef <= -100 then
                                         orderIndex = orderIndex + 1
-                                        if not buffOrder[spellRef] then
-                                            buffOrder[spellRef] = orderIndex
-                                        end
+                                        if not buffOrder[spellRef] then buffOrder[spellRef] = orderIndex end
                                     elseif type(spellRef) == "number" and spellRef > 0 then
                                         orderIndex = orderIndex + 1
-                                        if not buffOrder[spellRef] then
-                                            buffOrder[spellRef] = orderIndex
-                                        end
+                                        if not buffOrder[spellRef] then buffOrder[spellRef] = orderIndex end
                                         if _FindOverride then
                                             local ovr = _FindOverride(spellRef)
                                             if ovr and ovr > 0 and not buffOrder[ovr] then
@@ -1171,9 +1136,7 @@ local function CollectAndReanchor()
                 -- Mark this bar's frames as used BEFORE the excess-clear below, so the
                 -- clear can tell a stale tail slot from a still-claimed frame.
                 for _, record in ipairs(entries) do
-                    if record.frame and not usedFrames[record.frame] then
-                        usedFrames[record.frame] = true
-                    end
+                    if record.frame and not usedFrames[record.frame] then usedFrames[record.frame] = true end
                 end
 
                 -- Clear excess buff icons (Blizzard owns lifecycle, only disable
@@ -1188,9 +1151,7 @@ local function CollectAndReanchor()
                     local iconTex = iconList[i]
                     if iconTex and not usedFrames[iconTex] then
                         local efd = hookFrameData[iconTex]
-                        if efd then
-                            efd._cdmAnchor = nil
-                        end
+                        if efd then efd._cdmAnchor = nil end
                         if iconTex.Cooldown and iconTex.Cooldown.SetDrawSwipe then
                             iconTex.Cooldown:SetDrawSwipe(false)
                         end
@@ -1217,18 +1178,10 @@ local function CollectAndReanchor()
                     listChanged = true
                 end
                 if listChanged then
-                    if RefreshCDMIconAppearance then
-                        RefreshCDMIconAppearance(barId)
-                    end
-                    if LayoutCDMBar then
-                        LayoutCDMBar(barId)
-                    end
-                    if ApplyCDMTooltipState then
-                        ApplyCDMTooltipState(barId)
-                    end
-                    if not boxHolder._prevIconRefs then
-                        boxHolder._prevIconRefs = {}
-                    end
+                    if RefreshCDMIconAppearance then RefreshCDMIconAppearance(barId) end
+                    if LayoutCDMBar then LayoutCDMBar(barId) end
+                    if ApplyCDMTooltipState then ApplyCDMTooltipState(barId) end
+                    if not boxHolder._prevIconRefs then boxHolder._prevIconRefs = {} end
                     for position = 1, count do
                         boxHolder._prevIconRefs[position] = iconList[position]
                     end
@@ -1258,7 +1211,12 @@ local function CollectAndReanchor()
 
     -- Clean up empty buff bars
     for _, edge in ipairs(profile.cdmBars.bars) do
-        if edge.enabled and mod.IsBarBuffFamily(edge) and not edge.isGhostBar and not perBarLists[edge.key] then
+        if
+            edge.enabled
+            and mod.IsBarBuffFamily(edge)
+            and not edge.isGhostBar
+            and not perBarLists[edge.key]
+        then
             local iconList = cdmBarIcons[edge.key]
             if iconList then
                 for i = 1, #iconList do
@@ -1267,9 +1225,7 @@ local function CollectAndReanchor()
                     -- would blank it there).
                     if iconList[i] and not usedFrames[iconList[i]] then
                         local efd = hookFrameData[iconList[i]]
-                        if efd then
-                            efd._cdmAnchor = nil
-                        end
+                        if efd then efd._cdmAnchor = nil end
                         if iconList[i].Cooldown and iconList[i].Cooldown.SetDrawSwipe then
                             iconList[i].Cooldown:SetDrawSwipe(false)
                         end
@@ -1280,9 +1236,7 @@ local function CollectAndReanchor()
             local boxHolder = cdmBarFrames[edge.key]
             if boxHolder and (boxHolder._prevVisibleCount or 0) > 0 then
                 boxHolder._prevVisibleCount = 0
-                if LayoutCDMBar then
-                    LayoutCDMBar(edge.key)
-                end
+                if LayoutCDMBar then LayoutCDMBar(edge.key) end
             end
         end
     end
@@ -1303,9 +1257,7 @@ local function CollectAndReanchor()
             and not cdFrames[edge.key]
         then
             local sd = mod.GetBarSpellData(edge.key)
-            if sd and sd.assignedSpells and #sd.assignedSpells > 0 then
-                cdFrames[edge.key] = {}
-            end
+            if sd and sd.assignedSpells and #sd.assignedSpells > 0 then cdFrames[edge.key] = {} end
         end
     end
 
@@ -1320,7 +1272,8 @@ local function CollectAndReanchor()
                 for i = #frameList, 1, -1 do
                     local frameCache = _ecmeFC[frameList[i]]
                     if frameCache and not frameCache.replacesCd and frameCache.spellID then
-                        local hit = targets[frameCache.spellID] or (frameCache.baseSpellID and targets[frameCache.baseSpellID])
+                        local hit = targets[frameCache.spellID]
+                            or (frameCache.baseSpellID and targets[frameCache.baseSpellID])
                         if not hit then
                             for t in pairs(targets) do
                                 if mod.IsVariantOf(frameCache.spellID, t) then
@@ -1329,9 +1282,7 @@ local function CollectAndReanchor()
                                 end
                             end
                         end
-                        if hit then
-                            table.remove(frameList, i)
-                        end
+                        if hit then table.remove(frameList, i) end
                     end
                 end
             end
@@ -1342,9 +1293,7 @@ local function CollectAndReanchor()
     -- dropped like an unlearned spell (CludesUICdmTalentConditions.lua). A replacement
     -- buff follows its cooldown's conditions. Session-gated: skipped entirely until some
     -- spell has a condition.
-    if mod._cdmAnyTalentCond then
-        mod.TalentCondFilterPass(cdFrames)
-    end
+    if mod._cdmAnyTalentCond then mod.TalentCondFilterPass(cdFrames) end
 
     -- Pre-build claim set for racial/custom spell checks: collect all spellIDs already
     -- claimed by Blizzard frames across all bars. This replaces the O(frames *
@@ -1356,17 +1305,11 @@ local function CollectAndReanchor()
             local frameCache = _ecmeFC[frame]
             if frameCache then
                 local fSid = frameCache.spellID
-                if fSid then
-                    _globalClaimSet[fSid] = true
-                end
-                if frameCache.baseSpellID then
-                    _globalClaimSet[frameCache.baseSpellID] = true
-                end
+                if fSid then _globalClaimSet[fSid] = true end
+                if frameCache.baseSpellID then _globalClaimSet[frameCache.baseSpellID] = true end
                 if frameCache.linkedSpellIDs then
                     for _, lid in ipairs(frameCache.linkedSpellIDs) do
-                        if lid and lid > 0 then
-                            _globalClaimSet[lid] = true
-                        end
+                        if lid and lid > 0 then _globalClaimSet[lid] = true end
                     end
                 end
             end
@@ -1393,12 +1336,8 @@ local function CollectAndReanchor()
                     hostedOrder = boxHolder._cachedHostedOrder
                     hasCdKeys = boxHolder._cachedSpellOrderCdKeys
                 else
-                    if not boxHolder._cachedSpellOrder then
-                        boxHolder._cachedSpellOrder = {}
-                    end
-                    if not boxHolder._cachedHostedOrder then
-                        boxHolder._cachedHostedOrder = {}
-                    end
+                    if not boxHolder._cachedSpellOrder then boxHolder._cachedSpellOrder = {} end
+                    if not boxHolder._cachedHostedOrder then boxHolder._cachedHostedOrder = {} end
                     spellOrder = boxHolder._cachedSpellOrder
                     hostedOrder = boxHolder._cachedHostedOrder
                     hasCdKeys = false
@@ -1420,7 +1359,12 @@ local function CollectAndReanchor()
                                     end
                                     if _FindOverride then
                                         local hOvr = _FindOverride(hostedSpellId)
-                                        if hOvr and hOvr > 0 and hOvr ~= hostedSpellId and not hostedOrder[hOvr] then
+                                        if
+                                            hOvr
+                                            and hOvr > 0
+                                            and hOvr ~= hostedSpellId
+                                            and not hostedOrder[hOvr]
+                                        then
                                             hostedOrder[hOvr] = position
                                         end
                                     end
@@ -1448,14 +1392,10 @@ local function CollectAndReanchor()
                                         and mod.CdClaimMarkerToCdID(spellRef)
                                     if cdClaim then
                                         local ckey = "c" .. cdClaim
-                                        if not spellOrder[ckey] then
-                                            spellOrder[ckey] = position
-                                        end
+                                        if not spellOrder[ckey] then spellOrder[ckey] = position end
                                         hasCdKeys = true
                                     else
-                                        if not spellOrder[spellRef] then
-                                            spellOrder[spellRef] = position
-                                        end
+                                        if not spellOrder[spellRef] then spellOrder[spellRef] = position end
                                         -- Resolve override/base forms only for a REAL
                                         -- spellID. sid can still be an item/slot marker
                                         -- here (negative): FindSpellOverrideByID errors
@@ -1538,7 +1478,8 @@ local function CollectAndReanchor()
                             -- hosted-buff frames count: the same spell's COOLDOWN frame
                             -- here is the other form, so the global claim set (cooldowns
                             -- and linked ids included) cannot decide it.
-                            local hostedSpellId = mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(spellRef)
+                            local hostedSpellId = mod.HostedBuffMarkerToSpell
+                                and mod.HostedBuffMarkerToSpell(spellRef)
                             if
                                 hostedSpellId
                                 and sd
@@ -1547,7 +1488,9 @@ local function CollectAndReanchor()
                                 and mod.CDM_AuraIconForBuff
                             then
                                 local ovr = _FindOverride and _FindOverride(hostedSpellId)
-                                local base = C_Spell and C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(hostedSpellId)
+                                local base = C_Spell
+                                    and C_Spell.GetBaseSpell
+                                    and C_Spell.GetBaseSpell(hostedSpellId)
                                 local claimed = false
                                 for fi = 1, #frameList do
                                     local hfc = _ecmeFC[frameList[fi]]
@@ -1575,16 +1518,12 @@ local function CollectAndReanchor()
                             -- key, so it renders the slot and our frame stands down.
                             -- One physical trinket, one icon.
                             local tfN = _trinketFrames[mod.SlotIDFromKey(spellRef)]
-                            if tfN then
-                                tfN:Hide()
-                            end
+                            if tfN then tfN:Hide() end
                         elseif spellRef and mod.SlotIDFromKey(spellRef) then
                             -- Equipment slot (trinkets -13/-14, user-added slots)
                             local slotIndex = mod.SlotIDFromKey(spellRef)
                             local tf = _trinketFrames[slotIndex]
-                            if not tf then
-                                tf = GetOrCreateTrinketFrame(slotIndex)
-                            end
+                            if not tf then tf = GetOrCreateTrinketFrame(slotIndex) end
                             -- Re-decorate (icon, use spell, tooltip scan) only when the
                             -- equipped item changed or an earlier scan was inconclusive;
                             -- a plain re-anchor keeps the decoration and only drops the
@@ -1677,7 +1616,11 @@ local function CollectAndReanchor()
                                     -- CD state is maintained by ProcessPresetCooldowns
                                     -- at 10Hz. Here we just re-apply cached visuals
                                     -- (no API queries needed per reanchor).
-                                    if frame._cdStart and frame._cdDur and (GetTime() < frame._cdStart + frame._cdDur) then
+                                    if
+                                        frame._cdStart
+                                        and frame._cdDur
+                                        and (GetTime() < frame._cdStart + frame._cdDur)
+                                    then
                                         frame._cooldown:SetCooldown(frame._cdStart, frame._cdDur)
                                     end
                                     if frame._lastDesat ~= nil and frame._tex then
@@ -1705,15 +1648,11 @@ local function CollectAndReanchor()
                             local hasClaim = _globalClaimSet[spellRef] or false
                             if not hasClaim and _FindOverride then
                                 local ovr = _FindOverride(spellRef)
-                                if ovr and ovr > 0 and _globalClaimSet[ovr] then
-                                    hasClaim = true
-                                end
+                                if ovr and ovr > 0 and _globalClaimSet[ovr] then hasClaim = true end
                             end
                             if not hasClaim and C_Spell and C_Spell.GetBaseSpell then
                                 local base = C_Spell.GetBaseSpell(spellRef)
-                                if base and base > 0 and _globalClaimSet[base] then
-                                    hasClaim = true
-                                end
+                                if base and base > 0 and _globalClaimSet[base] then hasClaim = true end
                             end
                             -- An entry an aura icon of ours draws (CUI_CDM_AuraIcons.lua:
                             -- the WoW Forever Seals stand-in), native-first like a racial.
@@ -1775,15 +1714,14 @@ local function CollectAndReanchor()
                                         mod.CdmOwnIconCrop(texture)
                                         frame.Icon = texture
                                         frame._tex = texture
-                                        local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+                                        local cd =
+                                            CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
                                         cd:SetAllPoints()
                                         cd:SetDrawEdge(false)
                                         cd:SetDrawBling(false)
                                         cd:SetHideCountdownNumbers(true)
                                         cd:SetScript("OnCooldownDone", function()
-                                            if frame._tex then
-                                                frame._tex:SetDesaturation(0)
-                                            end
+                                            if frame._tex then frame._tex:SetDesaturation(0) end
                                         end)
                                         frame.Cooldown = cd
                                         frame._cooldown = cd
@@ -1800,9 +1738,7 @@ local function CollectAndReanchor()
                                             local ffc = _ecmeFC[self]
                                             local spid = ffc and ffc.spellID
                                             local bd2 = ffc and ffc.barKey and barDataByKey[ffc.barKey]
-                                            if not bd2 or not bd2.showTooltip then
-                                                return
-                                            end
+                                            if not bd2 or not bd2.showTooltip then return end
                                             -- Honor the global "Show Tooltips" mode (Blizzard Skin).
                                             if
                                                 CludesUI
@@ -1876,9 +1812,7 @@ local function CollectAndReanchor()
                 -- id the add path wrote) is matched too, so a placed cooldown finds its
                 -- saved rank instead of being mistaken for a brand-new spillover.
                 local function OrderKeyFor(widget, frameCache, spellRef, map)
-                    if not map then
-                        return nil
-                    end
+                    if not map then return nil end
                     -- Cd-claimed collided-buff slot: both frames of the pair share
                     -- one spellID, so every probe below would match the same rank
                     -- (or none). cooldownID is unique per slot -- check it first,
@@ -1888,9 +1822,7 @@ local function CollectAndReanchor()
                         local cd = widget and widget.cooldownID
                         if type(cd) == "number" then
                             local ckey = map["c" .. cd]
-                            if ckey then
-                                return ckey
-                            end
+                            if ckey then return ckey end
                         end
                     end
                     local barKey = spellRef and map[spellRef]
@@ -1900,24 +1832,18 @@ local function CollectAndReanchor()
                     end
                     if not barKey and spellRef and spellRef > 0 and _FindOverride then
                         local ovr = _FindOverride(spellRef)
-                        if ovr and ovr > 0 then
-                            barKey = map[ovr]
-                        end
+                        if ovr and ovr > 0 then barKey = map[ovr] end
                     end
                     if not barKey and spellRef and spellRef > 0 and C_Spell and C_Spell.GetBaseSpell then
                         local base = C_Spell.GetBaseSpell(spellRef)
-                        if base and base > 0 and base ~= spellRef then
-                            barKey = map[base]
-                        end
+                        if base and base > 0 and base ~= spellRef then barKey = map[base] end
                     end
                     if not barKey and frameCache and frameCache.resolvedSid then
                         barKey = map[frameCache.resolvedSid]
                     end
                     if not barKey and mod.GetCanonicalSpellIDForFrame then
                         local canon = mod.GetCanonicalSpellIDForFrame(widget)
-                        if canon and canon > 0 then
-                            barKey = map[canon]
-                        end
+                        if canon and canon > 0 then barKey = map[canon] end
                     end
                     if not barKey and frameCache and frameCache.linkedSpellIDs then
                         for _, lid in ipairs(frameCache.linkedSpellIDs) do
@@ -1939,9 +1865,7 @@ local function CollectAndReanchor()
                         -- marker model (plain entry + flag) -- they keep rendering
                         -- at their old position until the options pass normalizes.
                         barKey = OrderKeyFor(widget, frameCache, spellRef, hostedOrder)
-                        if not barKey then
-                            barKey = OrderKeyFor(widget, frameCache, spellRef, spellOrder)
-                        end
+                        if not barKey then barKey = OrderKeyFor(widget, frameCache, spellRef, spellOrder) end
                     else
                         barKey = OrderKeyFor(widget, frameCache, spellRef, spellOrder)
                     end
@@ -2039,7 +1963,10 @@ local function CollectAndReanchor()
                             for i = 1, #bKeys do
                                 aKeys[i] = bKeys[i]
                                 aLIs[i] = bLIs[i]
-                                if not firstAnchorIdx[viewerFrame] or bKeys[i] < firstAnchorIdx[viewerFrame] then
+                                if
+                                    not firstAnchorIdx[viewerFrame]
+                                    or bKeys[i] < firstAnchorIdx[viewerFrame]
+                                then
                                     firstAnchorIdx[viewerFrame] = bKeys[i]
                                 end
                             end
@@ -2080,7 +2007,10 @@ local function CollectAndReanchor()
                                     if effLI then
                                         aKeys[#aKeys + 1] = k
                                         aLIs[#aKeys] = effLI
-                                        if not firstAnchorIdx[viewerFrame] or k < firstAnchorIdx[viewerFrame] then
+                                        if
+                                            not firstAnchorIdx[viewerFrame]
+                                            or k < firstAnchorIdx[viewerFrame]
+                                        then
                                             firstAnchorIdx[viewerFrame] = k
                                         end
                                     end
@@ -2126,7 +2056,8 @@ local function CollectAndReanchor()
                                 -- cooldown: a preset switch re-seats the pool, and
                                 -- the held position belongs to the spell that sat
                                 -- here before, not to this one.
-                                local held = (frameCache.lastSortOrderCdID == widget.cooldownID) and frameCache.lastSortOrder
+                                local held = (frameCache.lastSortOrderCdID == widget.cooldownID)
+                                        and frameCache.lastSortOrder
                                     or nil
                                 frameCache.sortOrder = held or 99999
                             else
@@ -2155,9 +2086,7 @@ local function CollectAndReanchor()
         if tagged then
             for frame in pairs(tagged) do
                 local fcT = _ecmeFC[frame]
-                if fcT then
-                    fcT._overflowLayoutBar = nil
-                end
+                if fcT then fcT._overflowLayoutBar = nil end
                 tagged[frame] = nil
             end
         end
@@ -2219,9 +2148,7 @@ local function CollectAndReanchor()
                             end
                         end
                         if tOK and not blocked then
-                            if not moves then
-                                moves = {}
-                            end
+                            if not moves then moves = {} end
                             for i = cap + 1, #srcList do
                                 moves[#moves + 1] = srcList[i]
                                 moves[#moves + 1] = tKey
@@ -2247,9 +2174,7 @@ local function CollectAndReanchor()
                     end
                     tl[#tl + 1] = frame
                     local fcM = _ecmeFC[frame]
-                    if fcM then
-                        fcM._overflowLayoutBar = tKey
-                    end
+                    if fcM then fcM._overflowLayoutBar = tKey end
                     tagged[frame] = true
                 end
             end
@@ -2295,9 +2220,7 @@ local function CollectAndReanchor()
                         pcall(widget.ChargeCount.SetFrameLevel, widget.ChargeCount, _txtLvl2)
                     end
                     if widget.Cooldown then
-                        if widget.Cooldown.SetDrawSwipe then
-                            widget.Cooldown:SetDrawSwipe(true)
-                        end
+                        if widget.Cooldown.SetDrawSwipe then widget.Cooldown:SetDrawSwipe(true) end
                         -- Re-assert the swipe direction when the frame's recorded
                         -- kind differs: hosted buffs / placeholders fill like buffs,
                         -- everything else depletes. Once-per-frame decoration +
@@ -2321,9 +2244,7 @@ local function CollectAndReanchor()
                             widget.Cooldown:SetReverse(wantRev)
                         end
                         local hcd = mod.CdmDurationHideFor(widget, barId, hideCDText)
-                        if mod.CdmShouldHideCountdown then
-                            hcd = mod.CdmShouldHideCountdown(widget, hcd)
-                        end
+                        if mod.CdmShouldHideCountdown then hcd = mod.CdmShouldHideCountdown(widget, hcd) end
                         widget.Cooldown:SetHideCountdownNumbers(hcd)
                     end
                     -- Reparent custom frames to our container (never to Blizzard viewers)
@@ -2339,9 +2260,7 @@ local function CollectAndReanchor()
                         or widget._isItemPresetFrame
                         or widget._isCustomSpellFrame
                     then
-                        if widget:GetParent() ~= boxHolder then
-                            widget:SetParent(boxHolder)
-                        end
+                        if widget:GetParent() ~= boxHolder then widget:SetParent(boxHolder) end
                         -- Mouse motion (OnEnter/OnLeave) only while this bar's
                         -- tooltips are on -- a motion-enabled icon steals
                         -- mouseover focus from unit frames underneath (raid
@@ -2353,17 +2272,11 @@ local function CollectAndReanchor()
                         local bdHover = barDataByKey and barDataByKey[barId]
                         if bdHover and bdHover.showTooltip and not isCursorBar then
                             widget:EnableMouse(true)
-                            if widget.SetMouseClickEnabled then
-                                widget:SetMouseClickEnabled(false)
-                            end
-                            if widget.EnableMouseMotion then
-                                widget:EnableMouseMotion(true)
-                            end
+                            if widget.SetMouseClickEnabled then widget:SetMouseClickEnabled(false) end
+                            if widget.EnableMouseMotion then widget:EnableMouseMotion(true) end
                         else
                             widget:EnableMouse(false)
-                            if widget.EnableMouseMotion then
-                                widget:EnableMouseMotion(false)
-                            end
+                            if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
                         end
                         if widget.Cooldown then
                             widget.Cooldown:EnableMouse(false)
@@ -2384,12 +2297,8 @@ local function CollectAndReanchor()
                     -- while frame focus still looks correct.
                     if boxHolder and boxHolder._mouseTrack then
                         widget:EnableMouse(false)
-                        if widget.EnableMouseMotion then
-                            widget:EnableMouseMotion(false)
-                        end
-                        if widget.Cooldown then
-                            widget.Cooldown:EnableMouse(false)
-                        end
+                        if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
+                        if widget.Cooldown then widget.Cooldown:EnableMouse(false) end
                     end
                     -- Active state hooks handled in DecorateFrame (SetSwipeColor
                     -- hook on every frame, forces our color always).
@@ -2402,9 +2311,7 @@ local function CollectAndReanchor()
                 for i = newCount + 1, #iconList do
                     if iconList[i] and not usedFrames[iconList[i]] then
                         local efd = hookFrameData[iconList[i]]
-                        if efd then
-                            efd._cdmAnchor = nil
-                        end
+                        if efd then efd._cdmAnchor = nil end
                         local isCustom = iconList[i]._isRacialFrame
                             or iconList[i]._isTrinketFrame
                             or iconList[i]._isPresetFrame
@@ -2445,9 +2352,7 @@ local function CollectAndReanchor()
                     RefreshCDMIconAppearance(barId)
                     LayoutCDMBar(barId)
                     ApplyCDMTooltipState(barId)
-                    if not boxHolder._prevIconRefs then
-                        boxHolder._prevIconRefs = {}
-                    end
+                    if not boxHolder._prevIconRefs then boxHolder._prevIconRefs = {} end
                     for position = 1, newCount do
                         boxHolder._prevIconRefs[position] = iconList[position]
                     end
@@ -2478,9 +2383,7 @@ local function CollectAndReanchor()
                     -- swipe-off here would blank it there.
                     if iconList[i] and not usedFrames[iconList[i]] then
                         local efd = hookFrameData[iconList[i]]
-                        if efd then
-                            efd._cdmAnchor = nil
-                        end
+                        if efd then efd._cdmAnchor = nil end
                         local isCustom2 = iconList[i]._isRacialFrame
                             or iconList[i]._isTrinketFrame
                             or iconList[i]._isPresetFrame
@@ -2510,9 +2413,7 @@ local function CollectAndReanchor()
     mod._spellOrderDirty = false -- spell order caches are now valid
 
     -- Re-apply proc glows for any active procs (picks up per-spell settings)
-    if mod.ScanExistingProcGlows then
-        mod.ScanExistingProcGlows()
-    end
+    if mod.ScanExistingProcGlows then mod.ScanExistingProcGlows() end
 
     ---------------------------------------------------------------------------
     --  PHASE 4: Global cleanup for unclaimed frames
@@ -2527,9 +2428,7 @@ local function CollectAndReanchor()
     for bk, iconList in pairs(cdmBarIcons) do
         if barDataByKey[bk] then
             for ii = 1, #iconList do
-                if iconList[ii] then
-                    usedFrames[iconList[ii]] = true
-                end
+                if iconList[ii] then usedFrames[iconList[ii]] = true end
             end
         end
     end
@@ -2575,9 +2474,7 @@ local function CollectAndReanchor()
             -- Custom frames: managed by their own systems
         else
             local efd = hookFrameData[widget]
-            if efd then
-                efd._cdmAnchor = nil
-            end
+            if efd then efd._cdmAnchor = nil end
             local vf = widget.viewerFrame
             if vf == barViewer then
                 -- Bar viewer frame: skip entirely when using Blizzard tracked bars
@@ -2615,14 +2512,10 @@ local function CollectAndReanchor()
                 widget:SetAlpha(0)
                 -- TOPLEFT keyword matches LayoutCDMBar's claim SetPoint (no
                 -- ClearAllPoints there): same keyword = clean replacement.
-                if efd then
-                    efd._parkGuard = true
-                end
+                if efd then efd._parkGuard = true end
                 widget:ClearAllPoints()
                 widget:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
-                if efd then
-                    efd._parkGuard = nil
-                end
+                if efd then efd._parkGuard = nil end
                 -- A frame never claimed has no SetPoint hook of DecorateFrame's:
                 -- give it the park's own, or Blizzard's next layout leaves it in
                 -- the viewer's grid, catching hover there.
@@ -2664,13 +2557,9 @@ local function CollectAndReanchor()
     end
     -- Our aura icons level their slots on the frames this pass placed
     -- (CUI_CDM_AuraIcons.lua).
-    if mod.CDM_AuraIconsPlaced then
-        mod.CDM_AuraIconsPlaced()
-    end
+    if mod.CDM_AuraIconsPlaced then mod.CDM_AuraIconsPlaced() end
 
-    if not mod._initialReanchorDone then
-        mod._initialReanchorDone = true
-    end
+    if not mod._initialReanchorDone then mod._initialReanchorDone = true end
 
     -- Per-spec migration: convert pre-refactor "assignedSpells as content filter"
     -- data into "ghost-bar diversion" data. Must run AFTER reanchor because it
@@ -2688,12 +2577,8 @@ local function CollectAndReanchor()
         if needsMigration then
             local added = mod.MigrateSpecToBarFilterModelV6()
             if added and added > 0 then
-                if mod.RebuildSpellRouteMap then
-                    mod.RebuildSpellRouteMap()
-                end
-                if mod.QueueReanchor then
-                    mod.QueueReanchor()
-                end
+                if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+                if mod.QueueReanchor then mod.QueueReanchor() end
             end
         end
         -- Automatic base-bar materialization (once per spec+layout per session):
@@ -2751,18 +2636,12 @@ local function CollectAndReanchor()
         local prof2 = sp2 and specKey2 and sp2[specKey2]
         if prof2 and not prof2._dormantMerged then
             mod.MergeDormantSpellsIntoAssigned()
-            if mod.RebuildSpellRouteMap then
-                mod.RebuildSpellRouteMap()
-            end
-            if mod.QueueReanchor then
-                mod.QueueReanchor()
-            end
+            if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+            if mod.QueueReanchor then mod.QueueReanchor() end
         end
     end
 
-    if mod.RequestBarGlowUpdate then
-        mod.RequestBarGlowUpdate()
-    end
+    if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
 
     -- Authoritative final layout pass. Set by CDMFinishSetup (login) and
     -- ProcessSpecChange (spec swap). Gated on ns._spellsReadyForApply so it only
@@ -2779,42 +2658,28 @@ local function CollectAndReanchor()
         -- CDM is done populating icons; lift the rebuild gate so width
         -- matching can propagate against settled bar widths. Must happen
         -- BEFORE ApplyAllWidthHeightMatches so it isn't gated off.
-        if CludesUI then
-            CludesUI._cdmRebuilding = nil
-        end
+        if CludesUI then CludesUI._cdmRebuilding = nil end
         -- Defer position/width corrections to next frame. These are purely visual
         -- positioning operations (width match, saved positions, anchor reapply) that
         -- cost ~25ms synchronously but are imperceptible if they settle 1 frame late.
         C_Timer.After(0, function()
-            if CludesUI.ApplyAllWidthHeightMatches then
-                CludesUI.ApplyAllWidthHeightMatches()
-            end
-            if CludesUI._applySavedPositions then
-                CludesUI._applySavedPositions()
-            end
-            if CludesUI.ReapplyAllUnlockAnchorsForced then
-                CludesUI.ReapplyAllUnlockAnchorsForced()
-            end
+            if CludesUI.ApplyAllWidthHeightMatches then CludesUI.ApplyAllWidthHeightMatches() end
+            if CludesUI._applySavedPositions then CludesUI._applySavedPositions() end
+            if CludesUI.ReapplyAllUnlockAnchorsForced then CludesUI.ReapplyAllUnlockAnchorsForced() end
             -- Arm the settle debounce so any further late resizes (the refresh
             -- ladder / trinket retries) get one more forced re-apply once they
             -- quiesce -- guarantees a first debounce window even if the initial
             -- build's resizes fired before the OnSizeChanged hook was installed.
-            if CludesUI.ScheduleSettleReapply then
-                CludesUI.ScheduleSettleReapply()
-            end
+            if CludesUI.ScheduleSettleReapply then CludesUI.ScheduleSettleReapply() end
             -- A repopulate queued through CludesUI.RequestCDMRepopulate: this
             -- is the settled point for the live spec, and outside the reanchor,
             -- which the repopulate's own rebuild runs again.
-            if mod.RunQueuedRepopulate then
-                mod.RunQueuedRepopulate()
-            end
+            if mod.RunQueuedRepopulate then mod.RunQueuedRepopulate() end
         end)
     else
         -- Routine reanchor (icon churn, mob death, etc.) -- still clear
         -- the gate so subsequent layout calls don't get stuck.
-        if CludesUI then
-            CludesUI._cdmRebuilding = nil
-        end
+        if CludesUI then CludesUI._cdmRebuilding = nil end
     end
 
     -- Refresh the options-panel preview (if open) so the content header reflects the
@@ -2824,9 +2689,7 @@ local function CollectAndReanchor()
     -- hidden, and brings it up to date as it shows again (onPageCacheRestore).
     if CludesUI and CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
         local pv = CludesUI._cdmHeaderPreview
-        if pv and pv.Update and pv:IsVisible() then
-            pv:Update()
-        end
+        if pv and pv.Update and pv:IsVisible() then pv:Update() end
     end
     -- Frames we could not identify this pass were skipped by the Phase 4 sweep
     -- and are still sitting wherever Blizzard left them. Re-collect shortly so
@@ -2844,9 +2707,7 @@ local function CollectAndReanchor()
             -- without a poll, since each retry is one queued reanchor.
             C_Timer.After(0.5 + tries, function()
                 mod._cdmUnresolvedPending = nil
-                if mod.QueueReanchor then
-                    mod.QueueReanchor()
-                end
+                if mod.QueueReanchor then mod.QueueReanchor() end
             end)
         end
     elseif mod._cdmUnresolvedRetries then
@@ -2855,12 +2716,8 @@ local function CollectAndReanchor()
 
     -- Claims just settled: retire the proc-alert child map so the next alert
     -- rebuilds it against the fresh claim set.
-    if mod._cdmClaimGen then
-        mod._cdmClaimGen = mod._cdmClaimGen + 1
-    end
-    if mod.RefreshStaleCDMKeybinds then
-        mod.RefreshStaleCDMKeybinds()
-    end
+    if mod._cdmClaimGen then mod._cdmClaimGen = mod._cdmClaimGen + 1 end
+    if mod.RefreshStaleCDMKeybinds then mod.RefreshStaleCDMKeybinds() end
     -- A flipped Show When Missing icon whose bar Phase 2 did not reach.
     if next(mod._missingFlipBars) then
         for bk in pairs(mod._missingFlipBars) do
@@ -2882,16 +2739,12 @@ function mod.MissingFlip(widget, frameCache, hide)
     else
         frameCache._missingActiveHidden = nil
         local edge = barDataByKey[bk]
-        if edge then
-            BuffIconAlpha(widget, edge, cdmBarFrames[bk])
-        end
+        if edge then BuffIconAlpha(widget, edge, cdmBarFrames[bk]) end
     end
     mod.QueueShiftLayout(bk)
     mod.ApplyCDMTooltipState(bk)
     mod._btDirty = true
-    if mod.ArmBuffTicker then
-        mod.ArmBuffTicker()
-    end
+    if mod.ArmBuffTicker then mod.ArmBuffTicker() end
 end
 mod.CollectAndReanchor = CollectAndReanchor
 

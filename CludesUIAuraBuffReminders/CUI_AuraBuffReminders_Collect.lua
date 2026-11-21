@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Collect.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor, min, abs = math.floor, math.min, math.abs
@@ -45,32 +41,22 @@ local ApplySetup, GetOrCreateIcon, ICON_SIZE = Inner.ApplySetup, Inner.GetOrCrea
 local iconPool, RemoveGlow = Inner.iconPool, Inner.RemoveGlow
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 -- Hunter's Mark combat state: true on REGEN_DISABLED, cleared on cast/combat
 -- end; OOC falls back to target debuff check.
 local _huntersMarkNeeded = false
-Inner.huntersMarkSetters[#Inner.huntersMarkSetters + 1] = function(val)
-    _huntersMarkNeeded = val
-end
+Inner.huntersMarkSetters[#Inner.huntersMarkSetters + 1] = function(val) _huntersMarkNeeded = val end
 local iconAnchor
-Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val)
-    iconAnchor = val
-end
+Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val) iconAnchor = val end
 local cursorAnchor
-Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val)
-    cursorAnchor = val
-end
+Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val) cursorAnchor = val end
 
 -------------------------------------------------------------------------------
 --  Core Refresh Logic
 -------------------------------------------------------------------------------
 
 local function HideAllIcons()
-    if InCombatLockdown() then
-        return
-    end -- cannot hide SecureActionButtons after lockdown begins
+    if InCombatLockdown() then return end -- cannot hide SecureActionButtons after lockdown begins
     -- Sweep the WHOLE pool, never just activeIcons: a combat fade leaves icons
     -- shown at alpha 0, and any window where the list rebuilds without those
     -- frames orphans them -- shown, invisible, still hover/tooltip-live (field:
@@ -94,9 +80,7 @@ end
 -- iconAnchor is pinned by its grow edge (CENTER, LEFT or RIGHT) and the icons
 -- hang off that same edge, so resizing it never moves them.
 local function ResizeAnchorCentered(newW, newH)
-    if not iconAnchor or InCombatLockdown() then
-        return
-    end
+    if not iconAnchor or InCombatLockdown() then return end
     iconAnchor:SetSize(newW, newH)
 end
 
@@ -113,12 +97,8 @@ local function LayoutIcons()
         -- earlier row gave it, over whatever sits there now: the shown beacons
         -- hang after that row at its pitch until the next pass lays it out again.
         local g = _layoutGeom
-        if not g.pt or not _B.icons then
-            return
-        end
-        if saved and CursorAttachActive(saved.profile.display) and cursorAnchor then
-            return
-        end
+        if not g.pt or not _B.icons then return end
+        if saved and CursorAttachActive(saved.profile.display) and cursorAnchor then return end
         local index = g.fixed
         for _, ident in ipairs(_B.ALL or {}) do
             local frame = _B.iconState and _B.iconState[ident] and _B.icons[ident]
@@ -167,9 +147,7 @@ local function LayoutIcons()
     end
     local totalW = (total * iconSz) + ((total - 1) * spacing)
     local textH = 0
-    if display.showText then
-        textH = (display.textSize or 11) + abs(display.textYOffset or -2)
-    end
+    if display.showText then textH = (display.textSize or 11) + abs(display.textYOffset or -2) end
     -- Icons hang off the anchor's grow edge. Center-grow spreads them symmetrically so the row's center stays fixed
     -- as icons are added/removed; +textH/2 keeps the row at the icon+text box's top, matching the combat pool.
     -- Grow Right/Left hang them from the TOPLEFT/TOPRIGHT corner so that edge stays fixed instead.
@@ -274,9 +252,7 @@ end
 local function CollectRaidBuffs(missing, classFile, instanceNow, combatNow)
     local rb = saved.profile.raidBuffs
     do
-        if not REMIND.SectionShows(rb.whereToShow, instanceNow) then
-            return
-        end
+        if not REMIND.SectionShows(rb.whereToShow, instanceNow) then return end
         local _, iType = IsInInstance()
         local pvpNow = (iType == "pvp" or iType == "arena")
         local sw = rb.showWhen or {}
@@ -286,9 +262,7 @@ local function CollectRaidBuffs(missing, classFile, instanceNow, combatNow)
         -- composition when opted in and actually grouped -- the default case
         -- stays allocation-free.
         local groupClasses
-        if iAmMissing and (IsInGroup() or IsInRaid()) then
-            groupClasses = REMIND.BuildGroupClassSet()
-        end
+        if iAmMissing and (IsInGroup() or IsInRaid()) then groupClasses = REMIND.BuildGroupClassSet() end
         for _, buffRec in ipairs(RAID_BUFFS) do
             if rb.enabled[buffRec.key] and not (buffRec.noPvP and pvpNow) then
                 local iCast = (buffRec.class == classFile) and Known(buffRec.castSpell)
@@ -321,8 +295,13 @@ local function CollectRaidBuffs(missing, classFile, instanceNow, combatNow)
                         if iCast then
                             if buffRec.check == "huntersMark" then
                                 isMissing = combatNow and _huntersMarkNeeded
-                            elseif othersMissing and buffRec.check == "raid" and (IsInGroup() or IsInRaid()) then
-                                groupHave, groupSize = CountGroupBuffCoverage(buffRec.buffIDs, buffRec.benefit)
+                            elseif
+                                othersMissing
+                                and buffRec.check == "raid"
+                                and (IsInGroup() or IsInRaid())
+                            then
+                                groupHave, groupSize =
+                                    CountGroupBuffCoverage(buffRec.buffIDs, buffRec.benefit)
                                 isMissing = groupSize > 0 and groupHave < groupSize
                             else
                                 isMissing = not PlayerHasAuraByID(buffRec.buffIDs, "raidbuff")
@@ -336,9 +315,7 @@ local function CollectRaidBuffs(missing, classFile, instanceNow, combatNow)
                             local sname = _G._CUABR_SpellName(buffRec.castSpell, buffRec.name)
                             entry.spellID = buffRec.castSpell
                             entry.label = ShortLabel(sname)
-                            if buffRec.check == "huntersMark" then
-                                entry.unit = "target"
-                            end
+                            if buffRec.check == "huntersMark" then entry.unit = "target" end
                             entry.cat = "raidbuff"
                             entry.data = buffRec
                             entry.dismissKey = buffRec.key and ("raidbuff:" .. buffRec.key) or nil
@@ -401,13 +378,13 @@ local function CollectAuras(missing, classFile, specID, instanceNow, combatNow)
                 end
                 if specMatches then
                     -- Skip auras that require instance + group when not in both
-                    if auraInfo.requireInstanceGroup and (not instanceNow or not (IsInGroup() or IsInRaid())) then
+                    if
+                        auraInfo.requireInstanceGroup and (not instanceNow or not (IsInGroup() or IsInRaid()))
+                    then
                         specMatches = false
                     end
                     -- Skip auras that require a group when solo
-                    if auraInfo.requireGroup and not (IsInGroup() or IsInRaid()) then
-                        specMatches = false
-                    end
+                    if auraInfo.requireGroup and not (IsInGroup() or IsInRaid()) then specMatches = false end
                 end
                 if specMatches then
                     -- Restricted contexts (combat / M+): only track reminders
@@ -440,9 +417,7 @@ local function CollectAuras(missing, classFile, specID, instanceNow, combatNow)
                                 isMissing = false
                             else
                                 isMissing = not BuffExistsOnAnyGroupMember(auraInfo.buffIDs)
-                                if not (IsInGroup() or IsInRaid()) then
-                                    isMissing = false
-                                end
+                                if not (IsInGroup() or IsInRaid()) then isMissing = false end
                             end
                         elseif auraInfo.check == "ownOnRaid" then
                             if auraInfo.key == "som" then
@@ -460,9 +435,7 @@ local function CollectAuras(missing, classFile, specID, instanceNow, combatNow)
                             else
                                 isMissing = not PlayerOwnBuffOnAnyGroupMember(auraInfo.buffIDs)
                             end
-                            if not (IsInGroup() or IsInRaid()) then
-                                isMissing = false
-                            end
+                            if not (IsInGroup() or IsInRaid()) then isMissing = false end
                         elseif auraInfo.check == "ownGroupOrSelf" then
                             local hasOwnBuff = REMIND.PlayerOwnBuffOnGroupOrSelf(auraInfo.buffIDs)
                             isMissing = hasOwnBuff == false
@@ -555,9 +528,7 @@ function REMIND.EmitWeaponEnchantReminders(missing, collector)
             shouldRemind = true
         elseif category and has and expire and expire > 0 then
             local expireTime = expire / 1000 + GetTime()
-            if IsUnderDuration(3600, expireTime, "consumable") then
-                shouldRemind = true
-            end
+            if IsUnderDuration(3600, expireTime, "consumable") then shouldRemind = true end
         end
         if shouldRemind and region.itemID and (collector.showWithoutItem ~= false or region.hasBags) then
             local bestItemID = region.itemID
@@ -596,9 +567,7 @@ local function InkyMapRead(mapID)
 end
 
 local function InkyMapWatch(wanted)
-    if wanted == inkyIndex.on then
-        return
-    end
+    if wanted == inkyIndex.on then return end
     inkyIndex.on = wanted
     local frame = inkyIndex.frame
     if not wanted then
@@ -626,8 +595,10 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
     -- Class specials (poisons/rites/imbues/shields) follow the "Where to Show"
     -- of the player's class section.
     local specialFields = REMIND.SPECIALS[classFile]
-    local specialsActive =
-        REMIND.SectionShows(REMIND.SpecialsWhere(collector, specialFields and specialFields.where), instanceNow)
+    local specialsActive = REMIND.SectionShows(
+        REMIND.SpecialsWhere(collector, specialFields and specialFields.where),
+        instanceNow
+    )
     -- The trackable subset (weapon enchants, poisons, rites, imbues, Earth
     -- Shield) runs in combat / M+ too; where reminders appear is governed
     -- per-section by "Where to Show". Non-trackable emitters below either
@@ -640,9 +611,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             local ow = collector.whereToShow
             needResolve = (not ow) or (ow.open_world ~= false)
         end
-        if needResolve then
-            REMIND.ResolveConsumables()
-        end
+        if needResolve then REMIND.ResolveConsumables() end
 
         -- === SPECIALS (per-class "Where to Show") ===
         if specialsActive then
@@ -694,7 +663,8 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     local entry = AcquireEntry()
                     entry.mode = "spell"
                     entry.spellID = missingNL.castSpell
-                    entry.label = ShortLabel(_G._CUABR_SpellName(missingNL.castSpell, missingNL.name), "ROGUE")
+                    entry.label =
+                        ShortLabel(_G._CUABR_SpellName(missingNL.castSpell, missingNL.name), "ROGUE")
                     entry.cat = "consumable"
                     entry.data = missingNL
                     entry.dismissKey = "consumable:rogue_nonlethal"
@@ -794,16 +764,10 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                         if shieldRec.requireTalent and not Known(shieldRec.requireTalent) then
                             success = false
                         end
-                        if shieldRec.excludeTalent and Known(shieldRec.excludeTalent) then
-                            success = false
-                        end
+                        if shieldRec.excludeTalent and Known(shieldRec.excludeTalent) then success = false end
                         -- es_orbit and es_ally have their own block below
-                        if shieldRec.key == "es_orbit" or shieldRec.key == "es_ally" then
-                            success = false
-                        end
-                        if combatNow or inKeystone then
-                            success = false
-                        end
+                        if shieldRec.key == "es_orbit" or shieldRec.key == "es_ally" then success = false end
+                        if combatNow or inKeystone then success = false end
                         if success and not PlayerHasAuraByID(shieldRec.buffIDs, "special") then
                             local entry = AcquireEntry()
                             entry.mode = "spell"
@@ -829,7 +793,10 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
         else
             -- Augment Runes: presence unverifiable in combat/M+ (suppress);
             -- otherwise try the read and remind when missing.
-            if collector.enabled.augment_rune and REMIND.ConsumableShows(collector, "augment_rune", instanceNow) then
+            if
+                collector.enabled.augment_rune
+                and REMIND.ConsumableShows(collector, "augment_rune", instanceNow)
+            then
                 local hasRuneBuff = REMIND.ConsumablePresenceUnverifiable()
                     or PlayerHasAuraByID(RUNE_BUFF_IDS)
                 if not hasRuneBuff then
@@ -855,7 +822,10 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             -- combat-safe). Skipped if the player knows any imbue spell (Shaman
             -- imbues, Paladin rites). Rogues/DKs NOT excluded -- poisons are
             -- temp enchants too, and DKs can use oils alongside runeforges.
-            if collector.enabled.weapon_enchant and REMIND.ConsumableShows(collector, "weapon_enchant", instanceNow) then
+            if
+                collector.enabled.weapon_enchant
+                and REMIND.ConsumableShows(collector, "weapon_enchant", instanceNow)
+            then
                 local _hasImbueSpell = false
                 for _, spellRef in ipairs(_IMBUE_EXCLUDE_SPELLS) do
                     if IsSpellKnown(spellRef) then
@@ -863,9 +833,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                         break
                     end
                 end
-                if not _hasImbueSpell then
-                    REMIND.EmitWeaponEnchantReminders(missing, collector)
-                end
+                if not _hasImbueSpell then REMIND.EmitWeaponEnchantReminders(missing, collector) end
             end
 
             -- Flask / Food: remind only when absence is verifiable (the checks
@@ -893,7 +861,9 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             if collector.enabled.food and REMIND.ConsumableShows(collector, "food", instanceNow) then
                 if not PlayerHasWellFed() then
                     local foodItemID = REMIND._resolved.food.itemID
-                    if foodItemID and (collector.showWithoutItem ~= false or REMIND._resolved.food.hasBags) then
+                    if
+                        foodItemID and (collector.showWithoutItem ~= false or REMIND._resolved.food.hasBags)
+                    then
                         local entry = AcquireEntry()
                         entry.mode = "item"
                         entry.itemID = foodItemID
@@ -916,7 +886,9 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
 
             -- Inky Black Potion (zone-specific)
             local inkyWatch = false
-            if collector.enabled.inky_black and REMIND.ConsumableShows(collector, "inky_black", instanceNow) then
+            if
+                collector.enabled.inky_black and REMIND.ConsumableShows(collector, "inky_black", instanceNow)
+            then
                 local zones = collector.inkyBlackZones or ""
                 if zones ~= "" then
                     inkyWatch = true
@@ -949,9 +921,7 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     end
                 end
             end
-            if not inkyWatch then
-                InkyMapWatch(false)
-            end
+            if not inkyWatch then InkyMapWatch(false) end
         end -- not inPvP
     end -- consumables block
 

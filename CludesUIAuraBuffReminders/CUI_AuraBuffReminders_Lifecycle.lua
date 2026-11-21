@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Lifecycle.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor = math.floor
@@ -48,21 +44,13 @@ local SetCursorAnchor, SetPanelOpen = Inner.SetCursorAnchor, Inner.SetPanelOpen
 local SetInCombat, SetHuntersMarkNeeded = Inner.SetInCombat, Inner.SetHuntersMarkNeeded
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local iconHolder
-Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val)
-    iconHolder = val
-end
+Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val) iconHolder = val end
 local combatHolder
-Inner.combatAnchorSetters[#Inner.combatAnchorSetters + 1] = function(val)
-    combatHolder = val
-end
+Inner.combatAnchorSetters[#Inner.combatAnchorSetters + 1] = function(val) combatHolder = val end
 local cursorHolder
-Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val)
-    cursorHolder = val
-end
+Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val) cursorHolder = val end
 
 local _encounterSnapshotTime = nil
 local _needGroupAura = false
@@ -93,13 +81,9 @@ end
 -- ("others missing") read group aura changes mid-fight. One predicate for the
 -- pull edge and the registration pass so the two cannot drift.
 function REMIND.KeepGroupAuraInCombat()
-    if _isEvokerOwnOnRaid or REMIND._trackOwnOtherAuraID ~= nil then
-        return true
-    end
+    if _isEvokerOwnOnRaid or REMIND._trackOwnOtherAuraID ~= nil then return true end
     local rbSW = saved and saved.profile.raidBuffs and saved.profile.raidBuffs.showWhen
-    if not (REMIND._needsProviderCoverage and rbSW) then
-        return false
-    end
+    if not (REMIND._needsProviderCoverage and rbSW) then return false end
     return rbSW.othersMissing ~= false
 end
 
@@ -143,9 +127,7 @@ function REMIND:OnInitialize()
             return nil -- "all" or unknown => every difficulty on
         end
         for key, val in pairs(collector.showIn) do
-            if type(val) == "string" then
-                collector.showIn[key] = tierToSet(val)
-            end
+            if type(val) == "string" then collector.showIn[key] = tierToSet(val) end
         end
     end
     -- Per-spell/open-world/others-missing model -> per-section "Where to
@@ -170,32 +152,20 @@ function REMIND:OnInitialize()
     local display = profile and profile.display
     if display then
         if display.showUnderDurationDungeon ~= nil or display.showUnderDurationRaid ~= nil then
-            if display.showUnder == nil then
-                display.showUnder = display.showUnderDurationRaid or 5
-            end
+            if display.showUnder == nil then display.showUnder = display.showUnderDurationRaid or 5 end
             if display.showUnderMPlus == nil then
                 display.showUnderMPlus = display.showUnderDurationDungeon or 40
             end
             display.showUnderDurationDungeon = nil
             display.showUnderDurationRaid = nil
         end
-        if display.showUnder == nil then
-            display.showUnder = 5
-        end
-        if display.showUnderMPlus == nil then
-            display.showUnderMPlus = 40
-        end
+        if display.showUnder == nil then display.showUnder = 5 end
+        if display.showUnderMPlus == nil then display.showUnderMPlus = 40 end
     end
     -- Retired per-section scale keys (display scale is the one knob).
-    if rebuild then
-        rebuild.scale = nil
-    end
-    if auraRec then
-        auraRec.scale = nil
-    end
-    if collector then
-        collector.scale = nil
-    end
+    if rebuild then rebuild.scale = nil end
+    if auraRec then auraRec.scale = nil end
+    if collector then collector.scale = nil end
 
     -- Migrates the login-active profile eagerly; profiles activated later are covered by the read-path call in ResolveGlowTint.
     EnsureGlowModeMigrated(saved.profile.display)
@@ -290,9 +260,7 @@ function REMIND:OnEnable()
         end)
         cursorHolder:SetScript("OnHide", function()
             local M = CludesUI.Mouse
-            if M then
-                M.UnsubscribeFrame("abrCursor")
-            end
+            if M then M.UnsubscribeFrame("abrCursor") end
         end)
     end
     -- Starts hidden: OnUpdate only runs while :IsShown(), saving CPU when no cursor-attached reminders are active.
@@ -359,9 +327,7 @@ function REMIND:OnEnable()
     REMIND.ScanEatingState()
     REMIND.SyncProviderCastSpell()
     RequestRefresh()
-    if not REMIND.FOREVER then
-        BeaconInit()
-    end -- retail Holy Paladin beacons only
+    if not REMIND.FOREVER then BeaconInit() end -- retail Holy Paladin beacons only
     C_Timer.After(0.5, RegisterUnlockElements)
 
     -- Registers broad UNIT_AURA only when the class needs group aura tracking AND only OOC: it fires 100+/sec in a raid, but in-combat CollectRaidBuffs only checks the player's own auras (PlayerHasAuraByID), so group events are pure waste. Evoker keeps broad in combat for ownOnRaid cache updates but skips RequestRefresh on group events (handler below).
@@ -370,9 +336,7 @@ function REMIND:OnEnable()
         -- whichever caller (loading screen, profile, spec override, options)
         -- runs this pass: its one group reader, Raid Buffs, has its own watch,
         -- synced by every refresh (EABR.FvSyncGroupWatch).
-        if REMIND.FOREVER then
-            return
-        end
+        if REMIND.FOREVER then return end
         local playerClass = GetPlayerClass()
         local moonkinOn = playerClass == "DRUID"
             and saved.profile.auras.enabled.moonkin_form == true
@@ -428,9 +392,7 @@ function REMIND:OnEnable()
             REMIND._ownOtherAuraTargetGUID[prevTrackID] = nil
             REMIND._ownOtherAuraDuration[prevTrackID] = nil
             REMIND._ownOtherAuraExpiration[prevTrackID] = nil
-            if wasKnown then
-                RequestRefresh()
-            end
+            if wasKnown then RequestRefresh() end
         end
         if trackID then
             _needGroupAura = true
@@ -477,9 +439,7 @@ function REMIND:OnEnable()
         end
         -- Tracking just turned on: seed the cache (the scan is OOC-only;
         -- combat end rescans otherwise).
-        if trackID and trackID ~= prevTrackID then
-            REMIND.RescanOwnOtherAuras()
-        end
+        if trackID and trackID ~= prevTrackID then REMIND.RescanOwnOtherAuras() end
     end
     _G._CUABR_UpdateGroupAuraRegistration = UpdateGroupAuraRegistration
     -- Also seeds the targeted-aura cache when tracking turns on. A no-op on
@@ -492,9 +452,7 @@ function REMIND:OnEnable()
     end
 
     -- WoW Forever's Raid Buffs watch tracks its own range (EABR.FvSyncGroupWatch).
-    if REMIND.FOREVER then
-        return
-    end
+    if REMIND.FOREVER then return end
 
     ---------------------------------------------------------------------------
     --  Range updates: UNIT_IN_RANGE_UPDATE mirrors the raid frames' range path, so range changes retrigger group-buff evaluation without polling.
@@ -533,15 +491,11 @@ function REMIND:OnEnable()
         local changed = false
         if IsInRaid() then
             for index = 1, GetNumGroupMembers() do
-                if _checkUnit(_raidTokens[index]) then
-                    changed = true
-                end
+                if _checkUnit(_raidTokens[index]) then changed = true end
             end
         elseif IsInGroup() then
             for index = 1, GetNumSubgroupMembers() do
-                if _checkUnit(_partyTokens[index]) then
-                    changed = true
-                end
+                if _checkUnit(_partyTokens[index]) then changed = true end
             end
         end
         return changed
@@ -549,9 +503,7 @@ function REMIND:OnEnable()
 
     local function _onRangeEvent(_, evt, unitToken)
         if evt == "UNIT_PHASE" then
-            if _checkAllRangeUnits() then
-                RequestRefresh()
-            end
+            if _checkAllRangeUnits() then RequestRefresh() end
         elseif unitToken and _checkUnit(unitToken) then
             RequestRefresh()
         end
@@ -564,9 +516,7 @@ function REMIND:OnEnable()
     end
 
     local function _trackRangeUnit(unitToken)
-        if UnitIsUnit(unitToken, "player") then
-            return
-        end
+        if UnitIsUnit(unitToken, "player") then return end
         local trackerFrame = _rangeTrackers[unitToken]
         if not trackerFrame then
             trackerFrame = CreateFrame("Frame")
@@ -589,9 +539,7 @@ function REMIND:OnEnable()
                 _trackRangeUnit(_partyTokens[index])
             end
         end
-        if _checkAllRangeUnits() then
-            RequestRefresh()
-        end
+        if _checkAllRangeUnits() then RequestRefresh() end
     end
 
     rangeFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -612,9 +560,7 @@ end
 -- cursor, so the button parks now, while moving it and its mouse is still
 -- allowed. In combat it could only fade, and would stay clickable where it sat.
 local function ParkProviderForCursor()
-    if saved and CursorAttachActive(saved.profile.display) then
-        REMIND.ParkProviderCastButton()
-    end
+    if saved and CursorAttachActive(saved.profile.display) then REMIND.ParkProviderCastButton() end
 end
 
 -------------------------------------------------------------------------------
@@ -623,9 +569,7 @@ end
 hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     if e == "ENCOUNTER_START" then
         SnapshotPlayerAuras()
-        if _isEvokerOwnOnRaid then
-            SnapshotOwnOnRaidBuffs()
-        end
+        if _isEvokerOwnOnRaid then SnapshotOwnOnRaidBuffs() end
         _encounterSnapshotTime = GetTime()
         -- Marks combat immediately: ENCOUNTER_START fires before InCombatLockdown() returns true but aura APIs are already restricted; without this, non-whitelisted buffs flash "missing" for ~1s.
         SetInCombat(true)
@@ -644,9 +588,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
         if not REMIND.FOREVER then
             MarkDungeonPullStarted()
             -- Drops broad UNIT_AURA in combat unless a group reader needs it (EABR.KeepGroupAuraInCombat).
-            if _needGroupAura and not REMIND.KeepGroupAuraInCombat() then
-                _setBroadWatch(false)
-            end
+            if _needGroupAura and not REMIND.KeepGroupAuraInCombat() then _setBroadWatch(false) end
             -- Only flag Hunter's Mark needed if the target doesn't already have it
             SetHuntersMarkNeeded(true)
             if
@@ -666,9 +608,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
         -- Must snapshot before marking combat, or the group-buff lookup treats itself as restricted and reports nothing found.
         if not _encounterSnapshotTime or (GetTime() - _encounterSnapshotTime) > 1 then
             SnapshotPlayerAuras()
-            if _isEvokerOwnOnRaid then
-                SnapshotOwnOnRaidBuffs()
-            end
+            if _isEvokerOwnOnRaid then SnapshotOwnOnRaidBuffs() end
         end
         SetInCombat(true)
         _encounterSnapshotTime = nil
@@ -683,9 +623,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     if e == "PLAYER_REGEN_ENABLED" or (e == "ENCOUNTER_END" and not InCombatLockdown()) then
         SetInCombat(false)
         -- Restore broad UNIT_AURA for OOC group buff tracking
-        if _needGroupAura then
-            _setBroadWatch(true)
-        end
+        if _needGroupAura then _setBroadWatch(true) end
         -- Leaving combat: clean up combat icons, do full OOC refresh with secure buttons
         SetHuntersMarkNeeded(false)
         HideCombatIcons()
@@ -739,9 +677,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
             REMIND._fvSleepBag = nil
         end
         REMIND.ScanEatingState()
-        if not InCombatLockdown() then
-            REMIND.SyncProviderCastSpell()
-        end
+        if not InCombatLockdown() then REMIND.SyncProviderCastSpell() end
         -- GetInstanceInfo() can return stale data on the first frame after a loading screen (e.g. still
         -- reporting the previous zone on delve entry), which would show a reminder that "Where to Show"
         -- disables for the new location. Skip the immediate refresh and wait for the corrected one.
@@ -752,24 +688,18 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     if e == "UNIT_AURA" then
         -- arg1 = unit token. Player aura changes always refresh; group member changes only matter for Evoker ownOnRaid cache updates and OOC raid buff checks (broad UNIT_AURA is only registered for classes needing group tracking).
         if firstArg == "player" then
-            if not REMIND.FOREVER then
-                REMIND.UpdateEatingState(arg2)
-            end -- eating channel feeds the retail food reminder only
+            if not REMIND.FOREVER then REMIND.UpdateEatingState(arg2) end -- eating channel feeds the retail food reminder only
             local isEvoker = GetPlayerClass() == "EVOKER"
             if isEvoker and InCombat() and IsInGroup() then
                 for _, ident in ipairs(_ownOnRaidIDs) do
-                    if REMIND._OwnCastOn("player", ident) then
-                        _preCombatOwnOnRaidCache[ident] = true
-                    end
+                    if REMIND._OwnCastOn("player", ident) then _preCombatOwnOnRaidCache[ident] = true end
                 end
             end
             RequestRefresh()
         else
             -- Group member aura change (fast unit-type check via first byte). Broad UNIT_AURA stays registered in combat for Evoker ownOnRaid / provider-view coverage tracking; coalesces group events into one deferred refresh.
             if firstArg and (firstArg:match("^party%d+$") or firstArg:match("^raid%d+$")) then
-                if REMIND._trackOwnOtherAuraID then
-                    REMIND.UpdateOwnOtherAuraForUnit(firstArg)
-                end
+                if REMIND._trackOwnOtherAuraID then REMIND.UpdateOwnOtherAuraForUnit(firstArg) end
                 if _isEvokerOwnOnRaid and InCombat() and IsInGroup() then
                     for _, ident in ipairs(_ownOnRaidIDs) do
                         if not _preCombatOwnOnRaidCache[ident] and REMIND._OwnCastOn(firstArg, ident) then
@@ -794,9 +724,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     end
 
     if e == "UNIT_ENTERED_VEHICLE" or e == "UNIT_EXITED_VEHICLE" then
-        if firstArg == "player" then
-            RequestRefresh()
-        end
+        if firstArg == "player" then RequestRefresh() end
         return
     end
 
@@ -805,9 +733,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     if e == "GROUP_ROSTER_UPDATE" then
         REMIND.ReevaluateOwnOtherAuraTracking()
         local rbSW = saved and saved.profile.raidBuffs and saved.profile.raidBuffs.showWhen
-        if REMIND._rosterRefresh or (rbSW and rbSW.iAmMissing == true) then
-            RequestRefresh()
-        end
+        if REMIND._rosterRefresh or (rbSW and rbSW.iAmMissing == true) then RequestRefresh() end
         return
     end
 
@@ -847,9 +773,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     if e == "LEARNED_SPELL_IN_SKILL_LINE" or (REMIND.FOREVER and e == "SPELLS_CHANGED") then
         REMIND._fvFamDirty = true
         REMIND._fvClassPickerGroups = nil
-        if e == "LEARNED_SPELL_IN_SKILL_LINE" then
-            REMIND._fvTrackDirty = true
-        end
+        if e == "LEARNED_SPELL_IN_SKILL_LINE" then REMIND._fvTrackDirty = true end
     elseif e == "MINIMAP_UPDATE_TRACKING" then
         REMIND._fvTrackDirty = true
     elseif e == "PLAYER_EQUIPMENT_CHANGED" and firstArg ~= 16 and firstArg ~= 17 then
@@ -866,14 +790,10 @@ end)
 local _prevBagCounts = {}
 
 local function DetectUsedItem()
-    if not saved then
-        return
-    end
+    if not saved then return end
     RebuildBagCounts()
     for itemId, oldCount in pairs(_prevBagCounts) do
-        if (_bagCounts[itemId] or 0) < oldCount then
-            TrackItemUse(itemId)
-        end
+        if (_bagCounts[itemId] or 0) < oldCount then TrackItemUse(itemId) end
     end
     wipe(_prevBagCounts)
     for key, val in pairs(_bagCounts) do
@@ -927,9 +847,7 @@ if REMIND.FOREVER then
     -- is listened to only while a reminder that reads them can show
     -- (EABR.CollectForever; EABR.FvStandDown turns it off).
     function REMIND.FvSyncTrackingEvent(wanted)
-        if wanted == (REMIND._fvTrackEv or false) then
-            return
-        end
+        if wanted == (REMIND._fvTrackEv or false) then return end
         REMIND._fvTrackEv = wanted
         if wanted then
             -- Nothing was heard while it was off: the minimap is read afresh.
@@ -954,9 +872,7 @@ if REMIND.FOREVER then
         end
     end
     function REMIND.FvSyncWeaponEvents(wanted)
-        if wanted == (REMIND._fvWeaponEv or false) then
-            return
-        end
+        if wanted == (REMIND._fvWeaponEv or false) then return end
         REMIND._fvWeaponEv = wanted
         if wanted then
             hostFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
@@ -967,9 +883,7 @@ if REMIND.FOREVER then
         end
     end
     function REMIND.FvSyncBagEvent(wanted)
-        if wanted == (REMIND._fvBagEv or false) then
-            return
-        end
+        if wanted == (REMIND._fvBagEv or false) then return end
         REMIND._fvBagEv = wanted
         if wanted then
             InvalidateItemCountCache()
@@ -984,9 +898,7 @@ if REMIND.FOREVER then
     -- (EABR.FvSleepingBagOwned).
     local sleepWatcher
     function REMIND.FvSyncSleepBagWatch(wanted)
-        if wanted == (REMIND._fvSleepWatch or false) then
-            return
-        end
+        if wanted == (REMIND._fvSleepWatch or false) then return end
         REMIND._fvSleepWatch = wanted
         if wanted then
             if not sleepWatcher then

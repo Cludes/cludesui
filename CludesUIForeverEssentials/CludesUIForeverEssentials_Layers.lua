@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Layers.lua  (WoW Forever only)
 --  Layer Tracker: which layer of the zone you are on, read from the GUID of
@@ -26,25 +22,15 @@ local Get, Enabled = F.Get, F.Enabled
 local SEEN_MAX = 12
 local NPC_KINDS = { Creature = true, Vehicle = true }
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local function LayerOf(unitGuid)
-    if type(unitGuid) ~= "string" or Secret(unitGuid) then
-        return
-    end
+    if type(unitGuid) ~= "string" or Secret(unitGuid) then return end
     local kind, _, server, _, zone = strsplit("-", unitGuid)
-    if not NPC_KINDS[kind] then
-        return
-    end
+    if not NPC_KINDS[kind] then return end
     server, zone = tonumber(server), tonumber(zone)
-    if not (server and zone and server > 0 and zone > 0) then
-        return
-    end
+    if not (server and zone and server > 0 and zone > 0) then return end
     return ("%d-%d"):format(server, zone), zone
 end
 
@@ -63,9 +49,7 @@ local layer, isShown, map, inside, refreshAt, wasKey, wasZone, pendingKey, pendi
 local seen = {}
 
 local function Note(where, key, zone)
-    if not where then
-        return
-    end
+    if not where then return end
     local list = seen[where]
     if not list then
         list = { n = 0, entries = {} }
@@ -76,9 +60,7 @@ local function Note(where, key, zone)
         if list.n >= SEEN_MAX then
             local oldest
             for key, val in pairs(list.entries) do
-                if not oldest or val.at < list.entries[oldest].at then
-                    oldest = key
-                end
+                if not oldest or val.at < list.entries[oldest].at then oldest = key end
             end
             list.entries[oldest] = nil
             list.n = list.n - 1
@@ -93,13 +75,9 @@ end
 -- The zone UID alone, unless two layers seen here share it: then the full key.
 local function Label(key, zone)
     local list = map and seen[map]
-    if not list then
-        return zone
-    end
+    if not list then return zone end
     for other, entry in pairs(list.entries) do
-        if other ~= key and entry.zone == zone then
-            return key
-        end
+        if other ~= key and entry.zone == zone then return key end
     end
     return zone
 end
@@ -108,18 +86,14 @@ local function Text()
     local textValue = ("Layer %s"):format(layer and Label(layer, isShown) or "?")
     if refreshAt and Get("countdown") then
         local leftX = refreshAt - GetTime()
-        if leftX <= 0 then
-            return textValue .. " - changing"
-        end
+        if leftX <= 0 then return textValue .. " - changing" end
         return ("%s - changes in %d:%02d"):format(textValue, math.floor(leftX / 60), math.floor(leftX % 60))
     end
     return textValue
 end
 
 local function Update()
-    if not widget then
-        return
-    end
+    if not widget then return end
     if not Enabled() or (inside and not CludesUI._unlockActive) then
         widget:Hide()
         return
@@ -166,13 +140,9 @@ local function Seen(key, zone, unitGuid)
 end
 
 local function Read(unitToken, replace)
-    if inside or (layer and not replace) then
-        return
-    end
+    if inside or (layer and not replace) then return end
     local key, zone = LayerOf(UnitGUID(unitToken))
-    if key then
-        Seen(key, zone, UnitGUID(unitToken))
-    end
+    if key then Seen(key, zone, UnitGUID(unitToken)) end
 end
 
 local function Forget()
@@ -183,9 +153,7 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
     if evt == "NAME_PLATE_UNIT_ADDED" then
-        if not (layer or Secret(unitToken)) then
-            Read(unitToken)
-        end
+        if not (layer or Secret(unitToken)) then Read(unitToken) end
     elseif evt == "PLAYER_TARGET_CHANGED" then
         Read("target", true)
     elseif evt == "UPDATE_MOUSEOVER_UNIT" then
@@ -208,16 +176,12 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
         inside = IsInInstance()
         map = ZoneMap()
         Forget()
-        if evt == "PLAYER_ENTERING_WORLD" then
-            Read("target", true)
-        end
+        if evt == "PLAYER_ENTERING_WORLD" then Read("target", true) end
     end
 end)
 
 local function Build()
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("Frame", "CludesUILayerTracker", UIParent)
     widget.text = widget:CreateFontString(nil, "OVERLAY")
     widget.text:SetPoint("CENTER")
@@ -230,9 +194,7 @@ local function Build()
         for _, entry in pairs(map and seen[map] and seen[map].entries or {}) do
             sequence[#sequence + 1] = entry
         end
-        table.sort(sequence, function(lhs, rhs)
-            return lhs.at > rhs.at
-        end)
+        table.sort(sequence, function(lhs, rhs) return lhs.at > rhs.at end)
         if #sequence == 0 then
             GameTooltip:AddLine("Target or mouse over an NPC to read your layer.", 0.6, 0.6, 0.6, true)
         end
@@ -262,9 +224,7 @@ local function Build()
         end
         GameTooltip:Show()
     end)
-    widget:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
     widget:Hide()
     return widget
 end
@@ -275,15 +235,11 @@ local function Apply()
         layer, isShown, wasKey, wasZone, refreshAt, pendingKey, pendingGuid =
             nil, nil, nil, nil, nil, nil, nil
         Clock()
-        if widget then
-            widget:Hide()
-        end
+        if widget then widget:Hide() end
         return
     end
     Build()
-    if not CludesUI._unlockActive then
-        F.Place(widget)
-    end
+    if not CludesUI._unlockActive then F.Place(widget) end
     for _, event in ipairs({
         "PLAYER_ENTERING_WORLD",
         "ZONE_CHANGED_NEW_AREA",
@@ -314,9 +270,7 @@ F.Start(Apply, {
         end
         return widget
     end,
-    size = function()
-        return 160, Get("size") + 8
-    end,
+    size = function() return 160, Get("size") + 8 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
@@ -330,21 +284,15 @@ local hooked
 
 local function Accept()
     local prompt = _G.ShardTransferImminentFrame
-    if not (S.Enabled() and IsInGroup() and prompt and prompt:IsShown()) then
-        return
-    end
+    if not (S.Enabled() and IsInGroup() and prompt and prompt:IsShown()) then return end
     local wasUp = StaticPopup1 and StaticPopup1:IsShown()
     prompt:Click("LeftButton", true)
-    if not wasUp and StaticPopup1 and StaticPopup1:IsShown() then
-        StaticPopup1Button1:Click()
-    end
+    if not wasUp and StaticPopup1 and StaticPopup1:IsShown() then StaticPopup1Button1:Click() end
 end
 
 local function Hook()
     local prompt = _G.ShardTransferImminentFrame
-    if hooked or not prompt then
-        return
-    end
+    if hooked or not prompt then return end
     prompt:HookScript("OnShow", Accept)
     hooked = true
 end

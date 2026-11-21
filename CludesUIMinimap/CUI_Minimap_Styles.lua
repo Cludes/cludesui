@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Styles.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ADDON_NAME, SKIN, GetFFD, Pix = Inner.ADDON_NAME, Inner.EBS, Inner.GetFFD, Inner.PP
@@ -46,13 +42,9 @@ end
 
 function SKIN._PositionAddonCompartment(button)
     local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if not mp or not Minimap then
-        return
-    end
+    if not mp or not Minimap then return end
     SKIN._compartmentApplying = true
-    if button:GetParent() ~= Minimap then
-        button:SetParent(Minimap)
-    end
+    if button:GetParent() ~= Minimap then button:SetParent(Minimap) end
     button:SetFrameStrata("HIGH")
     button:SetFrameLevel((Minimap:GetFrameLevel() or 0) + 10)
     button:SetScale(mp.addonCompartmentScale or 0.9)
@@ -108,13 +100,9 @@ end
 
 function SKIN._ApplyAddonCompartment()
     local button = _G.AddonCompartmentFrame
-    if not button then
-        return
-    end
+    if not button then return end
     local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if not mp then
-        return
-    end
+    if not mp then return end
 
     -- One-time persistent hooks, mirroring the folio's: Blizzard re-anchors and
     -- reparents this button on edit-mode relayouts and cluster updates, often
@@ -123,13 +111,9 @@ function SKIN._ApplyAddonCompartment()
     if not SKIN._compartmentHooked then
         SKIN._compartmentHooked = true
         local function reassert(self)
-            if SKIN._compartmentApplying then
-                return
-            end
+            if SKIN._compartmentApplying then return end
             local m = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-            if not m then
-                return
-            end
+            if not m then return end
             if m.hideAddonCompartment then
                 SKIN._ParkAddonCompartment(self)
             else
@@ -143,9 +127,7 @@ function SKIN._ApplyAddonCompartment()
         -- Hovering the compartment counts as hovering the map region, so the
         -- hover-reveal elements stay alive while the cursor is on it.
         button:HookScript("OnEnter", function()
-            if SKIN._HVRevealMapHover then
-                SKIN._HVRevealMapHover()
-            end
+            if SKIN._HVRevealMapHover then SKIN._HVRevealMapHover() end
         end)
     end
 
@@ -159,9 +141,7 @@ function SKIN._ApplyAddonCompartment()
     -- an empty compartment is never forced on screen.
     if not button:IsShown() then
         local reg = button.registeredAddons
-        if reg and #reg > 0 then
-            button:Show()
-        end
+        if reg and #reg > 0 then button:Show() end
     end
 end
 
@@ -177,9 +157,7 @@ local cropMasks = {}
 -- bar's extra height each, so the whole frame, bar included, is a square (the
 -- nearest crop mask, and the crop that mask cuts). 0 keeps the canvas whole.
 SKIN._MapCrop = function(p, mapSize)
-    if not p then
-        return 0
-    end
+    if not p then return 0 end
     if SKIN._MapShape(p) == "rectangular" then
         return mapSize * 32 / 256,
             "Interface\\AddOns\\CludesUIMinimap\\Media\\minimap_rectangular-crop-mask.tga"
@@ -234,9 +212,7 @@ SKIN._MinimapStyle = function()
     local val = SKIN._styleLatch
     if val == nil then
         local m = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-        if not m then
-            return "cui"
-        end
+        if not m then return "cui" end
         val = (m.useClassicStyle and "classic") or (m.useBlizzardStyle and "blizzard") or "cui"
         -- The WoW Forever variant of Blizzard Style, latched with it: the
         -- Forever client, Blizzard Style, and the sibling useForeverStyle
@@ -268,12 +244,8 @@ SKIN._MinimapStyle = function()
         -- The look the profile's flags name (published MinimapForever), before
         -- a square renders it as the CludesUI layout.
         SKIN._fvLook = fv
-        if SKIN._bzCircle then
-            fv = true
-        end
-        if SKIN._sqSlim then
-            SKIN._fvSquare = true
-        end
+        if SKIN._bzCircle then fv = true end
+        if SKIN._sqSlim then SKIN._fvSquare = true end
         if SKIN._fvSquare then
             val, fv = "cui", false
         end
@@ -284,49 +256,35 @@ SKIN._MinimapStyle = function()
 end
 -- Stock-art mode: true for both stock styles (the geometry, gating and
 -- placement they share).
-SKIN._MinimapBlizz = function()
-    return SKIN._MinimapStyle() ~= "cui"
-end
-SKIN._MinimapClassic = function()
-    return SKIN._MinimapStyle() == "classic"
-end
+SKIN._MinimapBlizz = function() return SKIN._MinimapStyle() ~= "cui" end
+SKIN._MinimapClassic = function() return SKIN._MinimapStyle() == "classic" end
 -- WoW Forever variant: the style still reads "blizzard" (every stock site
 -- stays as it is); this gates the Forever-only pieces, Blizzard Style's
 -- Circle on the Forever client included (it draws the variant's round map
 -- exactly). False off Forever, and under either square.
 SKIN._MinimapForever = function()
-    if SKIN._styleLatch == nil then
-        SKIN._MinimapStyle()
-    end
+    if SKIN._styleLatch == nil then SKIN._MinimapStyle() end
     return SKIN._foreverLatch == true
 end
 -- A square frame on the Forever client, latched above: the WoW Forever look's
 -- Forever Square or Blizzard Style's Square (EBS._sqSlim tells them apart).
 -- False under every other look and off Forever.
 SKIN._MinimapFvSquare = function()
-    if SKIN._styleLatch == nil then
-        SKIN._MinimapStyle()
-    end
+    if SKIN._styleLatch == nil then SKIN._MinimapStyle() end
     return SKIN._fvSquare == true
 end
 -- The shape the map renders: the stock styles' round map, Forever Square's
 -- square, else the stored Shape (read live).
 SKIN._MapShape = function(profile)
-    if SKIN._MinimapBlizz() then
-        return "circle"
-    end
-    if SKIN._MinimapFvSquare() then
-        return "square"
-    end
+    if SKIN._MinimapBlizz() then return "circle" end
+    if SKIN._MinimapFvSquare() then return "square" end
     return (profile and profile.shape) or "square"
 end
 -- SetAtlas for a stock-look texture: CludesUI.StockAtlas (retail art
 -- where the Forever client swaps the name), native under the WoW Forever
 -- look. Plain SetAtlas on retail.
 SKIN._StockAtlas = function(texture, name, ...)
-    if SKIN._MinimapForever() then
-        return texture:SetAtlas(name, ...)
-    end
+    if SKIN._MinimapForever() then return texture:SetAtlas(name, ...) end
     return CludesUI.StockAtlas(texture, name, ...)
 end
 -- Published on the module ns for the Style page and the profile-switch check,
@@ -336,15 +294,11 @@ end
 CludesUI._ModuleNS[ADDON_NAME].MinimapBlizz = SKIN._MinimapBlizz
 CludesUI._ModuleNS[ADDON_NAME].MinimapStyle = function()
     local val = SKIN._MinimapStyle()
-    if SKIN._fvSquare then
-        return "blizzard"
-    end
+    if SKIN._fvSquare then return "blizzard" end
     return val
 end
 CludesUI._ModuleNS[ADDON_NAME].MinimapForever = function()
-    if SKIN._styleLatch == nil then
-        SKIN._MinimapStyle()
-    end
+    if SKIN._styleLatch == nil then SKIN._MinimapStyle() end
     return SKIN._fvLook == true
 end
 -- The options page: a square frame renders this session, and the shape the
@@ -368,9 +322,7 @@ CludesUI._ModuleNS[ADDON_NAME].MinimapFvBorderChanged = function(m)
     then
         if m.useForeverStyle == true then
             if m.foreverBorder == "slim" then
-                if CludesUI.ForeverBorderOK() then
-                    sq = "slim"
-                end
+                if CludesUI.ForeverBorderOK() then sq = "slim" end
             elseif m.foreverBorder ~= "circle" and CludesUI.ForeverHeavyOK() then
                 sq = "heavy"
             end
@@ -458,9 +410,7 @@ SKIN._ApplyBlizzMinimapChrome = function(minimap, mapSize)
     -- (and the landing page button, which this module positions itself).
     local backdrop = _G.MinimapBackdrop
     if backdrop and backdrop ~= minimap then
-        if backdrop:GetParent() ~= minimap then
-            backdrop:SetParent(minimap)
-        end
+        if backdrop:GetParent() ~= minimap then backdrop:SetParent(minimap) end
         backdrop:ClearAllPoints()
         if fv then
             backdrop:SetPoint("TOPLEFT", minimap, "CENTER", -hw, hh)
@@ -585,12 +535,8 @@ SKIN.FV_SLIM_TITLE = 24
 SKIN.FV_SLIM_BAND = 0.75
 -- The square frame's outer edge past the map's sides and bottom (and its
 -- top without the title bar), and past its top with the title bar.
-function SKIN._SqOut()
-    return SKIN._sqSlim and SKIN.FV_SLIM_OUT or SKIN.FV_SQUARE_OUT
-end
-function SKIN._SqTitle()
-    return SKIN._sqSlim and SKIN.FV_SLIM_TITLE or SKIN.FV_SQUARE_TITLE
-end
+function SKIN._SqOut() return SKIN._sqSlim and SKIN.FV_SLIM_OUT or SKIN.FV_SQUARE_OUT end
+function SKIN._SqTitle() return SKIN._sqSlim and SKIN.FV_SLIM_TITLE or SKIN.FV_SQUARE_TITLE end
 -- Rows outside the frame: the rim's outer shadow and 2px more past its outer
 -- edge (Distance from Map adds to it), and between two ring buttons' rings
 -- (Icon Spacing adds to it).
@@ -671,9 +617,7 @@ SKIN._ApplyForeverSquare = function(minimap)
         skinData.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -o - 2, topY - barFrame.bandEnd)
     end
     local ab = CludesUI._ModuleNS.CludesUIActionBars
-    if ab then
-        ab.AB_ForeverEyeRelayout()
-    end
+    if ab then ab.AB_ForeverEyeRelayout() end
 end
 
 -- WoW Forever: the queue eye's stock spot on the ring (Blizzard's Forever
@@ -685,13 +629,9 @@ end
 -- bottom-left corner (the 45px eye's top-right corner on the frame's outer
 -- corner), clear of the rows the CludesUI layout hangs along the edges.
 SKIN._QueueEyeSpot = function()
-    if not CludesUI.IS_FOREVER then
-        return nil
-    end
+    if not CludesUI.IS_FOREVER then return nil end
     local sq = SKIN._MinimapFvSquare()
-    if not sq and SKIN._MinimapStyle() ~= "blizzard" then
-        return nil
-    end
+    if not sq and SKIN._MinimapStyle() ~= "blizzard" then return nil end
     local size = SKIN.db.profile.minimap.mapSize or 140
     if sq then
         local o = size / 2 + SKIN._SqOut() + 22.5
@@ -716,9 +656,7 @@ SKIN._ApplyForeverDiel = function(minimap, mapSize)
     local orb = skinData.foreverDiel
     if not orb then
         local rim = C_Texture.GetAtlasInfo("UI-HUD-Minimap-Frame-Cycle")
-        if not rim then
-            return
-        end
+        if not rim then return end
         orb = CreateFrame("Frame", nil, minimap)
         orb:SetSize(rim.width, rim.height)
         orb:EnableMouse(false)
@@ -731,9 +669,7 @@ SKIN._ApplyForeverDiel = function(minimap, mapSize)
             disc:SetAtlas(isDay and "UI-HUD-Minimap-DayCycle" or "UI-HUD-Minimap-NightCycle", true)
         end
         orb:RegisterEvent("DIEL_CYCLE_CHANGED")
-        orb:SetScript("OnEvent", function(_, _, isDay)
-            Paint(isDay)
-        end)
+        orb:SetScript("OnEvent", function(_, _, isDay) Paint(isDay) end)
         Paint(C_DateAndTime.IsDayTime())
         skinData.foreverDiel = orb
     end
@@ -752,9 +688,7 @@ end
 SKIN._ClassicZoomButton = function(button, isIn, s)
     button:SetSize(32 * s, 32 * s)
     local skinData = GetFFD(button)
-    if skinData.classicSkin then
-        return
-    end
+    if skinData.classicSkin then return end
     skinData.classicSkin = true
     local base = isIn and "Interface\\Minimap\\UI-Minimap-ZoomInButton-"
         or "Interface\\Minimap\\UI-Minimap-ZoomOutButton-"
@@ -763,13 +697,9 @@ SKIN._ClassicZoomButton = function(button, isIn, s)
     button:SetDisabledTexture(base .. "Disabled")
     button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight", "ADD")
     local texture = button:GetNormalTexture()
-    if texture then
-        texture:SetTexCoord(0, 1, 0, 1)
-    end
+    if texture then texture:SetTexCoord(0, 1, 0, 1) end
     texture = button:GetPushedTexture()
-    if texture then
-        texture:SetTexCoord(0, 1, 0, 1)
-    end
+    if texture then texture:SetTexCoord(0, 1, 0, 1) end
     texture = button:GetDisabledTexture()
     if texture then
         texture:SetTexCoord(0, 1, 0, 1)

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBlizzardSkin_SkinAPI.lua
 --  Public skinning API for third-party addons. Devs call
@@ -28,16 +26,12 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local ADDON_NAME, mod = ...
 local CUI = CludesUI
 local Skin = mod.WSkin
-if not (CUI and Skin) then
-    return
-end
+if not (CUI and Skin) then return end
 
 -------------------------------------------------------------------------------
 --  Gating: master switch + per-addon switches, account-global, nil = on.
 -------------------------------------------------------------------------------
-local function MasterOn()
-    return not (CludesUIDB and CludesUIDB.thirdPartySkinsOff)
-end
+local function MasterOn() return not (CludesUIDB and CludesUIDB.thirdPartySkinsOff) end
 
 local function AddonOn(name)
     local tbl = CludesUIDB and CludesUIDB.thirdPartySkinAddons
@@ -82,17 +76,13 @@ local PASS = {
 for _, fname in ipairs(PASS) do
     base[fname] = function(...)
         local func = Skin[fname]
-        if func then
-            return func(...)
-        end
+        if func then return func(...) end
     end
 end
 
 -- Resolved third-party theme: "cui" or "modern" (never "off"; if skinning
 -- were off the callback would not have fired at all).
-function base.GetStyle()
-    return (CUI.GetThirdPartySkinStyle and CUI.GetThirdPartySkinStyle()) or "cui"
-end
+function base.GetStyle() return (CUI.GetThirdPartySkinStyle and CUI.GetThirdPartySkinStyle()) or "cui" end
 
 -- Live accent color (r, g, b). Prefer OnLooksChanged over caching this.
 function base.GetAccentColor()
@@ -103,18 +93,14 @@ end
 -- House panel fill (r, g, b, a) for custom elements that should match.
 function base.GetPanelColor()
     local T = Skin.Theme
-    if not T.bgR then
-        Skin.ResolveTheme()
-    end
+    if not T.bgR then Skin.ResolveTheme() end
     return T.bgR, T.bgG, T.bgB, T.bgA
 end
 
 -- The user's UI font: path, outline flag ("" when none).
 function base.GetFont()
     local T = Skin.Theme
-    if not T.fontPath then
-        Skin.ResolveTheme()
-    end
+    if not T.fontPath then Skin.ResolveTheme() end
     return T.fontPath, T.fontFlag
 end
 
@@ -122,9 +108,7 @@ end
 -- backdrop color, window styles). Shell/primitive visuals refresh on their
 -- own; this is only for custom elements colored via the getters above.
 function base.OnLooksChanged(func)
-    if type(func) == "function" then
-        Skin.OnLooksChanged(func)
-    end
+    if type(func) == "function" then Skin.OnLooksChanged(func) end
 end
 
 -- Per-addon facade: Shell is curried with the addon's virtual winKey so the
@@ -132,12 +116,8 @@ end
 local function MakeFacade(name)
     local winKey = "tp:" .. name
     local S = {
-        Shell = function(widget, options)
-            return Skin.Shell(winKey, widget, options)
-        end,
-        IsEnabled = function()
-            return MasterOn() and AddonOn(name)
-        end,
+        Shell = function(widget, options) return Skin.Shell(winKey, widget, options) end,
+        IsEnabled = function() return MasterOn() and AddonOn(name) end,
     }
     return setmetatable(S, { __index = base })
 end
@@ -151,16 +131,10 @@ local _fired = {}
 local _loginDone = false
 
 local function Dispatch(record)
-    if _fired[record.name] then
-        return
-    end
-    if not (MasterOn() and AddonOn(record.name)) then
-        return
-    end
+    if _fired[record.name] then return end
+    if not (MasterOn() and AddonOn(record.name)) then return end
     _fired[record.name] = true
-    if not Skin.Theme.fontPath then
-        Skin.ResolveTheme()
-    end
+    if not Skin.Theme.fontPath then Skin.ResolveTheme() end
     local success, err = pcall(record.apply, MakeFacade(record.name))
     if not success and err then
         -- Surface through the normal error pipeline without stopping the
@@ -172,9 +146,7 @@ end
 -- Called by the parent stub for registrations arriving after login (LoD
 -- third-party addons); pre-login entries wait in the queue for the boot.
 CUI._DispatchSkinRegistration = function(record)
-    if _loginDone then
-        Dispatch(record)
-    end
+    if _loginDone then Dispatch(record) end
 end
 
 -- Options page support: registered names + whether each ran this session.
@@ -191,9 +163,7 @@ end
 -- any now-eligible unfired entries live (skins install fine at any time;
 -- only REMOVING them needs the reload). Returns true if anything fired.
 function mod.TryDispatchThirdPartySkins()
-    if not _loginDone then
-        return false
-    end
+    if not _loginDone then return false end
     local fired = false
     local reg = CUI._skinRegistry or {}
     for idx = 1, #reg do

@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then
-    return
-end -- no season crests on WoW Forever (the main file drops the block type there too)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI.IS_FOREVER then return end -- no season crests on WoW Forever (the main file drops the block type there too)
 -------------------------------------------------------------------------------
 --  Blocks\Crests.lua - Info Bar block: the season's upgrade crests.
 --
@@ -34,9 +30,7 @@ local SEPARATORS = { slash = " / ", line = " || ", dash = " - ", space = "   " }
 -- coloured, and the first custom colour (b.color) takes over. The options
 -- page lights its fourth swatch on the same test.
 function mod.CrestColorMode(b)
-    if b.useCrestColor then
-        return true
-    end
+    if b.useCrestColor then return true end
     return not b.useClassColor and not b.useAccentColor and not b.useDynamicColor and b.color == nil
 end
 
@@ -44,15 +38,11 @@ local function Info(id)
     return C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(id)
 end
 
-local function Number(n)
-    return BreakUpLargeNumbers and BreakUpLargeNumbers(n or 0) or tostring(n or 0)
-end
+local function Number(n) return BreakUpLargeNumbers and BreakUpLargeNumbers(n or 0) or tostring(n or 0) end
 
 -- What counts towards the season cap: earned (crests), else what is held.
 local function Earned(skinData)
-    if skinData.useTotalEarnedForMaxQty then
-        return skinData.totalEarned or skinData.quantity or 0
-    end
+    if skinData.useTotalEarnedForMaxQty then return skinData.totalEarned or skinData.quantity or 0 end
     return skinData.quantity or 0
 end
 
@@ -60,9 +50,7 @@ end
 -- different number once some are spent, hence "Season Progress", not "Cap").
 local function BarAmount(skinData, progress)
     local cap = skinData.maxQuantity
-    if not progress or not cap or cap <= 0 then
-        return Number(skinData.quantity or 0)
-    end
+    if not progress or not cap or cap <= 0 then return Number(skinData.quantity or 0) end
     return Number(Earned(skinData)) .. "/" .. Number(cap)
 end
 
@@ -71,9 +59,7 @@ end
 local function TipAmount(skinData)
     local held = Number(skinData.quantity or 0)
     local cap = skinData.maxQuantity
-    if not cap or cap <= 0 then
-        return held
-    end
+    if not cap or cap <= 0 then return held end
     return held .. " " .. DIM .. "(" .. Number(Earned(skinData)) .. "/" .. Number(cap) .. ")|r"
 end
 
@@ -82,9 +68,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
     inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "CURRENCY_DISPLAY_UPDATE" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local button = CreateFrame("Button", nil, contentFrame)
     button:SetAllPoints()
@@ -97,14 +81,10 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
     local drawn -- the text on screen
     local parts = {} -- reused: the text is rebuilt on currency events
 
-    local function FontSize()
-        return max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
-    end
+    local function FontSize() return max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5)) end
 
     -- Crest colours, unless hovered: the accent can only show on plain text.
-    local function Coloured()
-        return mod.CrestColorMode(blockCfg) and not hovered
-    end
+    local function Coloured() return mod.CrestColorMode(blockCfg) and not hovered end
 
     -- The readout for the current settings and amounts.
     local function Compose()
@@ -125,27 +105,23 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
                 elseif not (cfg.hideEmpty == true and (skinData.quantity or 0) <= 0) then
                     local part = BarAmount(skinData, cfg.showSeasonProgress == true)
                     if cfg.showIcons ~= false and skinData.iconFileID then
-                        part = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", skinData.iconFileID, iconSize, iconSize)
-                            .. part
+                        part = format(
+                            "|T%s:%d:%d:0:0:64:64:5:59:5:59|t",
+                            skinData.iconFileID,
+                            iconSize,
+                            iconSize
+                        ) .. part
                     end
-                    if coloured then
-                        part = "|cff" .. crest.hex .. part .. "|r"
-                    end
+                    if coloured then part = "|cff" .. crest.hex .. part .. "|r" end
                     parts[#parts + 1] = part
                 end
             end
         end
         -- All filtered out: a placeholder keeps the block on the bar.
-        if #parts == 0 then
-            return "-"
-        end
-        if barCtx.IsVertical() then
-            return concat(parts, "\n")
-        end
+        if #parts == 0 then return "-" end
+        if barCtx.IsVertical() then return concat(parts, "\n") end
         local sep = SEPARATORS[cfg.separator or "slash"] or SEPARATORS.slash
-        if coloured then
-            sep = "|cff808080" .. sep .. "|r"
-        end
+        if coloured then sep = "|cff808080" .. sep .. "|r" end
         return concat(parts, sep)
     end
 
@@ -205,7 +181,16 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
         for _, crest in ipairs(K.CRESTS) do
             local skinData = Info(crest.id)
             if skinData then
-                mod.Tip_AddDouble(skinData.name or "?", TipAmount(skinData), crest.r, crest.g, crest.b, 1, 1, 1)
+                mod.Tip_AddDouble(
+                    skinData.name or "?",
+                    TipAmount(skinData),
+                    crest.r,
+                    crest.g,
+                    crest.b,
+                    1,
+                    1,
+                    1
+                )
             end
         end
         mod.Tip_AddLine(" ")
@@ -224,9 +209,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
         Repaint()
     end)
     button:SetScript("OnClick", function(_, mouseButton)
-        if mouseButton ~= "LeftButton" then
-            return
-        end
+        if mouseButton ~= "LeftButton" then return end
         if C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
             C_CurrencyInfo.OpenCurrencyPanel()
         elseif ToggleCharacter then
@@ -237,12 +220,8 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
     -- Another currency is ignored; a crest's (or an update of all, which names
     -- none) redraws only if the readout changed.
     inst.eventFrame = K.MakeEventFrame(inst, function(self, _, currencyId)
-        if currencyId and not mod.CREST_IDS[currencyId] then
-            return
-        end
-        if Compose() ~= drawn then
-            self:Refresh()
-        end
+        if currencyId and not mod.CREST_IDS[currencyId] then return end
+        if Compose() ~= drawn then self:Refresh() end
     end)
 
     function inst:Enable()
@@ -256,9 +235,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 120, 24)
     end
 

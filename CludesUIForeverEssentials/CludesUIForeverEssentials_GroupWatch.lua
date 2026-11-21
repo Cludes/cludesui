@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GroupWatch.lua  (WoW Forever only)
 --  Healer Mana: every healer in your group and their mana, lowest first,
@@ -19,12 +15,8 @@ end
 -------------------------------------------------------------------------------
 local _, module = ...
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 local function AurasSecret()
     return C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret()
 end
@@ -60,41 +52,27 @@ for index = 1, 4 do
 end
 
 local function HMHere()
-    if not IsInGroup() then
-        return false
-    end
-    if HM.Get("where") == "group" then
-        return true
-    end
+    if not IsInGroup() then return false end
+    if HM.Get("where") == "group" then return true end
     local _, kind = IsInInstance()
     return kind == "party" or kind == "raid"
 end
 
 local function IsHealer(unitToken, class)
     local role = UnitGroupRolesAssigned(unitToken)
-    if Secret(role) then
-        role = nil
-    end
-    if role == "HEALER" then
-        return true
-    end
-    if role == "TANK" or role == "DAMAGER" then
-        return false
-    end
+    if Secret(role) then role = nil end
+    if role == "HEALER" then return true end
+    if role == "TANK" or role == "DAMAGER" then return false end
     return HEALER_CLASSES[class] == true
 end
 
 local function Units()
     wipe(units)
-    if HM.Get("showSelf") then
-        units[1] = "player"
-    end
+    if HM.Get("showSelf") then units[1] = "player" end
     if IsInRaid() then
         for index = 1, math.min(GetNumGroupMembers(), 40) do
             local me = UnitIsUnit(RAID[index], "player")
-            if not Secret(me) and not me then
-                units[#units + 1] = RAID[index]
-            end
+            if not Secret(me) and not me then units[#units + 1] = RAID[index] end
         end
     else
         for index = 1, math.min(GetNumSubgroupMembers(), 4) do
@@ -129,17 +107,13 @@ local function Roster()
 end
 
 local function CanReadDrink()
-    if not HM.Get("drinking") or AurasSecret() then
-        return false
-    end
+    if not HM.Get("drinking") or AurasSecret() then return false end
     drinkName = drinkName or C_Spell.GetSpellName(DRINK_SPELL)
     return drinkName ~= nil
 end
 
 local function Drinking(m)
-    if not (CanReadDrink() and C_UnitAuras.GetAuraDataBySpellName) then
-        return
-    end
+    if not (CanReadDrink() and C_UnitAuras.GetAuraDataBySpellName) then return end
     local aura = C_UnitAuras.GetAuraDataBySpellName(m.unit, drinkName, "HELPFUL")
     m.drinking = aura ~= nil
     m.drinkID = aura and aura.auraInstanceID or nil
@@ -147,9 +121,7 @@ end
 
 -- True when the drinking state changed (an aura update for this unit).
 local function DrinkChanged(m, details)
-    if not CanReadDrink() then
-        return false
-    end
+    if not CanReadDrink() then return false end
     local was = m.drinking
     if not details or details.isFullUpdate then
         Drinking(m)
@@ -173,40 +145,26 @@ end
 
 local function Read(m)
     local online, dead = UnitIsConnected(m.unit), UnitIsDeadOrGhost(m.unit)
-    if Secret(online) then
-        online = true
-    end
-    if Secret(dead) then
-        dead = false
-    end
+    if Secret(online) then online = true end
+    if Secret(dead) then dead = false end
     m.state = (not online and OFFLINE) or (dead and DEAD) or nil
     local current, max = UnitPower(m.unit, MANA), UnitPowerMax(m.unit, MANA)
     m.secret = (Secret(current) or Secret(max)) == true
-    if not m.secret and max > 0 then
-        m.pct = current / max
-    end
+    if not m.secret and max > 0 then m.pct = current / max end
 end
 
 local function Less(a, b)
-    if (a.state ~= nil) ~= (b.state ~= nil) then
-        return b.state ~= nil
-    end
+    if (a.state ~= nil) ~= (b.state ~= nil) then return b.state ~= nil end
     local pa, pb = a.pct or NO_RANK, b.pct or NO_RANK
-    if pa ~= pb then
-        return pa < pb
-    end
-    if a.name ~= b.name then
-        return a.name < b.name
-    end
+    if pa ~= pb then return pa < pb end
+    if a.name ~= b.name then return a.name < b.name end
     return a.guid < b.guid
 end
 
 -- While any mana is secret, keep the last order (it cannot be compared).
 local function Held(a, b)
     local ra, rb = rank[a.guid] or NO_RANK, rank[b.guid] or NO_RANK
-    if ra ~= rb then
-        return ra < rb
-    end
+    if ra ~= rb then return ra < rb end
     return a.guid < b.guid
 end
 
@@ -225,9 +183,7 @@ local function Sort()
 end
 
 local function SecretShare(fontStr, unitToken)
-    if not (UnitPowerPercent and C_CurveUtil) then
-        return false
-    end
+    if not (UnitPowerPercent and C_CurveUtil) then return false end
     if not shareCurve then
         shareCurve = C_CurveUtil.CreateCurve()
         shareCurve:SetType(Enum.LuaCurveType.Linear)
@@ -247,9 +203,7 @@ local SAMPLE = {
 
 local function Row(index)
     local row = rowList[index]
-    if row then
-        return row
-    end
+    if row then return row end
     row = CreateFrame("Frame", nil, hmFrame)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetTexture(DRINK_ICON)
@@ -298,9 +252,7 @@ local function PaintRows(entries)
             end
         elseif m.secret then
             region.pct:SetTextColor(1, 1, 1)
-            if not SecretShare(region.pct, m.unit) then
-                region.pct:SetText(UNKNOWN)
-            end
+            if not SecretShare(region.pct, m.unit) then region.pct:SetText(UNKNOWN) end
         elseif m.pct then
             region.pct:SetText(("%.1f%%"):format(math.floor(m.pct * 1000 + 0.5) / 10))
             if m.pct < OUT then
@@ -322,9 +274,7 @@ local function PaintRows(entries)
 end
 
 local function HMRedraw()
-    if not hmFrame then
-        return
-    end
+    if not hmFrame then return end
     if CludesUI._unlockActive and HM.Enabled() then
         PaintRows(SAMPLE)
         hmFrame:Show()
@@ -344,9 +294,7 @@ end
 
 local hmPending
 local function HMSoon()
-    if hmPending then
-        return
-    end
+    if hmPending then return end
     hmPending = true
     C_Timer.After(0.25, function()
         hmPending = false
@@ -355,16 +303,10 @@ local function HMSoon()
 end
 
 local function OnUnitEvent(wid, evt, _, arg)
-    if evt == "UNIT_POWER_UPDATE" and (Secret(arg) or arg ~= MANA_TOKEN) then
-        return
-    end
+    if evt == "UNIT_POWER_UPDATE" and (Secret(arg) or arg ~= MANA_TOKEN) then return end
     local m = tracked[wid.unit]
-    if not m then
-        return
-    end
-    if evt == "UNIT_AURA" and not DrinkChanged(m, arg) then
-        return
-    end
+    if not m then return end
+    if evt == "UNIT_AURA" and not DrinkChanged(m, arg) then return end
     HMSoon()
 end
 
@@ -394,12 +336,8 @@ local hmEvents = CreateFrame("Frame")
 local HMApply
 local rosterPending
 hmEvents:SetScript("OnEvent", function(_, evt)
-    if evt == "PLAYER_ENTERING_WORLD" then
-        return HMApply()
-    end
-    if rosterPending then
-        return
-    end
+    if evt == "PLAYER_ENTERING_WORLD" then return HMApply() end
+    if rosterPending then return end
     rosterPending = true
     C_Timer.After(0.25, function()
         rosterPending = false
@@ -413,9 +351,7 @@ HMApply = function()
         wipe(list)
         wipe(tracked)
         Watch()
-        if hmFrame then
-            hmFrame:Hide()
-        end
+        if hmFrame then hmFrame:Hide() end
         return
     end
     if not hmFrame then
@@ -434,9 +370,7 @@ HMApply = function()
         end
     end
     Watch()
-    if not CludesUI._unlockActive then
-        HM.Place(hmFrame)
-    end
+    if not CludesUI._unlockActive then HM.Place(hmFrame) end
     HMRedraw()
 end
 
@@ -445,17 +379,11 @@ HM.Start(HMApply, {
     label = "Healer Mana",
     order = 746,
     frame = function(build)
-        if build and not hmFrame then
-            HMApply()
-        end
-        if build and hmFrame then
-            HMRedraw()
-        end
+        if build and not hmFrame then HMApply() end
+        if build and hmFrame then HMRedraw() end
         return hmFrame
     end,
-    size = function()
-        return HM.Get("width"), #SAMPLE * (HM.Get("size") + ROW_PAD) + 2 * PAD
-    end,
+    size = function() return HM.Get("width"), #SAMPLE * (HM.Get("size") + ROW_PAD) + 2 * PAD end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })
@@ -505,9 +433,7 @@ local function Known(ident)
 end
 
 local function PTBuild()
-    if ptFrame then
-        return ptFrame
-    end
+    if ptFrame then return ptFrame end
     ptFrame = CreateFrame("Frame", "CludesUIPetTracker", UIParent)
     ptFrame.icon = ptFrame:CreateTexture(nil, "ARTWORK")
     ptFrame.icon:SetTexture(PET_ICON)
@@ -547,19 +473,13 @@ local function BuildCurve()
 end
 
 local function ShouldHavePet()
-    if CLASS == "HUNTER" then
-        return Known(CALL_PET)
-    end
-    if CLASS == "WARLOCK" then
-        return Known(SUMMON_IMP) and not sacrificed
-    end
+    if CLASS == "HUNTER" then return Known(CALL_PET) end
+    if CLASS == "WARLOCK" then return Known(SUMMON_IMP) and not sacrificed end
     return false
 end
 
 local function CheckSacrifice()
-    if CLASS ~= "WARLOCK" or AurasSecret() then
-        return
-    end
+    if CLASS ~= "WARLOCK" or AurasSecret() then return end
     sacrificed = false
     for _, ident in ipairs(SACRIFICE_BUFFS) do
         if C_UnitAuras.GetPlayerAuraBySpellID(ident) then
@@ -570,52 +490,30 @@ local function CheckSacrifice()
 end
 
 local function IsPassive()
-    if not PetHasActionBar() then
-        return false
-    end
+    if not PetHasActionBar() then return false end
     for index = 1, NUM_PET_ACTION_SLOTS do
         local name, _, _, isActive = GetPetActionInfo(index)
-        if name == "PET_MODE_PASSIVE" then
-            return isActive == true
-        end
+        if name == "PET_MODE_PASSIVE" then return isActive == true end
     end
     return false
 end
 
 local function Warning()
-    if UnitIsDeadOrGhost("player") or UnitOnTaxi("player") then
-        return
-    end
-    if PT.Get("hideMounted") and (mounted or dismountTimer) then
-        return
-    end
-    if PT.Get("combatOnly") and not UnitAffectingCombat("player") then
-        return
-    end
-    if PT.Get("instanceOnly") and not IsInInstance() then
-        return
-    end
-    if not ShouldHavePet() then
-        return
-    end
+    if UnitIsDeadOrGhost("player") or UnitOnTaxi("player") then return end
+    if PT.Get("hideMounted") and (mounted or dismountTimer) then return end
+    if PT.Get("combatOnly") and not UnitAffectingCombat("player") then return end
+    if PT.Get("instanceOnly") and not IsInInstance() then return end
+    if not ShouldHavePet() then return end
     if not UnitExists("pet") then
-        if CLASS == "HUNTER" and (Known(LONE_WOLF) or Known(LONE_WOLF_TAUGHT)) then
-            return
-        end
+        if CLASS == "HUNTER" and (Known(LONE_WOLF) or Known(LONE_WOLF_TAUGHT)) then return end
         return "missingText"
     end
-    if PT.Get("passive") and IsPassive() then
-        return "passiveText"
-    end
-    if PT.Get("lowHealth") and not UnitIsDeadOrGhost("pet") then
-        return "lowText", true
-    end
+    if PT.Get("passive") and IsPassive() then return "passiveText" end
+    if PT.Get("lowHealth") and not UnitIsDeadOrGhost("pet") then return "lowText", true end
 end
 
 local function PTUpdate()
-    if not ptFrame then
-        return
-    end
+    if not ptFrame then return end
     if CludesUI._unlockActive and PT.Enabled() then
         ptFrame.text:SetText(PT.Get("missingText"))
         ptFrame:SetAlpha(1)
@@ -662,9 +560,7 @@ local function PTApply()
             dismountTimer:Cancel()
             dismountTimer = nil
         end
-        if ptFrame then
-            ptFrame:Hide()
-        end
+        if ptFrame then ptFrame:Hide() end
         return
     end
     PTBuild()
@@ -678,12 +574,8 @@ local function PTApply()
     ptEvents:RegisterUnitEvent("UNIT_PET", "player")
     ptEvents:RegisterUnitEvent("UNIT_HEALTH", "pet")
     ptEvents:RegisterUnitEvent("UNIT_MAXHEALTH", "pet")
-    if CLASS == "WARLOCK" then
-        ptEvents:RegisterUnitEvent("UNIT_AURA", "player")
-    end
-    if not CludesUI._unlockActive then
-        PT.Place(ptFrame)
-    end
+    if CLASS == "WARLOCK" then ptEvents:RegisterUnitEvent("UNIT_AURA", "player") end
+    if not CludesUI._unlockActive then PT.Place(ptFrame) end
     PTUpdate()
 end
 
@@ -699,9 +591,7 @@ PT.Start(PTApply, {
         end
         return ptFrame
     end,
-    size = function()
-        return 220, PT.Get("size") + 16
-    end,
+    size = function() return 220, PT.Get("size") + 16 end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,
 })

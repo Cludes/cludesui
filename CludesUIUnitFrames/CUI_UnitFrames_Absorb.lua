@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Absorb.lua
 --
@@ -18,9 +16,7 @@ local Inner = mod._internals
 local GetSettingsForUnit, UnsnapTex = Inner.GetSettingsForUnit, Inner.UnsnapTex
 local healthBarTextures, AbbreviateNumbers = Inner.healthBarTextures, Inner.AbbreviateNumbers
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Shield texture. DO NOT change this path; it is the one that resolves.
 local ABSORB_SHIELD_TEX = "Interface\\AddOns\\CludesUIUnitFrames\\Media\\shield.tga"
@@ -57,19 +53,13 @@ end
 -- Effective absorb opacity: per-unit absorbOpacity once set, else legacy behavior
 -- (clean uses absorbCleanAlpha, other styles a fixed 0.8). Read-time fallback, no migration.
 local function GetAbsorbOpacity(style, prefs)
-    if prefs and prefs.absorbOpacity then
-        return prefs.absorbOpacity / 100
-    end
-    if style == "clean" and prefs then
-        return (prefs.absorbCleanAlpha or 30) / 100
-    end
+    if prefs and prefs.absorbOpacity then return prefs.absorbOpacity / 100 end
+    if style == "clean" and prefs then return (prefs.absorbCleanAlpha or 30) / 100 end
     return ABSORB_STYLE_ALPHA[style] or 0.8
 end
 
 local function ApplyAbsorbStyle(absorbBar, style, prefs)
-    if not absorbBar then
-        return
-    end
+    if not absorbBar then return end
     local texture = mod.ResolveAbsorbStyleTex(style, ABSORB_SHIELD_TEX)
     local alpha = GetAbsorbOpacity(style, prefs)
     local ac = (prefs and prefs.absorbColor) or { r = 1, g = 1, b = 1 }
@@ -84,9 +74,7 @@ local function ApplyAbsorbStyle(absorbBar, style, prefs)
         fillTex:SetDrawLayer("ARTWORK", 1)
         fillTex:SetHorizTile(tiled)
         fillTex:SetVertTile(tiled)
-        if mask then
-            fillTex:AddMaskTexture(mask)
-        end
+        if mask then fillTex:AddMaskTexture(mask) end
     end
     -- New fill object + tiling state: re-derive rotation (stretch styles rotate
     -- on a vertical bar, tiled ones must not).
@@ -100,17 +88,13 @@ local function ApplyAbsorbStyle(absorbBar, style, prefs)
             fwFill:SetDrawLayer("ARTWORK", 1)
             fwFill:SetHorizTile(tiled)
             fwFill:SetVertTile(tiled)
-            if mask then
-                fwFill:AddMaskTexture(mask)
-            end
+            if mask then fwFill:AddMaskTexture(mask) end
         end
         mod.ApplyFillRotation(fillW)
     end
     -- New fill object: the glow lines that ride it re-seat (built only once
     -- the Blizzard Glow Line was turned on).
-    if absorbBar._glow then
-        mod.UF_AbsorbGlowAnchor(absorbBar)
-    end
+    if absorbBar._glow then mod.UF_AbsorbGlowAnchor(absorbBar) end
 end
 
 -- Read-only stand-ins for unset settings and lookups the absorb painter makes
@@ -132,9 +116,7 @@ local IS_BOSS_UNIT = setmetatable({}, {
 -- Heal absorb styling (mirrors the raid frames Absorbs section). Defaults are
 -- clean white8x8, red, 0.65 alpha.
 local function ApplyHealAbsorbStyle(haBar, style, prefs)
-    if not haBar then
-        return
-    end
+    if not haBar then return end
     local texture = mod.ResolveAbsorbStyleTex(style, "Interface\\Buttons\\WHITE8X8")
     local alpha = ((prefs and prefs.healAbsorbOpacity) or 65) / 100
     local hc = (prefs and prefs.healAbsorbColor) or { r = 0.8, g = 0.15, b = 0.15 }
@@ -151,9 +133,7 @@ local function ApplyHealAbsorbStyle(haBar, style, prefs)
         fillTex:SetDrawLayer("ARTWORK", 2)
         fillTex:SetHorizTile(tiled)
         fillTex:SetVertTile(tiled)
-        if mask then
-            fillTex:AddMaskTexture(mask)
-        end
+        if mask then fillTex:AddMaskTexture(mask) end
     end
     mod.ApplyFillRotation(haBar)
 end
@@ -181,24 +161,16 @@ end
 -- `settingsOverride` lets the creation path pass the settings table it already
 -- holds, for frames whose ._cuiUnit is not resolvable yet.
 local function UpdateAbsorbBarReverseFill(widget, reversed, settingsOverride)
-    if not widget or not widget.HealthPrediction then
-        return
-    end
+    if not widget or not widget.HealthPrediction then return end
     local absorbBar = widget.HealthPrediction.damageAbsorb
-    if not absorbBar then
-        return
-    end
+    if not absorbBar then return end
     local fillW = absorbBar._forward
     local nowClip = absorbBar._curClip
     local missClip = absorbBar._missClip
     local healthBar = absorbBar._hpBar
-    if not (fillW and nowClip and missClip and healthBar) then
-        return
-    end
+    if not (fillW and nowClip and missClip and healthBar) then return end
     local healthTex = healthBar:GetStatusBarTexture()
-    if not healthTex then
-        return
-    end
+    if not healthTex then return end
 
     absorbBar._isReversed = reversed and true or false
 
@@ -218,9 +190,7 @@ local function UpdateAbsorbBarReverseFill(widget, reversed, settingsOverride)
     -- emerging from the frame's origin edge. nil overshieldMode falls back
     -- to the legacy showOvershield boolean (saved toggles keep meaning).
     local osm = cfg and cfg.overshieldMode
-    if osm == nil then
-        osm = (cfg and cfg.showOvershield == false) and "never" or "always"
-    end
+    if osm == nil then osm = (cfg and cfg.showOvershield == false) and "never" or "always" end
     local osFromLeft = osm == "fromleft"
     -- Overlay Reverse (Full): Overlay Reverse, plus the forward bar filling
     -- from the bar's ORIGIN edge, so the missing-health clip shows the absorb
@@ -543,9 +513,7 @@ mod.UF_HEAL_PRED_UNITS = { player = true, target = true, focus = true }
 function mod.UF_AnchorHealPred(absorbBar)
     local my, other = absorbBar._predMy, absorbBar._predOther
     local healthTex = absorbBar._hpBar and absorbBar._hpBar:GetStatusBarTexture()
-    if not (my and healthTex) then
-        return
-    end
+    if not (my and healthTex) then return end
     local myTex = my:GetStatusBarTexture()
     local isVert, isRev = absorbBar._isVert and true or false, absorbBar._isReversed and true or false
     for index = 1, 2 do
@@ -577,9 +545,7 @@ function mod.UF_NewHealPredBar(absorbBar)
     local barFrame = CreateFrame("StatusBar", nil, absorbBar._missClip)
     barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local fillTex = barFrame:GetStatusBarTexture()
-    if fillTex and absorbBar._absorbMask then
-        fillTex:AddMaskTexture(absorbBar._absorbMask)
-    end
+    if fillTex and absorbBar._absorbMask then fillTex:AddMaskTexture(absorbBar._absorbMask) end
     barFrame:SetMinMaxValues(0, 1)
     barFrame:SetValue(0)
     barFrame:SetFrameLevel(absorbBar._hpBar:GetFrameLevel() + 1)
@@ -602,15 +568,11 @@ function mod.UF_HealPredMasks(absorbBar)
         if fillTex then
             if edge then
                 pcall(fillTex.RemoveMaskTexture, fillTex, edge)
-                if inside then
-                    fillTex:AddMaskTexture(edge)
-                end
+                if inside then fillTex:AddMaskTexture(edge) end
             end
             if shape then
                 pcall(fillTex.RemoveMaskTexture, fillTex, shape)
-                if inside and absorbBar._blizzMaskOn then
-                    fillTex:AddMaskTexture(shape)
-                end
+                if inside and absorbBar._blizzMaskOn then fillTex:AddMaskTexture(shape) end
             end
         end
     end
@@ -649,9 +611,7 @@ end
 -- The healpred channel's painter: values only, no style work.
 function mod.UF_PaintHealPred(widget, unitToken)
     local absorbBar = widget.HealthPrediction.damageAbsorb
-    if not absorbBar._predOn then
-        return
-    end
+    if not absorbBar._predOn then return end
     local calculator = absorbBar._predCalc
     UnitGetDetailedHealPrediction(unitToken, "player", calculator)
     local _, myHeals, others = calculator:GetIncomingHeals()
@@ -670,9 +630,7 @@ mod.Engine.SetPainter("healpred", mod.UF_PaintHealPred)
 function mod.UF_HealPredApply(widget, unitKey, cfg)
     local healthEnd = widget.HealthPrediction
     local absorbBar = healthEnd and healthEnd.damageAbsorb
-    if not (absorbBar and absorbBar._missClip) then
-        return
-    end
+    if not (absorbBar and absorbBar._missClip) then return end
     local enabled = mod.UF_HEAL_PRED_UNITS[unitKey]
             and cfg
             and cfg.healPrediction == true
@@ -712,9 +670,7 @@ function mod.UF_HealPredApply(widget, unitKey, cfg)
         absorbBar._predCalc = calculator
         -- Our own health bar; returns at once while the option is off.
         health:HookScript("OnSizeChanged", function()
-            if absorbBar._predOn then
-                mod.UF_HealPredLayout(absorbBar)
-            end
+            if absorbBar._predOn then mod.UF_HealPredLayout(absorbBar) end
         end)
     end
     local my, other = absorbBar._predMy, absorbBar._predOther
@@ -739,16 +695,12 @@ function mod.UF_HealPredApply(widget, unitKey, cfg)
             local barFrame = (index == 1) and my or other
             barFrame:SetStatusBarTexture(filePath)
             local fillTex = barFrame:GetStatusBarTexture()
-            if fillTex then
-                UnsnapTex(fillTex)
-            end
+            if fillTex then UnsnapTex(fillTex) end
         end
     end
     -- While off, the re-anchor pass skips the bars, so turning on re-seats
     -- them for the current fill axis.
-    if retex or not absorbBar._predOn then
-        mod.UF_AnchorHealPred(absorbBar)
-    end
+    if retex or not absorbBar._predOn then mod.UF_AnchorHealPred(absorbBar) end
     -- Overheal: how far past full health the bars may run (0 = stop at the
     -- end). The health bar sits inside the frame's bar clip, so running past
     -- its end takes a holder outside it, parented to the unit frame; the masks
@@ -781,16 +733,12 @@ function mod.UF_HealPredApply(widget, unitKey, cfg)
     my:SetStatusBarColor(mc.r, mc.g, mc.b, alpha)
     other:SetStatusBarColor(oc.r, oc.g, oc.b, alpha)
     -- While on, the re-anchor pass and the size hook keep the layout current.
-    if relayout then
-        mod.UF_HealPredLayout(absorbBar)
-    end
+    if relayout then mod.UF_HealPredLayout(absorbBar) end
     my:Show()
     other:Show()
     absorbBar._predOn = true
     mod.Engine.SetChannelOn(widget, "healpred", true)
-    if widget:IsShown() then
-        mod.UF_PaintHealPred(widget, widget._cuiUnit)
-    end
+    if widget:IsShown() then mod.UF_PaintHealPred(widget, widget._cuiUnit) end
 end
 
 -------------------------------------------------------------------------------
@@ -834,9 +782,7 @@ function mod.UF_PaintMaxHp(widget, unitToken)
     local healthEnd = widget.HealthPrediction
     local absorbBar = healthEnd and healthEnd.damageAbsorb
     local barFrame = absorbBar and absorbBar._maxHp
-    if not (barFrame and absorbBar._maxHpOn) then
-        return
-    end
+    if not (barFrame and absorbBar._maxHpOn) then return end
     local pct = GetUnitTotalModifiedMaxHealthPercent(unitToken)
     if pct > 0 then
         barFrame:SetValue(math.min(pct, 1))
@@ -852,15 +798,11 @@ mod.Engine.SetPainter("maxhp", mod.UF_PaintMaxHp)
 function mod.UF_MaxHpApply(widget, unitKey)
     local healthEnd = widget.HealthPrediction
     local absorbBar = healthEnd and healthEnd.damageAbsorb
-    if not (absorbBar and absorbBar._hpBar and saved) then
-        return
-    end
+    if not (absorbBar and absorbBar._hpBar and saved) then return end
     local s
     if IS_BOSS_UNIT[unitKey] then
         local b = saved.profile.boss
-        if not (b and b.showAbsorbs == false) then
-            s = saved.profile.target
-        end
+        if not (b and b.showAbsorbs == false) then s = saved.profile.target end
     elseif mod.UF_MAXHP_UNITS[unitKey] then
         s = GetSettingsForUnit(unitKey)
     end
@@ -967,9 +909,7 @@ end)
 function mod.UF_AbsorbGlowApply(widget, unitToken)
     local healthEnd = widget.HealthPrediction
     local absorbBar = healthEnd and healthEnd.damageAbsorb
-    if not (absorbBar and absorbBar._forward) then
-        return
-    end
+    if not (absorbBar and absorbBar._forward) then return end
     local s
     if unitToken and unitToken:match("^boss") then
         if not (saved.profile.boss and saved.profile.boss.showAbsorbs == false) then
@@ -988,9 +928,7 @@ function mod.UF_AbsorbGlowApply(widget, unitToken)
         local em = s.absorbEdgeMode or "overlay"
         if em == "overlay" then
             local osm = s.overshieldMode
-            if osm == nil then
-                osm = (s.showOvershield == false) and "never" or "always"
-            end
+            if osm == nil then osm = (s.showOvershield == false) and "never" or "always" end
             ge = (osm == "fromleft") and 2 or 1
             anc = (osm == "never") and 0 or ge
         elseif em == "overlayReverse" or em == "overlayReverseFull" then
@@ -1015,9 +953,7 @@ function mod.UF_AbsorbGlowApply(widget, unitToken)
     if g.ge ~= ge or g.anc ~= anc or g.rev ~= rev then
         g.ge, g.anc, g.rev = ge, anc, rev
         mod.UF_AbsorbGlowAnchor(absorbBar)
-        if ge == 3 then
-            g.edgeHost:SetAlpha(1)
-        end
+        if ge == 3 then g.edgeHost:SetAlpha(1) end
         if ge <= 2 then
             g.bfHost:Show()
         else
@@ -1034,9 +970,7 @@ function mod.UF_AbsorbGlowApply(widget, unitToken)
         g.szH = nil
         changed = true
     end
-    if not changed then
-        return
-    end
+    if not changed then return end
     absorbBar._glowOn = true
     g.host:Show()
     mod.Engine.SetChannelOn(widget, "absglow", ge ~= 3 and g.calc ~= nil)
@@ -1047,12 +981,8 @@ end
 
 -- Absorb / Heal Absorb strip-bar position resolvers + layout (mirrors Raid
 -- Frames). On ns so the options-panel preview can reuse the layout.
-mod.UF_GetAbsorbBarPos = function(cfg)
-    return (cfg and cfg.absorbBarPosition) or "none"
-end
-mod.UF_GetHealAbsorbBarPos = function(cfg)
-    return (cfg and cfg.healAbsorbBarPosition) or "none"
-end
+mod.UF_GetAbsorbBarPos = function(cfg) return (cfg and cfg.absorbBarPosition) or "none" end
+mod.UF_GetHealAbsorbBarPos = function(cfg) return (cfg and cfg.healAbsorbBarPosition) or "none" end
 
 -- Anchor/orient a strip bar (Absorb Bar or Heal Absorb Bar). "above*" sit on top
 -- of the health bar; "top*"/"bottom*" sit inside at the matching edge, drawn just
@@ -1060,10 +990,16 @@ end
 -- against the Absorb Bar, derived from its POSITION (not its live visibility, so
 -- they never shift). "*Right" fills from the right edge. `absorbLevel` is the
 -- absorb-overlay frame level (inside strips render at +1).
-mod.UF_ApplyStripBarLayout = function(stripeBar, health, position, height, absorbLevel, absorbPlace, absorbHeight)
-    if not stripeBar or not health then
-        return
-    end
+mod.UF_ApplyStripBarLayout = function(
+    stripeBar,
+    health,
+    position,
+    height,
+    absorbLevel,
+    absorbPlace,
+    absorbHeight
+)
+    if not stripeBar or not health then return end
     stripeBar:ClearAllPoints()
     stripeBar:SetHeight(Pix.Scale(height or 4))
     local insideLevel = (absorbLevel or (health:GetFrameLevel() + 1)) + 1
@@ -1092,9 +1028,7 @@ mod.UF_ApplyStripBarLayout = function(stripeBar, health, position, height, absor
             return
         end
         local yOff = 0
-        if absorbPlace == "topRight" or absorbPlace == "topLeft" then
-            yOff = -Pix.Scale(absorbHeight or 4)
-        end
+        if absorbPlace == "topRight" or absorbPlace == "topLeft" then yOff = -Pix.Scale(absorbHeight or 4) end
         stripeBar:SetReverseFill(absorbPlace ~= "aboveLeft" and absorbPlace ~= "topLeft")
         stripeBar:SetPoint("TOPLEFT", health, "TOPLEFT", 0, yOff)
         stripeBar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, yOff)
@@ -1138,9 +1072,7 @@ do
                     if (nowTime - (frame._absPaintAt or 0)) > 0.45 then
                         local health = frame.HealthPrediction
                         local shade = health and health.Override
-                        if shade then
-                            shade(frame, "CUI_AbsorbBelt", frame._cuiUnit)
-                        end
+                        if shade then shade(frame, "CUI_AbsorbBelt", frame._cuiUnit) end
                     end
                 end
                 if not any then
@@ -1165,9 +1097,7 @@ do
 end
 
 local function CreateAbsorbBar(widget, unitToken, prefs)
-    if not widget.Health then
-        return
-    end
+    if not widget.Health then return end
 
     local healthBar = widget.Health
 
@@ -1287,9 +1217,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
     -- fill texture by the first paint, so it tracks the secret heal-absorb amount.
     local haBg = healAbsorbFill:CreateTexture(nil, "ARTWORK", nil, 1)
     haBg:SetColorTexture(0, 0, 0, 0.15)
-    if absorbMask then
-        haBg:AddMaskTexture(absorbMask)
-    end
+    if absorbMask then haBg:AddMaskTexture(absorbMask) end
     haBg:Hide()
     healAbsorbFill._bg = haBg
 
@@ -1331,9 +1259,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
 
     -- Raise the power bar above the absorb overlay.
     local power = widget and widget.Power
-    if power then
-        power:SetFrameLevel(math.max(power:GetFrameLevel(), healthBar:GetFrameLevel() + 2))
-    end
+    if power then power:SetFrameLevel(math.max(power:GetFrameLevel(), healthBar:GetFrameLevel() + 2)) end
 
     backFill:HookScript("OnHide", function()
         frontBar:Hide()
@@ -1344,9 +1270,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
     -- "(anonymous) :5228" row); assigned into HealthPrediction below.
     local UF_AbsorbOverride
     UF_AbsorbOverride = function(self, evt, updUnit)
-        if self._cuiUnit ~= updUnit then
-            return
-        end
+        if self._cuiUnit ~= updUnit then return end
 
         -- Arm on the dedicated absorb events (plainly observable even
         -- while values are secret). Value-only health chatter is not
@@ -1410,14 +1334,10 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
 
         local element = self.HealthPrediction
         local absorbBar = element.damageAbsorb
-        if not absorbBar then
-            return
-        end
+        if not absorbBar then return end
         local fillW = absorbBar._forward
         local health = absorbBar._hpBar
-        if not health then
-            return
-        end
+        if not health then return end
 
         -- Heal absorb renders independently of shield absorb: shield "none" hides
         -- only the shield segments, and the whole update is skipped only when BOTH
@@ -1443,18 +1363,10 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         local healOff = (((cfg and cfg.healAbsorbStyle) or "clean") == "none")
         if bossAbsorbOff or (shieldOff and healOff and not barOn and not healBarOn) then
             absorbBar:Hide()
-            if fillW then
-                fillW:Hide()
-            end
-            if healAbsorb then
-                healAbsorb:Hide()
-            end
-            if overBar then
-                overBar:Hide()
-            end
-            if healOverBar then
-                healOverBar:Hide()
-            end
+            if fillW then fillW:Hide() end
+            if healAbsorb then healAbsorb:Hide() end
+            if overBar then overBar:Hide() end
+            if healOverBar then healOverBar:Hide() end
             -- Nothing draws a shield here, but the arm/disarm derivation still
             -- runs (as below): an absorb event armed this frame above, and a
             -- frame that never disarms keeps the 0.5s belt repainting it for the
@@ -1467,9 +1379,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
                 or (a or 0) > 0
                 or (hgt or 0) > 0
             then
-                if not self._absActive then
-                    mod.UF_AbArm(self)
-                end
+                if not self._absActive then mod.UF_AbArm(self) end
             else
                 mod.UF_AbDisarm(self)
             end
@@ -1495,9 +1405,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             or (absorbAmt or 0) > 0
             or (haAmtD or 0) > 0
         then
-            if not self._absActive then
-                mod.UF_AbArm(self)
-            end
+            if not self._absActive then mod.UF_AbArm(self) end
         else
             mod.UF_AbDisarm(self)
         end
@@ -1603,9 +1511,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- showOvershield boolean). Joins the edge key: "fromleft"
         -- re-anchors the backfill in UpdateAbsorbBarReverseFill.
         local osMode = cfg and cfg.overshieldMode
-        if osMode == nil then
-            osMode = (cfg and cfg.showOvershield == false) and "never" or "always"
-        end
+        if osMode == nil then osMode = (cfg and cfg.showOvershield == false) and "never" or "always" end
         -- Component compares instead of a concatenated key: same change
         -- detection, zero string allocation on the per-event path. Fields
         -- start nil, so the first update always anchors.
@@ -1626,9 +1532,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- "none" hides them and falls through to the independent heal absorb.
         if shieldOff then
             absorbBar:Hide()
-            if fillW then
-                fillW:Hide()
-            end
+            if fillW then fillW:Hide() end
         else
             -- Re-apply the absorb style only when the setting changes, never on
             -- every health event: SetStatusBarTexture per update flashes the
@@ -1647,9 +1551,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             -- by the anchor pass). Right/left edge modes draw the WHOLE
             -- absorb through ab (fw hidden below) and are untouched.
             local abValue = absorbAmt
-            if osMode == "never" and absorbStyle == "overlay" then
-                abValue = 0
-            end
+            if osMode == "never" and absorbStyle == "overlay" then abValue = 0 end
 
             -- Both bars get the raw absorb value and the normal maxHealth; the clip
             -- frames do "min(absorb,curHealth)" and "max(0,absorb-curHealth)"
@@ -1665,14 +1567,10 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
                 -- Edge modes and Overlay Reverse: the backfill shows the
                 -- absorb, so the forward bar is not needed (Overlay Reverse
                 -- (Full) draws its excess through it).
-                if absorbStyle ~= "overlay" and absorbStyle ~= "overlayReverseFull" then
-                    fillW:Hide()
-                end
+                if absorbStyle ~= "overlay" and absorbStyle ~= "overlayReverseFull" then fillW:Hide() end
             end
             -- Blizzard Glow Line (opt-in; see ns.UF_AbsorbGlowApply).
-            if absorbBar._glowOn then
-                mod.UF_PaintAbsorbGlow(absorbBar, updUnit, absorbAmt, hpH)
-            end
+            if absorbBar._glowOn then mod.UF_PaintAbsorbGlow(absorbBar, updUnit, absorbAmt, hpH) end
         end
 
         -- Heal absorb: overlay eating into filled health. The value can be a secret
@@ -1700,9 +1598,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
                     healAbsorb._hsR, healAbsorb._hsG, healAbsorb._hsB = hcR, hcG, hcB
                     ApplyHealAbsorbStyle(healAbsorb, haStyle, cfg)
                     -- After the retexture, re-seat the backing's fill anchor.
-                    if healthBg then
-                        healthBg._fillAnchored = nil
-                    end
+                    if healthBg then healthBg._fillAnchored = nil end
                 end
                 -- Sized with the health bar, size-gated like the shield bars.
                 if healAbsorb._szW ~= hpW or healAbsorb._szH ~= hpH then

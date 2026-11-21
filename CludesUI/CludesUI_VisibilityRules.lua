@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_VisibilityRules.lua
 --  Visibility dropdown values, option lanes and the runtime checks modules
@@ -66,8 +64,7 @@ CUI.VIS_VALUES_CDM = {
     in_party = "In Party",
     solo = "Solo",
 }
-CUI.VIS_ORDER_CDM =
-    { "never", "always", "in_combat", "out_of_combat", "---", "in_raid", "in_party", "solo" }
+CUI.VIS_ORDER_CDM = { "never", "always", "in_combat", "out_of_combat", "---", "in_raid", "in_party", "solo" }
 
 -- Each class's stance bar pages, as macro conditions: the action bars' paging
 -- states and the CDM's Stance Bar hide. A form pages only where the client
@@ -96,9 +93,7 @@ if CUI.IS_FOREVER == true then
     local states = CUI.CLASS_PAGING_STATES
     table.insert(states.WARRIOR, { id = "berserker", macro = "[bonusbar:3]", label = "Berserker Stance" })
     for idx = #states.DRUID, 1, -1 do
-        if states.DRUID[idx].id == "moonkin" then
-            table.remove(states.DRUID, idx)
-        end
+        if states.DRUID[idx].id == "moonkin" then table.remove(states.DRUID, idx) end
     end
 end
 
@@ -185,9 +180,7 @@ local DRUID_MOUNT_FORM_SPELLS = {
 -- for this axis, which is why the difficulty test alone is not enough.
 function CUI.IsInInstancedContent()
     local _, iType = GetInstanceInfo()
-    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
-        return false
-    end
+    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then return false end
     return iType == "party" or iType == "raid" or iType == "scenario" or iType == "arena" or iType == "pvp"
 end
 
@@ -195,9 +188,7 @@ end
 -- scenarios, so a Dungeons lane leaves them alone where the Instances lane does not.
 function CUI.IsInDungeon()
     local _, iType = GetInstanceInfo()
-    if iType ~= "party" then
-        return false
-    end
+    if iType ~= "party" then return false end
     return not (C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap())
 end
 
@@ -215,32 +206,24 @@ end
 -- `opts` is the settings table containing the vis option booleans.
 function CUI.IsPlayerMountedLike()
     -- Fast path for regular mounts.
-    if IsMounted and IsMounted() then
-        return true
-    end
+    if IsMounted and IsMounted() then return true end
 
     -- Only druids have mount-like shapeshift forms.
-    if _playerClass ~= "DRUID" then
-        return false
-    end
+    if _playerClass ~= "DRUID" then return false end
 
     -- Engine form category first: ground Travel and Mount Form report 3, Aquatic 4, Flight 27.
     -- Spell-agnostic, so it keeps working when the form aura's spell ID drifts across patches
     -- (Flight Form stopped matching the aura list below); no collision with combat forms (Cat 1, Bear 5, Moonkin 31).
     if GetShapeshiftFormID then
         local formID = GetShapeshiftFormID()
-        if formID == 3 or formID == 4 or formID == 27 then
-            return true
-        end
+        if formID == 3 or formID == 4 or formID == 27 then return true end
     end
 
     -- Aura fallback: the Travel Form buff is present on the player
     -- whenever the druid is shifted, regardless of ground/swim/fly subform.
     if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
         for idx = 1, #DRUID_MOUNT_FORM_SPELLS do
-            if C_UnitAuras.GetPlayerAuraBySpellID(DRUID_MOUNT_FORM_SPELLS[idx]) then
-                return true
-            end
+            if C_UnitAuras.GetPlayerAuraBySpellID(DRUID_MOUNT_FORM_SPELLS[idx]) then return true end
         end
     end
 
@@ -269,12 +252,8 @@ end
 -- (see BuildVisibilityString in CUI_ActionBars_VisibilityDrivers.lua). Such callers pass true and
 -- keep their own narrower mount check for the shapeshift forms [mounted] cannot see.
 function CUI.CheckVisibilityOptionsNonMacro(options, skipMountAxis)
-    if not options then
-        return false
-    end
-    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then
-        return false
-    end
+    if not options then return false end
+    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then return false end
 
     -- Any match: only the SHOW lanes are disjuncts, owned by EvalVisibilityExtended (or
     -- the secure driver build path). The HIDE lanes stay vetoes in every match mode, so
@@ -288,32 +267,22 @@ function CUI.CheckVisibilityOptionsNonMacro(options, skipMountAxis)
     -- chain to match if this ever gains a caller; do not narrow this one.
     if options.visibilityMatch == "any" then
         local fired, combatFlip = CUI.VisOptionHideVeto(options, "nonMacro", nil, skipMountAxis)
-        if not fired then
-            return false
-        end
+        if not fired then return false end
         return combatFlip and "mountaxis" or true
     end
 
     -- Instances axis: Only Show in Instances / Hide in Instances share one probe.
     if options.visOnlyInstances or options.visHideInstances then
         local inInstance = CUI.IsInInstancedContent()
-        if options.visOnlyInstances and not inInstance then
-            return true
-        end
-        if options.visHideInstances and inInstance then
-            return true
-        end
+        if options.visOnlyInstances and not inInstance then return true end
+        if options.visHideInstances and inInstance then return true end
     end
 
     -- Dungeons axis: Only Show in Dungeons / Hide in Dungeons share one probe.
     if options.visOnlyDungeons or options.visHideDungeons then
         local inDungeon = CUI.IsInDungeon()
-        if options.visOnlyDungeons and not inDungeon then
-            return true
-        end
-        if options.visHideDungeons and inDungeon then
-            return true
-        end
+        if options.visOnlyDungeons and not inDungeon then return true end
+        if options.visHideDungeons and inDungeon then return true end
     end
 
     -- Hide in Housing
@@ -333,18 +302,14 @@ function CUI.CheckVisibilityOptionsNonMacro(options, skipMountAxis)
     if not skipMountAxis then
         -- Hide when Mounted (includes druid travel/flight/aquatic forms)
         if options.visHideMounted then
-            if CUI.IsPlayerMountedLike() then
-                return true
-            end
+            if CUI.IsPlayerMountedLike() then return true end
         end
 
         -- Only Show when Mounted (inverse; druid mount-like forms count as mounted
         -- here too -- secure action bars carry a [nomounted] clause instead, which
         -- cannot see forms, see BuildVisibilityString)
         if options.visOnlyMounted then
-            if not (CUI.IsPlayerMountedLike()) then
-                return true
-            end
+            if not (CUI.IsPlayerMountedLike()) then return true end
         end
     end
 
@@ -355,37 +320,25 @@ function CUI.CheckVisibilityOptionsNonMacro(options, skipMountAxis)
     -- the truthy marker "mountaxis" so a secure-driver caller can bake a combat escape
     -- hatch into what it writes (a bare "hide" cannot re-evaluate once combat starts).
     if options.visHideDragonriding then
-        if CUI.IsPlayerSkyriding() then
-            return "mountaxis"
-        end
+        if CUI.IsPlayerSkyriding() then return "mountaxis" end
     end
 
     if options.visOnlySkyriding then
-        if not (CUI.IsPlayerSkyriding()) then
-            return "mountaxis"
-        end
+        if not (CUI.IsPlayerSkyriding()) then return "mountaxis" end
     end
 
     -- Resting axis: Only Show while Resting / Hide while Resting share one probe.
     if options.visOnlyResting or options.visHideResting then
         local resting = IsResting() and true or false
-        if options.visOnlyResting and not resting then
-            return true
-        end
-        if options.visHideResting and resting then
-            return true
-        end
+        if options.visOnlyResting and not resting then return true end
+        if options.visHideResting and resting then return true end
     end
 
     -- Vehicle axis: Only Show in Vehicle / Hide in Vehicle share one probe.
     if options.visOnlyVehicle or options.visHideVehicle then
         local inVehicle = UnitInVehicle("player") and true or false
-        if options.visOnlyVehicle and not inVehicle then
-            return true
-        end
-        if options.visHideVehicle and inVehicle then
-            return true
-        end
+        if options.visOnlyVehicle and not inVehicle then return true end
+        if options.visHideVehicle and inVehicle then return true end
     end
 
     -- Party Mode axis: Only Show during Party Mode / Hide during Party Mode.
@@ -397,61 +350,41 @@ function CUI.CheckVisibilityOptionsNonMacro(options, skipMountAxis)
     -- Party Mode" bar back on screen the moment combat starts.
     if options.visOnlyPartyMode or options.visHidePartyMode then
         local party = CUI.IsPartyModeActive()
-        if options.visOnlyPartyMode and not party then
-            return true
-        end
-        if options.visHidePartyMode and party then
-            return true
-        end
+        if options.visOnlyPartyMode and not party then return true end
+        if options.visHidePartyMode and party then return true end
     end
 
     return false
 end
 
 function CUI.CheckVisibilityOptions(options)
-    if not options then
-        return false
-    end
+    if not options then return false end
     -- An override replaces the whole Visibility configuration, option lanes included:
     -- "Always" set on an override means always, whatever the shared value hides.
-    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then
-        return false
-    end
+    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then return false end
 
     -- Any match: only the SHOW lanes are disjuncts; the HIDE lanes veto here as they do
     -- under All (CludesUI.VisOptionHideVeto), which is what makes "Hide when X" mean
     -- hide for every Lua consumer regardless of the match mode.
-    if options.visibilityMatch == "any" then
-        return CUI.VisOptionHideVeto(options) and true or false
-    end
+    if options.visibilityMatch == "any" then return CUI.VisOptionHideVeto(options) and true or false end
 
     -- Instances / housing / mounted (shared with secure-frame fast path).
-    if CUI.CheckVisibilityOptionsNonMacro(options) then
-        return true
-    end
+    if CUI.CheckVisibilityOptionsNonMacro(options) then return true end
 
     -- Target axis
     if options.visHideNoTarget then
-        if not UnitExists("target") then
-            return true
-        end
+        if not UnitExists("target") then return true end
     end
     if options.visHideWithTarget then
-        if UnitExists("target") then
-            return true
-        end
+        if UnitExists("target") then return true end
     end
 
     -- Enemy-target axis
     if options.visHideNoEnemy then
-        if not (UnitExists("target") and UnitCanAttack("player", "target")) then
-            return true
-        end
+        if not (UnitExists("target") and UnitCanAttack("player", "target")) then return true end
     end
     if options.visHideWithEnemy then
-        if UnitExists("target") and UnitCanAttack("player", "target") then
-            return true
-        end
+        if UnitExists("target") and UnitCanAttack("player", "target") then return true end
     end
 
     return false
@@ -465,35 +398,25 @@ end
 -- Friends, Chat, Damage Meters, Quest Tracker) are covered by RequestVisibilityUpdate.
 -- An edge that lands in combat re-fires once on PLAYER_REGEN_ENABLED, because secure
 -- consumers (Action Bars) cannot rewrite their drivers until then.
-function CUI.IsPartyModeActive()
-    return (CludesUIDB and CludesUIDB.partyMode) and true or false
-end
+function CUI.IsPartyModeActive() return (CludesUIDB and CludesUIDB.partyMode) and true or false end
 do
     local callbacks = {}
     local pending = false
     function CUI.RegisterVisEdge(func)
-        if type(func) == "function" then
-            callbacks[#callbacks + 1] = func
-        end
+        if type(func) == "function" then callbacks[#callbacks + 1] = func end
     end
     local function Run()
         pending = false
-        if CUI.RequestVisibilityUpdate then
-            CUI.RequestVisibilityUpdate()
-        end
+        if CUI.RequestVisibilityUpdate then CUI.RequestVisibilityUpdate() end
         for idx = 1, #callbacks do
             callbacks[idx]()
         end
     end
     function CUI.FireVisEdge()
-        if InCombatLockdown() then
-            CUI.CombatQueue.Defer("FireVisEdge", CUI.FireVisEdge)
-        end
+        if InCombatLockdown() then CUI.CombatQueue.Defer("FireVisEdge", CUI.FireVisEdge) end
         -- Coalesced and deferred one frame: a clean execution context, and a
         -- toggle that stops and restarts in one frame costs one pass.
-        if pending then
-            return
-        end
+        if pending then return end
         pending = true
         C_Timer.After(0, Run)
     end
@@ -509,17 +432,13 @@ CUI.VIS_OPT_AXES = {
         show = "visOnlyInstances",
         hide = "visHideInstances",
         luaOnly = true,
-        probe = function()
-            return CUI.IsInInstancedContent()
-        end,
+        probe = function() return CUI.IsInInstancedContent() end,
     },
     {
         show = "visOnlyDungeons",
         hide = "visHideDungeons",
         luaOnly = true,
-        probe = function()
-            return CUI.IsInDungeon()
-        end,
+        probe = function() return CUI.IsInDungeon() end,
     },
     {
         show = "visOnlyHousing",
@@ -534,35 +453,27 @@ CUI.VIS_OPT_AXES = {
         show = "visOnlyMounted",
         hide = "visHideMounted",
         combatFlip = true,
-        probe = function()
-            return CUI.IsPlayerMountedLike()
-        end,
+        probe = function() return CUI.IsPlayerMountedLike() end,
     },
     {
         show = "visOnlySkyriding",
         hide = "visHideDragonriding",
         luaOnly = true,
         combatFlip = true,
-        probe = function()
-            return CUI.IsPlayerSkyriding()
-        end,
+        probe = function() return CUI.IsPlayerSkyriding() end,
     },
     {
         show = "visOnlyResting",
         hide = "visHideResting",
         luaOnly = true,
-        probe = function()
-            return IsResting() and true or false
-        end,
+        probe = function() return IsResting() and true or false end,
     },
     {
         show = "visOnlyVehicle",
         hide = "visHideVehicle",
         luaOnly = true,
         combatFlip = true,
-        probe = function()
-            return UnitInVehicle("player") and true or false
-        end,
+        probe = function() return UnitInVehicle("player") and true or false end,
     },
     -- Not combatFlip, deliberately: see the Party Mode axis in
     -- CheckVisibilityOptionsNonMacro -- a secure bar holds its pre-combat state
@@ -571,9 +482,7 @@ CUI.VIS_OPT_AXES = {
         show = "visOnlyPartyMode",
         hide = "visHidePartyMode",
         luaOnly = true,
-        probe = function()
-            return CUI.IsPartyModeActive()
-        end,
+        probe = function() return CUI.IsPartyModeActive() end,
     },
     -- needsEdge: [exists]/[harm] re-evaluate on soft-target changes that
     -- UnitExists("target") ignores; a consumer without those edges resolves the axis in Lua.
@@ -581,9 +490,7 @@ CUI.VIS_OPT_AXES = {
         show = "visHideNoTarget",
         hide = "visHideWithTarget",
         needsEdge = "softTarget",
-        probe = function()
-            return UnitExists("target") and true or false
-        end,
+        probe = function() return UnitExists("target") and true or false end,
     },
     {
         show = "visHideNoEnemy",
@@ -599,9 +506,7 @@ CUI.VIS_OPT_AXES = {
 -- `edges` is the set of event edges the consumer actually watches, e.g.
 -- { softTarget = true } for Action Bars, which owns that machinery.
 function CUI.VisAxisIsLuaOnly(ax, edges)
-    if ax.luaOnly then
-        return true
-    end
+    if ax.luaOnly then return true end
     return ax.needsEdge ~= nil and not (edges and edges[ax.needsEdge])
 end
 
@@ -614,12 +519,8 @@ end
 -- Second return: the firing axis is combatFlip, so a secure-driver caller must bake a
 -- combat escape hatch instead of writing a bare "hide".
 function CUI.VisOptionHideVeto(options, filter, edges, skipMount)
-    if not options then
-        return false
-    end
-    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then
-        return false
-    end
+    if not options then return false end
+    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then return false end
     local axes = CUI.VIS_OPT_AXES
     for idx = 1, #axes do
         local ax = axes[idx]
@@ -630,9 +531,7 @@ function CUI.VisOptionHideVeto(options, filter, edges, skipMount)
             local luaOnly = CUI.VisAxisIsLuaOnly(ax, edges)
             skip = (filter == "luaOnly" and not luaOnly) or (filter == "driver" and luaOnly)
         end
-        if skipMount and ax.hide == "visHideMounted" then
-            skip = true
-        end
+        if skipMount and ax.hide == "visHideMounted" then skip = true end
         if not skip and options[ax.hide] and not options[ax.show] and ax.probe() then
             return true, ax.combatFlip or false
         end
@@ -646,12 +545,8 @@ end
 -- SHOW lanes only: a Hide lane is a veto (VisOptionHideVeto), never a disjunct.
 function CUI.TallyVisibilityOptionAxes(options, filter, edges)
     local constrained, passed = 0, 0
-    if not options then
-        return constrained, passed
-    end
-    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then
-        return constrained, passed
-    end
+    if not options then return constrained, passed end
+    if CUI.VisOverrideValue and CUI.VisOverrideValue(options) then return constrained, passed end
     local axes = CUI.VIS_OPT_AXES
     for idx = 1, #axes do
         local ax = axes[idx]
@@ -663,9 +558,7 @@ function CUI.TallyVisibilityOptionAxes(options, filter, edges)
             -- match, so a hand-edited store cannot lock an Any selection to hidden.
             if options[ax.show] and not options[ax.hide] then
                 constrained = constrained + 1
-                if ax.probe() then
-                    passed = passed + 1
-                end
+                if ax.probe() then passed = passed + 1 end
             end
         end
     end
@@ -675,27 +568,13 @@ end
 -- Runtime check: returns true if the element should be SHOWN based on the visibility mode
 -- dropdown value. `mode` is the dropdown string; `state` is a table: { inCombat, inRaid, inParty }.
 function CUI.CheckVisibilityMode(mode, status)
-    if mode == "disabled" then
-        return false
-    end
-    if mode == "never" then
-        return false
-    end
-    if mode == "in_combat" then
-        return status.inCombat
-    end
-    if mode == "out_of_combat" then
-        return not status.inCombat
-    end
-    if mode == "in_raid" then
-        return status.inRaid
-    end
-    if mode == "in_party" then
-        return status.inParty
-    end
-    if mode == "solo" then
-        return not status.inRaid and not status.inParty
-    end
+    if mode == "disabled" then return false end
+    if mode == "never" then return false end
+    if mode == "in_combat" then return status.inCombat end
+    if mode == "out_of_combat" then return not status.inCombat end
+    if mode == "in_raid" then return status.inRaid end
+    if mode == "in_party" then return status.inParty end
+    if mode == "solo" then return not status.inRaid and not status.inParty end
     if mode == "show_dragonriding" then
         -- Mirrors the secure-macro [advflyable,flying] driver: show only while airborne and
         -- glide-capable (skyriding mounts and flight forms alike). The shared predicate lives in

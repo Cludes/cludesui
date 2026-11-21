@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MapReveal.lua  (WoW Forever only)
 --  Reveal Unexplored Areas: draws the world map overlays the player has not
@@ -49,14 +45,10 @@ local function Refresh()
     local payload = module.MapRevealData
     local mapID = WorldMapFrame:GetMapID()
     local overlays = payload and mapID and payload[C_Map.GetMapArtID(mapID)]
-    if not overlays then
-        return
-    end
+    if not overlays then return end
     local layers = C_Map.GetMapArtLayers(mapID)
     local art = layers and layers[1]
-    if not art then
-        return
-    end
+    if not art then return end
     local tw, th = art.tileWidth, art.tileHeight
 
     wipe(explored)
@@ -64,9 +56,7 @@ local function Refresh()
     if known then
         for index = 1, #known do
             local ident = known[index].fileDataIDs[1]
-            if ident then
-                explored[ident] = true
-            end
+            if ident then explored[ident] = true end
         end
     end
 
@@ -114,15 +104,9 @@ local function Build()
     provider.OnMapChanged = Refresh
     provider.RefreshAllData = Refresh
     provider.RemoveAllData = Clear
-    provider.OnShow = function()
-        layer:RegisterEvent("MAP_EXPLORATION_UPDATED")
-    end
-    provider.OnHide = function()
-        layer:UnregisterEvent("MAP_EXPLORATION_UPDATED")
-    end
-    provider.OnGlobalAlphaChanged = function(self)
-        layer:SetAlpha(self:GetMap():GetGlobalAlpha())
-    end
+    provider.OnShow = function() layer:RegisterEvent("MAP_EXPLORATION_UPDATED") end
+    provider.OnHide = function() layer:UnregisterEvent("MAP_EXPLORATION_UPDATED") end
+    provider.OnGlobalAlphaChanged = function(self) layer:SetAlpha(self:GetMap():GetGlobalAlpha()) end
 end
 
 -- The world map loads on demand, so building may wait for it.
@@ -133,9 +117,7 @@ local function Apply()
             layer:UnregisterEvent("MAP_EXPLORATION_UPDATED")
             added = false
         end
-        if waiter then
-            waiter:UnregisterEvent("ADDON_LOADED")
-        end
+        if waiter then waiter:UnregisterEvent("ADDON_LOADED") end
         return
     end
     if not provider then
@@ -143,9 +125,7 @@ local function Apply()
             if not waiter then
                 waiter = CreateFrame("Frame")
                 waiter:SetScript("OnEvent", function(self, _, name)
-                    if name ~= "Blizzard_WorldMap" then
-                        return
-                    end
+                    if name ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
                     Apply()
                 end)
@@ -159,13 +139,9 @@ local function Apply()
         WorldMapFrame:AddDataProvider(provider)
         added = true
         provider:OnGlobalAlphaChanged()
-        if WorldMapFrame:IsShown() then
-            provider:OnShow()
-        end
+        if WorldMapFrame:IsShown() then provider:OnShow() end
     end
-    if WorldMapFrame:IsShown() then
-        Refresh()
-    end
+    if WorldMapFrame:IsShown() then Refresh() end
 end
 
 -- Options-page entry points.

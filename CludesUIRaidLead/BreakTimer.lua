@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  BreakTimer.lua -- Raid Lead: a shared break countdown.
 --
@@ -19,26 +17,18 @@ function mod.BreakSettings()
     local profile = mod.RaidLeadDB()
     profile.breakTimer = profile.breakTimer or {}
     local cfg = profile.breakTimer
-    if cfg.enabled == nil then
-        cfg.enabled = true
-    end
-    if cfg.sound == nil then
-        cfg.sound = true
-    end
+    if cfg.enabled == nil then cfg.enabled = true end
+    if cfg.sound == nil then cfg.sound = true end
     return cfg
 end
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local bar, labelText, ticker
 local current -- { ends, total, from, warned }
 
 local function Build()
-    if bar then
-        return
-    end
+    if bar then return end
     bar = CreateFrame("StatusBar", "CludesUIRaidLeadBreak", UIParent)
     bar:SetSize(W, H)
     bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -53,9 +43,7 @@ local function Build()
 end
 
 function mod.ApplyBreakPosition()
-    if not bar or InCombatLockdown() then
-        return
-    end
+    if not bar or InCombatLockdown() then return end
     local p = mod.BreakSettings().pos
     bar:ClearAllPoints()
     if p then
@@ -71,29 +59,21 @@ local function Stop()
         ticker:Cancel()
         ticker = nil
     end
-    if bar then
-        bar:Hide()
-    end
+    if bar then bar:Hide() end
 end
 
 local function Update()
-    if not current then
-        return
-    end
+    if not current then return end
     local leftX = current.ends - GetTime()
     if leftX <= 0 then
         Stop()
         Say("the break is over.")
-        if mod.BreakSettings().sound then
-            PlaySound(SOUNDKIT.RAID_WARNING, "Master")
-        end
+        if mod.BreakSettings().sound then PlaySound(SOUNDKIT.RAID_WARNING, "Master") end
         return
     end
     if leftX <= 60 and not current.warned then
         current.warned = true
-        if current.total > 90 then
-            Say("one minute of break left.")
-        end
+        if current.total > 90 then Say("one minute of break left.") end
     end
     bar:SetValue(leftX)
     labelText:SetText(
@@ -106,9 +86,7 @@ end
 
 --- Shows a break of `seconds` (0 ends it). `from` is who started it.
 function mod.ReceiveBreak(seconds, from)
-    if not mod.BreakSettings().enabled then
-        return
-    end
+    if not mod.BreakSettings().enabled then return end
     seconds = math.floor(tonumber(seconds) or 0)
     if seconds <= 0 then
         if current then
@@ -122,9 +100,7 @@ function mod.ReceiveBreak(seconds, from)
     current = { ends = GetTime() + seconds, total = seconds, from = from }
     bar:SetMinMaxValues(0, seconds)
     bar:Show()
-    if ticker then
-        ticker:Cancel()
-    end
+    if ticker then ticker:Cancel() end
     ticker = C_Timer.NewTicker(0.5, Update)
     Update()
 end
@@ -140,18 +116,14 @@ function mod.StartBreak(minutes)
     end
     local seconds = math.floor(minutes * 60 + 0.5)
     -- In a group the message comes back to us too, which starts our own bar.
-    if not (mod.SendBreak and mod.SendBreak(seconds)) then
-        mod.ReceiveBreak(seconds, nil)
-    end
+    if not (mod.SendBreak and mod.SendBreak(seconds)) then mod.ReceiveBreak(seconds, nil) end
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
 eventFrame:SetScript("OnEvent", function()
-    if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
-        return
-    end
+    if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then return end
     Build()
     registered = true
     CludesUI:RegisterUnlockElements({
@@ -162,24 +134,14 @@ eventFrame:SetScript("OnEvent", function()
             order = 663,
             noAnchorTarget = true,
             noResize = true,
-            isHidden = function()
-                return not mod.BreakSettings().enabled
-            end,
-            getFrame = function()
-                return bar
-            end,
-            getSize = function()
-                return W, H
-            end,
+            isHidden = function() return not mod.BreakSettings().enabled end,
+            getFrame = function() return bar end,
+            getSize = function() return W, H end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 mod.BreakSettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
-            loadPos = function()
-                return mod.BreakSettings().pos
-            end,
-            clearPos = function()
-                mod.BreakSettings().pos = nil
-            end,
+            loadPos = function() return mod.BreakSettings().pos end,
+            clearPos = function() mod.BreakSettings().pos = nil end,
             applyPos = mod.ApplyBreakPosition,
         }),
     }, "CludesUIRaidLead")

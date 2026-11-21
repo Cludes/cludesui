@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_ForeverAntiClip.lua -- WoW FOREVER ONLY: the Anti-Clip Glow.
 --
@@ -34,9 +32,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, mod = ...
 -- WoW Forever (ns.CDM_ANTI_CLIP, CludesUICooldownManager.lua).
-if not mod.CDM_ANTI_CLIP then
-    return
-end
+if not mod.CDM_ANTI_CLIP then return end
 
 local GetTime = GetTime
 local UnitCastingInfo, UnitChannelInfo = UnitCastingInfo, UnitChannelInfo
@@ -59,20 +55,14 @@ local ev = mod.TakeShell()
 
 local function WakeBuffTicker()
     mod._btDirty = true
-    if mod.ArmBuffTicker then
-        mod.ArmBuffTicker()
-    end
+    if mod.ArmBuffTicker then mod.ArmBuffTicker() end
 end
 
 local function SpellName(spellRef)
     local num = nameList[spellRef]
-    if num then
-        return num
-    end
+    if num then return num end
     num = PlainString(C_Spell.GetSpellName(spellRef))
-    if num then
-        nameList[spellRef] = num
-    end
+    if num then nameList[spellRef] = num end
     return num
 end
 
@@ -80,14 +70,10 @@ end
 -- instant). Cached; dropped when spells, talents, gear or haste change.
 local function CastTime(spellRef)
     local c = castTimes[spellRef]
-    if c then
-        return c
-    end
+    if c then return c end
     local details = C_Spell.GetSpellInfo(spellRef)
     local ms = details and details.castTime
-    if type(ms) ~= "number" or issecretvalue(ms) then
-        return 0
-    end
+    if type(ms) ~= "number" or issecretvalue(ms) then return 0 end
     c = ms > 0 and ms / 1000 or 0
     castTimes[spellRef] = c
     return c
@@ -129,9 +115,7 @@ end
 -- also returns the moment an idle wait would turn it on.
 local function Evaluate(widget, nowTime)
     local exp, rate = ReadExpiration(widget)
-    if not exp then
-        return false
-    end
+    if not exp then return false end
     -- The tracked spell is the one you cast (an aura's own id can differ: retail
     -- Immolate casts 348 and applies 157736); the aura's id stands in until resolved.
     local fc = mod._ecmeFC[widget]
@@ -141,31 +125,19 @@ local function Evaluate(widget, nowTime)
         -- is unchecked here and may be a secret table (no index on one).
         local skinData = widget.auraDataCached
         spellRef = nil
-        if not issecretvalue(skinData) and skinData then
-            spellRef = skinData.spellId
-        end
+        if not issecretvalue(skinData) and skinData then spellRef = skinData.spellId end
     end
     local plain = type(spellRef) == "number" and not issecretvalue(spellRef)
     -- Casting the spell itself refreshes the aura: nothing to queue.
-    if castName and plain and castName == SpellName(spellRef) then
-        return false
-    end
+    if castName and plain and castName == SpellName(spellRef) then return false end
     local c = plain and CastTime(spellRef) or 0
     local free = nowTime
-    if castEnd > free then
-        free = castEnd
-    end
-    if gcdEnd > free then
-        free = gcdEnd
-    end
-    if (exp - nowTime) / rate <= (free - nowTime) + c then
-        return true
-    end
+    if castEnd > free then free = castEnd end
+    if gcdEnd > free then free = gcdEnd end
+    if (exp - nowTime) / rate <= (free - nowTime) + c then return true end
     -- Free from `free` on, it turns on once the aura's time left fits the cast.
     local t = exp - c * rate
-    if t < free then
-        t = free
-    end
+    if t < free then t = free end
     return false, t
 end
 
@@ -173,9 +145,7 @@ local Probe
 
 -- A wake already superseded by an earlier one that ran stays quiet.
 local function WakeDue()
-    if GetTime() + 0.01 < nextWake then
-        return
-    end
+    if GetTime() + 0.01 < nextWake then return end
     nextWake = HUGE
     Probe()
 end
@@ -195,27 +165,19 @@ Probe = function()
     for widget, was in pairs(status) do
         if widget:IsShown() then
             local on, t = Evaluate(widget, nowTime)
-            if on ~= was then
-                flipped = true
-            end
-            if t then
-                Schedule(t, nowTime)
-            end
+            if on ~= was then flipped = true end
+            if t then Schedule(t, nowTime) end
         else
             status[widget] = nil
         end
     end
-    if flipped then
-        WakeBuffTicker()
-    end
+    if flipped then WakeBuffTicker() end
 end
 
 -- An item's aura changed: re-check the icons drawn, or let the ticker draw one
 -- it has not drawn yet.
 local function OnAuraEdge(widget)
-    if not armed then
-        return
-    end
+    if not armed then return end
     if status[widget] == nil then
         WakeBuffTicker()
     else
@@ -226,9 +188,7 @@ end
 -- After every reanchor (icons joined or left the bars, an aura's first
 -- activation among them): let the ticker draw the icons it has not drawn yet.
 function mod.CDM_AntiClipPlaced()
-    if armed then
-        WakeBuffTicker()
-    end
+    if armed then WakeBuffTicker() end
 end
 
 -- The GCD a cast starts can land a moment after the cast's own event.
@@ -236,9 +196,7 @@ local function Reread()
     local wasCast, wasGcd = castEnd, gcdEnd
     ReadCast()
     ReadGCD()
-    if castEnd ~= wasCast or gcdEnd ~= wasGcd then
-        Probe()
-    end
+    if castEnd ~= wasCast or gcdEnd ~= wasGcd then Probe() end
 end
 
 local CAST_EVENTS = {
@@ -288,9 +246,7 @@ ev:SetScript("OnEvent", function(_, evt)
 end)
 
 local function SetArmed(wanted)
-    if wanted == armed then
-        return
-    end
+    if wanted == armed then return end
     armed = wanted
     if wanted then
         for index = 1, #CAST_EVENTS do
@@ -328,9 +284,7 @@ function mod.CDM_AntiClipSync()
     wantIcons = wanted
     wipe(status)
     if armed == (wantIcons or wantBars) then
-        if armed then
-            WakeBuffTicker()
-        end
+        if armed then WakeBuffTicker() end
     else
         SetArmed(wantIcons or wantBars)
     end
@@ -347,9 +301,7 @@ end
 -- the cast edges re-check and asks for a wake at the moment an idle wait would
 -- turn it on; the Tracking Bars tick needs none of that.
 function mod.CDM_AntiClip(widget, wake)
-    if not armed then
-        return false
-    end
+    if not armed then return false end
     local nowTime = GetTime()
     local on, t = Evaluate(widget, nowTime)
     if wake then
@@ -358,9 +310,7 @@ function mod.CDM_AntiClip(widget, wake)
             hooksecurefunc(widget, "CheckSetPandemicAlertTriggerTime", OnAuraEdge)
         end
         status[widget] = on
-        if t then
-            Schedule(t, nowTime)
-        end
+        if t then Schedule(t, nowTime) end
     end
     return on
 end

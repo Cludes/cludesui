@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI Action Bars - XP Bar
 --  The XP bar's own runtime: its frame art styles and profession flipbook
@@ -40,9 +38,7 @@ local XP_BAR_COLORS = {
 -- s.fillGradEnd, the defaults above until set). Direction nil = no gradient.
 function mod.XPBarGradient(cfg)
     local direction = cfg and cfg.fillGradient
-    if direction ~= "HORIZONTAL" and direction ~= "VERTICAL" then
-        direction = nil
-    end
+    if direction ~= "HORIZONTAL" and direction ~= "VERTICAL" then direction = nil end
     local a = (cfg and cfg.fillGradStart) or XP_BAR_COLORS.gradStart
     local b = (cfg and cfg.fillGradEnd) or XP_BAR_COLORS.gradEnd
     return direction, a.r or 1, a.g or 1, a.b or 1, a.a or 1, b.r or 1, b.g or 1, b.b or 1, b.a or 1
@@ -55,9 +51,7 @@ end
 local _xpGradA, _xpGradB = CreateColor(1, 1, 1, 1), CreateColor(1, 1, 1, 1)
 local function XPPaintGradient(barFrame, direction, sr, sg, scrollBar, sa, er, eg, eb, ea)
     local texture = barFrame:GetStatusBarTexture()
-    if not texture then
-        return
-    end
+    if not texture then return end
     local m = barFrame._xpGrad
     if
         m
@@ -130,19 +124,11 @@ mod._XPArtFit = {
 -- either orientation.
 function mod.XPArtFit(cfg)
     local art = cfg and cfg.xpArt
-    if not art then
-        return nil
-    end
-    if art == "forever" then
-        return CludesUI.ForeverBorderOK() and mod._XPArtFit.forever or nil
-    end
-    if (cfg.orientation or "HORIZONTAL") ~= "HORIZONTAL" then
-        return nil
-    end
+    if not art then return nil end
+    if art == "forever" then return CludesUI.ForeverBorderOK() and mod._XPArtFit.forever or nil end
+    if (cfg.orientation or "HORIZONTAL") ~= "HORIZONTAL" then return nil end
     local atlasName = mod._XPArtAtlas[art]
-    if not (atlasName and C_Texture.GetAtlasInfo(atlasName)) then
-        return nil
-    end
+    if not (atlasName and C_Texture.GetAtlasInfo(atlasName)) then return nil end
     return mod._XPArtFit[art], atlasName
 end
 
@@ -194,14 +180,10 @@ function mod._XPFrameSlice(overlayFrame, atlasName, fitWidth)
     local midU, band = (lineColor + restColor) / 2, du * 0.004
     local midValue = (textColor + bc) / 2
     local oh = overlayFrame:GetHeight()
-    if not oh or oh <= 0 then
-        oh = details.height or 20
-    end
+    if not oh or oh <= 0 then oh = details.height or 20 end
     local scale = (details.height and details.height > 0) and (oh / details.height) or 1
     local capW = capFrac * (details.width or 0) * scale
-    if capW <= 0 then
-        capW = oh
-    end
+    if capW <= 0 then capW = oh end
     local file = details.file or details.filename
     for _, t in pairs(cfg) do
         t:SetTexture(file)
@@ -418,9 +400,7 @@ function mod.ApplyXPFlipFill(widget, cfg)
             tbl.once:Stop()
             tbl.flip:SetAlpha(1)
             tbl.flip:Show()
-            if not tbl.loop:IsPlaying() then
-                tbl.loop:Play()
-            end
+            if not tbl.loop:IsPlaying() then tbl.loop:Play() end
         else
             -- Smart: a running pass carries on; static: the idle frame alone.
             tbl.loop:Stop()
@@ -439,9 +419,7 @@ end
 -- tile together; a gain during a pass lets it finish.
 function mod.PlayXPFlipOnce(widget)
     local tiles, num = widget._fvTiles, widget._fvTileN
-    if not (tiles and num) or tiles[1].once:IsPlaying() then
-        return
-    end
+    if not (tiles and num) or tiles[1].once:IsPlaying() then return end
     for index = 1, num do
         tiles[index].once:Play()
     end
@@ -469,9 +447,7 @@ local function ApplyXPForeverBorder(widget, barFrame, backdrop, rb)
     local e = CludesUI.FOREVER_BORDER.fill
     Pix.SetInside(barFrame, widget, e, e)
     Pix.SetInside(backdrop, widget, e, e)
-    if rb then
-        Pix.SetInside(rb, widget, e, e)
-    end
+    if rb then Pix.SetInside(rb, widget, e, e) end
 end
 
 -- The XP bar's art style. frame._xpArtOn names the style on the bar ("frame"
@@ -498,22 +474,14 @@ local function ApplyXPArt(widget, cfg)
         if not kindName then
             Pix.SetInside(barFrame, widget, 1, 1)
             Pix.SetInside(backdrop, widget, 1, 1)
-            if rb then
-                Pix.SetInside(rb, widget, 1, 1)
-            end
-            if line and not cfg.customBorder then
-                line:Show()
-            end
+            if rb then Pix.SetInside(rb, widget, 1, 1) end
+            if line and not cfg.customBorder then line:Show() end
         end
     end
-    if not kindName then
-        return
-    end
+    if not kindName then return end
     widget._xpArtOn = kindName
     -- The art replaces our 1px border.
-    if line then
-        line:Hide()
-    end
+    if line then line:Hide() end
     if kindName == "ring" then
         ApplyXPForeverBorder(widget, barFrame, backdrop, rb)
         return
@@ -700,9 +668,7 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, cfg)
     end
     -- An XP bar frame art style: the ticks sit inside its rails.
     local fitWidth = holderFrame._isXP and mod.XPArtFit(cfg)
-    if fitWidth then
-        e = e + fitWidth.tickInset * Pix.mult
-    end
+    if fitWidth then e = e + fitWidth.tickInset * Pix.mult end
     -- Length along the bar (the fill's) and across it, inside the border.
     local L = (isVertical and hgt or wid) - 2
     local C = (isVertical and wid or hgt) - 2 * e
@@ -724,7 +690,8 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, cfg)
         local solidFull = full + 2 * solidExt
         local solidC0 = c0 - solidExt
         local color = cfg.tick5Color
-        local r5, g5, b5 = color and color.r or 220 / 255, color and color.g or 167 / 255, color and color.b or 127 / 255
+        local r5, g5, b5 =
+            color and color.r or 220 / 255, color and color.g or 167 / 255, color and color.b or 127 / 255
         local a5 = color and color.a or 0.9
         color = cfg.tick10Color
         local r10, g10, b10 = color and color.r or 1, color and color.g or 1, color and color.b or 1
@@ -780,12 +747,8 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, cfg)
                     fontStr:SetTextColor(lr, lg, lb, 1)
                     fontStr:SetRotation(lrot)
                     local hh = fontStr:GetStringHeight()
-                    if not hh or hh <= 0 then
-                        hh = fontStr:GetLineHeight()
-                    end
-                    if not hh or hh <= 0 then
-                        hh = lsz
-                    end
+                    if not hh or hh <= 0 then hh = fontStr:GetLineHeight() end
+                    if not hh or hh <= 0 then hh = lsz end
                     hh = hh / 2
                     -- The line's centre along the bar (it spans pos to pos + one).
                     local mid = place + onePx / 2
@@ -856,7 +819,8 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, cfg)
         labelFS[index]:Hide()
     end
     -- Every mark is shown here; Smart Ticks then hides the passed ones.
-    owner._nTick, owner._nLbl, owner._smart, owner._anyHidden = tickCount, nLbl, cfg.smartTicks and true or nil, nil
+    owner._nTick, owner._nLbl, owner._smart, owner._anyHidden =
+        tickCount, nLbl, cfg.smartTicks and true or nil, nil
     mod.ApplyDataBarSmartTicks(holderFrame)
 end
 
@@ -865,13 +829,9 @@ end
 -- while Smart Ticks is off with every mark shown.
 function mod.ApplyDataBarSmartTicks(holderFrame)
     local owner = holderFrame._divHost
-    if not (owner and owner._nTick) then
-        return
-    end
+    if not (owner and owner._nTick) then return end
     local smart = owner._smart
-    if not smart and not owner._anyHidden then
-        return
-    end
+    if not smart and not owner._anyHidden then return end
     local barFrame = holderFrame._bar
     local _, maxv = barFrame:GetMinMaxValues()
     local curPct = (smart and maxv > 0) and (barFrame:GetValue() / maxv * 100) or -1
@@ -880,9 +840,7 @@ function mod.ApplyDataBarSmartTicks(holderFrame)
     for index = 1, owner._nTick do
         local t = tick[index]
         local on = t._pct >= curPct
-        if not on then
-            anyHidden = true
-        end
+        if not on then anyHidden = true end
         t:SetShown(on)
     end
     for index = 1, owner._nLbl do
@@ -899,12 +857,8 @@ end
 -- Forever's border.
 function CludesUI._GetXPBarStyle()
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return "cui"
-    end
-    if profile.useBlizzardDataBars then
-        return "default"
-    end
+    if not profile then return "cui" end
+    if profile.useBlizzardDataBars then return "default" end
     local cfg = profile.bars and profile.bars.XPBar
     return (cfg and cfg.xpArt) or "cui"
 end
@@ -915,30 +869,22 @@ end
 -- back after their events were dropped), so the caller can offer it.
 function CludesUI._SetXPBarStyle(look)
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return false
-    end
+    if not profile then return false end
     local wantBlizz = look == "default"
     local cfg = profile.bars and profile.bars.XPBar
-    if cfg and not wantBlizz then
-        cfg.xpArt = (look == "prof" or look == "forever") and look or nil
-    end
+    if cfg and not wantBlizz then cfg.xpArt = (look == "prof" or look == "forever") and look or nil end
     local reload = false
     if (profile.useBlizzardDataBars and true or false) ~= wantBlizz then
         reload = mod.SetUseBlizzardDataBars(wantBlizz)
     end
-    if not wantBlizz and dataBarFrames.XPBar then
-        ApplyDataBarLayout("XPBar")
-    end
+    if not wantBlizz and dataBarFrames.XPBar then ApplyDataBarLayout("XPBar") end
     return reload or (not wantBlizz and not dataBarFrames.XPBar)
 end
 
 -- Whether an art style exists on this client ("forever" = WoW Forever's
 -- border, on that client only).
 function CludesUI._XPBarArtAvailable(look)
-    if look == "forever" then
-        return CludesUI.ForeverBorderOK()
-    end
+    if look == "forever" then return CludesUI.ForeverBorderOK() end
     local atlasName = mod._XPArtAtlas[look]
     return atlasName ~= nil and C_Texture.GetAtlasInfo(atlasName) ~= nil
 end
@@ -951,12 +897,8 @@ end
 -- max level backstops the check so the bar can never show for a max-level character.
 function mod.XPBarAtMaxLevel()
     local level = UnitLevel("player") or 0
-    if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then
-        return true
-    end
-    if IsLevelAtEffectiveMaxLevel and IsLevelAtEffectiveMaxLevel(level) then
-        return true
-    end
+    if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() then return true end
+    if IsLevelAtEffectiveMaxLevel and IsLevelAtEffectiveMaxLevel(level) then return true end
     local maxLevel = (GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion())
         or (GetMaxPlayerLevel and GetMaxPlayerLevel())
     return (maxLevel and level >= maxLevel) or false
@@ -1148,22 +1090,16 @@ local XP_ITEM_CLOCK = { xpPerHour = true, levelingIn = true, timeLevel = true, t
 -- then the value itself when it is still drawn as it was (XPLegacyText).
 local function XPTextItems(val, cfg, result)
     wipe(result)
-    if type(val) ~= "string" or val == "none" then
-        return nil
-    end
+    if type(val) ~= "string" or val == "none" then return nil end
     if XP_ITEM_SOLO[val] then
         result[1] = val
         return "solo"
     end
     if val == "classic" then
-        if cfg.showLevel then
-            result[1] = "level"
-        end
+        if cfg.showLevel then result[1] = "level" end
         if cfg.showRawValues then
             result[#result + 1] = "curMax"
-            if cfg.showPercent then
-                result[#result + 1] = "pct"
-            end
+            if cfg.showPercent then result[#result + 1] = "pct" end
         else
             result[#result + 1] = "pct"
         end
@@ -1185,14 +1121,10 @@ local function XPTextItems(val, cfg, result)
                     break
                 end
             end
-            if not dup then
-                result[#result + 1] = ident
-            end
+            if not dup then result[#result + 1] = ident end
         end
     end
-    if result[1] then
-        return "top"
-    end
+    if result[1] then return "top" end
     return nil
 end
 mod.XPTextItems = XPTextItems
@@ -1201,9 +1133,7 @@ mod.XPTextItems = XPTextItems
 -- else on for the old Default text.
 local function XPTextRested(cfg, restedKey, legacy)
     local region = cfg[restedKey]
-    if region == nil then
-        return legacy and true or false
-    end
+    if region == nil then return legacy and true or false end
     return region and true or false
 end
 mod.XPTextRested = XPTextRested
@@ -1229,18 +1159,14 @@ local xpTextEv = mod.TakeShell()
 -- A number: in full below 10,000 (6,811), abbreviated from there (17.6K).
 local function FmtNum(num)
     num = floor(num)
-    if num < 10000 then
-        return BreakUpLargeNumbers(num)
-    end
+    if num < 10000 then return BreakUpLargeNumbers(num) end
     return mod.AbbreviateLargeNumbers(num)
 end
 
 -- A percentage: one decimal, a whole number without one (89.6%, 0%).
 local function FmtPct(val)
     local t = floor(val * 10 + 0.5)
-    if t % 10 == 0 then
-        return format("%d%%", t / 10)
-    end
+    if t % 10 == 0 then return format("%d%%", t / 10) end
     return format("%.1f%%", t / 10)
 end
 
@@ -1251,29 +1177,21 @@ local FmtDur = CludesUI.FormatDuration
 -- the store, when missing). nil while the player's GUID cannot be read.
 local function XPCharEntry(create)
     local saved = CludesUIDB
-    if type(saved) ~= "table" then
-        return nil
-    end
+    if type(saved) ~= "table" then return nil end
     if not xpPlayerGUID then
         local g = UnitGUID("player")
-        if not g or (issecretvalue and issecretvalue(g)) then
-            return nil
-        end
+        if not g or (issecretvalue and issecretvalue(g)) then return nil end
         xpPlayerGUID = g
     end
     local all = saved.xpBarChars
     if type(all) ~= "table" then
-        if not create then
-            return nil
-        end
+        if not create then return nil end
         all = {}
         saved.xpBarChars = all
     end
     local e = all[xpPlayerGUID]
     if type(e) ~= "table" then
-        if not create then
-            return nil
-        end
+        if not create then return nil end
         e = { sStart = xpLoginAt or GetTime() }
         all[xpPlayerGUID] = e
     end
@@ -1292,17 +1210,13 @@ end
 -- level-up and waits for the settled one. Returns true when XP was added.
 local function XPTrackRate()
     local entry = XPCharEntry(false)
-    if not (entry and entry.rStart) then
-        return
-    end
+    if not (entry and entry.rStart) then return end
     local current, lv = UnitXP("player"), UnitLevel("player")
     local lastXP, lastLv = entry.lastXP, entry.lastLevel
     local added
     if lastXP and lastLv then
         if lv == lastLv then
-            if current <= lastXP then
-                return
-            end
+            if current <= lastXP then return end
             entry.gained = (entry.gained or 0) + (current - lastXP)
             added = true
         elseif lv > lastLv then
@@ -1319,9 +1233,7 @@ end
 local function XPRate(nowTime)
     local entry = XPCharEntry(false)
     local start, gained = entry and entry.rStart, entry and entry.gained
-    if not (start and gained) or gained <= 0 or nowTime - start < 60 then
-        return 0
-    end
+    if not (start and gained) or gained <= 0 or nowTime - start < 60 then return 0 end
     return gained * 3600 / (nowTime - start)
 end
 
@@ -1344,9 +1256,7 @@ local function XPLegacyText(widget, record, current, mx, rested, level)
     local text = record.lvl and format("%s %d - ", LEVEL, level) or ""
     if raw then
         text = text .. format("%s / %s", mod.AbbreviateLargeNumbers(current), mod.AbbreviateLargeNumbers(mx))
-        if record.pcts then
-            text = text .. format(" (%.1f%%)", current / mx * 100)
-        end
+        if record.pcts then text = text .. format(" (%.1f%%)", current / mx * 100) end
     else
         text = text .. format("%.1f%%", current / mx * 100)
     end
@@ -1365,21 +1275,15 @@ end
 local function XPItemText(widget, ident, current, mx, rested, level, nowTime, rest)
     if ident == "pct" then
         local text = FmtPct(current / mx * 100)
-        if rest then
-            text = text .. format(CludesUI.L(" (Rested: %s)"), FmtPct(rested / mx * 100))
-        end
+        if rest then text = text .. format(CludesUI.L(" (Rested: %s)"), FmtPct(rested / mx * 100)) end
         return text
     elseif ident == "cur" then
         local text = FmtNum(current)
-        if rest then
-            text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested))
-        end
+        if rest then text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested)) end
         return text
     elseif ident == "curMax" then
         local text = FmtNum(current) .. " / " .. FmtNum(mx)
-        if rest then
-            text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested))
-        end
+        if rest then text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested)) end
         return text
     elseif ident == "curMaxRem" then
         return format(
@@ -1424,12 +1328,8 @@ end
 -- table is the frame's own, refilled.
 local function XPTextString(widget, record, current, mx, rested, level, nowTime)
     local kindName, itemList = record.kind, record.items
-    if not kindName then
-        return ""
-    end
-    if record.render then
-        return XPLegacyText(widget, record, current, mx, rested, level)
-    end
+    if not kindName then return "" end
+    if record.render then return XPLegacyText(widget, record, current, mx, rested, level) end
     local rest = kindName == "top" and record.rested and rested > 0
     local num = #itemList
     if num == 1 then
@@ -1448,9 +1348,7 @@ local function XPTextString(widget, record, current, mx, rested, level, nowTime)
     for index = 1, num do
         local ident = itemList[index]
         local region = rest and XP_ITEM_RESTED[ident]
-        if region then
-            rest = false
-        end
+        if region then rest = false end
         parts[index] = XPItemText(widget, ident, current, mx, rested, level, nowTime, region)
     end
     return table.concat(parts, " - ", 1, num)
@@ -1470,16 +1368,12 @@ local function XPPaintText(widget, s, filter, current, mx, rested, level)
             widget._text:SetText(text)
             if widget._textPost then
                 mod.DataBarPlaceText(widget, s)
-                if not c.kind and widget._textBg then
-                    widget._textBg:Hide()
-                end
+                if not c.kind and widget._textBg then widget._textBg:Hide() end
             end
         end
     end
     local recs = widget._xpAny and widget._xpRecs
-    if not recs then
-        return
-    end
+    if not recs then return end
     for index = 1, #recs do
         local record = recs[index]
         if not filter or record[filter] then
@@ -1496,13 +1390,9 @@ end
 -- minute clock, a quest scan, /played, the bar showing again).
 local function XPRepaint(widget, filter)
     local s = ABAR.db and ABAR.db.profile.bars.XPBar
-    if not s then
-        return
-    end
+    if not s then return end
     local mx = UnitXPMax("player")
-    if mx <= 0 then
-        mx = 1
-    end
+    if mx <= 0 then mx = 1 end
     XPPaintText(widget, s, filter, UnitXP("player"), mx, GetXPExhaustion() or 0, UnitLevel("player"))
 end
 
@@ -1512,9 +1402,7 @@ end
 -- (s.questOverlayZone).
 local GetQuestLogRewardXP = GetQuestLogRewardXP -- missing on a client: reads 0
 local function XPQuestXP(cfg)
-    if not GetQuestLogRewardXP then
-        return 0, 0, 0
-    end
+    if not GetQuestLogRewardXP then return 0, 0, 0 end
     local QL = C_QuestLog
     local shade = cfg.questOverlay
     local all, onlyZone = shade and not cfg.questOverlayCompleted, shade and cfg.questOverlayZone
@@ -1525,9 +1413,7 @@ local function XPQuestXP(cfg)
             local complete = QL.IsComplete(q)
             if complete or all then
                 local xp = GetQuestLogRewardXP(q) or 0
-                if complete then
-                    sum = sum + xp
-                end
+                if complete then sum = sum + xp end
                 if shade and (not onlyZone or QL.IsOnMap(q)) then
                     if complete then
                         done = done + xp
@@ -1545,9 +1431,7 @@ end
 -- quest XP past it (built on first enable, ns.ApplyXPQuestOverlay).
 local function XPPaintQuestOverlay(widget, current, mx)
     local questBar = widget._questBar
-    if not (questBar and questBar:IsShown()) then
-        return
-    end
+    if not (questBar and questBar:IsShown()) then return end
     local done = current + (widget._xpQuestDone or 0)
     questBar:SetMinMaxValues(0, mx)
     questBar:SetValue(min(done + (widget._xpQuestInc or 0), mx))
@@ -1563,9 +1447,7 @@ local function OnXPQuestScan(self)
     self:Hide()
     local widget = dataBarFrames.XPBar
     local s = ABAR.db and ABAR.db.profile.bars.XPBar
-    if not (widget and s) then
-        return
-    end
+    if not (widget and s) then return end
     widget._xpQuestOK = true
     local sum, done, inc = XPQuestXP(s)
     if sum ~= widget._xpQuestXP then
@@ -1579,9 +1461,7 @@ local function OnXPQuestScan(self)
     end
 end
 
-local function OnXPQuestEvent(self)
-    self:Show()
-end
+local function OnXPQuestEvent(self) self:Show() end
 
 -- Quest events only while a quest content is in use and the bar shows. Going
 -- hidden (or out of use) leaves the total stale: it is scanned again on the
@@ -1604,9 +1484,7 @@ local function XPSyncQuestEvents(widget, vis)
         else
             questWatch:UnregisterEvent("ZONE_CHANGED_NEW_AREA")
         end
-        if not widget._xpQuestOK then
-            questWatch:Show()
-        end
+        if not widget._xpQuestOK then questWatch:Show() end
     elseif widget._xpQuestOn then
         widget._xpQuestOn, widget._xpQuestOK = nil, nil
         questWatch:UnregisterEvent("QUEST_LOG_UPDATE")
@@ -1619,9 +1497,7 @@ end
 -- shows, its first tick on the session clock's next whole minute.
 local function OnXPClockTick()
     local widget = dataBarFrames.XPBar
-    if widget then
-        XPRepaint(widget, "nc")
-    end
+    if widget then XPRepaint(widget, "nc") end
 end
 
 local function OnXPClockAlign()
@@ -1631,9 +1507,7 @@ end
 
 local function XPSyncClock(widget, vis)
     if widget._xpNeedClock and vis then
-        if xpClock then
-            return
-        end
+        if xpClock then return end
         local entry = XPCharEntry(false)
         local start = entry and entry.sStart or xpLoginAt
         local nowTime = GetTime()
@@ -1650,14 +1524,10 @@ end
 local function XPSyncLevelEvents(widget)
     if widget._xpNeedLevelTime then
         xpTextEv:RegisterEvent("TIME_PLAYED_MSG")
-        if xpLvlBase then
-            xpTextEv:RegisterEvent("PLAYER_LOGOUT")
-        end
+        if xpLvlBase then xpTextEv:RegisterEvent("PLAYER_LOGOUT") end
     else
         -- Our own /played still owed: its reply lands, then this drops it.
-        if not (xpLvlAsked and not xpLvlBase) then
-            xpTextEv:UnregisterEvent("TIME_PLAYED_MSG")
-        end
+        if not (xpLvlAsked and not xpLvlBase) then xpTextEv:UnregisterEvent("TIME_PLAYED_MSG") end
         xpTextEv:UnregisterEvent("PLAYER_LOGOUT")
     end
 end
@@ -1667,12 +1537,8 @@ end
 -- (the visibility passes normalize the settings table).
 local function XPBarCanShow(cfg)
     local profile = ABAR.db and ABAR.db.profile
-    if not (profile and cfg) or profile.useBlizzardDataBars then
-        return false
-    end
-    if cfg.enabled == false or ABAR.VisibilityCompat.IsNever(cfg) then
-        return false
-    end
+    if not (profile and cfg) or profile.useBlizzardDataBars then return false end
+    if cfg.enabled == false or ABAR.VisibilityCompat.IsNever(cfg) then return false end
     return not mod.XPBarAtMaxLevel() and not (IsXPUserDisabled and IsXPUserDisabled())
 end
 
@@ -1682,9 +1548,7 @@ local function XPSetLevelTime(levelTime)
     local widget = dataBarFrames.XPBar
     if widget then
         XPSyncLevelEvents(widget)
-        if widget:IsVisible() then
-            XPRepaint(widget, "nc")
-        end
+        if widget:IsVisible() then XPRepaint(widget, "nc") end
     end
 end
 
@@ -1695,20 +1559,12 @@ end
 local function XPRequestPlayed(widget)
     -- Not before the load's first PLAYER_ENTERING_WORLD has read the time
     -- saved at the last logout.
-    if xpLvlAsked or not xpWorldSeen or not widget._xpNeedLevelTime then
-        return
-    end
-    if xpLvlBase and xpLvl == UnitLevel("player") then
-        return
-    end
-    if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then
-        return
-    end
+    if xpLvlAsked or not xpWorldSeen or not widget._xpNeedLevelTime then return end
+    if xpLvlBase and xpLvl == UnitLevel("player") then return end
+    if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then return end
     xpLvlAsked = true
     local _, levelTime = CludesUI.RequestTimePlayed()
-    if levelTime then
-        XPSetLevelTime(levelTime)
-    end
+    if levelTime then XPSetLevelTime(levelTime) end
 end
 
 -- PLAYER_LEVEL_UP (the bar's own event frame): the new level starts at no
@@ -1717,22 +1573,16 @@ end
 local function XPTextLevelUp(widget, newLevel)
     xpLvl = type(newLevel) == "number" and newLevel or UnitLevel("player")
     xpLvlBase, xpLvlStamp = 0, GetTime()
-    if widget._xpNeedLevelTime then
-        XPSyncLevelEvents(widget)
-    end
+    if widget._xpNeedLevelTime then XPSyncLevelEvents(widget) end
     widget._xpQuestOK = nil
-    if widget._xpQuestOn then
-        questWatch:Show()
-    end
+    if widget._xpQuestOn then questWatch:Show() end
 end
 
 -- The holder's own show and hide (hooked the first time quests or the clock
 -- are needed, a flag read otherwise): quest events and the clock follow it,
 -- and the time contents catch up on the time spent hidden.
 local function OnXPHolderShow(widget)
-    if widget._xpNeedQuest then
-        XPSyncQuestEvents(widget, true)
-    end
+    if widget._xpNeedQuest then XPSyncQuestEvents(widget, true) end
     if widget._xpNeedClock then
         XPSyncClock(widget, true)
         XPRepaint(widget, "nc")
@@ -1740,12 +1590,8 @@ local function OnXPHolderShow(widget)
 end
 
 local function OnXPHolderHide(widget)
-    if widget._xpQuestOn then
-        XPSyncQuestEvents(widget, false)
-    end
-    if xpClock then
-        XPSyncClock(widget, false)
-    end
+    if widget._xpQuestOn then XPSyncQuestEvents(widget, false) end
+    if xpClock then XPSyncClock(widget, false) end
 end
 
 -- A text record's items from the parse in xpScratch (kind from it, legacy:
@@ -1766,18 +1612,10 @@ local function XPTextTake(record, kindName, legacy, cfg, restedKey, render)
     local nq, nr, nc, nl = false, false, false, false
     for index = 1, #itemList do
         local ident = itemList[index]
-        if XP_ITEM_QUEST[ident] then
-            nq = true
-        end
-        if XP_ITEM_RATE[ident] then
-            nr = true
-        end
-        if XP_ITEM_CLOCK[ident] then
-            nc = true
-        end
-        if ident == "timeLevel" then
-            nl = true
-        end
+        if XP_ITEM_QUEST[ident] then nq = true end
+        if XP_ITEM_RATE[ident] then nr = true end
+        if XP_ITEM_CLOCK[ident] then nc = true end
+        if ident == "timeLevel" then nl = true end
     end
     record.nq, record.nr, record.nc, record.nl = nq, nr, nc, nl
 end
@@ -1791,12 +1629,8 @@ function mod.XPBarTextSlots(widget, cfg)
     -- A layout pass (Bar Texture, style) can reset the fill's colours: the
     -- update that follows repaints the gradient.
     local gm = widget._bar and widget._bar._xpGrad
-    if gm then
-        gm.on = nil
-    end
-    if not widget._xpParts then
-        widget._xpParts = {}
-    end
+    if gm then gm.on = nil end
+    if not widget._xpParts then widget._xpParts = {} end
     -- Center's first text: unset (or a value no longer known) is the old
     -- Default.
     local c = widget._xpC
@@ -1805,18 +1639,14 @@ function mod.XPBarTextSlots(widget, cfg)
         widget._xpC = c
     end
     local cv = cfg.textSlotCenter
-    if cv == nil then
-        cv = "classic"
-    end
+    if cv == nil then cv = "classic" end
     local kindName, legacy, render = XPTextItems(cv, cfg, xpScratch)
     if not kindName and cv ~= "none" then
         kindName, legacy, render = XPTextItems("classic", cfg, xpScratch)
     end
     XPTextTake(c, kindName, legacy, cfg, "textSlotCenterRested", render)
     -- No Center text: no Text Background behind it either.
-    if not kindName and widget._textBg then
-        widget._textBg:Hide()
-    end
+    if not kindName and widget._textBg then widget._textBg:Hide() end
 
     local quest, rate, clock, levelTime = c.nq or cfg.questOverlay, c.nr, c.nc, c.nl
     local horizontal = cfg.orientation ~= "VERTICAL"
@@ -1824,9 +1654,7 @@ function mod.XPBarTextSlots(widget, cfg)
     local size, bgOn, bc = cfg.textSize or 9, cfg.showTextBg, cfg.textBgColor
     -- The texts in use, for the paint (refilled here: layout passes only).
     local recs = widget._xpRecs
-    if recs then
-        wipe(recs)
-    end
+    if recs then wipe(recs) end
     -- The last text placed at the current position, the one a later text
     -- lines up after (Center's: the kit's text while it shows).
     local lastPos, previous
@@ -1857,18 +1685,10 @@ function mod.XPBarTextSlots(widget, cfg)
             end
             recs[#recs + 1] = record
             XPTextTake(record, tk, tl, cfg, skinData.rested, tr)
-            if record.nq then
-                quest = true
-            end
-            if record.nr then
-                rate = true
-            end
-            if record.nc then
-                clock = true
-            end
-            if record.nl then
-                levelTime = true
-            end
+            if record.nq then quest = true end
+            if record.nr then rate = true end
+            if record.nc then clock = true end
+            if record.nl then levelTime = true end
             local fontStr = record.fs
             CludesUI.ApplyModuleFont(fontStr, nil, cfg[skinData.size] or size, "actionBars")
             fontStr:SetTextColor(1, 1, 1, 1)
@@ -1904,17 +1724,13 @@ function mod.XPBarTextSlots(widget, cfg)
         elseif record then
             record.kind = nil
             record.fs:Hide()
-            if record.bg then
-                record.bg:Hide()
-            end
+            if record.bg then record.bg:Hide() end
         end
     end
     widget._xpAny = (recs ~= nil and #recs > 0)
     -- The options preview stops at its layout: what follows arms the live
     -- bar's trackers, which are one per module (the clock, quest events).
-    if widget._preview then
-        return
-    end
+    if widget._preview then return end
 
     -- Wanted (the contents in use) vs armed (wanted and the bar can show):
     -- nothing is tracked, stored or requested for a bar that never shows.
@@ -1944,20 +1760,12 @@ function mod.XPBarTextSlots(widget, cfg)
         local entry = XPCharEntry(true)
         if entry then
             local nowTime = GetTime()
-            if type(entry.sStart) ~= "number" or entry.sStart > nowTime then
-                entry.sStart = nowTime
-            end
-            if rate and (wasRate == false or not entry.rStart) then
-                XPRateBaseline(entry)
-            end
+            if type(entry.sStart) ~= "number" or entry.sStart > nowTime then entry.sStart = nowTime end
+            if rate and (wasRate == false or not entry.rStart) then XPRateBaseline(entry) end
         end
     end
-    if levelTime ~= (wasLevel or false) then
-        XPSyncLevelEvents(widget)
-    end
-    if levelTime then
-        XPRequestPlayed(widget)
-    end
+    if levelTime ~= (wasLevel or false) then XPSyncLevelEvents(widget) end
+    if levelTime then XPRequestPlayed(widget) end
 
     -- Shown-only work (quest events, the minute clock), started and stopped
     -- by the holder's own show and hide from then on.
@@ -1987,50 +1795,38 @@ end
 local function XPOnFirstWorld(isInitialLogin)
     local nowTime = GetTime()
     xpWorldSeen = true
-    if isInitialLogin then
-        xpLoginAt = nowTime
-    end
+    if isInitialLogin then xpLoginAt = nowTime end
     local entry = XPCharEntry(false)
     local widget = dataBarFrames.XPBar
     if entry then
         if isInitialLogin then
             entry.sStart = nowTime
             entry.rStart, entry.gained, entry.lastXP, entry.lastMax, entry.lastLevel = nil, nil, nil, nil, nil
-            if widget and widget._xpNeedRate then
-                XPRateBaseline(entry)
-            end
+            if widget and widget._xpNeedRate then XPRateBaseline(entry) end
         end
         local t, at = entry.lvlTime, entry.lvlAt
         entry.lvlTime, entry.lvlAt = nil, nil
         if type(t) == "number" and entry.lvl == UnitLevel("player") then
-            if not isInitialLogin and type(at) == "number" and at <= nowTime then
-                t = t + (nowTime - at)
-            end
+            if not isInitialLogin and type(at) == "number" and at <= nowTime then t = t + (nowTime - at) end
             xpLvl, xpLvlBase, xpLvlStamp = entry.lvl, t, nowTime
         end
     end
     if widget then
-        if widget._xpNeedLevelTime then
-            XPSyncLevelEvents(widget)
-        end
+        if widget._xpNeedLevelTime then XPSyncLevelEvents(widget) end
         XPRequestPlayed(widget)
         if isInitialLogin and xpClock then
             -- Realigned on the session clock that starts now.
             XPSyncClock(widget, false)
             XPSyncClock(widget, widget:IsVisible())
         end
-        if widget._xpNeedClock and widget:IsVisible() then
-            XPRepaint(widget, "nc")
-        end
+        if widget._xpNeedClock and widget:IsVisible() then XPRepaint(widget, "nc") end
     end
 end
 
 xpTextEv:SetScript("OnEvent", function(self, evt, arg1, arg2)
     if evt == "TIME_PLAYED_MSG" then
         -- arg2: the time played this level, as of now.
-        if type(arg2) ~= "number" then
-            return
-        end
+        if type(arg2) ~= "number" then return end
         XPSetLevelTime(arg2)
     elseif evt == "PLAYER_LOGOUT" then
         -- Also fires on /reload, before SavedVariables are written.
@@ -2112,18 +1908,12 @@ local function UpdateXPBar(levelUp)
     if holderFrame and holderFrame._xpWant then
         -- Max level, Never or Blizzard's bars reached or left: re-arm.
         local s0 = ABAR.db.profile.bars.XPBar
-        if XPBarCanShow(s0) ~= holderFrame._xpLive then
-            mod.XPBarTextSlots(holderFrame, s0)
-        end
-        if holderFrame._xpNeedRate and not levelUp and XPTrackRate() then
-            holderFrame._xpPaintDirty = true
-        end
+        if XPBarCanShow(s0) ~= holderFrame._xpLive then mod.XPBarTextSlots(holderFrame, s0) end
+        if holderFrame._xpNeedRate and not levelUp and XPTrackRate() then holderFrame._xpPaintDirty = true end
     end
 
     local widget, s = EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate("XPBar")
-    if not widget then
-        return
-    end
+    if not widget then return end
 
     -- Hide at max level (or XP disabled)
     if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then
@@ -2133,9 +1923,7 @@ local function UpdateXPBar(levelUp)
 
     local currentXP = UnitXP("player")
     local maxXP = UnitXPMax("player")
-    if maxXP <= 0 then
-        maxXP = 1
-    end
+    if maxXP <= 0 then maxXP = 1 end
     local restedXP = GetXPExhaustion() or 0
     local level = UnitLevel("player")
 
@@ -2206,19 +1994,13 @@ function mod.CreateXPBar()
             and ABAR.db.profile
             and ABAR.db.profile.bars
             and ABAR.db.profile.bars["XPBar"]
-        if conf and conf.clickThrough then
-            return
-        end
-        if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then
-            return
-        end
+        if conf and conf.clickThrough then return end
+        if mod.XPBarAtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled()) then return end
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
         GameTooltip:ClearLines()
         local currentXP = UnitXP("player")
         local maxXP = UnitXPMax("player")
-        if maxXP <= 0 then
-            maxXP = 1
-        end
+        if maxXP <= 0 then maxXP = 1 end
         local restedXP = GetXPExhaustion() or 0
         local percent = (currentXP / maxXP) * 100
         local remain = maxXP - currentXP
@@ -2250,9 +2032,7 @@ function mod.CreateXPBar()
         GameTooltip:Show()
     end)
     holderFrame:SetScript("OnLeave", function(self)
-        if GameTooltip:IsOwned(self) then
-            GameTooltip:Hide()
-        end
+        if GameTooltip:IsOwned(self) then GameTooltip:Hide() end
     end)
 
     -- Events. A level-up also starts Time This Level over and rescans the
@@ -2268,9 +2048,7 @@ function mod.CreateXPBar()
             UpdateXPBar(true)
             return
         end
-        if evt == "PLAYER_ENTERING_WORLD" then
-            XPRequestPlayed(holderFrame)
-        end
+        if evt == "PLAYER_ENTERING_WORLD" then XPRequestPlayed(holderFrame) end
         UpdateXPBar()
     end)
 

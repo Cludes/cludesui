@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Invite.lua -- Raid Lead: invite a saved list and promote assistants.
 --
@@ -14,9 +12,7 @@ local _, mod = ...
 
 local PARTY_MAX = 5
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local function Settings()
     local profile = mod.RaidLeadDB()
@@ -24,9 +20,7 @@ local function Settings()
     local cfg = profile.invites
     cfg.list = cfg.list or ""
     cfg.promote = cfg.promote or ""
-    if cfg.autoPromote == nil then
-        cfg.autoPromote = false
-    end
+    if cfg.autoPromote == nil then cfg.autoPromote = false end
     return cfg
 end
 mod.InviteSettings = Settings
@@ -52,9 +46,7 @@ end
 local pending = {}
 
 local function InviteSome()
-    if #pending == 0 then
-        return
-    end
+    if #pending == 0 then return end
     if
         IsInGroup()
         and not IsInRaid()
@@ -80,13 +72,9 @@ function mod.InviteList()
     end
     wipe(pending)
     for _, name in ipairs(mod.SplitNames(Settings().list)) do
-        if not InGroup(name) then
-            pending[#pending + 1] = name
-        end
+        if not InGroup(name) then pending[#pending + 1] = name end
     end
-    if #pending == 0 then
-        return Say("everyone on the list is already in the group.")
-    end
+    if #pending == 0 then return Say("everyone on the list is already in the group.") end
     Say("inviting " .. #pending .. " player" .. (#pending == 1 and "" or "s") .. ".")
     InviteSome()
 end
@@ -96,9 +84,7 @@ local promoted = {}
 --- Makes everyone on the assistant list who is in the raid an assistant.
 function mod.PromoteList(quiet)
     if not (IsInRaid() and UnitIsGroupLeader("player")) then
-        if not quiet then
-            Say("only the raid leader can promote assistants.")
-        end
+        if not quiet then Say("only the raid leader can promote assistants.") end
         return
     end
     local num = 0
@@ -120,12 +106,6 @@ end
 local events = CreateFrame("Frame")
 events:RegisterEvent("GROUP_ROSTER_UPDATE")
 events:SetScript("OnEvent", function()
-    if #pending > 0 then
-        C_Timer.After(0.5, InviteSome)
-    end
-    if Settings().autoPromote then
-        C_Timer.After(1, function()
-            mod.PromoteList(true)
-        end)
-    end
+    if #pending > 0 then C_Timer.After(0.5, InviteSome) end
+    if Settings().autoPromote then C_Timer.After(1, function() mod.PromoteList(true) end) end
 end)

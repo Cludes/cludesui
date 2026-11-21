@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_TitleLine_Options.lua
 --  The Title Line page of the CludesUI settings panel. Title Line's graph is
@@ -9,17 +7,12 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUITitleLine"
 local mod = CludesUI._ModuleNS[ADDON_NAME]
-if not mod then
-    return
-end
+if not mod then return end
 
 local PAGE = "Title Line"
 
 CludesUI.AtOptionsLogin(function()
-
-    local function DB()
-        return _G.CludesUITitleLineDB or {}
-    end
+    local function DB() return _G.CludesUITitleLineDB or {} end
 
     local function Toggle(textValue, key, tooltip, default)
         return {
@@ -28,14 +21,10 @@ CludesUI.AtOptionsLogin(function()
             tooltip = tooltip,
             getValue = function()
                 local val = DB()[key]
-                if val == nil then
-                    return default and true or false
-                end
+                if val == nil then return default and true or false end
                 return val and true or false
             end,
-            setValue = function(val)
-                DB()[key] = val and true or false
-            end,
+            setValue = function(val) DB()[key] = val and true or false end,
         }
     end
 
@@ -52,9 +41,7 @@ CludesUI.AtOptionsLogin(function()
                 local saved = DB()
                 saved.hidden = saved.hidden or {}
                 saved.hidden[tier.key] = (not val) or nil
-                if mod.Graph and mod.Graph.Refresh then
-                    mod.Graph:Refresh()
-                end
+                if mod.Graph and mod.Graph.Refresh then mod.Graph:Refresh() end
             end,
         }
     end
@@ -76,9 +63,7 @@ CludesUI.AtOptionsLogin(function()
             width = 90,
             tooltip = "Your Mythic+ rating through the season against the title lines. /titleline does the same.",
             onClick = function()
-                if mod.Graph and mod.Graph.Toggle then
-                    mod.Graph:Toggle()
-                end
+                if mod.Graph and mod.Graph.Toggle then mod.Graph:Toggle() end
             end,
         }, {
             type = "slider",
@@ -87,14 +72,10 @@ CludesUI.AtOptionsLogin(function()
             max = 200,
             step = 5,
             tooltip = "The size of the graph window, in percent.",
-            getValue = function()
-                return math.floor((DB().scale or 1.15) * 100 + 0.5)
-            end,
+            getValue = function() return math.floor((DB().scale or 1.15) * 100 + 0.5) end,
             setValue = function(val)
                 DB().scale = math.floor(val + 0.5) / 100
-                if mod.Graph and mod.Graph.ApplyScale then
-                    mod.Graph:ApplyScale()
-                end
+                if mod.Graph and mod.Graph.ApplyScale then mod.Graph:ApplyScale() end
             end,
         })
         cursorY = cursorY - height
@@ -139,9 +120,7 @@ CludesUI.AtOptionsLogin(function()
         description = "Your Mythic+ rating against the 0.1% and 1% title lines.",
         pages = { PAGE },
         buildPage = function(page, hostFrame, yOffset)
-            if page == PAGE then
-                return BuildPage(page, hostFrame, yOffset)
-            end
+            if page == PAGE then return BuildPage(page, hostFrame, yOffset) end
         end,
     })
 end)

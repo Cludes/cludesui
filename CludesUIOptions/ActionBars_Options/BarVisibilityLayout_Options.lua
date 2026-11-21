@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ActionBars_Options\BarVisibilityLayout_Options.lua
 --  Action Bars options: the Bar 10 caution and the Visibility & Fading and
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  from ctx.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIActionBars"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page and every frame it hands out) is reset
 -- and dressed again by the next build instead of made anew; on any other
@@ -35,9 +31,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     local W = context.W
     -- Visibility updates do not run ApplyAll. Recompile page-cycle macros when
     -- the set of reserved action pages changes (never/always etc.).
-    local function RefreshPageCycle()
-        mod.RefreshPagingCycleMacros()
-    end
+    local function RefreshPageCycle() mod.RefreshPagingCycleMacros() end
     local _, height, heading
     local row
 
@@ -46,16 +40,12 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     -- entry of a label), carries its tooltip, its items' names and the rows its
     -- cog holds as search text; it is never shown.
     local function IndexChecklistRow(labelText, tooltip, words)
-        if not CludesUI._RegisterSearchEntry then
-            return
-        end
+        if not CludesUI._RegisterSearchEntry then return end
         local textValue = {}
         local function Add(s)
             textValue[#textValue + 1] = s
             local loc = CludesUI.L(s)
-            if loc ~= s then
-                textValue[#textValue + 1] = loc
-            end
+            if loc ~= s then textValue[#textValue + 1] = loc end
         end
         Add(tooltip)
         for idx = 1, #words do
@@ -113,11 +103,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
     -- A data bar under Blizzard's own data bars: the rows CUI cannot apply to it grey out.
     local _visBlizzDis
     local _VIS_BLIZZ_TIP = "This option does not work with Blizzard Bars. Please use Blizzard Edit Mode."
-    if IsDataBar() then
-        _visBlizzDis = function()
-            return ABAR.db.profile.useBlizzardDataBars
-        end
-    end
+    if IsDataBar() then _visBlizzDis = function() return ABAR.db.profile.useBlizzardDataBars end end
 
     do
         -- Pet Bar cannot express group modes: lock them with an explanation instead of offering silent no-ops.
@@ -133,9 +119,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         end
         -- Data bars evaluate in Lua (non-secure), so dragonriding items depend on the gliding
         -- edge event; secure bars' drivers re-evaluate natively and never lock.
-        if IsDataBar() then
-            visCaps.luaDragonriding = true
-        end
+        if IsDataBar() then visCaps.luaDragonriding = true end
 
         -- Visibility Extras: the times this bar shows beyond its Visibility
         -- setting, one checkbox per setting, each a view over its own key.
@@ -160,19 +144,13 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 end,
                 legacyKey = "barVisibility",
                 caps = visCaps,
-                applyScalarFn = function(s, mode)
-                    ApplyVisibilityKey(s, mode)
-                end,
+                applyScalarFn = function(s, mode) ApplyVisibilityKey(s, mode) end,
                 disabledFn = _visBlizzDis,
                 disabledTooltip = _visBlizzDis and _VIS_BLIZZ_TIP or nil,
                 rawTooltip = true,
                 onChanged = function()
-                    if ABAR.ClearVisToggleOverride then
-                        ABAR:ClearVisToggleOverride(SelectedKey())
-                    end
-                    if ABAR.RebuildVisToggleBindings then
-                        ABAR:RebuildVisToggleBindings()
-                    end
+                    if ABAR.ClearVisToggleOverride then ABAR:ClearVisToggleOverride(SelectedKey()) end
+                    if ABAR.RebuildVisToggleBindings then ABAR:RebuildVisToggleBindings() end
                     ABAR:RefreshRuntimeVisibility()
                     ABAR:RefreshMouseover()
                     ABAR:ApplyCombatVisibility()
@@ -211,9 +189,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
 
         do
             local region = visRow1._leftRegion
-            local function CopyTo(key, source)
-                CopyVisibilitySettings(ABAR.db.profile.bars[key], source, key)
-            end
+            local function CopyTo(key, source) CopyVisibilitySettings(ABAR.db.profile.bars[key], source, key) end
             CludesUI.BuildSyncIcon({
                 region = region,
                 tooltip = "Apply Visibility to all Bars",
@@ -235,21 +211,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         if not CludesUI.VisFullEquals(source, "barVisibility", dst, "barVisibility") then
                             return false
                         end
-                        if (source.dragShow or false) ~= (dst.dragShow or false) then
-                            return false
-                        end
+                        if (source.dragShow or false) ~= (dst.dragShow or false) then return false end
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { region }
-                end,
+                flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
                     elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
+                    getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local source = SB()
                         for _, key in ipairs(checkedKeys) do
@@ -279,9 +249,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             -- mouseoverEnabled), so it is offered while any of them is.
             local function AnyMouseoverBar()
                 for _, s in pairs(ABAR.db.profile.bars) do
-                    if type(s) == "table" and s.mouseoverEnabled then
-                        return true
-                    end
+                    if type(s) == "table" and s.mouseoverEnabled then return true end
                 end
                 return false
             end
@@ -298,23 +266,17 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     label = "Show During Drag",
                     tooltip = "While dragging a spell or item, this bar appears so you can drop onto it.",
                     lockedFn = NeverOnly,
-                    lockedTooltip = function()
-                        return CludesUI.DisabledTooltip("Visibility set to Never")
-                    end,
+                    lockedTooltip = function() return CludesUI.DisabledTooltip("Visibility set to Never") end,
                 },
                 {
                     key = "mouseoverShowAll",
                     label = "Show All Bars on Mouseover",
                     tooltip = "Hovering one Mouseover bar shows them all.",
-                    lockedFn = function()
-                        return not AnyMouseoverBar()
-                    end,
+                    lockedFn = function() return not AnyMouseoverBar() end,
                     lockedTooltip = "This option requires a bar set to Mouseover",
                 },
             }
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             -- Wider than the standard 170: its longest rows ("Show When Spellbook
             -- Is Open") must fit on the closed button and in the list.
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
@@ -369,9 +331,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         return not ABAR.AdvancedFadeOn(SB()) or (_visBlizzDis ~= nil and _visBlizzDis())
     end
     local function AdvancedFadeOffTip()
-        if _visBlizzDis ~= nil and _visBlizzDis() then
-            return _VIS_BLIZZ_TIP
-        end
+        if _visBlizzDis ~= nil and _visBlizzDis() then return _VIS_BLIZZ_TIP end
         return "This option requires an Advanced Fade condition to be checked"
     end
     do
@@ -403,9 +363,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             if type(sc) == "table" then
                 for idx = 1, #FADE_ORDER do
                     local keyName = FADE_ORDER[idx]
-                    if sc[keyName] then
-                        result[keyName] = true
-                    end
+                    if sc[keyName] then result[keyName] = true end
                 end
             end
             dst.advancedFadeConditions = result
@@ -431,9 +389,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             then
                 return false
             end
-            if (a.fadeInSpeed or 0.15) ~= (b.fadeInSpeed or 0.15) then
-                return false
-            end
+            if (a.fadeInSpeed or 0.15) ~= (b.fadeInSpeed or 0.15) then return false end
             return (a.fadeOutSpeed or 0.15) == (b.fadeOutSpeed or 0.15)
         end
 
@@ -443,9 +399,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             local source = SB()
             for _, key in ipairs(keyList) do
                 local dst = ABAR.db.profile.bars[key]
-                if dst and dst ~= source then
-                    CopyAdvancedFade(dst, source)
-                end
+                if dst and dst ~= source then CopyAdvancedFade(dst, source) end
             end
             ABAR:RefreshAdvancedFadeEnabled(keyList)
             ABAR:RefreshAllCustomFade(true, true)
@@ -456,9 +410,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             local source = SB()
             for _, key in ipairs(GROUP_BAR_ORDER) do
                 local dst = ABAR.db.profile.bars[key]
-                if dst and not AdvancedFadeEqual(source, dst) then
-                    return false
-                end
+                if dst and not AdvancedFadeEqual(source, dst) then return false end
             end
             return true
         end
@@ -498,9 +450,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             step = 5,
             getValue = function()
                 local bs = SB()
-                if bs.mouseoverEnabled then
-                    return floor((bs._savedBarAlpha or 1) * 100 + 0.5)
-                end
+                if bs.mouseoverEnabled then return floor((bs._savedBarAlpha or 1) * 100 + 0.5) end
                 return floor((bs.mouseoverAlpha or 1) * 100 + 0.5)
             end,
             setValue = function(value)
@@ -508,13 +458,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 if bs.mouseoverEnabled then
                     bs._savedBarAlpha = value / 100
                     -- The Advanced Fade layer rests on this value.
-                    if ABAR.AdvancedFadeOn(bs) then
-                        ABAR:RefreshCustomFadeForBar(SelectedKey(), false)
-                    end
+                    if ABAR.AdvancedFadeOn(bs) then ABAR:RefreshCustomFadeForBar(SelectedKey(), false) end
                 else
-                    SSet("mouseoverAlpha", value / 100, function(keyName)
-                        ABAR:ApplyBarOpacity(keyName)
-                    end)
+                    SSet("mouseoverAlpha", value / 100, function(keyName) ABAR:ApplyBarOpacity(keyName) end)
                 end
                 SUpdatePreview()
             end,
@@ -555,21 +501,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 for _, key in ipairs(GROUP_BAR_ORDER) do
                     local bs = ABAR.db.profile.bars[key]
                     local bv = bs.mouseoverEnabled and 1 or (bs.mouseoverAlpha or 1)
-                    if bv ~= value then
-                        return false
-                    end
+                    if bv ~= value then return false end
                 end
                 return true
             end,
-            flashTargets = function()
-                return { region }
-            end,
+            flashTargets = function() return { region } end,
             multiApply = {
                 elementKeys = GROUP_BAR_ORDER,
                 elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
+                getCurrentKey = function() return SelectedKey() end,
                 onApply = function(checkedKeys)
                     local value = SB().mouseoverAlpha or 1
                     for _, key in ipairs(checkedKeys) do
@@ -584,9 +524,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
 
     if not CludesUI._prebuilding then
         local region = fadeRow._rightRegion
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             170,
@@ -598,9 +536,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             end,
             function(keyName, value)
                 local bs = SB()
-                if type(bs.advancedFadeConditions) ~= "table" then
-                    bs.advancedFadeConditions = {}
-                end
+                if type(bs.advancedFadeConditions) ~= "table" then bs.advancedFadeConditions = {} end
                 bs.advancedFadeConditions[keyName] = value and true or nil
                 -- The first condition arms the layer's hooks; the last one
                 -- unchecked hands the bar's alpha back.
@@ -644,9 +580,11 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         return floor(((SB().fadeMaxAlpha ~= nil and SB().fadeMaxAlpha or 1) * 100) + 0.5)
                     end,
                     set = function(value)
-                        SSet("fadeMaxAlpha", value / 100, function(keyName)
-                            ABAR:RefreshCustomFadeForBar(keyName, true)
-                        end)
+                        SSet(
+                            "fadeMaxAlpha",
+                            value / 100,
+                            function(keyName) ABAR:RefreshCustomFadeForBar(keyName, true) end
+                        )
                     end,
                 },
                 {
@@ -656,12 +594,8 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     max = 2,
                     step = 0.01,
                     tooltip = "Seconds the fade to Advanced Fade Opacity takes.",
-                    get = function()
-                        return SB().fadeInSpeed or 0.15
-                    end,
-                    set = function(value)
-                        SSet("fadeInSpeed", value)
-                    end,
+                    get = function() return SB().fadeInSpeed or 0.15 end,
+                    set = function(value) SSet("fadeInSpeed", value) end,
                 },
                 {
                     type = "slider",
@@ -670,31 +604,21 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     max = 2,
                     step = 0.01,
                     tooltip = "Seconds the fade back to Bar Opacity takes.",
-                    get = function()
-                        return SB().fadeOutSpeed or 0.15
-                    end,
-                    set = function(value)
-                        SSet("fadeOutSpeed", value)
-                    end,
+                    get = function() return SB().fadeOutSpeed or 0.15 end,
+                    set = function(value) SSet("fadeOutSpeed", value) end,
                 },
             },
         })
         CludesUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Advanced Fade to all Bars",
-            onClick = function()
-                ApplyAdvancedFadeTo(GROUP_BAR_ORDER)
-            end,
+            onClick = function() ApplyAdvancedFadeTo(GROUP_BAR_ORDER) end,
             isSynced = AdvancedFadeSynced,
-            flashTargets = function()
-                return { region }
-            end,
+            flashTargets = function() return { region } end,
             multiApply = {
                 elementKeys = GROUP_BAR_ORDER,
                 elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
+                getCurrentKey = function() return SelectedKey() end,
                 onApply = ApplyAdvancedFadeTo,
             },
         })
@@ -707,9 +631,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
         text = "Always Show Buttons",
         getValue = function()
             local value = SGet("alwaysShowButtons")
-            if value == nil then
-                return true
-            end
+            if value == nil then return true end
             return value
         end,
         setValue = function(value)
@@ -739,9 +661,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 w = 126,
                 h = 29,
                 level = 4,
-                get = function()
-                    return SB().toggleVisKey
-                end,
+                get = function() return SB().toggleVisKey end,
                 set = function(value)
                     -- Spec Overrides: the slot is read before the write, as
                     -- a rebuild may dress this row again for another setting.
@@ -764,9 +684,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             CludesUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Action Bar",
-                getValue = function()
-                    return SB().toggleVisKey
-                end,
+                getValue = function() return SB().toggleVisKey end,
                 setValue = function(value)
                     SB().toggleVisKey = value
                     ABAR:RebuildVisToggleBindings()
@@ -796,9 +714,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             -- native-size button to it); only a size match locks it.
             disabled = function()
                 local keyName = SelectedKey()
-                if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget(keyName) then
-                    return true
-                end
+                if CludesUI.GetWidthMatchTarget and CludesUI.GetWidthMatchTarget(keyName) then return true end
                 if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget(keyName) then
                     return true
                 end
@@ -818,9 +734,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             rawTooltip = true,
             getValue = function()
                 local barCfg = SB()
-                if barCfg.buttonWidth and barCfg.buttonWidth > 0 then
-                    return barCfg.buttonWidth
-                end
+                if barCfg.buttonWidth and barCfg.buttonWidth > 0 then return barCfg.buttonWidth end
                 local details = BAR_LOOKUP[SelectedKey()]
                 local btn1 = FirstBarButton(SelectedKey())
                 return btn1 and math.floor((btn1:GetWidth() or 36) + 0.5) or 36
@@ -841,13 +755,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             min = -10,
             max = 20,
             step = 1,
-            getValue = function()
-                return SVal("buttonPadding", 2)
-            end,
+            getValue = function() return SVal("buttonPadding", 2) end,
             setValue = function(value)
-                SSet("buttonPadding", value, function(keyName)
-                    ABAR:ApplyPaddingForBar(keyName)
-                end)
+                SSet("buttonPadding", value, function(keyName) ABAR:ApplyPaddingForBar(keyName) end)
                 SUpdatePreview()
             end,
         })
@@ -881,21 +791,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     for _, key in ipairs(GROUP_BAR_ORDER) do
                         local ks = ABAR.db.profile.bars[key]
                         local kv = (ks.buttonWidth and ks.buttonWidth > 0) and ks.buttonWidth or value
-                        if kv ~= value then
-                            return false
-                        end
+                        if kv ~= value then return false end
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { region }
-                end,
+                flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
                     elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
+                    getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local barCfg = SB()
                         local details = BAR_LOOKUP[SelectedKey()]
@@ -929,21 +833,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 isSynced = function()
                     local value = SB().buttonPadding or 2
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].buttonPadding or 2) ~= value then
-                            return false
-                        end
+                        if (ABAR.db.profile.bars[key].buttonPadding or 2) ~= value then return false end
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { region }
-                end,
+                flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
                     elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
+                    getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local value = SB().buttonPadding or 2
                         for _, key in ipairs(checkedKeys) do
@@ -968,19 +866,13 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             end,
             getValue = function()
                 local value = SGet("overrideNumIcons")
-                if value and value > 0 then
-                    return value
-                end
+                if value and value > 0 then return value end
                 local barCfg = SB()
-                if barCfg and barCfg.numIcons and barCfg.numIcons > 0 then
-                    return barCfg.numIcons
-                end
+                if barCfg and barCfg.numIcons and barCfg.numIcons > 0 then return barCfg.numIcons end
                 return 12
             end,
             setValue = function(value)
-                SSet("overrideNumIcons", value, function(keyName)
-                    ABAR:ApplyIconRowOverrides(keyName)
-                end)
+                SSet("overrideNumIcons", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
                 SUpdatePreviewAndResize()
             end,
         }, {
@@ -991,19 +883,13 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             step = 1,
             getValue = function()
                 local value = SGet("overrideNumRows")
-                if value and value > 0 then
-                    return value
-                end
+                if value and value > 0 then return value end
                 local barCfg = SB()
-                if barCfg and barCfg.numRows and barCfg.numRows > 0 then
-                    return barCfg.numRows
-                end
+                if barCfg and barCfg.numRows and barCfg.numRows > 0 then return barCfg.numRows end
                 return 1
             end,
             setValue = function(value)
-                SSet("overrideNumRows", value, function(keyName)
-                    ABAR:ApplyIconRowOverrides(keyName)
-                end)
+                SSet("overrideNumRows", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
                 SUpdatePreviewAndResize()
             end,
         })
@@ -1024,21 +910,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 isSynced = function()
                     local value = SB().overrideNumIcons or 12
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].overrideNumIcons or 12) ~= value then
-                            return false
-                        end
+                        if (ABAR.db.profile.bars[key].overrideNumIcons or 12) ~= value then return false end
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { region }
-                end,
+                flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
                     elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
+                    getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local value = SB().overrideNumIcons or 12
                         for _, key in ipairs(checkedKeys) do
@@ -1066,21 +946,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 isSynced = function()
                     local value = SB().overrideNumRows or 1
                     for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].overrideNumRows or 1) ~= value then
-                            return false
-                        end
+                        if (ABAR.db.profile.bars[key].overrideNumRows or 1) ~= value then return false end
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { region }
-                end,
+                flashTargets = function() return { region } end,
                 multiApply = {
                     elementKeys = GROUP_BAR_ORDER,
                     elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
+                    getCurrentKey = function() return SelectedKey() end,
                     onApply = function(checkedKeys)
                         local value = SB().overrideNumRows or 1
                         for _, key in ipairs(checkedKeys) do
@@ -1114,15 +988,15 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         order = growDirOrder,
                         get = function()
                             local val = SVal("growDirection", "up")
-                            if not growDirValues[val] then
-                                return "center"
-                            end
+                            if not growDirValues[val] then return "center" end
                             return val
                         end,
                         set = function(value)
-                            SSet("growDirection", value, function(keyName)
-                                ABAR:ApplyIconRowOverrides(keyName)
-                            end)
+                            SSet(
+                                "growDirection",
+                                value,
+                                function(keyName) ABAR:ApplyIconRowOverrides(keyName) end
+                            )
                             SUpdatePreviewAndResize()
                         end,
                     },
@@ -1137,14 +1011,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             orientRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Vertical Orientation",
-                disabled = function()
-                    return not ABAR:BarSupportsOrientation(SelectedKey())
-                end,
+                disabled = function() return not ABAR:BarSupportsOrientation(SelectedKey()) end,
                 disabledTooltip = "This option is not supported for this bar type",
                 rawTooltip = true,
-                getValue = function()
-                    return not ABAR:GetOrientationForBar(SelectedKey())
-                end,
+                getValue = function() return not ABAR:GetOrientationForBar(SelectedKey()) end,
                 setValue = function(value)
                     ABAR:SetOrientationForBar(SelectedKey(), not value)
                     SUpdatePreviewAndResize()
@@ -1171,9 +1041,7 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 end,
                 setValue = function(value)
                     SDB().reverseIconOrder = (value == "reversed")
-                    SSet("iconOrder", value, function(keyName)
-                        ABAR:ApplyIconRowOverrides(keyName)
-                    end)
+                    SSet("iconOrder", value, function(keyName) ABAR:ApplyIconRowOverrides(keyName) end)
                     SUpdatePreviewAndResize()
                 end,
             })
@@ -1204,15 +1072,11 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         end
                         return true
                     end,
-                    flashTargets = function()
-                        return { region }
-                    end,
+                    flashTargets = function() return { region } end,
                     multiApply = {
                         elementKeys = GROUP_BAR_ORDER,
                         elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return SelectedKey()
-                        end,
+                        getCurrentKey = function() return SelectedKey() end,
                         onApply = function(checkedKeys)
                             local isHoriz = ABAR:GetOrientationForBar(SelectedKey())
                             for _, key in ipairs(checkedKeys) do

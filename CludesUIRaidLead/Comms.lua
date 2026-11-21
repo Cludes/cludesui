@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Comms.lua -- Raid Lead: messages between CludesUI users in a group.
 --
@@ -25,20 +23,12 @@ local PART = 200 -- characters of note per message, leaving room for the header
 local PACE = 1.1 -- seconds between messages after the first burst
 local BURST = 8
 
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
-end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local function Channel()
-    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
-        return "INSTANCE_CHAT"
-    end
-    if IsInRaid() then
-        return "RAID"
-    end
-    if IsInGroup() then
-        return "PARTY"
-    end
+    if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end
+    if IsInRaid() then return "RAID" end
+    if IsInGroup() then return "PARTY" end
     return nil
 end
 
@@ -66,9 +56,7 @@ local function Pump()
 end
 
 local function Send(msg, channel)
-    if not (channel or Channel()) then
-        return false
-    end
+    if not (channel or Channel()) then return false end
     queue[#queue + 1] = { msg, channel }
     if not sending then
         sending, failedWarned = true, false
@@ -77,19 +65,13 @@ local function Send(msg, channel)
     return true
 end
 
-local function MyVersion()
-    return (C_AddOns.GetAddOnMetadata("CludesUI", "Version")) or "?"
-end
+local function MyVersion() return (C_AddOns.GetAddOnMetadata("CludesUI", "Version")) or "?" end
 
 -- Only the group leader or an assistant may hand out notes.
 local function IsLeaderOrAssist(sender)
-    if not sender then
-        return false
-    end
+    if not sender then return false end
     local short = Ambiguate(sender, "none")
-    if UnitIsGroupLeader(short) or UnitIsGroupAssistant(short) then
-        return true
-    end
+    if UnitIsGroupLeader(short) or UnitIsGroupAssistant(short) then return true end
     return UnitIsUnit(short, "player")
 end
 
@@ -101,9 +83,7 @@ mod.versions = versions
 
 --- Asks the group for CludesUI versions and prints the result after a few seconds.
 function mod.VersionCheck()
-    if not Channel() then
-        return Say("you are not in a group.")
-    end
+    if not Channel() then return Say("you are not in a group.") end
     wipe(versions)
     versions[UnitName("player")] = MyVersion()
     Send("V?")
@@ -128,9 +108,7 @@ function mod.VersionCheck()
         if #missing > 0 then
             Say(#missing .. " without it (or did not answer): " .. table.concat(missing, ", "))
         end
-        if mod.OnVersionsChanged then
-            mod.OnVersionsChanged()
-        end
+        if mod.OnVersionsChanged then mod.OnVersionsChanged() end
     end)
 end
 
@@ -141,9 +119,7 @@ local incoming = {} -- id -> { boss, n, parts = {} }
 
 --- Sends a reminder note to every CludesUI user in the group.
 function mod.ShareNote(boss, textValue)
-    if not Channel() then
-        return Say("you are not in a group.")
-    end
+    if not Channel() then return Say("you are not in a group.") end
     if not (UnitIsGroupLeader("player") or UnitIsGroupAssistant("player")) then
         return Say("only the leader or an assistant can send reminders.")
     end
@@ -166,12 +142,8 @@ function mod.ShareNote(boss, textValue)
 end
 
 local function OnNotePart(sender, ident, idx, num, boss, part)
-    if not IsLeaderOrAssist(sender) then
-        return
-    end
-    if UnitIsUnit(Ambiguate(sender, "none"), "player") then
-        return
-    end
+    if not IsLeaderOrAssist(sender) then return end
+    if UnitIsUnit(Ambiguate(sender, "none"), "player") then return end
     local key = sender .. ident
     local record = incoming[key] or { boss = boss, n = num, parts = {}, got = 0 }
     incoming[key] = record
@@ -191,22 +163,14 @@ end
 -------------------------------------------------------------------------------
 --  Ready check reports and nicknames
 -------------------------------------------------------------------------------
-function mod.SendReadyReport(report)
-    Send("R|" .. report)
-end
+function mod.SendReadyReport(report) Send("R|" .. report) end
 
 --- channel nil = the group; "GUILD" = the guild.
-function mod.SendNickname(nick, channel)
-    Send("K|" .. nick, channel)
-end
+function mod.SendNickname(nick, channel) Send("K|" .. nick, channel) end
 
-function mod.SendBreak(seconds)
-    return Send("B|" .. seconds)
-end
+function mod.SendBreak(seconds) return Send("B|" .. seconds) end
 
-function mod.SendDrop(kind)
-    return Send("D|" .. kind)
-end
+function mod.SendDrop(kind) return Send("D|" .. kind) end
 
 -------------------------------------------------------------------------------
 --  Receiving
@@ -214,26 +178,16 @@ end
 local widget = CreateFrame("Frame")
 widget:RegisterEvent("CHAT_MSG_ADDON")
 widget:SetScript("OnEvent", function(_, _, prefixText, msg, channel, sender)
-    if prefixText ~= PREFIX or type(msg) ~= "string" then
-        return
-    end
-    if issecretvalue and (issecretvalue(msg) or issecretvalue(sender)) then
-        return
-    end
+    if prefixText ~= PREFIX or type(msg) ~= "string" then return end
+    if issecretvalue and (issecretvalue(msg) or issecretvalue(sender)) then return end
     if msg == "V?" then
         Send("V|" .. MyVersion())
     elseif msg:sub(1, 2) == "R|" then
-        if mod.ReceiveReadyReport then
-            mod.ReceiveReadyReport(Ambiguate(sender, "none"), msg:sub(3))
-        end
+        if mod.ReceiveReadyReport then mod.ReceiveReadyReport(Ambiguate(sender, "none"), msg:sub(3)) end
     elseif msg:sub(1, 2) == "K|" then
-        if mod.ReceiveNickname then
-            mod.ReceiveNickname(sender, msg:sub(3, 40))
-        end
+        if mod.ReceiveNickname then mod.ReceiveNickname(sender, msg:sub(3, 40)) end
     elseif msg:sub(1, 2) == "D|" then
-        if mod.ReceiveDrop then
-            mod.ReceiveDrop(Ambiguate(sender, "none"), msg:sub(3, 20))
-        end
+        if mod.ReceiveDrop then mod.ReceiveDrop(Ambiguate(sender, "none"), msg:sub(3, 20)) end
     elseif msg:sub(1, 2) == "B|" then
         local seconds = tonumber(msg:match("^B|(%d+)$"))
         if seconds and IsLeaderOrAssist(sender) and mod.ReceiveBreak then

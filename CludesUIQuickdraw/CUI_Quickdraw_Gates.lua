@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Gates.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local LIVE_STRATA, MAX_LATTICE, REGION_MAX = Inner.LIVE_STRATA, Inner.MAX_LATTICE, Inner.REGION_MAX
@@ -283,16 +279,10 @@ __ARC_GROUND__
                 end
             end
         end
-    ]==])
-                    :gsub("__CURSOR_OFFSET__", function()
-                        return CURSOR_OFFSET
-                    end)
-                    :gsub("__ARC_GROUND__", function()
-                        return ARC_GROUND
-                    end)
-                    :gsub("__ARM_CLAIM__", function()
-                        return ARM_CLAIM
-                    end)
+    ]==]):gsub("__CURSOR_OFFSET__", function() return CURSOR_OFFSET end):gsub(
+                    "__ARC_GROUND__",
+                    function() return ARC_GROUND end
+                ):gsub("__ARM_CLAIM__", function() return ARM_CLAIM end)
             )
         end
         return (
@@ -302,9 +292,10 @@ __ARC_GROUND__
             local k = __CLAIM_K__
             __ARM_CLAIM__
         end
-    ]==]):gsub("__CLAIM_K__", tostring(key)):gsub("__ARM_CLAIM__", function()
-                return ARM_CLAIM
-            end)
+    ]==]):gsub("__CLAIM_K__", tostring(key)):gsub(
+                "__ARM_CLAIM__",
+                function() return ARM_CLAIM end
+            )
         )
     end
 
@@ -467,16 +458,10 @@ __ARC_GROUND__
                     regionFrame and 'if btn and btn:GetAttribute("eqdMode") == "ANGULAR" then return end'
                         or ""
                 )
-                :gsub("__CURSOR_OFFSET__", function()
-                    return CURSOR_OFFSET
-                end)
-                :gsub("__ARC_GROUND__", function()
-                    return ARC_GROUND
-                end)
+                :gsub("__CURSOR_OFFSET__", function() return CURSOR_OFFSET end)
+                :gsub("__ARC_GROUND__", function() return ARC_GROUND end)
                 :gsub("__REGION_MAX__", tostring(REGION_MAX))
-                :gsub("__ARM_CLAIM__", function()
-                    return ARM_CLAIM
-                end)
+                :gsub("__ARM_CLAIM__", function() return ARM_CLAIM end)
         )
     end
 end
@@ -605,9 +590,7 @@ do
             SecureHandlerSetFrameRef(button, "fgate", fgate)
             pool.fgate = fgate
         end
-        if pool.built >= need then
-            return pool
-        end
+        if pool.built >= need then return pool end
 
         for key = pool.built + 1, need do
             local pgate = CreateFrame(
@@ -719,9 +702,7 @@ do
     -- ever builds it -- see the call in PushPalette.
     function EnsureLatticeGates(index, button)
         local pool = gatePools[index]
-        if not pool or pool.lattice then
-            return
-        end
+        if not pool or pool.lattice then return end
         pool.lattice = {}
         for skinData = -MAX_LATTICE, MAX_LATTICE do
             -- Named by 0-based position rather than by the signed offset, so the

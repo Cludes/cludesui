@@ -1,17 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then
-    return
-end -- no item upgrade system on WoW Forever: the QoL module lists no Upgrader tab there and its callers nil-guard the page builder and reset
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then return end -- no item upgrade system on WoW Forever: the QoL module lists no Upgrader tab there and its callers nil-guard the page builder and reset
 -------------------------------------------------------------------------------
 --  CUI_UpgradeCalc_Options.lua
 --  Options page for the Upgrade Calculator feature (part of CludesUIQoL).
 -------------------------------------------------------------------------------
 
-if not CludesUI._ModuleNS["CludesUIQoL"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIQoL"] then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
@@ -21,9 +15,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 local function GetAddonDB()
     -- Always delegate to the main module so we read from the same profile
     -- slice that persists via CludesUIDB (not the wiped CludesUIQoLDB).
-    if CUIUpgCalc and CUIUpgCalc.GetOptsDB then
-        return CUIUpgCalc.GetOptsDB()
-    end
+    if CUIUpgCalc and CUIUpgCalc.GetOptsDB then return CUIUpgCalc.GetOptsDB() end
     CludesUIQoLDB = CludesUIQoLDB or {}
     CludesUIQoLDB.upgradeCalcOpts = CludesUIQoLDB.upgradeCalcOpts or {}
     return CludesUIQoLDB.upgradeCalcOpts
@@ -37,15 +29,11 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
 
     hostFrame._showRowDivider = true
 
-    if CludesUI.ClearContentHeader then
-        CludesUI:ClearContentHeader()
-    end
+    if CludesUI.ClearContentHeader then CludesUI:ClearContentHeader() end
 
     local function RefreshOpenCalc()
         local fr = _G["CUIUpgCalcFrame"]
-        if fr and fr:IsShown() and CUIUpgCalc and CUIUpgCalc.PopulateGear then
-            CUIUpgCalc.PopulateGear()
-        end
+        if fr and fr:IsShown() and CUIUpgCalc and CUIUpgCalc.PopulateGear then CUIUpgCalc.PopulateGear() end
     end
 
     ---------------------------------------------------------------------------
@@ -81,9 +69,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         Pix.Point(clearBtn, "LEFT", row, "CENTER", GAP / 2, 0)
         clearBtn:SetFrameLevel(row:GetFrameLevel() + 1)
         CludesUI.MakeStyledButton(clearBtn, "Clear Upgrade Cache", 14, CludesUI.WB_COLOURS, function()
-            if CUIUpgCalc and CUIUpgCalc.ClearCache then
-                CUIUpgCalc:ClearCache()
-            end
+            if CUIUpgCalc and CUIUpgCalc.ClearCache then CUIUpgCalc:ClearCache() end
         end)
 
         cursorY = cursorY - ROW_H
@@ -116,26 +102,18 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Open with Character Sheet",
         tooltip = "Automatically opens and closes the Upgrade Calculator when the Character Sheet is opened or closed.",
-        getValue = function()
-            return GetAddonDB().openWithCharSheet or false
-        end,
-        setValue = function(val)
-            GetAddonDB().openWithCharSheet = val
-        end,
+        getValue = function() return GetAddonDB().openWithCharSheet or false end,
+        setValue = function(val) GetAddonDB().openWithCharSheet = val end,
     }, {
         type = "slider",
         text = "Window Scale",
         min = 50,
         max = 150,
         step = 5,
-        getValue = function()
-            return GetAddonDB().uiScale or 100
-        end,
+        getValue = function() return GetAddonDB().uiScale or 100 end,
         setValue = function(val)
             GetAddonDB().uiScale = val
-            if CUIUpgCalc and CUIUpgCalc.ApplyScale then
-                CUIUpgCalc.ApplyScale()
-            end
+            if CUIUpgCalc and CUIUpgCalc.ApplyScale then CUIUpgCalc.ApplyScale() end
         end,
     })
     cursorY = cursorY - height
@@ -145,9 +123,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Fully-Upgraded Items",
         tooltip = "Show gear tiles for items already at their maximum item level.",
-        getValue = function()
-            return GetAddonDB().showMaxed or false
-        end,
+        getValue = function() return GetAddonDB().showMaxed or false end,
         setValue = function(val)
             GetAddonDB().showMaxed = val
             RefreshOpenCalc()
@@ -156,9 +132,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Hide Crafted Items",
         tooltip = "Hide crafted items from the gear tile list.\nCrafted items cannot be upgraded at the Upgrade NPC.",
-        getValue = function()
-            return GetAddonDB().hideCrafted or false
-        end,
+        getValue = function() return GetAddonDB().hideCrafted or false end,
         setValue = function(val)
             GetAddonDB().hideCrafted = val
             RefreshOpenCalc()
@@ -187,25 +161,19 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         text = "Slot Groups",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     }, {
         type = "dropdown",
         text = "Crest Rows",
         values = { __placeholder = "..." },
         order = { "__placeholder" },
-        getValue = function()
-            return "__placeholder"
-        end,
+        getValue = function() return "__placeholder" end,
         setValue = function() end,
     })
     if not CludesUI._prebuilding then
         local leftRegion = filterRow._leftRegion
-        if leftRegion._control then
-            leftRegion._control:Hide()
-        end
+        if leftRegion._control then leftRegion._control:Hide() end
         local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             leftRegion,
             210,
@@ -229,9 +197,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
     end
     if not CludesUI._prebuilding then
         local rightRegion = filterRow._rightRegion
-        if rightRegion._control then
-            rightRegion._control:Hide()
-        end
+        if rightRegion._control then rightRegion._control:Hide() end
         local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             rightRegion,
             210,
@@ -260,9 +226,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Earned / Cap Column",
         tooltip = "Show the seasonal Earned / Cap column in the crest table.",
-        getValue = function()
-            return GetAddonDB().showEarnedCap or false
-        end,
+        getValue = function() return GetAddonDB().showEarnedCap or false end,
         setValue = function(val)
             GetAddonDB().showEarnedCap = val
             RefreshOpenCalc()
@@ -271,9 +235,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Still Available Column",
         tooltip = "Show how many crests you can still earn before hitting the season cap (cap minus earned so far).",
-        getValue = function()
-            return GetAddonDB().showWeeklyRemaining or false
-        end,
+        getValue = function() return GetAddonDB().showWeeklyRemaining or false end,
         setValue = function(val)
             GetAddonDB().showWeeklyRemaining = val
             RefreshOpenCalc()
@@ -288,21 +250,15 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Calc Button on Character Sheet",
         tooltip = "Adds a Calc toggle button to the character sheet that opens and closes the Upgrade Calculator.",
-        getValue = function()
-            return GetAddonDB().showCalcButton or false
-        end,
+        getValue = function() return GetAddonDB().showCalcButton or false end,
         setValue = function(val)
             GetAddonDB().showCalcButton = val
-            if CludesUI and CludesUI.ApplyCharSheetCalcTab then
-                CludesUI.ApplyCharSheetCalcTab()
-            end
+            if CludesUI and CludesUI.ApplyCharSheetCalcTab then CludesUI.ApplyCharSheetCalcTab() end
         end,
     }
     local skinNS = CludesUI._ModuleNS and CludesUI._ModuleNS.CludesUIBlizzardSkin
     if skinNS and skinNS.CharSheetStock() then
-        calcBtnCfg.disabled = function()
-            return true
-        end
+        calcBtnCfg.disabled = function() return true end
         calcBtnCfg.disabledTooltip = "Character Sheet: Blizz Default"
         calcBtnCfg.requireState = "disabled"
     end
@@ -310,12 +266,8 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Open with Crest Upgrader",
         tooltip = "Automatically opens the Upgrade Calculator when the Crest Upgrade NPC window is opened.",
-        getValue = function()
-            return GetAddonDB().openWithUpgrader or false
-        end,
-        setValue = function(val)
-            GetAddonDB().openWithUpgrader = val
-        end,
+        getValue = function() return GetAddonDB().openWithUpgrader or false end,
+        setValue = function(val) GetAddonDB().openWithUpgrader = val end,
     })
     cursorY = cursorY - height
 
@@ -325,9 +277,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enhanced Upgrade Tooltips",
         tooltip = "Replaces the Upgrade Level line with a colored rank, track and potential item-level range, including Ascension for eligible weapons, trinkets and necklaces. Shows the upgrade currency beside it while upgrades remain. Unmatched tracks keep Blizzard's text.",
-        getValue = function()
-            return CludesUI.QoLExtrasGet("upgradeTooltips") == true
-        end,
+        getValue = function() return CludesUI.QoLExtrasGet("upgradeTooltips") == true end,
         setValue = function(val)
             CludesUI.QoLExtrasSet("upgradeTooltips", val)
             CludesUI._applyUpgradeTooltips()
@@ -361,9 +311,7 @@ _G._CUI_ResetUpgradeCalc = function()
     elseif CludesUIQoLDB then
         CludesUIQoLDB.upgradeCalcOpts = {}
     end
-    if CUIUpgCalc and CUIUpgCalc.ClearCache then
-        CUIUpgCalc:ClearCache()
-    end
+    if CUIUpgCalc and CUIUpgCalc.ClearCache then CUIUpgCalc:ClearCache() end
     -- Also wipe the persisted queue and crest manual-add offsets.
     if CUIUpgCalc and CUIUpgCalc.GetOptsDB then
         local saved = CUIUpgCalc.GetCalcDB and CUIUpgCalc.GetCalcDB()

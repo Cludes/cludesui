@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewData.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local UnitName = UnitName
@@ -29,13 +25,9 @@ local previewClassTokens, previewRoles = Inner.previewClassTokens, Inner.preview
 -- function of the table that holds its list, which hands the value to
 -- every copy: db, PP and containerFrame are the Raid Frames chain's.
 local saved
-RF.dbSetters[#RF.dbSetters + 1] = function(val)
-    saved = val
-end
+RF.dbSetters[#RF.dbSetters + 1] = function(val) saved = val end
 local Pix
-RF.PPSetters[#RF.PPSetters + 1] = function(val)
-    Pix = val
-end
+RF.PPSetters[#RF.PPSetters + 1] = function(val) Pix = val end
 
 mod.previewAbsorbValues = mod.previewAbsorbValues or {}
 local previewHealthValues = {}
@@ -62,9 +54,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
     local name
     if index == playerSlot then
         name = UnitName("player") or "Player"
-        if Ambiguate then
-            name = Ambiguate(name, "short")
-        end
+        if Ambiguate then name = Ambiguate(name, "short") end
     else
         -- Legends roster names are RAID-preview-only (user directive): the
         -- party preview (which sandwiches this fn with _previewSettingsOverride
@@ -109,9 +99,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         frame._health:SetMinMaxValues(0, 100)
         -- Preview: honor invert setting by flipping the displayed fill percentage
         local healthBarPct = healthPct
-        if pvInvert then
-            healthBarPct = 100 - healthBarPct
-        end
+        if pvInvert then healthBarPct = 100 - healthBarPct end
         frame._health:SetValue(healthBarPct)
         frame._healthPct = healthPct
         frame._classToken = classToken
@@ -121,42 +109,35 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         if mode == "dark" then
             local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
             frame._health:SetStatusBarColor(dfr, dfg, dfb, 1)
-            if fillTex then
-                fillTex:SetAlpha(dfa)
-            end
+            if fillTex then fillTex:SetAlpha(dfa) end
         elseif mode == "classic" then
-            if fillTex then
-                fillTex:SetAlpha(1)
-            end
+            if fillTex then fillTex:SetAlpha(1) end
             local pct = healthPct / 100
             local region = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
             local g = pct > 0.5 and 1 or (pct * 2)
             frame._health:SetStatusBarColor(region, g, 0, (cfg.healthBarOpacity or 100) / 100)
         elseif mode == "customDynamic" then
-            if fillTex then
-                fillTex:SetAlpha(1)
-            end
+            if fillTex then fillTex:SetAlpha(1) end
             local red, green, blue = mod.ResolveDynamicColor(cfg, healthPct / 100)
             frame._health:SetStatusBarColor(red, green, blue, (cfg.healthBarOpacity or 100) / 100)
         elseif mode == "classReactive" then
-            if fillTex then
-                fillTex:SetAlpha(1)
-            end
+            if fillTex then fillTex:SetAlpha(1) end
             local red, green, blue = mod.ResolveClassReactiveColor(cfg, classToken, healthPct / 100)
             frame._health:SetStatusBarColor(red, green, blue, (cfg.healthBarOpacity or 100) / 100)
         elseif mode == "custom" then
-            if fillTex then
-                fillTex:SetAlpha(1)
-            end
+            if fillTex then fillTex:SetAlpha(1) end
             local color = cfg.customFillColor
             frame._health:SetStatusBarColor(color.r, color.g, color.b, (cfg.healthBarOpacity or 100) / 100)
         else
-            if fillTex then
-                fillTex:SetAlpha(1)
-            end
+            if fillTex then fillTex:SetAlpha(1) end
             local classColor = CludesUI.GetClassColor(classToken)
             if classColor then
-                frame._health:SetStatusBarColor(classColor.r, classColor.g, classColor.b, (cfg.healthBarOpacity or 100) / 100)
+                frame._health:SetStatusBarColor(
+                    classColor.r,
+                    classColor.g,
+                    classColor.b,
+                    (cfg.healthBarOpacity or 100) / 100
+                )
             end
         end
     end
@@ -212,7 +193,8 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         mod.RF_TexBgLayer(
             frame._health,
             frame._bg,
-            not frame.kit and mod.RF_TexBgOpaque(cfg, cfg.healthColorMode == "dark") and mod.RF_TexBgPath(cfg) or nil
+            not frame.kit and mod.RF_TexBgOpaque(cfg, cfg.healthColorMode == "dark") and mod.RF_TexBgPath(cfg)
+                or nil
         )
         if cfg.healthColorMode == "dark" then
             AnchorPreviewBg()
@@ -257,9 +239,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             if mod._indicatorsVisible then
                 barOn = false
             elseif mod._testMode then
-                if mod._testAbsorbs == false then
-                    barOn = false
-                end
+                if mod._testAbsorbs == false then barOn = false end
             elseif not mod._absorbsPreviewVisible then
                 barOn = false
             end
@@ -293,9 +273,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 if mod._indicatorsVisible then
                     healBarOn = false
                 elseif mod._testMode then
-                    if mod._testHealAbsorbs == false then
-                        healBarOn = false
-                    end
+                    if mod._testHealAbsorbs == false then healBarOn = false end
                 elseif not mod._absorbsPreviewVisible then
                     healBarOn = false
                 end
@@ -350,9 +328,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
 
             if modern then
                 -- Forward = modern texture; backfill = flat 10% white overshield (mirrors live).
-                if fw then
-                    mod.ApplyModernAbsorbBar(fw, mask)
-                end
+                if fw then mod.ApplyModernAbsorbBar(fw, mask) end
                 mod.HideModernAbsorbBase(frame._absorbBar)
                 frame._absorbBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
                 frame._absorbBar:SetStatusBarColor(1, 1, 1, 0.10)
@@ -361,15 +337,11 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     bfFill:SetDrawLayer("ARTWORK", 1)
                     bfFill:SetHorizTile(false)
                     bfFill:SetVertTile(false)
-                    if mask then
-                        mod.RF_AddMaskOnce(bfFill, mask)
-                    end
+                    if mask then mod.RF_AddMaskOnce(bfFill, mask) end
                 end
             else
                 mod.HideModernAbsorbBase(frame._absorbBar)
-                if fw then
-                    mod.HideModernAbsorbBase(fw)
-                end
+                if fw then mod.HideModernAbsorbBase(fw) end
 
                 -- Apply style to backfill bar
                 frame._absorbBar:SetStatusBarTexture(texture)
@@ -379,9 +351,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     bfFill:SetDrawLayer("ARTWORK", 1)
                     bfFill:SetHorizTile(tiled)
                     bfFill:SetVertTile(tiled)
-                    if mask then
-                        mod.RF_AddMaskOnce(bfFill, mask)
-                    end
+                    if mask then mod.RF_AddMaskOnce(bfFill, mask) end
                 end
 
                 -- Apply style to forward bar
@@ -393,9 +363,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                         fwFill:SetDrawLayer("ARTWORK", 1)
                         fwFill:SetHorizTile(tiled)
                         fwFill:SetVertTile(tiled)
-                        if mask then
-                            mod.RF_AddMaskOnce(fwFill, mask)
-                        end
+                        if mask then mod.RF_AddMaskOnce(fwFill, mask) end
                     end
                 end
             end
@@ -404,9 +372,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             -- Mirror the live Show Overshield gate: when off (overlay-like modes) feed
             -- the backfill 0 so the overshield does not render in the preview.
             local pvOsm = cfg.overshieldMode
-            if pvOsm == nil then
-                pvOsm = (cfg.showOvershield == false) and "never" or "always"
-            end
+            if pvOsm == nil then pvOsm = (cfg.showOvershield == false) and "never" or "always" end
             local pvOvershieldOn = pvOsm ~= "never"
             local pvOverlayLike = modern or (cfg.absorbEdgeMode or "overlay") == "overlay"
             local pvAbValue = (not pvOvershieldOn and pvOverlayLike) and 0 or absorbAmt
@@ -425,9 +391,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             local pvGlowVert = mod.RF_IsVerticalFill(cfg)
             if modern and fw and not pvGlowVert then
                 local fmb = fw._modernBase
-                if fmb then
-                    fmb:SetAllPoints(fw:GetStatusBarTexture())
-                end
+                if fmb then fmb:SetAllPoints(fw:GetStatusBarTexture()) end
             end
             local pvGlowSet = cfg.absorbGlowLine
             local pvEm = cfg.absorbEdgeMode or "overlay"
@@ -489,25 +453,15 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 end
             elseif fw and fw._edgeSpark then
                 fw._edgeSpark:Hide()
-                if fw._bfSpark then
-                    fw._bfSpark:Hide()
-                end
+                if fw._bfSpark then fw._bfSpark:Hide() end
             end
         else
             frame._absorbBar:Hide()
-            if fw then
-                fw:Hide()
-            end
+            if fw then fw:Hide() end
             mod.HideModernAbsorbBase(frame._absorbBar)
-            if fw then
-                mod.HideModernAbsorbBase(fw)
-            end
-            if fw and fw._edgeSpark then
-                fw._edgeSpark:Hide()
-            end
-            if fw and fw._bfSpark then
-                fw._bfSpark:Hide()
-            end
+            if fw then mod.HideModernAbsorbBase(fw) end
+            if fw and fw._edgeSpark then fw._edgeSpark:Hide() end
+            if fw and fw._bfSpark then fw._bfSpark:Hide() end
         end
         -- Position clip frames + backfill based on shield absorb placement
         -- (mirrors the live ReanchorAbsorbToFill).
@@ -546,9 +500,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                         frame._absorbBar:SetPoint("TOPLEFT", frame._health, "TOPLEFT", 0, 0)
                         frame._absorbBar:SetPoint("TOPRIGHT", frame._health, "TOPRIGHT", 0, 0)
                     end
-                    if fw then
-                        fw:Hide()
-                    end
+                    if fw then fw:Hide() end
                 elseif absorbMode == "overlayReverse" or absorbMode == "overlayReverseFull" then
                     -- Whole absorb fills DOWN into the fill from its top edge;
                     -- the filled-region clip masks excess (mirrors live). Full
@@ -576,9 +528,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     mc:SetPoint("TOPRIGHT", frame._health, "TOPRIGHT", 0, 0)
                     frame._absorbBar:ClearAllPoints()
                     local pvOsm2 = cfg.overshieldMode
-                    if pvOsm2 == nil then
-                        pvOsm2 = (cfg.showOvershield == false) and "never" or "always"
-                    end
+                    if pvOsm2 == nil then pvOsm2 = (cfg.showOvershield == false) and "never" or "always" end
                     if pvOsm2 == "fromleft" and cfg.absorbStyle ~= "blizzardModern" then
                         frame._absorbBar:SetReverseFill(false)
                         frame._absorbBar:SetPoint("TOPLEFT", vfill, hpA, 0, 0)
@@ -613,9 +563,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     frame._absorbBar:SetPoint("TOPRIGHT", frame._health, "TOPRIGHT", 0, 0)
                     frame._absorbBar:SetPoint("BOTTOMRIGHT", frame._health, "BOTTOMRIGHT", 0, 0)
                 end
-                if fw then
-                    fw:Hide()
-                end
+                if fw then fw:Hide() end
             elseif absorbMode == "overlayReverse" or absorbMode == "overlayReverseFull" then
                 -- Whole absorb backfills from the fill's leading edge INTO the
                 -- fill; the filled-region clip masks excess (mirrors live). Full
@@ -648,9 +596,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 -- right-anchored reverse fill.
                 frame._absorbBar:ClearAllPoints()
                 local pvOsm2 = cfg.overshieldMode
-                if pvOsm2 == nil then
-                    pvOsm2 = (cfg.showOvershield == false) and "never" or "always"
-                end
+                if pvOsm2 == nil then pvOsm2 = (cfg.showOvershield == false) and "never" or "always" end
                 if pvOsm2 == "fromleft" and cfg.absorbStyle ~= "blizzardModern" then
                     frame._absorbBar:SetReverseFill(false)
                     frame._absorbBar:SetPoint("TOPRIGHT", fillTex, hpA, 0, 0)
@@ -726,9 +672,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 haFillPv:SetDrawLayer("ARTWORK", 2)
                 haFillPv:SetHorizTile(tiled)
                 haFillPv:SetVertTile(tiled)
-                if mask then
-                    mod.RF_AddMaskOnce(haFillPv, mask)
-                end
+                if mask then mod.RF_AddMaskOnce(haFillPv, mask) end
             end
             frame._healAbsorbBar:SetMinMaxValues(0, 100)
             frame._healAbsorbBar:SetValue(haAmt)
@@ -784,7 +728,13 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                         frame._healClip:SetPoint("BOTTOMRIGHT", frame._health, "BOTTOMRIGHT", 0, 0)
                     else
                         frame._healClip:SetPoint("TOPLEFT", frame._health, "TOPLEFT", 0, 0)
-                        frame._healClip:SetPoint("BOTTOMRIGHT", frame._health:GetStatusBarTexture(), hpB, 0, 0)
+                        frame._healClip:SetPoint(
+                            "BOTTOMRIGHT",
+                            frame._health:GetStatusBarTexture(),
+                            hpB,
+                            0,
+                            0
+                        )
                     end
                 end
                 frame._healAbsorbBar:ClearAllPoints()
@@ -883,9 +833,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         or (role == "DAMAGER" and cfg.powerShowForDPS)
     local hidePower = powerH <= 0 or not showForRole
     -- Party Frames kit: the stock mana bar always shows (the kit pass sizes it).
-    if frame.kitG then
-        hidePower = false
-    end
+    if frame.kitG then hidePower = false end
 
     if frame._power then
         if not hidePower then
@@ -943,9 +891,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
     -- the frame border below)
     if frame._powerBorder and Pix then
         if hidePower or frame.stockDiv or frame.kitG then
-            if frame._powerBorder._powerArtKey then
-                mod.RF_ClearPowerBorderArt(frame._powerBorder)
-            end
+            if frame._powerBorder._powerArtKey then mod.RF_ClearPowerBorderArt(frame._powerBorder) end
             frame._powerBorder:Hide()
         elseif
             not (
@@ -959,18 +905,10 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 frame._powerBorder:Show()
                 local ppC = Pix.GetBorders(frame._powerBorder)
                 if ppC then
-                    if ppC._bottom then
-                        ppC._bottom:SetAlpha(0)
-                    end
-                    if ppC._left then
-                        ppC._left:SetAlpha(0)
-                    end
-                    if ppC._right then
-                        ppC._right:SetAlpha(0)
-                    end
-                    if ppC._top then
-                        ppC._top:SetAlpha(0.2)
-                    end
+                    if ppC._bottom then ppC._bottom:SetAlpha(0) end
+                    if ppC._left then ppC._left:SetAlpha(0) end
+                    if ppC._right then ppC._right:SetAlpha(0) end
+                    if ppC._top then ppC._top:SetAlpha(0.2) end
                 end
             else
                 local pbSize = cfg.powerBorderSize or 1
@@ -984,31 +922,15 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     local ppC = Pix.GetBorders(frame._powerBorder)
                     if ppC then
                         if pbStyle == "divider" then
-                            if ppC._bottom then
-                                ppC._bottom:SetAlpha(0)
-                            end
-                            if ppC._left then
-                                ppC._left:SetAlpha(0)
-                            end
-                            if ppC._right then
-                                ppC._right:SetAlpha(0)
-                            end
-                            if ppC._top then
-                                ppC._top:SetAlpha(pba)
-                            end
+                            if ppC._bottom then ppC._bottom:SetAlpha(0) end
+                            if ppC._left then ppC._left:SetAlpha(0) end
+                            if ppC._right then ppC._right:SetAlpha(0) end
+                            if ppC._top then ppC._top:SetAlpha(pba) end
                         else
-                            if ppC._top then
-                                ppC._top:SetAlpha(pba)
-                            end
-                            if ppC._bottom then
-                                ppC._bottom:SetAlpha(pba)
-                            end
-                            if ppC._left then
-                                ppC._left:SetAlpha(pba)
-                            end
-                            if ppC._right then
-                                ppC._right:SetAlpha(pba)
-                            end
+                            if ppC._top then ppC._top:SetAlpha(pba) end
+                            if ppC._bottom then ppC._bottom:SetAlpha(pba) end
+                            if ppC._left then ppC._left:SetAlpha(pba) end
+                            if ppC._right then ppC._right:SetAlpha(pba) end
                         end
                     end
                 end
@@ -1022,25 +944,17 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         frame._border:SetFrameLevel(frame:GetFrameLevel() + 8)
         CludesUI.ApplyBorderStyle(frame._border, 0, 0, 0, 0, 0, "solid")
         frame._border._hlBorderSize = nil
-        if frame._ApplyBorderColor then
-            frame._ApplyBorderColor()
-        end
+        if frame._ApplyBorderColor then frame._ApplyBorderColor() end
     elseif frame._border and Pix and frame.stockEdge then
         frame._border:SetFrameLevel(frame:GetFrameLevel() + 8)
         CludesUI.ApplyBorderStyle(frame._border, 0, 0, 0, 0, 0, "solid")
         frame._border._hlBorderSize = nil
         mod.RF_StockSeat(frame)
-        if frame.stockDiv and frame._power and frame._power:IsShown() then
-            mod.RF_StockDivider(frame)
-        end
-        if frame._ApplyBorderColor then
-            frame._ApplyBorderColor()
-        end
+        if frame.stockDiv and frame._power and frame._power:IsShown() then mod.RF_StockDivider(frame) end
+        if frame._ApplyBorderColor then frame._ApplyBorderColor() end
     elseif frame._border and Pix and compact then
         CludesUI.ApplyBorderStyle(frame._border, 0, 0, 0, 0, 0, "solid")
-        if frame._ApplyBorderColor then
-            frame._ApplyBorderColor()
-        end
+        if frame._ApplyBorderColor then frame._ApplyBorderColor() end
     elseif frame._border and Pix then
         local bs = cfg.borderSize or 1
         local bc = cfg.borderColor or { r = 0, g = 0, b = 0 }
@@ -1063,9 +977,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             nil,
             CludesUI.BorderPx(cfg.borderSizePx, bs, cfg.borderTexture or "solid")
         )
-        if frame._ApplyBorderColor then
-            frame._ApplyBorderColor()
-        end
+        if frame._ApplyBorderColor then frame._ApplyBorderColor() end
     end
     -- Rounded corners, as on the live cells (stock styles stay square).
     if frame._border then
@@ -1093,9 +1005,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         local bs = cfg.threatBorderSize or 0
         local rc = not compact and cfg.threatCustomBorder == true and mod.RF_CustomBorderOn(cfg)
         local wantThreat = bs > 0 or rc
-        if mod._testMode and mod._testThreat ~= nil then
-            wantThreat = mod._testThreat
-        end
+        if mod._testMode and mod._testThreat ~= nil then wantThreat = mod._testThreat end
         local showThreat = wantThreat
             and (mod._testMode or mod._healthAnimActive)
             and previewRoles._threatIndex == index
@@ -1112,9 +1022,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         end
         if frame._pvAggroBdr ~= agg then
             frame._pvAggroBdr = agg
-            if frame._ApplyBorderColor then
-                frame._ApplyBorderColor()
-            end
+            if frame._ApplyBorderColor then frame._ApplyBorderColor() end
         end
     end
 
@@ -1137,9 +1045,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             or nil
         if frame._pvDispelBdrC ~= bdrC then
             frame._pvDispelBdrC = bdrC
-            if frame._ApplyBorderColor then
-                frame._ApplyBorderColor()
-            end
+            if frame._ApplyBorderColor then frame._ApplyBorderColor() end
         end
     end
     if dispVis and dispelDC then
@@ -1177,9 +1083,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     olMode == "gradient" and "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-tb.tga"
                         or "Interface\\AddOns\\CludesUI\\media\\textures\\gradient-sharp.tga"
                 )
-                if olMode == "gradient_reverse" then
-                    olTex:SetTexCoord(0, 1, 1, 0)
-                end
+                if olMode == "gradient_reverse" then olTex:SetTexCoord(0, 1, 1, 0) end
                 olTex:SetVertexColor(dispelDC.r, dispelDC.g, dispelDC.b, olAlpha)
             end
             olTex:Show()
@@ -1189,9 +1093,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         -- Dispel type icon (positioned per setting)
         if cfg.showDispelIcons and frame._dispelIcon and frame._dispelIconTex then
             local atlas = DISPEL_ICON_ATLAS[dispelType]
-            if atlas then
-                frame._dispelIconTex:SetAtlas(atlas)
-            end
+            if atlas then frame._dispelIconTex:SetAtlas(atlas) end
             frame._dispelIcon:ClearAllPoints()
             local diSz = cfg.dispelIconSize or 16
             frame._dispelIcon:SetSize(diSz, diSz)
@@ -1225,15 +1127,9 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             frame._dispelIcon:Hide()
         end
     else
-        if frame._dispelBdrFrame then
-            frame._dispelBdrFrame:Hide()
-        end
-        if frame._dispelOLTex then
-            frame._dispelOLTex:Hide()
-        end
-        if frame._dispelIcon then
-            frame._dispelIcon:Hide()
-        end
+        if frame._dispelBdrFrame then frame._dispelBdrFrame:Hide() end
+        if frame._dispelOLTex then frame._dispelOLTex:Hide() end
+        if frame._dispelIcon then frame._dispelIcon:Hide() end
     end
 
     -- Static dispel debuff icon (shows a fake debuff matching user's debuff settings)
@@ -1300,15 +1196,9 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                 (ddi._cooldown or ddi):GetFrameLevel()
             )
 
-            if ddi._cooldown then
-                ddi._cooldown:Hide()
-            end
-            if ddi._count then
-                ddi._count:SetText("")
-            end
-            if ddi._durText then
-                ddi._durText:Hide()
-            end
+            if ddi._cooldown then ddi._cooldown:Hide() end
+            if ddi._count then ddi._count:SetText("") end
+            if ddi._durText then ddi._durText:Hide() end
             ddi:Show()
         else
             frame._pvDispelDebuff:Hide()
@@ -1366,9 +1256,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
     end
 
     -- WoW Forever: Missing Buffs (CUI_RaidFrames_ForeverMissingBuffs.lua).
-    if mod.RF_FvMissingPreview then
-        mod.RF_FvMissingPreview(frame, index, cfg, indVis)
-    end
+    if mod.RF_FvMissingPreview then mod.RF_FvMissingPreview(frame, index, cfg, indVis) end
 
     -- Ready check icon
     if frame._readyCheck then
@@ -1526,9 +1414,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             -- current-health area the dispel wash covers stays empty, as live.
             frame._health:SetValue(pvInvert and 100 or 0)
             local ft = frame._health:GetStatusBarTexture()
-            if ft then
-                ft:SetAlpha(0)
-            end
+            if ft then ft:SetAlpha(0) end
         end
         if frame._bg then
             local color = cfg.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 }
@@ -1539,20 +1425,14 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
         -- Hide shield on dead players
         if frame._absorbBar then
             frame._absorbBar:Hide()
-            if frame._absorbBar._forward then
-                frame._absorbBar._forward:Hide()
-            end
-            if frame._absorbBar._topBar then
-                frame._absorbBar._topBar:Hide()
-            end
+            if frame._absorbBar._forward then frame._absorbBar._forward:Hide() end
+            if frame._absorbBar._topBar then frame._absorbBar._topBar:Hide() end
         end
     elseif isOffline then
         if frame._health then
             frame._health:SetValue(pvInvert and 100 or 0) -- see the dead branch
             local ft = frame._health:GetStatusBarTexture()
-            if ft then
-                ft:SetAlpha(0)
-            end
+            if ft then ft:SetAlpha(0) end
         end
         if frame._bg then
             local color = cfg.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 }
@@ -1564,9 +1444,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
 
     -- Role icon (not affected by indicators toggle)
     if frame._roleIcon then
-        if frame._roleIcon._roleText then
-            frame._roleIcon._roleText:Hide()
-        end
+        if frame._roleIcon._roleText then frame._roleIcon._roleText:Hide() end
         local style = cfg.roleIconStyle or "modern"
         if cfg.roleText or style ~= "none" then
             local role = previewRoles[index] or "DAMAGER"
@@ -1605,9 +1483,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
                     )
                 end
                 frame._roleIcon:Show()
-                if cfg.roleText then
-                    mod.ApplyRoleText(frame._roleIcon, role, cfg)
-                end
+                if cfg.roleText then mod.ApplyRoleText(frame._roleIcon, role, cfg) end
             else
                 frame._roleIcon:Hide()
             end
@@ -1665,9 +1541,7 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             if style:find("^combat%d") then
                 frame._combatIcon:SetTexture(MEDIA .. style .. ".tga")
                 frame._combatIcon:SetTexCoord(0, 1, 0, 1)
-                if frame._combatIcon.SetDesaturated then
-                    frame._combatIcon:SetDesaturated(false)
-                end
+                if frame._combatIcon.SetDesaturated then frame._combatIcon:SetDesaturated(false) end
                 frame._combatIcon:SetVertexColor(1, 1, 1, 1)
             else
                 if style == "class" then
@@ -1707,9 +1581,7 @@ end
 mod._previewInitialized = false
 
 local function InitPreviewHealthValues()
-    if mod._previewInitialized then
-        return
-    end
+    if mod._previewInitialized then return end
     mod._previewInitialized = true
     for index = 1, 20 do
         previewHealthValues[index] = 40 + math.random(60)
@@ -1749,20 +1621,14 @@ local function InitPreviewHealthValues()
     end
     local hpPool = {}
     for index = 1, 20 do
-        if previewHealthValues[index] < 95 then
-            hpPool[#hpPool + 1] = index
-        end
+        if previewHealthValues[index] < 95 then hpPool[#hpPool + 1] = index end
     end
     for index = #hpPool, 2, -1 do
         local jdx = math.random(index)
         hpPool[index], hpPool[jdx] = hpPool[jdx], hpPool[index]
     end
-    if hpPool[1] then
-        mod.previewHealPredValues[hpPool[1]] = 10 + math.random(20)
-    end
-    if hpPool[2] then
-        mod.previewHealPredValues[hpPool[2]] = 10 + math.random(20)
-    end
+    if hpPool[1] then mod.previewHealPredValues[hpPool[1]] = 10 + math.random(20) end
+    if hpPool[2] then mod.previewHealPredValues[hpPool[2]] = 10 + math.random(20) end
 
     -- Reduced max health: 2 random slots with 10-25% health loss
     mod.previewReducedMaxHealth = {}

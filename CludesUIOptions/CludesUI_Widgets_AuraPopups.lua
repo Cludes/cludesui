@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_AuraPopups.lua
 --  Tracked auras and spell blacklist popups shared by the aura filter
@@ -63,9 +61,7 @@ function CUI.ShowTrackedAurasPopup(options)
         _trackedAurasDimmer:Hide()
         _trackedAurasDimmer = nil
     end
-    if _trackedAurasPanel then
-        _trackedAurasPanel:Hide()
-    end
+    if _trackedAurasPanel then _trackedAurasPanel:Hide() end
 
     -- Kept hidden: shown below once dressed, so the Escape/Back hooks a named
     -- dimmer keeps through resets run at that show alone, never at the reset.
@@ -159,13 +155,9 @@ function CUI.ShowTrackedAurasPopup(options)
     -- Escape closes (consume Escape only; other keys propagate so chat/UI shortcuts keep working behind the dimmer).
     CUI.PopupTakeKeys(panelFrame, shade)
     panelFrame:SetScript("OnKeyDown", function(self, key)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" then
-            ClosePopup()
-        end
+        if key == "ESCAPE" then ClosePopup() end
     end)
 
     -- X close (standard popup chrome: borderless cui-close, top right)
@@ -176,12 +168,8 @@ function CUI.ShowTrackedAurasPopup(options)
     closeTex:SetAllPoints()
     closeTex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
     closeBtn:SetAlpha(0.5)
-    closeBtn:SetScript("OnEnter", function(self)
-        self:SetAlpha(0.9)
-    end)
-    closeBtn:SetScript("OnLeave", function(self)
-        self:SetAlpha(0.5)
-    end)
+    closeBtn:SetScript("OnEnter", function(self) self:SetAlpha(0.9) end)
+    closeBtn:SetScript("OnLeave", function(self) self:SetAlpha(0.5) end)
     closeBtn:SetScript("OnClick", ClosePopup)
 
     local RefreshBoth
@@ -209,9 +197,7 @@ function CUI.ShowTrackedAurasPopup(options)
         tl:SetTextColor(0.85, 0.85, 0.85)
         tl:SetText(CUI.L(sa.label or "Show All"))
         local function UpdAll()
-            if PoolGen(shade) ~= dressGen then
-                return
-            end
+            if PoolGen(shade) ~= dressGen then return end
             local enabled = sa.get() == true
             chk:SetShown(enabled)
             if bbrd and bbrd.SetColor then
@@ -250,15 +236,11 @@ function CUI.ShowTrackedAurasPopup(options)
         apLbl:SetText(CUI.L("Apply"))
         applyBtn:SetScript("OnEnter", function()
             apLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
-            if apBrd and apBrd.SetColor then
-                apBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
-            end
+            if apBrd and apBrd.SetColor then apBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8) end
         end)
         applyBtn:SetScript("OnLeave", function()
             apLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.7)
-            if apBrd and apBrd.SetColor then
-                apBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.35)
-            end
+            if apBrd and apBrd.SetColor then apBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.35) end
         end)
 
         local dropdownBtn = CreateFrame("Button", nil, panelFrame)
@@ -302,12 +284,8 @@ function CUI.ShowTrackedAurasPopup(options)
             rl:SetPoint("LEFT", mrow, "LEFT", 8, 0)
             rl:SetTextColor(0.85, 0.85, 0.85)
             rl:SetText(CUI.L(choice.label))
-            mrow:SetScript("OnEnter", function()
-                highlight:SetColorTexture(1, 1, 1, 0.06)
-            end)
-            mrow:SetScript("OnLeave", function()
-                highlight:SetColorTexture(1, 1, 1, 0)
-            end)
+            mrow:SetScript("OnEnter", function() highlight:SetColorTexture(1, 1, 1, 0.06) end)
+            mrow:SetScript("OnLeave", function() highlight:SetColorTexture(1, 1, 1, 0) end)
             mrow:SetScript("OnClick", function()
                 chosen = choice.key
                 dropCaption:SetText(CUI.L(choice.label))
@@ -315,22 +293,14 @@ function CUI.ShowTrackedAurasPopup(options)
                 dropMenu:Hide()
             end)
         end
-        dropdownBtn:SetScript("OnClick", function()
-            dropMenu:SetShown(not dropMenu:IsShown())
-        end)
+        dropdownBtn:SetScript("OnClick", function() dropMenu:SetShown(not dropMenu:IsShown()) end)
         -- Controller cursor: Cancel inside the list clicks the button (closing just the list).
-        if CUI.PadCP() then
-            dropMenu.CloseButton = dropdownBtn
-        end
+        if CUI.PadCP() then dropMenu.CloseButton = dropdownBtn end
 
         applyBtn:SetScript("OnClick", function()
-            if not chosen then
-                return
-            end
+            if not chosen then return end
             castFrame.apply(chosen)
-            if RefreshBoth then
-                RefreshBoth()
-            end
+            if RefreshBoth then RefreshBoth() end
         end)
     end
 
@@ -363,27 +333,19 @@ function CUI.ShowTrackedAurasPopup(options)
     -- entry is restricted to your casts.
     local function MakeSpellColumn(posX, titleText, promptText, listFn, otherFn, withMine)
         local function ScopeMap()
-            if not withMine then
-                return nil
-            end
-            if withMine.mineGet then
-                return withMine.mineGet()
-            end
+            if not withMine then return nil end
+            if withMine.mineGet then return withMine.mineGet() end
             return withMine.anyGet and withMine.anyGet()
         end
         local function MineOn(ident)
             local map = ScopeMap()
-            if withMine and withMine.mineGet then
-                return map ~= nil and map[ident] == true
-            end
+            if withMine and withMine.mineGet then return map ~= nil and map[ident] == true end
             return not (map and map[ident])
         end
         -- Both polarities toggle by flipping the entry's presence in the map.
         local function ToggleMine(ident)
             local map = ScopeMap()
-            if not map then
-                return
-            end
+            if not map then return end
             if map[ident] then
                 map[ident] = nil
             else
@@ -412,15 +374,11 @@ function CUI.ShowTrackedAurasPopup(options)
         al:SetText(CUI.L("Add Spell ID"))
         addBtn:SetScript("OnEnter", function()
             al:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
-            if abrd and abrd.SetColor then
-                abrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
-            end
+            if abrd and abrd.SetColor then abrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8) end
         end)
         addBtn:SetScript("OnLeave", function()
             al:SetTextColor(ACC.r, ACC.g, ACC.b, 0.7)
-            if abrd and abrd.SetColor then
-                abrd:SetColor(ACC.r, ACC.g, ACC.b, 0.35)
-            end
+            if abrd and abrd.SetColor then abrd:SetColor(ACC.r, ACC.g, ACC.b, 0.35) end
         end)
 
         local scroll = CreateFrame("ScrollFrame", nil, panelFrame)
@@ -444,9 +402,7 @@ function CUI.ShowTrackedAurasPopup(options)
         -- Rows: checkbox (enable/disable the entry without deleting it) + spell icon + name with the spell ID in gray parentheses + delete X. Disabled entries stay stored (false) and dim the whole row; only true entries reach the engine.
         local rowList = {}
         local function RedrawList()
-            if PoolGen(shade) ~= dressGen then
-                return
-            end
+            if PoolGen(shade) ~= dressGen then return end
             for idx = 1, #rowList do
                 rowList[idx]:Hide()
             end
@@ -456,9 +412,7 @@ function CUI.ShowTrackedAurasPopup(options)
                 local nm = C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
                 sorted[#sorted + 1] = { id = ident, on = val == true, name = nm or tostring(ident) }
             end
-            table.sort(sorted, function(lhs, rhs)
-                return lhs.name < rhs.name
-            end)
+            table.sort(sorted, function(lhs, rhs) return lhs.name < rhs.name end)
             for idx = 1, #sorted do
                 local row = rowList[idx]
                 if not row then
@@ -507,27 +461,21 @@ function CUI.ShowTrackedAurasPopup(options)
                         row.mine.txt:SetText(CUI.L("MINE"))
                         row.mine:SetScript("OnClick", function()
                             ToggleMine(row._id)
-                            if options.onChanged then
-                                options.onChanged()
-                            end
+                            if options.onChanged then options.onChanged() end
                             RedrawList()
                         end)
                         row.mine:SetScript("OnEnter", function(self)
                             local tipText
                             if MineOn(row._id) then
-                                tipText = CUI.L(
-                                    "Showing this aura from your casts only; click for any caster."
-                                )
+                                tipText =
+                                    CUI.L("Showing this aura from your casts only; click for any caster.")
                             else
-                                tipText = CUI.L(
-                                    "Showing this aura from any caster; click for your casts only."
-                                )
+                                tipText =
+                                    CUI.L("Showing this aura from any caster; click for your casts only.")
                             end
                             CUI.ShowWidgetTooltip(self, tipText)
                         end)
-                        row.mine:SetScript("OnLeave", function()
-                            CUI.HideWidgetTooltip()
-                        end)
+                        row.mine:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
                     end
                     row.x.tex = row.x:CreateTexture(nil, "OVERLAY")
                     row.x.tex:SetAllPoints()
@@ -541,12 +489,8 @@ function CUI.ShowTrackedAurasPopup(options)
                         self:SetAlpha(0.5)
                         CUI.HideWidgetTooltip()
                     end)
-                    row:SetScript("OnEnter", function(self)
-                        self.hl:SetColorTexture(1, 1, 1, 0.04)
-                    end)
-                    row:SetScript("OnLeave", function(self)
-                        self.hl:SetColorTexture(1, 1, 1, 0)
-                    end)
+                    row:SetScript("OnEnter", function(self) self.hl:SetColorTexture(1, 1, 1, 0.04) end)
+                    row:SetScript("OnLeave", function(self) self.hl:SetColorTexture(1, 1, 1, 0) end)
                     rowList[idx] = row
                 end
                 local record = sorted[idx]
@@ -579,26 +523,18 @@ function CUI.ShowTrackedAurasPopup(options)
                     local l2 = listFn()
                     if l2 then
                         l2[row._id] = not (l2[row._id] == true)
-                        if options.onChanged then
-                            options.onChanged()
-                        end
+                        if options.onChanged then options.onChanged() end
                         RedrawList()
                     end
                 end)
                 row.x:SetScript("OnClick", function()
                     local l2 = listFn()
-                    if l2 then
-                        l2[row._id] = nil
-                    end
+                    if l2 then l2[row._id] = nil end
                     if withMine then
                         local map = ScopeMap()
-                        if map then
-                            map[row._id] = nil
-                        end
+                        if map then map[row._id] = nil end
                     end
-                    if options.onChanged then
-                        options.onChanged()
-                    end
+                    if options.onChanged then options.onChanged() end
                     RedrawList()
                 end)
                 row:Show()
@@ -617,19 +553,11 @@ function CUI.ShowTrackedAurasPopup(options)
                     if entries then
                         -- One list per spell: adding here removes it from the opposite list.
                         local other = otherFn()
-                        if other then
-                            other[ident] = nil
-                        end
-                        if options.onAdd then
-                            options.onAdd(ident)
-                        end
+                        if other then other[ident] = nil end
+                        if options.onAdd then options.onAdd(ident) end
                         entries[ident] = true
-                        if options.onChanged then
-                            options.onChanged()
-                        end
-                        if RefreshBoth then
-                            RefreshBoth()
-                        end
+                        if options.onChanged then options.onChanged() end
+                        if RefreshBoth then RefreshBoth() end
                     end
                 end,
             })
@@ -672,15 +600,11 @@ function CUI.ShowTrackedAurasPopup(options)
     dl2:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
     doneBtn:SetScript("OnEnter", function()
         dl2:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
-        if dbrd and dbrd.SetColor then
-            dbrd:SetColor(ACC.r, ACC.g, ACC.b, 1)
-        end
+        if dbrd and dbrd.SetColor then dbrd:SetColor(ACC.r, ACC.g, ACC.b, 1) end
     end)
     doneBtn:SetScript("OnLeave", function()
         dl2:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
-        if dbrd and dbrd.SetColor then
-            dbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9)
-        end
+        if dbrd and dbrd.SetColor then dbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9) end
     end)
     doneBtn:SetScript("OnClick", ClosePopup)
 
@@ -695,14 +619,10 @@ function CUI.ShowTrackedAurasPopup(options)
         CUI.RegisterEscapeClose(shade, TRACKED_AURAS_ESC)
         CUI.PadHint(shade, "nodepass")
         CUI.PadHint(panelFrame, "nodepass")
-        if CUI.PadCP() then
-            panelFrame.CloseButton = closeBtn
-        end
+        if CUI.PadCP() then panelFrame.CloseButton = closeBtn end
     end
     shade:Show()
-    if pad and CUI.PadCursorShown() then
-        CUI.PadFocus(doneBtn)
-    end
+    if pad and CUI.PadCursorShown() then CUI.PadFocus(doneBtn) end
 
     RefreshBoth()
 end
@@ -762,9 +682,7 @@ function CUI.ShowSpellBlacklistPopup(options)
     dialog:SetPoint("CENTER")
     dialog:EnableMouse(true)
     dialog:SetFrameLevel(shade:GetFrameLevel() + 2)
-    if CUI.GetPopupScale then
-        dialog:SetScale(CUI.GetPopupScale())
-    end
+    if CUI.GetPopupScale then dialog:SetScale(CUI.GetPopupScale()) end
     local popBg = CUI.SolidTex(dialog, "BACKGROUND", 13 / 255, 17 / 255, 25 / 255, 0.98)
     popBg:SetAllPoints(dialog)
     CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.22, popBg)
@@ -804,12 +722,8 @@ function CUI.ShowSpellBlacklistPopup(options)
     ph:SetPoint("LEFT", addBox, "LEFT", 6, 0)
     ph:SetTextColor(0.5, 0.5, 0.5, 0.6)
     ph:SetText(CUI.L("Spell ID..."))
-    addBox:SetScript("OnTextChanged", function(self)
-        ph:SetShown(self:GetText() == "")
-    end)
-    addBox:SetScript("OnEscapePressed", function(self)
-        self:ClearFocus()
-    end)
+    addBox:SetScript("OnTextChanged", function(self) ph:SetShown(self:GetText() == "") end)
+    addBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
 
     local addBtn = CreateFrame("Button", nil, dialog)
     addBtn:SetSize(70, 26)
@@ -848,9 +762,7 @@ function CUI.ShowSpellBlacklistPopup(options)
     local rowList = {}
     local RebuildList
     RebuildList = function()
-        if PoolGen(shade) ~= dressGen then
-            return
-        end
+        if PoolGen(shade) ~= dressGen then return end
         for idx = 1, #rowList do
             rowList[idx]:Hide()
         end
@@ -879,12 +791,8 @@ function CUI.ShowSpellBlacklistPopup(options)
                 row.rmX:SetPoint("CENTER")
                 row.rmX:SetText("X")
                 row.rmX:SetTextColor(1, 0.3, 0.3, 0.7)
-                row.rm:SetScript("OnEnter", function()
-                    row.rmX:SetTextColor(1, 0.3, 0.3, 1)
-                end)
-                row.rm:SetScript("OnLeave", function()
-                    row.rmX:SetTextColor(1, 0.3, 0.3, 0.7)
-                end)
+                row.rm:SetScript("OnEnter", function() row.rmX:SetTextColor(1, 0.3, 0.3, 1) end)
+                row.rm:SetScript("OnLeave", function() row.rmX:SetTextColor(1, 0.3, 0.3, 0.7) end)
                 row.idText = row:CreateFontString(nil, "OVERLAY")
                 row.idText:SetFont(fontFile, 10, "")
                 row.idText:SetTextColor(1, 1, 1, 0.35)
@@ -905,12 +813,8 @@ function CUI.ShowSpellBlacklistPopup(options)
             row.name:SetText((details and details.name) or ("Spell " .. tostring(ident)))
             row.idText:SetText(tostring(ident))
             row.rm:SetScript("OnClick", function()
-                if options.remove then
-                    options.remove(ident)
-                end
-                if options.onChanged then
-                    options.onChanged()
-                end
+                if options.remove then options.remove(ident) end
+                if options.onChanged then options.onChanged() end
                 RebuildList()
             end)
             row:Show()
@@ -924,19 +828,11 @@ function CUI.ShowSpellBlacklistPopup(options)
         local ident = tonumber(addBox:GetText() or "")
         addBox:SetText("")
         addBox:ClearFocus()
-        if not (ident and ident > 0) then
-            return
-        end
+        if not (ident and ident > 0) then return end
         local map = options.get and options.get()
-        if map and map[ident] then
-            return
-        end
-        if options.add then
-            options.add(ident)
-        end
-        if options.onChanged then
-            options.onChanged()
-        end
+        if map and map[ident] then return end
+        if options.add then options.add(ident) end
+        if options.onChanged then options.onChanged() end
         RebuildList()
     end
     addBtn:SetScript("OnClick", AddFromBox)
@@ -960,7 +856,5 @@ function CUI.ShowSpellBlacklistPopup(options)
     shade:Show()
 
     RebuildList()
-    if padCP and CUI.PadCursorShown() then
-        CUI.PadFocus(dialog)
-    end
+    if padCP and CUI.PadCursorShown() then CUI.PadFocus(dialog) end
 end

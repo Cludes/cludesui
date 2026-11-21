@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIResourceBars.lua
 --  Health bar, primary resource bar (mana/rage/energy/etc), secondary
@@ -41,9 +39,7 @@ CludesUI.RegisterBorderDefaults("resourcebars", CludesUI.BORDER_DEFAULTS_BARS)
 -- need to land edges on whole physical pixels.
 local function SnapXY(posX, posY, widget, place)
     local PPa = CludesUI and CludesUI.PP
-    if not (PPa and posX and posY and widget) then
-        return posX or 0, posY or 0
-    end
+    if not (PPa and posX and posY and widget) then return posX or 0, posY or 0 end
     local es = widget:GetEffectiveScale()
     local isCenterAnchor = place
         and (place.point == "CENTER")
@@ -62,20 +58,14 @@ local UnitPowerMax = UnitPowerMax
 local UnitClass = UnitClass
 -- Vanilla-based clients (WoW Forever) have no specialization API: every
 -- reader then sees "no spec", the state a fresh character is in anyway.
-local GetSpecialization = GetSpecialization or function()
-    return nil
-end
+local GetSpecialization = GetSpecialization or function() return nil end
 local GetShapeshiftFormID = GetShapeshiftFormID
 
 -------------------------------------------------------------------------------
 --  Constants
 -------------------------------------------------------------------------------
-local function GetRBFont()
-    return CludesUI.GetFontPath("resourceBars")
-end
-local function SetRBFont(fontStr, font, size)
-    CludesUI.ApplyModuleFont(fontStr, font, size, "resourceBars")
-end
+local function GetRBFont() return CludesUI.GetFontPath("resourceBars") end
+local function SetRBFont(fontStr, font, size) CludesUI.ApplyModuleFont(fontStr, font, size, "resourceBars") end
 -- Shared with CUI_ResourceBars_SwingTimer.lua (same font lane as the cast bar text).
 mod.GetRBFont = GetRBFont
 mod.SetRBFont = SetRBFont
@@ -84,15 +74,9 @@ mod.SetRBFont = SetRBFont
 -- "0%", "0.0" and "0/5" are zero and "0.5" or "10/5" are not. Blank and secret
 -- text pass through.
 function mod.ERB_TextIsZero(textValue)
-    if textValue == nil or (issecretvalue and issecretvalue(textValue)) then
-        return false
-    end
-    if type(textValue) == "number" then
-        return textValue == 0
-    end
-    if type(textValue) ~= "string" or textValue == "" then
-        return false
-    end
+    if textValue == nil or (issecretvalue and issecretvalue(textValue)) then return false end
+    if type(textValue) == "number" then return textValue == 0 end
+    if type(textValue) ~= "string" or textValue == "" then return false end
     return tonumber(textValue:match("^%s*%-?%d+%.?%d*")) == 0
 end
 
@@ -100,9 +84,7 @@ end
 -- TruncateWhenZero, which blanks it at zero engine-side. Returns ok, display;
 -- not ok when the call fails, and the caller shows the raw value.
 function mod.ERB_TruncateSecretZero(val)
-    if not (C_StringUtil and C_StringUtil.TruncateWhenZero) then
-        return false
-    end
+    if not (C_StringUtil and C_StringUtil.TruncateWhenZero) then return false end
     return pcall(C_StringUtil.TruncateWhenZero, val)
 end
 
@@ -117,15 +99,11 @@ function mod.GetCastTextAnchor(side, pushed, reserve)
         return "CENTER", 0, "CENTER"
     elseif side == "left" then
         local base = 4
-        if pushed then
-            base = base + reserve
-        end
+        if pushed then base = base + reserve end
         return "LEFT", base, "LEFT"
     else -- "right"
         local base = -4
-        if pushed then
-            base = base - reserve
-        end
+        if pushed then base = base - reserve end
         return "RIGHT", base, "RIGHT"
     end
 end
@@ -135,9 +113,7 @@ end
 -- GetText may return a secret cast name; SetText accepts secrets untouched, so the
 -- round-trip is safe.
 function mod.ReflowFontString(fontStr)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local t = fontStr:GetText()
     fontStr:SetText("")
     fontStr:SetText(t or "")
@@ -260,13 +236,9 @@ end
 -- General Options overrides apply. Metatable converts {r=,g=,b=} to {r,g,b} arrays.
 local CLASS_COLORS = setmetatable({}, {
     __index = function(_, class)
-        if not CludesUI or not CludesUI.GetClassColor then
-            return nil
-        end
+        if not CludesUI or not CludesUI.GetClassColor then return nil end
         local color = CludesUI.GetClassColor(class)
-        if color then
-            return { color.r, color.g, color.b }
-        end
+        if color then return { color.r, color.g, color.b } end
         return nil
     end,
 })
@@ -296,9 +268,7 @@ local POWER_KEY_ALIAS = {
 }
 
 local function ResolvePowerKey(powerKey)
-    if type(powerKey) == "number" then
-        return POWER_ENUM_TO_KEY[powerKey]
-    end
+    if type(powerKey) == "number" then return POWER_ENUM_TO_KEY[powerKey] end
     return POWER_KEY_ALIAS[powerKey] or powerKey
 end
 
@@ -313,12 +283,8 @@ local POWER_COLORS = setmetatable({}, {
         -- hunters have no primary power (GetPrimaryPowerType returns nil by
         -- design -- Focus is the class resource bar), and the options swatches
         -- index this memo with that result. rawset with a nil key throws.
-        if powerKey == nil then
-            return nil
-        end
-        if not CludesUI then
-            return nil
-        end
+        if powerKey == nil then return nil end
+        if not CludesUI then return nil end
         local key = ResolvePowerKey(powerKey)
         if key and CludesUI.GetPowerColor then
             local color = CludesUI.GetPowerColor(key)
@@ -344,9 +310,7 @@ local POWER_COLORS = setmetatable({}, {
 -- edits, resets, global-mode toggle, Pull Colors From, profile switches), so wiping
 -- the memo there covers every palette edge; bars simply recolor next tick.
 if CludesUI and hooksecurefunc then
-    hooksecurefunc(CludesUI, "ApplyColorsToOUF", function()
-        table.wipe(POWER_COLORS)
-    end)
+    hooksecurefunc(CludesUI, "ApplyColorsToOUF", function() table.wipe(POWER_COLORS) end)
 end
 
 -- Blizzard player-frame power-bar atlas per power token, validated at runtime via
@@ -386,25 +350,19 @@ mod._crAtlasClass = {
 function mod.GetBlizzardPowerAtlas(powerKey)
     local resolved = ResolvePowerKey(powerKey) or powerKey
     local suffix = mod._crAtlasSuffix[resolved]
-    if not suffix or not (C_Texture and C_Texture.GetAtlasInfo) then
-        return nil
-    end
+    if not suffix or not (C_Texture and C_Texture.GetAtlasInfo) then return nil end
     -- Try Midnight family first (e.g. "Unit_Druid_AstralPower_Fill"), then classless
     -- and legacy HUD spellings; each candidate is validated, so a miss falls back.
     local _, class = UnitClass("player")
     local classToken = class and mod._crAtlasClass[class]
     local candidates = {}
-    if classToken then
-        candidates[#candidates + 1] = "Unit_" .. classToken .. "_" .. suffix .. "_Fill"
-    end
+    if classToken then candidates[#candidates + 1] = "Unit_" .. classToken .. "_" .. suffix .. "_Fill" end
     candidates[#candidates + 1] = "Unit_" .. suffix .. "_Fill"
     candidates[#candidates + 1] = "UI-HUD-UnitFrame-Player-PortraitOff-Bar-" .. suffix
     candidates[#candidates + 1] = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-" .. suffix
     for index = 1, #candidates do
         local name = candidates[index]
-        if C_Texture.GetAtlasInfo(name) then
-            return name
-        end
+        if C_Texture.GetAtlasInfo(name) then return name end
     end
     return nil
 end
@@ -441,14 +399,10 @@ local function GetPrimaryPowerType()
         local shade = primary and primary.powerTypeOverride
         if shade and shade.foreverDruid then
             local _, castFrame = UnitClass("player")
-            if castFrame == "DRUID" then
-                return POWER.MANA
-            end
+            if castFrame == "DRUID" then return POWER.MANA end
         end
         local live = UnitPowerType("player")
-        if type(live) == "number" then
-            return live
-        end
+        if type(live) == "number" then return live end
     end
     local _, class = UnitClass("player")
     local specInfo = GetSpecialization()
@@ -465,71 +419,47 @@ local function GetPrimaryPowerType()
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = primary and primary.powerTypeOverride
         local o = ovSpec and shade and shade[ovSpec]
-        if o == "mana" then
-            return POWER.MANA
-        end -- Balance "Mana": every form
+        if o == "mana" then return POWER.MANA end -- Balance "Mana": every form
         if o then
-            if specInfo == 1 then
-                return POWER.LUNAR_POWER
-            end -- Balance alt: Astral Power
+            if specInfo == 1 then return POWER.LUNAR_POWER end -- Balance alt: Astral Power
             return POWER.MANA -- Feral/Guardian/Restoration alt: Mana
         end
-        if form == 1 then
-            return POWER.ENERGY
-        end
-        if form == 5 then
-            return POWER.RAGE
-        end
+        if form == 1 then return POWER.ENERGY end
+        if form == 5 then return POWER.RAGE end
         return POWER.MANA
     end
 
     if class == "SHAMAN" and specInfo == 1 then
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = primary and primary.powerTypeOverride
-        if ovSpec and shade and shade[ovSpec] then
-            return POWER.MAELSTROM
-        end -- Elemental alt: Maelstrom
+        if ovSpec and shade and shade[ovSpec] then return POWER.MAELSTROM end -- Elemental alt: Maelstrom
     end
     if class == "PRIEST" and specInfo == 3 then
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = primary and primary.powerTypeOverride
-        if ovSpec and shade and shade[ovSpec] then
-            return POWER.INSANITY
-        end -- Shadow alt: Insanity
+        if ovSpec and shade and shade[ovSpec] then return POWER.INSANITY end -- Shadow alt: Insanity
     end
     if class == "HUNTER" then
         -- BM/MM show Focus as the class resource bar, not power; Survival keeps
         -- it as power. Override: hunterFocusAsPower.
         if specInfo == 1 or specInfo == 2 then
             local pp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-            if pp and pp.hunterFocusAsPower then
-                return POWER.FOCUS
-            end
+            if pp and pp.hunterFocusAsPower then return POWER.FOCUS end
             return nil
         end
     end
     if class == "MONK" then
-        if specInfo == 1 then
-            return POWER.ENERGY
-        end -- Brewmaster
-        if specInfo == 2 then
-            return POWER.MANA
-        end -- Mistweaver
-        if specInfo == 3 then
-            return POWER.ENERGY
-        end -- Windwalker
+        if specInfo == 1 then return POWER.ENERGY end -- Brewmaster
+        if specInfo == 2 then return POWER.MANA end -- Mistweaver
+        if specInfo == 3 then return POWER.ENERGY end -- Windwalker
     end
-    if class == "DEMONHUNTER" then
-        return POWER.FURY
-    end
+    if class == "DEMONHUNTER" then return POWER.FURY end
     if class == "EVOKER" and specInfo == 3 then
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
         local shade = primary and primary.powerTypeOverride
         -- Inverted against the others: Augmentation's DEFAULT is Ebon Might and
         -- the override opts into plain Mana. Same spec-ID key either way.
-        if not (ovSpec and shade and shade[ovSpec]) then
-            return "EBON_MIGHT"
-        end
+        if not (ovSpec and shade and shade[ovSpec]) then return "EBON_MIGHT" end
         return POWER.MANA
     end
 
@@ -582,17 +512,13 @@ end
 local function GetIcicleCount()
     local _, class = UnitClass("player")
     local specInfo = GetSpecialization()
-    if class ~= "MAGE" or specInfo ~= 3 then
-        return 0
-    end
+    if class ~= "MAGE" or specInfo ~= 3 then return 0 end
 
     if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
         local aura = C_UnitAuras.GetPlayerAuraBySpellID(ICICLES_SPELL_ID)
         if aura then
             local total = aura.applications or aura.charges or aura.points or 0
-            if total > 5 then
-                total = 5
-            end
+            if total > 5 then total = 5 end
             return total
         end
         return 0
@@ -601,14 +527,10 @@ local function GetIcicleCount()
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
         for index = 1, 255 do
             local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
-            if not aura then
-                break
-            end
+            if not aura then break end
             if aura.spellId == ICICLES_SPELL_ID then
                 local total = aura.applications or aura.charges or aura.points or 0
-                if total > 5 then
-                    total = 5
-                end
+                if total > 5 then total = 5 end
                 return total
             end
         end
@@ -692,12 +614,8 @@ local function GetSecondaryResource()
     elseif class == "DRUID" and specInfo == 1 then
         -- Balance: Astral Power as a class resource bar (like Elemental maelstrom)
         local mx = UnitPowerMax("player", POWER.LUNAR_POWER)
-        if issecretvalue and issecretvalue(mx) then
-            mx = 100
-        end
-        if not mx or mx <= 0 then
-            mx = 100
-        end
+        if issecretvalue and issecretvalue(mx) then mx = 100 end
+        if not mx or mx <= 0 then mx = 100 end
         return { power = "LUNAR_POWER_BAR", max = mx, type = "bar" }
     elseif class == "DRUID" and specInfo == 3 then
         -- Guardian, Ironfur bar disabled: no class resource (form==1 branch
@@ -713,12 +631,8 @@ local function GetSecondaryResource()
     elseif class == "MONK" and (specInfo == 1) then
         -- Brewmaster: stagger as a bar (max = player max health)
         local mx = UnitHealthMax("player") or 1
-        if issecretvalue and issecretvalue(mx) then
-            mx = 1
-        end
-        if mx <= 0 then
-            mx = 1
-        end
+        if issecretvalue and issecretvalue(mx) then mx = 1 end
+        if mx <= 0 then mx = 1 end
         return { power = "BREWMASTER_STAGGER", max = mx, type = "bar" }
     elseif class == "WARLOCK" then
         local mx = UnitPowerMax("player", POWER.SOUL_SHARDS)
@@ -762,9 +676,7 @@ local function GetSecondaryResource()
             local maxC = 50
             if CludesUI and CludesUI.GetSoulFragments then
                 local _, m = CludesUI.GetSoulFragments()
-                if m and m > 0 then
-                    maxC = m
-                end
+                if m and m > 0 then maxC = m end
             end
             return { power = "SOUL_FRAGMENTS_DEVOURER", max = maxC, type = "bar" }
         end
@@ -773,22 +685,14 @@ local function GetSecondaryResource()
     elseif class == "SHAMAN" and specInfo == 1 then
         -- Elemental: Maelstrom as a bar (like Devourer soul fragments)
         local mx = UnitPowerMax("player", POWER.MAELSTROM)
-        if issecretvalue and issecretvalue(mx) then
-            mx = 100
-        end
-        if not mx or mx <= 0 then
-            mx = 100
-        end
+        if issecretvalue and issecretvalue(mx) then mx = 100 end
+        if not mx or mx <= 0 then mx = 100 end
         return { power = "MAELSTROM_BAR", max = mx, type = "bar" }
     elseif class == "PRIEST" and specInfo == 3 then
         -- Shadow: Insanity as a bar (like Elemental maelstrom)
         local mx = UnitPowerMax("player", POWER.INSANITY)
-        if issecretvalue and issecretvalue(mx) then
-            mx = 100
-        end
-        if not mx or mx <= 0 then
-            mx = 100
-        end
+        if issecretvalue and issecretvalue(mx) then mx = 100 end
+        if not mx or mx <= 0 then mx = 100 end
         return { power = "INSANITY_BAR", max = mx, type = "bar" }
     elseif class == "SHAMAN" and specInfo == 2 then
         -- Base max 5, or 10 with Raging Maelstrom talent; BuildBars
@@ -799,16 +703,10 @@ local function GetSecondaryResource()
     elseif class == "HUNTER" and (specInfo == 1 or specInfo == 2) then
         -- BM and MM: Focus as a class resource bar (unless overridden)
         local pp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-        if pp and pp.hunterFocusAsPower then
-            return nil
-        end
+        if pp and pp.hunterFocusAsPower then return nil end
         local mx = UnitPowerMax("player", POWER.FOCUS)
-        if issecretvalue and issecretvalue(mx) then
-            mx = 100
-        end
-        if not mx or mx <= 0 then
-            mx = 100
-        end
+        if issecretvalue and issecretvalue(mx) then mx = 100 end
+        if not mx or mx <= 0 then mx = 100 end
         return { power = "FOCUS_BAR", max = mx, type = "bar" }
     elseif
         class == "WARRIOR"
@@ -822,12 +720,8 @@ local function GetSecondaryResource()
         -- see IP.CAP); stacks are unreadable (aura data fully secret). Toggle-gated,
         -- existing users pinned OFF via migration "resourcebars_protwar_ignorepain_existing_off_v1".
         local mx = UnitHealthMax("player") or 1
-        if issecretvalue and issecretvalue(mx) then
-            mx = 1
-        end
-        if mx <= 0 then
-            mx = 1
-        end
+        if issecretvalue and issecretvalue(mx) then mx = 1 end
+        if mx <= 0 then mx = 1 end
         return { power = "IGNOREPAIN_BAR", max = mx * IP.CAP, type = "bar" }
     elseif class == "WARRIOR" and specInfo == 2 then
         return { power = "WHIRLWIND_STACKS", max = 4, type = "custom" }

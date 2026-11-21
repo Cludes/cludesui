@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 -- CludesUI_ManaRegenSpark.lua
 -- WoW FOREVER ONLY: mana regen spark on mana power bars.
@@ -36,13 +34,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 local _, PLAYER_CLASS = UnitClass("player")
-if PLAYER_CLASS == "WARRIOR" or PLAYER_CLASS == "ROGUE" then
-    return
-end
+if PLAYER_CLASS == "WARRIOR" or PLAYER_CLASS == "ROGUE" then return end
 
 local MANA = Enum.PowerType.Mana
 local WINDOW = 5 -- five second rule
@@ -68,13 +62,9 @@ local timerSpan = timer:CreateAnimation("Animation")
 -- True when the spell's cost includes mana. A secret amount counts as a cost;
 -- only a plain 0 is free.
 local function CostsMana(spellId)
-    if issecretvalue(spellId) or not spellId then
-        return false
-    end
+    if issecretvalue(spellId) or not spellId then return false end
     local costs = C_Spell.GetSpellPowerCost(spellId)
-    if not costs then
-        return false
-    end
+    if not costs then return false end
     for idx = 1, #costs do
         local c = costs[idx]
         if not issecretvalue(c.type) and c.type == MANA then
@@ -93,9 +83,7 @@ local function Layout(hgt)
     local bar = hgt.bar
     local vert = bar:GetOrientation() == "VERTICAL"
     local rev = bar:GetReverseFill() and true or false
-    if hgt.vert == vert and hgt.rev == rev then
-        return
-    end
+    if hgt.vert == vert and hgt.rev == rev then return end
     hgt.vert, hgt.rev = vert, rev
     local o, s = hgt.overlay, hgt.spark
     o:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
@@ -145,9 +133,7 @@ end
 -- per hop; a start already a full sweep behind restarts from now.
 local function Sweep(len, start)
     local nowTime = GetTime()
-    if not start or start + len <= nowTime then
-        start = nowTime
-    end
+    if not start or start + len <= nowTime then start = nowTime end
     sweepEnd = start + len
     dur:SetTimeFromStart(start, len)
     for _, hgt in pairs(hosts) do
@@ -196,9 +182,7 @@ local function SyncListeners()
     for _, hgt in pairs(hosts) do
         if hgt.bar:IsVisible() then
             enabled = true
-            if hgt.ticks then
-                tk = true
-            end
+            if hgt.ticks then tk = true end
         end
     end
     if tk ~= ticking then
@@ -209,9 +193,7 @@ local function SyncListeners()
             eventFrame:UnregisterEvent("UNIT_POWER_UPDATE")
         end
     end
-    if enabled == listening then
-        return
-    end
+    if enabled == listening then return end
     listening = enabled
     if enabled then
         eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
@@ -234,9 +216,7 @@ end
 
 local function OnHostHide(bar)
     local hgt = built[bar]
-    if hosts[hgt.key] == hgt then
-        SyncListeners()
-    end
+    if hosts[hgt.key] == hgt then SyncListeners() end
 end
 
 local MRS = {}
@@ -275,9 +255,7 @@ function MRS.Attach(key, bar, ticks)
         end
         return
     end
-    if old then
-        old.overlay:Hide()
-    end
+    if old then old.overlay:Hide() end
     hgt.key, hgt.ticks = key, ticks
     hosts[key] = hgt
     SyncListeners()
@@ -286,9 +264,7 @@ end
 
 function MRS.Detach(key)
     local hgt = hosts[key]
-    if not hgt then
-        return
-    end
+    if not hgt then return end
     hosts[key] = nil
     hgt.overlay:Hide()
     SyncListeners()
@@ -298,15 +274,11 @@ end
 -- attach starts from the last report; on the edge to mana a running sweep
 -- shows at once, at its current position.
 function MRS.SetMana(key, isMana)
-    if mana[key] == isMana then
-        return
-    end
+    if mana[key] == isMana then return end
     mana[key] = isMana
     local hgt = hosts[key]
     if hgt then
-        if isMana then
-            Layout(hgt)
-        end
+        if isMana then Layout(hgt) end
         Arm(hgt)
     end
 end

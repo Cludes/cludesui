@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Info.lua - the clock, location and coordinates text.
 --
@@ -14,9 +12,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local SKIN, ACCENT = Inner.EBS, Inner.EG
@@ -25,26 +21,14 @@ local floor = math.floor
 -- The text frames, made by CUI_Minimap_Apply.lua: each file keeps its own
 -- copy, and Inner.Set<Name> hands a new value to every copy.
 local coordFrame, clockFrame, locationFrame, locationBg
-Inner.coordFrameSetters[#Inner.coordFrameSetters + 1] = function(v)
-    coordFrame = v
-end
-Inner.clockFrameSetters[#Inner.clockFrameSetters + 1] = function(v)
-    clockFrame = v
-end
-Inner.locationFrameSetters[#Inner.locationFrameSetters + 1] = function(v)
-    locationFrame = v
-end
-Inner.locationBgSetters[#Inner.locationBgSetters + 1] = function(v)
-    locationBg = v
-end
+Inner.coordFrameSetters[#Inner.coordFrameSetters + 1] = function(v) coordFrame = v end
+Inner.clockFrameSetters[#Inner.clockFrameSetters + 1] = function(v) clockFrame = v end
+Inner.locationFrameSetters[#Inner.locationFrameSetters + 1] = function(v) locationFrame = v end
+Inner.locationBgSetters[#Inner.locationBgSetters + 1] = function(v) locationBg = v end
 
-local function Profile()
-    return SKIN.db and SKIN.db.profile.minimap
-end
+local function Profile() return SKIN.db and SKIN.db.profile.minimap end
 
-local function ApplyMinimapFont(text, size)
-    CludesUI.ApplyModuleFont(text, nil, size, "minimap")
-end
+local function ApplyMinimapFont(text, size) CludesUI.ApplyModuleFont(text, nil, size, "minimap") end
 
 -- The colour of the descriptive bits (the clock's AM/PM, "fps"/"ms"): the
 -- accent, the chosen colour, or white; the values themselves stay white.
@@ -57,7 +41,8 @@ local function GetDescColor(mp)
         local color = mp.fpsColor
         red, green, blue = color.r or 1, color.g or 1, color.b or 1
     end
-    local hex = format("%02x%02x%02x", floor(red * 255 + 0.5), floor(green * 255 + 0.5), floor(blue * 255 + 0.5))
+    local hex =
+        format("%02x%02x%02x", floor(red * 255 + 0.5), floor(green * 255 + 0.5), floor(blue * 255 + 0.5))
     return red, green, blue, hex
 end
 
@@ -75,12 +60,8 @@ end
 -- AM/PM takes the descriptive colour only when that option is on.
 local shownClock -- the clock text as last written
 local function UpdateClock()
-    if not clockFrame then
-        return
-    end
-    if use24 == nil then
-        RefreshClockCVars()
-    end
+    if not clockFrame then return end
+    if use24 == nil then RefreshClockCVars() end
     local hour, minute
     if useLocal then
         local now = date("*t")
@@ -94,9 +75,7 @@ local function UpdateClock()
     else
         local suffix = hour >= 12 and "PM" or "AM"
         hour = hour % 12
-        if hour == 0 then
-            hour = 12
-        end
+        if hour == 0 then hour = 12 end
         local mp = Profile()
         if mp and mp.fpsColorClockAMPM then
             local _, _, _, hex = GetDescColor(mp)
@@ -107,9 +86,7 @@ local function UpdateClock()
     end
     -- The frame is reused when the clock is hidden and shown again, so its
     -- text is compared, not just the last string written.
-    if text == shownClock and clockFrame:GetText() == text then
-        return
-    end
+    if text == shownClock and clockFrame:GetText() == text then return end
     shownClock = text
     clockFrame:SetText(text)
 end
@@ -121,9 +98,7 @@ end
 -- carry only coordsBelow (true = always shown below the map, else on hover
 -- at the top left).
 local function GetCoordsModePos(mp)
-    if not mp then
-        return "always", "topLeft"
-    end
+    if not mp then return "always", "topLeft" end
     local mode = mp.coordsMode or "always"
     local place = mp.coordsPosition or (mp.coordsBelow and "belowMap") or "topLeft"
     return mode, place
@@ -133,9 +108,7 @@ end
 -- zoneInside (default on / off) and the removed Zone / Clock checkboxes
 -- (showClock == false or hideZoneText == true meant hidden).
 local function GetElementModes(mp)
-    if not mp then
-        return "inside", "inside"
-    end
+    if not mp then return "inside", "inside" end
     local clockMode = mp.clockMode
     if clockMode == nil then
         if mp.showClock == false then
@@ -179,24 +152,14 @@ local MAP_POS_ANCHORS = {
 -- Blizzard Style's slim square keeps the 4px (its shadow ends at the edge).
 -- place: a MAP_POS_ANCHORS key. An EBS field.
 function SKIN._FvInsideXY(place, x, y)
-    if not SKIN._fvSquare or place == "belowMap" then
-        return x, y
-    end
+    if not SKIN._fvSquare or place == "belowMap" then return x, y end
     if place == "aboveMap" then
-        if SKIN._fvTitleOn then
-            y = y + SKIN._SqTitle() - SKIN._SqOut()
-        end
+        if SKIN._fvTitleOn then y = y + SKIN._SqTitle() - SKIN._SqOut() end
         return x, y
     end
-    if SKIN._sqSlim then
-        return x, y
-    end
-    if x ~= 0 then
-        x = x + (x > 0 and 2 or -2)
-    end
-    if y ~= 0 then
-        y = y + (y > 0 and 2 or -2)
-    end
+    if SKIN._sqSlim then return x, y end
+    if x ~= 0 then x = x + (x > 0 and 2 or -2) end
+    if y ~= 0 then y = y + (y > 0 and 2 or -2) end
     return x, y
 end
 
@@ -209,12 +172,8 @@ local function ResolveElementAnchor(place, style, isCircle)
     local x, y = a[3], a[4]
     if style == "edge" and place ~= "belowMap" and place ~= "aboveMap" then
         local function Edge(v)
-            if v == 0 then
-                return 0
-            end
-            if isCircle then
-                return v > 0 and 3 or -3
-            end
+            if v == 0 then return 0 end
+            if isCircle then return v > 0 and 3 or -3 end
             return v > 0 and -7 or 7
         end
         x, y = Edge(x), Edge(y)
@@ -229,9 +188,7 @@ end
 -------------------------------------------------------------------------------
 local precision, pattern -- the format for the current precision
 local function UpdateCoords()
-    if not coordFrame then
-        return
-    end
+    if not coordFrame then return end
     local mapID = C_Map.GetBestMapForUnit("player")
     local spot = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
     local text = ""
@@ -246,9 +203,7 @@ local function UpdateCoords()
         text = format(pattern, x * 100, y * 100)
     end
     -- Twice a second: standing still writes nothing.
-    if coordFrame:GetText() ~= text then
-        coordFrame:SetText(text)
-    end
+    if coordFrame:GetText() ~= text then coordFrame:SetText(text) end
 end
 
 -------------------------------------------------------------------------------
@@ -271,9 +226,7 @@ end
 
 local shownLocation
 local function UpdateLocation()
-    if not locationFrame or InCombatLockdown() then
-        return
-    end
+    if not locationFrame or InCombatLockdown() then return end
     -- The colour first: a setting change or a new ruleset repaints the same name.
     local mp = Profile()
     if mp and mp.zoneReactiveColor then
@@ -285,18 +238,12 @@ local function UpdateLocation()
     local text = GetZoneText() or ""
     if mp and mp.zoneShowSubZone then
         local sub = GetSubZoneText()
-        if sub and sub ~= "" then
-            text = sub
-        end
+        if sub and sub ~= "" then text = sub end
     end
-    if text == shownLocation then
-        return
-    end
+    if text == shownLocation then return end
     shownLocation = text
     locationFrame:SetText(text)
-    if locationBg then
-        locationBg:SetSize((locationFrame:GetStringWidth() or 0) + 20, 18)
-    end
+    if locationBg then locationBg:SetSize((locationFrame:GetStringWidth() or 0) + 20, 18) end
 end
 
 Inner.ApplyMinimapFont, Inner.GetCoordsModePos = ApplyMinimapFont, GetCoordsModePos

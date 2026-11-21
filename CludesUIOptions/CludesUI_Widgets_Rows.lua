@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_Rows.lua
 --  Factory rows: buttons, the keybind button, DualRow, TripleRow and the
@@ -66,18 +64,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- while conf.disabled() holds: applied now and on every widget refresh.
     local function TrackSliderDisabled(rowConf, labelText, trackFrame, valBox, slThumb)
         local function Apply()
-            if not rowConf.disabled then
-                return
-            end
+            if not rowConf.disabled then return end
             local off = rowConf.disabled()
             local alpha = off and 0.3 or 1
             labelText:SetAlpha(alpha)
             trackFrame:SetAlpha(alpha)
             valBox:EnableMouse(not off)
             valBox:SetAlpha(alpha)
-            if slThumb then
-                slThumb._sliderDisabled = off
-            end
+            if slThumb then slThumb._sliderDisabled = off end
         end
         RegisterWidgetRefresh(Apply)
         Apply()
@@ -86,12 +80,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- A colour swatch's own tooltip (sc.tooltip, read on each hover), added to
     -- whatever hover it already has.
     local function HookSwatchTooltip(swatch, sc)
-        swatch:HookScript("OnEnter", function()
-            ShowWidgetTooltip(swatch, sc.tooltip)
-        end)
-        swatch:HookScript("OnLeave", function()
-            HideWidgetTooltip()
-        end)
+        swatch:HookScript("OnEnter", function() ShowWidgetTooltip(swatch, sc.tooltip) end)
+        swatch:HookScript("OnLeave", function() HideWidgetTooltip() end)
     end
 
     -- A row label's tooltip: a frame a little larger than the label that, on
@@ -101,9 +91,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- dropdown (ddBtn), nothing but the disabled reason shows while its menu
     -- is open.
     local function AddLabelTooltipHit(regionFrame, labelText, rowConf, dropdownBtn)
-        local function MenuOpen()
-            return dropdownBtn and dropdownBtn._ddMenu and dropdownBtn._ddMenu:IsShown()
-        end
+        local function MenuOpen() return dropdownBtn and dropdownBtn._ddMenu and dropdownBtn._ddMenu:IsShown() end
         local ttOpts = rowConf.tooltipOpts
         local hit = CreateFrame("Frame", nil, regionFrame)
         hit:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
@@ -112,23 +100,21 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         hit:SetScript("OnEnter", function()
             if rowConf.disabled and rowConf.disabled() and rowConf.disabledTooltip then
                 local reason = ResolveDisabledTip(rowConf)
-                if reason then
-                    ShowWidgetTooltip(labelText, reason)
-                end
+                if reason then ShowWidgetTooltip(labelText, reason) end
             elseif rowConf.tooltip and not MenuOpen() then
-                ShowWidgetTooltip(labelText, LabelTooltipText(regionFrame, labelText, rowConf.tooltip), ttOpts)
+                ShowWidgetTooltip(
+                    labelText,
+                    LabelTooltipText(regionFrame, labelText, rowConf.tooltip),
+                    ttOpts
+                )
             elseif regionFrame._labelTruncated and not MenuOpen() then
                 ShowWidgetTooltip(labelText, labelText:GetText())
             end
         end)
-        hit:SetScript("OnLeave", function()
-            HideWidgetTooltip()
-        end)
+        hit:SetScript("OnLeave", function() HideWidgetTooltip() end)
         hit:SetMouseClickEnabled(false)
         if rowConf.disabled and rowConf.disabledTooltip then
-            local function BlockWhileDisabled()
-                hit:SetMouseClickEnabled(rowConf.disabled() and true or false)
-            end
+            local function BlockWhileDisabled() hit:SetMouseClickEnabled(rowConf.disabled() and true or false) end
             RegisterWidgetRefresh(BlockWhileDisabled)
             BlockWhileDisabled()
         end
@@ -152,9 +138,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- (the disabled tooltip covers that); a press hides it.
     local function AttachSliderTooltip(regionFrame, labelText, rowConf, trackFrame, thumb, valBox)
         local own = type(rowConf.tooltipOnControl) == "string" and rowConf.tooltipOnControl
-        if not (own or (rowConf.tooltip and rowConf.tooltipOnControl)) then
-            return
-        end
+        if not (own or (rowConf.tooltip and rowConf.tooltipOnControl)) then return end
         local hit = CreateFrame("Frame", nil, regionFrame)
         -- Starts half a thumb before the track: the thumb overhangs it at the minimum.
         local overhang = thumb and thumb:GetWidth() / 2 or 0
@@ -165,25 +149,19 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         hit:SetMouseClickEnabled(false)
         CUI.PadHint(hit, "nodeignore")
         hit:SetScript("OnEnter", function()
-            if CUI._sliderDragging or (rowConf.disabled and rowConf.disabled()) then
-                return
-            end
+            if CUI._sliderDragging or (rowConf.disabled and rowConf.disabled()) then return end
             ShowWidgetTooltip(
                 hit,
                 own or LabelTooltipText(regionFrame, labelText, rowConf.tooltip),
                 rowConf.tooltipOpts
             )
         end)
-        local function Hide()
-            HideWidgetTooltip()
-        end
+        local function Hide() HideWidgetTooltip() end
         hit:SetScript("OnLeave", Hide)
         hit:SetPropagateMouseClicks(true)
         hit:SetPropagateMouseMotion(true)
         trackFrame:HookScript("OnMouseDown", Hide)
-        if thumb then
-            thumb:HookScript("OnMouseDown", Hide)
-        end
+        if thumb then thumb:HookScript("OnMouseDown", Hide) end
         valBox:HookScript("OnMouseDown", Hide)
     end
 
@@ -222,20 +200,14 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
     -- Spec Overrides capture: append an extra accessor to a region/row's capture config so inline extras (swatches, cog fields, inline toggles) built outside the factory capture TOGETHER with the slot's main setting as one override. acc = { type, text, getValue, setValue, step/values/order/hasAlpha }.
     function CUI.AddCaptureAccessor(regionFrame, acc)
-        if not (regionFrame and acc and acc.getValue and acc.setValue) then
-            return
-        end
+        if not (regionFrame and acc and acc.getValue and acc.setValue) then return end
         local classColor = regionFrame._captureCfg
         -- Dedupe by getValue identity: factory paths stash some controls themselves (colorpicker halves, multiSwatch rows) and BuildColorSwatch self-registers, so the same accessor must never join twice.
         if classColor then
-            if classColor.getValue == acc.getValue then
-                return
-            end
+            if classColor.getValue == acc.getValue then return end
             if classColor.accessors then
                 for _, a in ipairs(classColor.accessors) do
-                    if a.getValue == acc.getValue then
-                        return
-                    end
+                    if a.getValue == acc.getValue then return end
                 end
             end
         end
@@ -245,7 +217,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             classColor.accessors[#classColor.accessors + 1] = acc
         else
             -- Promote a single-accessor widget cfg to a grouped slot cfg.
-            regionFrame._captureCfg = { type = "multi", text = classColor.text, accessors = { classColor, acc } }
+            regionFrame._captureCfg =
+                { type = "multi", text = classColor.text, accessors = { classColor, acc } }
         end
     end
 
@@ -292,9 +265,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end
         local function FormatKey(key)
-            if not key or key == "" then
-                return CUI.L("Not Bound")
-            end
+            if not key or key == "" then return CUI.L("Not Bound") end
             local parts = {}
             for mod in key:gmatch("(%u+)%-") do
                 parts[#parts + 1] = mod:sub(1, 1) .. mod:sub(2):lower()
@@ -307,16 +278,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 local off = disabled()
                 -- Mouse stays on so the disabled tooltip can show; OnClick refuses.
                 button:SetAlpha(off and 0.3 or 1)
-                if hostFrame._label then
-                    hostFrame._label:SetAlpha(off and 0.3 or 1)
-                end
-                if off and listening then
-                    StopListening()
-                end
+                if hostFrame._label then hostFrame._label:SetAlpha(off and 0.3 or 1) end
+                if off and listening then StopListening() end
             end
-            if not listening then
-                labelFS:SetText(FormatKey(options.get()))
-            end
+            if not listening then labelFS:SetText(FormatKey(options.get())) end
         end
         local function Commit(chord)
             StopListening()
@@ -324,16 +289,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             options.set(chord)
             -- A setter that rebuilt the page dressed this button again (page
             -- reuse): that dress painted itself, so this one paints nothing more.
-            if PoolGen(button) ~= gen then
-                return
-            end
+            if PoolGen(button) ~= gen then return end
             SyncRowState()
         end
 
         button:SetScript("OnClick", function(self, btnFrame)
-            if disabled and disabled() then
-                return
-            end
+            if disabled and disabled() then return end
             -- OnKeyDown never sees mouse buttons; plain left/right keep arm/unbind
             -- unless plainMouse.
             if
@@ -352,12 +313,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 Commit(nil)
                 return
             end
-            if btnFrame ~= "LeftButton" or listening then
-                return
-            end
-            if options.canArm and not options.canArm() then
-                return
-            end
+            if btnFrame ~= "LeftButton" or listening then return end
+            if options.canArm and not options.canArm() then return end
             listening = true
             labelFS:SetText(CUI.L("Press a key..."))
             self:EnableKeyboard(true)
@@ -374,9 +331,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         -- SetPropagateKeyboardInput is blocked in combat on every
                         -- frame: the key and pad handlers stand aside there, as the
                         -- popup helpers' do (every host closes as combat starts).
-                        if InCombatLockdown() then
-                            return
-                        end
+                        if InCombatLockdown() then return end
                         if not listening then
                             s:SetPropagateKeyboardInput(true)
                             return
@@ -403,9 +358,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         Commit(CreateKeyChordStringUsingMetaKeyState(keyName))
                     end)
                     self:SetScript("OnGamePadButtonUp", function(s, key)
-                        if InCombatLockdown() then
-                            return
-                        end
+                        if InCombatLockdown() then return end
                         if key ~= padHeld then
                             s:SetPropagateKeyboardInput(true)
                             return
@@ -423,9 +376,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             end
         end)
         button:SetScript("OnKeyDown", function(self, key)
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             -- Bare modifiers pass through so they can be held for the chord.
             if not listening or IsKeyPressIgnoredForBinding(key) then
                 self:SetPropagateKeyboardInput(true)
@@ -442,9 +393,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         button:SetScript("OnEnter", function(self)
             if disabled and disabled() then
                 local tipText = options.disabledTip
-                if type(tipText) == "function" then
-                    tipText = tipText()
-                end
+                if type(tipText) == "function" then tipText = tipText() end
                 ShowWidgetTooltip(self, DisabledTooltip(tipText))
                 return
             end
@@ -457,9 +406,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end)
         button:SetScript("OnLeave", function()
             HideWidgetTooltip()
-            if listening then
-                return
-            end
+            if listening then return end
             backdrop:SetColorTexture(DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_A)
             button._border:SetColor(1, 1, 1, DD_BRD_A)
         end)
@@ -506,26 +453,18 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         catcher:SetMouseMotionEnabled(false)
         catcher:RegisterForClicks("LeftButtonUp")
         catcher:SetScript("OnClick", function()
-            if not toggle:IsMouseEnabled() then
-                return
-            end
+            if not toggle:IsMouseEnabled() then return end
             local click = toggle:GetScript("OnClick")
-            if click then
-                click(toggle, "LeftButton")
-            end
+            if click then click(toggle, "LeftButton") end
         end)
     end
 
     local function RowHintText(tipText)
-        if type(tipText) ~= "string" then
-            return nil
-        end
+        if type(tipText) ~= "string" then return nil end
         local text = CUI.L(tipText):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
         text = text:match("^[^\n]+") or ""
         text = (text:match("^(.-[%.%!%?])%s") or text):gsub("^%s+", ""):gsub("%s+$", "")
-        if text == "" then
-            return nil
-        end
+        if text == "" then return nil end
         return text
     end
 
@@ -539,16 +478,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
         Pix.Size(widget, totalW, ROW_HEIGHT)
         Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
-        if not rightCfg then
-            widget._skipRowDivider = true
-        end
+        if not rightCfg then widget._skipRowDivider = true end
         if not hiddenRow then
             RowBg(widget, hostFrame)
             -- Search metadata: combined label on the frame (inline page search), one global-index entry per slot.
             local dualLabel = (leftCfg and leftCfg.text or "")
-            if rightCfg and rightCfg.text then
-                dualLabel = dualLabel .. " " .. rightCfg.text
-            end
+            if rightCfg and rightCfg.text then dualLabel = dualLabel .. " " .. rightCfg.text end
             TagOptionRow(widget, hostFrame, dualLabel, nil, true)
             IndexSlotForSearch(hostFrame, leftCfg and leftCfg.text, leftCfg and leftCfg.tooltip)
             IndexSlotForSearch(hostFrame, rightCfg and rightCfg.text, rightCfg and rightCfg.tooltip)
@@ -566,9 +501,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
         local function BuildHalf(regionFrame, rowConf)
-            if not rowConf then
-                return
-            end
+            if not rowConf then return end
             local t = rowConf.type
             -- Spec Overrides capture: expose the widget config so the capture overlay can identify settings. A slot is ONE setting: multiSwatch slots capture all their swatches together, inline extras join via AddCaptureAccessor. cfg.noCapture opts a widget out (used by the Spec Overrides page's own mirrored editors).
             if rowConf.noCapture then
@@ -627,14 +560,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 labelText:ClearAllPoints()
                 Pix.Point(labelText, "LEFT", regionFrame, "LEFT", SIDE_PAD, 7)
                 regionFrame._labelDY = 7
-                local hint = MakeFont(
-                    regionFrame,
-                    11,
-                    nil,
-                    CUI.TEXT_DIM_R,
-                    CUI.TEXT_DIM_G,
-                    CUI.TEXT_DIM_B
-                )
+                local hint = MakeFont(regionFrame, 11, nil, CUI.TEXT_DIM_R, CUI.TEXT_DIM_G, CUI.TEXT_DIM_B)
                 hint:SetAlpha(0.85)
                 hint:SetPoint("TOPLEFT", labelText, "BOTTOMLEFT", 0, -2)
                 hint:SetJustifyH("LEFT")
@@ -657,14 +583,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local controlAnchor -- main control frame for inline element anchoring
 
             local function SyncDisabled()
-                if not rowConf.disabled then
-                    return
-                end
+                if not rowConf.disabled then return end
                 local off = rowConf.disabled()
                 labelText:SetAlpha(off and 0.3 or 1)
-                if regionFrame._hint then
-                    regionFrame._hint:SetAlpha(off and 0.3 or 0.85)
-                end
+                if regionFrame._hint then regionFrame._hint:SetAlpha(off and 0.3 or 0.85) end
                 if controlFrame then
                     if off then
                         controlFrame:EnableMouse(false)
@@ -710,12 +632,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 -- setValue, disabled, tooltip), every option in view at once.
                 -- Opt-in per row: a dropdown with many or long options stays one.
                 local function Pick(key)
-                    if rowConf.disabled and rowConf.disabled() then
-                        return
-                    end
-                    if rowConf.getValue() == key then
-                        return
-                    end
+                    if rowConf.disabled and rowConf.disabled() then return end
+                    if rowConf.getValue() == key then return end
                     -- Spec Overrides capture and the changed flag, as the other controls report a write.
                     local snap = CUI._SOAttribution(regionFrame)
                     rowConf.setValue(key)
@@ -729,12 +647,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     height = 26,
                     keys = rowConf.order,
                     labels = rowConf.values,
-                    getChecked = function(key)
-                        return rowConf.getValue() == key
-                    end,
-                    isDisabled = rowConf.disabled and function()
-                        return rowConf.disabled() and true or false
-                    end or nil,
+                    getChecked = function(key) return rowConf.getValue() == key end,
+                    isDisabled = rowConf.disabled
+                            and function() return rowConf.disabled() and true or false end
+                        or nil,
                     onToggle = function(key)
                         local g = PoolGen(regionFrame)
                         Pick(key)
@@ -751,9 +667,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 controlAnchor = segFrame
                 AddControlDisabledTooltip(segFrame, rowConf)
                 RegisterWidgetRefresh(function()
-                    if segRefresh then
-                        segRefresh()
-                    end
+                    if segRefresh then segRefresh() end
                     SyncDisabled()
                 end)
                 SyncDisabled()
@@ -768,9 +682,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 local tipText = rowConf.itemDisabledTooltip(val)
                                 -- cfg.itemRequireState: "disabled" flips the wrapper's verb
                                 -- for a bare requirement noun (nil = "enabled", as before).
-                                if tipText then
-                                    return DisabledTooltip(tipText, rowConf.itemRequireState)
-                                end
+                                if tipText then return DisabledTooltip(tipText, rowConf.itemRequireState) end
                             end
                             return true
                         end
@@ -809,20 +721,28 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         labelText:SetAlpha(1)
                     end
                     RegisterWidgetRefresh(function()
-                        dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
+                        dropCaption:SetText(
+                            DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue())
+                        )
                         PaintLabelOnly()
                     end)
                     PaintLabelOnly()
                 else
                     RegisterWidgetRefresh(function()
-                        dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
+                        dropCaption:SetText(
+                            DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue())
+                        )
                         SyncDisabled()
                     end)
                     SyncDisabled()
                 end
             elseif t == "toggle" then
-                local toggle, _, tgSnap =
-                    BuildToggleControl(regionFrame, widget:GetFrameLevel() + 2, rowConf.getValue, rowConf.setValue)
+                local toggle, _, tgSnap = BuildToggleControl(
+                    regionFrame,
+                    widget:GetFrameLevel() + 2,
+                    rowConf.getValue,
+                    rowConf.setValue
+                )
                 toggle:SetPoint("RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 ClickRowToToggle(regionFrame, toggle)
                 controlFrame = toggle
@@ -861,9 +781,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 controlFrame = button
                 controlAnchor = button
                 AddControlDisabledTooltip(button, rowConf)
-                RegisterWidgetRefresh(function()
-                    SyncDisabled()
-                end)
+                RegisterWidgetRefresh(function() SyncDisabled() end)
                 SyncDisabled()
             elseif t == "labeledButton" then
                 -- Standard left label, button anchored right
@@ -871,13 +789,17 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 Pix.Size(button, rowConf.width or 180, 32)
                 Pix.Point(button, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 button:SetFrameLevel(widget:GetFrameLevel() + 2)
-                MakeStyledButton(button, rowConf.buttonText or rowConf.text or "", 13, RB_COLOURS, rowConf.onClick)
+                MakeStyledButton(
+                    button,
+                    rowConf.buttonText or rowConf.text or "",
+                    13,
+                    RB_COLOURS,
+                    rowConf.onClick
+                )
                 controlFrame = button
                 controlAnchor = button
                 AddControlDisabledTooltip(button, rowConf)
-                RegisterWidgetRefresh(function()
-                    SyncDisabled()
-                end)
+                RegisterWidgetRefresh(function() SyncDisabled() end)
                 SyncDisabled()
             elseif t == "multiSwatch" then
                 -- Label + N swatches laid out right-to-left from the right edge
@@ -905,13 +827,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     end
                     -- Effective disabled = row-level cfg.disabled OR per-swatch sc.disabled
                     local function SwatchEffectiveDisabled()
-                        if rowConf.disabled and rowConf.disabled() then
-                            return true
-                        end
+                        if rowConf.disabled and rowConf.disabled() then return true end
                         if sc.disabled ~= nil then
-                            if type(sc.disabled) == "function" then
-                                return sc.disabled()
-                            end
+                            if type(sc.disabled) == "function" then return sc.disabled() end
                             return sc.disabled
                         end
                         return false
@@ -922,13 +840,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         swatchBlock:SetScript("OnEnter", function()
                             local source = (sc.disabledTooltip ~= nil) and sc or rowConf
                             local tipText = ResolveDisabledTip(source)
-                            if tipText then
-                                ShowWidgetTooltip(colorSwatch, tipText)
-                            end
+                            if tipText then ShowWidgetTooltip(colorSwatch, tipText) end
                         end)
-                        swatchBlock:SetScript("OnLeave", function()
-                            HideWidgetTooltip()
-                        end)
+                        swatchBlock:SetScript("OnLeave", function() HideWidgetTooltip() end)
                         local function UpdateSwatchDisabled()
                             if SwatchEffectiveDisabled() then
                                 colorSwatch:SetAlpha(0.3)
@@ -941,30 +855,22 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         UpdateSwatchDisabled()
                         RegisterWidgetRefresh(UpdateSwatchDisabled)
                     end
-                    if sc.tooltip then
-                        HookSwatchTooltip(colorSwatch, sc)
-                    end
+                    if sc.tooltip then HookSwatchTooltip(colorSwatch, sc) end
                     -- Per-swatch alpha refresh (dim inactive, bright active)
                     if sc.refreshAlpha then
                         local _sw, _ra = colorSwatch, sc.refreshAlpha
                         local function UpdateAlpha()
                             -- The disabled handler owns alpha while disabled
-                            if SwatchEffectiveDisabled() then
-                                return
-                            end
+                            if SwatchEffectiveDisabled() then return end
                             _sw:SetAlpha(_ra())
                         end
                         UpdateAlpha()
                         RegisterWidgetRefresh(UpdateAlpha)
                     end
-                    RegisterWidgetRefresh(function()
-                        updateSwatch()
-                    end)
+                    RegisterWidgetRefresh(function() updateSwatch() end)
                 end
                 controlAnchor = leftmostSwatch
-                RegisterWidgetRefresh(function()
-                    SyncDisabled()
-                end)
+                RegisterWidgetRefresh(function() SyncDisabled() end)
                 SyncDisabled()
             elseif t == "input" then
                 -- Free-text entry box, right-anchored. getValue returns the display
@@ -1000,9 +906,10 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                             ph:SetPoint("LEFT", boxFrame, "LEFT", 10, 0)
                         end
                         ph:SetText(CUI.L(rowConf.placeholder))
-                        boxFrame:SetScript("OnTextChanged", function(self)
-                            ph:SetShown((self:GetText() or "") == "")
-                        end)
+                        boxFrame:SetScript(
+                            "OnTextChanged",
+                            function(self) ph:SetShown((self:GetText() or "") == "") end
+                        )
                     end
                 else
                     boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
@@ -1012,9 +919,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     CUI.RoundBody(boxFrame, boxBg)
                 end
                 local function SyncInputText()
-                    if boxFrame:HasFocus() then
-                        return
-                    end
+                    if boxFrame:HasFocus() then return end
                     boxFrame:SetText((rowConf.getValue and rowConf.getValue()) or "")
                 end
                 local committing = false
@@ -1023,18 +928,12 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 -- commit's own repaint is skipped (here and after Escape, whose
                 -- focus loss commits too).
                 local function CommitInput()
-                    if committing then
-                        return
-                    end
+                    if committing then return end
                     committing = true
                     local gen = PoolGen(boxFrame)
                     boxFrame:ClearFocus()
-                    if rowConf.setValue then
-                        rowConf.setValue(boxFrame:GetText())
-                    end
-                    if PoolGen(boxFrame) == gen then
-                        SyncInputText()
-                    end
+                    if rowConf.setValue then rowConf.setValue(boxFrame:GetText()) end
+                    if PoolGen(boxFrame) == gen then SyncInputText() end
                     committing = false
                 end
                 boxFrame:SetScript("OnEnterPressed", CommitInput)
@@ -1042,9 +941,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 boxFrame:SetScript("OnEscapePressed", function(self)
                     local gen = PoolGen(self)
                     self:ClearFocus()
-                    if PoolGen(self) == gen then
-                        SyncInputText()
-                    end
+                    if PoolGen(self) == gen then SyncInputText() end
                 end)
                 SyncInputText()
                 controlFrame = boxFrame
@@ -1144,9 +1041,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         rightRegion:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
 
         local function BuildThird(regionFrame, rowConf)
-            if not rowConf then
-                return
-            end
+            if not rowConf then return end
             local t = rowConf.type
             -- Spec Overrides capture: see DualRow BuildHalf.
             if rowConf.noCapture then
@@ -1170,9 +1065,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
             local controlFrame, controlAnchor
             local function SyncDisabled()
-                if not rowConf.disabled then
-                    return
-                end
+                if not rowConf.disabled then return end
                 local off = rowConf.disabled()
                 labelText:SetAlpha(off and 0.3 or 1)
                 if controlFrame then
@@ -1223,9 +1116,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                                 local tipText = rowConf.itemDisabledTooltip(val)
                                 -- cfg.itemRequireState: "disabled" flips the wrapper's verb
                                 -- for a bare requirement noun (nil = "enabled", as before).
-                                if tipText then
-                                    return DisabledTooltip(tipText, rowConf.itemRequireState)
-                                end
+                                if tipText then return DisabledTooltip(tipText, rowConf.itemRequireState) end
                             end
                             return true
                         end
@@ -1271,26 +1162,30 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                         end
                     end
                     RegisterWidgetRefresh(function()
-                        dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
+                        dropCaption:SetText(
+                            DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue())
+                        )
                         PaintLabelOnly()
-                        if dropdownBtn._ddRefresh then
-                            dropdownBtn._ddRefresh()
-                        end
+                        if dropdownBtn._ddRefresh then dropdownBtn._ddRefresh() end
                     end)
                     PaintLabelOnly()
                 else
                     RegisterWidgetRefresh(function()
-                        dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
+                        dropCaption:SetText(
+                            DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue())
+                        )
                         SyncDisabled()
-                        if dropdownBtn._ddRefresh then
-                            dropdownBtn._ddRefresh()
-                        end
+                        if dropdownBtn._ddRefresh then dropdownBtn._ddRefresh() end
                     end)
                     SyncDisabled()
                 end
             elseif t == "toggle" then
-                local toggle, _, tgSnap =
-                    BuildToggleControl(regionFrame, widget:GetFrameLevel() + 2, rowConf.getValue, rowConf.setValue)
+                local toggle, _, tgSnap = BuildToggleControl(
+                    regionFrame,
+                    widget:GetFrameLevel() + 2,
+                    rowConf.getValue,
+                    rowConf.setValue
+                )
                 toggle:SetPoint("RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 ClickRowToToggle(regionFrame, toggle)
                 controlFrame = toggle
@@ -1323,7 +1218,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 button:SetAllPoints(regionFrame)
                 button:SetFrameLevel(widget:GetFrameLevel() + 2)
 
-                local boxFrame, check, boxBorder, cbApply = BuildCheckboxControl(button, widget:GetFrameLevel() + 2)
+                local boxFrame, check, boxBorder, cbApply =
+                    BuildCheckboxControl(button, widget:GetFrameLevel() + 2)
                 boxFrame:SetPoint("LEFT", button, "LEFT", SIDE_PAD, 0)
 
                 local cbLabel = MakeFont(button, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
@@ -1350,9 +1246,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     CUI._settingsChanged = true
                     -- A setter that rebuilt the page dressed this checkbox again
                     -- (page reuse): that dress painted itself.
-                    if PoolGen(button) ~= gen then
-                        return
-                    end
+                    if PoolGen(button) ~= gen then return end
                     PaintCheckbox()
                 end)
                 button:SetScript("OnEnter", function()
@@ -1378,20 +1272,22 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 button:SetFrameLevel(widget:GetFrameLevel() + 2)
                 MakeStyledButton(button, rowConf.text or "", 13, RB_COLOURS, rowConf.onClick)
                 controlFrame = button
-                RegisterWidgetRefresh(function()
-                    SyncDisabled()
-                end)
+                RegisterWidgetRefresh(function() SyncDisabled() end)
                 SyncDisabled()
             elseif t == "labeledButton" then
                 local button = CreateFrame("Button", nil, regionFrame)
                 Pix.Size(button, rowConf.width or 140, 32)
                 Pix.Point(button, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 button:SetFrameLevel(widget:GetFrameLevel() + 2)
-                MakeStyledButton(button, rowConf.buttonText or rowConf.text or "", 13, RB_COLOURS, rowConf.onClick)
+                MakeStyledButton(
+                    button,
+                    rowConf.buttonText or rowConf.text or "",
+                    13,
+                    RB_COLOURS,
+                    rowConf.onClick
+                )
                 controlFrame = button
-                RegisterWidgetRefresh(function()
-                    SyncDisabled()
-                end)
+                RegisterWidgetRefresh(function() SyncDisabled() end)
                 SyncDisabled()
             end
             regionFrame._control = controlAnchor or controlFrame
@@ -1436,9 +1332,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         end
 
         leftRegion._widgetCfg = leftCfg
-        if midRegion then
-            midRegion._widgetCfg = midCfg
-        end
+        if midRegion then midRegion._widgetCfg = midCfg end
         rightRegion._widgetCfg = rightCfg
 
         widget._leftRegion = leftRegion
@@ -1469,9 +1363,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
 
         -- Swatches build right-to-left from the right edge
         local swatches = rowConf.swatches or {}
-        if rowConf.noCapture then
-            widget._noCapture = true
-        end
+        if rowConf.noCapture then widget._noCapture = true end
         local anchorX = -SIDE_PAD
         for i = #swatches, 1, -1 do
             local sc = swatches[i]
@@ -1483,12 +1375,11 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             if sc.disabled then
                 local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
                 if sc.disabledTooltip then
-                    swatchBlock:SetScript("OnEnter", function()
-                        ShowWidgetTooltip(colorSwatch, sc.disabledTooltip)
-                    end)
-                    swatchBlock:SetScript("OnLeave", function()
-                        HideWidgetTooltip()
-                    end)
+                    swatchBlock:SetScript(
+                        "OnEnter",
+                        function() ShowWidgetTooltip(colorSwatch, sc.disabledTooltip) end
+                    )
+                    swatchBlock:SetScript("OnLeave", function() HideWidgetTooltip() end)
                 end
                 if sc.tooltip then -- normal tooltip while enabled
                     HookSwatchTooltip(colorSwatch, sc)
@@ -1513,12 +1404,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     swatchBlock:Hide()
                 end
             else
-                if sc.tooltip then
-                    HookSwatchTooltip(colorSwatch, sc)
-                end
-                RegisterWidgetRefresh(function()
-                    updateSwatch()
-                end)
+                if sc.tooltip then HookSwatchTooltip(colorSwatch, sc) end
+                RegisterWidgetRefresh(function() updateSwatch() end)
             end
         end
 
@@ -1597,9 +1484,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         Pix.Point(dropdownBtn, "RIGHT", leftRegion, "RIGHT", -SIDE_PAD, 0)
 
         local function ApplyDDDisabled()
-            if not dropdownCfg.disabled then
-                return
-            end
+            if not dropdownCfg.disabled then return end
             local off = dropdownCfg.disabled()
             ddLabel:SetAlpha(off and 0.3 or 1)
             dropdownBtn:EnableMouse(not off)
@@ -1660,9 +1545,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                     trackFrame:SetAlpha(off and 0.3 or 1)
                     valBox:EnableMouse(not off)
                     valBox:SetAlpha(off and 0.3 or 1)
-                    if slThumb then
-                        slThumb._sliderDisabled = off
-                    end
+                    if slThumb then slThumb._sliderDisabled = off end
                 end
             end)
             if slCfg.disabled then
@@ -1671,9 +1554,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 trackFrame:SetAlpha(off and 0.3 or 1)
                 valBox:EnableMouse(not off)
                 valBox:SetAlpha(off and 0.3 or 1)
-                if slThumb then
-                    slThumb._sliderDisabled = off
-                end
+                if slThumb then slThumb._sliderDisabled = off end
             end
         end
 
@@ -1688,7 +1569,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         div:SetPoint("BOTTOM", widget, "BOTTOM", 0, 0)
 
         RegisterWidgetRefresh(function()
-            dropCaption:SetText(DDResolveLabel(dropdownCfg.values, dropdownCfg.order or {}, dropdownCfg.getValue()))
+            dropCaption:SetText(
+                DDResolveLabel(dropdownCfg.values, dropdownCfg.order or {}, dropdownCfg.getValue())
+            )
             ApplyDDDisabled()
         end)
         ApplyDDDisabled()
@@ -1771,13 +1654,9 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             if dopt and dopt.disabled then
                 button:SetAlpha(0.4)
                 button:SetScript("OnEnter", function()
-                    if dopt.tooltip then
-                        ShowWidgetTooltip(button, dopt.tooltip)
-                    end
+                    if dopt.tooltip then ShowWidgetTooltip(button, dopt.tooltip) end
                 end)
-                button:SetScript("OnLeave", function()
-                    HideWidgetTooltip()
-                end)
+                button:SetScript("OnLeave", function() HideWidgetTooltip() end)
                 button:SetScript("OnClick", nil)
             end
         end
@@ -1910,9 +1789,13 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
                 rowConf.setValue
             )
             Pix.Point(dropdownBtn, "TOPLEFT", widget, "TOPLEFT", col, -(TITLE_H + GAP_Y))
-            RegisterWidgetRefresh(function()
-                dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
-            end)
+            RegisterWidgetRefresh(
+                function()
+                    dropCaption:SetText(
+                        DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue())
+                    )
+                end
+            )
         end
         return widget, ROW_HEIGHT
     end

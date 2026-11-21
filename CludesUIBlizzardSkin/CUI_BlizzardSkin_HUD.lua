@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_HUD.lua
 --
@@ -12,12 +10,9 @@ local _, mod = ...
 local Inner = mod._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not Inner or Inner.last ~= "TooltipVisibility" then
-    return
-end
+if not Inner or Inner.last ~= "TooltipVisibility" then return end
 
-local GetFFD = Inner.GetFFD--  covers, and the extra action button.
---
+local GetFFD = Inner.GetFFD--
 --  These are not WINDOWS -- no shell, no per-window style dropdown -- so they
 --  live here rather than in a window pack.
 --
@@ -27,13 +22,11 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
 --  would hand this block a nil engine. WS() below reads it on first use, so
 --  there is no silent fallback to hand-rolled fonts and colors.
 -------------------------------------------------------------------------------
-; ------------------------------------------------------------------------------- --  Blizzard HUD reskins: tooltip progress/status bars, UI widget status bar
+; ------------------------------------------------------------------------------- --  Blizzard HUD reskins: tooltip progress/status bars, UI widget status bar --  covers, and the extra action button.
 (function()
     local _WS
     local function WindowSkinNS()
-        if _WS then
-            return _WS
-        end
+        if _WS then return _WS end
         _WS = mod.WSkin
         -- Force the theme on first use: a tooltip bar on the very first hover
         -- can reach WSkin.Font before the engine's own PLAYER_LOGIN boot and
@@ -54,9 +47,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- > 0". An `or 11` fallback does NOT catch this -- the value is a number,
     -- just a nonsensical one -- so the test is on the SIGN.
     local function HouseFont(fontStr, white)
-        if not fontStr or not fontStr.GetFont then
-            return
-        end
+        if not fontStr or not fontStr.GetFont then return end
         local filePath, size, flags = fontStr:GetFont()
         if type(size) ~= "number" or size <= 0 then
             fontStr:SetFont(filePath or STANDARD_TEXT_FONT, 11, flags or "")
@@ -78,13 +69,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- kept getting rejected). Black at 1px reads as a crisp edge, not a frame.
     -- Idempotent via FFD; drawn on OVERLAY so the fill cannot cover it.
     local function ThinBorder(widget, inset)
-        if not widget then
-            return
-        end
+        if not widget then return end
         local skinData = GetFFD(widget)
-        if skinData.thinBorder then
-            return
-        end
+        if skinData.thinBorder then return end
         skinData.thinBorder = true
         -- Recorded as OURS: StripBarArt clears every texture on the bar, and
         -- these live on the bar.
@@ -156,12 +143,8 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
                     -- CLEARED, not alpha'd: these bars flare on change through
                     -- animations that drive alpha every frame and win over a
                     -- SetAlpha(0). An animation can animate nothing.
-                    if region.SetAtlas then
-                        region:SetAtlas("")
-                    end
-                    if region.SetTexture then
-                        region:SetTexture("")
-                    end
+                    if region.SetAtlas then region:SetAtlas("") end
+                    if region.SetTexture then region:SetTexture("") end
                     region:SetAlpha(0)
                 end
             end
@@ -169,9 +152,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     end
 
     local function SkinBarCommon(barFrame, keyList)
-        if not barFrame or barFrame:IsForbidden() or not barFrame.SetStatusBarTexture then
-            return
-        end
+        if not barFrame or barFrame:IsForbidden() or not barFrame.SetStatusBarTexture then return end
         -- Fill installed FIRST, then re-read, so the "clear everything that is
         -- not the fill" sweep below can never clear the live fill whatever art
         -- Blizzard happened to have there.
@@ -181,9 +162,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         for idx = 1, #keyList do
             local t = barFrame[keyList[idx]]
             if t and t.SetTexture then
-                if t.SetAtlas then
-                    t:SetAtlas("")
-                end
+                if t.SetAtlas then t:SetAtlas("") end
                 t:SetTexture("")
                 t:SetAlpha(0)
             end
@@ -218,9 +197,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
 
     local function SkinProgressBar(widget)
         local barFrame = widget and widget.Bar
-        if not barFrame then
-            return
-        end
+        if not barFrame then return end
         SkinBarCommon(barFrame, PROGRESS_ART)
         HouseFont(barFrame.Label, true)
     end
@@ -231,9 +208,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     end
 
     local function SweepPool(pool, func)
-        if not (pool and pool.EnumerateActive) then
-            return
-        end
+        if not (pool and pool.EnumerateActive) then return end
         local success, iter = pcall(pool.EnumerateActive, pool)
         if success and iter then
             for frame in iter do
@@ -247,16 +222,12 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- and later bars on one tooltip.
     if type(_G.GameTooltip_AddProgressBar) == "function" then
         hooksecurefunc("GameTooltip_AddProgressBar", function(self)
-            if self then
-                SweepPool(self.progressBarPool, SkinProgressBar)
-            end
+            if self then SweepPool(self.progressBarPool, SkinProgressBar) end
         end)
     end
     if type(_G.GameTooltip_AddStatusBar) == "function" then
         hooksecurefunc("GameTooltip_AddStatusBar", function(self)
-            if self then
-                SweepPool(self.statusBarPool, SkinStatusBar)
-            end
+            if self then SweepPool(self.statusBarPool, SkinStatusBar) end
         end)
     end
 
@@ -343,9 +314,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- blizzskin_widget_bars_seed_v1 migration (on only when Reskin Tooltips
     -- AND Reskin Popups and Menus are both on); nil survives only on fresh
     -- installs, where both of those masters default on too -- so nil = on.
-    local function CoverEnabled()
-        return not CludesUIDB or CludesUIDB.reskinWidgetBars ~= false
-    end
+    local function CoverEnabled() return not CludesUIDB or CludesUIDB.reskinWidgetBars ~= false end
 
     -- FORWARD DECLARATION, filled in far below. Adopt installs a hook that has
     -- to call the debounced refresh; that refresh cannot be written until
@@ -360,20 +329,12 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- chain throws on the spot rather than being skipped.
     local function SafeRead(object, method)
         local func = object and object[method]
-        if type(func) ~= "function" then
-            return false
-        end
+        if type(func) ~= "function" then return false end
         local success, a, button = pcall(func, object)
-        if not success then
-            return false
-        end
+        if not success then return false end
         if _isSecretV then
-            if a ~= nil and _isSecretV(a) then
-                return false
-            end
-            if button ~= nil and _isSecretV(button) then
-                return false
-            end
+            if a ~= nil and _isSecretV(a) then return false end
+            if button ~= nil and _isSecretV(button) then return false end
         end
         return true, a, button
     end
@@ -428,9 +389,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- Plain indexed read, passed BY ARGUMENT to pcall (no closure allocated).
     -- Field access on a widget frame can throw, so even fetching a texture
     -- reference off one has to be guarded.
-    local function HUDGet(tbl, key)
-        return tbl[key]
-    end
+    local function HUDGet(tbl, key) return tbl[key] end
 
     -- Anchor the COVER ITSELF out to Blizzard's border art, not to the bar's
     -- inner rect.
@@ -460,26 +419,18 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- is what produced the giant-bar round.
     local function VPad(barFrame)
         local okB, barH = pcall(barFrame.GetHeight, barFrame)
-        if not okB or type(barH) ~= "number" or barH <= 0 then
-            return 0
-        end
+        if not okB or type(barH) ~= "number" or barH <= 0 then return 0 end
         local tallest = barH
         for _, key in ipairs({ "BorderCenter", "BorderLeft", "BorderRight" }) do
             local texOk, t = pcall(HUDGet, barFrame, key)
             if texOk and t then
                 local okH, hgt = pcall(t.GetHeight, t)
-                if okH and type(hgt) == "number" and hgt > tallest then
-                    tallest = hgt
-                end
+                if okH and type(hgt) == "number" and hgt > tallest then tallest = hgt end
             end
         end
         local padding = (tallest - barH) / 2
-        if padding < 0 then
-            padding = 0
-        end
-        if padding > MAX_VPAD then
-            padding = MAX_VPAD
-        end
+        if padding < 0 then padding = 0 end
+        if padding > MAX_VPAD then padding = MAX_VPAD end
         return padding
     end
 
@@ -500,15 +451,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- while a fill animates); the options cog re-reads it through the seam.
     local function ReadMinPx()
         local val = CludesUIDB and CludesUIDB.widgetBarMinSize
-        if type(val) ~= "number" then
-            return DEFAULT_MIN_BAR_PX
-        end
-        if val < 0 then
-            return 0
-        end
-        if val > MAX_MIN_BAR_PX then
-            return MAX_MIN_BAR_PX
-        end
+        if type(val) ~= "number" then return DEFAULT_MIN_BAR_PX end
+        if val < 0 then return 0 end
+        if val > MAX_MIN_BAR_PX then return MAX_MIN_BAR_PX end
         return val
     end
 
@@ -516,25 +461,15 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- (floor off, panel bar, or plate at readable scale).
     local function CoverScale(barFrame, cfg)
         local min = HUD.minPx
-        if not (cfg.cuiPlate and type(min) == "number" and min > 0) then
-            return 1
-        end
+        if not (cfg.cuiPlate and type(min) == "number" and min > 0) then return 1 end
         local okH, hgt = pcall(barFrame.GetHeight, barFrame)
-        if not okH or type(hgt) ~= "number" or hgt <= 0 then
-            return 1
-        end
+        if not okH or type(hgt) ~= "number" or hgt <= 0 then return 1 end
         local okE, es = pcall(barFrame.GetEffectiveScale, barFrame)
-        if not okE or type(es) ~= "number" or es <= 0 then
-            return 1
-        end
+        if not okE or type(es) ~= "number" or es <= 0 then return 1 end
         local pixel = hgt * es
-        if pixel <= 0 or pixel >= min then
-            return 1
-        end
+        if pixel <= 0 or pixel >= min then return 1 end
         local s = min / pixel
-        if s > MAX_UPSCALE then
-            s = MAX_UPSCALE
-        end
+        if s > MAX_UPSCALE then s = MAX_UPSCALE end
         return s
     end
 
@@ -664,23 +599,17 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- Local copy: KidsOf is declared further down, and a `local function` is
     -- not in scope for code written above it -- the reference would resolve to
     -- a nil global and the pcall around it would swallow the failure silently.
-    local function BarKids(frame)
-        return { frame:GetChildren() }
-    end
+    local function BarKids(frame) return { frame:GetChildren() } end
     local function HideBarArt(barFrame)
         for idx = 1, #ART do
             local texOk, t = pcall(HUDGet, barFrame, ART[idx])
-            if texOk and t then
-                pcall(t.SetAlpha, t, 0)
-            end
+            if texOk and t then pcall(t.SetAlpha, t, 0) end
         end
         local pointOk, hostFrame = SafeRead(barFrame, "GetParent")
         if pointOk and hostFrame then
             for idx = 1, #PARENT_ART do
                 local texOk, t = pcall(HUDGet, hostFrame, PARENT_ART[idx])
-                if texOk and t then
-                    pcall(t.SetAlpha, t, 0)
-                end
+                if texOk and t then pcall(t.SetAlpha, t, 0) end
             end
         end
         -- DIVIDER TICKS. Blizzard builds these at runtime
@@ -695,21 +624,15 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         if keyOk and childList then
             for idx = 1, #childList do
                 local texOk, t = pcall(HUDGet, childList[idx], "Tex")
-                if texOk and t then
-                    pcall(t.SetAlpha, t, 0)
-                end
+                if texOk and t then pcall(t.SetAlpha, t, 0) end
             end
         end
     end
 
     local function SyncCover(barFrame, isPlate)
-        if HUD.retired[barFrame] then
-            return false
-        end
+        if HUD.retired[barFrame] then return false end
         local c = HUD.covers[barFrame]
-        if not c then
-            return false
-        end
+        if not c then return false end
         -- Pooled bars can migrate between hosts; keep the plate flag current.
         c.cuiPlate = isPlate and true or false
 
@@ -719,9 +642,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             return false
         end
         if not isShown then
-            if c:IsShown() then
-                c:Hide()
-            end
+            if c:IsShown() then c:Hide() end
             return false
         end
 
@@ -749,9 +670,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         local txt
         if blabel then
             local tOk, t = SafeRead(blabel, "GetText")
-            if tOk then
-                txt = t
-            end
+            if tOk then txt = t end
         end
         txt = txt or ""
         if c.cuiLabel:GetText() ~= txt then
@@ -767,30 +686,22 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- when its widget updates -- which is exactly when a value or label
         -- moves -- so a change IS the re-texture signal. Adopt() also hides at
         -- creation, so a bar is never left showing its own art.
-        if changed then
-            HideBarArt(barFrame)
-        end
+        if changed then HideBarArt(barFrame) end
 
         -- Follow the bar if it is re-parented (these frames are POOLED, so a
         -- reused bar can land under a different option).
         local pOk, bp = SafeRead(barFrame, "GetParent")
-        if pOk and bp and c:GetParent() ~= bp then
-            c:SetParent(bp)
-        end
+        if pOk and bp and c:GetParent() ~= bp then c:SetParent(bp) end
 
         -- STRATA FIRST, THEN LEVEL. SetFrameStrata RESETS a frame's level, so
         -- the reverse order silently threw the level away on the first pass and
         -- only self-corrected on the next tick.
         local stOk, st = SafeRead(barFrame, "GetFrameStrata")
-        if stOk and st and c:GetFrameStrata() ~= st then
-            c:SetFrameStrata(st)
-        end
+        if stOk and st and c:GetFrameStrata() ~= st then c:SetFrameStrata(st) end
         local lvlOk, lvl = SafeRead(barFrame, "GetFrameLevel")
         if lvlOk and type(lvl) == "number" then
             local wanted = lvl + 2
-            if c:GetFrameLevel() ~= wanted then
-                c:SetFrameLevel(wanted)
-            end
+            if c:GetFrameLevel() ~= wanted then c:SetFrameLevel(wanted) end
         end
 
         -- Re-anchor only when the measured overhang actually changed: Blizzard
@@ -813,9 +724,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         local es
         if c.cuiPlate and HUD.minPx > 0 then
             local esOk, curES = pcall(barFrame.GetEffectiveScale, barFrame)
-            if esOk and type(curES) == "number" then
-                es = curES
-            end
+            if esOk and type(curES) == "number" then es = curES end
         end
         local esMoved = (es ~= nil) ~= (c.cuiES ~= nil) or (es and c.cuiES and math.abs(es - c.cuiES) > 0.01)
         -- Third trigger: the floor itself (the cog's slider re-anchors live covers).
@@ -825,9 +734,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             AnchorCover(c, barFrame, padding)
         end
 
-        if not c:IsShown() then
-            c:Show()
-        end
+        if not c:IsShown() then c:Show() end
         return true
     end
 
@@ -844,24 +751,14 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- restored, leaving the glows on show with nothing left to re-fire the
     -- hide. Next frame sees the finished widget, which is exactly where the
     -- old ticker saw it.
-    local function OnBarValueDisplayed()
-        pcall(Refresh)
-    end
+    local function OnBarValueDisplayed() pcall(Refresh) end
 
     local function Adopt(barFrame, isPlate)
-        if not barFrame or HUD.retired[barFrame] then
-            return
-        end
-        if HUD.covers[barFrame] then
-            return
-        end
+        if not barFrame or HUD.retired[barFrame] then return end
+        if HUD.covers[barFrame] then return end
         -- Never cover one of our own covers (see HUD.owned).
-        if HUD.owned[barFrame] then
-            return
-        end
-        if barFrame.IsForbidden and barFrame:IsForbidden() then
-            return
-        end
+        if HUD.owned[barFrame] then return end
+        if barFrame.IsForbidden and barFrame:IsForbidden() then return end
         -- Immediately, before the cover has values to show. Otherwise their bar
         -- is what you watch for the first few ticks while it animates in, which
         -- reads as the skin taking half a second to appear.
@@ -899,35 +796,27 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- Children as a TABLE, passed by argument to pcall. The obvious spelling,
     -- pcall(function() return { f:GetChildren() } end), allocates a closure on
     -- every frame of every walk.
-    local function KidsOf(frame)
-        return { frame:GetChildren() }
-    end
+    local function KidsOf(frame) return { frame:GetChildren() } end
 
     -- Walk a container for StatusBars. Depth-capped and children taken once.
     local function CollectBars(widget, depth, result, seen)
-        if not widget or depth > 4 then
-            return
-        end
-        if seen[widget] then
-            return
-        end
+        if not widget or depth > 4 then return end
+        if seen[widget] then return end
         seen[widget] = true
-        if not widget.GetChildren then
-            return
-        end
+        if not widget.GetChildren then return end
         local okKids, childList = pcall(KidsOf, widget)
-        if not okKids or not childList then
-            return
-        end
+        if not okKids or not childList then return end
         for idx = 1, #childList do
             local childFrame = childList[idx]
             -- Skip OUR OWN covers entirely -- not collected, not descended
             -- into. They are StatusBars living inside Blizzard's frames, so
             -- without this the sweep covers its own covers, every tick.
-            if childFrame and HUD.owned[childFrame] then
-                childFrame = nil
-            end
-            if childFrame and childFrame.GetObjectType and not (childFrame.IsForbidden and childFrame:IsForbidden()) then
+            if childFrame and HUD.owned[childFrame] then childFrame = nil end
+            if
+                childFrame
+                and childFrame.GetObjectType
+                and not (childFrame.IsForbidden and childFrame:IsForbidden())
+            then
                 local texOk, t = pcall(childFrame.GetObjectType, childFrame)
                 if texOk and t == "StatusBar" then
                     result[#result + 1] = childFrame
@@ -943,9 +832,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         wipe(HUD.containers)
         for idx = 1, #NAMED_CONTAINERS do
             local frame = _G[NAMED_CONTAINERS[idx]]
-            if frame then
-                HUD.containers[#HUD.containers + 1] = frame
-            end
+            if frame then HUD.containers[#HUD.containers + 1] = frame end
         end
         -- Any other UIParent child that is a widget container. Children taken
         -- ONCE; UIParent has a few hundred of them. GetChildren returns every
@@ -965,7 +852,11 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         if keyOk and childList then
             for idx = 1, #childList do
                 local childFrame = childList[idx]
-                if childFrame and childFrame.GetName and not (childFrame.IsForbidden and childFrame:IsForbidden()) then
+                if
+                    childFrame
+                    and childFrame.GetName
+                    and not (childFrame.IsForbidden and childFrame:IsForbidden())
+                then
                     local okN, num = pcall(childFrame.GetName, childFrame)
                     local pointOk, poolList = pcall(HUDGet, childFrame, "widgetPools")
                     local isWidget = (okN and type(num) == "string" and num:find("^UIWidget"))
@@ -1015,15 +906,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             end
         end
         local okS, spellRef = pcall(HUDGet, c, "widgetSetID")
-        if not okS then
-            return false
-        end
-        if spellRef == nil then
-            return exactMatch
-        end
-        if (_isSecretV and _isSecretV(spellRef)) or type(spellRef) ~= "number" then
-            return false
-        end
+        if not okS then return false end
+        if spellRef == nil then return exactMatch end
+        if (_isSecretV and _isSecretV(spellRef)) or type(spellRef) ~= "number" then return false end
         HUD.setIds[spellRef] = true
         return exactMatch
     end
@@ -1063,7 +948,11 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
                             CollectBars(childFrame, 0, barList, seen)
                         else
                             local okW, watchCount = pcall(HUDGet, childFrame, "WidgetContainer")
-                            if okW and watchCount and not (watchCount.IsForbidden and watchCount:IsForbidden()) then
+                            if
+                                okW
+                                and watchCount
+                                and not (watchCount.IsForbidden and watchCount:IsForbidden())
+                            then
                                 exactMatch = NoteContainerSet(watchCount, exactMatch)
                                 CollectBars(watchCount, 0, barList, seen)
                             end
@@ -1080,18 +969,14 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         for idx = 1, #barList do
             local isPlate = idx > nStatic
             Adopt(barList[idx], isPlate)
-            if SyncCover(barList[idx], isPlate) then
-                live = live + 1
-            end
+            if SyncCover(barList[idx], isPlate) then live = live + 1 end
         end
         -- Covers whose bar has gone away this pass.
         for barFrame, c in pairs(HUD.covers) do
             if not seen[barFrame] then
                 local success, vis = SafeRead(barFrame, "IsVisible")
                 if not success or not vis then
-                    if c:IsShown() then
-                        c:Hide()
-                    end
+                    if c:IsShown() then c:Hide() end
                 end
             end
         end
@@ -1123,9 +1008,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         Sweep()
     end
     function Refresh()
-        if pending then
-            return
-        end
+        if pending then return end
         pending = true
         if C_Timer then
             C_Timer.After(0, Flush)
@@ -1148,9 +1031,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- WindowPacks already tests `type(adopt) ~= "function"`, so leaving it nil
     -- is the honest way to say the system is not running.
     local function HUDWidgetAdopt(boxHolder)
-        if not boxHolder or HUD.adopted[boxHolder] then
-            return
-        end
+        if not boxHolder or HUD.adopted[boxHolder] then return end
         HUD.adopted[boxHolder] = true
         HUD.containers[#HUD.containers + 1] = boxHolder
         Refresh()
@@ -1251,9 +1132,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
                 and C_NamePlate
                 and C_NamePlate.GetNamePlateForUnit
                 and C_NamePlate.GetNamePlateForUnit(unitToken)
-            if backing then
-                HUD.plates[backing] = nil
-            end
+            if backing then HUD.plates[backing] = nil end
         else
             -- UPDATE_UI_WIDGET / UPDATE_ALL_UI_WIDGETS. Discovery is NOT run
             -- from here: the first build of this system did, and that is
@@ -1304,32 +1183,20 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- removal writes to the icon's own mask list, never the secure button.
     -- GetNumMaskTextures is SecretReturnsForAspect: reject before looping.
     local function Unmask(texture)
-        if not texture or type(texture.GetNumMaskTextures) ~= "function" then
-            return
-        end
+        if not texture or type(texture.GetNumMaskTextures) ~= "function" then return end
         local okN, num = pcall(texture.GetNumMaskTextures, texture)
-        if not okN then
-            return
-        end
-        if _isSecretV and num ~= nil and _isSecretV(num) then
-            return
-        end
-        if type(num) ~= "number" or num <= 0 then
-            return
-        end
+        if not okN then return end
+        if _isSecretV and num ~= nil and _isSecretV(num) then return end
+        if type(num) ~= "number" or num <= 0 then return end
         for idx = num, 1, -1 do
             local okM, m = pcall(texture.GetMaskTexture, texture, idx)
-            if okM and m then
-                pcall(texture.RemoveMaskTexture, texture, m)
-            end
+            if okM and m then pcall(texture.RemoveMaskTexture, texture, m) end
         end
     end
 
     local function StripExtraButton()
         local button = _G.ExtraActionButton1
-        if not button or button:IsForbidden() then
-            return
-        end
+        if not button or button:IsForbidden() then return end
 
         -- SCALE FIRST, ABOVE THE SKIN GATE. "Extra Action Button Size" is its
         -- own setting, and it used to sit below this gate -- so once the reskin
@@ -1338,19 +1205,13 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- DEFAULT OFF (`== true`, not `~= false`): opt-in, by request. Nil means
         -- the user has never chosen, and that now means "leave Blizzard's
         -- button alone".
-        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then
-            return
-        end
+        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then return end
 
         local skinData = GetFFD(button)
         local look = button.style
         if look then
-            if look.SetAtlas then
-                look:SetAtlas("")
-            end
-            if look.SetTexture then
-                look:SetTexture("")
-            end
+            if look.SetAtlas then look:SetAtlas("") end
+            if look.SetTexture then look:SetTexture("") end
             look:SetAlpha(0)
         end
         if button.icon then
@@ -1404,9 +1265,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             _eabUpdateHooked = true
             hooksecurefunc("ExtraActionBar_Update", StripExtraButton)
         end
-        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then
-            return
-        end
+        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then return end
         StripExtraButton()
         if C_Timer then
             C_Timer.After(0, StripExtraButton)
@@ -1430,36 +1289,24 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     ---------------------------------------------------------------------------
     local function StripZoneAbility()
         local frame = _G.ZoneAbilityFrame
-        if not frame or frame:IsForbidden() then
-            return
-        end
+        if not frame or frame:IsForbidden() then return end
 
         -- Shares the extra action button's toggle: both are granted-ability
         -- buttons and get identical treatment, so two settings was a
         -- distinction without a difference. DEFAULT OFF, by request.
-        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then
-            return
-        end
+        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then return end
 
         local look = frame.Style
         if look then
-            if look.SetAtlas then
-                look:SetAtlas("")
-            end
-            if look.SetTexture then
-                look:SetTexture("")
-            end
+            if look.SetAtlas then look:SetAtlas("") end
+            if look.SetTexture then look:SetTexture("") end
             look:SetAlpha(0)
         end
 
         local sc = frame.SpellButtonContainer
-        if not (sc and sc.EnumerateActive) then
-            return
-        end
+        if not (sc and sc.EnumerateActive) then return end
         local okIter, iter = pcall(sc.EnumerateActive, sc)
-        if not (okIter and iter) then
-            return
-        end
+        if not (okIter and iter) then return end
         for button in iter do
             if button and button.IsForbidden and not button:IsForbidden() then
                 local skinData = GetFFD(button)
@@ -1469,12 +1316,8 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
                 -- nothing and covers a template that only has one.
                 local nt = button.NormalTexture or (button.GetNormalTexture and button:GetNormalTexture())
                 if nt then
-                    if nt.SetAtlas then
-                        nt:SetAtlas("")
-                    end
-                    if nt.SetTexture then
-                        nt:SetTexture("")
-                    end
+                    if nt.SetAtlas then nt:SetAtlas("") end
+                    if nt.SetTexture then nt:SetTexture("") end
                     nt:SetAlpha(0)
                 end
                 if button.Icon then
@@ -1527,9 +1370,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
                 hooksecurefunc(frame, "UpdateDisplayedZoneAbilities", StripZoneAbility)
             end
         end
-        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then
-            return
-        end
+        if not (CludesUIDB and CludesUIDB.reskinExtraActionButton == true) then return end
         StripZoneAbility()
         if C_Timer then
             C_Timer.After(0, StripZoneAbility)

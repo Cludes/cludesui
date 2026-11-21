@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Compact.lua
 --  Compact Mode (the raid and party Frame Spacing cogs) and Grid Mode (the
@@ -15,9 +13,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, mod = ...
 local Inner = mod._internals
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = mod.CludesUI
@@ -25,26 +21,27 @@ local CreateFrame, InCombatLockdown = CreateFrame, InCombatLockdown
 local PixelSnap, FFD, GetFFD, defaultSet = Inner.PixelSnap, Inner.FFD, Inner.GetFFD, Inner.defaults
 local allButtons, separatedHdrs = Inner.allButtons, Inner.separatedHdrs
 local saved, boxHolder, solidStyle
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
-    boxHolder = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val) boxHolder = val end
 
 -------------------------------------------------------------------------------
 --  Gates and spacing
 -------------------------------------------------------------------------------
 -- The border either mode needs: a Pixels style above size 0, on the CludesUI look.
 function mod.RF_CompactEligible(cfg)
-    return cfg and CUI._pixelArtBorders[cfg.borderTexture] and not mod.RF_Stock() and (cfg.borderSize or 1) > 0
+    return cfg
+        and CUI._pixelArtBorders[cfg.borderTexture]
+        and not mod.RF_Stock()
+        and (cfg.borderSize or 1) > 0
 end
 
 -- Compact Mode in effect for settings s (party: the Party tab's choice). The party
 -- side also stands down under the Party Frames kit and while target frames sit along
 -- the stack; a saved choice that cannot apply stays saved.
 function mod.RF_CompactOn(cfg, party)
-    if not cfg or not (party and cfg.partyCompactMode == true or not party and cfg.raidCompactMode == true) then
+    if
+        not cfg or not (party and cfg.partyCompactMode == true or not party and cfg.raidCompactMode == true)
+    then
         return false
     end
     local style = cfg
@@ -53,20 +50,14 @@ function mod.RF_CompactOn(cfg, party)
     elseif party and cfg == mod._pvOverlayProxy then
         style = mod._scaledPartyProxy
     end
-    if not mod.RF_CompactEligible(style) then
-        return false
-    end
+    if not mod.RF_CompactEligible(style) then return false end
     return not party or (not mod.RF_PartyKit() and not mod.PT_AlongStack(cfg, cfg.partyShowTargets == true))
 end
 
 -- The options pages' check for the tab they show (party: the Party tab).
-function mod.RF_CompactOnTab(party)
-    return mod.RF_CompactOn(party and mod._partyProxy or saved.profile, party)
-end
+function mod.RF_CompactOnTab(party) return mod.RF_CompactOn(party and mod._partyProxy or saved.profile, party) end
 
-function mod.RF_GridOn(cfg)
-    return cfg.raidGridMode == true and mod.RF_CompactOn(cfg, false)
-end
+function mod.RF_GridOn(cfg) return cfg.raidGridMode == true and mod.RF_CompactOn(cfg, false) end
 
 -- One physical pixel at the container's scale.
 function mod.RF_OnePixel(party)
@@ -76,9 +67,7 @@ end
 
 -- The spacing the layout uses: one pixel under the mode, else the saved slider value.
 function mod.RF_CellSpacing(cfg, party)
-    if mod.RF_CompactOn(cfg, party) then
-        return mod.RF_OnePixel(party)
-    end
+    if mod.RF_CompactOn(cfg, party) then return mod.RF_OnePixel(party) end
     return PixelSnap(party and (cfg.partyCellSpacing or cfg.cellSpacing or 2) or (cfg.cellSpacing or 2))
 end
 
@@ -97,14 +86,13 @@ end
 -- A grouped pet: a header pet while its tab's mode is on, or a grouped preview pet.
 function mod.RF_PetCompactOn(btnFrame, s)
     local skinData = FFD[btnFrame]
-    if not skinData then
-        return false
-    end
-    if skinData._petGroupedPreview then
-        return mod.RF_CompactOn(s, skinData._petPreviewParty)
-    end
+    if not skinData then return false end
+    if skinData._petGroupedPreview then return mod.RF_CompactOn(s, skinData._petPreviewParty) end
     local popFrame = mod._PF
-    return skinData._petHeader and popFrame and popFrame.active and mod.RF_CompactOn(s, popFrame.styleCtx == "party")
+    return skinData._petHeader
+            and popFrame
+            and popFrame.active
+            and mod.RF_CompactOn(s, popFrame.styleCtx == "party")
         or false
 end
 
@@ -134,14 +122,10 @@ function mod.RF_CompactHighlight(widget, skinData, cfg, btnFrame)
         local red, green, blue = mod.RF_VisibleHighlight(cfg, c.r, c.g, c.b)
         local level = cfg.borderBehind and math.max(0, btnFrame:GetFrameLevel() - 1)
             or btnFrame:GetFrameLevel() + mod.LVL_RAISE
-        if widget:GetFrameLevel() ~= level then
-            widget:SetFrameLevel(level)
-        end
+        if widget:GetFrameLevel() ~= level then widget:SetFrameLevel(level) end
         mod.ApplyHighlightBorder(widget, solidStyle, size, red, green, blue, a, px)
         local strips = CUI.PP.GetBorders(widget)
-        if strips and strips:GetFrameLevel() ~= level + 1 then
-            strips:SetFrameLevel(level + 1)
-        end
+        if strips and strips:GetFrameLevel() ~= level + 1 then strips:SetFrameLevel(level + 1) end
     else
         mod.ApplyHighlightBorder(widget, solidStyle, nil, 0, 0, 0, 0)
     end
@@ -158,9 +142,7 @@ end
 local raid, party, pets, raidPreview, partyPreview, petPreview
 
 local function HideState(st)
-    if not st or not st.shown then
-        return
-    end
+    if not st or not st.shown then return end
     for _, owner in ipairs(st.hosts) do
         if owner:IsShown() then
             CUI.HideBorderStyle(owner)
@@ -169,14 +151,10 @@ local function HideState(st)
         end
     end
     for _, frame in ipairs(st.empty) do
-        if frame:IsShown() then
-            frame:Hide()
-        end
+        if frame:IsShown() then frame:Hide() end
     end
     for _, t in ipairs(st.seams) do
-        if t:IsShown() then
-            t:Hide()
-        end
+        if t:IsShown() then t:Hide() end
     end
     st.shown, st.dirty = false, true
 end
@@ -249,9 +227,7 @@ local function Cell(st, gi, index, frame)
     end
     local scale = frame:GetEffectiveScale() / st.owner:GetEffectiveScale()
     local posX, posY, wid, hgt = frame:GetRect()
-    if not posX or not posY then
-        return false
-    end
+    if not posX or not posY then return false end
     posX, posY, wid, hgt = posX * scale, (posY + hgt) * scale, wid * scale, hgt * scale
     local level, strata = frame:GetFrameLevel(), frame:GetFrameStrata()
     if
@@ -272,9 +248,7 @@ end
 
 -- Cells in screen order: left to right, then top to bottom.
 local function Along(a, b)
-    if a.x == b.x then
-        return a.y > b.y
-    end
+    if a.x == b.x then return a.y > b.y end
     return a.x < b.x
 end
 
@@ -333,9 +307,7 @@ end
 local function Seam(st, index, first, posX, posY, length, vertical)
     local t = st.seams[index]
     if not t then
-        if not st.seamHost then
-            st.seamHost = CreateFrame("Frame", nil, st.owner)
-        end
+        if not st.seamHost then st.seamHost = CreateFrame("Frame", nil, st.owner) end
         t = st.seamHost:CreateTexture(nil, "OVERLAY")
         CUI.PP.DisablePixelSnap(t)
         st.seams[index] = t
@@ -368,9 +340,7 @@ local function Seam(st, index, first, posX, posY, length, vertical)
 end
 
 local function Draw(st)
-    if not st.dirty then
-        return
-    end
+    if not st.dirty then return end
     local val = st.style
     if st.styleDirty then
         st.styleDirty = false
@@ -407,12 +377,8 @@ local function Draw(st)
             -- its last frame along its growth.
             if val.grid and not st.isPet and num < 5 then
                 local missing = 5 - num
-                if set.growth == "LEFT" then
-                    posX = posX - missing * (c.w + gap)
-                end
-                if set.growth == "UP" then
-                    posY = posY + missing * (c.h + gap)
-                end
+                if set.growth == "LEFT" then posX = posX - missing * (c.w + gap) end
+                if set.growth == "UP" then posY = posY + missing * (c.h + gap) end
                 wid = horizontal and (5 * c.w + 4 * gap) or c.w
                 hgt = horizontal and c.h or (5 * c.h + 4 * gap)
                 for index = num + 1, 5 do
@@ -520,14 +486,10 @@ local function Draw(st)
         end
     end
     for index = emptyCount + 1, #st.empty do
-        if st.empty[index]:IsShown() then
-            st.empty[index]:Hide()
-        end
+        if st.empty[index]:IsShown() then st.empty[index]:Hide() end
     end
     for index = seamCount + 1, #st.seams do
-        if st.seams[index]:IsShown() then
-            st.seams[index]:Hide()
-        end
+        if st.seams[index]:IsShown() then st.seams[index]:Hide() end
     end
     st.shown, st.dirty = first ~= nil, false
 end
@@ -540,21 +502,13 @@ end
 local RefreshLive, flusher
 local function Flush(self)
     self:Hide()
-    if raid and raid.pending then
-        RefreshLive(raid)
-    end
-    if party and party.pending then
-        RefreshLive(party)
-    end
-    if pets and pets.pending then
-        RefreshLive(pets)
-    end
+    if raid and raid.pending then RefreshLive(raid) end
+    if party and party.pending then RefreshLive(party) end
+    if pets and pets.pending then RefreshLive(pets) end
 end
 
 local function Queue(st)
-    if not st.on or st.pending then
-        return
-    end
+    if not st.on or st.pending then return end
     st.pending = true
     if not flusher then
         flusher = CreateFrame("Frame")
@@ -565,9 +519,7 @@ local function Queue(st)
 end
 
 local function Hook(st, frame)
-    if st.hooked[frame] then
-        return
-    end
+    if st.hooked[frame] then return end
     st.hooked[frame] = true
     frame:HookScript("OnShow", st.queue)
     frame:HookScript("OnHide", st.queue)
@@ -590,13 +542,15 @@ local function RefreshButtonBorders(st, enabled)
             changed = true
             local unitToken = frame:GetAttribute("unit")
             if unitToken then
-                mod.RF_PaintThreat(skinData, st.isParty and mod._scaledPartyProxy or mod._scaledProfile, unitToken)
+                mod.RF_PaintThreat(
+                    skinData,
+                    st.isParty and mod._scaledPartyProxy or mod._scaledProfile,
+                    unitToken
+                )
             end
         end
     end
-    if changed and mod.RFC_ReloadAll then
-        mod.RFC_ReloadAll()
-    end
+    if changed and mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
 end
 
 local function CollectGroup(st, frameList, start, limit, gi, growth)
@@ -657,9 +611,7 @@ local function CollectLive(st, cfg)
         for gi = 1, math.ceil(limit / 5) do
             local num = 0
             for index = (gi - 1) * 5 + 1, math.min(gi * 5, limit) do
-                if Cell(st, gi, num + 1, st.flat[index]) then
-                    num = num + 1
-                end
+                if Cell(st, gi, num + 1, st.flat[index]) then num = num + 1 end
             end
             FinishGroup(st, gi, num, growth)
             total = gi
@@ -678,17 +630,13 @@ end
 
 -- The settings a live state draws from.
 local function StateSource(st)
-    if st.isPet then
-        return mod._PF.StyleSource()
-    end
+    if st.isPet then return mod._PF.StyleSource() end
     return st.isParty and mod._partyProxy or saved.profile
 end
 
 RefreshLive = function(st)
     st.pending = nil
-    if not st.on then
-        return
-    end
+    if not st.on then return end
     local s = StateSource(st)
     UpdateStyle(st, s)
     CollectLive(st, s)
@@ -698,13 +646,9 @@ end
 local function NewLiveState(ownerFrame, isParty)
     local st = NewState(ownerFrame, isParty)
     st.hooked = setmetatable({}, { __mode = "k" })
-    st.queue = function()
-        Queue(st)
-    end
+    st.queue = function() Queue(st) end
     st.assigned = function(_, name)
-        if name == "unit" then
-            Queue(st)
-        end
+        if name == "unit" then Queue(st) end
     end
     return st
 end
@@ -719,9 +663,7 @@ function mod.RF_SyncCompact(isParty)
     else
         st = raid
     end
-    if not enabled and not st then
-        return
-    end
+    if not enabled and not st then return end
     if enabled and not st then
         st = NewLiveState(isParty and mod._partyContainerFrame or boxHolder, isParty)
         if isParty then
@@ -732,9 +674,7 @@ function mod.RF_SyncCompact(isParty)
     end
     local wasOn = st.on
     st.on = enabled
-    if wasOn ~= enabled then
-        RefreshButtonBorders(st, enabled)
-    end
+    if wasOn ~= enabled then RefreshButtonBorders(st, enabled) end
     if enabled then
         st.layoutPixel = mod.RF_OnePixel(isParty)
         Queue(st)
@@ -750,9 +690,7 @@ function mod.RF_SyncPetCompact()
     local enabled = popFrame and popFrame.active and mod.RF_CompactOn(popFrame.StyleSource(), isParty)
         or false
     local st = pets
-    if not enabled and not st then
-        return
-    end
+    if not enabled and not st then return end
     if not st then
         st = NewLiveState(popFrame.container, isParty)
         st.isPet = true
@@ -762,7 +700,11 @@ function mod.RF_SyncPetCompact()
         st.on = enabled
         for _, frame in ipairs(popFrame.buttons) do
             local skinData = GetFFD(frame)
-            if frame._borderFrame and (enabled or skinData._petCompactBorder) and skinData._petCompactBorder ~= enabled then
+            if
+                frame._borderFrame
+                and (enabled or skinData._petCompactBorder)
+                and skinData._petCompactBorder ~= enabled
+            then
                 mod._FB.StyleBorder(frame)
             end
         end
@@ -783,18 +725,14 @@ end
 --  and an attached boss group takes the new pitch (ns.FB_Repitch).
 -------------------------------------------------------------------------------
 local function Rescale(st)
-    if not (st and st.on) or (st.isPet and not mod._PF.active) then
-        return
-    end
+    if not (st and st.on) or (st.isPet and not mod._PF.active) then return end
     if not mod.RF_CompactOn(StateSource(st), st.isParty) or st.layoutPixel == mod.RF_OnePixel(st.isParty) then
         return
     end
     if InCombatLockdown() then
         mod.CombatQueue.Defer(
             st.isPet and "compact-pet-scale" or st.isParty and "compact-party-scale" or "compact-raid-scale",
-            function()
-                Rescale(st)
-            end
+            function() Rescale(st) end
         )
         return
     end
@@ -834,9 +772,7 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
         HideState(st)
         return st
     end
-    if not st then
-        st = NewState(ownerFrame, isParty)
-    end
+    if not st then st = NewState(ownerFrame, isParty) end
     st.isPet, st.isParty = isPet, isParty
     if st.owner ~= ownerFrame then
         st.owner, st.dirty = ownerFrame, true
@@ -846,9 +782,7 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
         for _, frame in ipairs(st.empty) do
             frame:SetParent(ownerFrame)
         end
-        if st.seamHost then
-            st.seamHost:SetParent(ownerFrame)
-        end
+        if st.seamHost then st.seamHost:SetParent(ownerFrame) end
     end
     UpdateStyle(st, s)
     local total = isParty and 1 or math.ceil(#frameList / 5)
@@ -856,9 +790,7 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
         local num = 0
         for index = (gi - 1) * 5 + 1, math.min(gi * 5, #frameList) do
             local frame = frameList[index]
-            if frame:IsShown() and Cell(st, gi, num + 1, frame) then
-                num = num + 1
-            end
+            if frame:IsShown() and Cell(st, gi, num + 1, frame) then num = num + 1 end
         end
         FinishGroup(st, gi, num, growth)
     end

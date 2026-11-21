@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Apply.lua
 --
@@ -38,25 +36,15 @@ local SHOWGRID, SetShowGridInsecure = Inner.SHOWGRID, Inner.SetShowGridInsecure
 --  EAB Methods Apply functions called by the options UI
 -------------------------------------------------------------------------------
 function ABAR:ApplyBordersForBar(barId)
-    if not self.db then
-        return
-    end
+    if not self.db then return end
     -- Border reach counts in size matching (the bar's getMatchPad reads these
     -- settings): re-push the bar's matches when it moved. At entry so the look
     -- and square-icon returns below report too; the re-push is deferred.
-    if CludesUI.MatchPadChanged then
-        CludesUI.MatchPadChanged(barId)
-    end
-    if not self.db.profile.squareIcons then
-        return
-    end
-    if mod.AB_Style() ~= "cui" then
-        return
-    end
+    if CludesUI.MatchPadChanged then CludesUI.MatchPadChanged(barId) end
+    if not self.db.profile.squareIcons then return end
+    if mod.AB_Style() ~= "cui" then return end
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local color = barCfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local sz, px = ResolveBorderThickness(barCfg)
     local enabled = sz > 0
@@ -80,9 +68,7 @@ function ABAR:ApplyBordersForBar(barId)
     local behind = barCfg.borderBehind
     local above = barCfg.borderAboveEffects
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     for index = 1, #buttons do
         local button = buttons[index]
         if button then
@@ -114,9 +100,7 @@ function ABAR:ApplyBordersForBar(barId)
 end
 
 function ABAR:ApplyBorders()
-    if not self.db then
-        return
-    end
+    if not self.db then return end
     for _, details in ipairs(BAR_CONFIG) do
         self:ApplyBordersForBar(details.key)
     end
@@ -127,16 +111,10 @@ function ABAR:ApplyShapesForBar(barId)
         mod._eabApplyDeferred = true
         return
     end
-    if not self.db then
-        return
-    end
-    if mod.AB_Style() ~= "cui" then
-        return
-    end
+    if not self.db then return end
+    if mod.AB_Style() ~= "cui" then return end
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local shape = barCfg.buttonShape or "none"
     local zoom = (barCfg.iconZoom or self.db.profile.iconZoom or 5.5) / 100
     local brdSz = ResolveBorderThickness(barCfg)
@@ -153,14 +131,10 @@ function ABAR:ApplyShapesForBar(barId)
         end
     end
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     for index = 1, #buttons do
         local button = buttons[index]
-        if button then
-            ApplyShapeToButton(button, shape, brdOn, brdR, brdG, brdB, brdA, brdSz, zoom)
-        end
+        if button then ApplyShapeToButton(button, shape, brdOn, brdR, brdG, brdB, brdA, brdSz, zoom) end
     end
     LayoutBar(barId)
     -- A shape change moves the bar in or out of Match Bar Border eligibility;
@@ -169,21 +143,15 @@ function ABAR:ApplyShapesForBar(barId)
 end
 
 function ABAR:ApplyShapes()
-    if not self.db then
-        return
-    end
+    if not self.db then return end
     for _, details in ipairs(BAR_CONFIG) do
         self:ApplyShapesForBar(details.key)
     end
 end
 
-function ABAR:ApplyPaddingForBar(barId)
-    LayoutBar(barId)
-end
+function ABAR:ApplyPaddingForBar(barId) LayoutBar(barId) end
 
-function ABAR:ApplyButtonSizeForBar(barId)
-    LayoutBar(barId)
-end
+function ABAR:ApplyButtonSizeForBar(barId) LayoutBar(barId) end
 
 function ABAR:ApplyIconRowOverrides(barId)
     LayoutBar(barId)
@@ -192,22 +160,16 @@ end
 
 function ABAR:ApplyBarOpacity(barId)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local widget = barFrames[barId]
-    if not widget then
-        return
-    end
+    if not widget then return end
     -- In mouseover mode the hover system owns alpha (0 when unhovered,
     -- mouseoverAlpha when hovered). Don't override it here.
     if not barCfg.mouseoverEnabled then
         local a = barCfg.mouseoverAlpha or 1
         widget:SetAlpha(a)
         _fadeAlpha[widget] = a
-        if barId == "MainBar" then
-            SyncPagingAlpha(barCfg.mouseoverAlpha or 1)
-        end
+        if barId == "MainBar" then SyncPagingAlpha(barCfg.mouseoverAlpha or 1) end
     end
 end
 
@@ -218,20 +180,14 @@ end
 
 function ABAR:GetOrientationForBar(barId)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return true
-    end
+    if not barCfg then return true end
     return barCfg.orientation ~= "vertical"
 end
 
 function ABAR:LayoutAnchoredBarsFrom(targetKey, depth)
-    if not targetKey or (depth or 0) > 12 then
-        return
-    end
+    if not targetKey or (depth or 0) > 12 then return end
     local adb = _G.CludesUIDB and _G.CludesUIDB.unlockAnchors
-    if not adb then
-        return
-    end
+    if not adb then return end
     local nextDepth = (depth or 0) + 1
     for childKey, ai in pairs(adb) do
         if
@@ -248,22 +204,16 @@ end
 
 function ABAR:SetOrientationForBar(barId, isHorizontal)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     barCfg.orientation = isHorizontal and "horizontal" or "vertical"
     -- Reset growth direction to orientation-appropriate default when switching
     local g = (barCfg.growDirection or "up"):upper()
     if isHorizontal then
         -- Switching to horizontal: if current growth is vertical-only, reset
-        if g == "UP" or g == "DOWN" then
-            barCfg.growDirection = "center"
-        end
+        if g == "UP" or g == "DOWN" then barCfg.growDirection = "center" end
     else
         -- Switching to vertical: if current growth is horizontal-only, reset
-        if g == "LEFT" or g == "RIGHT" then
-            barCfg.growDirection = "up"
-        end
+        if g == "LEFT" or g == "RIGHT" then barCfg.growDirection = "up" end
     end
     LayoutBar(barId)
     self:LayoutAnchoredBarsFrom(barId, 0)
@@ -271,9 +221,7 @@ end
 
 function ABAR:SetGrowDirectionForBar(barId, direction)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     barCfg.growDirection = direction or "up"
     LayoutBar(barId)
     self:LayoutAnchoredBarsFrom(barId, 0)
@@ -303,9 +251,7 @@ ABAR.TEXT_INSET_Y = { keybind = 3, count = 4, macro = 4 }
 -- 0/0 for a position PlaceButtonText does not know (hand-edited, or from a newer
 -- build): that text draws at the stock placement, which carries its own spacing.
 function ABAR.StockTextOffsets(kind, anchor)
-    if not ABAR.TEXT_ANCHOR_JUSTIFY[anchor] then
-        return 0, 0
-    end
+    if not ABAR.TEXT_ANCHOR_JUSTIFY[anchor] then return 0, 0 end
     local posX = 0
     if anchor:find("LEFT", 1, true) then
         posX = ABAR.TEXT_INSET_X
@@ -313,9 +259,7 @@ function ABAR.StockTextOffsets(kind, anchor)
         posX = -ABAR.TEXT_INSET_X
     end
     local posY = ABAR.TEXT_INSET_Y[kind] or 0
-    if anchor:find("TOP", 1, true) then
-        posY = -posY
-    end
+    if anchor:find("TOP", 1, true) then posY = -posY end
     return posX, posY
 end
 
@@ -344,9 +288,7 @@ ABAR.TEXT_ANCHOR_JUSTIFY = {
 }
 function ABAR.PlaceButtonText(fontStr, hostFrame, anchor, ox, oy)
     local justify = anchor and ABAR.TEXT_ANCHOR_JUSTIFY[anchor]
-    if not justify then
-        return false
-    end
+    if not justify then return false end
     -- Offset 0/0 is the corner the position names, with no inset of its own: the
     -- boxes are the only thing between the text and the edge, and they read the
     -- same at all six positions. The spacing the three stock placements carry
@@ -375,22 +317,16 @@ end
 
 function ABAR:ApplyFontsForBar(barId)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     local fontFile = CludesUI.GetFontPath("actionBars") or FONT_PATH
     local hideKB = barCfg.hideKeybind
     local kbSize = barCfg.keybindFontSize or 12
     -- Stance/pet bar buttons are smaller (30px vs 45px) shrink keybind text
     -- by 2px so it doesn't overwhelm the icon.
     local details = BAR_LOOKUP[barId]
-    if details and (details.isStance or details.isPetBar) then
-        kbSize = max(kbSize - 2, 6)
-    end
+    if details and (details.isStance or details.isPetBar) then kbSize = max(kbSize - 2, 6) end
     local kbColor = barCfg.keybindFontColor or { r = 1, g = 1, b = 1 }
     local ctSize = barCfg.countFontSize or 12
     local ctColor = barCfg.countFontColor or { r = 1, g = 1, b = 1 }
@@ -402,9 +338,7 @@ function ABAR:ApplyFontsForBar(barId)
     local ctAnchor = barCfg.countAnchor
     local hideMacro = barCfg.hideMacroText
     local macroSize = barCfg.macroFontSize or 12
-    if details and (details.isStance or details.isPetBar) then
-        macroSize = max(macroSize - 2, 6)
-    end
+    if details and (details.isStance or details.isPetBar) then macroSize = max(macroSize - 2, 6) end
     local macroColor = barCfg.macroFontColor or { r = 1, g = 1, b = 1 }
     local macroOX = barCfg.macroOffsetX or 0
     local macroOY = barCfg.macroOffsetY or 0
@@ -413,9 +347,7 @@ function ABAR:ApplyFontsForBar(barId)
 
     for index = 1, #buttons do
         local button = buttons[index]
-        if not button then
-            break
-        end
+        if not button then break end
 
         -- Keybind text
         local hotkeyText = button.HotKey
@@ -432,9 +364,7 @@ function ABAR:ApplyFontsForBar(barId)
                         bindingAction = "ACTIONBUTTON" .. index
                     else
                         local bindPrefix = BINDING_MAP[barId]
-                        if bindPrefix then
-                            bindingAction = bindPrefix .. index
-                        end
+                        if bindPrefix then bindingAction = bindPrefix .. index end
                     end
                 elseif details and details.isStance then
                     bindingAction = "SHAPESHIFTBUTTON" .. index
@@ -444,9 +374,7 @@ function ABAR:ApplyFontsForBar(barId)
 
                 local key1 = bindingAction and GetBindingKey(bindingAction)
                 local textValue = key1 and FormatHotkeyText(key1) or ""
-                if textValue == RANGE_INDICATOR or textValue == "\226\128\162" then
-                    textValue = ""
-                end
+                if textValue == RANGE_INDICATOR or textValue == "\226\128\162" then textValue = "" end
                 hotkeyText:SetText(textValue)
                 hotkeyText:Show()
                 CludesUI.ApplyIconTextFont(hotkeyText, fontFile, kbSize, "actionBars")
@@ -482,9 +410,17 @@ function ABAR:ApplyFontsForBar(barId)
             else
                 macroName:SetAlpha(1)
                 CludesUI.PrimeFontShadow(macroName, false)
-                macroName:SetFont(fontFile, macroSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+                macroName:SetFont(
+                    fontFile,
+                    macroSize,
+                    (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
+                )
                 macroName:SetTextColor(macroColor.r, macroColor.g, macroColor.b)
-                if not (macroAnchor and ABAR.PlaceButtonText(macroName, button, macroAnchor, macroOX, macroOY)) then
+                if
+                    not (
+                        macroAnchor and ABAR.PlaceButtonText(macroName, button, macroAnchor, macroOX, macroOY)
+                    )
+                then
                     macroName:ClearAllPoints()
                     macroName:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 1 + macroOX, 4 + macroOY)
                     macroName:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + macroOX, 4 + macroOY)
@@ -510,18 +446,14 @@ end
 -- button work at all for bars on the default white.
 function ABAR:ReapplyHotkeyColors()
     local barList = self.db and self.db.profile and self.db.profile.bars
-    if not barList then
-        return
-    end
+    if not barList then return end
     for barId, buttons in pairs(barButtons) do
         local cfg = barList[barId]
         local color = cfg and not cfg.hideKeybind and cfg.keybindFontColor
         if color and (color.r ~= 1 or color.g ~= 1 or color.b ~= 1) then
             for index = 1, #buttons do
                 local hotkeyText = buttons[index] and buttons[index].HotKey
-                if hotkeyText then
-                    hotkeyText:SetTextColor(color.r, color.g, color.b)
-                end
+                if hotkeyText then hotkeyText:SetTextColor(color.r, color.g, color.b) end
             end
         end
     end
@@ -532,9 +464,7 @@ end
 -- re-resolve, and the pending flag coalesces the burst into one next-frame
 -- pass. State lives on EAB.
 function ABAR:QueueHotkeyColorReassert()
-    if self._kbColorPending then
-        return
-    end
+    if self._kbColorPending then return end
     self._kbColorPending = true
     self._kbColorRunner = self._kbColorRunner
         or function()
@@ -564,13 +494,9 @@ end
 -- on the edge and covers nothing. OPT-IN per bar (cdFit, "Fit Size to Button"): the
 -- configured size wins unless the bar opts in, so the off path returns it untouched.
 function EAB_VTABLE.CooldownFonts.EffectiveSize(cdFrame, cdSize, cdFit)
-    if not cdFit then
-        return cdSize
-    end
+    if not cdFit then return cdSize end
     local owner = cdFrame and (cdFrame:GetParent() or cdFrame)
-    if not (owner and owner.GetWidth and owner.GetHeight) then
-        return cdSize
-    end
+    if not (owner and owner.GetWidth and owner.GetHeight) then return cdSize end
     local wid, hgt = owner:GetWidth(), owner:GetHeight()
     if not wid or not hgt or wid <= 0 or hgt <= 0 then
         return cdSize -- not laid out yet; re-applied on the next layout pass
@@ -580,16 +506,12 @@ function EAB_VTABLE.CooldownFonts.EffectiveSize(cdFrame, cdSize, cdFit)
     -- axis is the one that constrains.
     local size = (wid < hgt) and wid or hgt
     local cap = math.floor(size * 0.40)
-    if cap < 5 then
-        cap = 5
-    end -- never shrink to illegibility
+    if cap < 5 then cap = 5 end -- never shrink to illegibility
     return (cdSize > cap) and cap or cdSize
 end
 
 function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
-    if not cdFrame then
-        return false
-    end
+    if not cdFrame then return false end
 
     -- Stamp on the EFFECTIVE size, not requested: keyed to the request, a bar
     -- resize would leave the setting unchanged, match the stamp, and freeze
@@ -630,9 +552,7 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, 
 end
 
 function EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
-    if not button then
-        return
-    end
+    if not button then return end
 
     local applied =
         EAB_VTABLE.CooldownFonts.ApplyToFrame(button.cooldown, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
@@ -649,9 +569,7 @@ function EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, 
             cdColor,
             cdFit
         )
-    if applied and appliedCharge then
-        return
-    end
+    if applied and appliedCharge then return end
 
     -- Some cooldown frames create their countdown FontString lazily on the
     -- first update after SetCooldown(). Retry once on the next frame.
@@ -671,21 +589,15 @@ end
 
 function ABAR:ApplyCooldownFontsForBar(barId)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     local fontFile, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(barCfg)
 
     C_Timer.After(0, function()
         for index = 1, #buttons do
             local button = buttons[index]
-            if not button then
-                break
-            end
+            if not button then break end
             EAB_VTABLE.CooldownFonts.ApplyToButton(button, fontFile, cdSize, cdOX, cdOY, cdColor, cdFit)
         end
     end)
@@ -708,12 +620,8 @@ function ABAR:ApplyEquippedBorder(changedOnly)
     local enabled = self.db.profile.showEquippedBorder and true or false
     local was = mod._eabEqBorderOn
     mod._eabEqBorderOn = enabled
-    if changedOnly and (was == nil or was == enabled) then
-        return
-    end
-    if mod.AB_Style() ~= "cui" then
-        return
-    end
+    if changedOnly and (was == nil or was == enabled) then return end
+    if mod.AB_Style() ~= "cui" then return end
     for _, details in ipairs(BAR_CONFIG) do
         local buttonList = barButtons[details.key]
         if buttonList then
@@ -738,9 +646,7 @@ end
 -- the count TEXT stays whatever its owners last wrote. Cold path: options
 -- clicks only.
 function ABAR:RefreshCountVisibility(barId)
-    if not (C_ActionBar and C_ActionBar.GetActionDisplayCount) then
-        return
-    end
+    if not (C_ActionBar and C_ActionBar.GetActionDisplayCount) then return end
     for _, details in ipairs(BAR_CONFIG) do
         if not details.isStance and not details.isPetBar and (barId == nil or details.key == barId) then
             local buttonList = barButtons[details.key]
@@ -766,9 +672,7 @@ function ABAR:RefreshCountVisibility(barId)
     end
 end
 
-function ABAR:RefreshAllCounts()
-    self:RefreshCountVisibility()
-end
+function ABAR:RefreshAllCounts() self:RefreshCountVisibility() end
 
 -- Re-apply "Alpha on Cooldown" across every action button: on setting change (immediate
 -- feedback plus a clean restore to full alpha at 100) and on the main apply. Same
@@ -804,14 +708,10 @@ end
 
 function ABAR:ApplySlotBackgroundColor()
     local profileDB = self.db and self.db.profile
-    if not profileDB then
-        return
-    end
+    if not profileDB then return end
     local color = profileDB.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
     local a = profileDB.slotBgOpacity
-    if a == nil then
-        a = 50
-    end
+    if a == nil then a = 50 end
     a = a / 100
     for _, details in ipairs(BAR_CONFIG) do
         local buttonList = barButtons[details.key]
@@ -831,9 +731,7 @@ end
 -- and on setting change. Defaults mirror the Blizzard look.
 function ABAR:ApplyCooldownSwipeColor()
     local profileDB = self.db and self.db.profile
-    if not profileDB then
-        return
-    end
+    if not profileDB then return end
     local color = profileDB.cdSwipeColor or { r = 0, g = 0, b = 0 }
     local a = (profileDB.cdSwipeAlpha or 80) / 100
     for _, details in ipairs(BAR_CONFIG) do
@@ -856,13 +754,9 @@ local barBackgrounds = {} -- [barKey] = { fill = Texture, border = Frame }
 
 function ABAR:ApplyBackgroundForBar(barId)
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local widget = barFrames[barId]
-    if not widget then
-        return
-    end
+    if not widget then return end
 
     if not barCfg.bgEnabled then
         local bgTex = barBackgrounds[barId]
@@ -959,9 +853,7 @@ end
 function ABAR:ApplyIconBackgroundForBar(barId)
     local pr = self.db.profile
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     local show = pr.showBlizzIconBg or false
     -- Session gate for the per-button OnEvent hook below: feature defaults
     -- OFF and the hook rides every event every button receives, so the
@@ -973,17 +865,13 @@ function ABAR:ApplyIconBackgroundForBar(barId)
     local inset = blizzStyle and 0 or 4
     for index = 1, #buttons do
         local button = buttons[index]
-        if not button then
-            break
-        end
+        if not button then break end
         local buttonData = EFD(button)
         if not show then
             -- Disabled (the default): build nothing. Only a clip left over
             -- from an earlier ON has anything to hide; every other reader of
             -- iconBg / iconBgClip (slot sync, shape masks) nil-checks.
-            if buttonData.iconBgClip then
-                buttonData.iconBgClip:Hide()
-            end
+            if buttonData.iconBgClip then buttonData.iconBgClip:Hide() end
         else
             -- Only show icon background on empty slots
             local okHA, hasAction = pcall(button.HasAction, button)
@@ -1019,9 +907,7 @@ function ABAR:ApplyIconBackgroundForBar(barId)
                     -- Feature gate FIRST: turned off later in the session, the
                     -- hook must cost one boolean. The apply pass hides a
                     -- freshly-disabled clip on the settings edge, never this hook.
-                    if not mod._iconBgOn then
-                        return
-                    end
+                    if not mod._iconBgOn then return end
                     local sfd = EFD(self)
                     local c = sfd.iconBgClip
                     if c then
@@ -1049,45 +935,25 @@ end
 function ABAR:ApplyAlwaysShowButtons(barId)
     -- Hard-dormant bars skip the whole pass; the dormancy reveal reconcile
     -- runs it once when a settings edge brings the bar back.
-    if mod._eabBarNever[barId] then
-        return
-    end
+    if mod._eabBarNever[barId] then return end
     local barCfg = self.db.profile.bars[barId]
-    if not barCfg then
-        return
-    end
+    if not barCfg then return end
     local details = BAR_LOOKUP[barId]
-    if not details then
-        return
-    end
+    if not details then return end
     local buttons = barButtons[barId]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     local showEmpty = barCfg.alwaysShowButtons
-    if showEmpty == nil then
-        showEmpty = true
-    end
+    if showEmpty == nil then showEmpty = true end
     -- Stance bar always hides empty slots (count is dynamic per class)
-    if details.isStance then
-        showEmpty = false
-    end
+    if details.isStance then showEmpty = false end
 
     -- Respect icon cutoff (hoisted above the grid half so the signature
     -- below sees every input)
     local numIcons = barCfg.overrideNumIcons or barCfg.numIcons or details.count
-    if numIcons < 1 then
-        numIcons = details.count
-    end
-    if numIcons > details.count then
-        numIcons = details.count
-    end
-    if details.isStance then
-        numIcons = GetNumShapeshiftForms() or details.count
-    end
-    if numIcons < 1 then
-        numIcons = 1
-    end
+    if numIcons < 1 then numIcons = details.count end
+    if numIcons > details.count then numIcons = details.count end
+    if details.isStance then numIcons = GetNumShapeshiftForms() or details.count end
+    if numIcons < 1 then numIcons = 1 end
 
     local quickKeybindVisible = ShouldQuickKeybindSurfaceBar(barCfg)
     local clickable = quickKeybindVisible or not barCfg.clickThrough
@@ -1134,14 +1000,10 @@ function ABAR:ApplyAlwaysShowButtons(barId)
     -- During a spell drag, we leave the controller's secure visibility path
     -- alone. QuickKeybind still needs the normal visibility refresh so its
     -- dedicated KEYBOUND flag can show empty slots on EAB-owned bars.
-    if _gridState.shown and not _quickKeybindState.open then
-        return
-    end
+    if _gridState.shown and not _quickKeybindState.open then return end
     -- The loop below rewrites the pet buttons from live state: drop the pet
     -- handler's shape memo so its next full pass lays them out again.
-    if details.isPetBar then
-        mod._eabPetLayoutSig = nil
-    end
+    if details.isPetBar then mod._eabPetLayoutSig = nil end
     local lastVisible = 0
     for index = 1, numIcons do
         local button = buttons[index]
@@ -1152,9 +1014,7 @@ function ABAR:ApplyAlwaysShowButtons(barId)
             local isVisible = showEmpty or quickKeybindVisible or not mod.AB_EmptySlot(button, details)
 
             local buttonData = EFD(button)
-            if buttonData.slotBG then
-                buttonData.slotBG:SetShown(isVisible)
-            end
+            if buttonData.slotBG then buttonData.slotBG:SetShown(isVisible) end
             if buttonData.borders and not (buttonData.shapeMask and buttonData.shapeMask:IsShown()) then
                 buttonData.borders:SetShown(isVisible)
             end
@@ -1260,9 +1120,7 @@ end
 -- AlwaysShow pass once combat ends, never a full ApplyAll: the regen handler
 -- runs it from ns._eabMainBarAsbOwed.
 function EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, withinCutoff, showEmpty)
-    if not button then
-        return
-    end
+    if not button then return end
     if InCombatLockdown() then
         mod._eabMainBarAsbOwed = true
         return
@@ -1273,9 +1131,7 @@ end
 
 function EAB_VTABLE.MainBarPageSync.Queue()
     local status = EAB_VTABLE.MainBarPageSync
-    if status.pending then
-        return
-    end
+    if status.pending then return end
     status.pending = true
     C_Timer_After(0, function()
         status.pending = false
@@ -1283,9 +1139,7 @@ function EAB_VTABLE.MainBarPageSync.Queue()
             mod._eabMainBarAsbOwed = true
             return
         end
-        if not ABAR or not ABAR.db then
-            return
-        end
+        if not ABAR or not ABAR.db then return end
         ABAR:ApplyAlwaysShowButtons("MainBar")
     end)
 end
@@ -1296,18 +1150,14 @@ function EAB_VTABLE.MainBarPageSync.InstallAll()
         return
     end
     local buttons = barButtons["MainBar"]
-    if not buttons then
-        return
-    end
+    if not buttons then return end
     for _, button in ipairs(buttons) do
         EAB_VTABLE.MainBarPageSync.InstallButton(button)
     end
 end
 
 function EAB_VTABLE.MainBarPageSync.InstallButton(button)
-    if not button or button:GetAttribute("_eabPageSyncInstalled") or InCombatLockdown() then
-        return
-    end
+    if not button or button:GetAttribute("_eabPageSyncInstalled") or InCombatLockdown() then return end
 
     -- Bake the base index directly into the snippet as a literal so it
     -- doesn't depend on attribute reads in the restricted environment.

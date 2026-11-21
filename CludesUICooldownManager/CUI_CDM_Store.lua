@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Store.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ECME = Inner.ECME
@@ -29,42 +25,34 @@ local ECME = Inner.ECME
 local SpellStore = {}
 
 function SpellStore.Get()
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
-    if not CludesUIDB.spellAssignments then
-        CludesUIDB.spellAssignments = { profiles = {} }
-    end
+    if not CludesUIDB then CludesUIDB = {} end
+    if not CludesUIDB.spellAssignments then CludesUIDB.spellAssignments = { profiles = {} } end
     return CludesUIDB.spellAssignments
 end
 
 -- Active profile name for the per-profile spell store; read live so a profile switch auto-follows the next CDM rebuild, no repoint step.
-function mod.GetActiveProfileName()
-    return (CludesUIDB and CludesUIDB.activeProfile) or "Default"
-end
+function mod.GetActiveProfileName() return (CludesUIDB and CludesUIDB.activeProfile) or "Default" end
 
 -- Per-profile spell store: copying a profile forks its CDM; deleting a bar never crosses
 -- profiles. Until the seeding migration (cdm_per_profile_spell_store_v1) completes (_perProfileSeeded),
 -- fork the legacy shared spellAssignments.specProfiles on first access so a profile never reads empty mid-migration.
 function mod.GetSpecProfilesForProfile(profileName)
     local assignments = SpellStore.Get()
-    if not assignments.profiles then
-        assignments.profiles = {}
-    end
+    if not assignments.profiles then assignments.profiles = {} end
     local specBucket = assignments.profiles[profileName]
     if not specBucket then
         specBucket = { specProfiles = {} }
-        if not assignments._perProfileSeeded and type(assignments.specProfiles) == "table" and next(assignments.specProfiles) then
+        if
+            not assignments._perProfileSeeded
+            and type(assignments.specProfiles) == "table"
+            and next(assignments.specProfiles)
+        then
             local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
-            if DeepCopy then
-                specBucket.specProfiles = DeepCopy(assignments.specProfiles)
-            end
+            if DeepCopy then specBucket.specProfiles = DeepCopy(assignments.specProfiles) end
         end
         assignments.profiles[profileName] = specBucket
     end
-    if not specBucket.specProfiles then
-        specBucket.specProfiles = {}
-    end
+    if not specBucket.specProfiles then specBucket.specProfiles = {} end
     return specBucket.specProfiles
 end
 
@@ -77,12 +65,8 @@ function mod.GetActiveTBBBroadcastSet()
     mod.GetSpecProfilesForProfile(label)
     local assignments = SpellStore.Get()
     local specBucket = assignments.profiles and assignments.profiles[label]
-    if not specBucket then
-        return {}
-    end
-    if not specBucket.tbbBroadcast then
-        specBucket.tbbBroadcast = {}
-    end
+    if not specBucket then return {} end
+    if not specBucket.tbbBroadcast then specBucket.tbbBroadcast = {} end
     return specBucket.tbbBroadcast
 end
 
@@ -94,12 +78,8 @@ function mod.GetTBBSmoothSettings()
     mod.GetSpecProfilesForProfile(label)
     local assignments = SpellStore.Get()
     local specBucket = assignments.profiles and assignments.profiles[label]
-    if not specBucket then
-        return nil
-    end
-    if not specBucket.tbbSmooth then
-        specBucket.tbbSmooth = {}
-    end
+    if not specBucket then return nil end
+    if not specBucket.tbbSmooth then specBucket.tbbSmooth = {} end
     return specBucket.tbbSmooth
 end
 
@@ -109,9 +89,7 @@ end
 -- (spellAssignments.profileBindings) applied by ns.ApplyProfileBinding on profile load. Self-heals to a valid layout.
 function mod.GetActiveLayoutName()
     local assignments = SpellStore.Get()
-    if not assignments.profiles then
-        assignments.profiles = {}
-    end
+    if not assignments.profiles then assignments.profiles = {} end
     local label = assignments.activeLayout
     if type(label) ~= "string" or type(assignments.profiles[label]) ~= "table" then
         -- Self-heal: prefer a layout named after the current profile, else any existing layout, else the profile name (creates it).
@@ -140,17 +118,13 @@ end
 -- switch and options rebuild passes through one of those.
 function mod.GetActiveSpecProfiles()
     local specProfile = mod._cachedSpecProfiles
-    if specProfile then
-        return specProfile
-    end
+    if specProfile then return specProfile end
     specProfile = mod.GetSpecProfilesForProfile(mod.GetActiveProfileName())
     mod._cachedSpecProfiles = specProfile
     return specProfile
 end
 
-function SpellStore.GetSpecProfiles()
-    return mod.GetActiveSpecProfiles()
-end
+function SpellStore.GetSpecProfiles() return mod.GetActiveSpecProfiles() end
 
 -- (SpellStore.GetBarGlows removed -- Bar Glows disabled pending rewrite)
 
@@ -166,16 +140,12 @@ end
 -- next call). Belt: BuildAllCDMBars' head drops the memo for structural ops (delete/reset) that replace an inner table.
 function mod.GetBarSpellData(barId)
     local specSlot = mod.GetActiveSpecKey()
-    if not specSlot or specSlot == "0" then
-        return nil
-    end
+    if not specSlot or specSlot == "0" then return nil end
     local specProfile = SpellStore.GetSpecProfiles()
     local memoTbl = mod._cdmStoreMemo
     if memoTbl and memoTbl.root == specProfile and memoTbl.spec == specSlot then
         local hit = memoTbl.sd[barId]
-        if hit then
-            return hit
-        end
+        if hit then return hit end
     else
         memoTbl = { root = specProfile, spec = specSlot, sd = {} }
         mod._cdmStoreMemo = memoTbl
@@ -185,9 +155,7 @@ function mod.GetBarSpellData(barId)
         profileTbl = { barSpells = {} }
         specProfile[specSlot] = profileTbl
     end
-    if not profileTbl.barSpells then
-        profileTbl.barSpells = {}
-    end
+    if not profileTbl.barSpells then profileTbl.barSpells = {} end
     local barStore = profileTbl.barSpells[barId]
     if not barStore then
         barStore = {}
@@ -260,15 +228,11 @@ mod.INV_SLOT_NAMES = {
 
 -- Decode an equipment-slot entry to its inventory slot id; nil for anything else.
 function mod.SlotIDFromKey(storeKey)
-    if type(storeKey) == "number" and storeKey < 0 and mod.INV_SLOT_NAMES[-storeKey] then
-        return -storeKey
-    end
+    if type(storeKey) == "number" and storeKey < 0 and mod.INV_SLOT_NAMES[-storeKey] then return -storeKey end
     return nil
 end
 
-function mod.HostedBuffMarker(spellId)
-    return -(mod.HOSTED_BUFF_MARKER_BASE + spellId)
-end
+function mod.HostedBuffMarker(spellId) return -(mod.HOSTED_BUFF_MARKER_BASE + spellId) end
 
 -- Decode a hosted-buff marker to its spellID; nil otherwise. Bounded by CD_CLAIM_MARKER_BASE so a cd-claim marker never misdecodes as a spellID.
 function mod.HostedBuffMarkerToSpell(ident)
@@ -284,14 +248,10 @@ end
 
 -- True when the list already holds the hosted marker for spellID.
 function mod.ListHasHostedMarker(entries, spellId)
-    if not entries then
-        return false
-    end
+    if not entries then return false end
     local marker = -(mod.HOSTED_BUFF_MARKER_BASE + spellId)
     for index = 1, #entries do
-        if entries[index] == marker then
-            return true
-        end
+        if entries[index] == marker then return true end
     end
     return false
 end
@@ -330,9 +290,7 @@ function mod.NewEmptySlotMarker()
                 for ident in pairs(prefs) do
                     if mod.IsEmptySlotMarker(ident) then
                         local seq = -ident - mod.EMPTY_SLOT_MARKER_BASE
-                        if seq > maxSeq then
-                            maxSeq = seq
-                        end
+                        if seq > maxSeq then maxSeq = seq end
                     end
                 end
             end
@@ -344,9 +302,7 @@ function mod.NewEmptySlotMarker()
                         for _, ident in ipairs(assignedList) do
                             if mod.IsEmptySlotMarker(ident) then
                                 local seq = -ident - mod.EMPTY_SLOT_MARKER_BASE
-                                if seq > maxSeq then
-                                    maxSeq = seq
-                                end
+                                if seq > maxSeq then maxSeq = seq end
                             end
                         end
                     end
@@ -381,9 +337,7 @@ end
 -------------------------------------------------------------------------------
 mod.CD_CLAIM_MARKER_BASE = 3000000000
 
-function mod.CdClaimMarker(cdID)
-    return -(mod.CD_CLAIM_MARKER_BASE + cdID)
-end
+function mod.CdClaimMarker(cdID) return -(mod.CD_CLAIM_MARKER_BASE + cdID) end
 
 -- Decode a cd-claim marker to its cooldownID; nil for anything else.
 function mod.CdClaimMarkerToCdID(ident)
@@ -395,9 +349,7 @@ end
 
 -- Every cd-claim marker in a bar's assignedSpells as a set ({[cdID]=true,...}), or nil if none.
 function mod.CollectCdClaimSet(spellData)
-    if not spellData or not spellData.assignedSpells then
-        return nil
-    end
+    if not spellData or not spellData.assignedSpells then return nil end
     local keySet
     for _, ident in ipairs(spellData.assignedSpells) do
         local cd = mod.CdClaimMarkerToCdID(ident)
@@ -411,17 +363,13 @@ end
 
 -- Family store key for a bar ("spellSettingsBuff" for buff-family bars, "spellSettingsCD" for everything else, including the ghost CD bar).
 function mod.SettingsFamilyKey(barKeyOrBd)
-    if mod.IsBarBuffFamily and mod.IsBarBuffFamily(barKeyOrBd) then
-        return "spellSettingsBuff"
-    end
+    if mod.IsBarBuffFamily and mod.IsBarBuffFamily(barKeyOrBd) then return "spellSettingsBuff" end
     return "spellSettingsCD"
 end
 
 -- Family per-spell store for an explicit spec profile table.
 function mod.GetSpellSettingsStoreForProf(profileTbl, famKey, create)
-    if not profileTbl then
-        return nil
-    end
+    if not profileTbl then return nil end
     local state = profileTbl[famKey]
     if not state and create then
         state = {}
@@ -435,21 +383,15 @@ end
 -- cached, and create=true refreshes the entry so a first-write store is immediately visible to readers.
 function mod.GetSpellSettingsStore(barKeyOrBd, create)
     local specSlot = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not specSlot or specSlot == "0" then
-        return nil
-    end
+    if not specSlot or specSlot == "0" then return nil end
     local specProfile = SpellStore.GetSpecProfiles()
-    if not specProfile then
-        return nil
-    end
+    if not specProfile then return nil end
     local famKey = mod.SettingsFamilyKey(barKeyOrBd)
     local memoTbl = mod._cdmStoreMemo
     if memoTbl and memoTbl.root == specProfile and memoTbl.spec == specSlot then
         if not create then
             local hit = memoTbl[famKey]
-            if hit then
-                return hit
-            end
+            if hit then return hit end
         end
     else
         memoTbl = { root = specProfile, spec = specSlot, sd = {} }
@@ -457,25 +399,19 @@ function mod.GetSpellSettingsStore(barKeyOrBd, create)
     end
     local profileTbl = specProfile[specSlot]
     if not profileTbl then
-        if not create then
-            return nil
-        end
+        if not create then return nil end
         profileTbl = { barSpells = {} }
         specProfile[specSlot] = profileTbl
     end
     local state = mod.GetSpellSettingsStoreForProf(profileTbl, famKey, create)
-    if state then
-        memoTbl[famKey] = state
-    end
+    if state then memoTbl[famKey] = state end
     return state
 end
 
 -- Chain child.__index -> parent (or clear the link when parent is nil), so every read of a
 -- per-spell table falls through to the bar tiers per KEY. Cheap: one getmetatable + compare.
 function mod.ChainSettings(childFrame, hostFrame)
-    if not childFrame then
-        return
-    end
+    if not childFrame then return end
     local meta = getmetatable(childFrame)
     if hostFrame then
         if not meta then
@@ -504,23 +440,15 @@ end
 -- (over-approximate -- keyed by spell, not bar) or either bar tier is non-empty. Gates "re-resolve appearance" passes.
 function mod.BarHasAnySpellSettings(barId, spellData)
     local state = mod.GetSpellSettingsStore(barId)
-    if state and next(state) ~= nil then
-        return true
-    end
+    if state and next(state) ~= nil then return true end
     spellData = spellData or mod.GetBarSpellData(barId)
     if spellData then
-        if spellData.barSettings and next(spellData.barSettings) ~= nil then
-            return true
-        end
+        if spellData.barSettings and next(spellData.barSettings) ~= nil then return true end
         -- Legacy shape safety net (pre-migration data; should not happen since migration runs before this addon loads).
-        if spellData.spellSettings and next(spellData.spellSettings) ~= nil then
-            return true
-        end
+        if spellData.spellSettings and next(spellData.spellSettings) ~= nil then return true end
     end
     local edge = mod.barDataByKey and mod.barDataByKey[barId]
-    if edge and edge.barSpellSettings and next(edge.barSpellSettings) ~= nil then
-        return true
-    end
+    if edge and edge.barSpellSettings and next(edge.barSpellSettings) ~= nil then return true end
     return false
 end
 
@@ -528,9 +456,7 @@ end
 -- family-store entries + per-bar barSettings, plus the active profile's bar-level
 -- barSpellSettings. fn(ss) returning true stops the walk. Used by login gate scans ("does anyone use feature X anywhere").
 function mod.ForEachSavedSettingsBlock(func)
-    if not CludesUIDB then
-        return false
-    end
+    if not CludesUIDB then return false end
     local specProfile = SpellStore and SpellStore.GetSpecProfiles and SpellStore.GetSpecProfiles()
     if specProfile then
         for _, profileTbl in pairs(specProfile) do
@@ -538,33 +464,25 @@ function mod.ForEachSavedSettingsBlock(func)
                 local cooldownState = profileTbl.spellSettingsCD
                 if type(cooldownState) == "table" then
                     for _, spellSettings in pairs(cooldownState) do
-                        if type(spellSettings) == "table" and func(spellSettings) then
-                            return true
-                        end
+                        if type(spellSettings) == "table" and func(spellSettings) then return true end
                     end
                 end
                 local stBuff = profileTbl.spellSettingsBuff
                 if type(stBuff) == "table" then
                     for _, spellSettings in pairs(stBuff) do
-                        if type(spellSettings) == "table" and func(spellSettings) then
-                            return true
-                        end
+                        if type(spellSettings) == "table" and func(spellSettings) then return true end
                     end
                 end
                 local barSpellMap = profileTbl.barSpells
                 if type(barSpellMap) == "table" then
                     for _, barStore in pairs(barSpellMap) do
                         local bset = type(barStore) == "table" and barStore.barSettings
-                        if type(bset) == "table" and func(bset) then
-                            return true
-                        end
+                        if type(bset) == "table" and func(bset) then return true end
                         -- Legacy shape safety net (pre-migration data; should not happen since migration runs before this addon loads).
                         local ssAll = type(barStore) == "table" and barStore.spellSettings
                         if type(ssAll) == "table" then
                             for _, spellSettings in pairs(ssAll) do
-                                if type(spellSettings) == "table" and func(spellSettings) then
-                                    return true
-                                end
+                                if type(spellSettings) == "table" and func(spellSettings) then return true end
                             end
                         end
                     end
@@ -577,9 +495,7 @@ function mod.ForEachSavedSettingsBlock(func)
     if type(barList) == "table" then
         for _, edge in ipairs(barList) do
             local abs = type(edge) == "table" and edge.barSpellSettings
-            if type(abs) == "table" and func(abs) then
-                return true
-            end
+            if type(abs) == "table" and func(abs) then return true end
         end
     end
     return false
@@ -591,16 +507,10 @@ end
 -- (never duplicates within a spec). Custom Active State is NOT copied: it lives in the
 -- profile-level customActiveStates store, already shared across specs. Returns the count copied to.
 function mod.CopyCustomSpellToSpecs(barId, spellId, specKeys)
-    if not barId or type(spellId) ~= "number" or spellId == 0 then
-        return 0
-    end
-    if type(specKeys) ~= "table" then
-        return 0
-    end
+    if not barId or type(spellId) ~= "number" or spellId == 0 then return 0 end
+    if type(specKeys) ~= "table" then return 0 end
     local specProfile = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfile then
-        return 0
-    end
+    if not specProfile then return 0 end
     local curKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local famKey = mod.SettingsFamilyKey(barId)
     local DeepCopy = CludesUI.Lite and CludesUI.Lite.DeepCopy
@@ -619,9 +529,7 @@ function mod.CopyCustomSpellToSpecs(barId, spellId, specKeys)
                 profileTbl = { barSpells = {} }
                 specProfile[storeKey] = profileTbl
             end
-            if not profileTbl.barSpells then
-                profileTbl.barSpells = {}
-            end
+            if not profileTbl.barSpells then profileTbl.barSpells = {} end
             -- Present anywhere in this spec? Skip the whole spec.
             local exists = false
             for _, barStore in pairs(profileTbl.barSpells) do
@@ -633,9 +541,7 @@ function mod.CopyCustomSpellToSpecs(barId, spellId, specKeys)
                         end
                     end
                 end
-                if exists then
-                    break
-                end
+                if exists then break end
             end
             if not exists then
                 local barStore = profileTbl.barSpells[barId]
@@ -643,18 +549,12 @@ function mod.CopyCustomSpellToSpecs(barId, spellId, specKeys)
                     barStore = {}
                     profileTbl.barSpells[barId] = barStore
                 end
-                if not barStore.assignedSpells then
-                    barStore.assignedSpells = {}
-                end
+                if not barStore.assignedSpells then barStore.assignedSpells = {} end
                 barStore.assignedSpells[#barStore.assignedSpells + 1] = spellId
-                if not barStore.customSpellIDs then
-                    barStore.customSpellIDs = {}
-                end
+                if not barStore.customSpellIDs then barStore.customSpellIDs = {} end
                 barStore.customSpellIDs[spellId] = true
                 if dur and dur > 0 then
-                    if not barStore.spellDurations then
-                        barStore.spellDurations = {}
-                    end
+                    if not barStore.spellDurations then barStore.spellDurations = {} end
                     barStore.spellDurations[spellId] = dur
                 end
                 if type(srcSettings) == "table" and DeepCopy then
@@ -682,13 +582,9 @@ end
 -- per-spell menu's Copy/Remove label + the Remove picker's pre-check. Excludes the active spec.
 function mod.SpecsWithCustomSpell(spellId)
     local result = {}
-    if type(spellId) ~= "number" or spellId == 0 then
-        return result
-    end
+    if type(spellId) ~= "number" or spellId == 0 then return result end
     local specProfile = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfile then
-        return result
-    end
+    if not specProfile then return result end
     local curKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     for storeKey, profileTbl in pairs(specProfile) do
         -- WoW Forever: the player's class is one spec there, so its other
@@ -714,13 +610,9 @@ function mod.SpecsWithCustomSpell(spellId)
                         end
                     end
                 end
-                if found then
-                    break
-                end
+                if found then break end
             end
-            if found then
-                result[storeKey] = true
-            end
+            if found then result[storeKey] = true end
         end
     end
     return result
@@ -730,16 +622,10 @@ end
 -- specs (scans every bar). Never touches the active spec or the profile-level customActiveState
 -- (that stays while the spell exists on ANY spec, incl. the current one). Returns the count removed.
 function mod.RemoveCustomSpellFromSpecs(spellId, specKeys)
-    if type(spellId) ~= "number" or spellId == 0 then
-        return 0
-    end
-    if type(specKeys) ~= "table" then
-        return 0
-    end
+    if type(spellId) ~= "number" or spellId == 0 then return 0 end
+    if type(specKeys) ~= "table" then return 0 end
     local specProfile = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfile then
-        return 0
-    end
+    if not specProfile then return 0 end
     local curKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local removedList = 0
     for storeKey, enabled in pairs(specKeys) do
@@ -759,12 +645,8 @@ function mod.RemoveCustomSpellFromSpecs(spellId, specKeys)
                         end
                         -- Clean the per-id metadata on the bar it lived on.
                         if hitHere then
-                            if barStore.customSpellIDs then
-                                barStore.customSpellIDs[spellId] = nil
-                            end
-                            if barStore.spellDurations then
-                                barStore.spellDurations[spellId] = nil
-                            end
+                            if barStore.customSpellIDs then barStore.customSpellIDs[spellId] = nil end
+                            if barStore.spellDurations then barStore.spellDurations[spellId] = nil end
                             if barStore.customSpellDurations then
                                 barStore.customSpellDurations[spellId] = nil
                             end
@@ -780,12 +662,8 @@ function mod.RemoveCustomSpellFromSpecs(spellId, specKeys)
                 end
                 if didRemove then
                     -- Drop the per-spell settings entry (keyed by spellID, so clearing both family stores is safe -- only one holds it).
-                    if profileTbl.spellSettingsCD then
-                        profileTbl.spellSettingsCD[spellId] = nil
-                    end
-                    if profileTbl.spellSettingsBuff then
-                        profileTbl.spellSettingsBuff[spellId] = nil
-                    end
+                    if profileTbl.spellSettingsCD then profileTbl.spellSettingsCD[spellId] = nil end
+                    if profileTbl.spellSettingsBuff then profileTbl.spellSettingsBuff[spellId] = nil end
                     -- Entry deletion (belt: non-active specs by contract).
                     mod._cdmResGen = mod._cdmResGen + 1
                     removedList = removedList + 1
@@ -802,21 +680,15 @@ end
 -- activeSwipeMode, activeSwipeClassColor, activeSwipeR/G/B/A, activeGlow, glowColor, glowColorR/G/B }.
 function mod.GetCustomActiveStates()
     local profile = ECME and ECME.db and ECME.db.profile
-    if not profile then
-        return nil
-    end
-    if not profile.customActiveStates then
-        profile.customActiveStates = {}
-    end
+    if not profile then return nil end
+    if not profile.customActiveStates then profile.customActiveStates = {} end
     return profile.customActiveStates
 end
 
 -- Read (or, with create=true, lazily create) the entry for one spell key.
 function mod.GetCustomActiveState(spellId, create)
     local storage = mod.GetCustomActiveStates()
-    if not storage then
-        return nil
-    end
+    if not storage then return nil end
     local entry = storage[spellId]
     if not entry and create then
         entry = {}
@@ -832,9 +704,7 @@ function mod.ResolveCustomActiveKey(frameKey)
     local slot = mod.SlotIDFromKey(frameKey)
     if slot then
         local itemId = GetInventoryItemID("player", slot)
-        if itemId then
-            return -itemId
-        end
+        if itemId then return -itemId end
     end
     return frameKey
 end
@@ -849,9 +719,7 @@ end
 -- (ns.CdStateOf) read false as no effect.
 function mod.GetEffectiveCustomActiveState(frameKey)
     local storage = mod.GetCustomActiveStates()
-    if not storage then
-        return nil
-    end
+    if not storage then return nil end
     local slot = mod.SlotIDFromKey(frameKey)
     if slot then
         local slotE = storage[frameKey]
@@ -920,42 +788,28 @@ mod.CD_STATE_GLOWS = {
 -- customActiveStates, None included, so an old spell-family or bar-tier effect
 -- never shows behind that menu's back.
 function mod.CdStateOf(prefs, widget)
-    if not prefs then
-        return nil, nil
-    end
-    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then
-        return nil, nil
-    end
+    if not prefs then return nil, nil end
+    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then return nil, nil end
     local GLOWS = mod.CD_STATE_GLOWS
     local e = prefs.cdStateEffect
     local hide = e
-    if e == false or GLOWS[e] then
-        hide = nil
-    end
+    if e == false or GLOWS[e] then hide = nil end
     -- No level holds a cdStateGlow: the single value decides.
     if prefs.cdStateGlow == nil then
-        if GLOWS[e] then
-            return hide, e
-        end
+        if GLOWS[e] then return hide, e end
         return hide, nil
     end
     -- Top down: a level's own cdStateGlow decides (false = none), else its
     -- single-value glow while no hide or false above shadows those.
     local t, shadowed = prefs, false
     for _ = 1, 4 do
-        if type(t) ~= "table" then
-            break
-        end
+        if type(t) ~= "table" then break end
         local g = rawget(t, "cdStateGlow")
-        if g ~= nil then
-            return hide, g or nil
-        end
+        if g ~= nil then return hide, g or nil end
         if not shadowed then
             local le = rawget(t, "cdStateEffect")
             if le ~= nil then
-                if GLOWS[le] then
-                    return hide, le
-                end
+                if GLOWS[le] then return hide, le end
                 shadowed = true
             end
         end
@@ -967,16 +821,10 @@ end
 
 -- The hide half alone (the same gate, no glow walk).
 function mod.CdStateHideOf(prefs, widget)
-    if not prefs then
-        return nil
-    end
-    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then
-        return nil
-    end
+    if not prefs then return nil end
+    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then return nil end
     local e = prefs.cdStateEffect
-    if e == false or mod.CD_STATE_GLOWS[e] then
-        return nil
-    end
+    if e == false or mod.CD_STATE_GLOWS[e] then return nil end
     return e
 end
 
@@ -993,12 +841,8 @@ end
 function mod.CdStateGlowConflicts(hide, glow)
     local m = hide and mod.CD_STATE_HIDE[hide]
     local g = glow and mod.CD_STATE_GLOWS[glow]
-    if not (m and g) or m.form then
-        return false
-    end
-    if g == "glowOnCD" then
-        return m.base == "hiddenOnCD"
-    end
+    if not (m and g) or m.form then return false end
+    if g == "glowOnCD" then return m.base == "hiddenOnCD" end
     return m.base == "hiddenReady"
 end
 
@@ -1015,20 +859,12 @@ end
 -- over t would inherit. cdStateEffect stays false where a hide below would
 -- otherwise show through. True when t held one.
 function mod.CdStateSplitLegacy(tbl)
-    if type(tbl) ~= "table" then
-        return false
-    end
+    if type(tbl) ~= "table" then return false end
     local e = rawget(tbl, "cdStateEffect")
-    if not (e and mod.CD_STATE_GLOWS[e]) then
-        return false
-    end
-    if rawget(tbl, "cdStateGlow") == nil then
-        tbl.cdStateGlow = e
-    end
+    if not (e and mod.CD_STATE_GLOWS[e]) then return false end
+    if rawget(tbl, "cdStateGlow") == nil then tbl.cdStateGlow = e end
     tbl.cdStateEffect = nil
-    if mod.CdStateHideOf(tbl) ~= nil then
-        tbl.cdStateEffect = false
-    end
+    if mod.CdStateHideOf(tbl) ~= nil then tbl.cdStateEffect = false end
     return true
 end
 
@@ -1039,12 +875,8 @@ function mod.CdStateWriteHide(tbl, val)
     local before = mod.CdStateGlowOf(tbl)
     mod.CdStateSplitLegacy(tbl)
     tbl.cdStateEffect = val
-    if val == nil and mod.CdStateHideOf(tbl) ~= nil then
-        tbl.cdStateEffect = false
-    end
-    if mod.CdStateGlowOf(tbl) ~= before then
-        tbl.cdStateGlow = before or false
-    end
+    if val == nil and mod.CdStateHideOf(tbl) ~= nil then tbl.cdStateEffect = false end
+    if mod.CdStateGlowOf(tbl) ~= before then tbl.cdStateGlow = before or false end
 end
 
 -- A menu's glow pick on its own table t (g = a menu glow, nil = no glow). The
@@ -1053,14 +885,10 @@ end
 function mod.CdStateWriteGlow(tbl, g)
     local current = mod.CdStateGlowOf(tbl)
     local cc = current and mod.CD_STATE_GLOWS[current]
-    if g and cc and cc ~= current and not ReadsGlowStyle(tbl) then
-        tbl.cdStateGlowStyle = 3
-    end
+    if g and cc and cc ~= current and not ReadsGlowStyle(tbl) then tbl.cdStateGlowStyle = 3 end
     mod.CdStateSplitLegacy(tbl)
     tbl.cdStateGlow = g
-    if g == nil and mod.CdStateGlowOf(tbl) ~= nil then
-        tbl.cdStateGlow = false
-    end
+    if g == nil and mod.CdStateGlowOf(tbl) ~= nil then tbl.cdStateGlow = false end
 end
 
 -- CD Ready glow style (CDM saved numbering), read from the same settings table as
@@ -1069,15 +897,9 @@ end
 -- glowOnCD = Blackout), so older settings render unchanged.
 function mod.CdReadyGlowStyle(cse, prefs)
     local state = prefs and prefs.cdStateGlowStyle
-    if type(state) == "number" and state >= 1 and state <= #mod.GLOW_STYLES then
-        return state
-    end
-    if cse == "pixelGlowReady" or cse == "pixelGlowReadyUsable" then
-        return 1
-    end
-    if cse == "glowOnCD" then
-        return 8
-    end -- Blackout: the default look for this effect
+    if type(state) == "number" and state >= 1 and state <= #mod.GLOW_STYLES then return state end
+    if cse == "pixelGlowReady" or cse == "pixelGlowReadyUsable" then return 1 end
+    if cse == "glowOnCD" then return 8 end -- Blackout: the default look for this effect
     return 3
 end
 
@@ -1085,29 +907,21 @@ end
 -- long-standing look) and nil for FlipBooks (the atlas's own untinted look).
 function mod.CdReadyGlowColor(style, prefs)
     local red, green, blue = mod.ResolveGlowColor(prefs)
-    if red then
-        return red, green, blue
-    end
+    if red then return red, green, blue end
     local e = mod.GLOW_STYLES[style]
-    if e and not (e.procedural or e.buttonGlow or e.autocast or e.shapeGlow) then
-        return nil
-    end
+    if e and not (e.procedural or e.buttonGlow or e.autocast or e.shapeGlow) then return nil end
     return 1, 1, 1
 end
 
 -- CD Ready / On CD glow opacity (Blackout only; other styles ignore it).
 -- nil = fully opaque, matches StartSolidFill's own default.
-function mod.CdReadyGlowAlpha(prefs)
-    return prefs and prefs.cdStateGlowAlpha
-end
+function mod.CdReadyGlowAlpha(prefs) return prefs and prefs.cdStateGlowAlpha end
 
 -- Does this icon have a custom Cooldown State Effect (preset cd-state)? Appearance refresh
 -- uses this so it doesn't clear a preset's _cdStateHidden flag: presets store cdState in customActiveStates, not per-bar spellSettings.
 function mod.PresetHasCdState(widget)
     local fc = mod._ecmeFC and mod._ecmeFC[widget]
-    if not fc or not fc.spellID then
-        return false
-    end
+    if not fc or not fc.spellID then return false end
     -- Only frames WE inject can own a custom active state -- same gate the
     -- Fake-Active engine applies before honoring one. Without it an orphaned
     -- profile-level entry both hid a plain tracked spell and stopped the
@@ -1133,12 +947,8 @@ end
 -- the glow enabled, so RefreshCDMIconAppearance skips its per-icon watch check entirely for
 -- non-users -- 0 cost when off. Monotonic + scanned-once: runtime enables come from the option's setValue, so this only discovers already-saved settings at/after login.
 function mod.RescanMaxStacksGlowFlag()
-    if mod._cdmAnyMaxStacksGlow or mod._maxStacksFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyMaxStacksGlow or mod._maxStacksFlagScanned then return end
+    if not CludesUIDB then return end
     mod._maxStacksFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.maxStacksGlow and spellSettings.maxStacksGlow > 0 then
@@ -1156,9 +966,7 @@ end
 -- is O(specs x bars) with no allocation, so it repeats on every rebuild until it finds a sound,
 -- which also picks up bar sounds a live profile switch brings in.
 function mod.RescanBuffSoundFlag()
-    if not CludesUIDB then
-        return
-    end
+    if not CludesUIDB then return end
     if not mod._buffSoundFlagScanned then
         mod._buffSoundFlagScanned = true
         if not mod._cdmAnyBuffSound then
@@ -1187,18 +995,12 @@ end
 -- alert BEFORE DecorateFrame populates that state, so this must resolve purely
 -- from the id. O(bars): spellSettings is keyed by id.
 function mod.FindBuffSoundKey(spellRef, field)
-    if not spellRef then
-        return nil
-    end
+    if not spellRef then return nil end
     local specSlot = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not specSlot or specSlot == "0" then
-        return nil
-    end
+    if not specSlot or specSlot == "0" then return nil end
     local specProfile = SpellStore and SpellStore.GetSpecProfiles and SpellStore.GetSpecProfiles()
     local profileTbl = specProfile and specProfile[specSlot]
-    if not profileTbl then
-        return nil
-    end
+    if not profileTbl then return nil end
     -- Per-spell tier: buff family store (explicit false = inherited bar-level
     -- sound turned OFF for this one buff -- treat as silent).
     local state = profileTbl.spellSettingsBuff
@@ -1206,9 +1008,7 @@ function mod.FindBuffSoundKey(spellRef, field)
     if own then
         local val = rawget(own, field)
         if val ~= nil then
-            if val and val ~= "none" then
-                return val
-            end
+            if val and val ~= "none" then return val end
             return nil
         end
     end
@@ -1236,9 +1036,7 @@ function mod.FindBuffSoundKey(spellRef, field)
     local bsHome = barSpellMap and barSpellMap[homeKey]
     local tier = mod.GetBarTierSettings(bsHome, homeKey)
     local storeKey = tier and tier[field]
-    if storeKey and storeKey ~= "none" then
-        return storeKey
-    end
+    if storeKey and storeKey ~= "none" then return storeKey end
     return nil
 end
 
@@ -1247,12 +1045,8 @@ end
 -- SetDesaturated edge hook no-ops entirely for non-users. Same monotonic,
 -- scanned-once contract as RescanBuffSoundFlag.
 function mod.RescanCdReadySoundFlag()
-    if mod._cdmAnyCdReadySound or mod._cdReadySoundFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyCdReadySound or mod._cdReadySoundFlagScanned then return end
+    if not CludesUIDB then return end
     mod._cdReadySoundFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.cdReadySoundKey and spellSettings.cdReadySoundKey ~= "none" then
@@ -1267,12 +1061,8 @@ end
 -- collect pass's identity swap and compaction stay skipped for non-users. Same
 -- scanned-once contract as RescanCdReadySoundFlag.
 function mod.RescanBuffReplaceFlag()
-    if mod._cdmAnyBuffReplace or mod._buffReplaceFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyBuffReplace or mod._buffReplaceFlagScanned then return end
+    if not CludesUIDB then return end
     mod._buffReplaceFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if type(spellSettings.replaceBuffID) == "number" and spellSettings.replaceBuffID > 0 then
@@ -1286,12 +1076,8 @@ end
 -- (any spec) has the toggle on; RefreshCDMIconAppearance then skips its per-icon watch
 -- check for non-users. Same contract as RescanMaxStacksGlowFlag.
 function mod.RescanChargeCdTextFlag()
-    if mod._cdmAnyChargeHideCdText or mod._chargeCdTextFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyChargeHideCdText or mod._chargeCdTextFlagScanned then return end
+    if not CludesUIDB then return end
     mod._chargeCdTextFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.chargeHideCdText then
@@ -1305,12 +1091,8 @@ end
 -- (any spec) overrides showCooldownText either way. ~= nil, not truthiness: a per-spell
 -- ON must beat a bar that is OFF, same as the options resolver reads it.
 function mod.RescanSpellDurationTextFlag()
-    if mod._cdmAnySpellDurationText or mod._spellDurationTextFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnySpellDurationText or mod._spellDurationTextFlagScanned then return end
+    if not CludesUIDB then return end
     mod._spellDurationTextFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.showCooldownText ~= nil then
@@ -1326,12 +1108,8 @@ end
 -- feature nor an active watch -- without it the per-spell hide never runs.
 -- Same monotonic, scanned-once contract as RescanChargeCdTextFlag.
 function mod.RescanHideChargeTextFlag()
-    if mod._cdmAnyHideChargeText or mod._hideChargeTextFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyHideChargeText or mod._hideChargeTextFlagScanned then return end
+    if not CludesUIDB then return end
     mod._hideChargeTextFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.hideChargeText then
@@ -1345,12 +1123,8 @@ end
 -- swipe pass resolve per-spell settings only behind this flag. Same
 -- monotonic, scanned-once contract as RescanChargeCdTextFlag.
 function mod.RescanSuppressGcdFlag()
-    if mod._cdmAnySuppressGcd or mod._suppressGcdFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnySuppressGcd or mod._suppressGcdFlagScanned then return end
+    if not CludesUIDB then return end
     mod._suppressGcdFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.suppressGCD then
@@ -1373,12 +1147,8 @@ end
 -- its cooldown again. Priming here closes that window; the reactive hooks then
 -- carry it as before.
 function mod.RescanChargeStyleFlag()
-    if mod._cdmAnyChargeStyle or mod._chargeStyleFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyChargeStyle or mod._chargeStyleFlagScanned then return end
+    if not CludesUIDB then return end
     mod._chargeStyleFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if spellSettings.chargeHideSwipe or spellSettings.hideRechargeEdge then
@@ -1391,13 +1161,9 @@ end
 -- Custom Item gate: set ns._cdmAnyCustomItem once if any saved bar (any spec) tracks a custom
 -- item (assignedSpells entry <= -100); the buff-bar injection pass is skipped entirely for non-users. Same contract as the flags above.
 function mod.RescanCustomItemFlag()
-    if mod._cdmAnyCustomItem or mod._customItemFlagScanned then
-        return
-    end
+    if mod._cdmAnyCustomItem or mod._customItemFlagScanned then return end
     local specProfile = SpellStore and SpellStore.GetSpecProfiles and SpellStore.GetSpecProfiles()
-    if not specProfile then
-        return
-    end
+    if not specProfile then return end
     mod._customItemFlagScanned = true
     for _, profileTbl in pairs(specProfile) do
         local barSpellMap = profileTbl and profileTbl.barSpells
@@ -1424,19 +1190,19 @@ end
 
 -- "Show Charges" (custom CD/utility spells) gate. Same contract as the flags above; zero cost in ProcessPresetCooldowns unless a custom spell opted in.
 function mod.RescanCustomForceCountFlag()
-    if mod._cdmAnyCustomForceCount or mod._customForceCountScanned then
-        return
-    end
+    if mod._cdmAnyCustomForceCount or mod._customForceCountScanned then return end
     local specProfile = SpellStore and SpellStore.GetSpecProfiles and SpellStore.GetSpecProfiles()
-    if not specProfile then
-        return
-    end
+    if not specProfile then return end
     mod._customForceCountScanned = true
     for _, profileTbl in pairs(specProfile) do
         local barSpellMap = profileTbl and profileTbl.barSpells
         if barSpellMap then
             for _, barStore in pairs(barSpellMap) do
-                if barStore and type(barStore.customSpellForceCount) == "table" and next(barStore.customSpellForceCount) then
+                if
+                    barStore
+                    and type(barStore.customSpellForceCount) == "table"
+                    and next(barStore.customSpellForceCount)
+                then
                     mod._cdmAnyCustomForceCount = true
                     return
                 end
@@ -1449,13 +1215,9 @@ end
 -- lives in the profile customActiveStates. Zero cost in the preset pass (and no range check
 -- armed, no listener events) unless a custom spell opted in.
 function mod.RescanCustomRangeColorFlag()
-    if mod._cdmAnyCustomRangeColor or mod._customRangeColorScanned then
-        return
-    end
+    if mod._cdmAnyCustomRangeColor or mod._customRangeColorScanned then return end
     local customState = mod.GetCustomActiveStates()
-    if not customState then
-        return
-    end
+    if not customState then return end
     mod._customRangeColorScanned = true
     for _, entry in pairs(customState) do
         if type(entry) == "table" and entry.outOfRangeColoring then
@@ -1471,36 +1233,22 @@ end
 -- per-spell reverseSwipe on; the reverse-apply in RefreshCDMIconAppearance is skipped for
 -- non-users. Also gates hideCDSwipe -- both monotonic per-spell swipe flags scanned in one pass, costing nothing until used.
 function mod.RescanReverseSwipeFlag()
-    if mod._reverseSwipeFlagScanned then
-        return
-    end
-    if mod._cdmAnyReverseSwipe and mod._cdmAnyHideCDSwipe then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._reverseSwipeFlagScanned then return end
+    if mod._cdmAnyReverseSwipe and mod._cdmAnyHideCDSwipe then return end
+    if not CludesUIDB then return end
     mod._reverseSwipeFlagScanned = true
     -- Regular per-spell settings (family stores + bar tiers, every spec).
     mod.ForEachSavedSettingsBlock(function(spellSettings)
-        if spellSettings.reverseSwipe then
-            mod._cdmAnyReverseSwipe = true
-        end
-        if spellSettings.hideCDSwipe then
-            mod._cdmAnyHideCDSwipe = true
-        end
+        if spellSettings.reverseSwipe then mod._cdmAnyReverseSwipe = true end
+        if spellSettings.hideCDSwipe then mod._cdmAnyHideCDSwipe = true end
     end)
     -- Preset / custom cd-utility spells (profile-level customActiveStates).
     local customState = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
     if customState then
         for _, entry in pairs(customState) do
             if entry then
-                if entry.reverseSwipe then
-                    mod._cdmAnyReverseSwipe = true
-                end
-                if entry.hideCDSwipe then
-                    mod._cdmAnyHideCDSwipe = true
-                end
+                if entry.reverseSwipe then mod._cdmAnyReverseSwipe = true end
+                if entry.hideCDSwipe then mod._cdmAnyHideCDSwipe = true end
             end
         end
     end
@@ -1510,12 +1258,8 @@ end
 -- Threshold Seconds armed -- per-spell family stores, bar tiers, or preset/custom
 -- customActiveStates entries. Skips the formatter attach in RefreshCDMIconAppearance (and the fake-active/custom-buff attach sites) for non-users. Same monotonic, scanned-once contract.
 function mod.RescanThresholdTextFlag()
-    if mod._cdmAnyThresholdText or mod._thresholdTextFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyThresholdText or mod._thresholdTextFlagScanned then return end
+    if not CludesUIDB then return end
     mod._thresholdTextFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if (tonumber(spellSettings.thresholdSeconds) or 0) > 0 then
@@ -1540,12 +1284,8 @@ end
 -- per-spell replacement icon. Skips the DecorateFrame re-stamp and the RefreshSpellTexture
 -- post-hooks for non-users. Same monotonic, scanned-once contract; customIcon is never written to bar tiers.
 function mod.RescanCustomIconFlag()
-    if mod._cdmAnyCustomIcon or mod._customIconFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyCustomIcon or mod._customIconFlagScanned then return end
+    if not CludesUIDB then return end
     mod._customIconFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if type(spellSettings.customIcon) == "number" and spellSettings.customIcon > 0 then
@@ -1559,12 +1299,8 @@ end
 -- per-spell activeGlow set. Skips the buff ticker's active-glow integrity pass (safety net
 -- that lights the glow when Blizzard skips the SetSwipeColor call that normally drives it) for non-users. Same monotonic, scanned-once contract.
 function mod.RescanActiveGlowFlag()
-    if mod._cdmAnyActiveGlow or mod._activeGlowFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyActiveGlow or mod._activeGlowFlagScanned then return end
+    if not CludesUIDB then return end
     mod._activeGlowFlagScanned = true
     mod.ForEachSavedSettingsBlock(function(spellSettings)
         if (tonumber(spellSettings.activeGlow) or 0) > 0 then

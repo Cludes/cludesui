@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 -------------------------------------------------------------------------------
 --  Tank Kit has no settings window of its own. Its settings are the Tank Kit
 --  pages of the CludesUI panel (CludesUIOptions/CUI_Tank_Options.lua). This
@@ -20,12 +18,8 @@ function mod.Options:Open()
     -- One tick later: the first open loads the settings addon and builds the
     -- whole panel, which is too much work for a click or slash handler.
     C_Timer.After(0, function()
-        if InCombatLockdown() then
-            return
-        end
-        if CludesUI.EnsureOptionsLoaded and not CludesUI.EnsureOptionsLoaded() then
-            return
-        end
+        if InCombatLockdown() then return end
+        if CludesUI.EnsureOptionsLoaded and not CludesUI.EnsureOptionsLoaded() then return end
         CludesUI:ShowModule(addonName)
     end)
 end
@@ -34,9 +28,7 @@ end
 --- command): repaints the Tank Kit page if it is the one on screen.
 function mod.Options:SyncTestButton()
     local main = CludesUI._mainFrame
-    if not (main and main:IsShown()) then
-        return
-    end
+    if not (main and main:IsShown()) then return end
     if CludesUI.GetActiveModule and CludesUI:GetActiveModule() == addonName and CludesUI.RefreshPage then
         CludesUI:RefreshPage(true)
     end

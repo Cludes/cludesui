@@ -1,17 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end -- Forever Essentials loads on WoW Forever only
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_General_Options.lua
 --  Builds the "General" page inside the Forever Essentials module: its
 --  general quality of life features, one section each.
 -------------------------------------------------------------------------------
-if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then
-    return
-end -- module disabled: no options page
+if not CludesUI._ModuleNS["CludesUIForeverEssentials"] then return end -- module disabled: no options page
 
 -------------------------------------------------------------------------------
 --  NAME FORMAT: one place for every Name Format in the suite, as two checkbox
@@ -27,17 +21,11 @@ end -- module disabled: no options page
 --  module that is off has no row.
 -------------------------------------------------------------------------------
 -- A saved Name Format as a row value ("full" = Full Name), and back (nil).
-local function ModeOf(val)
-    return (val == nil or val == "full") and "full" or val
-end
-local function Stored(val)
-    return (val ~= "full") and val or nil
-end
+local function ModeOf(val) return (val == nil or val == "full") and "full" or val end
+local function Stored(val) return (val ~= "full") and val or nil end
 -- One value while every input agrees, "mixed" once two differ (nil: none yet).
 local function Merge(acc, m)
-    if acc == nil or acc == m then
-        return m
-    end
+    if acc == nil or acc == m then return m end
     return "mixed"
 end
 
@@ -64,9 +52,7 @@ local function NameFormatSources()
                         local m = ModeOf(cfg[e.format])
                         -- A power text without Custom never names, so it does
                         -- not count toward the fallback either.
-                        if not e.power or cfg[e.content] == "custom" then
-                            all = Merge(all, m)
-                        end
+                        if not e.power or cfg[e.content] == "custom" then all = Merge(all, m) end
                         -- A power text shows while its position is set and, under a
                         -- stock style, Hide Power Bar leaves it (ApplyPowerPercentText).
                         local powerShown = not e.power
@@ -93,9 +79,7 @@ local function NameFormatSources()
                 local p, mode = uf.db.profile, Stored(val)
                 for idx = 1, #slots do
                     local cfg = p[slots[idx].unit]
-                    if cfg then
-                        cfg[slots[idx].format] = mode
-                    end
+                    if cfg then cfg[slots[idx].format] = mode end
                 end
                 uf.ReloadFrames()
             end,
@@ -106,18 +90,14 @@ local function NameFormatSources()
     -- unsynced (Raid Frames saves "full"; an unset party key reads the raid's).
     local rf = MNS("CludesUIRaidFrames")
     if rf and rf.db then
-        local function partyOwn()
-            return rf._IsPartySectionCustom("textDisplay")
-        end
+        local function partyOwn() return rf._IsPartySectionCustom("textDisplay") end
         entries[#entries + 1] = {
             text = "Raid & Party Frames",
             tooltip = "Player names on raid and party frames.",
             get = function()
                 local p = rf.db.profile
                 local m = ModeOf(p.nameFormat)
-                if partyOwn() and p.party_nameFormat ~= nil then
-                    m = Merge(m, ModeOf(p.party_nameFormat))
-                end
+                if partyOwn() and p.party_nameFormat ~= nil then m = Merge(m, ModeOf(p.party_nameFormat)) end
                 return m
             end,
             set = function(val)
@@ -125,9 +105,7 @@ local function NameFormatSources()
                 p.nameFormat = val
                 -- A party key left from an unsync is set too, or a later unsync
                 -- would bring the old value back.
-                if partyOwn() or p.party_nameFormat ~= nil then
-                    p.party_nameFormat = val
-                end
+                if partyOwn() or p.party_nameFormat ~= nil then p.party_nameFormat = val end
                 rf._BumpAbsorbGen()
                 rf.ReloadFrames()
                 rf.ReloadPartyFrames()
@@ -150,12 +128,8 @@ local function NameFormatSources()
             get = function()
                 local p, m = np.db.profile, nil
                 local nameSlot, totSlot = np.FindNameSlot(), np._npToTSlot
-                if nameSlot then
-                    m = ModeOf(p[formatKey[nameSlot]])
-                end
-                if totSlot then
-                    m = Merge(m, ModeOf(p[formatKey[totSlot]]))
-                end
+                if nameSlot then m = ModeOf(p[formatKey[nameSlot]]) end
+                if totSlot then m = Merge(m, ModeOf(p[formatKey[totSlot]])) end
                 for idx = 1, #slotKeys do
                     local slot = slotKeys[idx]
                     local parsed = p[slot] == "custom" and np.NP_CustomParse(slot)
@@ -181,13 +155,9 @@ local function NameFormatSources()
         entries[#entries + 1] = {
             text = "Friendly Player Nameplates",
             tooltip = "Friendly player names on nameplates, in both modes.",
-            disabled = function()
-                return np.db.profile.showFriendlyPlayers == false
-            end,
+            disabled = function() return np.db.profile.showFriendlyPlayers == false end,
             disabledTooltip = "Show CUI Friendly Player Nameplates",
-            get = function()
-                return ModeOf(np.db.profile.friendlyNameFormat)
-            end,
+            get = function() return ModeOf(np.db.profile.friendlyNameFormat) end,
             set = function(val)
                 np.db.profile.friendlyNameFormat = Stored(val)
                 np.NP_SyncFriendlyNameFormat()
@@ -202,9 +172,7 @@ local function NameFormatSources()
         entries[#entries + 1] = {
             text = "Damage Meters",
             tooltip = "Player names on the meter bars.",
-            get = function()
-                return ModeOf(DMCfg().nameFormat)
-            end,
+            get = function() return ModeOf(DMCfg().nameFormat) end,
             set = function(val)
                 DMCfg().nameFormat = Stored(val)
                 dm.RefreshNames()
@@ -217,13 +185,9 @@ local function NameFormatSources()
     entries[#entries + 1] = {
         text = "Threat Meter",
         tooltip = "Player names on the threat meter, for all your characters.",
-        disabled = function()
-            return not TM.Get("enabled")
-        end,
+        disabled = function() return not TM.Get("enabled") end,
         disabledTooltip = "Threat Meter",
-        get = function()
-            return ModeOf(TM.Get("nameFormat"))
-        end,
+        get = function() return ModeOf(TM.Get("nameFormat")) end,
         set = function(val)
             TM.Cfg().nameFormat = Stored(val)
             TM.ApplyStyle()
@@ -260,9 +224,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             key = "spellbook",
             label = "Classic Spellbook",
             tooltip = "Your spellbook key and the micro menu's Spellbook button open the vanilla spellbook.",
-            read = function()
-                return CS.Get("enabled")
-            end,
+            read = function() return CS.Get("enabled") end,
             write = function(val)
                 CS.Cfg().enabled = val
                 CS.Apply()
@@ -272,9 +234,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             key = "talents",
             label = "Classic Talents",
             tooltip = "Your talents key and the micro menu's Talents button open the vanilla talent window.",
-            read = function()
-                return CT.Get("enabled")
-            end,
+            read = function() return CT.Get("enabled") end,
             write = function(val)
                 CT.Cfg().enabled = val
                 CT.Apply()
@@ -290,9 +250,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             local s = cwItems[idx].label
             words[#words + 1] = s
             local loc = CludesUI.L(s)
-            if loc ~= s then
-                words[#words + 1] = loc
-            end
+            if loc ~= s then words[#words + 1] = loc end
         end
         local labelLoc = CludesUI.L(CW_LABEL)
         CludesUI._RegisterSearchEntry(
@@ -310,9 +268,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Auto Uprank Spells on Bars",
         tooltip = "Swaps new spell ranks, yours and your pet's, onto your action bars.",
-        getValue = function()
-            return SU.Get("enabled")
-        end,
+        getValue = function() return SU.Get("enabled") end,
         setValue = function(val)
             SU.Cfg().enabled = val
             SU.Apply()
@@ -334,12 +290,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             210,
             region:GetFrameLevel() + 2,
             cwItems,
-            function(key)
-                return byKey[key].read()
-            end,
-            function(key, val)
-                byKey[key].write(val)
-            end
+            function(key) return byKey[key].read() end,
+            function(key, val) byKey[key].write(val) end
         )
         CludesUI.PanelPP.Point(cwDD, "RIGHT", region, "RIGHT", -20, 0)
         region._control = cwDD
@@ -352,9 +304,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Most Valuable Quest Reward",
         tooltip = "Among a quest's reward choices, a money bag marks the one that sells for most, its count included.",
-        getValue = function()
-            return QR.Get("enabled")
-        end,
+        getValue = function() return QR.Get("enabled") end,
         setValue = function(val)
             QR.Cfg().enabled = val
             QR.Apply()
@@ -363,9 +313,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Gathering Skill in Tooltips",
         tooltip = "Adds the skill a herb or ore node needs to its tooltip, colored by your chance to raise your skill there.",
-        getValue = function()
-            return GS.Get("enabled")
-        end,
+        getValue = function() return GS.Get("enabled") end,
         setValue = function(val)
             GS.Cfg().enabled = val
             GS.Apply()
@@ -381,18 +329,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Minimap",
                     tooltip = "Also adds the required skill to herb and ore names on the minimap.",
-                    get = function()
-                        return GS.Get("minimap")
-                    end,
+                    get = function() return GS.Get("minimap") end,
                     set = function(val)
                         GS.Cfg().minimap = val
                         GS.Apply()
                     end,
                 },
             },
-            disabled = function()
-                return not GS.Get("enabled")
-            end,
+            disabled = function() return not GS.Get("enabled") end,
             disabledTooltip = "Gathering Skill in Tooltips",
         })
     end
@@ -405,9 +349,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Auto Summon Pet",
             tooltip = "Brings a random favorite pet back after loading screens, flights and deaths; a pet you dismiss stays away.",
-            getValue = function()
-                return PS.Get("enabled")
-            end,
+            getValue = function() return PS.Get("enabled") end,
             setValue = function(val)
                 PS.Cfg().enabled = val
                 PS.Apply(val) -- turning it on also ends an earlier dismissal
@@ -417,9 +359,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Favorites per Character",
             tooltip = "Pick this character's favorites from a pet's right-click menu in the Pet Journal.",
-            disabled = function()
-                return not PS.Get("enabled")
-            end,
+            disabled = function() return not PS.Get("enabled") end,
             disabledTooltip = "Auto Summon Pet",
             -- This character's own setting, read without creating its table.
             getValue = function()
@@ -431,9 +371,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             end,
             setValue = function(val)
                 local unitGuid = UnitGUID("player")
-                if not unitGuid then
-                    return
-                end
+                if not unitGuid then return end
                 local rowConf = PS.Cfg()
                 rowConf.chars = rowConf.chars or {}
                 rowConf.chars[unitGuid] = rowConf.chars[unitGuid] or {}
@@ -453,12 +391,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Known Levels Instead of ??",
             tooltip = "Unit frames, nameplates and tooltips show ?? for anything 10 or more levels above you. This shows the real level instead: the one the game still gives addons, or for a player whose level is hidden, the level they had when you last saw it (or a groupmate's PvP sharing sent it).",
-            getValue = function()
-                return pvp.Get("knownLevels")
-            end,
-            setValue = function(val)
-                pvp.Cfg().knownLevels = val
-            end,
+            getValue = function() return pvp.Get("knownLevels") end,
+            setValue = function(val) pvp.Cfg().knownLevels = val end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -481,9 +415,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 tooltip = tooltip,
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
-                getValue = function()
-                    return "__placeholder"
-                end,
+                getValue = function() return "__placeholder" end,
                 setValue = function() end,
             }
         end
@@ -519,14 +451,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 }
             end
             -- Whether a row value shows that part of the name ("mixed" shows neither box).
-            local function Has(m, part)
-                return m == part or m == "full"
-            end
+            local function Has(m, part) return m == part or m == "full" end
             local function List(region, part)
                 local other = (part == "first") and "last" or "first"
-                if region._control then
-                    region._control:Hide()
-                end
+                if region._control then region._control:Hide() end
                 -- 260 wide: room for the longest row label (Friendly Player
                 -- Nameplates and its translations); longer ones end in "...".
                 local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
@@ -534,15 +462,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     260,
                     region:GetFrameLevel() + 2,
                     itemList,
-                    function(idx)
-                        return Has(sources[idx].get(), part)
-                    end,
+                    function(idx) return Has(sources[idx].get(), part) end,
                     function(idx, on)
                         local theirs = Has(sources[idx].get(), other)
                         -- A name always shows: unchecking the last box keeps it.
-                        if not (on or theirs) then
-                            return
-                        end
+                        if not (on or theirs) then return end
                         sources[idx].set((on and theirs) and "full" or (on and part or other))
                         -- The other list reads the new value too.
                         CludesUI:RefreshPage()
@@ -567,9 +491,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local MR = CludesUI._MapReveal
     local ZL = CludesUI._ZoneLevels
-    local function revealOff()
-        return not MR.Get("enabled")
-    end
+    local function revealOff() return not MR.Get("enabled") end
 
     _, height = W:Spacer(hostFrame, cursorY, 20)
     cursorY = cursorY - height
@@ -588,22 +510,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Fade Map While Moving",
         tooltip = "The world map fades while you move and comes back when you stop or hover it.",
-        getValue = function()
-            return MF.Get("enabled")
-        end,
-        setValue = function(val)
-            SetFade("enabled", val)
-        end,
+        getValue = function() return MF.Get("enabled") end,
+        setValue = function(val) SetFade("enabled", val) end,
     }, {
         type = "toggle",
         text = "Show the Game Behind the Map",
         tooltip = "Lightens the black behind the maximized world map.",
-        getValue = function()
-            return MF.Get("dim")
-        end,
-        setValue = function(val)
-            SetFade("dim", val)
-        end,
+        getValue = function() return MF.Get("dim") end,
+        setValue = function(val) SetFade("dim", val) end,
     })
     cursorY = cursorY - height
 
@@ -612,9 +526,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Reveal Unexplored Areas",
         tooltip = "Shows the parts of the world map you have not explored yet. Use the cog to pick their color.",
-        getValue = function()
-            return MR.Get("enabled")
-        end,
+        getValue = function() return MR.Get("enabled") end,
         setValue = function(val)
             MR.Cfg().enabled = val
             MR.Apply()
@@ -624,9 +536,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Zone Levels",
         tooltip = "Shows the level range of the zone you hover on a continent of the world map, under its name, colored by difficulty.",
-        getValue = function()
-            return ZL.Get("enabled")
-        end,
+        getValue = function() return ZL.Get("enabled") end,
         setValue = function(val)
             ZL.Cfg().enabled = val
             ZL.Apply()
@@ -639,9 +549,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Map Markers",
         tooltip = "Shows boats, zeppelins, dungeon entrances, flight points and zone exits on the world map; click one to link it in chat.",
-        getValue = function()
-            return MT.Get("enabled")
-        end,
+        getValue = function() return MT.Get("enabled") end,
         setValue = function(val)
             MT.Cfg().enabled = val
             MT.Apply()
@@ -651,9 +559,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Fishing Skill",
         tooltip = "Shows the fishing skill a zone needs under its name on the world map: red, too low; yellow, fish still get away; green, none do.",
-        getValue = function()
-            return ZL.Get("fishing")
-        end,
+        getValue = function() return ZL.Get("fishing") end,
         setValue = function(val)
             ZL.Cfg().fishing = val
             ZL.Apply()
@@ -692,9 +598,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 type = "toggle",
                 label = labelText,
                 tooltip = tooltip,
-                get = function()
-                    return MT.Get(key)
-                end,
+                get = function() return MT.Get(key) end,
                 set = function(val)
                     MT.Cfg()[key] = val
                     MT.Apply()
@@ -726,9 +630,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         CludesUI.BuildInlineCog(markersRow._leftRegion, {
             title = "Map Markers",
             rows = rowList,
-            disabled = function()
-                return not MT.Get("enabled")
-            end,
+            disabled = function() return not MT.Get("enabled") end,
             disabledTooltip = "Show Map Markers",
         })
     end
@@ -742,12 +644,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             SS.Cfg()[keyName] = val
             CludesUI:RefreshPage() -- update the dependent rows' disabled state
         end
-        local function shortenOff()
-            return not SS.Get("shorten")
-        end
-        local function colorsOff()
-            return not SS.Get("colors")
-        end
+        local function shortenOff() return not SS.Get("shorten") end
+        local function colorsOff() return not SS.Get("colors") end
 
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
@@ -759,22 +657,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Shorten Equip Lines",
             tooltip = "Shortens Equip: and Set: stat lines on item tooltips to +X Stat.",
-            getValue = function()
-                return SS.Get("shorten")
-            end,
-            setValue = function(val)
-                Set("shorten", val)
-            end,
+            getValue = function() return SS.Get("shorten") end,
+            setValue = function(val) Set("shorten", val) end,
         }, {
             type = "toggle",
             text = "Color Stats",
             tooltip = "Colors each stat name on item tooltips, enchants included, and its number per Number Color.",
-            getValue = function()
-                return SS.Get("colors")
-            end,
-            setValue = function(val)
-                Set("colors", val)
-            end,
+            getValue = function() return SS.Get("colors") end,
+            setValue = function(val) Set("colors", val) end,
         })
         cursorY = cursorY - height
 
@@ -785,12 +675,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "Shows equal spell damage and healing as one Spell Power line.",
             disabled = shortenOff,
             disabledTooltip = "Shorten Equip Lines",
-            getValue = function()
-                return SS.Get("merge")
-            end,
-            setValue = function(val)
-                Set("merge", val)
-            end,
+            getValue = function() return SS.Get("merge") end,
+            setValue = function(val) Set("merge", val) end,
         }, {
             type = "dropdown",
             text = "Number Color",
@@ -798,12 +684,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             disabledTooltip = "Color Stats",
             values = { signed = "Green / Red", stat = "Stat Color", line = "Line Color" },
             order = { "signed", "stat", "line" },
-            getValue = function()
-                return SS.Get("numColor")
-            end,
-            setValue = function(val)
-                SS.Cfg().numColor = (val ~= "signed") and val or nil
-            end,
+            getValue = function() return SS.Get("numColor") end,
+            setValue = function(val) SS.Cfg().numColor = (val ~= "signed") and val or nil end,
         })
         cursorY = cursorY - height
     end
@@ -813,9 +695,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local AF = CludesUI._ActiveForm
     if AF then
-        local function afOff()
-            return not AF.Get("enabled")
-        end
+        local function afOff() return not AF.Get("enabled") end
         local function AFSet(key, val)
             AF.Cfg()[key] = val
             AF.Apply()
@@ -841,18 +721,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 type = "toggle",
                 text = labelText,
                 tooltip = "Shows an icon for your active stance, form, aura or aspect. Hidden while none is active.",
-                getValue = function()
-                    return not afOff()
-                end,
-                setValue = CludesUI.SectionToggleSetValue(function(val)
-                    AFSet("enabled", val)
-                end),
+                getValue = function() return not afOff() end,
+                setValue = CludesUI.SectionToggleSetValue(function(val) AFSet("enabled", val) end),
             },
             -- The table exists once it was turned on, and the row is greyed out
             -- while it is off, so viewing the page saves nothing.
-            getStore = function()
-                return afOff() and AF.Read() or AF.Cfg()
-            end,
+            getStore = function() return afOff() and AF.Read() or AF.Cfg() end,
             caps = { partyIncludesRaid = false, luaDragonriding = true, noMouseover = true },
             disabledFn = afOff,
             disabledTooltip = labelText,
@@ -870,12 +744,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 max = 96,
                 step = 1,
                 isPercent = false,
-                getValue = function()
-                    return AF.Get("iconSize")
-                end,
-                setValue = function(val)
-                    AFSet("iconSize", val)
-                end,
+                getValue = function() return AF.Get("iconSize") end,
+                setValue = function(val) AFSet("iconSize", val) end,
             }, {
                 type = "slider",
                 text = "Icon Zoom",
@@ -884,12 +754,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 max = 25,
                 step = 1,
                 isPercent = false,
-                getValue = function()
-                    return AF.Get("zoom")
-                end,
-                setValue = function(val)
-                    AFSet("zoom", val)
-                end,
+                getValue = function() return AF.Get("zoom") end,
+                setValue = function(val) AFSet("zoom", val) end,
             })
             cursorY = cursorY - height
 
@@ -904,9 +770,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     text = "Border Style",
                     values = texValues,
                     order = texOrder,
-                    getValue = function()
-                        return AF.Get("borderTexture")
-                    end,
+                    getValue = function() return AF.Get("borderTexture") end,
                     setValue = function(val)
                         local c = AF.Cfg()
                         c.borderTexture = val
@@ -914,12 +778,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                         local color = CludesUI.GetBorderStyleSelectDefaults(val)
                         c.borderR, c.borderG, c.borderB, c.borderA = color.r, color.g, color.b, 1
                         local defaultSize = CludesUI.GetBorderDefaultSize(nil, val)
-                        if defaultSize then
-                            c.borderSize = defaultSize
-                        end
-                        if c.borderSizePx then
-                            c.borderSizePx = false
-                        end
+                        if defaultSize then c.borderSize = defaultSize end
+                        if c.borderSizePx then c.borderSizePx = false end
                         AF.Apply()
                         -- Rebuild: the offset row follows the Solid / textured pick.
                         CludesUI:RefreshPage(true)
@@ -927,21 +787,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 },
                 CludesUI.BorderPxSliderCfg({
                     text = "Border Size",
-                    getStep = function()
-                        return AF.Get("borderSize")
-                    end,
-                    setStep = function(val)
-                        AF.Cfg().borderSize = val
-                    end,
-                    getTex = function()
-                        return AF.Get("borderTexture")
-                    end,
-                    getPx = function()
-                        return AF.Read().borderSizePx
-                    end,
-                    setPx = function(val)
-                        AF.Cfg().borderSizePx = val
-                    end,
+                    getStep = function() return AF.Get("borderSize") end,
+                    setStep = function(val) AF.Cfg().borderSize = val end,
+                    getTex = function() return AF.Get("borderTexture") end,
+                    getPx = function() return AF.Read().borderSizePx end,
+                    setPx = function(val) AF.Cfg().borderSizePx = val end,
                     apply = AF.Apply,
                 })
             )
@@ -972,30 +822,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             local texKey = AF.Get("borderTexture")
             if texKey ~= "" and texKey ~= "solid" then
                 local offL, offR = CludesUI.BorderOffsetRowCfgs({
-                    getTex = function()
-                        return AF.Get("borderTexture")
-                    end,
-                    getStep = function()
-                        return AF.Get("borderSize")
-                    end,
-                    getSizeKey = function()
-                        return AF.Get("borderSize")
-                    end,
-                    getPx = function()
-                        return AF.Read().borderSizePx
-                    end,
-                    getX = function()
-                        return AF.Read().borderTextureOffset
-                    end,
-                    setX = function(val)
-                        AF.Cfg().borderTextureOffset = val
-                    end,
-                    getY = function()
-                        return AF.Read().borderTextureOffsetY
-                    end,
-                    setY = function(val)
-                        AF.Cfg().borderTextureOffsetY = val
-                    end,
+                    getTex = function() return AF.Get("borderTexture") end,
+                    getStep = function() return AF.Get("borderSize") end,
+                    getSizeKey = function() return AF.Get("borderSize") end,
+                    getPx = function() return AF.Read().borderSizePx end,
+                    getX = function() return AF.Read().borderTextureOffset end,
+                    setX = function(val) AF.Cfg().borderTextureOffset = val end,
+                    getY = function() return AF.Read().borderTextureOffsetY end,
+                    setY = function(val) AF.Cfg().borderTextureOffsetY = val end,
                     apply = AF.Apply,
                 })
                 _, height = W:DualRow(hostFrame, cursorY, offL, offR)
@@ -1009,9 +843,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local TR = CludesUI._TrackingReminder
     if TR then
-        local function trOff()
-            return not TR.Get("enabled")
-        end
+        local function trOff() return not TR.Get("enabled") end
         local function TRSet(key, val)
             TR.Cfg()[key] = val
             TR.Apply()
@@ -1028,22 +860,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Tracking Reminder",
             tooltip = "A row of icons for the tracking you know but have not turned on: Find Treasure, hunter tracks, Track Humanoids in Cat Form, Sense Undead, Sense Demons. Click one to turn it on. Hidden in combat.",
-            getValue = function()
-                return not trOff()
-            end,
-            setValue = function(val)
-                TRSet("enabled", val and true or false)
-            end,
+            getValue = function() return not trOff() end,
+            setValue = function(val) TRSet("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Include Find Herbs and Minerals",
             disabled = trOff,
-            getValue = function()
-                return TR.Get("gathering")
-            end,
-            setValue = function(val)
-                TRSet("gathering", val and true or false)
-            end,
+            getValue = function() return TR.Get("gathering") end,
+            setValue = function(val) TRSet("gathering", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -1054,12 +878,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = trOff,
-            getValue = function()
-                return TR.Get("iconSize")
-            end,
-            setValue = function(val)
-                TRSet("iconSize", math.floor(val + 0.5))
-            end,
+            getValue = function() return TR.Get("iconSize") end,
+            setValue = function(val) TRSet("iconSize", math.floor(val + 0.5)) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -1069,9 +889,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local STm = CludesUI._SwingTimer
     if STm then
-        local function stOff()
-            return not STm.Get("enabled")
-        end
+        local function stOff() return not STm.Get("enabled") end
         local function STSet(key, val)
             STm.Cfg()[key] = val
             STm.Apply()
@@ -1088,45 +906,29 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Swing Timer",
             tooltip = "A bar per weapon that fills to your next auto attack. The game sends each swing's real length, so haste and parry haste are already counted.",
-            getValue = function()
-                return not stOff()
-            end,
-            setValue = function(val)
-                STSet("enabled", val and true or false)
-            end,
+            getValue = function() return not stOff() end,
+            setValue = function(val) STSet("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Hide When Idle",
             disabled = stOff,
             tooltip = "Hide a bar when that weapon has not swung for a moment.",
-            getValue = function()
-                return STm.Get("hideIdle")
-            end,
-            setValue = function(val)
-                STSet("hideIdle", val and true or false)
-            end,
+            getValue = function() return STm.Get("hideIdle") end,
+            setValue = function(val) STSet("hideIdle", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Off Hand Bar",
             disabled = stOff,
-            getValue = function()
-                return STm.Get("offHand")
-            end,
-            setValue = function(val)
-                STSet("offHand", val and true or false)
-            end,
+            getValue = function() return STm.Get("offHand") end,
+            setValue = function(val) STSet("offHand", val and true or false) end,
         }, {
             type = "toggle",
             text = "Ranged Bar",
             disabled = stOff,
-            getValue = function()
-                return STm.Get("ranged")
-            end,
-            setValue = function(val)
-                STSet("ranged", val and true or false)
-            end,
+            getValue = function() return STm.Get("ranged") end,
+            setValue = function(val) STSet("ranged", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -1137,12 +939,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = stOff,
-            getValue = function()
-                return STm.Get("width")
-            end,
-            setValue = function(val)
-                STSet("width", math.floor(val + 0.5))
-            end,
+            getValue = function() return STm.Get("width") end,
+            setValue = function(val) STSet("width", math.floor(val + 0.5)) end,
         }, {
             type = "slider",
             text = "Height",
@@ -1151,12 +949,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = stOff,
-            getValue = function()
-                return STm.Get("height")
-            end,
-            setValue = function(val)
-                STSet("height", math.floor(val + 0.5))
-            end,
+            getValue = function() return STm.Get("height") end,
+            setValue = function(val) STSet("height", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
     end
@@ -1166,9 +960,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local DM = CludesUI._DruidMana
     if DM then
-        local function dmOff()
-            return not DM.Get("enabled")
-        end
+        local function dmOff() return not DM.Get("enabled") end
         local function DMSet(key, val)
             DM.Cfg()[key] = val
             DM.Apply()
@@ -1185,23 +977,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Mana Bar",
             tooltip = "Shows a druid's mana while in Bear, Cat or another form that hides it.",
-            getValue = function()
-                return not dmOff()
-            end,
-            setValue = function(val)
-                DMSet("enabled", val and true or false)
-            end,
+            getValue = function() return not dmOff() end,
+            setValue = function(val) DMSet("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Five-Second Rule",
             disabled = dmOff,
             tooltip = "A line under the bar counts down five seconds after you spend mana, while spirit regen is paused.",
-            getValue = function()
-                return DM.Get("fiveSecond")
-            end,
-            setValue = function(val)
-                DMSet("fiveSecond", val and true or false)
-            end,
+            getValue = function() return DM.Get("fiveSecond") end,
+            setValue = function(val) DMSet("fiveSecond", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -1209,12 +993,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Always Show",
             disabled = dmOff,
             tooltip = "Show the bar all the time, for any class with mana, not only a druid in a form.",
-            getValue = function()
-                return DM.Get("always")
-            end,
-            setValue = function(val)
-                DMSet("always", val and true or false)
-            end,
+            getValue = function() return DM.Get("always") end,
+            setValue = function(val) DMSet("always", val and true or false) end,
         }, {
             type = "slider",
             text = "Width",
@@ -1223,12 +1003,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = dmOff,
-            getValue = function()
-                return DM.Get("width")
-            end,
-            setValue = function(val)
-                DMSet("width", math.floor(val + 0.5))
-            end,
+            getValue = function() return DM.Get("width") end,
+            setValue = function(val) DMSet("width", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
     end
@@ -1238,9 +1014,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local CB = CludesUI._ConsumableBar
     if CB then
-        local function cbOff()
-            return not CB.Get("enabled")
-        end
+        local function cbOff() return not CB.Get("enabled") end
         local function CBSet(key, val)
             CB.Cfg()[key] = val
             CB.Apply()
@@ -1257,12 +1031,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Consumable Bar",
             tooltip = "The consumables in your bags on a bar you can click, with how many you carry and their cooldowns. It works in combat; an item you run out of in a fight keeps its icon until the fight ends.",
-            getValue = function()
-                return not cbOff()
-            end,
-            setValue = function(val)
-                CBSet("enabled", val and true or false)
-            end,
+            getValue = function() return not cbOff() end,
+            setValue = function(val) CBSet("enabled", val and true or false) end,
         }, {
             type = "slider",
             text = "Icon Size",
@@ -1271,30 +1041,20 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = cbOff,
-            getValue = function()
-                return CB.Get("iconSize")
-            end,
-            setValue = function(val)
-                CBSet("iconSize", math.floor(val + 0.5))
-            end,
+            getValue = function() return CB.Get("iconSize") end,
+            setValue = function(val) CBSet("iconSize", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
         local cats = CB.Categories
         for idx = 1, #cats, 2 do
             local function Toggle(cfg)
-                if not cfg then
-                    return { type = "label", text = "" }
-                end
+                if not cfg then return { type = "label", text = "" } end
                 return {
                     type = "toggle",
                     text = cfg.label,
                     disabled = cbOff,
-                    getValue = function()
-                        return CB.Get(cfg.key)
-                    end,
-                    setValue = function(val)
-                        CBSet(cfg.key, val and true or false)
-                    end,
+                    getValue = function() return CB.Get(cfg.key) end,
+                    setValue = function(val) CBSet(cfg.key, val and true or false) end,
                 }
             end
             _, height = W:DualRow(hostFrame, cursorY, Toggle(cats[idx]), Toggle(cats[idx + 1]))
@@ -1308,12 +1068,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = cbOff,
-            getValue = function()
-                return CB.Get("maxIcons")
-            end,
-            setValue = function(val)
-                CBSet("maxIcons", math.floor(val + 0.5))
-            end,
+            getValue = function() return CB.Get("maxIcons") end,
+            setValue = function(val) CBSet("maxIcons", math.floor(val + 0.5)) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -1323,9 +1079,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local RD = CludesUI._RaidDebuffs
     if RD then
-        local function rdOff()
-            return not RD.Get("enabled")
-        end
+        local function rdOff() return not RD.Get("enabled") end
         local function RDSet(key, val)
             RD.Cfg()[key] = val
             RD.Apply()
@@ -1342,40 +1096,26 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Raid Debuffs",
             tooltip = "Icons on your enemy target for the raid debuffs you pick: bright while up with their time, dim while missing. Changes to the picks apply out of combat.",
-            getValue = function()
-                return not rdOff()
-            end,
-            setValue = function(val)
-                RDSet("enabled", val and true or false)
-            end,
+            getValue = function() return not rdOff() end,
+            setValue = function(val) RDSet("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Only in a Group",
             disabled = rdOff,
-            getValue = function()
-                return RD.Get("groupOnly")
-            end,
-            setValue = function(val)
-                RDSet("groupOnly", val and true or false)
-            end,
+            getValue = function() return RD.Get("groupOnly") end,
+            setValue = function(val) RDSet("groupOnly", val and true or false) end,
         })
         cursorY = cursorY - height
         local entries = RD.Debuffs
         for idx = 1, #entries, 2 do
             local function Toggle(d)
-                if not d then
-                    return { type = "label", text = "" }
-                end
+                if not d then return { type = "label", text = "" } end
                 return {
                     type = "toggle",
                     text = d.label,
                     disabled = rdOff,
-                    getValue = function()
-                        return RD.Get("pick_" .. d.key)
-                    end,
-                    setValue = function(val)
-                        RDSet("pick_" .. d.key, val and true or false)
-                    end,
+                    getValue = function() return RD.Get("pick_" .. d.key) end,
+                    setValue = function(val) RDSet("pick_" .. d.key, val and true or false) end,
                 }
             end
             _, height = W:DualRow(hostFrame, cursorY, Toggle(entries[idx]), Toggle(entries[idx + 1]))
@@ -1389,12 +1129,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = rdOff,
-            getValue = function()
-                return RD.Get("iconSize")
-            end,
-            setValue = function(val)
-                RDSet("iconSize", math.floor(val + 0.5))
-            end,
+            getValue = function() return RD.Get("iconSize") end,
+            setValue = function(val) RDSet("iconSize", math.floor(val + 0.5)) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -1404,9 +1140,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local GS = CludesUI._GearSets
     if GS then
-        local function gsOff()
-            return not GS.Get("enabled")
-        end
+        local function gsOff() return not GS.Get("enabled") end
         local function GSSet(key, val)
             GS.Cfg()[key] = val
             GS.Apply()
@@ -1432,12 +1166,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Gear Sets Bar",
             tooltip = "Your equipment sets on a bar; click one to wear it. The set you are wearing is lit. Armour cannot change in combat, so a click in combat waits for the fight to end.",
-            getValue = function()
-                return not gsOff()
-            end,
-            setValue = function(val)
-                GSSet("enabled", val and true or false)
-            end,
+            getValue = function() return not gsOff() end,
+            setValue = function(val) GSSet("enabled", val and true or false) end,
         }, {
             type = "input",
             text = "Save What You Wear",
@@ -1445,14 +1175,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             inputStyle = "popup",
             placeholder = "Set name",
             tooltip = "Type a name to save the gear you have on as a set. Using an existing name saves over it.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 GS.Save(textValue)
-                C_Timer.After(0.5, function()
-                    CludesUI:RefreshPage(true)
-                end)
+                C_Timer.After(0.5, function() CludesUI:RefreshPage(true) end)
             end,
         })
         cursorY = cursorY - height
@@ -1463,12 +1189,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             order = sequence,
             disabled = gsOff,
             tooltip = "Wear this set while mounted, and put your gear back when you dismount.",
-            getValue = function()
-                return GS.Get("mountedSet")
-            end,
-            setValue = function(val)
-                GSSet("mountedSet", val)
-            end,
+            getValue = function() return GS.Get("mountedSet") end,
+            setValue = function(val) GSSet("mountedSet", val) end,
         }, {
             type = "dropdown",
             text = "While Resting",
@@ -1476,12 +1198,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             order = sequence,
             disabled = gsOff,
             tooltip = "Wear this set in an inn or a city, and put your gear back when you leave.",
-            getValue = function()
-                return GS.Get("restingSet")
-            end,
-            setValue = function(val)
-                GSSet("restingSet", val)
-            end,
+            getValue = function() return GS.Get("restingSet") end,
+            setValue = function(val) GSSet("restingSet", val) end,
         })
         cursorY = cursorY - height
     end
@@ -1491,9 +1209,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local IT = CludesUI._InstanceTracker
     if IT then
-        local function itOff()
-            return not IT.Get("enabled")
-        end
+        local function itOff() return not IT.Get("enabled") end
         local function ITSet(key, val)
             IT.Cfg()[key] = val
             IT.Apply()
@@ -1510,12 +1226,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Instance Tracker",
             tooltip = "Counts the new dungeons and raids your account enters in a rolling hour against the cap, times your runs, and prints a summary when you leave. Re-entering the same copy does not count again.",
-            getValue = function()
-                return not itOff()
-            end,
-            setValue = function(val)
-                ITSet("enabled", val and true or false)
-            end,
+            getValue = function() return not itOff() end,
+            setValue = function(val) ITSet("enabled", val and true or false) end,
         }, {
             type = "slider",
             text = "Hourly Cap",
@@ -1525,43 +1237,29 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             isPercent = false,
             disabled = itOff,
             tooltip = "WoW Forever allows 10 new instances an hour per account. Change this only if the game does.",
-            getValue = function()
-                return IT.Get("cap")
-            end,
-            setValue = function(val)
-                ITSet("cap", math.floor(val + 0.5))
-            end,
+            getValue = function() return IT.Get("cap") end,
+            setValue = function(val) ITSet("cap", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show the Counter",
             disabled = itOff,
-            getValue = function()
-                return IT.Get("hud")
-            end,
-            setValue = function(val)
-                ITSet("hud", val and true or false)
-            end,
+            getValue = function() return IT.Get("hud") end,
+            setValue = function(val) ITSet("hud", val and true or false) end,
         }, {
             type = "toggle",
             text = "Summary When You Leave",
             disabled = itOff,
-            getValue = function()
-                return IT.Get("summary")
-            end,
-            setValue = function(val)
-                ITSet("summary", val and true or false)
-            end,
+            getValue = function() return IT.Get("summary") end,
+            setValue = function(val) ITSet("summary", val and true or false) end,
         })
         cursorY = cursorY - height
         if not itOff() then
             local runs = IT.Runs()
             for idx = 1, math.min(#runs, 6), 2 do
                 local function Run(r)
-                    if not r then
-                        return { type = "label", text = "" }
-                    end
+                    if not r then return { type = "label", text = "" } end
                     return {
                         type = "label",
                         text = ("%s  |cff9aa6b2%d:%02d, %d deaths, %d items|r"):format(
@@ -1593,9 +1291,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             buttonText = "Open",
             width = 90,
             tooltip = "Everyone in your group with their level, item level and unenchanted slots. Click a name to open the game's inspect window on them. /cinspect opens it too.",
-            onClick = function()
-                CludesUI._GroupInspect.Show()
-            end,
+            onClick = function() CludesUI._GroupInspect.Show() end,
         }, { type = "label", text = "Players out of range answer when they come closer." })
         cursorY = cursorY - height
     end
@@ -1610,9 +1306,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             f.Apply()
         end
         local function Off(f)
-            return function()
-                return not f.Get("enabled")
-            end
+            return function() return not f.Get("enabled") end
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
@@ -1622,66 +1316,42 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Combat Timer",
             tooltip = "How long the current fight has run, held for a few seconds after it ends. Move it in Layout Mode.",
-            getValue = function()
-                return CE.timer.Get("enabled")
-            end,
-            setValue = function(val)
-                Set(CE.timer, "enabled", val and true or false)
-            end,
+            getValue = function() return CE.timer.Get("enabled") end,
+            setValue = function(val) Set(CE.timer, "enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Fight Length in Chat",
             disabled = Off(CE.timer),
-            getValue = function()
-                return CE.timer.Get("chat")
-            end,
-            setValue = function(val)
-                Set(CE.timer, "chat", val and true or false)
-            end,
+            getValue = function() return CE.timer.Get("chat") end,
+            setValue = function(val) Set(CE.timer, "chat", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Combat Alert",
             tooltip = "+ Combat and - Combat fade in the middle of the screen as you enter and leave combat.",
-            getValue = function()
-                return CE.alert.Get("enabled")
-            end,
-            setValue = function(val)
-                Set(CE.alert, "enabled", val and true or false)
-            end,
+            getValue = function() return CE.alert.Get("enabled") end,
+            setValue = function(val) Set(CE.alert, "enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Alert Sound",
             disabled = Off(CE.alert),
-            getValue = function()
-                return CE.alert.Get("sound")
-            end,
-            setValue = function(val)
-                Set(CE.alert, "sound", val and true or false)
-            end,
+            getValue = function() return CE.alert.Get("sound") end,
+            setValue = function(val) Set(CE.alert, "sound", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Stealth Reminder",
             tooltip = "For rogues, and druids in Cat Form: Not stealthed shows while you are out of combat and out of stealth. Never in an inn or a city, or while mounted.",
-            getValue = function()
-                return CE.stealth.Get("enabled")
-            end,
-            setValue = function(val)
-                Set(CE.stealth, "enabled", val and true or false)
-            end,
+            getValue = function() return CE.stealth.Get("enabled") end,
+            setValue = function(val) Set(CE.stealth, "enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Only in a Group",
             disabled = Off(CE.stealth),
-            getValue = function()
-                return CE.stealth.Get("groupOnly")
-            end,
-            setValue = function(val)
-                Set(CE.stealth, "groupOnly", val and true or false)
-            end,
+            getValue = function() return CE.stealth.Get("groupOnly") end,
+            setValue = function(val) Set(CE.stealth, "groupOnly", val and true or false) end,
         })
         cursorY = cursorY - height
     end
@@ -1697,18 +1367,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "CUI_BagSpace",
-            disabled = function()
-                return not BS.Get("enabled")
-            end,
+            disabled = function() return not BS.Get("enabled") end,
             disabledTooltip = "Bag Space",
         })
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Bag Space",
             tooltip = "Free bag slots on screen, amber when nearly full and red when full. Hover it for the cheapest items you carry; click it to open your bags.",
-            getValue = function()
-                return BS.Get("enabled")
-            end,
+            getValue = function() return BS.Get("enabled") end,
             setValue = function(val)
                 BS.Cfg().enabled = val and true or false
                 BS.Apply()
@@ -1716,12 +1382,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         }, {
             type = "toggle",
             text = "Warn When Nearly Full",
-            disabled = function()
-                return not BS.Get("enabled")
-            end,
-            getValue = function()
-                return BS.Get("warn")
-            end,
+            disabled = function() return not BS.Get("enabled") end,
+            getValue = function() return BS.Get("warn") end,
             setValue = function(val)
                 BS.Cfg().warn = val and true or false
                 BS.Apply()
@@ -1735,9 +1397,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local QA = CludesUI._QuestAutomation
     if QA then
-        local function qaOff()
-            return not QA.Get("enabled")
-        end
+        local function qaOff() return not QA.Get("enabled") end
         local function QASet(key, val)
             QA.Cfg()[key] = val and true or false
             QA.Apply()
@@ -1750,45 +1410,29 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Quest Automation",
             tooltip = "Accepts and turns in quests for you. Hold Shift while talking to an NPC to do it yourself. With a choice of rewards it always stops for you to pick.",
-            getValue = function()
-                return not qaOff()
-            end,
-            setValue = function(val)
-                QASet("enabled", val)
-            end,
+            getValue = function() return not qaOff() end,
+            setValue = function(val) QASet("enabled", val) end,
         }, {
             type = "toggle",
             text = "Skip Grey Quests",
             disabled = qaOff,
             tooltip = "Leave quests far below your level alone.",
-            getValue = function()
-                return QA.Get("skipGrey")
-            end,
-            setValue = function(val)
-                QASet("skipGrey", val)
-            end,
+            getValue = function() return QA.Get("skipGrey") end,
+            setValue = function(val) QASet("skipGrey", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto Accept",
             disabled = qaOff,
-            getValue = function()
-                return QA.Get("accept")
-            end,
-            setValue = function(val)
-                QASet("accept", val)
-            end,
+            getValue = function() return QA.Get("accept") end,
+            setValue = function(val) QASet("accept", val) end,
         }, {
             type = "toggle",
             text = "Auto Turn In",
             disabled = qaOff,
-            getValue = function()
-                return QA.Get("turnIn")
-            end,
-            setValue = function(val)
-                QASet("turnIn", val)
-            end,
+            getValue = function() return QA.Get("turnIn") end,
+            setValue = function(val) QASet("turnIn", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -1796,12 +1440,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Progress to Party",
             disabled = qaOff,
             tooltip = "Says your quest objective progress (Kobold Vermin slain: 4/10) in party chat. Never in a raid.",
-            getValue = function()
-                return QA.Get("progress")
-            end,
-            setValue = function(val)
-                QASet("progress", val)
-            end,
+            getValue = function() return QA.Get("progress") end,
+            setValue = function(val) QASet("progress", val) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -1822,13 +1462,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             values[""] = "None saved"
             sequence[1] = ""
         end
-        if not values[rowConf.selected or ""] then
-            rowConf.selected = nameList[1] or ""
-        end
+        if not values[rowConf.selected or ""] then rowConf.selected = nameList[1] or "" end
         local function Rebuild()
-            C_Timer.After(0.1, function()
-                CludesUI:RefreshPage(true)
-            end)
+            C_Timer.After(0.1, function() CludesUI:RefreshPage(true) end)
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
@@ -1841,9 +1477,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             inputStyle = "popup",
             placeholder = "Profile name",
             tooltip = "Saves every action bar slot under this name, for any character of your class on this account. /cbars save <name> does the same.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(textValue)
                 AP.Save(textValue)
                 rowConf.selected = (textValue or ""):match("^%s*(.-)%s*$")
@@ -1853,12 +1487,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Include Keybinds",
             tooltip = "Also save and load your keybinds with the bars.",
-            getValue = function()
-                return AP.Get("bindings")
-            end,
-            setValue = function(val)
-                rowConf.bindings = val and true or false
-            end,
+            getValue = function() return AP.Get("bindings") end,
+            setValue = function(val) rowConf.bindings = val and true or false end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -1866,12 +1496,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Profile",
             values = values,
             order = sequence,
-            getValue = function()
-                return rowConf.selected or ""
-            end,
-            setValue = function(val)
-                rowConf.selected = val
-            end,
+            getValue = function() return rowConf.selected or "" end,
+            setValue = function(val) rowConf.selected = val end,
         }, {
             type = "labeledButton",
             text = "Load It",
@@ -1879,9 +1505,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             width = 90,
             tooltip = "Puts the profile on your bars. Spells you have not learned and items you do not carry are skipped. Out of combat only.",
             onClick = function()
-                if rowConf.selected and rowConf.selected ~= "" then
-                    AP.Load(rowConf.selected)
-                end
+                if rowConf.selected and rowConf.selected ~= "" then AP.Load(rowConf.selected) end
             end,
         })
         cursorY = cursorY - height
@@ -1914,12 +1538,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Quest Item Sparkles",
             tooltip = "Keeps the game's sparkle on lootable quest items, even after a graphics preset turns it off. Your outline mode is left as you set it. Switching this off takes effect after restarting the game.",
-            getValue = function()
-                return LS.Get("enabled")
-            end,
-            setValue = function(val)
-                LS.SetEnabled(val)
-            end,
+            getValue = function() return LS.Get("enabled") end,
+            setValue = function(val) LS.SetEnabled(val) end,
         }, { type = "label", text = "Turning it off needs a game restart." })
         cursorY = cursorY - height
     end
@@ -1929,9 +1549,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local BI = CludesUI._BiS
     if BI then
-        local function BSet(key, val)
-            BI.Cfg()[key] = val and true or false
-        end
+        local function BSet(key, val) BI.Cfg()[key] = val and true or false end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         _, height = W:SectionHeader(hostFrame, "BEST IN SLOT", cursorY)
@@ -1942,39 +1560,25 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             buttonText = "Open",
             width = 90,
             tooltip = "Your pick for every gear slot and whether you have it. Alt+Shift-click any item to add or remove it. Shared by your characters of this class. /cbis opens it too.",
-            onClick = function()
-                BI.Show()
-            end,
+            onClick = function() BI.Show() end,
         }, {
             type = "toggle",
             text = "Alt+Shift-Click to Add",
-            getValue = function()
-                return BI.Get("enabled")
-            end,
-            setValue = function(val)
-                BSet("enabled", val)
-            end,
+            getValue = function() return BI.Get("enabled") end,
+            setValue = function(val) BSet("enabled", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Mark BiS on Tooltips",
-            getValue = function()
-                return BI.Get("tooltip")
-            end,
-            setValue = function(val)
-                BSet("tooltip", val)
-            end,
+            getValue = function() return BI.Get("tooltip") end,
+            setValue = function(val) BSet("tooltip", val) end,
         }, {
             type = "toggle",
             text = "Drop Alert",
             tooltip = "A warning, a sound and a chat line when a BiS item you do not have drops: in the loot window, or looted by anyone near you.",
-            getValue = function()
-                return BI.Get("alert")
-            end,
-            setValue = function(val)
-                BSet("alert", val)
-            end,
+            getValue = function() return BI.Get("alert") end,
+            setValue = function(val) BSet("alert", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -1983,9 +1587,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             inputWidth = 160,
             inputStyle = "popup",
             tooltip = "Copy this line to share your list.",
-            getValue = function()
-                return BI.Export()
-            end,
+            getValue = function() return BI.Export() end,
             setValue = function() end,
         }, {
             type = "input",
@@ -1994,12 +1596,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             inputStyle = "popup",
             placeholder = "CUIBIS1:...",
             tooltip = "Paste a CludesUI BiS line for your class. It replaces your list.",
-            getValue = function()
-                return ""
-            end,
-            setValue = function(textValue)
-                BI.Import(textValue)
-            end,
+            getValue = function() return "" end,
+            setValue = function(textValue) BI.Import(textValue) end,
         })
         cursorY = cursorY - height
     end
@@ -2013,9 +1611,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             PH.Cfg()[key] = val
             PH.Apply()
         end
-        local function pOff()
-            return not PH.Get("enabled")
-        end
+        local function pOff() return not PH.Get("enabled") end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         _, height = W:SectionHeader(hostFrame, "PLAYER HISTORY", cursorY)
@@ -2024,23 +1620,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Player History",
             tooltip = "Remembers the players you group with on this computer: how often, the dungeons and raids together, and your last sessions. /chistory lists them. Right-click a player for Player Note to tag them and write a note.",
-            getValue = function()
-                return not pOff()
-            end,
-            setValue = function(val)
-                Set("enabled", val and true or false)
-            end,
+            getValue = function() return not pOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Record Chats",
             disabled = pOff,
             tooltip = "Also keeps your last whispers and group chat lines with each player.",
-            getValue = function()
-                return PH.Get("chats")
-            end,
-            setValue = function(val)
-                Set("chats", val and true or false)
-            end,
+            getValue = function() return PH.Get("chats") end,
+            setValue = function(val) Set("chats", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -2051,21 +1639,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = pOff,
-            getValue = function()
-                return PH.Get("days")
-            end,
-            setValue = function(val)
-                PH.Cfg().days = math.floor(val + 0.5)
-            end,
+            getValue = function() return PH.Get("days") end,
+            setValue = function(val) PH.Cfg().days = math.floor(val + 0.5) end,
         }, {
             type = "toggle",
             text = "Notes on Tooltips",
-            getValue = function()
-                return PH.Get("tooltip")
-            end,
-            setValue = function(val)
-                PH.Cfg().tooltip = val and true or false
-            end,
+            getValue = function() return PH.Get("tooltip") end,
+            setValue = function(val) PH.Cfg().tooltip = val and true or false end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -2073,17 +1653,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Player History",
             buttonText = "Open",
             width = 90,
-            onClick = function()
-                PH.Show()
-            end,
+            onClick = function() PH.Show() end,
         }, {
             type = "labeledButton",
             text = "Clear History (keeps notes)",
             buttonText = "Clear",
             width = 90,
-            onClick = function()
-                PH.Clear("history")
-            end,
+            onClick = function() PH.Clear("history") end,
         })
         cursorY = cursorY - height
     end
@@ -2093,9 +1669,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local TR2 = CludesUI._Transport
     if TR2 then
-        local function tOff()
-            return not TR2.Get("enabled")
-        end
+        local function tOff() return not TR2.Get("enabled") end
         local function Set(key, val)
             TR2.Cfg()[key] = val
             TR2.Apply()
@@ -2112,23 +1686,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Boat and Zeppelin Timers",
             tooltip = "When each ship leaves and arrives, on minimap pins at its docks. A ship is timed when you ride it, when you click its pin as it arrives (left) or leaves (right), or from players who share timings.",
-            getValue = function()
-                return not tOff()
-            end,
-            setValue = function(val)
-                Set("enabled", val and true or false)
-            end,
+            getValue = function() return not tOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Zone Timer",
             disabled = tOff,
             tooltip = "A list of the boats and zeppelins in your zone with their times. Move it in Layout Mode.",
-            getValue = function()
-                return TR2.Get("zone")
-            end,
-            setValue = function(val)
-                Set("zone", val and true or false)
-            end,
+            getValue = function() return TR2.Get("zone") end,
+            setValue = function(val) Set("zone", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -2136,12 +1702,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Share Timings",
             disabled = tOff,
             tooltip = "Sends the ships you time to your group and guild, and takes theirs, and the timings of ForeverTransport and NauticusClassic users.",
-            getValue = function()
-                return TR2.Get("share")
-            end,
-            setValue = function(val)
-                Set("share", val and true or false)
-            end,
+            getValue = function() return TR2.Get("share") end,
+            setValue = function(val) Set("share", val and true or false) end,
         }, {
             type = "slider",
             text = "Text Size",
@@ -2150,12 +1712,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = tOff,
-            getValue = function()
-                return TR2.Get("size")
-            end,
-            setValue = function(val)
-                Set("size", math.floor(val + 0.5))
-            end,
+            getValue = function() return TR2.Get("size") end,
+            setValue = function(val) Set("size", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
     end
@@ -2165,18 +1723,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local TWN = CludesUI._TownMap
     if TWN then
-        local function nOff()
-            return not TWN.Get("enabled")
-        end
+        local function nOff() return not TWN.Get("enabled") end
         local function Tog(key, textValue, tipText, dis)
             return {
                 type = "toggle",
                 text = textValue,
                 tooltip = tipText,
                 disabled = dis or nOff,
-                getValue = function()
-                    return TWN.Get(key)
-                end,
+                getValue = function() return TWN.Get(key) end,
                 setValue = function(val)
                     TWN.Cfg()[key] = val and true or false
                     TWN.Apply()
@@ -2194,9 +1748,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "enabled",
                 "Town Map",
                 "Service NPCs for your faction, mailboxes and spirit healers on the world map. Hover a pin for its name.",
-                function()
-                    return false
-                end
+                function() return false end
             ),
             Tog(
                 "capitalsOnly",
@@ -2237,7 +1789,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             Tog("inn", "Innkeepers")
         )
         cursorY = cursorY - height
-        _, height = W:DualRow(hostFrame, cursorY, Tog("bank", "Bank and Auction House"), Tog("repair", "Repairs"))
+        _, height =
+            W:DualRow(hostFrame, cursorY, Tog("bank", "Bank and Auction House"), Tog("repair", "Repairs"))
         cursorY = cursorY - height
         _, height = W:DualRow(
             hostFrame,
@@ -2258,9 +1811,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 step = 1,
                 isPercent = false,
                 disabled = nOff,
-                getValue = function()
-                    return TWN.Get("size")
-                end,
+                getValue = function() return TWN.Get("size") end,
                 setValue = function(val)
                     TWN.Cfg().size = math.floor(val + 0.5)
                     TWN.Apply()
@@ -2275,9 +1826,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local BL = CludesUI._Blessings
     if BL then
-        local function bOff()
-            return not BL.Get("enabled")
-        end
+        local function bOff() return not BL.Get("enabled") end
         local function Set(key, val)
             BL.Cfg()[key] = val
             BL.Apply()
@@ -2288,12 +1837,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 text = textValue,
                 tooltip = tipText,
                 disabled = bOff,
-                getValue = function()
-                    return BL.Get(key)
-                end,
-                setValue = function(val)
-                    Set(key, val and true or false)
-                end,
+                getValue = function() return BL.Get(key) end,
+                setValue = function(val) Set(key, val and true or false) end,
             }
         end
         local function Slider(key, textValue, lo, hi, tipText)
@@ -2306,12 +1851,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 step = 1,
                 isPercent = false,
                 disabled = bOff,
-                getValue = function()
-                    return BL.Get(key)
-                end,
-                setValue = function(val)
-                    Set(key, math.floor(val + 0.5))
-                end,
+                getValue = function() return BL.Get(key) end,
+                setValue = function(val) Set(key, math.floor(val + 0.5)) end,
             }
         end
         local ROLE_VALUES = {
@@ -2333,12 +1874,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Blessing Bar",
             tooltip = "For paladins: your aura and a button per class in the group. Left-click a class to bless the next member who needs it, missing first; in combat each click steps to the next. Right-click a class for its blessing, its player list or the assignments. Plans are shared with the group's other paladins, and PallyPower users' plans are read too.",
-            getValue = function()
-                return not bOff()
-            end,
-            setValue = function(val)
-                Set("enabled", val and true or false)
-            end,
+            getValue = function() return not bOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
         }, {
             type = "labeledButton",
             text = "Assignments",
@@ -2346,9 +1883,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             width = 90,
             disabled = bOff,
             tooltip = "Every paladin's blessing for each class and their aura, with Auto-Assign, a saved preset and a report to chat. Also /cbless.",
-            onClick = function()
-                BL.Open()
-            end,
+            onClick = function() BL.Open() end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(
@@ -2450,12 +1985,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             order = ROLE_ORDER,
             disabled = bOff,
             tooltip = "A warrior, druid or paladin marked as tank or main tank gets this instead of their class blessing.",
-            getValue = function()
-                return BL.Get("tank")
-            end,
-            setValue = function(val)
-                Set("tank", val)
-            end,
+            getValue = function() return BL.Get("tank") end,
+            setValue = function(val) Set("tank", val) end,
         }, {
             type = "dropdown",
             text = "Main Assist Blessing",
@@ -2463,12 +1994,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             order = ROLE_ORDER,
             disabled = bOff,
             tooltip = "A warrior, druid or paladin marked as main assist gets this instead of their class blessing.",
-            getValue = function()
-                return BL.Get("assist")
-            end,
-            setValue = function(val)
-                Set("assist", val)
-            end,
+            getValue = function() return BL.Get("assist") end,
+            setValue = function(val) Set("assist", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(
@@ -2486,12 +2013,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 values = { black = "Black", status = "Status Color", none = "None" },
                 order = { "black", "status", "none" },
                 tooltip = "With Status Color the class buttons show their state on their edge instead of tinting the icon: red missing, yellow running out, blue only players with their own.",
-                getValue = function()
-                    return BL.Get("border")
-                end,
-                setValue = function(val)
-                    Set("border", val)
-                end,
+                getValue = function() return BL.Get("border") end,
+                setValue = function(val) Set("border", val) end,
             }
         )
         cursorY = cursorY - height
@@ -2527,9 +2050,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local DC = CludesUI._Discovery
     if DC then
-        local function dOff()
-            return not DC.Get("enabled")
-        end
+        local function dOff() return not DC.Get("enabled") end
         local function Set(key, val)
             DC.Cfg()[key] = val
             DC.Apply()
@@ -2540,12 +2061,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 text = textValue,
                 tooltip = tipText,
                 disabled = dOff,
-                getValue = function()
-                    return DC.Get(key)
-                end,
-                setValue = function(val)
-                    Set(key, val and true or false)
-                end,
+                getValue = function() return DC.Get(key) end,
+                setValue = function(val) Set(key, val and true or false) end,
             }
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
@@ -2560,12 +2077,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Discovery",
             tooltip = "A window (/cdiscovery) of the library books, the Cozy Sleeping Bag's hidden chain, the Field Journal, and every quest and rare by zone, with trackers and map pins.",
-            getValue = function()
-                return not dOff()
-            end,
-            setValue = function(val)
-                Set("enabled", val and true or false)
-            end,
+            getValue = function() return not dOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
         }, {
             type = "labeledButton",
             text = "Discovery Window",
@@ -2573,9 +2086,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             width = 90,
             disabled = dOff,
             tooltip = "Opens the Discovery window. Also /cdiscovery.",
-            onClick = function()
-                DC.Open()
-            end,
+            onClick = function() DC.Open() end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(
@@ -2631,12 +2142,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 step = 5,
                 isPercent = false,
                 disabled = dOff,
-                getValue = function()
-                    return DC.Get("nearbyRange")
-                end,
-                setValue = function(val)
-                    Set("nearbyRange", math.floor(val + 0.5))
-                end,
+                getValue = function() return DC.Get("nearbyRange") end,
+                setValue = function(val) Set("nearbyRange", math.floor(val + 0.5)) end,
             }
         )
         cursorY = cursorY - height
@@ -2655,12 +2162,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = dOff,
-            getValue = function()
-                return DC.Get("pinSize")
-            end,
-            setValue = function(val)
-                Set("pinSize", math.floor(val + 0.5))
-            end,
+            getValue = function() return DC.Get("pinSize") end,
+            setValue = function(val) Set("pinSize", math.floor(val + 0.5)) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -2670,9 +2173,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local QL = CludesUI._QuestList
     if QL and DC then
-        local function qOff()
-            return not DC.Get("enabled")
-        end
+        local function qOff() return not DC.Get("enabled") end
         local function Set(key, val)
             QL.Cfg()[key] = val
             QL.Apply()
@@ -2683,12 +2184,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 text = textValue,
                 tooltip = tipText,
                 disabled = qOff,
-                getValue = function()
-                    return QL.Get(key)
-                end,
-                setValue = function(val)
-                    Set(key, val and true or false)
-                end,
+                getValue = function() return QL.Get(key) end,
+                setValue = function(val) Set(key, val and true or false) end,
             }
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
@@ -2697,9 +2194,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "CUI_RareAlert",
-            disabled = function()
-                return qOff() or not QL.Get("rareAlert")
-            end,
+            disabled = function() return qOff() or not QL.Get("rareAlert") end,
             disabledTooltip = "Rare Alert",
         })
         _, height = W:DualRow(
@@ -2736,12 +2231,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 step = 1,
                 isPercent = false,
                 disabled = qOff,
-                getValue = function()
-                    return QL.Get("pinSize")
-                end,
-                setValue = function(val)
-                    Set("pinSize", math.floor(val + 0.5))
-                end,
+                getValue = function() return QL.Get("pinSize") end,
+                setValue = function(val) Set("pinSize", math.floor(val + 0.5)) end,
             }
         )
         cursorY = cursorY - height
@@ -2775,12 +2266,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = qOff,
-            getValue = function()
-                return QL.Get("rareAlertTime")
-            end,
-            setValue = function(val)
-                Set("rareAlertTime", math.floor(val + 0.5))
-            end,
+            getValue = function() return QL.Get("rareAlertTime") end,
+            setValue = function(val) Set("rareAlertTime", math.floor(val + 0.5)) end,
         }, {
             type = "labeledButton",
             text = "Test the Alert",
@@ -2788,9 +2275,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             width = 90,
             disabled = qOff,
             tooltip = "Shows the card for your target, or a sample rare.",
-            onClick = function()
-                QL.TestAlert()
-            end,
+            onClick = function() QL.TestAlert() end,
         })
         cursorY = cursorY - height
     end
@@ -2800,9 +2285,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local PF = CludesUI._Professions
     if PF then
-        local function pOff()
-            return not PF.Get("enabled")
-        end
+        local function pOff() return not PF.Get("enabled") end
         local function Set(key, val)
             PF.Cfg()[key] = val
             PF.Apply()
@@ -2815,12 +2298,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Professions",
             tooltip = "A window (/cprof) for each of your professions: the next rank and where to get it, the recipes you know that still give skill, and every recipe you have not learned with where it comes from. Open your profession window once so it knows what you have learned.",
-            getValue = function()
-                return not pOff()
-            end,
-            setValue = function(val)
-                Set("enabled", val and true or false)
-            end,
+            getValue = function() return not pOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
         }, {
             type = "labeledButton",
             text = "Professions Window",
@@ -2828,9 +2307,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             width = 90,
             disabled = pOff,
             tooltip = "Opens the Professions window. Also /cprof.",
-            onClick = function()
-                PF.Open()
-            end,
+            onClick = function() PF.Open() end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -2838,23 +2315,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Next Rank Alert",
             disabled = pOff,
             tooltip = "A chat line once when a profession is ready for its next rank, with where to train it. /cprof rank checks now.",
-            getValue = function()
-                return PF.Get("rankAlert")
-            end,
-            setValue = function(val)
-                Set("rankAlert", val and true or false)
-            end,
+            getValue = function() return PF.Get("rankAlert") end,
+            setValue = function(val) Set("rankAlert", val and true or false) end,
         }, {
             type = "toggle",
             text = "List Recipes for Later",
             disabled = pOff,
             tooltip = "The Recipe Finder also lists the recipes your skill is not high enough for yet.",
-            getValue = function()
-                return PF.Get("showLater")
-            end,
-            setValue = function(val)
-                Set("showLater", val and true or false)
-            end,
+            getValue = function() return PF.Get("showLater") end,
+            setValue = function(val) Set("showLater", val and true or false) end,
         })
         cursorY = cursorY - height
     end
@@ -2869,9 +2338,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 type = "toggle",
                 text = textValue,
                 tooltip = tipText,
-                getValue = function()
-                    return MA.Get(key)
-                end,
+                getValue = function() return MA.Get(key) end,
                 setValue = function(val)
                     MA.Cfg()[key] = val and true or false
                     MA.Apply()
@@ -2918,9 +2385,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             buttonText = "Forget",
             width = 90,
             tooltip = "Removes a deleted or moved character from the counts and the Alts list.",
-            onClick = function(self)
-                MA.Forget(self)
-            end,
+            onClick = function(self) MA.Forget(self) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -2931,9 +2396,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     local LY = CludesUI._Layers
     if LY then
         local lt, ls = LY.tracker, LY.swap
-        local function lOff()
-            return not lt.Get("enabled")
-        end
+        local function lOff() return not lt.Get("enabled") end
         local function Set(key, val)
             lt.Cfg()[key] = val
             lt.Apply()
@@ -2950,44 +2413,28 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Layer Tracker",
             tooltip = "Which layer of the zone you are on, read from the NPCs around you. Hover it for the layers seen in this zone.",
-            getValue = function()
-                return not lOff()
-            end,
-            setValue = function(val)
-                Set("enabled", val and true or false)
-            end,
+            getValue = function() return not lOff() end,
+            setValue = function(val) Set("enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Auto-Accept Layer Swap",
             tooltip = "Confirms the game's layer swap prompt when you join a group.",
-            getValue = function()
-                return ls.Get("enabled")
-            end,
-            setValue = function(val)
-                ls.Cfg().enabled = val and true or false
-            end,
+            getValue = function() return ls.Get("enabled") end,
+            setValue = function(val) ls.Cfg().enabled = val and true or false end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Countdown to a Layer Change",
             disabled = lOff,
-            getValue = function()
-                return lt.Get("countdown")
-            end,
-            setValue = function(val)
-                Set("countdown", val and true or false)
-            end,
+            getValue = function() return lt.Get("countdown") end,
+            setValue = function(val) Set("countdown", val and true or false) end,
         }, {
             type = "toggle",
             text = "Say When You Move",
             disabled = lOff,
-            getValue = function()
-                return lt.Get("chat")
-            end,
-            setValue = function(val)
-                Set("chat", val and true or false)
-            end,
+            getValue = function() return lt.Get("chat") end,
+            setValue = function(val) Set("chat", val and true or false) end,
         })
         cursorY = cursorY - height
     end
@@ -3008,12 +2455,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 text = textValue,
                 tooltip = tipText,
                 disabled = off,
-                getValue = function()
-                    return f.Get(key)
-                end,
-                setValue = function(val)
-                    Set(f, key, val and true or false)
-                end,
+                getValue = function() return f.Get(key) end,
+                setValue = function(val) Set(f, key, val and true or false) end,
             }
         end
         local function Num(f, key, textValue, min, max, step, off)
@@ -3025,20 +2468,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 step = step,
                 isPercent = false,
                 disabled = off,
-                getValue = function()
-                    return f.Get(key)
-                end,
-                setValue = function(val)
-                    Set(f, key, math.floor(val + 0.5))
-                end,
+                getValue = function() return f.Get(key) end,
+                setValue = function(val) Set(f, key, math.floor(val + 0.5)) end,
             }
         end
-        local function xOff()
-            return not xt.Get("enabled")
-        end
-        local function gOff()
-            return not gx.Get("enabled")
-        end
+        local function xOff() return not xt.Get("enabled") end
+        local function gOff() return not gx.Get("enabled") end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "XP PER HOUR", cursorY)
@@ -3118,9 +2553,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local rs, lk, gr, tp = RM.restock, RM.lock, RM.gear, RM.talents
         local function Set(f, key, val)
             f.Cfg()[key] = val
-            if f.Apply then
-                f.Apply()
-            end
+            if f.Apply then f.Apply() end
         end
         local function Tog(f, key, textValue, tipText, off)
             return {
@@ -3128,12 +2561,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 text = textValue,
                 tooltip = tipText,
                 disabled = off,
-                getValue = function()
-                    return f.Get(key)
-                end,
-                setValue = function(val)
-                    Set(f, key, val and true or false)
-                end,
+                getValue = function() return f.Get(key) end,
+                setValue = function(val) Set(f, key, val and true or false) end,
             }
         end
         local function Num(f, key, textValue, min, max, step, off)
@@ -3145,17 +2574,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 step = step,
                 isPercent = false,
                 disabled = off,
-                getValue = function()
-                    return f.Get(key)
-                end,
-                setValue = function(val)
-                    Set(f, key, math.floor(val + 0.5))
-                end,
+                getValue = function() return f.Get(key) end,
+                setValue = function(val) Set(f, key, math.floor(val + 0.5)) end,
             }
         end
-        local function rsOff()
-            return not rs.Get("enabled")
-        end
+        local function rsOff() return not rs.Get("enabled") end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "RESTOCK REMINDER", cursorY)
@@ -3235,9 +2658,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local reagents = rs.Reagents()
         for idx = 1, #reagents, 2 do
             local function Carry(r)
-                if not r then
-                    return { type = "label", text = "" }
-                end
+                if not r then return { type = "label", text = "" } end
                 return {
                     type = "slider",
                     text = r.name .. " to Carry",
@@ -3247,9 +2668,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     isPercent = false,
                     disabled = rsOff,
                     tooltip = "How many to carry. 0 stops reminding you about it.",
-                    getValue = function()
-                        return rs.Target(r.item)
-                    end,
+                    getValue = function() return rs.Target(r.item) end,
                     setValue = function(val)
                         local c = rs.Cfg()
                         c.targets = c.targets or {}
@@ -3268,9 +2687,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "CUI_GearReminders",
-            disabled = function()
-                return not (gr.Get("worn") or gr.Get("pole"))
-            end,
+            disabled = function() return not (gr.Get("worn") or gr.Get("pole")) end,
             disabledTooltip = "Gear Reminders",
         })
         _, height = W:DualRow(
@@ -3307,15 +2724,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Fishing Pole Shows In",
             values = { always = "Everywhere", instance = "Dungeons & Raids" },
             order = { "always", "instance" },
-            disabled = function()
-                return not gr.Get("pole")
-            end,
-            getValue = function()
-                return gr.Get("poleWhere")
-            end,
-            setValue = function(val)
-                Set(gr, "poleWhere", val)
-            end,
+            disabled = function() return not gr.Get("pole") end,
+            getValue = function() return gr.Get("poleWhere") end,
+            setValue = function(val) Set(gr, "poleWhere", val) end,
         }, Num(gr, "size", "Gear Icon Size", 20, 96, 1))
         cursorY = cursorY - height
     end
@@ -3325,12 +2736,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local SE = CludesUI._SpellEfficiency
     if SE then
-        local function seOff()
-            return not SE.Get("enabled")
-        end
-        local function SESet(key, val)
-            SE.Cfg()[key] = val
-        end
+        local function seOff() return not SE.Get("enabled") end
+        local function SESet(key, val) SE.Cfg()[key] = val end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         _, height = W:SectionHeader(hostFrame, "MANA EFFICIENCY", cursorY)
@@ -3339,92 +2746,60 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Mana Efficiency",
             tooltip = "A line on a mana spell's tooltip (and a macro that casts one) with its healing or damage per mana and per second, with your spell power and talents counted.",
-            getValue = function()
-                return not seOff()
-            end,
-            setValue = function(val)
-                SESet("enabled", val and true or false)
-            end,
+            getValue = function() return not seOff() end,
+            setValue = function(val) SESet("enabled", val and true or false) end,
         }, {
             type = "dropdown",
             text = "Show",
             disabled = seOff,
             values = { all = "Healing and Damage", heal = "Healing Only", damage = "Damage Only" },
             order = { "all", "heal", "damage" },
-            getValue = function()
-                return SE.Get("show")
-            end,
-            setValue = function(val)
-                SESet("show", val)
-            end,
+            getValue = function() return SE.Get("show") end,
+            setValue = function(val) SESet("show", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Per Mana",
             disabled = seOff,
-            getValue = function()
-                return SE.Get("perMana")
-            end,
-            setValue = function(val)
-                SESet("perMana", val and true or false)
-            end,
+            getValue = function() return SE.Get("perMana") end,
+            setValue = function(val) SESet("perMana", val and true or false) end,
         }, {
             type = "toggle",
             text = "Per Second",
             disabled = seOff,
-            getValue = function()
-                return SE.Get("perSecond")
-            end,
-            setValue = function(val)
-                SESet("perSecond", val and true or false)
-            end,
+            getValue = function() return SE.Get("perSecond") end,
+            setValue = function(val) SESet("perSecond", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Per Mana per Second",
             disabled = seOff,
-            getValue = function()
-                return SE.Get("perManaSecond")
-            end,
-            setValue = function(val)
-                SESet("perManaSecond", val and true or false)
-            end,
+            getValue = function() return SE.Get("perManaSecond") end,
+            setValue = function(val) SESet("perManaSecond", val and true or false) end,
         }, {
             type = "dropdown",
             text = "Style",
             disabled = seOff,
             values = { long = "Words (healing per mana)", short = "Short (HPM, HPS)" },
             order = { "long", "short" },
-            getValue = function()
-                return SE.Get("style")
-            end,
-            setValue = function(val)
-                SESet("style", val)
-            end,
+            getValue = function() return SE.Get("style") end,
+            setValue = function(val) SESet("style", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Count Spell Power",
             disabled = seOff,
-            getValue = function()
-                return SE.Get("bonus")
-            end,
-            setValue = function(val)
-                SESet("bonus", val and true or false)
-            end,
+            getValue = function() return SE.Get("bonus") end,
+            setValue = function(val) SESet("bonus", val and true or false) end,
         }, {
             type = "toggle",
             text = "Count Talents",
             disabled = seOff,
-            getValue = function()
-                return SE.Get("talents")
-            end,
-            setValue = function(val)
-                SESet("talents", val and true or false)
-            end,
+            getValue = function() return SE.Get("talents") end,
+            setValue = function(val) SESet("talents", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -3435,12 +2810,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = seOff,
-            getValue = function()
-                return SE.Get("decimals")
-            end,
-            setValue = function(val)
-                SESet("decimals", math.floor(val + 0.5))
-            end,
+            getValue = function() return SE.Get("decimals") end,
+            setValue = function(val) SESet("decimals", math.floor(val + 0.5)) end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
     end
@@ -3455,12 +2826,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             f.Cfg()[key] = val
             f.Apply()
         end
-        local function hmOff()
-            return not hm.Get("enabled")
-        end
-        local function ptOff()
-            return not pt.Get("enabled")
-        end
+        local function hmOff() return not hm.Get("enabled") end
+        local function ptOff() return not pt.Get("enabled") end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height
         heading, height = W:SectionHeader(hostFrame, "HEALER MANA", cursorY)
@@ -3473,46 +2840,30 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Healer Mana",
             tooltip = "Your group's healers and their mana, lowest first, with a cup beside anyone drinking. Move it in Layout Mode.",
-            getValue = function()
-                return not hmOff()
-            end,
-            setValue = function(val)
-                Set(hm, "enabled", val and true or false)
-            end,
+            getValue = function() return not hmOff() end,
+            setValue = function(val) Set(hm, "enabled", val and true or false) end,
         }, {
             type = "dropdown",
             text = "Show In",
             disabled = hmOff,
             values = { instance = "Dungeons & Raids", group = "Any Group" },
             order = { "instance", "group" },
-            getValue = function()
-                return hm.Get("where")
-            end,
-            setValue = function(val)
-                Set(hm, "where", val)
-            end,
+            getValue = function() return hm.Get("where") end,
+            setValue = function(val) Set(hm, "where", val) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Yourself",
             disabled = hmOff,
-            getValue = function()
-                return hm.Get("showSelf")
-            end,
-            setValue = function(val)
-                Set(hm, "showSelf", val and true or false)
-            end,
+            getValue = function() return hm.Get("showSelf") end,
+            setValue = function(val) Set(hm, "showSelf", val and true or false) end,
         }, {
             type = "toggle",
             text = "Mark Drinking",
             disabled = hmOff,
-            getValue = function()
-                return hm.Get("drinking")
-            end,
-            setValue = function(val)
-                Set(hm, "drinking", val and true or false)
-            end,
+            getValue = function() return hm.Get("drinking") end,
+            setValue = function(val) Set(hm, "drinking", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -3523,12 +2874,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 5,
             isPercent = false,
             disabled = hmOff,
-            getValue = function()
-                return hm.Get("width")
-            end,
-            setValue = function(val)
-                Set(hm, "width", math.floor(val + 0.5))
-            end,
+            getValue = function() return hm.Get("width") end,
+            setValue = function(val) Set(hm, "width", math.floor(val + 0.5)) end,
         }, {
             type = "slider",
             text = "Text Size",
@@ -3537,12 +2884,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = hmOff,
-            getValue = function()
-                return hm.Get("size")
-            end,
-            setValue = function(val)
-                Set(hm, "size", math.floor(val + 0.5))
-            end,
+            getValue = function() return hm.Get("size") end,
+            setValue = function(val) Set(hm, "size", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
 
@@ -3558,34 +2901,22 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Pet Tracker",
             tooltip = "A warning while a hunter or warlock has no pet out. A warlock who sacrificed their demon, and a hunter with Lone Wolf, are left alone.",
-            getValue = function()
-                return not ptOff()
-            end,
-            setValue = function(val)
-                Set(pt, "enabled", val and true or false)
-            end,
+            getValue = function() return not ptOff() end,
+            setValue = function(val) Set(pt, "enabled", val and true or false) end,
         }, {
             type = "toggle",
             text = "Warn While Passive",
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("passive")
-            end,
-            setValue = function(val)
-                Set(pt, "passive", val and true or false)
-            end,
+            getValue = function() return pt.Get("passive") end,
+            setValue = function(val) Set(pt, "passive", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Warn on Low Pet Health",
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("lowHealth")
-            end,
-            setValue = function(val)
-                Set(pt, "lowHealth", val and true or false)
-            end,
+            getValue = function() return pt.Get("lowHealth") end,
+            setValue = function(val) Set(pt, "lowHealth", val and true or false) end,
         }, {
             type = "slider",
             text = "Low Health Below",
@@ -3594,56 +2925,36 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("lowBelow")
-            end,
-            setValue = function(val)
-                Set(pt, "lowBelow", math.floor(val + 0.5))
-            end,
+            getValue = function() return pt.Get("lowBelow") end,
+            setValue = function(val) Set(pt, "lowBelow", math.floor(val + 0.5)) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Only In Combat",
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("combatOnly")
-            end,
-            setValue = function(val)
-                Set(pt, "combatOnly", val and true or false)
-            end,
+            getValue = function() return pt.Get("combatOnly") end,
+            setValue = function(val) Set(pt, "combatOnly", val and true or false) end,
         }, {
             type = "toggle",
             text = "Only In Dungeons & Raids",
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("instanceOnly")
-            end,
-            setValue = function(val)
-                Set(pt, "instanceOnly", val and true or false)
-            end,
+            getValue = function() return pt.Get("instanceOnly") end,
+            setValue = function(val) Set(pt, "instanceOnly", val and true or false) end,
         })
         cursorY = cursorY - height
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Hide While Mounted",
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("hideMounted")
-            end,
-            setValue = function(val)
-                Set(pt, "hideMounted", val and true or false)
-            end,
+            getValue = function() return pt.Get("hideMounted") end,
+            setValue = function(val) Set(pt, "hideMounted", val and true or false) end,
         }, {
             type = "toggle",
             text = "Show Icon",
             disabled = ptOff,
-            getValue = function()
-                return pt.Get("showIcon")
-            end,
-            setValue = function(val)
-                Set(pt, "showIcon", val and true or false)
-            end,
+            getValue = function() return pt.Get("showIcon") end,
+            setValue = function(val) Set(pt, "showIcon", val and true or false) end,
         })
         cursorY = cursorY - height
     end
@@ -3662,9 +2973,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             buttonText = "Open",
             width = 90,
             tooltip = "Every dungeon and raid: bosses in kill order, their loot and drop chances, a tip per boss, and the quests. Alt+Shift-click an item to add it to your BiS list. /cjournal opens it too.",
-            onClick = function()
-                CludesUI._Journal.Show()
-            end,
+            onClick = function() CludesUI._Journal.Show() end,
         }, { type = "label", text = "Opens on the dungeon you are in." })
         cursorY = cursorY - height
     end
@@ -3676,9 +2985,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     if SWt then
         local rowConf = SWt.Cfg()
         local function Rebuild()
-            C_Timer.After(0.05, function()
-                CludesUI:RefreshPage(true)
-            end)
+            C_Timer.After(0.05, function() CludesUI:RefreshPage(true) end)
         end
         local values, sequence = { [""] = "Automatic (talents)" }, { "" }
         for _, spec in ipairs(SWt.Specs()) do
@@ -3693,9 +3000,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Upgrades on Tooltips",
             tooltip = "Gear that is an upgrade for your spec says so on its tooltip, as a percent over what you wear. The BiS window shows each pick's gain too. An estimate from these weights.",
-            getValue = function()
-                return SWt.Get("enabled")
-            end,
+            getValue = function() return SWt.Get("enabled") end,
             setValue = function(val)
                 rowConf.enabled = val and true or false
                 Rebuild()
@@ -3706,9 +3011,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             values = values,
             order = sequence,
             tooltip = "Automatic weighs by the talent tree you spent most points in.",
-            getValue = function()
-                return rowConf.spec or ""
-            end,
+            getValue = function() return rowConf.spec or "" end,
             setValue = function(val)
                 rowConf.spec = val
                 Rebuild()
@@ -3720,14 +3023,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             local weights = SWt.For(key) or {}
             local entries = {}
             for _, st in ipairs(SWt.Stats) do
-                if (weights[st[1]] or 0) ~= 0 then
-                    entries[#entries + 1] = st
-                end
+                if (weights[st[1]] or 0) ~= 0 then entries[#entries + 1] = st end
             end
             local function Slider(st)
-                if not st then
-                    return { type = "label", text = "" }
-                end
+                if not st then return { type = "label", text = "" } end
                 local max = st[3]
                 local step = max >= 20 and 0.5 or (max >= 5 and 0.1 or (max >= 1 and 0.05 or 0.005))
                 return {
@@ -3737,12 +3036,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     max = max,
                     step = step,
                     isPercent = false,
-                    getValue = function()
-                        return (SWt.For(key) or {})[st[1]] or 0
-                    end,
-                    setValue = function(val)
-                        SWt.Set(key, st[1], val)
-                    end,
+                    getValue = function() return (SWt.For(key) or {})[st[1]] or 0 end,
+                    setValue = function(val) SWt.Set(key, st[1], val) end,
                 }
             end
             for idx = 1, #entries, 2 do
@@ -3769,9 +3064,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     --  on; the toggle rebuilds the page)
     ---------------------------------------------------------------------------
     local JI = CludesUI._JunkItems
-    local function junkOff()
-        return not JI.Get("enabled")
-    end
+    local function junkOff() return not JI.Get("enabled") end
     -- Every write re-applies the window.
     local function JunkSet(key, val)
         JI.Cfg()[key] = val
@@ -3803,18 +3096,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Enable Junk Items Window",
             tooltip = "Shows your cheapest junk in a small window.",
-            getValue = function()
-                return not junkOff()
-            end,
-            setValue = CludesUI.SectionToggleSetValue(function(val)
-                JunkSet("enabled", val)
-            end),
+            getValue = function() return not junkOff() end,
+            setValue = CludesUI.SectionToggleSetValue(function(val) JunkSet("enabled", val) end),
         },
         -- The window's table exists once it was turned on, and the row is
         -- greyed out while it is off, so viewing the page saves nothing.
-        getStore = function()
-            return junkOff() and JI.Read() or JI.Cfg()
-        end,
+        getStore = function() return junkOff() and JI.Read() or JI.Cfg() end,
         legacyKey = "visibility",
         caps = { partyIncludesRaid = false, luaDragonriding = true, noMouseover = true },
         disabledFn = junkOff,
@@ -3837,24 +3124,16 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             step = 1,
             isPercent = false,
             tooltip = "How many junk stacks the window lists.",
-            getValue = function()
-                return JI.Get("itemCount")
-            end,
-            setValue = function(val)
-                JunkSet("itemCount", val)
-            end,
+            getValue = function() return JI.Get("itemCount") end,
+            setValue = function(val) JunkSet("itemCount", val) end,
         }, {
             type = "dropdown",
             text = "Maximum Quality",
             values = qualityValues,
             order = qualityOrder,
             tooltip = "Items above this quality are not shown, unless marked as junk in Bags.",
-            getValue = function()
-                return tostring(JI.Get("maxQuality"))
-            end,
-            setValue = function(val)
-                JunkSet("maxQuality", tonumber(val))
-            end,
+            getValue = function() return tostring(JI.Get("maxQuality")) end,
+            setValue = function(val) JunkSet("maxQuality", tonumber(val)) end,
         })
         cursorY = cursorY - height
 
@@ -3864,12 +3143,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             values = qualityValues,
             order = qualityOrder,
             tooltip = "Items of this quality and below delete on the first Ctrl + Left Click. Higher-quality items need a second click, and Rare and above also need DELETE typed.",
-            getValue = function()
-                return tostring(JI.Get("oneClickQuality"))
-            end,
-            setValue = function(val)
-                JunkSet("oneClickQuality", tonumber(val))
-            end,
+            getValue = function() return tostring(JI.Get("oneClickQuality")) end,
+            setValue = function(val) JunkSet("oneClickQuality", tonumber(val)) end,
         }, {
             type = "labeledButton",
             text = "Excluded Items",
@@ -3887,12 +3162,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             max = 64,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return JI.Get("iconSize")
-            end,
-            setValue = function(val)
-                JunkSet("iconSize", val)
-            end,
+            getValue = function() return JI.Get("iconSize") end,
+            setValue = function(val) JunkSet("iconSize", val) end,
         }, {
             type = "slider",
             text = "Icon Spacing",
@@ -3901,12 +3172,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             max = 30,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return JI.Get("iconSpacing")
-            end,
-            setValue = function(val)
-                JunkSet("iconSpacing", val)
-            end,
+            getValue = function() return JI.Get("iconSpacing") end,
+            setValue = function(val) JunkSet("iconSpacing", val) end,
         })
         cursorY = cursorY - height
 
@@ -3915,22 +3182,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             text = "Price Position",
             values = { bottom = "Below Icon", top = "Above Icon" },
             order = { "bottom", "top" },
-            getValue = function()
-                return JI.Get("priceSide")
-            end,
-            setValue = function(val)
-                JunkSet("priceSide", val)
-            end,
+            getValue = function() return JI.Get("priceSide") end,
+            setValue = function(val) JunkSet("priceSide", val) end,
         }, {
             type = "toggle",
             text = "Show Empty Bag Slots",
             tooltip = "Shows free and total bag slots as the title.",
-            getValue = function()
-                return JI.Get("showFreeSlots") == true
-            end,
-            setValue = function(val)
-                JunkSet("showFreeSlots", val)
-            end,
+            getValue = function() return JI.Get("showFreeSlots") == true end,
+            setValue = function(val) JunkSet("showFreeSlots", val) end,
         })
         cursorY = cursorY - height
 
@@ -3940,9 +3199,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Only Show When Bag Space Is Low",
             tooltip = "Shows the window only while few bag slots are free. Use the cog to set how few.",
-            getValue = function()
-                return JI.Get("onlyLowBagSpace") == true
-            end,
+            getValue = function() return JI.Get("onlyLowBagSpace") == true end,
             setValue = function(val)
                 JunkSet("onlyLowBagSpace", val)
                 CludesUI:RefreshPage() -- the cog's disabled state
@@ -3951,24 +3208,16 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Use Auctionator Prices",
             tooltip = "Prices items from Auctionator scans.",
-            disabled = function()
-                return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() == nil
-            end,
+            disabled = function() return CludesUI._ModuleNS["CludesUIForeverEssentials"].AuctionAPI() == nil end,
             disabledTooltip = "This option requires Auctionator to be loaded.",
-            getValue = function()
-                return JI.Get("auctionPrices") == true
-            end,
-            setValue = function(val)
-                JunkSet("auctionPrices", val)
-            end,
+            getValue = function() return JI.Get("auctionPrices") == true end,
+            setValue = function(val) JunkSet("auctionPrices", val) end,
         })
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(lowRow._leftRegion, {
                 title = "Only Show When Bag Space Is Low",
-                disabled = function()
-                    return JI.Get("onlyLowBagSpace") ~= true
-                end,
+                disabled = function() return JI.Get("onlyLowBagSpace") ~= true end,
                 disabledTooltip = "Only Show When Bag Space Is Low",
                 rows = {
                     {
@@ -3978,12 +3227,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                         max = 100,
                         step = 1,
                         tooltip = "Shows the window while fewer regular bag slots than this are free.",
-                        get = function()
-                            return JI.Get("freeSlotThreshold")
-                        end,
-                        set = function(val)
-                            JunkSet("freeSlotThreshold", val)
-                        end,
+                        get = function() return JI.Get("freeSlotThreshold") end,
+                        set = function(val) JunkSet("freeSlotThreshold", val) end,
                     },
                 },
             })
@@ -4008,16 +3253,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     -- rows), so the button names whichever of the three is missing.
     CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_FishingBobber",
-        disabled = function()
-            return FI.Get("key") == nil or not FI.Get("reel") or not FI.Get("indicator")
-        end,
+        disabled = function() return FI.Get("key") == nil or not FI.Get("reel") or not FI.Get("indicator") end,
         disabledTooltip = function()
-            if FI.Get("key") == nil then
-                return "Fishing Key"
-            end
-            if not FI.Get("reel") then
-                return "Reel In With the Key"
-            end
+            if FI.Get("key") == nil then return "Fishing Key" end
+            if not FI.Get("reel") then return "Reel In With the Key" end
             return "Bobber Indicator"
         end,
     })
@@ -4032,13 +3271,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Double-Click to Cast",
         tooltip = "With a fishing pole in hand, double right-click the world to cast.",
-        disabled = function()
-            return CludesUI.PadGamepadUI()
-        end,
+        disabled = function() return CludesUI.PadGamepadUI() end,
         disabledTooltip = "This option does not work with the Gamepad interface style.",
-        getValue = function()
-            return FI.Get("doubleClick")
-        end,
+        getValue = function() return FI.Get("doubleClick") end,
         setValue = function(val)
             SetFish("doubleClick", val)
             CludesUI:RefreshPage() -- the cog's disabled state
@@ -4051,9 +3286,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             w = 140,
             h = 30,
             font = 13,
-            get = function()
-                return FI.Get("key")
-            end,
+            get = function() return FI.Get("key") end,
             set = function(val)
                 SetFish("key", val)
                 CludesUI:RefreshPage() -- the cog's disabled state
@@ -4068,12 +3301,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 type = "toggle",
                 label = labelText,
                 tooltip = tooltip,
-                get = function()
-                    return FI.Get(key)
-                end,
-                set = function(val)
-                    SetFish(key, val)
-                end,
+                get = function() return FI.Get(key) end,
+                set = function(val) SetFish(key, val) end,
             }
         end
         -- A label half has no control: the cog sits left of the keybind
@@ -4098,9 +3327,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 ),
             },
             anchorTo = kbBtn,
-            disabled = function()
-                return FI.Get("key") == nil
-            end,
+            disabled = function() return FI.Get("key") == nil end,
             disabledTooltip = "Fishing Key",
         })
         CludesUI.BuildInlineCog(fishKeyRow._rightRegion, {
@@ -4112,9 +3339,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     "clickLure"
                 ),
             },
-            disabled = function()
-                return CludesUI.PadGamepadUI() or not FI.Get("doubleClick")
-            end,
+            disabled = function() return CludesUI.PadGamepadUI() or not FI.Get("doubleClick") end,
             disabledTooltip = function()
                 if CludesUI.PadGamepadUI() then
                     return "This option does not work with the Gamepad interface style."
@@ -4128,12 +3353,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         type = "toggle",
         text = "Fishing Sounds",
         tooltip = "While you fish: music and ambience down, effects up, sound on in the background.",
-        getValue = function()
-            return FI.Get("sound")
-        end,
-        setValue = function(val)
-            SetFish("sound", val)
-        end,
+        getValue = function() return FI.Get("sound") end,
+        setValue = function(val) SetFish("sound", val) end,
     }, BLANK())
     cursorY = cursorY - height
 

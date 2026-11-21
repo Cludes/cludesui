@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIDamageMeters_ForeverThreat.lua  (WoW Forever only)
 --  The "Threat" meter type: Forever Essentials' threat list in a Damage Meters
@@ -32,21 +28,15 @@ end
 -- repaints on its show).
 function mod.DMThreatNotify()
     for _, wid in ipairs(mod._windows) do
-        if wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then
-            wid.Refresh()
-        end
+        if wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then wid.Refresh() end
     end
 end
 
 -- The session a visible Threat window paints. The first one starts the feed.
 function mod.DMThreatSession()
     local feed = CludesUI._ThreatFeed
-    if not feed then
-        return nil
-    end
-    if not feed.IsActive() then
-        feed.Start(mod.DMThreatNotify)
-    end
+    if not feed then return nil end
+    if not feed.IsActive() then feed.Start(mod.DMThreatNotify) end
     -- The value text follows the meter's Force English Units, as every type's does.
     local saved = mod.EDM.DB()
     return feed.Session(saved and saved.forceEnglishUnits == true)
@@ -56,13 +46,9 @@ end
 -- the middle of hiding.
 function mod.DMThreatSync(except)
     local feed = CludesUI._ThreatFeed
-    if not (feed and feed.IsActive()) then
-        return
-    end
+    if not (feed and feed.IsActive()) then return end
     for _, wid in ipairs(mod._windows) do
-        if wid ~= except and wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then
-            return
-        end
+        if wid ~= except and wid.curDMType == THREAT and wid.frame and wid.frame:IsVisible() then return end
     end
     feed.Stop()
 end
@@ -72,14 +58,10 @@ end
 -- leave it.
 function mod.DMThreatMenu(itemList)
     local feed = CludesUI._ThreatFeed
-    if not feed then
-        return
-    end
+    if not feed then return end
     for index = #itemList, 1, -1 do
         local e = itemList[index]
-        if type(e) == "table" and e.noThreat then
-            table.remove(itemList, index)
-        end
+        if type(e) == "table" and e.noThreat then table.remove(itemList, index) end
     end
     local head = feed.MenuItems({})
     head[#head + 1] = "---"
@@ -94,7 +76,5 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if CludesUI._ThreatFeed then
-        mod._DM_TYPE_NAMES[THREAT] = "Threat"
-    end
+    if CludesUI._ThreatFeed then mod._DM_TYPE_NAMES[THREAT] = "Threat" end
 end)

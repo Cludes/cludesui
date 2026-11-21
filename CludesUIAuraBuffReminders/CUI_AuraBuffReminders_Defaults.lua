@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Defaults.lua
 --
@@ -12,17 +10,13 @@ local _, mod = ...
 local Inner = mod._abrInternals
 -- CludesUIAuraBuffReminders.lua or an earlier AuraBuff Reminders file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local REMIND = Inner.EABR
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -------------------------------------------------------------------------------
 --  Glow Types (shared with options)
@@ -278,9 +272,7 @@ function REMIND.SpecialSoundField(key)
         for _, group in ipairs(groups) do
             if type(group[1]) == "table" then
                 for _, it in ipairs(group[1]) do
-                    if it.key then
-                        set[it.key] = group[2]
-                    end
+                    if it.key then set[it.key] = group[2] end
                 end
             end
         end
@@ -292,9 +284,7 @@ end
 -- Resolves the configured sound key for a reminder from its dismissKey.
 function REMIND.ResolveReminderSound(dk)
     local prefixText, key = dk:match("^(%a+):(.+)$")
-    if not prefixText then
-        return nil
-    end
+    if not prefixText then return nil end
     local profile = saved.profile
     if prefixText == "raidbuff" then
         return profile.raidBuffs.sectionSound
@@ -303,9 +293,7 @@ function REMIND.ResolveReminderSound(dk)
     elseif prefixText == "consumable" then
         local co = profile.consumables
         local field = REMIND.SpecialSoundField(key)
-        if field then
-            return REMIND.SpecialsSound(co, field)
-        end
+        if field then return REMIND.SpecialsSound(co, field) end
         return co.sectionSound
     elseif prefixText == "forever" then
         local fo = profile.forever
@@ -328,9 +316,7 @@ function REMIND.HandleAppearSounds(missing)
                 if skey and skey ~= "none" then
                     local paths = CludesUI._groupDeathSoundPaths
                     local filePath = paths and paths[skey]
-                    if filePath then
-                        PlaySoundFile(filePath, "Master")
-                    end
+                    if filePath then PlaySoundFile(filePath, "Master") end
                 end
             end
         end

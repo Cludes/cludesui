@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIUnitFrames_PlayerAuraBars.lua
 --  12.1 AuraKit-based player buff/debuff bars.
@@ -28,9 +26,7 @@ if CludesUI.FvBW then
     PAB = function()
         local saved = mod.db
         local cfg = saved and saved.profile and saved.profile.playerAuraBars
-        if cfg and cfg.fvBuffWipe == nil then
-            fv.ProcessUF(saved.profile, nil, "live")
-        end
+        if cfg and cfg.fvBuffWipe == nil then fv.ProcessUF(saved.profile, nil, "live") end
         return cfg
     end
 end
@@ -46,22 +42,16 @@ local HIDDEN_CLASSES = {}
 
 local function TokenClassesShown()
     local uf = mod.UF_TokenClasses
-    if not uf then
-        return nil
-    end
+    if not uf then return nil end
     local result = {}
     for index = 1, #uf do
-        if not HIDDEN_CLASSES[uf[index].key] then
-            result[#result + 1] = uf[index]
-        end
+        if not HIDDEN_CLASSES[uf[index].key] then result[#result + 1] = uf[index] end
     end
     return result
 end
 
 -- No candidate class is hidden today; kept behind an accessor so a future hide is one line.
-local function CandidateClassesShown()
-    return mod.UF_CandidateClasses
-end
+local function CandidateClassesShown() return mod.UF_CandidateClasses end
 
 -- Display metadata for the Options class-toggle dropdown, keyed by .skey (matches
 -- ClassEnabled's db-field convention). Label/tooltip text is verbatim from
@@ -144,17 +134,13 @@ local function ClassByKey(key)
     local uf = mod.UF_TokenClasses
     if uf then
         for index = 1, #uf do
-            if uf[index].key == key then
-                return uf[index]
-            end
+            if uf[index].key == key then return uf[index] end
         end
     end
     local cc = mod.UF_CandidateClasses
     if cc then
         for index = 1, #cc do
-            if cc[index].key == key then
-                return cc[index]
-            end
+            if cc[index].key == key then return cc[index] end
         end
     end
 end
@@ -186,9 +172,7 @@ function mod.PAB_ClassItems(isBuff)
     local itemList = {}
     local tokenClasses = TokenClassesShown()
     local candidateClasses = CandidateClassesShown()
-    if not (tokenClasses and candidateClasses) then
-        return itemList
-    end
+    if not (tokenClasses and candidateClasses) then return itemList end
     local function AddAll(entries)
         for index = 1, #entries do
             local class = entries[index]
@@ -229,9 +213,7 @@ local function PAB_FxEntryActive(e)
 end
 
 local function PAB_FxListView(entries)
-    if not entries then
-        return nil
-    end
+    if not entries then return nil end
     local result
     for index = 1, #entries do
         if PAB_FxEntryActive(entries[index]) then
@@ -246,18 +228,14 @@ end
 -- to active-only blocks by PAB_FxListView/style.fxList). `cat` is one category key,
 -- or a Match All group's category list (any listed category matches).
 local function PAB_FxBlockFor(entries, category)
-    if not (entries and category) then
-        return nil
-    end
+    if not (entries and category) then return nil end
     local many = type(category) == "table"
     for index = 1, #entries do
         local frame = entries[index].filters
         if frame then
             if many then
                 for jdx = 1, #category do
-                    if frame[category[jdx]] then
-                        return entries[index]
-                    end
+                    if frame[category[jdx]] then return entries[index] end
                 end
             elseif frame[category] then
                 return entries[index]
@@ -270,9 +248,7 @@ end
 -- PAB_ApplyDmFx uses for glow/border) -- a later block's Size never overrides an
 -- already-claimed category. `cat` takes a category list like PAB_FxBlockFor.
 local function PAB_FxSizeFor(entries, category)
-    if not (entries and category) then
-        return nil
-    end
+    if not (entries and category) then return nil end
     local many = type(category) == "table"
     for index = 1, #entries do
         local entry = entries[index]
@@ -293,9 +269,7 @@ local function PAB_FxSizeFor(entries, category)
             end
             if hit then
                 local sz = tonumber(entry.size)
-                if sz and sz > 0 then
-                    return sz
-                end
+                if sz and sz > 0 then return sz end
                 return nil
             end
         end
@@ -309,14 +283,10 @@ end
 -- the button (style.dispelBorder/dispelColorMap write-only). Fix: give fx-targeted
 -- categories their own group, as if that Base Filter were on.
 local function PAB_FxWantsCategory(entries, key)
-    if not (entries and key) then
-        return false
-    end
+    if not (entries and key) then return false end
     for index = 1, #entries do
         local entry = entries[index]
-        if PAB_FxEntryActive(entry) and entry.filters and entry.filters[key] then
-            return true
-        end
+        if PAB_FxEntryActive(entry) and entry.filters and entry.filters[key] then return true end
     end
     return false
 end
@@ -369,21 +339,15 @@ end
 -- Icon-size expansion for a masked shape's overhang beyond its logical iconSize
 -- (mirrors CludesUIActionBars.lua's SHAPE_BTN_EXPAND).
 local PAB_SHAPE_EXPAND = 8
-local function PabShapeActive(shape)
-    return shape ~= nil and shape ~= "none" and shape ~= "cropped"
-end
+local function PabShapeActive(shape) return shape ~= nil and shape ~= "none" and shape ~= "cropped" end
 
 -- Shape borders only render two visually distinct states at aura-icon sizes, same as
 -- Action Bars' own ns.BORDER_THICKNESS table: thin/normal/heavy all carry shape=0,
 -- only strong carries shape=7. Border Size's 0-4 levels mirror that table 1:1 (see
 -- CUI_PlayerAuraBars_ManagerPages.lua's BORDER_SIZE_LEVELS).
-local function PabShapeBorderSize(val)
-    return ((val or 0) >= 4) and 7 or 0
-end
+local function PabShapeBorderSize(val) return ((val or 0) >= 4) and 7 or 0 end
 local function PabShapedSize(rawSize, shape)
-    if PabShapeActive(shape) then
-        return rawSize + PAB_SHAPE_EXPAND
-    end
+    if PabShapeActive(shape) then return rawSize + PAB_SHAPE_EXPAND end
     return rawSize
 end
 
@@ -394,9 +358,7 @@ end
 -- between sessions.
 local function PabSnap(posX)
     local Pix = CludesUI.PP
-    if posX == 0 or Pix.mult == 1 then
-        return posX
-    end
+    if posX == 0 or Pix.mult == 1 then return posX end
     return Pix.FromPixels(Pix.ToPixels(posX))
 end
 
@@ -445,7 +407,8 @@ local function PAB_ApplyDmFx(btnFrame, skinData, style, arming)
         gov:SetAllPoints(btnFrame)
         -- Level ladder: base border(+1) < fx border(+2) < glow(+3) < dispel ring(+4)
         -- < text(+5). The glow gets its own level, never shared with the fx border's.
-        local base = (skinData.borderHost and skinData.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
+        local base = (skinData.borderHost and skinData.borderHost:GetFrameLevel())
+            or (btnFrame:GetFrameLevel() + 1)
         gov:SetFrameLevel(base + 3)
         gov:EnableMouse(false)
         gov:Hide()
@@ -479,9 +442,7 @@ local function PAB_ApplyDmFx(btnFrame, skinData, style, arming)
         gov:Show()
         Glows.StartSpecGlow(gov, specInfo, sz, style.height or sz, "engine")
     else
-        if gov._cuiGlowActive then
-            Glows.StopGlow(gov)
-        end
+        if gov._cuiGlowActive then Glows.StopGlow(gov) end
         gov:Hide()
     end
 
@@ -493,7 +454,8 @@ local function PAB_ApplyDmFx(btnFrame, skinData, style, arming)
     if not owner and Pix then
         owner = CreateFrame("Frame", nil, btnFrame)
         owner:SetAllPoints(btnFrame)
-        local base = (skinData.borderHost and skinData.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
+        local base = (skinData.borderHost and skinData.borderHost:GetFrameLevel())
+            or (btnFrame:GetFrameLevel() + 1)
         owner:SetFrameLevel(base + 1)
         owner:EnableMouse(false)
         owner:Hide()
@@ -534,20 +496,14 @@ end
 -------------------------------------------------------------------------------
 
 local function ClassEnabled(class, isBuff, conf)
-    if class.buffOnly and not isBuff then
-        return false
-    end
-    if class.debuffOnly and isBuff then
-        return false
-    end
+    if class.buffOnly and not isBuff then return false end
+    if class.debuffOnly and isBuff then return false end
     -- "Show All Debuffs": bypasses every class toggle without touching saved
     -- classFilters, so turning it back off restores exactly what was configured.
     -- Debuffs only -- buffs never read classFilters. ~= false not == true: nil
     -- (unconfigured bar) means ON, matching showAllBuffs' "nil == on". Has
     -- Duration is a MODIFIER, not a mode: it never bypasses class toggles.
-    if not isBuff and conf.showAllDebuffs ~= false then
-        return false
-    end
+    if not isBuff and conf.showAllDebuffs ~= false then return false end
     -- playerUnitOnly classes ("nonplayer") always apply: player unit only.
     return conf.classFilters and conf.classFilters[class.skey] == true
 end
@@ -562,13 +518,9 @@ end
 -- of a family would leak the rest.
 local function ExpandFamily(set, ident, blocked)
     local fam = mod.PAB_SPELL_FAMILY and mod.PAB_SPELL_FAMILY[ident]
-    if not fam then
-        return
-    end
+    if not fam then return end
     for index = 1, #fam do
-        if not (blocked and blocked[fam[index]] == false) then
-            set[fam[index]] = true
-        end
+        if not (blocked and blocked[fam[index]] == false) then set[fam[index]] = true end
     end
 end
 
@@ -594,9 +546,7 @@ local function BuffBarChain(conf)
     -- duration-carrying buffs via the maxDuration extras merge) and hide-lane filters
     -- SUBTRACT from it. With neither on, show-lane filters ADD through the spells
     -- group (minus the hide lane, resolved in PAB_ResolveSpells).
-    if conf.showAllBuffs == false and conf.hasDuration ~= true then
-        return {}
-    end
+    if conf.showAllBuffs == false and conf.hasDuration ~= true then return {} end
     local itemLink = { key = "all", tokens = { "HELPFUL" } }
     if conf.negFilters then
         local ex
@@ -612,9 +562,7 @@ local function BuffBarChain(conf)
                 end
             end
         end
-        if ex then
-            itemLink.cand = { excludeSpellIDs = ex }
-        end
+        if ex then itemLink.cand = { excludeSpellIDs = ex } end
     end
     return { itemLink }
 end
@@ -625,13 +573,9 @@ end
 -- hide-lane test as BuildChain's subtractFn; nil when nothing is hidden.
 local function DebuffSubtractFn(conf)
     local neg = conf.negClassFilters
-    if not (neg and next(neg)) then
-        return nil
-    end
+    if not (neg and next(neg)) then return nil end
     return function(class)
-        if class.buffOnly then
-            return false
-        end
+        if class.buffOnly then return false end
         return neg[class.skey] == true
     end
 end
@@ -657,9 +601,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     local excludeDispelTypes, npOwned, anyOwned, prOwned, boolOwned, subCand
     local tokenClasses = TokenClassesShown()
     local candidateClasses = CandidateClassesShown()
-    if not (tokenClasses and candidateClasses) then
-        return chain
-    end
+    if not (tokenClasses and candidateClasses) then return chain end
     -- TWO structures, picked by mode. BROAD mode (catch-all included) keeps the
     -- LEGACY single interleaved pass bit-for-bit: hidden and fx-forced links emit
     -- in vocabulary order, an fx-forced class sees only earlier-vocab negations,
@@ -673,15 +615,9 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     -- Boss / Role / Can Apply: the engine field a link of one of those classes
     -- owns, else nil. Each is an exact NOT when set false (like isPriorityAura).
     local function OwnFlagOf(cc)
-        if cc.isBossAura == true then
-            return "isBossAura"
-        end
-        if cc.isRoleAura == true then
-            return "isRoleAura"
-        end
-        if cc.canApplyAura == true then
-            return "canApplyAura"
-        end
+        if cc.isBossAura == true then return "isBossAura" end
+        if cc.isRoleAura == true then return "isRoleAura" end
+        if cc.canApplyAura == true then return "canApplyAura" end
     end
 
     -- One linear owner order, each shown class carrying its complement onto every
@@ -739,25 +675,17 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         local withSub = addMode and subCand or nil
         local np = npOwned and not skipNp
         local bo = (not noBools) and boolOwned or nil
-        if not (excludeDispelTypes or np or anyOwned or prOwned or bo or withSub) then
-            return nil
-        end
+        if not (excludeDispelTypes or np or anyOwned or prOwned or bo or withSub) then return nil end
         local tbl = {}
-        if excludeDispelTypes then
-            tbl.excludeDispelTypes = excludeDispelTypes
-        end
+        if excludeDispelTypes then tbl.excludeDispelTypes = excludeDispelTypes end
         -- Non-Player and From Any Player are the same field; the options
         -- setters keep them exclusive, nonplayer wins if stale data disagrees.
         if npOwned then
-            if np then
-                tbl.isFromPlayerOrPlayerPet = true
-            end
+            if np then tbl.isFromPlayerOrPlayerPet = true end
         elseif anyOwned then
             tbl.isFromPlayerOrPlayerPet = false
         end
-        if prOwned then
-            tbl.isPriorityAura = false
-        end
+        if prOwned then tbl.isPriorityAura = false end
         if bo then
             for key, val in pairs(bo) do
                 tbl[key] = val
@@ -784,9 +712,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 end
             end
         end
-        if not npFlip then
-            return ExtraCand(nil, dead)
-        end
+        if not npFlip then return ExtraCand(nil, dead) end
         local ex = ExtraCand(
             cc.isPriorityAura == true
                 or OwnFlagOf(cc) ~= nil
@@ -796,9 +722,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         if cc.isFromPlayerOrPlayerPet == false then
             ex = ex or {}
             ex.isPriorityAura = false
-            if flipTypes then
-                ex.excludeDispelTypes = MergeTypes(ex.excludeDispelTypes, flipTypes)
-            end
+            if flipTypes then ex.excludeDispelTypes = MergeTypes(ex.excludeDispelTypes, flipTypes) end
             if flipBools then
                 for key, val in pairs(flipBools) do
                     ex[key] = val
@@ -811,9 +735,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     local function CollectSub(cc)
         subCand = subCand or {}
         for key, val in pairs(cc) do
-            if type(val) == "boolean" then
-                subCand[key] = not val
-            end
+            if type(val) == "boolean" then subCand[key] = not val end
         end
     end
 
@@ -905,9 +827,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 elseif cc.isFromPlayerOrPlayerPet == true then
                     anyOwned = true
                 end
-                if cc.isPriorityAura == true then
-                    prOwned = true
-                end
+                if cc.isPriorityAura == true then prOwned = true end
                 local bk = OwnFlagOf(cc)
                 if bk then
                     boolOwned = boolOwned or {}
@@ -982,9 +902,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 elseif cc.isFromPlayerOrPlayerPet == true then
                     anyOwned = true
                 end
-                if en and cc.isPriorityAura == true then
-                    prOwned = true
-                end
+                if en and cc.isPriorityAura == true then prOwned = true end
                 local bk = en and OwnFlagOf(cc)
                 if bk then
                     boolOwned = boolOwned or {}
@@ -1008,9 +926,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         if subCand then
             ex = ex or {}
             for key, val in pairs(subCand) do
-                if ex[key] == nil then
-                    ex[key] = val
-                end
+                if ex[key] == nil then ex[key] = val end
             end
         end
         chain[#chain + 1] = { key = "all", tokens = allTokens, excludeCand = ex }

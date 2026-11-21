@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end -- Forever Essentials loads on WoW Forever only
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end -- Forever Essentials loads on WoW Forever only
 -------------------------------------------------------------------------------
 --  CUI_ForeverEssentials_MacroModel_Options.lua
 --  The Macro Manager's model, loaded with the options panel for the Macros
@@ -30,9 +26,7 @@ end -- Forever Essentials loads on WoW Forever only
 --  deleted, and two macros may share a name.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIForeverEssentials"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local B, S, MM = {}, {}, {}
 mod._MacroModel = { B = B, S = S, MM = MM }
@@ -454,9 +448,7 @@ local BY_CMD = {}
 for _, keyName in ipairs(B.KINDS) do
     if keyName.key then
         B.KIND[keyName.key] = keyName
-        if keyName.cmd ~= "" and keyName.key ~= "chat" then
-            BY_CMD[keyName.cmd] = keyName
-        end
+        if keyName.cmd ~= "" and keyName.key ~= "chat" then BY_CMD[keyName.cmd] = keyName end
     end
 end
 
@@ -544,9 +536,7 @@ local function EquipOptions()
     local result = {}
     for _, entry in ipairs(EQUIP_TYPES) do
         local name = C_Item.GetItemSubClassInfo(entry[1], entry[2])
-        if name and name ~= "" then
-            result[#result + 1] = { value = name, label = name }
-        end
+        if name and name ~= "" then result[#result + 1] = { value = name, label = name } end
     end
     return result
 end
@@ -589,18 +579,14 @@ B.PARAMS = {
         key = "actionbar",
         label = "action bar page",
         default = "1",
-        options = function()
-            return Numbers(6)
-        end,
+        options = function() return Numbers(6) end,
         tip = "Which page your main action bar is on right now (Shift+1 ... 6).",
     },
     {
         key = "bonusbar",
         label = "bonus bar",
         default = "1",
-        options = function()
-            return Numbers(5)
-        end,
+        options = function() return Numbers(5) end,
         tip = "The stance or form action bar: warrior 1 Battle, 2 Defensive, 3 Berserker; druid 1 Cat, 3 Bear; rogue 1 Stealth.",
     },
     {
@@ -638,9 +624,7 @@ end
 
 function B.NewParam(key)
     local d = B.PARAM[key].default
-    if type(d) == "function" then
-        d = d()
-    end
+    if type(d) == "function" then d = d() end
     return { key = key, value = d or "", no = false }
 end
 
@@ -677,24 +661,18 @@ function B.NewVariant(arg)
 end
 
 function B.NewLine(kind, arg)
-    if kind == "targetmarker" and not arg then
-        arg = "8"
-    end -- skull
+    if kind == "targetmarker" and not arg then arg = "8" end -- skull
     return { kind = kind or "cast", variants = { B.NewVariant(arg) }, reset = "", chan = "say" }
 end
 
-function B.New()
-    return { tooltip = true, tooltipSpell = "", lines = {} }
-end
+function B.New() return { tooltip = true, tooltipSpell = "", lines = {} } end
 
 function B.FirstSpell(m)
     for _, l in ipairs(m.lines or {}) do
         if l.kind == "cast" or l.kind == "use" then
             for _, value in ipairs(l.variants) do
                 local s = strtrim(value.arg or "")
-                if s ~= "" and not tonumber(s) then
-                    return s
-                end
+                if s ~= "" and not tonumber(s) then return s end
             end
         end
     end
@@ -705,9 +683,7 @@ end
 -------------------------------------------------------------------------------
 local function CondParts(value)
     local parts = {}
-    if value.target and value.target ~= "" then
-        parts[#parts + 1] = "@" .. value.target
-    end
+    if value.target and value.target ~= "" then parts[#parts + 1] = "@" .. value.target end
     for _, d in ipairs(B.CONDS) do
         local posX = value.conds and value.conds[d.key]
         if posX == 1 then
@@ -716,75 +692,49 @@ local function CondParts(value)
             parts[#parts + 1] = "no" .. d.key
         end
     end
-    if value.stance and value.stance ~= "" then
-        parts[#parts + 1] = "stance:" .. value.stance
-    end
+    if value.stance and value.stance ~= "" then parts[#parts + 1] = "stance:" .. value.stance end
     for _, p in ipairs(value.params or {}) do
         local val = strtrim(p.value or "")
-        if val ~= "" then
-            parts[#parts + 1] = (p.no and "no" or "") .. p.key .. ":" .. val
-        end
+        if val ~= "" then parts[#parts + 1] = (p.no and "no" or "") .. p.key .. ":" .. val end
     end
     local posX = strtrim(value.extra or "")
-    if posX ~= "" then
-        parts[#parts + 1] = posX
-    end
+    if posX ~= "" then parts[#parts + 1] = posX end
     return parts
 end
 
 local function Bracket(parts)
-    if #parts == 0 then
-        return ""
-    end
+    if #parts == 0 then return "" end
     return "[" .. table.concat(parts, ",") .. "]"
 end
 
 function B.LineText(l)
     local K = B.KIND[l.kind] or B.KIND.raw
     local v1 = l.variants[1] or B.NewVariant()
-    if K.key == "raw" then
-        return v1.arg or ""
-    end
+    if K.key == "raw" then return v1.arg or "" end
     local cmd = K.cmd
-    if K.key == "chat" then
-        cmd = "/" .. (l.chan or "say")
-    end
+    if K.key == "chat" then cmd = "/" .. (l.chan or "say") end
 
     if K.arg == "spells" then
         local text = cmd
         local b = Bracket(CondParts(v1))
-        if b ~= "" then
-            text = text .. " " .. b
-        end
+        if b ~= "" then text = text .. " " .. b end
         local reset = strtrim(l.reset or "")
-        if K.reset and reset ~= "" then
-            text = text .. " reset=" .. reset
-        end
+        if K.reset and reset ~= "" then text = text .. " reset=" .. reset end
         local a = strtrim(v1.arg or "")
-        if a ~= "" then
-            text = text .. " " .. a
-        end
+        if a ~= "" then text = text .. " " .. a end
         return text
     end
 
     local segs = {}
     for idx, value in ipairs(l.variants) do
-        if idx > 1 and not K.multi then
-            break
-        end
+        if idx > 1 and not K.multi then break end
         local b = K.conds and Bracket(CondParts(value)) or ""
         local a = K.arg and strtrim(value.arg or "") or ""
         local seg = b
-        if a ~= "" then
-            seg = (b ~= "" and (b .. " ") or "") .. a
-        end
-        if seg ~= "" then
-            segs[#segs + 1] = seg
-        end
+        if a ~= "" then seg = (b ~= "" and (b .. " ") or "") .. a end
+        if seg ~= "" then segs[#segs + 1] = seg end
     end
-    if #segs == 0 then
-        return cmd
-    end
+    if #segs == 0 then return cmd end
     return cmd .. " " .. table.concat(segs, "; ")
 end
 
@@ -861,14 +811,10 @@ function B.ParseLine(textValue)
         cmd = cmd:lower()
         local K = BY_CMD[cmd]
         local chan = cmd:sub(2)
-        if not K and CHAN_OK[chan] then
-            K = B.KIND.chat
-        end
+        if not K and CHAN_OK[chan] then K = B.KIND.chat end
         if K then
             l = B.NewLine(K.key)
-            if K.key == "chat" then
-                l.chan = chan
-            end
+            if K.key == "chat" then l.chan = chan end
             local value = l.variants[1]
             if K.arg == "spells" then
                 local conds, after = rest:match("^%[([^%]]*)%]%s*(.*)$")
@@ -890,18 +836,14 @@ function B.ParseLine(textValue)
                     ParseSeg(strtrim(rawSeg), nv)
                     l.variants[#l.variants + 1] = nv
                 end
-                if #l.variants == 0 then
-                    l.variants[1] = B.NewVariant()
-                end
+                if #l.variants == 0 then l.variants[1] = B.NewVariant() end
             else
                 ParseSeg(rest, value)
             end
         end
     end
     local lt = l and B.LineText(l)
-    if not l or (lt ~= textValue and Canon(lt) ~= Canon(text)) then
-        l = B.NewLine("raw", textValue)
-    end
+    if not l or (lt ~= textValue and Canon(lt) ~= Canon(text)) then l = B.NewLine("raw", textValue) end
     return l
 end
 
@@ -909,9 +851,7 @@ function B.Parse(body)
     local m = B.New()
     m.tooltip = false
     body = body or ""
-    if body == "" then
-        return m
-    end
+    if body == "" then return m end
     local first = true
     for line in (body .. "\n"):gmatch("(.-)\n") do
         local tipText = first and line:match("^#showtooltip ?(.*)$")
@@ -937,9 +877,7 @@ end
 local entries, sorted = {}, {}
 local dirty = true
 
-local function ByName(a, b)
-    return a.lname < b.lname
-end
+local function ByName(a, b) return a.lname < b.lname end
 
 local function Scan()
     wipe(entries)
@@ -975,20 +913,14 @@ end
 
 -- Spellbook order: { { name, lname, icon } }; Sorted: by name.
 function S.List()
-    if dirty then
-        Scan()
-    end
+    if dirty then Scan() end
     return entries
 end
 function S.Sorted()
-    if dirty then
-        Scan()
-    end
+    if dirty then Scan() end
     return sorted
 end
-function S.Invalidate()
-    dirty = true
-end
+function S.Invalidate() dirty = true end
 
 -------------------------------------------------------------------------------
 --  The game's macros: account macros at 1..count, character macros at
@@ -1003,9 +935,7 @@ MM.QUESTION = 134400 -- INV_Misc_QuestionMark: the icon follows #showtooltip
 -- First and last index of one list.
 local function Range(perChar)
     local a, c = GetNumMacros()
-    if perChar then
-        return MM.MAX_ACCOUNT + 1, MM.MAX_ACCOUNT + c
-    end
+    if perChar then return MM.MAX_ACCOUNT + 1, MM.MAX_ACCOUNT + c end
     return 1, a
 end
 
@@ -1015,9 +945,7 @@ function MM.CleanName(s)
     local result, num = {}, 0
     for ch in strtrim(((s or ""):gsub('"', ""))):gmatch("[%z\1-\127\194-\244][\128-\191]*") do
         num = num + 1
-        if num > MM.MAX_NAME then
-            break
-        end
+        if num > MM.MAX_NAME then break end
         result[num] = ch
     end
     return table.concat(result)
@@ -1043,27 +971,21 @@ end
 
 function MM.Free(perChar)
     local a, c = GetNumMacros()
-    if perChar then
-        return MM.MAX_CHAR - c
-    end
+    if perChar then return MM.MAX_CHAR - c end
     return MM.MAX_ACCOUNT - a
 end
 
 function MM.NameTaken(name, perChar)
     local first, last = Range(perChar)
     for idx = first, last do
-        if GetMacroInfo(idx) == name then
-            return true
-        end
+        if GetMacroInfo(idx) == name then return true end
     end
     return false
 end
 
 -- The icon a macro keeps: a "?" macro keeps "?", where GetMacroInfo shows the
 -- spell's icon (saving that back would freeze it).
-function MM.StoredIcon(idx)
-    return C_Macro.GetSelectedMacroIcon(idx) or select(2, GetMacroInfo(idx))
-end
+function MM.StoredIcon(idx) return C_Macro.GetSelectedMacroIcon(idx) or select(2, GetMacroInfo(idx)) end
 
 -- Finds ref ({ index, name, body, perChar }) again: at its index while that
 -- still holds its name and body, else the one macro of that name and body in
@@ -1075,9 +997,7 @@ function MM.Resolve(ref, byName)
     local idx = ref.index
     if idx and idx >= first and idx <= last then
         local name, _, body = GetMacroInfo(idx)
-        if name == ref.name and (body or "") == ref.body then
-            return idx
-        end
+        if name == ref.name and (body or "") == ref.body then return idx end
     end
     local hit, named, nameHits = nil, nil, 0
     for jdx = first, last do
@@ -1098,32 +1018,22 @@ function MM.Resolve(ref, byName)
         return hit
     end
     ref.index = nil
-    if byName and nameHits == 1 then
-        return named
-    end
+    if byName and nameHits == 1 then return named end
 end
 
 -- Combat, or a macro that cannot be found again, stops a write.
 local function Target(ref)
-    if InCombatLockdown() then
-        return nil, CludesUI.L("Macros can't be changed in combat.")
-    end
+    if InCombatLockdown() then return nil, CludesUI.L("Macros can't be changed in combat.") end
     local idx = MM.Resolve(ref)
-    if not idx then
-        return nil, CludesUI.L("This macro changed outside the editor. Select it again.")
-    end
+    if not idx then return nil, CludesUI.L("This macro changed outside the editor. Select it again.") end
     return idx
 end
 
 -- Why the editor's name and text cannot be saved, or nil. The length counts
 -- letters, as Blizzard's own macro text box does.
 function MM.Check(name, body)
-    if name == "" then
-        return CludesUI.L("Please enter a name.")
-    end
-    if strtrim(body) == "" then
-        return CludesUI.L("The macro is empty.")
-    end
+    if name == "" then return CludesUI.L("Please enter a name.") end
+    if strtrim(body) == "" then return CludesUI.L("The macro is empty.") end
     local num = strlenutf8(body)
     if num > MM.MAX_LETTERS then
         return CludesUI.Lf("Too long: %1$d / %2$d characters.", num, MM.MAX_LETTERS)
@@ -1140,9 +1050,7 @@ function MM.Save(ref, name, icon, body, perChar)
     local idx, err
     if ref then
         idx, err = Target(ref)
-        if not idx then
-            return nil, err
-        end
+        if not idx then return nil, err end
         icon = icon or MM.StoredIcon(idx)
     elseif InCombatLockdown() then
         return nil, CludesUI.L("Macros can't be changed in combat.")
@@ -1159,33 +1067,23 @@ function MM.Save(ref, name, icon, body, perChar)
         -- the game runs the macro event's handlers inside CreateMacro, and
         -- another addon's handler may change this list (the copy is in the
         -- other one).
-        if success and idx then
-            idx = MM.Resolve(ref)
-        end
-        if success and idx then
-            DeleteMacro(idx)
-        end
+        if success and idx then idx = MM.Resolve(ref) end
+        if success and idx then DeleteMacro(idx) end
     end
-    if not success then
-        return nil, CludesUI.L("Error:") .. " " .. tostring(new)
-    end
+    if not success then return nil, CludesUI.L("Error:") .. " " .. tostring(new) end
     return MM.Entry(new)
 end
 
 function MM.Delete(ref)
     local idx, err = Target(ref)
-    if not idx then
-        return nil, err
-    end
+    if not idx then return nil, err end
     DeleteMacro(idx)
     return true
 end
 
 function MM.Pickup(ref)
     local idx, err = Target(ref)
-    if not idx then
-        return nil, err
-    end
+    if not idx then return nil, err end
     PickupMacro(idx)
     return true
 end
@@ -1197,9 +1095,7 @@ end
 function MM.Diff(snap, write)
     local a, c = GetNumMacros()
     local diff = a ~= snap.a or c ~= snap.c
-    if diff and not write then
-        return true
-    end
+    if diff and not write then return true end
     snap.a, snap.c = a, c
     local N, Inner, T = snap.n, snap.i, snap.b
     local first, last = 1, a
@@ -1207,9 +1103,7 @@ function MM.Diff(snap, write)
         for keyName = first, last do
             local name, icon, body = GetMacroInfo(keyName)
             if N[keyName] ~= name or Inner[keyName] ~= icon or T[keyName] ~= body then
-                if not write then
-                    return true
-                end
+                if not write then return true end
                 diff, N[keyName], Inner[keyName], T[keyName] = true, name, icon, body
             end
         end

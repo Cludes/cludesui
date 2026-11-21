@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  BossPhases.lua -- Raid Lead: when each Midnight raid boss changes phase.
 --
@@ -18,18 +16,14 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 
 local function Near(a, b, by)
-    if ApproximatelyEqual then
-        return ApproximatelyEqual(a, b, by)
-    end
+    if ApproximatelyEqual then return ApproximatelyEqual(a, b, by) end
     return math.abs(a - b) <= by
 end
 
 local P = {}
 mod.BossPhases = P
 
-local function NextPhase(num)
-    return num + 1
-end
+local function NextPhase(num) return num + 1 end
 
 -------------------------------------------------------------------------------
 --  Belo'ren (3182): Death Drop's 6 second timer starts each new phase.
@@ -54,9 +48,7 @@ do
                 return
             end
             local difficultyID = self:DifficultyCheck({ 14, 15, 16, 233 })
-            if not difficultyID or not detectedDurations[difficultyID] then
-                return
-            end
+            if not difficultyID or not detectedDurations[difficultyID] then return end
             table.insert(self.Timelines, nowTime)
             if self.Phase >= 2 and Near(details.duration, 40, 0.2) then
                 local diff = nowTime - self.PhaseSwapTime
@@ -69,9 +61,7 @@ do
                 if details.duration == phaseinfo.time then
                     local total = 0
                     for _, val in ipairs(self.Timelines) do
-                        if nowTime < val + 0.1 then
-                            total = total + 1
-                        end
+                        if nowTime < val + 0.1 then total = total + 1 end
                     end
                     local newphase = phaseinfo.phase(self.Phase)
                     if newphase > self.Phase and total <= 1 then
@@ -109,9 +99,7 @@ do
                 return
             end
             local difficultyID = self:DifficultyCheck({ 14, 15, 16 })
-            if (not difficultyID) or not detectedDurations[difficultyID] then
-                return
-            end
+            if (not difficultyID) or not detectedDurations[difficultyID] then return end
             local phaseinfo = detectedDurations[difficultyID][1]
             if phaseinfo and details.duration >= phaseinfo.time then
                 local newphase = phaseinfo.phase(self.Phase)
@@ -134,53 +122,37 @@ do
         [14] = {
             {
                 time = 1.5,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
             {
                 time = 24,
-                phase = function()
-                    return 3
-                end,
+                phase = function() return 3 end,
             },
             {
                 time = 1.5,
-                phase = function()
-                    return 4
-                end,
+                phase = function() return 4 end,
             },
             {
                 time = 60,
-                phase = function()
-                    return 5
-                end,
+                phase = function() return 5 end,
             },
         },
         [15] = {
             {
                 time = 1.5,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
             {
                 time = 24,
-                phase = function()
-                    return 3
-                end,
+                phase = function() return 3 end,
             },
             {
                 time = 1.5,
-                phase = function()
-                    return 4
-                end,
+                phase = function() return 4 end,
             },
             {
                 time = 60,
-                phase = function()
-                    return 5
-                end,
+                phase = function() return 5 end,
             },
         },
     }
@@ -188,9 +160,7 @@ do
 
     local function MythicPhaseDetect(self, e, details)
         local nowTime = GetTime()
-        if (not details) or not self.PhaseSwapTime or not (nowTime > self.PhaseSwapTime + 5) then
-            return
-        end
+        if (not details) or not self.PhaseSwapTime or not (nowTime > self.PhaseSwapTime + 5) then return end
         if e == "ENCOUNTER_TIMELINE_EVENT_REMOVED" then
             table.insert(self.RemovedTimelines, nowTime)
         else
@@ -206,9 +176,7 @@ do
         end
         local addedcount = 0
         for _, val in ipairs(self.Timelines) do
-            if nowTime < val + 0.3 then
-                addedcount = addedcount + 1
-            end
+            if nowTime < val + 0.3 then addedcount = addedcount + 1 end
         end
         if self.Phase ~= 3 and RequiredTimers[self.Phase] and addedcount >= RequiredTimers[self.Phase] then
             self.Phase = self.Phase + 1
@@ -248,9 +216,7 @@ do
             then
                 return
             end
-            if (not difficultyID) or not detectedDurations[difficultyID] then
-                return
-            end
+            if (not difficultyID) or not detectedDurations[difficultyID] then return end
             local phaseinfo = detectedDurations[difficultyID][self.Phase]
             if phaseinfo and details.duration == phaseinfo.time then
                 local newphase = phaseinfo.phase(self.Phase)
@@ -273,41 +239,29 @@ do
         [15] = {
             {
                 time = 45,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
             {
                 time = 97,
-                phase = function()
-                    return 3
-                end,
+                phase = function() return 3 end,
             },
             {
                 time = 180,
-                phase = function()
-                    return 4
-                end,
+                phase = function() return 4 end,
             },
         },
         [16] = {
             {
                 time = 45,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
             {
                 time = 97,
-                phase = function()
-                    return 3
-                end,
+                phase = function() return 3 end,
             },
             {
                 time = 180,
-                phase = function()
-                    return 4
-                end,
+                phase = function() return 4 end,
             },
         },
     }
@@ -316,9 +270,7 @@ do
         detect = function(self, e, details)
             local nowTime = GetTime()
             if e == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" and self.Phase == 4 then
-                if (not self.PhaseSwapTime) or not (nowTime > self.PhaseSwapTime + 20) then
-                    return
-                end
+                if (not self.PhaseSwapTime) or not (nowTime > self.PhaseSwapTime + 20) then return end
                 if not UnitExists("boss2") then
                     self.Phase = 5
                     self:StartReminders(self.Phase)
@@ -337,9 +289,7 @@ do
                 return
             end
             local difficultyID = self:DifficultyCheck({ 14, 15, 16 })
-            if (not difficultyID) or not detectedDurations[difficultyID] then
-                return
-            end
+            if (not difficultyID) or not detectedDurations[difficultyID] then return end
             local phaseinfo = detectedDurations[difficultyID][self.Phase]
             if phaseinfo and Near(details.duration, phaseinfo.time, 0.2) then
                 local newphase = phaseinfo.phase(self.Phase)
@@ -361,17 +311,13 @@ do
         [14] = {
             {
                 time = 8,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
         },
         [15] = {
             {
                 time = 8,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
         },
     }
@@ -393,13 +339,9 @@ do
                 and detectedDurations[difficultyID]
                 and detectedDurations[difficultyID][self.Phase]
             if phaseinfo and details.duration == phaseinfo.time then
-                if self.VaelgorPhaseTimer then
-                    self.VaelgorPhaseTimer:Cancel()
-                end
+                if self.VaelgorPhaseTimer then self.VaelgorPhaseTimer:Cancel() end
                 self.VaelgorPhaseTimer = C_Timer.NewTimer(8, function()
-                    if not self.EncounterID then
-                        return
-                    end
+                    if not self.EncounterID then return end
                     local newphase = phaseinfo.phase(self.Phase)
                     if newphase > self.Phase then
                         self.Phase = newphase
@@ -431,9 +373,7 @@ P[3445] = {
         table.insert(self.Timelines, nowTime)
         local addedcount = 0
         for _, timestamp in ipairs(self.Timelines) do
-            if nowTime < timestamp + 0.3 then
-                addedcount = addedcount + 1
-            end
+            if nowTime < timestamp + 0.3 then addedcount = addedcount + 1 end
         end
         if addedcount >= 8 then
             self.Phase = self.Phase + 1
@@ -453,25 +393,19 @@ do
         [14] = {
             [1] = {
                 time = 70,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
         },
         [15] = {
             [1] = {
                 time = 70,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
         },
         [16] = {
             [1] = {
                 time = 70,
-                phase = function()
-                    return 2
-                end,
+                phase = function() return 2 end,
             },
         },
     }
@@ -501,34 +435,24 @@ do
                 return
             end
             local difficultyID = self:DifficultyCheck({ 14, 15, 16 })
-            if (not difficultyID) or not detectedDurations[difficultyID] then
-                return
-            end
+            if (not difficultyID) or not detectedDurations[difficultyID] then return end
             if self.Phase == 2.5 then
                 table.insert(self.Timelines, nowTime)
                 local addedcount = 0
                 for _, timestamp in ipairs(self.Timelines) do
-                    if nowTime < timestamp + 0.3 then
-                        addedcount = addedcount + 1
-                    end
+                    if nowTime < timestamp + 0.3 then addedcount = addedcount + 1 end
                 end
-                if addedcount < 4 then
-                    return
-                end
+                if addedcount < 4 then return end
                 self.Phase = 3
                 self:StartReminders(self.Phase)
                 self.PhaseSwapTime = nowTime
                 return
             end
             local phaseinfo = detectedDurations[difficultyID][self.Phase]
-            if not phaseinfo then
-                return
-            end
+            if not phaseinfo then return end
             if Near(details.duration, phaseinfo.time, 0.2) then
                 local newphase = phaseinfo.phase(self.Phase)
-                if newphase <= self.Phase then
-                    return
-                end
+                if newphase <= self.Phase then return end
                 self.Phase = newphase
                 self:StartReminders(self.Phase)
                 self.PhaseSwapTime = nowTime
@@ -610,27 +534,19 @@ P[3470] = {
             local newPhase
             if e == "UNIT_SPELLCAST_CHANNEL_START" then
                 if self.Phase == 1 then
-                    if not self.NekzaliBoss1ValidCastSequence then
-                        return
-                    end
+                    if not self.NekzaliBoss1ValidCastSequence then return end
                     newPhase = 1.5
                 elseif self.Phase == 1.75 then
                     newPhase = 2
                 end
             elseif e == "UNIT_SPELLCAST_START" and self.Phase == 1.5 then
-                if GetTime() - self.PhaseSwapTime < 25 then
-                    return
-                end
-                if self:GetActiveEncounterTimelineEventCount() ~= 0 then
-                    return
-                end
+                if GetTime() - self.PhaseSwapTime < 25 then return end
+                if self:GetActiveEncounterTimelineEventCount() ~= 0 then return end
                 newPhase = 1.75
             else
                 return
             end
-            if not newPhase then
-                return
-            end
+            if not newPhase then return end
             self.Phase = newPhase
             if newPhase == 1.5 then
                 self:EncounterRegister(

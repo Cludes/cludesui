@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Update.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ceil, min, max = math.ceil, math.min, math.max
@@ -41,69 +37,37 @@ local EnsureIronfurOverlay, ironfurTickTex = Inner.EnsureIronfurOverlay, Inner.i
 local SetCachedPrimary = Inner.SetCachedPrimary
 
 local ironfurBaseDur = 7
-Inner.ironfurBaseDurSetters[#Inner.ironfurBaseDurSetters + 1] = function(v)
-    ironfurBaseDur = v
-end
+Inner.ironfurBaseDurSetters[#Inner.ironfurBaseDurSetters + 1] = function(v) ironfurBaseDur = v end
 local ironfurGoEUntil = 0
-Inner.ironfurGoEUntilSetters[#Inner.ironfurGoEUntilSetters + 1] = function(v)
-    ironfurGoEUntil = v
-end
+Inner.ironfurGoEUntilSetters[#Inner.ironfurGoEUntilSetters + 1] = function(v) ironfurGoEUntil = v end
 local mainFrame
-Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(v)
-    mainFrame = v
-end
+Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(v) mainFrame = v end
 local health
-Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(v)
-    health = v
-end
+Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(v) health = v end
 local mainBar
-Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(v)
-    mainBar = v
-end
+Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(v) mainBar = v end
 local classFrame
-Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(v)
-    classFrame = v
-end
+Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(v) classFrame = v end
 local classBar
-Inner.secondaryBarSetters[#Inner.secondaryBarSetters + 1] = function(v)
-    classBar = v
-end
+Inner.secondaryBarSetters[#Inner.secondaryBarSetters + 1] = function(v) classBar = v end
 local castBarFrame
-Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(v)
-    castBarFrame = v
-end
+Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(v) castBarFrame = v end
 local gcdBarFrame
-Inner.gcdBarFrameSetters[#Inner.gcdBarFrameSetters + 1] = function(v)
-    gcdBarFrame = v
-end
+Inner.gcdBarFrameSetters[#Inner.gcdBarFrameSetters + 1] = function(v) gcdBarFrame = v end
 local isInCombat = false
-Inner.isInCombatSetters[#Inner.isInCombatSetters + 1] = function(v)
-    isInCombat = v
-end
+Inner.isInCombatSetters[#Inner.isInCombatSetters + 1] = function(v) isInCombat = v end
 local cachedClass
-Inner.cachedClassSetters[#Inner.cachedClassSetters + 1] = function(v)
-    cachedClass = v
-end
+Inner.cachedClassSetters[#Inner.cachedClassSetters + 1] = function(v) cachedClass = v end
 local cachedPrimary
-Inner.cachedPrimarySetters[#Inner.cachedPrimarySetters + 1] = function(v)
-    cachedPrimary = v
-end
+Inner.cachedPrimarySetters[#Inner.cachedPrimarySetters + 1] = function(v) cachedPrimary = v end
 local cachedSecondary
-Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(v)
-    cachedSecondary = v
-end
+Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(v) cachedSecondary = v end
 local _ebonMightExpiry = 0
-Inner.ebonMightExpirySetters[#Inner.ebonMightExpirySetters + 1] = function(v)
-    _ebonMightExpiry = v
-end
+Inner.ebonMightExpirySetters[#Inner.ebonMightExpirySetters + 1] = function(v) _ebonMightExpiry = v end
 local UpdateCastBar
-Inner.UpdateCastBarSetters[#Inner.UpdateCastBarSetters + 1] = function(v)
-    UpdateCastBar = v
-end
+Inner.UpdateCastBarSetters[#Inner.UpdateCastBarSetters + 1] = function(v) UpdateCastBar = v end
 local UpdateGCDBar
-Inner.UpdateGCDBarSetters[#Inner.UpdateGCDBarSetters + 1] = function(v)
-    UpdateGCDBar = v
-end
+Inner.UpdateGCDBarSetters[#Inner.UpdateGCDBarSetters + 1] = function(v) UpdateGCDBar = v end
 
 -- Update functions (event-driven)
 -- WoW Forever: no health/power number under 10,000 abbreviates
@@ -113,23 +77,15 @@ mod.AbbreviateNumbers = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbe
 -- Health text: the global Number Format for valueType (power text keeps the
 -- default above). On ns for the options preview.
 mod.AbbreviateValue = CludesUI.AbbreviateValue
-CludesUI.RegisterNumberFormatCallback(function()
-    Inner.UpdateHealthBar()
-end)
+CludesUI.RegisterNumberFormatCallback(function() Inner.UpdateHealthBar() end)
 local function UpdateHealthBar()
-    if not health or not health:IsShown() then
-        return
-    end
+    if not health or not health:IsShown() then return end
     local healthCfg = _G._CURB_ResolveHealthCfg()
 
     local current = UnitHealth("player")
     local mx = UnitHealthMax("player")
-    if not current or not mx then
-        return
-    end
-    if not (issecretvalue and issecretvalue(mx)) and mx <= 0 then
-        return
-    end
+    if not current or not mx then return end
+    if not (issecretvalue and issecretvalue(mx)) and mx <= 0 then return end
 
     health:SetMinMaxValues(0, mx)
 
@@ -151,9 +107,7 @@ local function UpdateHealthBar()
     local _hpTsEntry = ResolveThresholdSpecEntry(healthCfg)
     local _hpTsEnabled = _hpTsEntry and (_hpTsEntry.thresholdEnabled ~= false) or false
     local _hpBandOn, _hpBands, _hpBandMode, _hpBandRev = ResolveBandConfig(healthCfg, _hpTsEntry)
-    if not _hpTsEnabled then
-        _hpTsEntry = nil
-    end
+    if not _hpTsEnabled then _hpTsEntry = nil end
     local fillTex = health:GetStatusBarTexture()
     local _hpTextInstead = _hpTsEntry and _hpTsEntry.thresholdTextInstead and healthCfg.textFormat ~= "none"
     if (_hpTsEntry or _hpBandOn) and fillTex and UnitHealthPercent then
@@ -304,9 +258,7 @@ local function UpdateHealthBar()
 end
 
 local function UpdatePrimaryBar()
-    if not mainBar or not mainBar:IsShown() then
-        return
-    end
+    if not mainBar or not mainBar:IsShown() then return end
     -- Config resolution cache: ResolvePowerCfg/ResolveThresholdSpecEntry/
     -- ResolveBandConfig walk profile tables and only change on a profile edit,
     -- spec swap or form change, but power events fire a dozen times/sec while
@@ -323,7 +275,8 @@ local function UpdatePrimaryBar()
         powerColor.pp = _G._CURB_ResolvePowerCfg()
         local e = ResolveThresholdSpecEntry(powerColor.pp)
         -- ResolveBandConfig must see the RAW entry, not the enabled-gated one.
-        powerColor.bandOn, powerColor.bands, powerColor.bandMode, powerColor.bandRev = ResolveBandConfig(powerColor.pp, e)
+        powerColor.bandOn, powerColor.bands, powerColor.bandMode, powerColor.bandRev =
+            ResolveBandConfig(powerColor.pp, e)
         powerColor.tsEntry = (e and (e.thresholdEnabled ~= false)) and e or nil
         -- Primary power type is spec/form/profile state; every path that can
         -- change it funnels through BuildBars, which bumps CfgGen.
@@ -336,16 +289,10 @@ local function UpdatePrimaryBar()
     end
     local primaryCfg = powerColor.pp
 
-    if cachedPrimary ~= powerColor.primary then
-        SetCachedPrimary(powerColor.primary)
-    end
-    if not cachedPrimary then
-        return
-    end
+    if cachedPrimary ~= powerColor.primary then SetCachedPrimary(powerColor.primary) end
+    if not cachedPrimary then return end
     -- Park the engine-slot overlay when the primary is no longer Ebon Might.
-    if mod.EMB121_Gate then
-        mod.EMB121_Gate(cachedPrimary == "EBON_MIGHT")
-    end
+    if mod.EMB121_Gate then mod.EMB121_Gate(cachedPrimary == "EBON_MIGHT") end
 
     -- Ebon Might: aura-based countdown, not a standard power type. The OnUpdate
     -- ticker does the smooth frame-by-frame updates; this path runs on UNIT_AURA
@@ -356,9 +303,7 @@ local function UpdatePrimaryBar()
             -- text -- secrecy makes the numeric path below impossible in combat.
             -- Legacy stays empty underneath; Sync attaches/builds the overlay with
             -- the live bar and settings.
-            if mod.EMB121_Sync then
-                mod.EMB121_Sync(mainBar, primaryCfg, POWER_COLORS["EBON_MIGHT"])
-            end
+            if mod.EMB121_Sync then mod.EMB121_Sync(mainBar, primaryCfg, POWER_COLORS["EBON_MIGHT"]) end
             mainBar:SetMinMaxValues(0, EBON_MIGHT_DURATION)
             mainBar:SetValue(0)
             if mod.EMB121_TextOk and mod.EMB121_TextOk() then
@@ -374,9 +319,7 @@ local function UpdatePrimaryBar()
         -- Ebon Might is secret-flagged: under aura restriction the query returns
         -- nil or carries secret fields, and a secret expirationTime would error in
         -- the numeric chain below. Degrade to an empty bar.
-        if aura and issecretvalue(aura.expirationTime) then
-            aura = nil
-        end
+        if aura and issecretvalue(aura.expirationTime) then aura = nil end
         _ebonMightExpiry = (aura and aura.expirationTime) or 0
         local remaining = (_ebonMightExpiry > 0) and max(0, _ebonMightExpiry - GetTime()) or 0
         if not mod.EMB121_Owns then
@@ -431,9 +374,7 @@ local function UpdatePrimaryBar()
 
     local current = UnitPower("player", cachedPrimary)
     local mx = UnitPowerMax("player", cachedPrimary)
-    if not mx or mx <= 0 then
-        return
-    end
+    if not mx or mx <= 0 then return end
     -- Some custom power types (e.g. Devourer Fury) can transiently report a
     -- negative value from the server between spend and the next power sync.
     -- The StatusBar widget itself clamps the *fill* to [0, mx] automatically,
@@ -443,9 +384,7 @@ local function UpdatePrimaryBar()
     -- clamped value everywhere after this point (fill + text) so both stay
     -- consistent. issecretvalue()'d numbers can't be compared, so skip the
     -- floor for those (SetValue's own clamp still protects the fill).
-    if not (issecretvalue and issecretvalue(current)) and current < 0 then
-        current = 0
-    end
+    if not (issecretvalue and issecretvalue(current)) and current < 0 then current = 0 end
 
     mainBar:SetMinMaxValues(0, mx)
 
@@ -471,7 +410,8 @@ local function UpdatePrimaryBar()
     -- already nil when thresholds are disabled.
     local _ppTsEntry = powerColor.tsEntry
     local _ppTsEnabled = _ppTsEntry ~= nil
-    local _ppBandOn, _ppBands, _ppBandMode, _ppBandRev = powerColor.bandOn, powerColor.bands, powerColor.bandMode, powerColor.bandRev
+    local _ppBandOn, _ppBands, _ppBandMode, _ppBandRev =
+        powerColor.bandOn, powerColor.bands, powerColor.bandMode, powerColor.bandRev
     local fillTex = mainBar:GetStatusBarTexture()
     local _ppTextInstead = _ppTsEntry and _ppTsEntry.thresholdTextInstead and primaryCfg.textFormat ~= "none"
     -- A castable tracked spender outranks threshold and band coloring; Recolor
@@ -504,9 +444,7 @@ local function UpdatePrimaryBar()
         mainBar._colCur, mainBar._colGen = nil, nil
     end
     if spR then
-        if
-            not (mainBar._ovW == spW and mainBar._ovGen == mod.CfgGen and mainBar._ovTI == spText)
-        then
+        if not (mainBar._ovW == spW and mainBar._ovGen == mod.CfgGen and mainBar._ovTI == spText) then
             mainBar._ovW, mainBar._ovGen, mainBar._ovTI = spW, mod.CfgGen, spText
             mainBar._colCur, mainBar._colGen = nil, nil
             if spText then
@@ -541,7 +479,8 @@ local function UpdatePrimaryBar()
                     rvR, rvG, rvB = 1, 1, 1
                 end
             else
-                rvR, rvG, rvB = primaryCfg.textFillR or 1, primaryCfg.textFillG or 1, primaryCfg.textFillB or 1
+                rvR, rvG, rvB =
+                    primaryCfg.textFillR or 1, primaryCfg.textFillG or 1, primaryCfg.textFillB or 1
             end
         end
         if _bandOn then
@@ -552,9 +491,7 @@ local function UpdatePrimaryBar()
             local tB = _ppTsEntry.thresholdB or primaryCfg.thresholdB or 0.2
             local tPct = _ppTsEntry.thresholdPct or primaryCfg.thresholdPct or 30
             local _ppPartial = _ppTsEntry.thresholdPartialOnly
-            if _ppPartial == nil then
-                _ppPartial = primaryCfg.thresholdPartialOnly
-            end
+            if _ppPartial == nil then _ppPartial = primaryCfg.thresholdPartialOnly end
             if _ppPartial then
                 colorCurve = GetBarThresholdCurve(rvR, rvG, rvB, tR, tG, tB, tPct)
             else
@@ -580,9 +517,7 @@ local function UpdatePrimaryBar()
             local success, colorResult = pcall(UnitPowerPercent, "player", cachedPrimary, false, colorCurve)
             if success and colorResult and colorResult.GetRGBA then
                 if _ppTextInstead then
-                    if mainBar._text then
-                        mainBar._text:SetTextColor(colorResult:GetRGBA())
-                    end
+                    if mainBar._text then mainBar._text:SetTextColor(colorResult:GetRGBA()) end
                 else
                     fillTex:SetVertexColor(colorResult:GetRGBA())
                 end
@@ -714,23 +649,15 @@ local _runeReady = {} -- [rune index] = true/false
 
 -- Evoker Essence recharge state (timer-based, UnitPower partial doesn't work for Essence)
 local _essenceNextTick = nil -- GetTime() when the next pip will be ready
-Inner.essenceNextTickSetters[#Inner.essenceNextTickSetters + 1] = function(v)
-    _essenceNextTick = v
-end
+Inner.essenceNextTickSetters[#Inner.essenceNextTickSetters + 1] = function(v) _essenceNextTick = v end
 local _essenceLastCount = nil -- last known whole-pip count
-Inner.essenceLastCountSetters[#Inner.essenceLastCountSetters + 1] = function(v)
-    _essenceLastCount = v
-end
+Inner.essenceLastCountSetters[#Inner.essenceLastCountSetters + 1] = function(v) _essenceLastCount = v end
 local _essenceTickDur = 0 -- seconds per pip recharge
-Inner.essenceTickDurSetters[#Inner.essenceTickDurSetters + 1] = function(v)
-    _essenceTickDur = v
-end
+Inner.essenceTickDurSetters[#Inner.essenceTickDurSetters + 1] = function(v) _essenceTickDur = v end
 -- Seconds per Essence pip from the regen rate; the last known duration (5 before
 -- any) while the rate reads secret, as it does in combat. On ns.
 function mod.EssenceTickDuration()
-    if not GetPowerRegenForPowerType then
-        return _essenceTickDur > 0 and _essenceTickDur or 5
-    end
+    if not GetPowerRegenForPowerType then return _essenceTickDur > 0 and _essenceTickDur or 5 end
     local regen = GetPowerRegenForPowerType(PT.ESSENCE)
     if not regen or (issecretvalue and issecretvalue(regen)) then
         return _essenceTickDur > 0 and _essenceTickDur or 5
@@ -741,9 +668,7 @@ end
 -- Cast handler for the Prot Ignore Pain bar's moving hash line: each cast
 -- refreshes the buff, so the line resets to the right edge and slides left.
 IP.HandleCast = function(spellId)
-    if not (cachedSecondary and cachedSecondary.power == "IGNOREPAIN_BAR") then
-        return
-    end
+    if not (cachedSecondary and cachedSecondary.power == "IGNOREPAIN_BAR") then return end
     if spellId == IP.SPELL then
         IP.hashEndTime = GetTime() + IP.DURATION
         return
@@ -770,9 +695,7 @@ end
 -- Cast handler for the Guardian Ironfur bar. Only tracks while the Ironfur
 -- bar is the active class resource so the tick list can't grow unbounded.
 local function HandleIronfurCast(spellId)
-    if not (cachedSecondary and cachedSecondary.power == "IRONFUR_BAR") then
-        return
-    end
+    if not (cachedSecondary and cachedSecondary.power == "IRONFUR_BAR") then return end
     local nowTime = GetTime()
     if spellId == IRONFUR_SPELL then
         ironfurBaseDur = IronfurBaseDuration()
@@ -783,9 +706,7 @@ local function HandleIronfurCast(spellId)
             and C_SpellBook.IsSpellKnown(GUARDIAN_OF_ELUNE)
         local dur = ironfurBaseDur + (hasGoE and IRONFUR_GOE_BONUS or 0)
         ironfurTicks[#ironfurTicks + 1] = { endTime = nowTime + dur, duration = dur }
-        if hasGoE then
-            ironfurGoEUntil = 0
-        end
+        if hasGoE then ironfurGoEUntil = 0 end
     elseif spellId == MANGLE_SPELL then
         if C_SpellBook and C_SpellBook.IsSpellKnown and C_SpellBook.IsSpellKnown(GUARDIAN_OF_ELUNE) then
             ironfurGoEUntil = nowTime + IRONFUR_GOE_WINDOW
@@ -797,13 +718,9 @@ end
 
 -- Recolor text instead of bar
 local function colorText(on, triggered, tr, tg, textBlock, baseR, baseG, baseB)
-    if not on then
-        return
-    end
+    if not on then return end
     local ct = classFrame and classFrame._countText
-    if not ct then
-        return
-    end
+    if not ct then return end
     if triggered then
         ct:SetTextColor(tr, tg, textBlock, 0.9)
     else
@@ -836,16 +753,12 @@ local BVI = { items = { {}, {} }, seen = { {}, {} }, dirty = { true, true }, hoo
 function BVI.Items(vi)
     local vf = _G[_cuiBuffViewers[vi]]
     local pool = vf and vf.itemFramePool
-    if not (pool and pool.EnumerateActive) then
-        return nil
-    end
+    if not (pool and pool.EnumerateActive) then return nil end
     local dirty = BVI.dirty
     if BVI.hooked[vi] ~= pool then
         BVI.hooked[vi] = pool
         dirty[vi] = true
-        hooksecurefunc(pool, "Acquire", function()
-            dirty[vi] = true
-        end)
+        hooksecurefunc(pool, "Acquire", function() dirty[vi] = true end)
     end
     local entries = BVI.items[vi]
     if dirty[vi] then
@@ -864,27 +777,19 @@ end
 -- values into an item's live cooldownInfo mid-fight (raid encounters), and
 -- comparing one from addon code is a hard error.
 function BVI.Secret(details)
-    if not issecretvalue then
-        return false
-    end
-    if issecretvalue(details.spellID) or issecretvalue(details.overrideSpellID) then
-        return true
-    end
+    if not issecretvalue then return false end
+    if issecretvalue(details.spellID) or issecretvalue(details.overrideSpellID) then return true end
     local linked = details.linkedSpellIDs
     if type(linked) == "table" then
         for i = 1, #linked do
-            if issecretvalue(linked[i]) then
-                return true
-            end
+            if issecretvalue(linked[i]) then return true end
         end
     end
     return false
 end
 local function BuffActiveViaCooldownViewer(spellId, wantName)
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not getCdInfo then
-        return false
-    end
+    if not getCdInfo then return false end
     for vi = 1, #_cuiBuffViewers do
         local entries = BVI.Items(vi)
         if entries then
@@ -905,9 +810,7 @@ local function BuffActiveViaCooldownViewer(spellId, wantName)
                         details = nil
                         if type(cdID) == "number" and not (issecretvalue and issecretvalue(cdID)) then
                             details = getCdInfo(cdID)
-                            if details and BVI.Secret(details) then
-                                details = nil
-                            end
+                            if details and BVI.Secret(details) then details = nil end
                         end
                     end
                     if details then
@@ -916,20 +819,14 @@ local function BuffActiveViaCooldownViewer(spellId, wantName)
                         end
                         if details.linkedSpellIDs then
                             for _, lid in ipairs(details.linkedSpellIDs) do
-                                if lid == spellId then
-                                    return true
-                                end
+                                if lid == spellId then return true end
                             end
                         end
                         local spellRef = wantName and details.spellID
                         if spellRef then
                             local nm = _cuiSpellNames[spellRef]
-                            if nm == nil then
-                                nm = CachedSpellName(spellRef)
-                            end
-                            if nm == wantName then
-                                return true
-                            end
+                            if nm == nil then nm = CachedSpellName(spellRef) end
+                            if nm == wantName then return true end
                         end
                     end
                 end
@@ -943,45 +840,33 @@ end
 IP.BuffActiveViaViewer = BuffActiveViaCooldownViewer
 
 local function PlayerHasBuff(spellId)
-    if not spellId or spellId == 0 or not C_UnitAuras then
-        return false
-    end
+    if not spellId or spellId == 0 or not C_UnitAuras then return false end
     local nm = CachedSpellName(spellId)
     -- 1) Exact aura spellId match.
     local byID = C_UnitAuras.GetPlayerAuraBySpellID
     if byID then
         local success, aura = pcall(byID, spellId)
-        if success and aura ~= nil then
-            return true
-        end
+        if success and aura ~= nil then return true end
     end
     -- 2) Name match. The APPLIED aura's spellId often differs from the entered
     -- (tooltip) ID (per-spec variants), so match by name. Presence only.
     local byName = C_UnitAuras.GetAuraDataBySpellName
     if byName and nm then
         local success, aura = pcall(byName, "player", nm, "HELPFUL")
-        if success and aura ~= nil then
-            return true
-        end
+        if success and aura ~= nil then return true end
     end
     -- 3) Secret rotational procs (Essence Burst etc.) are invisible to both aura
     -- reads; fall back to Blizzard's Cooldown Viewer active state.
-    if BuffActiveViaCooldownViewer(spellId, nm) then
-        return true
-    end
+    if BuffActiveViaCooldownViewer(spellId, nm) then return true end
     return false
 end
 
 -- Buff coloring for the class-resource bar. The 5th return is the winning row's
 -- index, which the class-bar value early-out keys on.
 local function ActiveBuffColor(record)
-    if not record or not record.buffColorEnabled then
-        return nil
-    end
+    if not record or not record.buffColorEnabled then return nil end
     local entries = record.buffColors
-    if not entries then
-        return nil
-    end
+    if not entries then return nil end
     for i = 1, #entries do
         local entry = entries[i]
         if entry.spellID and PlayerHasBuff(entry.spellID) then
@@ -1011,9 +896,7 @@ function mod.SecondaryTracksSpender(e, ids)
     ids = ids or mod.STK.ids
     wipe(ids)
     local entries = e and e.spenderColorEnabled and e.spenderColors
-    if not entries then
-        return false
-    end
+    if not entries then return false end
     local any = false
     for i = 1, #entries do
         local ident = entries[i].spellID
@@ -1031,7 +914,8 @@ function mod.SecTracks()
     if tbl.gen ~= mod.CfgGen then
         tbl.gen = mod.CfgGen
         local secondaryCfg = _G._CURB_ResolveSecondaryCfg()
-        local e = secondaryCfg and secondaryCfg.enabled ~= false and ResolveThresholdSpecEntry(secondaryCfg) or nil
+        local e = secondaryCfg and secondaryCfg.enabled ~= false and ResolveThresholdSpecEntry(secondaryCfg)
+            or nil
         tbl.entry = e
         tbl.buff = (e and e.buffColorEnabled and e.buffColors and #e.buffColors > 0) and true or false
         tbl.spend = mod.SecondaryTracksSpender(e)
@@ -1040,9 +924,7 @@ function mod.SecTracks()
         -- stale if it came back later: drop it.
         local oncd, ids = tbl.oncd, tbl.ids
         for ident in pairs(oncd) do
-            if not ids[ident] then
-                oncd[ident] = nil
-            end
+            if not ids[ident] then oncd[ident] = nil end
         end
     end
     return tbl.buff, tbl.spend
@@ -1062,9 +944,7 @@ function mod.PowTracks()
         tbl.w = nil
         local oncd, ids = tbl.oncd, tbl.ids
         for ident in pairs(oncd) do
-            if not ids[ident] then
-                oncd[ident] = nil
-            end
+            if not ids[ident] then oncd[ident] = nil end
         end
     end
     return tbl.spend
@@ -1084,9 +964,7 @@ end
 -- for none.
 function mod.SpenderScan(record, oncd)
     local entries = record and record.spenderColorEnabled and record.spenderColors
-    if not entries then
-        return 0
-    end
+    if not entries then return 0 end
     local S = C_Spell
     oncd = oncd or mod.STK.oncd
     for i = 1, #entries do
@@ -1113,9 +991,7 @@ function mod.SpenderScan(record, oncd)
                     end
                     ready = not oc
                 end
-                if ready then
-                    return i
-                end
+                if ready then return i end
             end
         end
     end
@@ -1139,14 +1015,10 @@ end
 -- 10 Hz tickers read this; only the spender pass queries the spell APIs.
 function mod.ActiveSpenderColor(record)
     local _, spend = mod.SecTracks()
-    if not spend or record ~= mod.STK.entry then
-        return nil
-    end
+    if not spend or record ~= mod.STK.entry then return nil end
     local wid = mod.SpenderWinner()
     local e = wid > 0 and record.spenderColors[wid]
-    if e then
-        return e.r, e.g, e.b, e.a
-    end
+    if e then return e.r, e.g, e.b, e.a end
     return nil
 end
 
@@ -1164,14 +1036,10 @@ end
 -- The Power Bar's override color and winning index. Separate from
 -- ns.ActiveSpenderColor so class-resource paints pay nothing for it.
 function mod.PowSpenderColor()
-    if not mod.PowTracks() then
-        return nil
-    end
+    if not mod.PowTracks() then return nil end
     local wid = mod.PowSpenderWinner()
     local e = wid > 0 and mod.PTK.entry.spenderColors[wid]
-    if e then
-        return e.r, e.g, e.b, e.a, wid
-    end
+    if e then return e.r, e.g, e.b, e.a, wid end
     return nil
 end
 
@@ -1179,17 +1047,13 @@ end
 -- the moving hash lines (right -> left as each cast decays), and drive the fill
 -- to the longest-remaining fraction.
 local function UpdateIronfurBar()
-    if not (classBar and classBar:IsShown()) then
-        return
-    end
+    if not (classBar and classBar:IsShown()) then return end
     local secondaryCfg = _G._CURB_ResolveSecondaryCfg() or ERB.db.profile.secondary
     local nowTime = GetTime()
 
     -- Prune expired casts
     for i = #ironfurTicks, 1, -1 do
-        if ironfurTicks[i].endTime <= nowTime then
-            table.remove(ironfurTicks, i)
-        end
+        if ironfurTicks[i].endTime <= nowTime then table.remove(ironfurTicks, i) end
     end
 
     local total = #ironfurTicks
@@ -1215,9 +1079,7 @@ local function UpdateIronfurBar()
         elseif frac > 1 then
             frac = 1
         end
-        if frac > maxFrac then
-            maxFrac = frac
-        end
+        if frac > maxFrac then maxFrac = frac end
         if showHash and overlayFrame and barW > 0 and barH > 0 then
             isShown = isShown + 1
             local texture = ironfurTickTex[isShown]
@@ -1231,12 +1093,8 @@ local function UpdateIronfurBar()
             texture:ClearAllPoints()
             if vert then
                 local posY = frac * barH
-                if posY > barH - tickW then
-                    posY = barH - tickW
-                end
-                if posY < 0 then
-                    posY = 0
-                end
+                if posY > barH - tickW then posY = barH - tickW end
+                if posY < 0 then posY = 0 end
                 texture:SetSize(barW, tickW)
                 if revFill then
                     texture:SetPoint("TOPLEFT", classBar, "TOPLEFT", 0, -posY)
@@ -1245,12 +1103,8 @@ local function UpdateIronfurBar()
                 end
             else
                 local posX = frac * barW
-                if posX > barW - tickW then
-                    posX = barW - tickW
-                end
-                if posX < 0 then
-                    posX = 0
-                end
+                if posX > barW - tickW then posX = barW - tickW end
+                if posX < 0 then posX = 0 end
                 texture:SetSize(tickW, barH)
                 texture:SetPoint("TOPLEFT", classBar, "TOPLEFT", posX, 0)
             end
@@ -1361,16 +1215,12 @@ IP.UpdateHash = function()
     local secondaryCfg = ERB.db.profile.secondary
     local remain = IP.hashEndTime - GetTime()
     if secondaryCfg.protIgnorePainHashLine == false or remain <= 0 then
-        if IP.hashTex then
-            IP.hashTex:Hide()
-        end
+        if IP.hashTex then IP.hashTex:Hide() end
         return
     end
     local barW = classBar:GetWidth() or 0
     local barH = classBar:GetHeight() or 0
-    if barW <= 0 then
-        return
-    end
+    if barW <= 0 then return end
     local overlayFrame = EnsureIronfurOverlay(classBar)
     if not IP.hashTex then
         IP.hashTex = overlayFrame:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -1381,9 +1231,7 @@ IP.UpdateHash = function()
     local Pix = CludesUI and CludesUI.PP
     local tickW = Pix and (2 * Pix.mult) or 2
     local frac = remain / IP.DURATION
-    if frac > 1 then
-        frac = 1
-    end
+    if frac > 1 then frac = 1 end
     -- Follow bar orientation instead of assuming horizontal.
     local oriSb = classBar._sb
     local vert = (oriSb and oriSb.GetOrientation and oriSb:GetOrientation() == "VERTICAL") or false
@@ -1391,12 +1239,8 @@ IP.UpdateHash = function()
     IP.hashTex:ClearAllPoints()
     if vert then
         local posY = frac * barH
-        if posY > barH - tickW then
-            posY = barH - tickW
-        end
-        if posY < 0 then
-            posY = 0
-        end
+        if posY > barH - tickW then posY = barH - tickW end
+        if posY < 0 then posY = 0 end
         IP.hashTex:SetSize(barW, tickW)
         if revFill then
             IP.hashTex:SetPoint("TOPLEFT", classBar, "TOPLEFT", 0, -posY)
@@ -1405,12 +1249,8 @@ IP.UpdateHash = function()
         end
     else
         local posX = frac * barW
-        if posX > barW - tickW then
-            posX = barW - tickW
-        end
-        if posX < 0 then
-            posX = 0
-        end
+        if posX > barW - tickW then posX = barW - tickW end
+        if posX < 0 then posX = 0 end
         IP.hashTex:SetSize(tickW, barH)
         IP.hashTex:SetPoint("TOPLEFT", classBar, "TOPLEFT", posX, 0)
     end
@@ -1426,18 +1266,14 @@ end
 IP.FrameSpellID = function(widget)
     if widget.GetSpellID then
         local success, spellRef = pcall(widget.GetSpellID, widget)
-        if success and spellRef and not (issecretvalue and issecretvalue(spellRef)) then
-            return spellRef
-        end
+        if success and spellRef and not (issecretvalue and issecretvalue(spellRef)) then return spellRef end
     end
     local cdID = widget.cooldownID or (widget.cooldownInfo and widget.cooldownInfo.cooldownID)
     if cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
         local success, details = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cdID)
         if success and details then
             local spellRef = details.spellID
-            if spellRef and not (issecretvalue and issecretvalue(spellRef)) then
-                return spellRef
-            end
+            if spellRef and not (issecretvalue and issecretvalue(spellRef)) then return spellRef end
         end
     end
 end
@@ -1448,9 +1284,7 @@ IP.HookViewerFS = function(widget, appFS)
     if not IP.hookedFS[appFS] then
         IP.hookedFS[appFS] = true
         hooksecurefunc(appFS, "SetText", function(_, val)
-            if IP.viewerFS ~= appFS then
-                return
-            end
+            if IP.viewerFS ~= appFS then return end
             -- Pool recycling: this frame may now show another buff
             if IP.FrameSpellID(widget) ~= IP.SPELL then
                 IP.viewerFrame = nil
@@ -1492,13 +1326,9 @@ end
 -- went invisible, possibly stranded on a released pool frame); a forced scan
 -- finding nothing leaves the current capture in place.
 IP.ScanViewer = function(force)
-    if IP.viewerFrame and not force then
-        return
-    end
+    if IP.viewerFrame and not force then return end
     local function scanPool(viewer, resolve)
-        if not viewer or not viewer.itemFramePool then
-            return
-        end
+        if not viewer or not viewer.itemFramePool then return end
         for widget in viewer.itemFramePool:EnumerateActive() do
             if IP.FrameSpellID(widget) == IP.SPELL then
                 local fontStr = resolve(widget)
@@ -1510,15 +1340,14 @@ IP.ScanViewer = function(force)
             end
         end
     end
-    local hit = scanPool(_G.BuffIconCooldownViewer, function(frame)
-        return frame.Applications and frame.Applications.Applications
-    end)
+    local hit = scanPool(
+        _G.BuffIconCooldownViewer,
+        function(frame) return frame.Applications and frame.Applications.Applications end
+    )
     -- Icon viewer wins; the bar viewer is only consulted when the icon scan
     -- captured nothing this pass (a held stale capture must not block it).
     if not hit and (not IP.viewerFrame or force) then
-        scanPool(_G.BuffBarCooldownViewer, function(frame)
-            return frame.Icon and frame.Icon.Applications
-        end)
+        scanPool(_G.BuffBarCooldownViewer, function(frame) return frame.Icon and frame.Icon.Applications end)
     end
 end
 
@@ -1542,9 +1371,7 @@ end
 -- missed -- but it only exists while the user tracks IP in the CDM, so the
 -- cast-driven window backs it up.
 IP.Active = function()
-    if IP.viewerFS and IP.viewerFS:IsVisible() then
-        return true
-    end
+    if IP.viewerFS and IP.viewerFS:IsVisible() then return true end
     return IP.hashEndTime > GetTime()
 end
 
@@ -1553,9 +1380,7 @@ end
 -- (fill/bar = percent of cap = stacks) when values read clean but the viewer is
 -- unavailable. Change-detected; blank with no clean source, empty bar, or text off.
 IP.UpdateText = function()
-    if not (classFrame and classFrame._countText) then
-        return
-    end
+    if not (classFrame and classFrame._countText) then return end
     local secondaryCfg = ERB.db.profile.secondary
     if not secondaryCfg.showText then
         if IP.lastTextStacks then
@@ -1581,12 +1406,8 @@ IP.UpdateText = function()
     local stacks = 0
     if IP.value and IP.viewerFS and IP.viewerFS:IsVisible() then
         stacks = IP.value
-        if stacks > 100 then
-            stacks = 100
-        end
-        if stacks < 0 then
-            stacks = 0
-        end
+        if stacks > 100 then stacks = 100 end
+        if stacks < 0 then stacks = 0 end
     else
         local fillTex = classBar.GetStatusBarTexture and classBar:GetStatusBarTexture()
         if fillTex then
@@ -1601,30 +1422,20 @@ IP.UpdateText = function()
                 and bw > 0
             then
                 stacks = math.floor(fw / bw * 100 + 0.5)
-                if stacks > 100 then
-                    stacks = 100
-                end
+                if stacks > 100 then stacks = 100 end
             end
         end
     end
-    if stacks == IP.lastTextStacks then
-        return
-    end
+    if stacks == IP.lastTextStacks then return end
     IP.lastTextStacks = stacks
     classFrame._countText:SetText(stacks > 0 and tostring(stacks) or "")
 end
 
 local function SyncSecondary()
     -- Blizzard Class Resource Art stands in: the pips are unseen, paint nothing.
-    if mod._erbArtOn then
-        return
-    end
-    if not classFrame or not classFrame:IsShown() then
-        return
-    end
-    if not cachedSecondary then
-        return
-    end
+    if mod._erbArtOn then return end
+    if not classFrame or not classFrame:IsShown() then return end
+    if not cachedSecondary then return end
 
     local powerKind = cachedSecondary.power
     local pointCap = cachedSecondary.max or 5
@@ -1658,9 +1469,7 @@ local function SyncSecondary()
         local _evCur
         if cachedSecondary.frac then
             _evCur = UnitPower("player", powerKind, true)
-            if _evCur == nil then
-                _evCur = UnitPower("player", powerKind)
-            end
+            if _evCur == nil then _evCur = UnitPower("player", powerKind) end
         elseif cachedSecondary.onTarget then
             -- WoW Forever: combo points belong to the target, and UnitPower still
             -- reports the previous target's count after a target swap.
@@ -1677,9 +1486,7 @@ local function SyncSecondary()
                 _ebR, _ebG, _ebB, _ebA, i = ActiveBuffColor(_ebEntry)
                 bw = i or 0
             end
-            if ts then
-                sw = mod.SpenderWinner()
-            end
+            if ts then sw = mod.SpenderWinner() end
             local st = mod.SecSt
             -- Essence recharge exemption: the partial pip refills over several
             -- seconds while UnitPower reads the SAME count, so an in-flight
@@ -1705,18 +1512,14 @@ local function SyncSecondary()
     end
 
     local secondaryCfg = _G._CURB_ResolveSecondaryCfg()
-    if not secondaryCfg then
-        return
-    end
+    if not secondaryCfg then return end
     -- Per-spec threshold entry, resolved once per update
     local _tsEntry = ResolveThresholdSpecEntry(secondaryCfg)
     local _buffEntry = _tsEntry
     -- Per-entry thresholdEnabled (absent field = true, for migrated entries)
     local _tsEnabled = _tsEntry and (_tsEntry.thresholdEnabled ~= false) or false
     local _tsBandOn, _tsBands, _tsBandMode, _tsBandReverse = ResolveBandConfig(secondaryCfg, _tsEntry)
-    if not _tsEnabled then
-        _tsEntry = nil
-    end
+    if not _tsEnabled then _tsEntry = nil end
     local _tsThreshCount = _tsEntry and _tsEntry.thresholdCount or secondaryCfg.thresholdCount
     -- Enhance Five Bar needs a threshold of at least 7 (5 pips + overflow). Clamp
     -- the value used this update, and persist a stale entry saved below 7 so it
@@ -1743,20 +1546,14 @@ local function SyncSecondary()
         end
     end
     local _tsPartialOnly = _tsEntry and _tsEntry.thresholdPartialOnly
-    if _tsPartialOnly == nil then
-        _tsPartialOnly = secondaryCfg.thresholdPartialOnly
-    end
+    if _tsPartialOnly == nil then _tsPartialOnly = secondaryCfg.thresholdPartialOnly end
     -- Bar-type only: reverse so the threshold color shows below the value
     local _tsReverse = _tsEntry and _tsEntry.thresholdReverse
-    if _tsReverse == nil then
-        _tsReverse = secondaryCfg.thresholdReverse
-    end
+    if _tsReverse == nil then _tsReverse = secondaryCfg.thresholdReverse end
     -- "Only color at/above threshold" (partial pip recolor) is "From"-only --
     -- meaningless under "Up to" (low count = no pips past the threshold), so the
     -- option is greyed there and ignored here.
-    if _tsReverse then
-        _tsPartialOnly = false
-    end
+    if _tsReverse then _tsPartialOnly = false end
     -- Per-entry threshold color (falls back to global sp.thresholdR/G/B/A)
     local _tsR = _tsEntry and _tsEntry.thresholdR or secondaryCfg.thresholdR
     local _tsG = _tsEntry and _tsEntry.thresholdG or secondaryCfg.thresholdG
@@ -1771,7 +1568,8 @@ local function SyncSecondary()
         and _buffEntry.thresholdTextInstead
         and secondaryCfg.showText
         and powerKind ~= "IGNOREPAIN_BAR"
-    local _spTextBaseR, _spTextBaseG, _spTextBaseB = secondaryCfg.textR or 1, secondaryCfg.textG or 1, secondaryCfg.textB or 1
+    local _spTextBaseR, _spTextBaseG, _spTextBaseB =
+        secondaryCfg.textR or 1, secondaryCfg.textG or 1, secondaryCfg.textB or 1
     local red, green, blue, a = 1, 1, 1, 1
 
     -- Color: dark theme > class colored > custom fill color
@@ -1876,9 +1674,7 @@ local function SyncSecondary()
         end
         local _runeTI = _spTextInstead and secondaryCfg.runesSimple
         local _runeTiTrig = runeUseThresh and true or false
-        if _runeTI then
-            runeUseThresh = false
-        end
+        if _runeTI then runeUseThresh = false end
 
         if secondaryCfg.runesSimple then
             -- Simple mode: flat pips like Holy Power (active/inactive, no recharge animation)
@@ -1919,12 +1715,8 @@ local function SyncSecondary()
                     else
                         resourceFrame:SetActive(active, red, green, blue, a)
                     end
-                    if resourceFrame._rechargeBar then
-                        resourceFrame._rechargeBar:Hide()
-                    end
-                    if resourceFrame._cdText then
-                        resourceFrame._cdText:SetText("")
-                    end
+                    if resourceFrame._rechargeBar then resourceFrame._rechargeBar:Hide() end
+                    if resourceFrame._cdText then resourceFrame._cdText:SetText("") end
                 end
             end
 
@@ -1936,9 +1728,7 @@ local function SyncSecondary()
         else
             -- Full rune mode: sort ready left, cooling right with recharge animation
             -- Clear central count text (used by simple mode)
-            if classFrame._countText then
-                classFrame._countText:SetText("")
-            end
+            if classFrame._countText then classFrame._countText:SetText("") end
             -- Append cd runes after ready runes in _runeOrder
             local ci = readyN
             for i = 1, 6 do
@@ -2003,12 +1793,8 @@ local function SyncSecondary()
                         else
                             resourceFrame:SetActive(true, red, green, blue, a)
                         end
-                        if resourceFrame._rechargeBar then
-                            resourceFrame._rechargeBar:Hide()
-                        end
-                        if resourceFrame._cdText then
-                            resourceFrame._cdText:SetText("")
-                        end
+                        if resourceFrame._rechargeBar then resourceFrame._rechargeBar:Hide() end
+                        if resourceFrame._cdText then resourceFrame._cdText:SetText("") end
                     else
                         -- Cooling-down rune: hide normal fill, show recharge bar.
                         -- The pip background is zeroed ONLY at full Fill
@@ -2022,9 +1808,7 @@ local function SyncSecondary()
                         -- bg for the Fill Opacity case. Background on individual
                         -- pips stamps _fillOp = 1 for the same reason.
                         resourceFrame:SetActive(false, red, green, blue, a)
-                        if not resourceFrame._fillOp then
-                            resourceFrame._bg:SetAlpha(0)
-                        end
+                        if not resourceFrame._fillOp then resourceFrame._bg:SetAlpha(0) end
 
                         -- Lazily create a StatusBar overlay for recharge progress
                         if not resourceFrame._rechargeBar then
@@ -2035,11 +1819,12 @@ local function SyncSecondary()
                             scrollBar:SetMinMaxValues(0, 1)
                             -- Apply the same bar texture if one is set
                             if resourceFrame._texKey then
-                                local filePath =
-                                    CludesUI.ResolveTexturePath(_G._CURB_BarTextures, resourceFrame._texKey, nil)
-                                if filePath then
-                                    scrollBar:SetStatusBarTexture(filePath)
-                                end
+                                local filePath = CludesUI.ResolveTexturePath(
+                                    _G._CURB_BarTextures,
+                                    resourceFrame._texKey,
+                                    nil
+                                )
+                                if filePath then scrollBar:SetStatusBarTexture(filePath) end
                             end
                             resourceFrame._rechargeBar = scrollBar
                             if resourceFrame._blizzMask then
@@ -2057,7 +1842,9 @@ local function SyncSecondary()
                             local vertPip = pipOri ~= "HORIZONTAL"
                             resourceFrame._rechargeBar:SetOrientation(vertPip and "VERTICAL" or "HORIZONTAL")
                             resourceFrame._rechargeBar:SetRotatesTexture(vertPip)
-                            resourceFrame._rechargeBar:SetReverseFill(pipOri == "VERTICAL_DOWN" or pipOri == "VERTICAL")
+                            resourceFrame._rechargeBar:SetReverseFill(
+                                pipOri == "VERTICAL_DOWN" or pipOri == "VERTICAL"
+                            )
                             resourceFrame._rechargeOri = pipOri
                         end
 
@@ -2079,9 +1866,19 @@ local function SyncSecondary()
                                 secondaryCfg.runesRechargeA or 1
                             )
                         elseif runeUseThresh then
-                            resourceFrame._rechargeBar:SetStatusBarColor(tr * 0.75, tg * 0.75, textBlock * 0.75, a)
+                            resourceFrame._rechargeBar:SetStatusBarColor(
+                                tr * 0.75,
+                                tg * 0.75,
+                                textBlock * 0.75,
+                                a
+                            )
                         else
-                            resourceFrame._rechargeBar:SetStatusBarColor(red * 0.75, green * 0.75, blue * 0.75, a)
+                            resourceFrame._rechargeBar:SetStatusBarColor(
+                                red * 0.75,
+                                green * 0.75,
+                                blue * 0.75,
+                                a
+                            )
                         end
                         resourceFrame._rechargeBar:Show()
                         if secondaryCfg.useContinuousTexture then
@@ -2107,45 +1904,27 @@ local function SyncSecondary()
             local current, maxCount = 0, pointCap
             if powerKind == "SOUL_FRAGMENTS_DEVOURER" and CludesUI and CludesUI.GetSoulFragments then
                 current, maxCount = CludesUI.GetSoulFragments()
-                if not maxCount or maxCount <= 0 then
-                    maxCount = pointCap
-                end
+                if not maxCount or maxCount <= 0 then maxCount = pointCap end
             elseif powerKind == "MAELSTROM_BAR" then
                 current = UnitPower("player", PT.MAELSTROM) or 0
                 maxCount = UnitPowerMax("player", PT.MAELSTROM) or pointCap
-                if issecretvalue and issecretvalue(maxCount) then
-                    maxCount = pointCap
-                end
-                if maxCount <= 0 then
-                    maxCount = pointCap
-                end
+                if issecretvalue and issecretvalue(maxCount) then maxCount = pointCap end
+                if maxCount <= 0 then maxCount = pointCap end
             elseif powerKind == "INSANITY_BAR" then
                 current = UnitPower("player", PT.INSANITY) or 0
                 maxCount = UnitPowerMax("player", PT.INSANITY) or pointCap
-                if issecretvalue and issecretvalue(maxCount) then
-                    maxCount = pointCap
-                end
-                if maxCount <= 0 then
-                    maxCount = pointCap
-                end
+                if issecretvalue and issecretvalue(maxCount) then maxCount = pointCap end
+                if maxCount <= 0 then maxCount = pointCap end
             elseif powerKind == "FOCUS_BAR" then
                 current = UnitPower("player", PT.FOCUS) or 0
                 maxCount = UnitPowerMax("player", PT.FOCUS) or pointCap
-                if issecretvalue and issecretvalue(maxCount) then
-                    maxCount = pointCap
-                end
-                if maxCount <= 0 then
-                    maxCount = pointCap
-                end
+                if issecretvalue and issecretvalue(maxCount) then maxCount = pointCap end
+                if maxCount <= 0 then maxCount = pointCap end
             elseif powerKind == "LUNAR_POWER_BAR" then
                 current = UnitPower("player", PT.LUNAR_POWER) or 0
                 maxCount = UnitPowerMax("player", PT.LUNAR_POWER) or pointCap
-                if issecretvalue and issecretvalue(maxCount) then
-                    maxCount = pointCap
-                end
-                if maxCount <= 0 then
-                    maxCount = pointCap
-                end
+                if issecretvalue and issecretvalue(maxCount) then maxCount = pointCap end
+                if maxCount <= 0 then maxCount = pointCap end
             elseif powerKind == "BREWMASTER_STAGGER" then
                 current = UnitStagger("player") or 0
                 maxCount = UnitHealthMax("player") or 1
@@ -2175,7 +1954,8 @@ local function SyncSecondary()
                     if _tsBandOn then
                         local bandTex = FindCountBand(_tsBands, staggerPct, _tsBandReverse)
                         if bandTex then
-                            trig, tcr, tcg, tcb = true, bandTex.r or red, bandTex.g or green, bandTex.b or blue
+                            trig, tcr, tcg, tcb =
+                                true, bandTex.r or red, bandTex.g or green, bandTex.b or blue
                         end
                     elseif _tsEntry then
                         local threshVal = _tsThreshCount or 30
@@ -2222,12 +2002,8 @@ local function SyncSecondary()
                         end
                     end
                 end
-                if maxTainted then
-                    maxCount = pointCap
-                end
-                if not maxTainted and maxCount <= 0 then
-                    maxCount = 1
-                end
+                if maxTainted then maxCount = pointCap end
+                if not maxTainted and maxCount <= 0 then maxCount = 1 end
             elseif powerKind == "IGNOREPAIN_BAR" then
                 -- Prot Ignore Pain. Preferred: the tracked-buff icon's stack count --
                 -- IP caps at 30% max health, so 0-100 stacks are percent-of-cap, i.e.
@@ -2256,9 +2032,7 @@ local function SyncSecondary()
             local barMax = maxCount
             if powerKind == "BREWMASTER_STAGGER" then
                 local ceil = secondaryCfg.staggerCeilingPercent or 100
-                if ceil < 1 then
-                    ceil = 1
-                end
+                if ceil < 1 then ceil = 1 end
                 barMax = maxCount * ceil / 100
             end
             -- Only call SetMinMaxValues if max actually changed (prevents flicker)
@@ -2270,11 +2044,7 @@ local function SyncSecondary()
             -- Reapply hash positions on a max change or the first valid layout
             -- (bar width can be 0 at BuildBars time, before layout settles).
             local barW = classBar:GetWidth()
-            if
-                barW > 0
-                and (maxChanged or not classBar._hashApplied)
-                and powerKind ~= "IGNOREPAIN_BAR"
-            then
+            if barW > 0 and (maxChanged or not classBar._hashApplied) and powerKind ~= "IGNOREPAIN_BAR" then
                 classBar._hashApplied = true
                 local _rtTsEntry = ResolveThresholdSpecEntry(secondaryCfg)
                 local _rtTickStr = (_rtTsEntry and _rtTsEntry.hashValues ~= "") and _rtTsEntry.hashValues
@@ -2315,9 +2085,7 @@ local function SyncSecondary()
                 -- An active atlas fill is NEVER tinted: route every fill
                 -- SetVertexColor below into the no-op sink. Text recoloring still
                 -- runs; Ignore Pain / Devourer / Stagger can never be atlased.
-                if fillTex and classBar._atlasFill then
-                    fillTex = mod._atlasNoTint
-                end
+                if fillTex and classBar._atlasFill then fillTex = mod._atlasNoTint end
                 if fillTex then
                     -- Hide Ignore Pain band/threshold overlays by default; the IP
                     -- branch below re-shows exactly the layers it needs.
@@ -2349,8 +2117,16 @@ local function SyncSecondary()
                             rvR, rvG, rvB = _spTextBaseR, _spTextBaseG, _spTextBaseB
                         end
                         if _bandOn then
-                            colorCurve =
-                                GetBarBandCurve("secondary", _bands, _bandMode, maxCount, rvR, rvG, rvB, _bandRev)
+                            colorCurve = GetBarBandCurve(
+                                "secondary",
+                                _bands,
+                                _bandMode,
+                                maxCount,
+                                rvR,
+                                rvG,
+                                rvB,
+                                _bandRev
+                            )
                         elseif _tsReverse then
                             colorCurve = GetBarThresholdCurve(
                                 rvR,
@@ -2429,9 +2205,7 @@ local function SyncSecondary()
                         -- StatusBar-overlay technique (as Vengeance pips): the fill
                         -- texture is the "cell", each overlay repaints the visible fill.
                         local function _ipBound(to)
-                            if _tsBandMode ~= "value" then
-                                return maxCount * (to or 0) / 100
-                            end
+                            if _tsBandMode ~= "value" then return maxCount * (to or 0) / 100 end
                             -- A value-mode bound is an absorb amount. On the stack axis
                             -- maxC is 0-100, so rescale it against the absorb-scale cap
                             -- (both clean: user config and max health).
@@ -2530,9 +2304,7 @@ local function SyncSecondary()
                                     -- Blizzard Style: the layer rides the row's bar-shape mask
                                     -- (the bevel overlay sits above it by level).
                                     local rm = classFrame and classFrame._blizzBarMask
-                                    if rm and _obt then
-                                        mod.ERB_MaskTex(_obt, rm)
-                                    end
+                                    if rm and _obt then mod.ERB_MaskTex(_obt, rm) end
                                 end
                                 local _lvl = owner:GetFrameLevel() + isShown
                                 if ob._lvl ~= _lvl then
@@ -2626,15 +2398,11 @@ local function SyncSecondary()
             maxCount = 6
         elseif powerKind == "SOUL_FRAGMENTS" and CludesUI and CludesUI.GetSoulFragments then
             current, maxCount = CludesUI.GetSoulFragments()
-            if not maxCount or maxCount <= 0 then
-                maxCount = pointCap
-            end
+            if not maxCount or maxCount <= 0 then maxCount = pointCap end
         elseif powerKind == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
             current, maxCount = CludesUI.GetMaelstromWeapon()
             -- Enhance 5-bar mode: clamp visual to 5 pips
-            if secondaryCfg.enhanceFiveBar and maxCount > 5 then
-                maxCount = 5
-            end
+            if secondaryCfg.enhanceFiveBar and maxCount > 5 then maxCount = 5 end
         elseif powerKind == "TIP_OF_THE_SPEAR" and CludesUI and CludesUI.GetTipOfTheSpear then
             current, maxCount = CludesUI.GetTipOfTheSpear()
         elseif powerKind == "WHIRLWIND_STACKS" or powerKind == "SWEEPING_STRIKES" then
@@ -2660,9 +2428,7 @@ local function SyncSecondary()
                 _wcEngine = true
             else
                 for i = 1, #pips do
-                    if pips[i] then
-                        pips[i]:Hide()
-                    end
+                    if pips[i] then pips[i]:Hide() end
                 end
                 return
             end
@@ -2724,13 +2490,9 @@ local function SyncSecondary()
         end
         if _wcEngine then
             for i = 1, #pips do
-                if pips[i] then
-                    pips[i]:Hide()
-                end
+                if pips[i] then pips[i]:Hide() end
             end
-            if classFrame._countText then
-                classFrame._countText:SetText("")
-            end
+            if classFrame._countText then classFrame._countText:SetText("") end
             return
         end
         if isSecret then
@@ -2779,17 +2541,13 @@ local function SyncSecondary()
                         scrollBar:SetStatusBarColor(red, green, blue, a)
                         scrollBar:SetFrameLevel(pipTex:GetFrameLevel())
                         pipTex._secretBar = scrollBar
-                        if pipTex._blizzMask then
-                            mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
-                        end
+                        if pipTex._blizzMask then mod.ERB_MaskPip(pipTex, pipTex._blizzMask) end
                     elseif pipTex._secretBar._texPath ~= texPath then
                         -- A path swap mints a brand-new inner texture and runs the
                         -- parent's pixel-snap hook: NEVER re-set the current path.
                         pipTex._secretBar:SetStatusBarTexture(texPath)
                         pipTex._secretBar._texPath = texPath
-                        if pipTex._blizzMask then
-                            mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
-                        end
+                        if pipTex._blizzMask then mod.ERB_MaskPip(pipTex, pipTex._blizzMask) end
                     end
                     pipTex._secretBar:SetMinMaxValues(i - 1, i)
                     pipTex._secretBar:SetValue(current)
@@ -2799,9 +2557,7 @@ local function SyncSecondary()
                     if _tsBandOn and _bandStarts then
                         -- Multi-band overlays: one StatusBar per band, higher bands
                         -- on top -> the topmost reached band colors the whole bar.
-                        if not pipTex._bandBars then
-                            pipTex._bandBars = {}
-                        end
+                        if not pipTex._bandBars then pipTex._bandBars = {} end
                         for k = 1, #_tsBands do
                             local bb = pipTex._bandBars[k]
                             if not bb then
@@ -2815,9 +2571,7 @@ local function SyncSecondary()
                             if bb._texPath ~= texPath then
                                 bb:SetStatusBarTexture(texPath)
                                 bb._texPath = texPath
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
-                                end
+                                if pipTex._blizzMask then mod.ERB_MaskPip(pipTex, pipTex._blizzMask) end
                             end
                             local _lvl = pipTex:GetFrameLevel() + k
                             if bb._lvl ~= _lvl then
@@ -2846,9 +2600,7 @@ local function SyncSecondary()
                             if pipTex._bandResetBar._texPath ~= texPath then
                                 pipTex._bandResetBar:SetStatusBarTexture(texPath)
                                 pipTex._bandResetBar._texPath = texPath
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
-                                end
+                                if pipTex._blizzMask then mod.ERB_MaskPip(pipTex, pipTex._blizzMask) end
                             end
                             pipTex._bandResetBar:SetFrameLevel(pipTex:GetFrameLevel() + #_tsBands + 1)
                             local _rlo = (i > (_topTo + 1)) and i or (_topTo + 1)
@@ -2861,13 +2613,9 @@ local function SyncSecondary()
                             -- handled by the base _secretBar; no reset overlay needed.
                             pipTex._bandResetBar:Hide()
                         end
-                        if pipTex._secretThreshBar then
-                            pipTex._secretThreshBar:Hide()
-                        end
+                        if pipTex._secretThreshBar then pipTex._secretThreshBar:Hide() end
                     else
-                        if pipTex._bandResetBar then
-                            pipTex._bandResetBar:Hide()
-                        end
+                        if pipTex._bandResetBar then pipTex._bandResetBar:Hide() end
                         if pipTex._bandBars then
                             for k = 1, #pipTex._bandBars do
                                 pipTex._bandBars[k]:Hide()
@@ -2884,15 +2632,11 @@ local function SyncSecondary()
                                 textBlock._texPath = texPath
                                 textBlock:SetFrameLevel(pipTex:GetFrameLevel() + 1)
                                 pipTex._secretThreshBar = textBlock
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
-                                end
+                                if pipTex._blizzMask then mod.ERB_MaskPip(pipTex, pipTex._blizzMask) end
                             elseif pipTex._secretThreshBar._texPath ~= texPath then
                                 pipTex._secretThreshBar:SetStatusBarTexture(texPath)
                                 pipTex._secretThreshBar._texPath = texPath
-                                if pipTex._blizzMask then
-                                    mod.ERB_MaskPip(pipTex, pipTex._blizzMask)
-                                end
+                                if pipTex._blizzMask then mod.ERB_MaskPip(pipTex, pipTex._blizzMask) end
                             end
                             -- Fills only when cur >= max(i, threshCount): the pip is
                             -- active AND the threshold has been reached.
@@ -2919,9 +2663,7 @@ local function SyncSecondary()
                         local _fo = pipTex._fillOp < 1 and pipTex._fillOp
                         local _sft = pipTex._secretBar:GetStatusBarTexture()
                         if _sft then
-                            if _fo then
-                                _sft:SetAlpha(_fo)
-                            end
+                            if _fo then _sft:SetAlpha(_fo) end
                             if not pipTex._sbgAnchored then
                                 pipTex._sbgAnchored = true
                                 pipTex._bg:ClearAllPoints()
@@ -2933,25 +2675,19 @@ local function SyncSecondary()
                         local _stb = pipTex._secretThreshBar
                         if _fo and _stb and _stb:IsShown() then
                             local t = _stb:GetStatusBarTexture()
-                            if t then
-                                t:SetAlpha(_fo)
-                            end
+                            if t then t:SetAlpha(_fo) end
                         end
                         local _srb = pipTex._bandResetBar
                         if _fo and _srb and _srb:IsShown() then
                             local t = _srb:GetStatusBarTexture()
-                            if t then
-                                t:SetAlpha(_fo)
-                            end
+                            if t then t:SetAlpha(_fo) end
                         end
                         if _fo and pipTex._bandBars then
                             for k = 1, #pipTex._bandBars do
                                 local bb = pipTex._bandBars[k]
                                 if bb:IsShown() then
                                     local t = bb:GetStatusBarTexture()
-                                    if t then
-                                        t:SetAlpha(_fo)
-                                    end
+                                    if t then t:SetAlpha(_fo) end
                                 end
                             end
                         end
@@ -2992,15 +2728,9 @@ local function SyncSecondary()
             for i = 1, maxCount do
                 local p = pips[i]
                 if p then
-                    if p._secretBar then
-                        p._secretBar:Hide()
-                    end
-                    if p._secretThreshBar then
-                        p._secretThreshBar:Hide()
-                    end
-                    if p._bandResetBar then
-                        p._bandResetBar:Hide()
-                    end
+                    if p._secretBar then p._secretBar:Hide() end
+                    if p._secretThreshBar then p._secretThreshBar:Hide() end
+                    if p._bandResetBar then p._bandResetBar:Hide() end
                     if p._bandBars then
                         for k = 1, #p._bandBars do
                             p._bandBars[k]:Hide()
@@ -3021,10 +2751,10 @@ local function SyncSecondary()
             local _enhOverCount = _enhOverflow and (current - 5) or 0
             local _enhRealCur = current -- preserve for count text
             local _enhOR, _enhOG, _enhOB =
-                secondaryCfg.enhanceOverflowR or 1, secondaryCfg.enhanceOverflowG or 0.6, secondaryCfg.enhanceOverflowB or 0.2
-            if _enhOverflow then
-                current = 5
-            end -- all 5 pips active when overflowing
+                secondaryCfg.enhanceOverflowR or 1,
+                secondaryCfg.enhanceOverflowG or 0.6,
+                secondaryCfg.enhanceOverflowB or 0.2
+            if _enhOverflow then current = 5 end -- all 5 pips active when overflowing
 
             -- Direction: "From" (>=, default) or "Up to" (<=, thresholdReverse).
             local useThresh = _tsEntry
@@ -3045,9 +2775,7 @@ local function SyncSecondary()
             end
             -- "Recolor text instead of bar": keep pips at base, route to the text.
             local _tiTrig = useThresh and true or false
-            if _spTextInstead then
-                useThresh = false
-            end
+            if _spTextInstead then useThresh = false end
             for i = 1, maxCount do
                 if pips[i] and pips[i]:IsShown() then
                     local active = i <= current
@@ -3075,7 +2803,16 @@ local function SyncSecondary()
             -- Count text (use real count, not clamped)
             if secondaryCfg.showText and classFrame._countText then
                 classFrame._countText:SetText(tostring(_enhRealCur or current))
-                colorText(_spTextInstead, _tiTrig, tr, tg, textBlock, _spTextBaseR, _spTextBaseG, _spTextBaseB)
+                colorText(
+                    _spTextInstead,
+                    _tiTrig,
+                    tr,
+                    tg,
+                    textBlock,
+                    _spTextBaseR,
+                    _spTextBaseG,
+                    _spTextBaseB
+                )
             end
         end
     else
@@ -3085,15 +2822,9 @@ local function SyncSecondary()
         for i = 1, pointCap do
             local p = pips[i]
             if p then
-                if p._secretBar then
-                    p._secretBar:Hide()
-                end
-                if p._secretThreshBar then
-                    p._secretThreshBar:Hide()
-                end
-                if p._bandResetBar then
-                    p._bandResetBar:Hide()
-                end
+                if p._secretBar then p._secretBar:Hide() end
+                if p._secretThreshBar then p._secretThreshBar:Hide() end
+                if p._bandResetBar then p._bandResetBar:Hide() end
                 if p._bandBars then
                     for k = 1, #p._bandBars do
                         p._bandBars[k]:Hide()
@@ -3126,9 +2857,7 @@ local function SyncSecondary()
             end
         end
         local _tiTrig = useThresh and true or false
-        if _spTextInstead then
-            useThresh = false
-        end
+        if _spTextInstead then useThresh = false end
 
         -- Fractional resource detection
         local frac = 0
@@ -3150,14 +2879,10 @@ local function SyncSecondary()
             -- Evoker Essence: timer-based recharge (UnitPower partial doesn't work)
             local nowTime = GetTime()
             local maxE = UnitPowerMax("player", PT.ESSENCE) or pointCap
-            if issecretvalue and issecretvalue(maxE) then
-                maxE = pointCap
-            end
+            if issecretvalue and issecretvalue(maxE) then maxE = pointCap end
 
             -- Detect pip gain/loss and reset the timer
-            if _essenceLastCount == nil then
-                _essenceLastCount = current
-            end
+            if _essenceLastCount == nil then _essenceLastCount = current end
             if current ~= _essenceLastCount then
                 if current < maxE then
                     _essenceTickDur = mod.EssenceTickDuration()
@@ -3175,9 +2900,7 @@ local function SyncSecondary()
             end
 
             -- At max: clear timer
-            if current >= maxE then
-                _essenceNextTick = nil
-            end
+            if current >= maxE then _essenceNextTick = nil end
 
             -- Compute fill fraction for the recharging pip
             if _essenceNextTick and _essenceTickDur > 0 then
@@ -3202,7 +2925,11 @@ local function SyncSecondary()
                 end
             end
         end
-        local cr, cg, callback, ca = secondaryCfg.chargedR or 0.44, secondaryCfg.chargedG or 0.77, secondaryCfg.chargedB or 1.00, secondaryCfg.chargedA or 1
+        local cr, cg, callback, ca =
+            secondaryCfg.chargedR or 0.44,
+            secondaryCfg.chargedG or 0.77,
+            secondaryCfg.chargedB or 1.00,
+            secondaryCfg.chargedA or 1
 
         for i = 1, pointCap do
             if pips[i] and pips[i]:IsShown() then
@@ -3223,9 +2950,7 @@ local function SyncSecondary()
                     pips[i]:SetActive(active, red, green, blue, a)
                 end
                 -- Hide any leftover partial-fill overlay on non-fractional pips
-                if pips[i]._rechargeBar then
-                    pips[i]._rechargeBar:Hide()
-                end
+                if pips[i]._rechargeBar then pips[i]._rechargeBar:Hide() end
             end
         end
 
@@ -3240,14 +2965,10 @@ local function SyncSecondary()
                 scrollBar:SetMinMaxValues(0, 1)
                 if nextPip._texKey then
                     local filePath = CludesUI.ResolveTexturePath(_G._CURB_BarTextures, nextPip._texKey, nil)
-                    if filePath then
-                        scrollBar:SetStatusBarTexture(filePath)
-                    end
+                    if filePath then scrollBar:SetStatusBarTexture(filePath) end
                 end
                 nextPip._rechargeBar = scrollBar
-                if nextPip._blizzMask then
-                    mod.ERB_MaskPip(nextPip, nextPip._blizzMask)
-                end
+                if nextPip._blizzMask then mod.ERB_MaskPip(nextPip, nextPip._blizzMask) end
             end
             -- Reused overlays follow orientation changes, as rune recharge fills do.
             local pipOri = secondaryCfg.pipOrientation or "HORIZONTAL"
@@ -3295,9 +3016,7 @@ end
 local function ShouldShowSecondary()
     local secondaryCfg = _G._CURB_ResolveSecondaryCfg()
     -- Check visibility options first
-    if CludesUI.CheckVisibilityOptions(secondaryCfg) then
-        return false
-    end
+    if CludesUI.CheckVisibilityOptions(secondaryCfg) then return false end
     -- Multi-select / dragonriding path (nil = legacy single mode below)
     if CludesUI and CludesUI.EvalVisibilityExtended then
         local st = ERB._visState
@@ -3310,47 +3029,27 @@ local function ShouldShowSecondary()
         st.inRaid = inRaid
         st.inParty = not inRaid and (IsInGroup and IsInGroup() or false)
         local ext = CludesUI.EvalVisibilityExtended(secondaryCfg, "visibility", st, CludesUI.VIS_CAPS_DEFAULT)
-        if ext ~= nil then
-            return ext
-        end
+        if ext ~= nil then return ext end
     end
     local visible = secondaryCfg.visibility
-    if visible == "always" then
-        return true
-    end
-    if visible == "never" then
-        return false
-    end
-    if visible == "mouseover" then
-        return "mouseover"
-    end
-    if visible == "combat" or visible == "in_combat" then
-        return isInCombat
-    end
-    if visible == "out_of_combat" then
-        return not isInCombat
-    end
-    if visible == "target" then
-        return UnitExists("target") and UnitCanAttack("player", "target")
-    end
-    if visible == "in_raid" then
-        return IsInRaid and IsInRaid() or false
-    end
+    if visible == "always" then return true end
+    if visible == "never" then return false end
+    if visible == "mouseover" then return "mouseover" end
+    if visible == "combat" or visible == "in_combat" then return isInCombat end
+    if visible == "out_of_combat" then return not isInCombat end
+    if visible == "target" then return UnitExists("target") and UnitCanAttack("player", "target") end
+    if visible == "in_raid" then return IsInRaid and IsInRaid() or false end
     if visible == "in_party" then
         local inRaid = IsInRaid and IsInRaid() or false
         return not inRaid and (IsInGroup and IsInGroup() or false)
     end
-    if visible == "solo" then
-        return not (IsInRaid and IsInRaid()) and not (IsInGroup and IsInGroup())
-    end
+    if visible == "solo" then return not (IsInRaid and IsInRaid()) and not (IsInGroup and IsInGroup()) end
     return true
 end
 
 local function ShouldShowBar(barProfile)
     -- Check visibility options first
-    if CludesUI.CheckVisibilityOptions(barProfile) then
-        return false
-    end
+    if CludesUI.CheckVisibilityOptions(barProfile) then return false end
     -- Multi-select / dragonriding path (nil = legacy single mode below)
     if CludesUI and CludesUI.EvalVisibilityExtended then
         local st = ERB._visState
@@ -3363,39 +3062,21 @@ local function ShouldShowBar(barProfile)
         st.inRaid = inRaid
         st.inParty = not inRaid and (IsInGroup and IsInGroup() or false)
         local ext = CludesUI.EvalVisibilityExtended(barProfile, "visibility", st, CludesUI.VIS_CAPS_DEFAULT)
-        if ext ~= nil then
-            return ext
-        end
+        if ext ~= nil then return ext end
     end
     local visible = barProfile.visibility or "always"
-    if visible == "always" then
-        return true
-    end
-    if visible == "never" then
-        return false
-    end
-    if visible == "mouseover" then
-        return "mouseover"
-    end
-    if visible == "combat" or visible == "in_combat" then
-        return isInCombat
-    end
-    if visible == "out_of_combat" then
-        return not isInCombat
-    end
-    if visible == "target" then
-        return UnitExists("target") and UnitCanAttack("player", "target")
-    end
-    if visible == "in_raid" then
-        return IsInRaid and IsInRaid() or false
-    end
+    if visible == "always" then return true end
+    if visible == "never" then return false end
+    if visible == "mouseover" then return "mouseover" end
+    if visible == "combat" or visible == "in_combat" then return isInCombat end
+    if visible == "out_of_combat" then return not isInCombat end
+    if visible == "target" then return UnitExists("target") and UnitCanAttack("player", "target") end
+    if visible == "in_raid" then return IsInRaid and IsInRaid() or false end
     if visible == "in_party" then
         local inRaid = IsInRaid and IsInRaid() or false
         return not inRaid and (IsInGroup and IsInGroup() or false)
     end
-    if visible == "solo" then
-        return not (IsInRaid and IsInRaid()) and not (IsInGroup and IsInGroup())
-    end
+    if visible == "solo" then return not (IsInRaid and IsInRaid()) and not (IsInGroup and IsInGroup()) end
     return true
 end
 
@@ -3417,18 +3098,12 @@ mod.ShouldShowBar = ShouldShowBar
 local MISSING_POWERS = { [PT.MANA] = true, [PT.ENERGY] = true, [PT.FOCUS] = true }
 
 function mod.ERB_MissingWanted(conf, powerKind)
-    if not conf then
-        return false
-    end
+    if not conf then return false end
     if powerKind then
-        if not MISSING_POWERS[powerKind] then
-            return false
-        end
+        if not MISSING_POWERS[powerKind] then return false end
         if powerKind == PT.MANA then
             local mx = UnitPowerMax("player", PT.MANA)
-            if not mx or issecretvalue(mx) or mx <= 0 then
-                return false
-            end
+            if not mx or issecretvalue(mx) or mx <= 0 then return false end
         end
     end
     return (CludesUI.VisOverrideValue(conf) or conf.visibility) ~= "never"
@@ -3468,13 +3143,9 @@ end
 -- while the resource is full (the faded opacity over the normal one); nil in
 -- combat, with the fade off, or for a fade that does not dim below normal.
 function mod.ERB_MissingLiftFloor(conf)
-    if isInCombat or not (conf and conf.oocFadeEnabled) then
-        return nil
-    end
+    if isInCombat or not (conf and conf.oocFadeEnabled) then return nil end
     local normal, faded = conf.barAlpha or 1, conf.oocAlpha or 0.5
-    if normal <= 0 or faded >= normal then
-        return nil
-    end
+    if normal <= 0 or faded >= normal then return nil end
     return faded / normal
 end
 
@@ -3482,9 +3153,7 @@ end
 -- Missing reveals it (the wrapper hides or fades it at full), else the
 -- ns.ResolveBarAlpha answer.
 function mod.ERB_MissingBarAlpha(barFrame, conf)
-    if barFrame and barFrame._missLive then
-        return (conf and conf.barAlpha) or 1
-    end
+    if barFrame and barFrame._missLive then return (conf and conf.barAlpha) or 1 end
     return mod.ResolveBarAlpha(conf)
 end
 
@@ -3516,13 +3185,9 @@ function mod.ERB_MissingApply(barFrame, live, powerKind, home, park, floor)
     local wid = barFrame._missWrap
     if not live and not park then
         barFrame._missLive, barFrame._missParked, barFrame._missFloor = nil, nil, nil
-        if wid then
-            wid:SetAlpha(1)
-        end
+        if wid then wid:SetAlpha(1) end
         local hgt = barFrame._missHome
-        if hgt and barFrame:GetParent() ~= hgt then
-            MissingRehome(barFrame, hgt)
-        end
+        if hgt and barFrame:GetParent() ~= hgt then MissingRehome(barFrame, hgt) end
         return
     end
     if not wid then
@@ -3555,9 +3220,7 @@ end
 -- no longer inherits the Power Bar's alpha, so its own is applied directly.
 function mod.ERB_MissingHost(pb, primaryCfg, mode, floor)
     local hgt = mode and mod.FDM_Host() or pb._missHost
-    if not hgt then
-        return
-    end
+    if not hgt then return end
     pb._missHost = hgt
     if mode == "mana" then
         mod.ERB_MissingApply(hgt, true, PT.MANA, pb, nil, floor)
@@ -3580,29 +3243,21 @@ end
 -- by a repeat attach during one, never per power event.
 if CludesUI.SpellCostPrediction then
     mod.ERB_COST_HOST = {
-        PowerType = function()
-            return cachedPrimary
-        end,
+        PowerType = function() return cachedPrimary end,
         Color = function()
             local primaryCfg = _G._CURB_ResolvePowerCfg()
             local red, green, b = CludesUI.SpellCostPrediction.Color(primaryCfg)
             return red, green, b, ((primaryCfg and primaryCfg.fillOpacity) or 100) / 100
         end,
-        Mask = function()
-            return mainBar and mainBar._blizzBarMask
-        end,
+        Mask = function() return mainBar and mainBar._blizzBarMask end,
     }
 end
 
 local function UpdateVisibility()
     -- Swing timer (Forever only) rides every visibility edge this module sees;
     -- a no-op until the feature is on.
-    if mod.ST_UpdateVisibility then
-        mod.ST_UpdateVisibility()
-    end
-    if not mainFrame then
-        return
-    end
+    if mod.ST_UpdateVisibility then mod.ST_UpdateVisibility() end
+    if not mainFrame then return end
 
     -- Main frame always shown
     mainFrame:Show()
@@ -3640,15 +3295,11 @@ local function UpdateVisibility()
         local missing = wanted and visible == false
         local lift = wanted and visible == true and mod.ERB_MissingLiftFloor(healthCfg) or nil
         -- A lifted bar's opacity follows its health: no shared-opacity group member.
-        if grp then
-            mod._erbGrpH = (visible == true) and not health._erbMouseTrack and not lift
-        end
+        if grp then mod._erbGrpH = (visible == true) and not health._erbMouseTrack and not lift end
         if missing or lift or health._missLive then
             mod.ERB_MissingApply(health, (missing or lift) and true or false, nil, nil, nil, lift)
         end
-        if missing then
-            visible = true
-        end
+        if missing then visible = true end
         if visible == true then
             health:Show()
             CludesUI.SetElementVisibility(health, true)
@@ -3666,7 +3317,10 @@ local function UpdateVisibility()
         -- hide the power bar even when it is enabled in settings. "Hide Power Bar if
         -- Resource" applies only while the Class Resource is on: its toggle is greyed
         -- out otherwise, and a WoW Forever druid has combo points in Cat Form alone.
-        local hidePower = secondaryCfg and secondaryCfg.hidePowerIfResource and secondaryCfg.enabled ~= false and cachedSecondary
+        local hidePower = secondaryCfg
+            and secondaryCfg.hidePowerIfResource
+            and secondaryCfg.enabled ~= false
+            and cachedSecondary
         local avail = not hidePower
             and primaryCfg
             and primaryCfg.enabled ~= false
@@ -3690,17 +3344,16 @@ local function UpdateVisibility()
         local wanted = avail and barFlag and type(pt) == "number" and mod.ERB_MissingWanted(primaryCfg, pt)
         local missing = wanted and ruleHidden
         local lift = wanted and visible == true and mod.ERB_MissingLiftFloor(primaryCfg) or nil
-        if grp then
-            mod._erbGrpP = (visible == true) and not mainBar._erbMouseTrack and not lift
-        end
+        if grp then mod._erbGrpP = (visible == true) and not mainBar._erbMouseTrack and not lift end
         if missing or lift or mainBar._missLive then
             mod.ERB_MissingApply(mainBar, (missing or lift) and true or false, pt, nil, nil, lift)
         end
-        if missing then
-            visible = true
-        end
+        if missing then visible = true end
         local strip = mod.FDM_Host and mod.FDM_Host()
-        local manaWanted = strip and avail and primaryCfg.showManaWhenMissing and mod.ERB_MissingWanted(primaryCfg, PT.MANA)
+        local manaWanted = strip
+            and avail
+            and primaryCfg.showManaWhenMissing
+            and mod.ERB_MissingWanted(primaryCfg, PT.MANA)
         local hostMode, hostLift
         if strip and ruleHidden then
             if manaWanted then
@@ -3710,13 +3363,9 @@ local function UpdateVisibility()
             end
         elseif manaWanted and visible == true then
             hostLift = mod.ERB_MissingLiftFloor(primaryCfg)
-            if hostLift then
-                hostMode = "mana"
-            end
+            if hostLift then hostMode = "mana" end
         end
-        if hostMode or mainBar._missHost then
-            mod.ERB_MissingHost(mainBar, primaryCfg, hostMode, hostLift)
-        end
+        if hostMode or mainBar._missHost then mod.ERB_MissingHost(mainBar, primaryCfg, hostMode, hostLift) end
         if visible == true then
             mainBar:Show()
             CludesUI.SetElementVisibility(mainBar, true)
@@ -3777,9 +3426,7 @@ local function UpdateVisibility()
         -- this visibility; while that frame stands in for the pips the slot
         -- stays at zero alpha and out of the Border Around All group.
         local artOn, artHost = mod._erbArtOn, mod._erbArtHost
-        if grp then
-            mod._erbGrpS = (visible == true) and not artOn and not classFrame._erbMouseTrack
-        end
+        if grp then mod._erbGrpS = (visible == true) and not artOn and not classFrame._erbMouseTrack end
         if artHost then
             if visible == true then
                 CludesUI.SetElementVisibility(artHost, true)
@@ -3797,9 +3444,7 @@ local function UpdateVisibility()
         end
     end
 
-    if grp then
-        mod.ERB_GroupEval()
-    end
+    if grp then mod.ERB_GroupEval() end
 end
 
 -- Subsystem tickers. There is NO frame-rate OnUpdate multiplexer:
@@ -3822,15 +3467,9 @@ end
 -- the fill between fires.
 -- Re-armed by UNIT_AURA via ns.ArmTick.
 mod.EMTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
-    if mod.EMB121_Owns then
-        return
-    end
-    if cachedPrimary ~= "EBON_MIGHT" then
-        return
-    end
-    if not (mainBar and mainBar:IsShown() and mainBar:GetAlpha() > 0) then
-        return
-    end
+    if mod.EMB121_Owns then return end
+    if cachedPrimary ~= "EBON_MIGHT" then return end
+    if not (mainBar and mainBar:IsShown() and mainBar:GetAlpha() > 0) then return end
     local remaining = (_ebonMightExpiry > 0) and max(0, _ebonMightExpiry - GetTime()) or 0
     mainBar:SetValue(remaining)
     local primaryCfg = _G._CURB_ResolvePowerCfg()
@@ -3857,9 +3496,7 @@ end, 0.05)
 -- frame-rate cost; both update paths are change-gated internally.
 mod.MotionTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     local cs = cachedSecondary
-    if not (cs and classBar and classBar:IsShown() and classBar:GetAlpha() > 0) then
-        return
-    end
+    if not (cs and classBar and classBar:IsShown() and classBar:GetAlpha() > 0) then return end
     if cs.power == "IRONFUR_BAR" then
         UpdateIronfurBar()
         return true
@@ -3878,18 +3515,14 @@ end, 1 / 30)
 mod.PollTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     local cs = cachedSecondary
     -- Blizzard Class Resource Art stands in: nothing to poll (the ticker stops).
-    if not cs or mod._erbArtOn then
-        return
-    end
+    if not cs or mod._erbArtOn then return end
     local pwr, typ = cs.power, cs.type
     if _essenceNextTick and pwr == PT.ESSENCE then
         SyncSecondary()
         return true
     end
     mod._pollFlip = not mod._pollFlip
-    if mod._pollFlip then
-        return true
-    end
+    if mod._pollFlip then return true end
     if typ == "runes" or typ == "custom" or typ == "bar" or cs.frac then
         -- cs.frac (Destruction shard fragments): sub-unit movement, including
         -- out-of-combat decay, has no reliable event. The fragment-aware value
@@ -3936,21 +3569,15 @@ do
     end
 
     local function OnDone(cd)
-        if not mod._spenderEvents then
-            return
-        end
-        if cd._sid and cd._oncd then
-            cd._oncd[cd._sid] = false
-        end
+        if not mod._spenderEvents then return end
+        if cd._sid and cd._oncd then cd._oncd[cd._sid] = false end
         pass:Show()
     end
 
     -- Feeds list's rows into the widgets after position n, tagged with the bar's
     -- verdicts; returns the last position used.
     local function Feed(entries, num, oncd)
-        if not entries then
-            return num
-        end
+        if not entries then return num end
         if not owner then
             owner = CreateFrame("Frame")
             owner:SetSize(1, 1)
@@ -3989,9 +3616,7 @@ do
         local _, spend = mod.SecTracks()
         local pspend = mod.PowTracks()
         spend, pspend = spend and mod._spenderSec, pspend and mod._spenderPow
-        if not (spend or pspend) then
-            return
-        end
+        if not (spend or pspend) then return end
         local t, pt = mod.STK, mod.PTK
         if feed then
             feed = false
@@ -4020,9 +3645,7 @@ do
     end)
 
     function mod.SpenderRequest(refeed)
-        if refeed then
-            feed = true
-        end
+        if refeed then feed = true end
         pass:Show()
     end
 
@@ -4031,9 +3654,7 @@ do
             local _, spend = mod.SecTracks()
             local pspend = mod.PowTracks()
             spend, pspend = spend and mod._spenderSec, pspend and mod._spenderPow
-            if not (spend or pspend) then
-                return
-            end
+            if not (spend or pspend) then return end
             local t, pt = mod.STK, mod.PTK
             -- A named update for an untracked spell changes nothing here unless it
             -- started the GCD; a nil or unreadable spellID updates every cooldown.
@@ -4047,12 +3668,8 @@ do
             then
                 return
             end
-            if spend then
-                Latch(t.entry.spenderColors, t.oncd)
-            end
-            if pspend then
-                Latch(pt.entry.spenderColors, pt.oncd)
-            end
+            if spend then Latch(t.entry.spenderColors, t.oncd) end
+            if pspend then Latch(pt.entry.spenderColors, pt.oncd) end
             feed = true
         elseif evt == "SPELL_UPDATE_ICON" then
             -- An override appeared or went away: re-feed the widgets from the
@@ -4071,9 +3688,7 @@ do
         for i = 1, #cds do
             cds[i]:Clear()
         end
-        if owner then
-            owner:Hide()
-        end
+        if owner then owner:Hide() end
     end
 end
 
@@ -4091,9 +3706,7 @@ function mod.ArmTick()
     -- Blizzard Class Resource Art stands in for the pips: arm nothing for them.
     if cs and not mod._erbArtOn then
         local pwr, typ = cs.power, cs.type
-        if pwr == "IRONFUR_BAR" or pwr == "IGNOREPAIN_BAR" then
-            mod.MotionTick.Start()
-        end
+        if pwr == "IRONFUR_BAR" or pwr == "IGNOREPAIN_BAR" then mod.MotionTick.Start() end
         if
             typ == "runes"
             or typ == "custom"
@@ -4163,9 +3776,7 @@ do
     end)
     -- Idempotent; safe to call from every cast event.
     mod.StartCastTick = function()
-        if not anim:IsPlaying() then
-            anim:Play()
-        end
+        if not anim:IsPlaying() then anim:Play() end
     end
 end
 
@@ -4185,7 +3796,12 @@ do
     mod._rawFillDriver = driver
     driver:SetScript("OnUpdate", function(self)
         local frame = castBarFrame
-        if not frame or frame._nativeFill or not frame._rawFill or not (frame._casting or frame._channeling or frame._empowering) then
+        if
+            not frame
+            or frame._nativeFill
+            or not frame._rawFill
+            or not (frame._casting or frame._channeling or frame._empowering)
+        then
             self:Hide()
             return
         end

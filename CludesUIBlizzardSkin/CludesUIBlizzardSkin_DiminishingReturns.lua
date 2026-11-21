@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  Secondary / Tertiary Stat Diminishing Returns
 --------------------------------------------------------------------------------
@@ -20,9 +18,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 
 -- Gross-percent brackets: each entry is the width (in gross %) of the bracket
 -- and the rating penalty applied within it. Walking them yields how much rating
@@ -629,18 +625,12 @@ local STAT_INFO = {
 --   nextThreshold   : raw rating at which that next bracket begins, or nil
 function CUI.GetStatDR(statName, rawRating)
     local details = STAT_INFO[statName]
-    if not details or not rawRating or rawRating <= 0 then
-        return nil
-    end
+    if not details or not rawRating or rawRating <= 0 then return nil end
 
     local level = UnitLevel("player") or 1
-    if level < 1 then
-        level = 1
-    end
+    if level < 1 then level = 1 end
     local conv = details.conv[level] or details.conv[#details.conv]
-    if not conv or conv <= 0 then
-        return nil
-    end
+    if not conv or conv <= 0 then return nil end
 
     local grossPct = rawRating / conv -- percent the rating would grant with no DR
     local remaining = grossPct

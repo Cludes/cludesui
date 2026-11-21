@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_SharedHelpers.lua
 --  Frame data store, third-party skin registry, Edit Mode-safe anchoring and
@@ -42,13 +40,9 @@ end
 -- deep into `p`, as the Style page's SLOT_KEYS). Callers bank only while
 -- none of the module's seed stamps is set; an existing slot is never touched.
 function CUI.BankEuiStyleSlot(profile, keyList)
-    if type(profile) ~= "table" then
-        return
-    end
+    if type(profile) ~= "table" then return end
     local slots = profile._styleSlots
-    if type(slots) == "table" and type(slots.cui) == "table" then
-        return
-    end
+    if type(slots) == "table" and type(slots.cui) == "table" then return end
     if type(slots) ~= "table" then
         slots = {}
         profile._styleSlots = slots
@@ -59,9 +53,7 @@ function CUI.BankEuiStyleSlot(profile, keyList)
         local a, b = filePath:match("^([^.]+)%.(.+)$")
         if a then
             local cfg = profile[a]
-            if type(cfg) == "table" then
-                result[filePath] = cfg[b]
-            end
+            if type(cfg) == "table" then result[filePath] = cfg[b] end
         else
             result[filePath] = profile[filePath]
         end
@@ -80,20 +72,14 @@ end
 -------------------------------------------------------------------------------
 CUI._skinRegistry = CUI._skinRegistry or {}
 function CUI.RegisterSkin(label, applyFn)
-    if type(label) ~= "string" or label == "" or type(applyFn) ~= "function" then
-        return
-    end
+    if type(label) ~= "string" or label == "" or type(applyFn) ~= "function" then return end
     local reg = CUI._skinRegistry
     for idx = 1, #reg do
-        if reg[idx].name == label then
-            return
-        end
+        if reg[idx].name == label then return end
     end
     local record = { name = label, apply = applyFn }
     reg[#reg + 1] = record
-    if CUI._DispatchSkinRegistration then
-        CUI._DispatchSkinRegistration(record)
-    end
+    if CUI._DispatchSkinRegistration then CUI._DispatchSkinRegistration(record) end
     return true
 end
 
@@ -104,17 +90,13 @@ end
 --  Sub-widgets (icons, text, glows) inside these frames still use :Hide()/:Show().
 -------------------------------------------------------------------------------
 function CUI.SetElementVisibility(widget, visible)
-    if not widget then
-        return
-    end
+    if not widget then return end
     if visible then
         widget:SetAlpha(CUI._GetFFD(widget).restoreAlpha or 1)
         widget:EnableMouse(CUI._GetFFD(widget).restoreMouse or false)
     else
         local alpha = widget:GetAlpha()
-        if not issecretvalue(alpha) and alpha > 0 then
-            CUI._GetFFD(widget).restoreAlpha = alpha
-        end
+        if not issecretvalue(alpha) and alpha > 0 then CUI._GetFFD(widget).restoreAlpha = alpha end
         CUI._GetFFD(widget).restoreMouse = widget:IsMouseEnabled()
         widget:SetAlpha(0)
         widget:EnableMouse(false)
@@ -131,22 +113,14 @@ end
 --  compare and re-asserts.
 -------------------------------------------------------------------------------
 function CUI.SetEditModeChildInert(frame, inert)
-    if not frame then
-        return
-    end
+    if not frame then return end
     local alpha = inert and 0 or 1
     local a = frame:GetAlpha()
-    if issecretvalue(a) or a ~= alpha then
-        frame:SetAlpha(alpha)
-    end
+    if issecretvalue(a) or a ~= alpha then frame:SetAlpha(alpha) end
     if frame.SetMouseClickEnabled then
         local enabled = not inert
-        if frame:IsMouseClickEnabled() ~= enabled then
-            frame:SetMouseClickEnabled(enabled)
-        end
-        if frame:IsMouseMotionEnabled() ~= enabled then
-            frame:SetMouseMotionEnabled(enabled)
-        end
+        if frame:IsMouseClickEnabled() ~= enabled then frame:SetMouseClickEnabled(enabled) end
+        if frame:IsMouseMotionEnabled() ~= enabled then frame:SetMouseMotionEnabled(enabled) end
     end
 end
 
@@ -181,13 +155,9 @@ function CUI.SetFrameScale(widget, scale, keepPosition)
     end
     local old = keepPosition and widget:GetScale()
     setScale(widget, scale)
-    if not old then
-        return
-    end
+    if not old then return end
     local new = widget:GetScale()
-    if issecretvalue(old) or issecretvalue(new) or new == old or new <= 0 then
-        return
-    end
+    if issecretvalue(old) or issecretvalue(new) or new == old or new <= 0 then return end
     local k = old / new
     for idx = 1, widget:GetNumPoints() do
         local point, relTo, relPoint, x, y = widget:GetPoint(idx)
@@ -262,27 +232,19 @@ do
     local PLACER_RANKS = { shifter = 1, cdm = 2 }
     local NUM_PLACER_RANKS = 0
     for _, rank in pairs(PLACER_RANKS) do
-        if rank > NUM_PLACER_RANKS then
-            NUM_PLACER_RANKS = rank
-        end
+        if rank > NUM_PLACER_RANKS then NUM_PLACER_RANKS = rank end
     end
     local placerStates = setmetatable({}, { __mode = "k" })
     local PlacerRetry
 
     local function PlacerRefused(widget)
         local val = widget:IsForbidden()
-        if issecretvalue(val) or val then
-            return true
-        end
+        if issecretvalue(val) or val then return true end
         val = widget:IsProtected()
-        if issecretvalue(val) or val then
-            return true
-        end
+        if issecretvalue(val) or val then return true end
         if widget.IsAnchoringRestricted then
             val = widget:IsAnchoringRestricted()
-            if issecretvalue(val) or val then
-                return true
-            end
+            if issecretvalue(val) or val then return true end
         end
         return false
     end
@@ -299,9 +261,7 @@ do
         placerState.applying = true
         local success, err = pcall(PlacerSet, widget, anchorPoint, relativeTo, relativePoint, x, y)
         placerState.applying, placerState.over = false, false
-        if not success then
-            geterrorhandler()(err)
-        end
+        if not success then geterrorhandler()(err) end
         return success
     end
 
@@ -314,9 +274,7 @@ do
 
     local function PlacerResolve(widget, placerState)
         placerState.owed = false
-        if placerState.count == 0 and not placerState.placed then
-            return
-        end
+        if placerState.count == 0 and not placerState.placed then return end
         if PlacerRefused(widget) then
             PlacerOwe(placerState)
             return
@@ -324,14 +282,20 @@ do
         if placerState.count == 0 then
             -- A hand-back refused earlier: our anchor is still on the frame.
             placerState.placed = false
-            PlacerApply(widget, placerState, placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by)
+            PlacerApply(
+                widget,
+                placerState,
+                placerState.bp,
+                placerState.br,
+                placerState.brp,
+                placerState.bx,
+                placerState.by
+            )
             return
         end
         if not placerState.placed then
             -- The frame holds Blizzard's anchor: kept for the owners and the hand-back.
-            if widget:GetNumPoints() ~= 1 then
-                return
-            end
+            if widget:GetNumPoints() ~= 1 then return end
             local point, r, relPoint, x, y = widget:GetPoint(1)
             if
                 issecretvalue(point)
@@ -352,7 +316,8 @@ do
                     return
                 end
             end
-            placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by = point, r, relPoint, x, y
+            placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by =
+                point, r, relPoint, x, y
         end
         local fns = placerState.fns
         local later = false
@@ -361,21 +326,25 @@ do
             local func = fns[rank]
             if func then
                 -- An owner that errors passes, so it never stops the others.
-                success, p, r, rp, x, y = pcall(func, widget, placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by)
+                success, p, r, rp, x, y = pcall(
+                    func,
+                    widget,
+                    placerState.bp,
+                    placerState.br,
+                    placerState.brp,
+                    placerState.bx,
+                    placerState.by
+                )
                 if not success then
                     geterrorhandler()(p)
                     p = nil
                 elseif p == false then
                     later = true
                 end
-                if p then
-                    break
-                end
+                if p then break end
             end
         end
-        if later then
-            PlacerOwe(placerState)
-        end
+        if later then PlacerOwe(placerState) end
         if p then
             if
                 placerState.placed
@@ -390,7 +359,8 @@ do
             end
             if PlacerApply(widget, placerState, p, r, rp, x, y) then
                 placerState.placed = true
-                placerState.ap, placerState.ar, placerState.arp, placerState.ax, placerState.ay = p, r, rp, x, y
+                placerState.ap, placerState.ar, placerState.arp, placerState.ax, placerState.ay =
+                    p, r, rp, x, y
                 return
             end
         elseif later or not placerState.placed then
@@ -400,7 +370,15 @@ do
         end
         -- No owner wants a spot, or the owner's anchor was refused.
         placerState.placed = false
-        PlacerApply(widget, placerState, placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by)
+        PlacerApply(
+            widget,
+            placerState,
+            placerState.bp,
+            placerState.br,
+            placerState.brp,
+            placerState.bx,
+            placerState.by
+        )
     end
 
     -- Shown exactly while a state is marked, so its OnUpdate runs only in a
@@ -423,9 +401,7 @@ do
     -- event, a timer, an animation that ends, the column's own OnUpdate), the
     -- frames it re-anchored are placed as it returns, before anything draws.
     local function PlacerSettle()
-        if placerDriver:IsShown() then
-            PlacerFlush()
-        end
+        if placerDriver:IsShown() then PlacerFlush() end
     end
     local placerColumns = {}
 
@@ -436,9 +412,7 @@ do
 
     PlacerRetry = function()
         for _, placerState in pairs(placerStates) do
-            if placerState.owed then
-                PlacerMark(placerState)
-            end
+            if placerState.owed then PlacerMark(placerState) end
         end
     end
 
@@ -452,26 +426,18 @@ do
         -- point than ours leaves our anchor on the frame beside it (st.over):
         -- it stays ours, and the next placement or hand-back leaves one point.
         hooksecurefunc(widget, "SetPoint", function(_, anchorPoint)
-            if placerState.applying then
-                return
-            end
+            if placerState.applying then return end
             if placerState.placed and anchorPoint ~= placerState.ap then
                 placerState.over = true
             else
                 placerState.placed, placerState.over = false, false
             end
-            if placerState.count > 0 then
-                PlacerMark(placerState)
-            end
+            if placerState.count > 0 then PlacerMark(placerState) end
         end)
         hooksecurefunc(widget, "SetAllPoints", function()
-            if placerState.applying then
-                return
-            end
+            if placerState.applying then return end
             placerState.placed, placerState.over = false, false
-            if placerState.count > 0 then
-                PlacerMark(placerState)
-            end
+            if placerState.count > 0 then PlacerMark(placerState) end
         end)
         hooksecurefunc(widget, "ClearAllPoints", function()
             if not placerState.applying then
@@ -498,23 +464,15 @@ do
         end
         local placerState = placerStates[widget]
         if func then
-            if placerState and placerState.fns[rank] == func then
-                return true
-            end
-            if PlacerRefused(widget) then
-                return false
-            end
+            if placerState and placerState.fns[rank] == func then return true end
+            if PlacerRefused(widget) then return false end
             placerState = placerState or PlacerNewState(widget)
-            if not placerState.fns[rank] then
-                placerState.count = placerState.count + 1
-            end
+            if not placerState.fns[rank] then placerState.count = placerState.count + 1 end
             placerState.fns[rank] = func
             PlacerMark(placerState)
             return true
         end
-        if not (placerState and placerState.fns[rank]) then
-            return true
-        end
+        if not (placerState and placerState.fns[rank]) then return true end
         placerState.fns[rank] = nil
         placerState.count = placerState.count - 1
         if placerState.count > 0 then
@@ -528,7 +486,15 @@ do
                 PlacerOwe(placerState)
             else
                 placerState.placed = false
-                PlacerApply(widget, placerState, placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by)
+                PlacerApply(
+                    widget,
+                    placerState,
+                    placerState.bp,
+                    placerState.br,
+                    placerState.brp,
+                    placerState.bx,
+                    placerState.by
+                )
             end
         end
         return true
@@ -536,9 +502,7 @@ do
 
     function CUI.RequestFramePlacement(widget)
         local placerState = placerStates[widget]
-        if placerState and placerState.count > 0 then
-            PlacerMark(placerState)
-        end
+        if placerState and placerState.count > 0 then PlacerMark(placerState) end
     end
 end
 
@@ -552,17 +516,13 @@ end
 -------------------------------------------------------------------------------
 function CUI._BlizzCastBars()
     local barList = CUI._blizzCastBarList
-    if barList then
-        return barList
-    end
+    if barList then return barList end
 
     barList = {}
     if PlayerCastingBarFrame then
         barList[#barList + 1] = { frame = PlayerCastingBarFrame, unit = "player" }
     end
-    if PetCastingBarFrame then
-        barList[#barList + 1] = { frame = PetCastingBarFrame, unit = "pet" }
-    end
+    if PetCastingBarFrame then barList[#barList + 1] = { frame = PetCastingBarFrame, unit = "pet" } end
     CUI._blizzCastBarList = barList
 
     for idx = 1, #barList do
@@ -591,9 +551,7 @@ end
 
 function CUI.RestoreBlizzCastBarEvents()
     local snapshot = CUI._blizzCastBarSnapshot
-    if not snapshot then
-        return
-    end
+    if not snapshot then return end
     CUI._blizzCastBarSnapshot = nil
 
     local barList = CUI._blizzCastBarList
@@ -654,9 +612,7 @@ local BLIZZ_CAST_EVENTS = {
 -- Disable, so any release path that does not run that (the element was never enabled to begin with) leaves both dead.
 function CUI.RearmBlizzCastBars()
     local barList = CUI._blizzCastBarList
-    if not barList then
-        return
-    end
+    if not barList then return end
     for idx = 1, #barList do
         local barFrame = barList[idx]
         if not barFrame.foreign and not barFrame.frame:IsEventRegistered("UNIT_SPELLCAST_START") then
@@ -665,9 +621,7 @@ function CUI.RearmBlizzCastBars()
                 barFrame.frame:RegisterUnitEvent(BLIZZ_CAST_EVENTS[jdx], barFrame.unit)
             end
             barFrame.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-            if barFrame.unit == "pet" then
-                barFrame.frame:RegisterEvent("UNIT_PET")
-            end
+            if barFrame.unit == "pet" then barFrame.frame:RegisterEvent("UNIT_PET") end
         end
     end
 end
@@ -678,9 +632,7 @@ end
 -- leaves every earlier silence unattributed. File scope runs during the ADDON_LOADED sequence,
 -- before any addon's PLAYER_LOGIN handler, so this closes the window to everything except
 -- file-scope silences in addons that load before CUI. Guarded on BOTH frames: the list is cached on first build, so building it while either frame is missing would drop that bar for the whole session.
-if PlayerCastingBarFrame and PetCastingBarFrame then
-    CUI._BlizzCastBars()
-end
+if PlayerCastingBarFrame and PetCastingBarFrame then CUI._BlizzCastBars() end
 
 -------------------------------------------------------------------------------
 --  Shared Player Cast Bar Suppression -- multiple CUI modules can temporarily suppress
@@ -688,9 +640,7 @@ end
 --  with each other and leave third-party visibility control alone once no CUI module is actively using a replacement bar.
 -------------------------------------------------------------------------------
 function CUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
-    if not ownerFrame or ownerFrame == "" then
-        return
-    end
+    if not ownerFrame or ownerFrame == "" then return end
 
     local owners = CUI._playerCastBarSuppressors
     if not owners then
@@ -705,9 +655,7 @@ function CUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
     end
 
     local stockBar = PlayerCastingBarFrame
-    if not stockBar then
-        return
-    end
+    if not stockBar then return end
 
     local shouldSuppress = next(owners) ~= nil
     local hiddenHost = CUI._playerCastBarHiddenParent
@@ -719,9 +667,7 @@ function CUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
             CUI._playerCastBarHiddenParent = hiddenHost
         end
 
-        if stockBar:GetParent() ~= hiddenHost then
-            CUI._GetFFD(stockBar).origParent = stockBar:GetParent()
-        end
+        if stockBar:GetParent() ~= hiddenHost then CUI._GetFFD(stockBar).origParent = stockBar:GetParent() end
         CUI._GetFFD(stockBar).castBarSuppressed = true
 
         -- Skip the re-parent while Edit Mode is open: SetParent fires Blizzard's synchronous
@@ -769,10 +715,7 @@ function CUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
                 Repark()
             end)
             hooksecurefunc(stockBar, "SetParent", function(self, newParent)
-                if
-                    CUI._GetFFD(self).castBarSuppressed
-                    and newParent ~= CUI._playerCastBarHiddenParent
-                then
+                if CUI._GetFFD(self).castBarSuppressed and newParent ~= CUI._playerCastBarHiddenParent then
                     repark:Show()
                 end
             end)
@@ -793,10 +736,7 @@ function CUI.SetPlayerCastBarSuppressed(ownerFrame, suppressed)
                 hooksecurefunc(picked, "Show", function(self)
                     -- Deferred: Show fires inside Edit Mode's secure ShowSystemSelections pass; write nothing there.
                     C_Timer.After(0, function()
-                        if
-                            PlayerCastingBarFrame
-                            and CUI._GetFFD(PlayerCastingBarFrame).castBarSuppressed
-                        then
+                        if PlayerCastingBarFrame and CUI._GetFFD(PlayerCastingBarFrame).castBarSuppressed then
                             self:SetAlpha(0)
                             self:EnableMouse(false)
                         end
@@ -864,15 +804,11 @@ end
 -------------------------------------------------------------------------------
 do
     local hooked = {}
-    local function isEnabled()
-        return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false
-    end
+    local function isEnabled() return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false end
     function CUI._HookSwiftmendIcon(texture)
         if not texture or hooked[texture] then
             -- Already hooked; just force bright if re-enabling
-            if texture and hooked[texture] and isEnabled() then
-                texture:SetVertexColor(1, 1, 1)
-            end
+            if texture and hooked[texture] and isEnabled() then texture:SetVertexColor(1, 1, 1) end
             return
         end
         hooked[texture] = true
@@ -885,9 +821,7 @@ do
             end
         end)
         -- Force bright immediately (icon may already be dimmed before hook)
-        if isEnabled() then
-            texture:SetVertexColor(1, 1, 1)
-        end
+        if isEnabled() then texture:SetVertexColor(1, 1, 1) end
     end
     CUI._SWIFTMEND_SPELL = 18562
     CUI._SWIFTMEND_ICON = 134914
@@ -899,20 +833,14 @@ end
 --  color for its level against yours.
 -------------------------------------------------------------------------------
 function CUI.GetLevelDifficultyColor(lvl, attackable)
-    if lvl <= 0 then
-        return 1, 0.1, 0.1
-    end
+    if lvl <= 0 then return 1, 0.1, 0.1 end
     if not attackable then
         local color = UNIT_LEVEL_NON_ATTACKABLE
-        if color then
-            return color.r, color.g, color.b
-        end
+        if color then return color.r, color.g, color.b end
         return 1, 0.82, 0
     end
     local mine = UnitEffectiveLevel("player")
-    if issecretvalue and issecretvalue(mine) then
-        return nil
-    end
+    if issecretvalue and issecretvalue(mine) then return nil end
     if CUI.IS_FOREVER then
         -- WoW Forever's own nameplate rule (the vanilla one): grey past the
         -- trivial range, green 3+ below, yellow within 2, orange 3-4 above, red 5+.
@@ -929,37 +857,25 @@ function CUI.GetLevelDifficultyColor(lvl, attackable)
         else
             fc = IMPOSSIBLE_DIFFICULTY_COLOR
         end
-        if fc then
-            return fc.r, fc.g, fc.b
-        end
+        if fc then return fc.r, fc.g, fc.b end
         return nil
     end
     local color = (GetRelativeDifficultyColor and GetRelativeDifficultyColor(mine, lvl))
         or (GetQuestDifficultyColor and GetQuestDifficultyColor(lvl))
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
 end
 -- For a unit; nil when the level or attackability cannot be read (secret).
 -- includeFriendly: friendly units get their difficulty color too, not gold.
 function CUI.GetLevelColor(unitToken, lvl, includeFriendly)
     local sv = issecretvalue
-    if lvl == nil or (sv and sv(lvl)) then
-        return nil
-    end
-    if includeFriendly then
-        return CUI.GetLevelDifficultyColor(lvl, true)
-    end
+    if lvl == nil or (sv and sv(lvl)) then return nil end
+    if includeFriendly then return CUI.GetLevelDifficultyColor(lvl, true) end
     local attackable = UnitCanAttack("player", unitToken)
-    if sv and sv(attackable) then
-        return nil
-    end
+    if sv and sv(attackable) then return nil end
     return CUI.GetLevelDifficultyColor(lvl, attackable)
 end
 function CUI.ColorText(textValue, red, green, blue)
-    if not red then
-        return textValue
-    end
+    if not red then return textValue end
     return ("|cff%02x%02x%02x%s|r"):format(
         math.floor(red * 255 + 0.5),
         math.floor(green * 255 + 0.5),
@@ -1001,13 +917,9 @@ local HONOR_BADGE_RATIO = 30 / 50
 local honorBadgeFiles = {}
 function CUI.FactionBadgeFor(style, unitToken)
     local artTex = CUI.FACTION_ART[style]
-    if not (artTex and artTex.badge and unitToken) then
-        return nil
-    end
+    if not (artTex and artTex.badge and unitToken) then return nil end
     local lvl = UnitHonorLevel and UnitHonorLevel(unitToken)
-    if issecretvalue(lvl) or not lvl or lvl <= 0 then
-        return nil
-    end
+    if issecretvalue(lvl) or not lvl or lvl <= 0 then return nil end
     local filePath = honorBadgeFiles[lvl]
     if filePath == nil then
         local details = C_PvP and C_PvP.GetHonorRewardInfo and C_PvP.GetHonorRewardInfo(lvl)
@@ -1021,9 +933,7 @@ end
 -- the texture's Show/Hide/alpha/desaturation are mirrored onto it.
 local function GetBadgeHost(texture)
     local owner = texture._honorBadgeHost
-    if owner then
-        return owner
-    end
+    if owner then return owner end
     local par = texture:GetParent()
     owner = CreateFrame("Frame", nil, par)
     owner:SetAllPoints(texture)
@@ -1038,20 +948,12 @@ local function GetBadgeHost(texture)
         local s = wid * HONOR_BADGE_RATIO
         icon:SetSize(s, s)
     end)
-    hooksecurefunc(texture, "Hide", function()
-        owner:Hide()
-    end)
+    hooksecurefunc(texture, "Hide", function() owner:Hide() end)
     hooksecurefunc(texture, "Show", function()
-        if owner.wanted then
-            owner:Show()
-        end
+        if owner.wanted then owner:Show() end
     end)
-    hooksecurefunc(texture, "SetAlpha", function(_, a)
-        owner:SetAlpha(a)
-    end)
-    hooksecurefunc(texture, "SetDesaturated", function(_, d)
-        icon:SetDesaturated(d)
-    end)
+    hooksecurefunc(texture, "SetAlpha", function(_, a) owner:SetAlpha(a) end)
+    hooksecurefunc(texture, "SetDesaturated", function(_, d) icon:SetDesaturated(d) end)
     texture._honorBadgeHost = owner
     return owner
 end
@@ -1073,9 +975,7 @@ local function SetBadge(texture, filePath)
         owner.icon:SetSize(s, s)
     end
     owner.wanted = true
-    if texture:IsShown() then
-        owner:Show()
-    end
+    if texture:IsShown() then owner:Show() end
 end
 
 function CUI.SetFactionArt(texture, style, faction, badgeFile)
@@ -1115,17 +1015,11 @@ end
 --  that gives back a readable, non-empty string or nil. Hot paths import both
 --  as locals; no module keeps a copy.
 -------------------------------------------------------------------------------
-local issecretvalue = issecretvalue or function()
-    return false
-end
-function CUI.IsSecret(val)
-    return val ~= nil and issecretvalue(val)
-end
+local issecretvalue = issecretvalue or function() return false end
+function CUI.IsSecret(val) return val ~= nil and issecretvalue(val) end
 function CUI.PlainString(val)
     -- The secrecy test comes first: comparing a secret string raises.
-    if type(val) == "string" and not issecretvalue(val) and val ~= "" then
-        return val
-    end
+    if type(val) == "string" and not issecretvalue(val) and val ~= "" then return val end
     return nil
 end
 
@@ -1138,22 +1032,16 @@ end
 --  (forever_power_text_value_v1, CludesUI_Migration.lua).
 -------------------------------------------------------------------------------
 function CUI.PowerTextFormat(fmt)
-    if fmt == "smart" and CUI.IS_FOREVER then
-        return "curpp"
-    end
+    if fmt == "smart" and CUI.IS_FOREVER then return "curpp" end
     return fmt
 end
 -- A format dropdown's order list for this client: the same table, or on WoW
 -- Forever a copy without "smart".
 function CUI.PowerTextFormatOrder(sequence)
-    if not CUI.IS_FOREVER then
-        return sequence
-    end
+    if not CUI.IS_FOREVER then return sequence end
     local result = {}
     for idx = 1, #sequence do
-        if sequence[idx] ~= "smart" then
-            result[#result + 1] = sequence[idx]
-        end
+        if sequence[idx] ~= "smart" then result[#result + 1] = sequence[idx] end
     end
     return result
 end
@@ -1175,9 +1063,7 @@ do
         setmetatable(entries, {
             __newindex = function(l, idx, func)
                 rawset(l, idx, func)
-                if has then
-                    func(current)
-                end
+                if has then func(current) end
             end,
         })
         return function(val)
@@ -1201,9 +1087,7 @@ do
         end
         tbl.broken = false
         mod[field] = setmetatable(tbl, {
-            __index = function(_, key)
-                error(label .. " has no entry " .. tostring(key), 2)
-            end,
+            __index = function(_, key) error(label .. " has no entry " .. tostring(key), 2) end,
         })
         return mod[field]
     end
@@ -1243,27 +1127,19 @@ do
 
     local function OverlayEnter(self)
         local conf = self._cuiPtCfg
-        if conf and conf.onEnter then
-            conf.onEnter(self:GetParent())
-        end
+        if conf and conf.onEnter then conf.onEnter(self:GetParent()) end
     end
     local function OverlayLeave(self)
         local conf = self._cuiPtCfg
-        if conf and conf.onLeave then
-            conf.onLeave(self:GetParent())
-        end
+        if conf and conf.onLeave then conf.onLeave(self:GetParent()) end
     end
 
     local Sync
     Sync = function(ownerFrame, conf)
         local button = overlays[ownerFrame]
-        if not button and not conf.wanted(ownerFrame) then
-            return
-        end
+        if not button and not conf.wanted(ownerFrame) then return end
         if InCombatLockdown() then
-            CUI.CombatQueue.Defer(ownerFrame, function()
-                Sync(ownerFrame, conf)
-            end)
+            CUI.CombatQueue.Defer(ownerFrame, function() Sync(ownerFrame, conf) end)
             return
         end
         if not conf.wanted(ownerFrame) then
@@ -1292,15 +1168,11 @@ do
             button:HookScript("OnEnter", OverlayEnter)
             button:HookScript("OnLeave", OverlayLeave)
             overlays[ownerFrame] = button
-            if conf.register then
-                conf.register(button)
-            end
+            if conf.register then conf.register(button) end
             -- An owner never shown yet has no rect to measure: measure on its first show.
             ownerFrame:HookScript("OnShow", function(o)
                 local c = pending[o]
-                if c then
-                    Sync(o, c)
-                end
+                if c then Sync(o, c) end
             end)
         end
         local edge = conf.backdrop(ownerFrame)
@@ -1329,13 +1201,9 @@ do
         end
         -- The layer is read back from the overlay: a strata change on the owner moves it too.
         local strata = edge:GetFrameStrata()
-        if button:GetFrameStrata() ~= strata then
-            button:SetFrameStrata(strata)
-        end
+        if button:GetFrameStrata() ~= strata then button:SetFrameStrata(strata) end
         local lvl = edge:GetFrameLevel() + 1
-        if button:GetFrameLevel() ~= lvl then
-            button:SetFrameLevel(lvl)
-        end
+        if button:GetFrameLevel() ~= lvl then button:SetFrameLevel(lvl) end
         button:Show()
         return true
     end
@@ -1363,12 +1231,8 @@ do
     end
     function CUI.UIScaledAlpha(a)
         local ui = UIParent:GetAlpha()
-        if issecretvalue(ui) or ui >= 1 then
-            return a
-        end
-        if issecretvalue(a) then
-            return ui <= 0 and 0 or a
-        end
+        if issecretvalue(ui) or ui >= 1 then return a end
+        if issecretvalue(a) then return ui <= 0 and 0 or a end
         return a * ui
     end
     function CUI.OnUIAlphaChanged(func)
@@ -1377,9 +1241,7 @@ do
             hooksecurefunc(UIParent, "SetAlpha", Notify)
         end
         for idx = 1, #listeners do
-            if listeners[idx] == func then
-                return
-            end
+            if listeners[idx] == func then return end
         end
         listeners[#listeners + 1] = func
     end
@@ -1428,9 +1290,7 @@ do
     function CUI.SetCraftTimerText(f, fontStr, remaining, totalMode)
         local leftX = (remaining > 0 and remaining or 0) + f._craftExtra
         local secs = floor(totalMode and (f._craftTotal - leftX) or leftX)
-        if secs < 0 then
-            secs = 0
-        end
+        if secs < 0 then secs = 0 end
         if secs ~= f._craftSecs then
             f._craftSecs = secs
             fontStr:SetText(
@@ -1446,9 +1306,7 @@ end
 --  as it is.
 -------------------------------------------------------------------------------
 function CUI.CleanCastName(label)
-    if issecretvalue(label) or type(label) ~= "string" then
-        return label
-    end
+    if issecretvalue(label) or type(label) ~= "string" then return label end
     local clean = label:gsub("%s*%-%s*No Text$", "")
     return clean ~= "" and clean or label
 end
@@ -1514,9 +1372,7 @@ do
     -- Width of a clean string in fs's font face (at size, or fs's own size).
     local function Measure(fontStr, str, size)
         local font, current, flags, isFam, shadow = FontOf(fontStr)
-        if not font then
-            return 0
-        end
+        if not font then return 0 end
         local fam = isFam and CUI.GetFontFamily(font, size or current, flags, shadow)
         local m = MeasureString(fam)
         if fam then
@@ -1531,9 +1387,7 @@ do
 
     function CUI.FitCastName(fontStr, str, baseSize)
         local font, current, flags, isFam, shadow = FontOf(fontStr)
-        if not font then
-            return
-        end
+        if not font then return end
         local size = baseSize
         local room = fontStr:GetWidth()
         if str and not issecretvalue(str) and str ~= "" and room and not issecretvalue(room) and room > 1 then
@@ -1541,9 +1395,7 @@ do
             -- 1px slack: glyph hinting can round a scaled string up a pixel.
             if wid and wid > room - 1 then
                 size = floor(baseSize * (room - 1) / wid * 2) / 2
-                if size < MIN_SIZE then
-                    size = MIN_SIZE
-                end
+                if size < MIN_SIZE then size = MIN_SIZE end
             end
         end
         if current ~= size then
@@ -1567,27 +1419,19 @@ function CUI.AddRestFlipbook(widget, texture, duration)
     texture:SetAtlas("UI-HUD-UnitFrame-Player-Rest-Flipbook")
     local anim = widget:CreateAnimationGroup()
     anim:SetLooping("REPEAT")
-    if anim.SetToFinalAlpha then
-        anim:SetToFinalAlpha(true)
-    end
+    if anim.SetToFinalAlpha then anim:SetToFinalAlpha(true) end
     local flipped = anim:CreateAnimation("FlipBook")
     flipped:SetTarget(texture)
     flipped:SetDuration(duration or 1.5)
     flipped:SetOrder(1)
-    if flipped.SetSmoothing then
-        flipped:SetSmoothing("NONE")
-    end
+    if flipped.SetSmoothing then flipped:SetSmoothing("NONE") end
     flipped:SetFlipBookRows(7)
     flipped:SetFlipBookColumns(6)
     flipped:SetFlipBookFrames(42)
     flipped:SetFlipBookFrameWidth(0)
     flipped:SetFlipBookFrameHeight(0)
-    widget:SetScript("OnShow", function()
-        anim:Play()
-    end)
-    widget:SetScript("OnHide", function()
-        anim:Stop()
-    end)
+    widget:SetScript("OnShow", function() anim:Play() end)
+    widget:SetScript("OnHide", function() anim:Stop() end)
     return anim
 end
 
@@ -1598,9 +1442,7 @@ end
 --  as trait groups.
 -------------------------------------------------------------------------------
 do
-    local function ByOrder(a, b)
-        return a.orderIndex < b.orderIndex
-    end
+    local function ByOrder(a, b) return a.orderIndex < b.orderIndex end
 
     -- The active config ID and tree ID, and the trees in their order, each
     -- { groupID, name, nodes = { nodeID, ... } } with its visible talents
@@ -1609,9 +1451,7 @@ do
         local configId = C_ClassTalents.GetActiveConfigID()
         local config = configId and C_Traits.GetConfigInfo(configId)
         local treeID = config and config.treeIDs[1]
-        if not treeID then
-            return configId, nil, nil
-        end
+        if not treeID then return configId, nil, nil end
         local groups = C_Traits.GetGroupDisplayInfoByTreeID(treeID)
         table.sort(groups, ByOrder)
         local trees, byGroup = {}, {}
@@ -1655,9 +1495,7 @@ do
             gaps[idx] = nil
         end
         local first = values[1] or 0
-        if count == 0 then
-            return first, 1, first
-        end
+        if count == 0 then return first, 1, first end
         table.sort(gaps)
         local least = gaps[math.floor(count / 2) + 1] / 4
         local step
@@ -1671,9 +1509,7 @@ do
         -- the rest lie off the grid (see Line).
         local last = first
         for idx = 2, #values do
-            if values[idx] - values[idx - 1] > 4 * step then
-                break
-            end
+            if values[idx] - values[idx - 1] > 4 * step then break end
             last = values[idx]
         end
         return first, step, last
@@ -1687,9 +1523,7 @@ do
             local t = val / 10
             local k = (t - first) / step
             local r = math.floor(k + 0.5)
-            if r >= 0 and t <= last + step / 4 and math.abs(k - r) < 0.25 then
-                val = t
-            end
+            if r >= 0 and t <= last + step / 4 and math.abs(k - r) < 0.25 then val = t end
         end
         return math.floor((val - first) / step + 0.5)
     end
@@ -1771,9 +1605,7 @@ do
 
     local function IsTaken(nodeId, entryID, configId)
         local placerState = NodeState(nodeId, configId)
-        if placerState == false then
-            return false
-        end
+        if placerState == false then return false end
         return entryID == nil or placerState == entryID
     end
 
@@ -1787,18 +1619,12 @@ do
     -- configID: the config a caller already read for a whole pass (false =
     -- none); nil reads the active one.
     function CUI.TalentConditionsHold(conds, configId)
-        if type(conds) ~= "table" then
-            return true
-        end
-        if configId == nil then
-            configId = C_ClassTalents.GetActiveConfigID()
-        end
+        if type(conds) ~= "table" then return true end
+        if configId == nil then configId = C_ClassTalents.GetActiveConfigID() end
         for idx = 1, #conds do
             local c = conds[idx]
             if type(c) == "table" and c.nodeID then
-                if IsTaken(c.nodeID, c.entryID, configId or nil) ~= (c.taken ~= false) then
-                    return false
-                end
+                if IsTaken(c.nodeID, c.entryID, configId or nil) ~= (c.taken ~= false) then return false end
             end
         end
         return true

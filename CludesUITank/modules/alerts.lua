@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 
 mod.Alert = {}
 
@@ -59,9 +57,7 @@ local function CreateFlashFrame()
     fade:SetToAlpha(0)
     fade:SetDuration(0.6)
     fade:SetSmoothing("OUT")
-    anim:SetScript("OnFinished", function()
-        flashFrame:SetAlpha(0)
-    end)
+    anim:SetScript("OnFinished", function() flashFrame:SetAlpha(0) end)
     flashFrame.fadeGroup = anim
     flashFrame:Hide()
 end
@@ -113,9 +109,7 @@ local function FireAlert(spellName, stacks)
         alertFrame.text:SetTextColor(1, 0.3, 0.3)
         alertFrame:SetAlpha(1)
         alertFrame:Show()
-        if fadeTimer then
-            fadeTimer:Cancel()
-        end
+        if fadeTimer then fadeTimer:Cancel() end
         fadeTimer = C_Timer.NewTimer(DISPLAY_TIME, function()
             fadeTimer = nil
             if alertFrame then
@@ -130,28 +124,20 @@ end
 
 -- ── Public API ────────────────────────────────────────────────────────────
 function mod.Alert:Initialize()
-    if not flashFrame then
-        CreateFlashFrame()
-    end
-    if not alertFrame then
-        CreateAlertFrame()
-    end
+    if not flashFrame then CreateFlashFrame() end
+    if not alertFrame then CreateAlertFrame() end
 end
 
 -- The frame the on-screen alert sits on. The aura buttons anchor their own
 -- alert text to it, and they are built before Initialize runs.
 function mod.Alert:Anchor()
-    if not alertFrame then
-        CreateAlertFrame()
-    end
+    if not alertFrame then CreateAlertFrame() end
     return alertFrame
 end
 
 function mod.Alert:BannerText()
     local textValue = (mod.DB and mod.DB() or {}).alertText
-    if type(textValue) ~= "string" or textValue == "" then
-        return "TAUNT"
-    end
+    if type(textValue) ~= "string" or textValue == "" then return "TAUNT" end
     return textValue
 end
 
@@ -163,9 +149,7 @@ end
 -- Test mode stand-in for the engine-driven alert text.
 local previewing = false
 function mod.Alert:PreviewBanner(on)
-    if not alertFrame then
-        return
-    end
+    if not alertFrame then return end
     if on then
         previewing = true
         alertFrame.text:SetText(self:BannerText())
@@ -194,13 +178,9 @@ end
 -- addon copying or redistributing anyone's audio: the file stays in its own
 -- addon folder and we only reference the path LSM hands back.
 local function GetLSM()
-    if not LibStub then
-        return nil
-    end
+    if not LibStub then return nil end
     local success, LSM = pcall(LibStub, "LibSharedMedia-3.0", true)
-    if success and LSM and LSM.Fetch then
-        return LSM
-    end
+    if success and LSM and LSM.Fetch then return LSM end
     return nil
 end
 
@@ -208,9 +188,7 @@ end
 -- its sounds with a colour), so "Interrupt" would never match the actual key
 -- "|cFF4BAAC8Interrupt|r". Compare on the stripped, lowercased name instead.
 local function StripEscapes(textValue)
-    if type(textValue) ~= "string" then
-        return ""
-    end
+    if type(textValue) ~= "string" then return "" end
     return (textValue:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
@@ -218,13 +196,9 @@ end
 -- in their original casing.
 local function BuildSoundIndex(LSM)
     local index, display = {}, {}
-    if not LSM.List then
-        return index, display
-    end
+    if not LSM.List then return index, display end
     local success, entries = pcall(LSM.List, LSM, "sound")
-    if not success or type(entries) ~= "table" then
-        return index, display
-    end
+    if not success or type(entries) ~= "table" then return index, display end
     for _, key in ipairs(entries) do
         local plain = StripEscapes(key)
         if plain ~= "" and not index[plain:lower()] then
@@ -238,13 +212,9 @@ end
 -- Sorted, escape-free list of every sound name that can be used.
 function mod.Alert:ListSoundNames()
     local LSM = GetLSM()
-    if not LSM then
-        return nil
-    end
+    if not LSM then return nil end
     local _, nameList = BuildSoundIndex(LSM)
-    table.sort(nameList, function(lhs, rhs)
-        return lhs:lower() < rhs:lower()
-    end)
+    table.sort(nameList, function(lhs, rhs) return lhs:lower() < rhs:lower() end)
     return nameList
 end
 
@@ -262,29 +232,21 @@ end
 function mod.Alert:ResolveSoundPath()
     local name = (mod.DB and mod.DB() or {}).alertSoundFile or DEFAULT_ALERT_SOUND
     local LSM = GetLSM()
-    if not LSM then
-        return name
-    end
+    if not LSM then return name end
 
     local function fetch(key)
         local success, filePath = pcall(LSM.Fetch, LSM, "sound", key, true)
         -- LSM stores the number 1 for its "None" entry; that is not a path.
-        if success and type(filePath) == "string" and filePath ~= "" then
-            return filePath
-        end
+        if success and type(filePath) == "string" and filePath ~= "" then return filePath end
     end
 
     local direct = fetch(name)
-    if direct then
-        return direct
-    end
+    if direct then return direct end
 
     local key = BuildSoundIndex(LSM)[StripEscapes(name):lower()]
     if key then
         local filePath = fetch(key)
-        if filePath then
-            return filePath
-        end
+        if filePath then return filePath end
     end
 
     return name
@@ -292,12 +254,8 @@ end
 
 -- Called when combat drops, to run any rebuild that was blocked by secrecy.
 function mod.Alert:FlushPendingAuraSounds()
-    if not pendingRegister then
-        return
-    end
-    if mod.AurasAreSecret() then
-        return
-    end
+    if not pendingRegister then return end
+    if mod.AurasAreSecret() then return end
     local unit = pendingUnit
     pendingRegister = false
     pendingUnit = nil
@@ -333,9 +291,7 @@ function mod.Alert:RegisterAuraSounds(unit)
     pendingUnit = nil
 
     self:ClearAuraSounds()
-    if not unit then
-        return 0, 0
-    end
+    if not unit then return 0, 0 end
 
     local saved = mod.DB and mod.DB() or {}
     local soundPath = not saved.alertSoundFileID and self:ResolveSoundPath() or nil
@@ -377,9 +333,7 @@ function mod.Alert:RegisterAuraSounds(unit)
 
                 attempted = attempted + 1
                 local success, soundID = pcall(C_UnitAuras.AddAuraSound, trigger, sound)
-                if success and soundID then
-                    table.insert(auraSoundIDs, soundID)
-                end
+                if success and soundID then table.insert(auraSoundIDs, soundID) end
             end
         end
     end
@@ -452,13 +406,9 @@ end
 -- nothing (and does not error) for auras the client is keeping secret, so this
 -- fires in the open world and on non-secret spells and stays quiet otherwise.
 function mod.Alert:Check(unit)
-    if not unit then
-        return
-    end
+    if not unit then return end
     local getBySpellID = C_UnitAuras and C_UnitAuras.GetUnitAuraBySpellID
-    if not getBySpellID then
-        return
-    end
+    if not getBySpellID then return end
 
     local saved = mod.DB and mod.DB() or {}
     local nowTime = GetTime()
@@ -487,9 +437,7 @@ function mod.Alert:Check(unit)
     end
 end
 
-function mod.Alert:Test()
-    FireAlert("Test Spell", 3)
-end
+function mod.Alert:Test() FireAlert("Test Spell", 3) end
 
 -- Lists the sound names available through LibSharedMedia, optionally filtered.
 function mod.Alert:PrintSoundNames(filter)
@@ -507,9 +455,7 @@ function mod.Alert:PrintSoundNames(filter)
     for _, name in ipairs(nameList) do
         if not filter or name:lower():find(filter, 1, true) then
             sum = sum + 1
-            if #isShown < 40 then
-                isShown[#isShown + 1] = name
-            end
+            if #isShown < 40 then isShown[#isShown + 1] = name end
         end
     end
 
@@ -531,9 +477,7 @@ end
 -- Sets the alert sound by name (or literal path) and re-registers.
 function mod.Alert:SetSound(name)
     name = name and name:match("^%s*(.-)%s*$") or ""
-    if name == "" then
-        return
-    end
+    if name == "" then return end
 
     local saved = mod.DB()
     saved.alertSoundFile = name
@@ -557,9 +501,7 @@ end
 
 -- Re-applies the global font choice to the alert banner.
 function mod.Alert:RefreshFont()
-    if not alertFrame then
-        return
-    end
+    if not alertFrame then return end
     local saved = mod.DB and mod.DB() or {}
     alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize or 22, mod.FontFlags())
 end
@@ -567,16 +509,12 @@ end
 function mod.Alert:SetTextSize(size)
     local saved = mod.DB and mod.DB() or {}
     saved.alertTextSize = math.max(12, math.min(48, tonumber(size) or 22))
-    if alertFrame then
-        alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize, mod.FontFlags())
-    end
+    if alertFrame then alertFrame.text:SetFont(mod.FontPath(), saved.alertTextSize, mod.FontFlags()) end
     mod.RestyleAuraButtons()
 end
 
 function mod.Alert:ApplyPosition()
-    if not alertFrame then
-        return
-    end
+    if not alertFrame then return end
     local saved = mod.DB and mod.DB() or {}
     alertFrame:ClearAllPoints()
     alertFrame:SetPoint(

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Immunities.lua -- Raid Lead: Immunities on You.
 --
@@ -26,9 +24,7 @@ function mod.ImmunitySettings()
     local profile = mod.RaidLeadDB()
     profile.immunities = profile.immunities or {}
     local cfg = profile.immunities
-    if cfg.enabled == nil then
-        cfg.enabled = true
-    end
+    if cfg.enabled == nil then cfg.enabled = true end
     cfg.size = cfg.size or 40
     cfg.extra = cfg.extra or {}
     return cfg
@@ -48,9 +44,7 @@ end
 local anchor, boxHolder, rejected
 
 local function ApplyPosition()
-    if not anchor or InCombatLockdown() then
-        return
-    end
+    if not anchor or InCombatLockdown() then return end
     local p = mod.ImmunitySettings().pos
     anchor:ClearAllPoints()
     if p then
@@ -61,15 +55,11 @@ local function ApplyPosition()
 end
 
 local function Build()
-    if anchor or rejected or InCombatLockdown() then
-        return
-    end
+    if anchor or rejected or InCombatLockdown() then return end
     if C_AddOns and not C_AddOns.IsAddOnLoaded("Blizzard_AuraContainer") then
         pcall(C_AddOns.LoadAddOn, "Blizzard_AuraContainer")
     end
-    if type(AuraContainerSortMethod) ~= "table" then
-        return
-    end
+    if type(AuraContainerSortMethod) ~= "table" then return end
     local cfg = mod.ImmunitySettings()
     anchor = CreateFrame("Frame", "CludesUIRaidLeadImmunities", UIParent)
     anchor:SetSize(cfg.size * 3 + 8, cfg.size)
@@ -113,9 +103,7 @@ local function Build()
 end
 
 function mod.RefreshImmunities()
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
     local cfg = mod.ImmunitySettings()
     pcall(boxHolder.SetAuraGroupCandidateFilters, boxHolder, "immunities", { includeSpellIDs = SpellSet() })
     pcall(
@@ -124,9 +112,7 @@ function mod.RefreshImmunities()
         "immunities",
         { elementSpacing = 4, lineSpacing = 4, elementWidth = cfg.size, elementHeight = cfg.size }
     )
-    if cfg.enabled then
-        boxHolder:SetUnit("player")
-    end
+    if cfg.enabled then boxHolder:SetUnit("player") end
     boxHolder:SetEnabled(cfg.enabled)
     if not InCombatLockdown() then
         boxHolder:SetShown(cfg.enabled)
@@ -139,13 +125,9 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:SetScript("OnEvent", function()
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     Build()
-    if registered or not anchor or not CludesUI.RegisterUnlockElements then
-        return
-    end
+    if registered or not anchor or not CludesUI.RegisterUnlockElements then return end
     registered = true
     CludesUI:RegisterUnlockElements({
         CludesUI.MakeUnlockElement({
@@ -155,12 +137,8 @@ eventFrame:SetScript("OnEvent", function()
             order = 661,
             noAnchorTarget = true,
             noResize = true,
-            isHidden = function()
-                return not mod.ImmunitySettings().enabled
-            end,
-            getFrame = function()
-                return anchor
-            end,
+            isHidden = function() return not mod.ImmunitySettings().enabled end,
+            getFrame = function() return anchor end,
             getSize = function()
                 local cfg = mod.ImmunitySettings()
                 return cfg.size * 3 + 8, cfg.size
@@ -168,12 +146,8 @@ eventFrame:SetScript("OnEvent", function()
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 mod.ImmunitySettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
-            loadPos = function()
-                return mod.ImmunitySettings().pos
-            end,
-            clearPos = function()
-                mod.ImmunitySettings().pos = nil
-            end,
+            loadPos = function() return mod.ImmunitySettings().pos end,
+            clearPos = function() mod.ImmunitySettings().pos = nil end,
             applyPos = ApplyPosition,
         }),
     }, "CludesUIRaidLead")

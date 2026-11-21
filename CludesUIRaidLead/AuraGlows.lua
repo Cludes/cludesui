@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  AuraGlows.lua -- Raid Lead: Aura Glows.
 --
@@ -28,12 +26,8 @@ function mod.AuraGlowSettings()
     local profile = mod.RaidLeadDB()
     profile.auraGlows = profile.auraGlows or {}
     local cfg = profile.auraGlows
-    if cfg.enabled == nil then
-        cfg.enabled = true
-    end
-    if cfg.size == nil then
-        cfg.size = 44
-    end
+    if cfg.enabled == nil then cfg.enabled = true end
+    if cfg.size == nil then cfg.size = 44 end
     cfg.spells = cfg.spells or {} -- { spellID, ... }
     return cfg
 end
@@ -68,12 +62,8 @@ local function CanBuild()
 end
 
 local function Decorate(btnFrame)
-    if btnFrame.SetMouseClickEnabled then
-        btnFrame:SetMouseClickEnabled(false)
-    end
-    if btnFrame.SetMouseMotionEnabled then
-        btnFrame:SetMouseMotionEnabled(false)
-    end
+    if btnFrame.SetMouseClickEnabled then btnFrame:SetMouseClickEnabled(false) end
+    if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
     local glow = btnFrame:CreateTexture(nil, "OVERLAY", nil, 7)
     glow:SetPoint("TOPLEFT", -4, 4)
     glow:SetPoint("BOTTOMRIGHT", 4, -4)
@@ -96,9 +86,7 @@ local function Rebuild()
     local cfg = mod.AuraGlowSettings()
     local entries = cfg.enabled and cfg.spells or {}
     local key = Key(cfg) .. (cfg.enabled and "" or "off")
-    if key == built then
-        return
-    end
+    if key == built then return end
     if not CanBuild() then
         pending = true
         return
@@ -112,9 +100,7 @@ local function Rebuild()
     end
     built = key
     holderFrame:SetSize(math.max(1, #entries) * (cfg.size + GAP) - GAP, cfg.size)
-    if #entries == 0 then
-        return
-    end
+    if #entries == 0 then return end
     AK.styles[STYLE] = { width = cfg.size, height = cfg.size }
     local success, err = pcall(function()
         local cont = AK.CreateContainerShell(holderFrame, { point = { "LEFT", holderFrame, "LEFT" } })
@@ -131,9 +117,7 @@ local function Rebuild()
                     sortDirection = AuraContainerSortDirection and AuraContainerSortDirection.Normal,
                     candidateFilters = { includeSpellIDs = { [ident] = true } },
                     style = STYLE,
-                    extraInit = function(btnFrame)
-                        Decorate(btnFrame)
-                    end,
+                    extraInit = function(btnFrame) Decorate(btnFrame) end,
                     layout = {
                         elementWidth = cfg.size,
                         elementHeight = cfg.size,
@@ -158,9 +142,7 @@ mod.RebuildAuraGlows = function()
 end
 
 local function ApplyPosition()
-    if not holderFrame or InCombatLockdown() then
-        return
-    end
+    if not holderFrame or InCombatLockdown() then return end
     local p = mod.AuraGlowSettings().pos
     holderFrame:ClearAllPoints()
     if p then
@@ -192,12 +174,8 @@ eventFrame:SetScript("OnEvent", function(_, evt)
                     order = 665,
                     noAnchorTarget = true,
                     noResize = true,
-                    isHidden = function()
-                        return not mod.AuraGlowSettings().enabled
-                    end,
-                    getFrame = function()
-                        return holderFrame
-                    end,
+                    isHidden = function() return not mod.AuraGlowSettings().enabled end,
+                    getFrame = function() return holderFrame end,
                     getSize = function()
                         local s = mod.AuraGlowSettings()
                         local num = math.max(1, #s.spells)
@@ -207,12 +185,8 @@ eventFrame:SetScript("OnEvent", function(_, evt)
                         mod.AuraGlowSettings().pos =
                             { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     end,
-                    loadPos = function()
-                        return mod.AuraGlowSettings().pos
-                    end,
-                    clearPos = function()
-                        mod.AuraGlowSettings().pos = nil
-                    end,
+                    loadPos = function() return mod.AuraGlowSettings().pos end,
+                    clearPos = function() mod.AuraGlowSettings().pos = nil end,
                     applyPos = ApplyPosition,
                 }),
             }, "CludesUIRaidLead")

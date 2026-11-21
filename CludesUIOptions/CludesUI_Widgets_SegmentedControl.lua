@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Widgets_SegmentedControl.lua
 --  BuildSegmentedControl, the pill-shaped tab bar of the multi-edit headers.
@@ -113,15 +111,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0) -- transparent; per-segment segBg handles background
         local boxBdr = SQUARE
-            and CUI.MakeRoundedBorder(
-                pillBody,
-                INACTIVE_R,
-                INACTIVE_G,
-                INACTIVE_B,
-                INACTIVE_A,
-                backdrop,
-                2
-            )
+            and CUI.MakeRoundedBorder(pillBody, INACTIVE_R, INACTIVE_G, INACTIVE_B, INACTIVE_A, backdrop, 2)
 
         -------------------------------------------------------------------
         -- Pill caps
@@ -169,35 +159,25 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         capLeftBtn:SetFrameLevel(pillBody:GetFrameLevel() + 4)
         capLeftBtn:SetScript("OnClick", function()
             local key = rowConf.keys[1]
-            if rowConf.isDisabled and rowConf.isDisabled(key) then
-                return
-            end
-            if rowConf.onToggle then
-                rowConf.onToggle(key)
-            end
+            if rowConf.isDisabled and rowConf.isDisabled(key) then return end
+            if rowConf.onToggle then rowConf.onToggle(key) end
         end)
         capLeftBtn:SetScript("OnEnter", function()
             local key = rowConf.keys[1]
             if rowConf.isDisabled and rowConf.isDisabled(key) then
                 if rowConf.disabledTip then
                     local tipText = rowConf.disabledTip(key)
-                    if tipText then
-                        ShowWidgetTooltip(capLeftBtn, tipText)
-                    end
+                    if tipText then ShowWidgetTooltip(capLeftBtn, tipText) end
                 end
                 return
             end
             widget._hoverIdx = 1
-            if widget._refreshAll then
-                widget._refreshAll()
-            end
+            if widget._refreshAll then widget._refreshAll() end
         end)
         capLeftBtn:SetScript("OnLeave", function()
             HideWidgetTooltip()
             widget._hoverIdx = nil
-            if widget._refreshAll then
-                widget._refreshAll()
-            end
+            if widget._refreshAll then widget._refreshAll() end
         end)
 
         local capRightBtn = CreateFrame("Button", nil, widget)
@@ -206,35 +186,25 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
         capRightBtn:SetFrameLevel(pillBody:GetFrameLevel() + 4)
         capRightBtn:SetScript("OnClick", function()
             local key = rowConf.keys[numKeys]
-            if rowConf.isDisabled and rowConf.isDisabled(key) then
-                return
-            end
-            if rowConf.onToggle then
-                rowConf.onToggle(key)
-            end
+            if rowConf.isDisabled and rowConf.isDisabled(key) then return end
+            if rowConf.onToggle then rowConf.onToggle(key) end
         end)
         capRightBtn:SetScript("OnEnter", function()
             local key = rowConf.keys[numKeys]
             if rowConf.isDisabled and rowConf.isDisabled(key) then
                 if rowConf.disabledTip then
                     local tipText = rowConf.disabledTip(key)
-                    if tipText then
-                        ShowWidgetTooltip(capRightBtn, tipText)
-                    end
+                    if tipText then ShowWidgetTooltip(capRightBtn, tipText) end
                 end
                 return
             end
             widget._hoverIdx = numKeys
-            if widget._refreshAll then
-                widget._refreshAll()
-            end
+            if widget._refreshAll then widget._refreshAll() end
         end)
         capRightBtn:SetScript("OnLeave", function()
             HideWidgetTooltip()
             widget._hoverIdx = nil
-            if widget._refreshAll then
-                widget._refreshAll()
-            end
+            if widget._refreshAll then widget._refreshAll() end
         end)
 
         -------------------------------------------------------------------
@@ -313,12 +283,8 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             local labelFS = button:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(CUI.EXPRESSWAY, FONT_SZ, "")
             local lblOfsX = 0
-            if i == 1 then
-                lblOfsX = -capW / 2
-            end
-            if i == numKeys then
-                lblOfsX = capW / 2
-            end
+            if i == 1 then lblOfsX = -capW / 2 end
+            if i == numKeys then lblOfsX = capW / 2 end
             labelFS:SetPoint("CENTER", lblOfsX, 0)
             labelFS:SetText(CUI.L(rowConf.labels[key] or key))
 
@@ -338,36 +304,26 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             btnByKey[key] = button
 
             button:SetScript("OnClick", function()
-                if rowConf.isDisabled and rowConf.isDisabled(key) then
-                    return
-                end
-                if rowConf.onToggle then
-                    rowConf.onToggle(key)
-                end
+                if rowConf.isDisabled and rowConf.isDisabled(key) then return end
+                if rowConf.onToggle then rowConf.onToggle(key) end
             end)
 
             button:SetScript("OnEnter", function()
                 if rowConf.isDisabled and rowConf.isDisabled(key) then
                     if rowConf.disabledTip then
                         local tipText = rowConf.disabledTip(key)
-                        if tipText then
-                            ShowWidgetTooltip(button, tipText)
-                        end
+                        if tipText then ShowWidgetTooltip(button, tipText) end
                     end
                     return
                 end
                 widget._hoverIdx = i
-                if widget._refreshAll then
-                    widget._refreshAll()
-                end
+                if widget._refreshAll then widget._refreshAll() end
             end)
 
             button:SetScript("OnLeave", function()
                 HideWidgetTooltip()
                 widget._hoverIdx = nil
-                if widget._refreshAll then
-                    widget._refreshAll()
-                end
+                if widget._refreshAll then widget._refreshAll() end
             end)
         end
 
@@ -585,9 +541,7 @@ CUI._deferredInits[#CUI._deferredInits + 1] = function()
             boxBdr:SetColor(INACTIVE_R, INACTIVE_G, INACTIVE_B, allDisabled and 0.10 or INACTIVE_A)
             backdrop:SetColorTexture(PILL_BG[1], PILL_BG[2], PILL_BG[3], allDisabled and 0.50 or PILL_BGA)
         end
-        if SQUARE then
-            RefreshAll = RefreshBox
-        end
+        if SQUARE then RefreshAll = RefreshBox end
 
         widget._refreshAll = RefreshAll
         RefreshAll()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Actions.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local tonumber, type, select = tonumber, type, select
@@ -36,26 +32,16 @@ local UsableSlots
 local TopRank
 do
     local memo = {}
-    function mod.WipeRankCache()
-        wipe(memo)
-    end
+    function mod.WipeRankCache() wipe(memo) end
     TopRank = function(ident)
-        if not CludesUI.IS_FOREVER or type(ident) ~= "number" then
-            return ident
-        end
+        if not CludesUI.IS_FOREVER or type(ident) ~= "number" then return ident end
         local hit = memo[ident]
-        if hit then
-            return hit
-        end
+        if hit then return hit end
         local details = C_Spell.GetSpellInfo(ident)
         local topY = details and C_Spell.GetSpellInfo(details.name)
-        if not topY then
-            return ident
-        end
+        if not topY then return ident end
         local result = ident
-        if topY.spellID ~= ident and C_SpellBook.IsSpellKnown(topY.spellID) then
-            result = topY.spellID
-        end
+        if topY.spellID ~= ident and C_SpellBook.IsSpellKnown(topY.spellID) then result = topY.spellID end
         memo[ident] = result
         return result
     end
@@ -64,9 +50,7 @@ end
 -- The spell a spell entry casts: exactly its stored rank when picked from a
 -- lower one (slot.rankPinned, Forever only), the highest known rank otherwise.
 local function SlotRank(slot)
-    if slot.rankPinned and CludesUI.IS_FOREVER and type(slot.id) == "number" then
-        return slot.id
-    end
+    if slot.rankPinned and CludesUI.IS_FOREVER and type(slot.id) == "number" then return slot.id end
     return TopRank(slot.id)
 end
 
@@ -137,21 +121,15 @@ do
     local function RezKit()
         local _, class = UnitClass("player")
         local kit = class and REZ_BY_CLASS[class]
-        if not kit then
-            return nil
-        end
+        if not kit then return nil end
         local bank = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
         local function Known(ident)
-            if not ident then
-                return nil
-            end
+            if not ident then return nil end
             -- A rank list (Forever) answers with the first rank in the book.
             if type(ident) == "table" then
                 for index = 1, #ident do
                     local hit = Known(ident[index])
-                    if hit then
-                        return hit
-                    end
+                    if hit then return hit end
                 end
                 return nil
             end
@@ -180,17 +158,11 @@ do
     -- readable frame corrects the picture.
     function Rez.HasDeadTarget()
         local exists = UnitExists("target")
-        if issecretvalue(exists) or not exists then
-            return false
-        end
+        if issecretvalue(exists) or not exists then return false end
         local friend = UnitIsFriend("player", "target")
-        if issecretvalue(friend) or not friend then
-            return false
-        end
+        if issecretvalue(friend) or not friend then return false end
         local dead = UnitIsDeadOrGhost("target")
-        if issecretvalue(dead) or not dead then
-            return false
-        end
+        if issecretvalue(dead) or not dead then return false end
         return true
     end
 
@@ -203,15 +175,9 @@ do
         local battle, single, set = RezKit()
         -- A class whose only rez is the battle one casts it in every state, which
         -- is what the bare macro line below does for the same case.
-        if not (single or set) then
-            return battle
-        end
-        if battle and InCombatLockdown() then
-            return battle
-        end
-        if single and Rez.HasDeadTarget() then
-            return single
-        end
+        if not (single or set) then return battle end
+        if battle and InCombatLockdown() then return battle end
+        if single and Rez.HasDeadTarget() then return single end
         return set or single
     end
 
@@ -223,18 +189,14 @@ do
     function Rez.MacroText()
         local battle, single, set = RezKit()
         local Name = C_Spell.GetSpellName
-        if not Name then
-            return nil
-        end
+        if not Name then return nil end
 
         local parts = {}
         local function Add(cond, ident)
             -- By NAME: /cast resolves against the localized one, and a hardcoded
             -- English name would fail silently on every other client.
             local name = ident and Name(ident)
-            if name then
-                parts[#parts + 1] = cond .. name
-            end
+            if name then parts[#parts + 1] = cond .. name end
         end
 
         -- [combat] only when there is something after it to be the out-of-combat
@@ -258,9 +220,7 @@ do
         -- an action bar, and it matches the picture.
         Add("", set or single)
 
-        if #parts == 0 then
-            return nil
-        end
+        if #parts == 0 then return nil end
         return "/cast " .. table.concat(parts, "; ")
     end
 
@@ -307,17 +267,13 @@ do
         end
         -- The flyout fires every toy as "item"; the toy action is the one the
         -- rest of this module uses for toys.
-        if kind == "item" and PlayerHasToy(ident) then
-            kind = "toy"
-        end
+        if kind == "item" and PlayerHasToy(ident) then kind = "toy" end
         pickKind, pickID = kind, ident
     end
 
     -- kind ("toy" or "item") and itemID of what the entry fires right now.
     function Hearth.Current()
-        if not pickID then
-            Hearth.Roll()
-        end
+        if not pickID then Hearth.Roll() end
         return pickKind, pickID
     end
 end
@@ -356,18 +312,12 @@ do
     -- every form is checked before answering no, and a malformed id answers yes
     -- and leaves the slot to render as the placeholder it always was.
     local function SpellKnownHere(ident)
-        if type(ident) ~= "number" or ident <= 0 then
-            return true
-        end
-        if KnownForm(ident) then
-            return true
-        end
+        if type(ident) ~= "number" or ident <= 0 then return true end
+        if KnownForm(ident) then return true end
         local ovr = C_SpellBook
             and C_SpellBook.FindSpellOverrideByID
             and C_SpellBook.FindSpellOverrideByID(ident)
-        if ovr ~= ident and KnownForm(ovr) then
-            return true
-        end
+        if ovr ~= ident and KnownForm(ovr) then return true end
         local base = C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(ident)
         return base ~= ident and KnownForm(base)
     end
@@ -414,15 +364,11 @@ do
     -- Nested palette slots inside a nest fire nothing (one level), so they never count.
     local function NestOffersAny(childFrame)
         local palette = ReadPalette(childFrame)
-        if not palette then
-            return false
-        end
+        if not palette then return false end
         local cp = Inner.PA(childFrame)
         local all = cp and cp.hideUnusable == false
         for _, slot in ipairs(palette.slots) do
-            if slot.kind ~= "palette" and (all or SlotUsable(slot)) then
-                return true
-            end
+            if slot.kind ~= "palette" and (all or SlotUsable(slot)) then return true end
         end
         return false
     end
@@ -436,13 +382,9 @@ do
     -- this palette's setting says; with it off, everything else stays.
     function UsableSlots(palette, profile)
         local slots = palette and palette.slots
-        if not slots then
-            return slots
-        end
+        if not slots then return slots end
         local memo = usableMemo[palette]
-        if memo then
-            return memo
-        end
+        if memo then return memo end
         local all = profile and profile.hideUnusable == false
         local result
         for index = 1, #slots do
@@ -482,22 +424,16 @@ SetUsableSlots(UsableSlots)
 -- palette being PUSHED, which for a nest's cells is the owner's -- the same
 -- palette whose appearance draws them.
 local function ResolveAction(slot, profile)
-    if not slot or not slot.kind then
-        return nil
-    end
+    if not slot or not slot.kind then return nil end
     local key = slot.kind
 
     -- A palette opens entries; it never fires one. Returning nothing is what
     -- makes a release on the parent itself a cancel, which is the only sensible
     -- reading of "you stopped on the door rather than going through it".
-    if key == "palette" then
-        return nil
-    end
+    if key == "palette" then return nil end
 
     if key == "spell" then
-        if type(slot.id) ~= "number" then
-            return nil
-        end
+        if type(slot.id) ~= "number" then return nil end
         return "spell", "spell", SlotRank(slot)
     elseif key == "dynamicprofession" then
         -- Resolved to the CURRENT position's spell every time the
@@ -505,37 +441,25 @@ local function ResolveAction(slot, profile)
         -- slot is -- see ns.ProfessionSpellFor above for what makes the
         -- position current.
         local spellId = mod.ProfessionSpellFor(slot)
-        if not spellId then
-            return nil
-        end
+        if not spellId then return nil end
         return "spell", "spell", spellId
     elseif key == "item" then
-        if type(slot.id) ~= "number" then
-            return nil
-        end
+        if type(slot.id) ~= "number" then return nil end
         return "item", "item", "item:" .. slot.id
     elseif key == "toy" then
-        if type(slot.id) ~= "number" then
-            return nil
-        end
+        if type(slot.id) ~= "number" then return nil end
         return "toy", "toy", slot.id
     elseif key == "randomhearth" then
         local kind, ident = Hearth.Current()
-        if kind == "toy" then
-            return "toy", "toy", ident
-        end
+        if kind == "toy" then return "toy", "toy", ident end
         return "item", "item", "item:" .. ident
     elseif key == "outfit" then
         local details = mod.OutfitInfo(slot)
-        if not details then
-            return nil
-        end
+        if not details then return nil end
         return "outfit", "outfit-index", details.playerFacingOutfitIndex
     elseif key == "equipmentset" then
         local name = mod.EquipmentSetInfo(slot)
-        if not name then
-            return nil
-        end
+        if not name then return nil end
         return "equipmentset", "equipmentset", name
     elseif key == "macro" then
         -- Stored by name so reordering the macro list doesn't repoint the
@@ -547,14 +471,10 @@ local function ResolveAction(slot, profile)
         -- the earlier slot's macro name wins. This branch clears macrotext for
         -- symmetry, so neither key can outlive the slot that set it.
         local nameOrIndex = slot.name or slot.id
-        if not nameOrIndex then
-            return nil
-        end
+        if not nameOrIndex then return nil end
         return "macro", "macro", nameOrIndex, "macrotext"
     elseif key == "macrotext" then
-        if type(slot.macrotext) ~= "string" or slot.macrotext == "" then
-            return nil
-        end
+        if type(slot.macrotext) ~= "string" or slot.macrotext == "" then return nil end
         return "macro", "macrotext", slot.macrotext, "macro"
     elseif key == "mount" then
         -- C_MountJournal.SummonByID is protected, so the mount is summoned
@@ -574,9 +494,7 @@ local function ResolveAction(slot, profile)
         -- CastSpellByName resolves against.
         local details = type(spellId) == "number" and C_Spell.GetSpellInfo(spellId)
         local castName = (details and details.name) or mountName
-        if type(castName) ~= "string" or castName == "" then
-            return nil
-        end
+        if type(castName) ~= "string" or castName == "" then return nil end
         return "spell", "spell", castName
     elseif key == "raidtarget" then
         -- Fired as the /tm slash command rather than through
@@ -590,9 +508,7 @@ local function ResolveAction(slot, profile)
         -- an addon makes from its own Lua. See the clearmarkers branch below,
         -- which was written on the opposite assumption and did not work.
         local ident = tonumber(slot.id)
-        if not ident or ident < 0 or ident > 8 then
-            return nil
-        end
+        if not ident or ident < 0 or ident > 8 then return nil end
         return "macro", "macrotext", "/tm " .. ident, "macro"
     elseif key == "clearmarkers" then
         -- SECURE_ACTIONS.raidtarget's own clear-all branch, which calls
@@ -617,9 +533,7 @@ local function ResolveAction(slot, profile)
         -- marker, /cwm clears. Both take the ENGINE's marker number, so the
         -- stored icon position goes through the map.
         local ident = tonumber(slot.id)
-        if not ident or ident < 0 or ident > 8 then
-            return nil
-        end
+        if not ident or ident < 0 or ident > 8 then return nil end
         if ident == 0 then
             -- The /cwm handler compares its argument against the client's own
             -- ALL string (SlashCommands.lua:824-830), so that string is what
@@ -658,9 +572,7 @@ local function ResolveAction(slot, profile)
         -- the macro runs, so a menu pushed before the pull still casts the
         -- battle rez in it. A resolved spellID could not do that.
         local textValue = Rez.MacroText()
-        if not textValue then
-            return nil
-        end
+        if not textValue then return nil end
         return "macro", "macrotext", textValue, "macro"
     elseif key == "panel" then
         -- "/click <micro button>", so the panel opens on Blizzard's own click
@@ -669,9 +581,7 @@ local function ResolveAction(slot, profile)
         -- taint into everything it draws. The panels with no micro button
         -- answer nothing here and go to FireInsecure instead.
         local textValue = mod.PanelMacro(mod.PanelDef(slot))
-        if not textValue then
-            return nil
-        end
+        if not textValue then return nil end
         return "macro", "macrotext", textValue, "macro"
     elseif key == "cycleraidtarget" or key == "cycleworldmarker" then
         -- The step the position on the slot says is up. The snippet overwrites
@@ -701,9 +611,7 @@ mod.ResolveAction = ResolveAction
 -- WHICH cell reaches here is the snippet's answer rather than the live view's
 -- selection; see OnPostClick.
 local function FireInsecure(slot)
-    if not slot then
-        return
-    end
+    if not slot then return end
     if slot.kind == "battlepet" and slot.guid and C_PetJournal then
         C_PetJournal.SummonPetByGUID(slot.guid)
     elseif slot.kind == "randommount" and C_MountJournal then
@@ -732,9 +640,7 @@ local function FireInsecure(slot)
         -- Refused in combat by the game itself, with its own error message.
         -- Nothing to defer to PLAYER_REGEN_ENABLED: a spec change the user
         -- asked for mid-fight and got minutes later is not what they meant.
-        if index then
-            C_SpecializationInfo.SetSpecialization(index)
-        end
+        if index then C_SpecializationInfo.SetSpecialization(index) end
     end
 end
 
@@ -762,23 +668,15 @@ local QUESTION_MARK_ID = GetFileIDFromPath and GetFileIDFromPath(QUESTION_MARK)
 -- settled on (CludesUICooldownManager.lua:6986-6992): the id a macro action
 -- carries is not reliably a macro index, and these two want the index.
 local function MacroIcon(nameOrIndex)
-    if not nameOrIndex then
-        return nil
-    end
+    if not nameOrIndex then return nil end
     local index = nameOrIndex
-    if type(index) ~= "number" then
-        index = GetMacroIndexByName(index)
-    end
-    if not index or index <= 0 then
-        return nil
-    end
+    if type(index) ~= "number" then index = GetMacroIndexByName(index) end
+    if not index or index <= 0 then return nil end
 
     local spellId = GetMacroSpell(index)
     if spellId then
         local details = C_Spell.GetSpellInfo(spellId)
-        if details and details.iconID then
-            return details.iconID
-        end
+        if details and details.iconID then return details.iconID end
     end
 
     -- An item branch answers no spell. The link, not the name: it carries the
@@ -792,9 +690,7 @@ local function MacroIcon(nameOrIndex)
         local _, itemLink = GetMacroItem(index)
         if itemLink then
             local _, _, _, _, iconTex = C_Item.GetItemInfoInstant(itemLink)
-            if iconTex then
-                return iconTex
-            end
+            if iconTex then return iconTex end
         end
     end
 
@@ -810,9 +706,7 @@ end
 -- `and` expression is truncated to ONE value, which would silently drop every
 -- return past the first and leave every icon nil.
 local function SlotDisplay(slot)
-    if not slot or not slot.kind then
-        return nil, nil
-    end
+    if not slot or not slot.kind then return nil, nil end
     local key = slot.kind
 
     if key == "spell" then
@@ -824,23 +718,17 @@ local function SlotDisplay(slot)
             -- else tells it from the entry that follows the highest rank.
             if slot.rankPinned and CludesUI.IS_FOREVER then
                 local sub = C_Spell.GetSpellSubtext(ident)
-                if sub and sub ~= "" then
-                    name = name .. " (" .. sub .. ")"
-                end
+                if sub and sub ~= "" then name = name .. " (" .. sub .. ")" end
             end
             return details.iconID or QUESTION_MARK, name
         end
     elseif key == "item" then
-        if type(slot.id) ~= "number" then
-            return QUESTION_MARK, slot.name
-        end
+        if type(slot.id) ~= "number" then return QUESTION_MARK, slot.name end
         local _, _, _, _, iconTex = C_Item.GetItemInfoInstant(slot.id)
         local name = C_Item.GetItemInfo(slot.id)
         return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "toy" then
-        if type(slot.id) ~= "number" then
-            return QUESTION_MARK, slot.name
-        end
+        if type(slot.id) ~= "number" then return QUESTION_MARK, slot.name end
         local _, name, iconTex = C_ToyBox.GetToyInfo(slot.id)
         return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "randomhearth" then
@@ -881,17 +769,13 @@ local function SlotDisplay(slot)
         -- would hide the only thing it has to say.
         local ident = Rez.SpellNow()
         local details = ident and C_Spell.GetSpellInfo(ident)
-        if details then
-            return details.iconID or QUESTION_MARK, details.name
-        end
+        if details then return details.iconID or QUESTION_MARK, details.name end
         -- A character with no resurrection spell at all -- the mage carrying
         -- the shared palette. Drawn as an occupied slot under its own name, the
         -- same as a spec this character does not have.
         return QUESTION_MARK, "Dynamic Rez"
     elseif key == "mount" then
-        if type(slot.id) ~= "number" then
-            return QUESTION_MARK, slot.name
-        end
+        if type(slot.id) ~= "number" then return QUESTION_MARK, slot.name end
         local name, _, iconTex = C_MountJournal.GetMountInfoByID(slot.id)
         return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "lastmount" then
@@ -904,9 +788,7 @@ local function SlotDisplay(slot)
         local ident = popFrame and popFrame.lastMountID
         if type(ident) == "number" then
             local name, _, iconTex = C_MountJournal.GetMountInfoByID(ident)
-            if name then
-                return iconTex or QUESTION_MARK, name
-            end
+            if name then return iconTex or QUESTION_MARK, name end
         end
         local details = C_Spell.GetSpellInfo(RANDOM_FAVORITE_MOUNT)
         return (details and details.iconID) or QUESTION_MARK, "Last Used Mount"
@@ -940,9 +822,7 @@ local function SlotDisplay(slot)
         local wanted = tonumber(slot.specID)
         if wanted and GetSpecializationInfoByID then
             local _, name, _, iconTex = GetSpecializationInfoByID(wanted)
-            if iconTex or name then
-                return iconTex or QUESTION_MARK, name or slot.name
-            end
+            if iconTex or name then return iconTex or QUESTION_MARK, name or slot.name end
         end
         return QUESTION_MARK, slot.name
     elseif key == "dynamicprofession" then
@@ -952,9 +832,7 @@ local function SlotDisplay(slot)
             local spellId = mod.ProfessionSpellFor(slot)
             if spellId then
                 local details = C_Spell.GetSpellInfo(spellId)
-                if details then
-                    return details.iconID or QUESTION_MARK, details.name or slot.name
-                end
+                if details then return details.iconID or QUESTION_MARK, details.name or slot.name end
             end
         else
             local bookIndex = mod.ProfessionBookIndexFor(slot)
@@ -970,9 +848,7 @@ local function SlotDisplay(slot)
         return QUESTION_MARK,
             mod.ProfessionPositionName(tonumber(slot.index), slot.extra, slot.specialization)
     elseif key == "battlepet" then
-        if type(slot.guid) ~= "string" then
-            return QUESTION_MARK, slot.name
-        end
+        if type(slot.guid) ~= "string" then return QUESTION_MARK, slot.name end
         local _, _, _, _, _, _, _, name, iconTex = C_PetJournal.GetPetInfoByPetID(slot.guid)
         return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "raidtarget" then
@@ -1001,9 +877,7 @@ local function SlotDisplay(slot)
         -- are the 32x40 shape of a micro button and would be stretched square
         -- by the icon a menu entry draws at.
         local def = mod.PanelDef(slot)
-        if def then
-            return def.icon, mod.PanelName(def)
-        end
+        if def then return def.icon, mod.PanelName(def) end
         -- A key from a newer version of the module, or one that has been
         -- retired. Drawn as an occupied slot, like every other unresolved kind.
         return QUESTION_MARK, slot.name or "Interface Panel"
@@ -1018,9 +892,7 @@ local function SlotDisplay(slot)
         -- send this round its own loop.
         local iconTex = slot.icon
         local first = palette and palette.slots[1]
-        if not iconTex and first and first.kind ~= "palette" then
-            iconTex = SlotDisplay(first)
-        end
+        if not iconTex and first and first.kind ~= "palette" then iconTex = SlotDisplay(first) end
         return iconTex or QUESTION_MARK, slot.name or (palette and palette.name) or "Action Menu"
     end
 
@@ -1050,9 +922,7 @@ mod.SlotDisplay = SlotDisplay
 -- Dynamic entries answer the spell they resolve to right now, so their
 -- cooldown describes the same spell as their icon and secure action.
 local function SlotSpellID(slot)
-    if not slot then
-        return nil
-    end
+    if not slot then return nil end
     if slot.kind == "spell" then
         return type(slot.id) == "number" and SlotRank(slot) or nil
     elseif slot.kind == "dynamicrez" then
@@ -1085,9 +955,7 @@ end
 -- Both ns-hosted for the reason ns.SetIconTexture is: as one file the module's
 -- main chunk was at Lua 5.1's 200-local cap.
 function mod.SlotDataReady(slot)
-    if not slot then
-        return true
-    end
+    if not slot then return true end
     local key = slot.kind
 
     if key == "spell" or key == "dynamicrez" or key == "dynamicprofession" then
@@ -1112,9 +980,7 @@ end
 -- test above because AdvancePendingIcons retests every frame and must not send
 -- the request again with each one.
 function mod.WarmSlot(slot)
-    if mod.SlotDataReady(slot) then
-        return false
-    end
+    if mod.SlotDataReady(slot) then return false end
     local itemId = SlotItemID(slot)
     if itemId then
         C_Item.RequestLoadItemDataByID(itemId)
@@ -1125,9 +991,7 @@ function mod.WarmSlot(slot)
 end
 
 local function SlotCooldown(slot)
-    if not slot then
-        return nil
-    end
+    if not slot then return nil end
     local key = slot.kind
     if
         key == "spell"
@@ -1154,9 +1018,7 @@ local function SlotCooldown(slot)
         end
     elseif key == "item" or key == "toy" or key == "randomhearth" then
         local ident = SlotItemID(slot)
-        if ident and C_Item.GetItemCooldown then
-            return nil, C_Item.GetItemCooldown(ident)
-        end
+        if ident and C_Item.GetItemCooldown then return nil, C_Item.GetItemCooldown(ident) end
     end
     return nil
 end
@@ -1181,34 +1043,24 @@ end
 -- have to be, because a count only means something on a stackable item. A
 -- Hearthstone writing "1" in its corner is noise.
 local function SlotCount(slot)
-    if not slot then
-        return false
-    end
+    if not slot then return false end
     local key = slot.kind
 
     -- A battle rez is the charge-carrying spell this matters most for: how many
     -- are left is the whole question a raid asks of it.
     if key == "spell" or key == "dynamicrez" then
         local ident = SlotSpellID(slot)
-        if not ident or not C_Spell.GetSpellCharges then
-            return false
-        end
+        if not ident or not C_Spell.GetSpellCharges then return false end
         local charges = C_Spell.GetSpellCharges(ident)
-        if not charges then
-            return false
-        end
+        if not charges then return false end
         return true, charges.currentCharges
     elseif key == "item" then
-        if type(slot.id) ~= "number" then
-            return false
-        end
+        if type(slot.id) ~= "number" then return false end
         -- Position 8 is the stack size. It is nil until the item's data has
         -- been cached, which costs at most the count on one open -- the
         -- palette repaints from scratch every time it is drawn.
         local stack = select(8, C_Item.GetItemInfo(slot.id))
-        if not stack or stack <= 1 then
-            return false
-        end
+        if not stack or stack <= 1 then return false end
         return true, C_Item.GetItemCount(slot.id)
     end
 
@@ -1256,28 +1108,18 @@ local USABILITY_TINT = {
 -- usability tint -- Blizzard_ToyBox.lua desaturates only UNCOLLECTED toys --
 -- and the cooldown swipe already tells the one thing a toy has to tell.
 local function SlotUsability(slot)
-    if not slot then
-        return nil
-    end
+    if not slot then return nil end
     local key = slot.kind
 
     if key == "spell" or key == "dynamicrez" then
         local ident = SlotSpellID(slot)
-        if not ident then
-            return nil
-        end
-        if C_Spell.IsSpellInRange(ident) == false then
-            return "OUTOFRANGE"
-        end
+        if not ident then return nil end
+        if C_Spell.IsSpellInRange(ident) == false then return "OUTOFRANGE" end
         local usable, noPower = C_Spell.IsSpellUsable(ident)
-        if usable then
-            return nil
-        end
+        if usable then return nil end
         return noPower and "NOPOWER" or "UNUSABLE"
     elseif key == "item" then
-        if type(slot.id) ~= "number" then
-            return nil
-        end
+        if type(slot.id) ~= "number" then return nil end
         -- Range against the target is a PROTECTED query in combat and in
         -- protected instances when the target cannot be attacked; the Range
         -- module owns that rule. Skipped = no range tint, usability still applies.
@@ -1291,16 +1133,12 @@ local function SlotUsability(slot)
             return "OUTOFRANGE"
         end
         local usable, noPower = C_Item.IsUsableItem(slot.id)
-        if usable then
-            return nil
-        end
+        if usable then return nil end
         return noPower and "NOPOWER" or "UNUSABLE"
     elseif key == "outfit" then
         return InCombatLockdown() and "UNUSABLE" or nil
     elseif key == "equipmentset" then
-        if InCombatLockdown() or not mod.EquipmentSetInfo(slot) then
-            return "UNUSABLE"
-        end
+        if InCombatLockdown() or not mod.EquipmentSetInfo(slot) then return "UNUSABLE" end
     elseif key == "mount" or key == "lastmount" or key == "randommount" then
         -- The Mount Journal's own answer, the one behind its Summon button's
         -- "You can't mount here" line, indoors counted (checkIndoors): plain
@@ -1311,9 +1149,7 @@ local function SlotUsability(slot)
         -- indoors or in combat -- the test the last-mount entry falls back to
         -- before a mount is tracked, or when the journal answers nothing (its
         -- getter may return nothing).
-        if key == "randommount" then
-            return (IsIndoors() or InCombatLockdown()) and "UNUSABLE" or nil
-        end
+        if key == "randommount" then return (IsIndoors() or InCombatLockdown()) and "UNUSABLE" or nil end
         local ident = slot.id
         if key == "lastmount" then
             local popFrame = P()
@@ -1321,13 +1157,9 @@ local function SlotUsability(slot)
         end
         if type(ident) == "number" and ident > 0 then
             local usable = C_MountJournal.GetMountUsabilityByID(ident, true)
-            if usable ~= nil then
-                return usable == false and "UNUSABLE" or nil
-            end
+            if usable ~= nil then return usable == false and "UNUSABLE" or nil end
         end
-        if key == "lastmount" and (IsIndoors() or InCombatLockdown()) then
-            return "UNUSABLE"
-        end
+        if key == "lastmount" and (IsIndoors() or InCombatLockdown()) then return "UNUSABLE" end
     end
 
     return nil
@@ -1337,9 +1169,7 @@ end
 -- cursor holds something the palette can't fire.
 local function SlotFromCursor()
     local cursorType, a, b, c = GetCursorInfo()
-    if not cursorType then
-        return nil
-    end
+    if not cursorType then return nil end
 
     if cursorType == "spell" then
         -- Position 2 is the spellbook SLOT, not the spell -- Blizzard's own
@@ -1347,9 +1177,7 @@ local function SlotFromCursor()
         -- select(4, GetCursorInfo()) for the id. No fallback to position 2:
         -- that would store a slot number as a spellID and silently create a
         -- slot that casts the wrong thing.
-        if type(c) ~= "number" then
-            return nil
-        end
+        if type(c) ~= "number" then return nil end
         -- A lower rank than the highest known one is kept as that rank.
         if CludesUI.IS_FOREVER and TopRank(c) ~= c then
             return { kind = "spell", id = c, rankPinned = true }
@@ -1357,20 +1185,14 @@ local function SlotFromCursor()
         return { kind = "spell", id = c }
     elseif cursorType == "item" then
         local itemId = tonumber(a)
-        if not itemId then
-            return nil
-        end
+        if not itemId then return nil end
         -- The Toy Box frame hands back cursorType "item", not "toy", so
         -- reclassify here to match what the search picker already stores.
-        if PlayerHasToy(itemId) then
-            return { kind = "toy", id = itemId }
-        end
+        if PlayerHasToy(itemId) then return { kind = "toy", id = itemId } end
         return { kind = "item", id = itemId }
     elseif cursorType == "macro" then
         local name = GetMacroInfo(a)
-        if not name then
-            return nil
-        end
+        if not name then return nil end
         return { kind = "macro", id = a, name = name }
     elseif cursorType == "mount" then
         -- Position 2 is the mountID: Blizzard reads it exactly this way at
@@ -1378,30 +1200,20 @@ local function SlotFromCursor()
         -- unsafe here because display indices and mountIDs are both small
         -- integers, so a wrong guess resolves to a real but unrelated mount.
         local mountID = tonumber(a)
-        if not mountID then
-            return nil
-        end
+        if not mountID then return nil end
         local name, spellId = C_MountJournal.GetMountInfoByID(mountID)
-        if not name then
-            return nil
-        end
+        if not name then return nil end
         return { kind = "mount", id = mountID, spellID = spellId, name = name }
     elseif cursorType == "toy" then
         local itemId = tonumber(a)
-        if not itemId then
-            return nil
-        end
+        if not itemId then return nil end
         return { kind = "toy", id = itemId }
     elseif cursorType == "battlepet" then
-        if not a then
-            return nil
-        end
+        if not a then return nil end
         return { kind = "battlepet", guid = a }
     elseif cursorType == "outfit" then
         local details = mod.OutfitInfo(a)
-        if not details then
-            return nil
-        end
+        if not details then return nil end
         return {
             kind = "outfit",
             id = details.outfitID,

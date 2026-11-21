@@ -1,7 +1,5 @@
 local addonName, mod = ...
-if mod.standalone then
-    return
-end
+if mod.standalone then return end
 -- Core.lua is loaded before this file (see TOC), so ns.K is available.
 local K = mod.K
 
@@ -17,15 +15,9 @@ end
 function CoTankAuras_Mixin:MaxShownDefensives()
     return self.maxDefensives or mod.SettingNumber("maxDefensives", K.BIG_DEFENSIVES_DEFAULT_COUNT)
 end
-function CoTankAuras_Mixin:ShowPrivateAuras()
-    return self:MaxShownPrivateAuras() > 0
-end
-function CoTankAuras_Mixin:ShowDebuffs()
-    return mod.DebuffsEnabled() and self:MaxShownDebuffs() > 0
-end
-function CoTankAuras_Mixin:ShowDefensives()
-    return self:MaxShownDefensives() > 0
-end
+function CoTankAuras_Mixin:ShowPrivateAuras() return self:MaxShownPrivateAuras() > 0 end
+function CoTankAuras_Mixin:ShowDebuffs() return mod.DebuffsEnabled() and self:MaxShownDebuffs() > 0 end
+function CoTankAuras_Mixin:ShowDefensives() return self:MaxShownDefensives() > 0 end
 
 -- ── Dead indicator ────────────────────────────────────────────────────────
 function CoTankAuras_Mixin:CreateDeadOverlay()
@@ -42,22 +34,14 @@ end
 
 function CoTankAuras_Mixin:UpdateDeadState()
     if mod.isTestMode then
-        if self.deadOverlay then
-            self.deadOverlay:Hide()
-        end
-        if self.deadText then
-            self.deadText:Hide()
-        end
+        if self.deadOverlay then self.deadOverlay:Hide() end
+        if self.deadText then self.deadText:Hide() end
         return
     end
     local unit = self:GetAttribute("unit")
     local isDead = unit and UnitExists(unit) and UnitIsDeadOrGhost(unit)
-    if self.deadOverlay then
-        self.deadOverlay:SetShown(isDead)
-    end
-    if self.deadText then
-        self.deadText:SetShown(isDead)
-    end
+    if self.deadOverlay then self.deadOverlay:SetShown(isDead) end
+    if self.deadText then self.deadText:SetShown(isDead) end
 end
 
 -- ── Clear helpers ─────────────────────────────────────────────────────────
@@ -66,15 +50,9 @@ end
 local function SetPreviewHighlight(f, stacks)
     local at = mod.StackHighlightAt()
     local enabled = at > 0 and stacks >= at
-    if enabled and not f.stackEdges then
-        f.stackEdges = mod.CreateEdges(f, K.STACK_HIGHLIGHT_EDGE)
-    end
-    if not f.stackEdges then
-        return
-    end
-    if enabled then
-        mod.ColorEdges(f.stackEdges, mod.FontColor("stackHighlightColor"))
-    end
+    if enabled and not f.stackEdges then f.stackEdges = mod.CreateEdges(f, K.STACK_HIGHLIGHT_EDGE) end
+    if not f.stackEdges then return end
+    if enabled then mod.ColorEdges(f.stackEdges, mod.FontColor("stackHighlightColor")) end
     for _, t in ipairs(f.stackEdges) do
         t:SetShown(enabled)
     end
@@ -92,18 +70,14 @@ end
 
 function CoTankAuras_Mixin:ClearDebuffs()
     mod.Alert:PreviewBanner(false)
-    if not self.debuffs then
-        return
-    end
+    if not self.debuffs then return end
     for i = 1, #self.debuffs do
         ClearIconFrame(self.debuffs[i])
     end
 end
 
 function CoTankAuras_Mixin:ClearBigDefensives()
-    if not self.bigDefensives then
-        return
-    end
+    if not self.bigDefensives then return end
     for i = 1, #self.bigDefensives do
         ClearIconFrame(self.bigDefensives[i])
     end
@@ -113,9 +87,7 @@ end
 -- As with debuffs, the live display belongs to the AuraContainer. Outside
 -- edit mode this only draws the test-mode preview.
 function CoTankAuras_Mixin:UpdateBigDefensives()
-    if mod.IsInEditMode() then
-        return
-    end
+    if mod.IsInEditMode() then return end
     if mod.isTestMode and self:ShowDefensives() then
         self:ShowMockDefensives()
     else
@@ -124,9 +96,7 @@ function CoTankAuras_Mixin:UpdateBigDefensives()
 end
 
 function CoTankAuras_Mixin:ShowMockDefensives()
-    if not self.bigDefensives then
-        return
-    end
+    if not self.bigDefensives then return end
     local mocks = K.MOCK_PREVIEW_DEFENSIVE_SPELLS
     local max = math.min(self:MaxShownDefensives(), #mocks)
     local nowTime = GetTime()
@@ -187,9 +157,7 @@ function CoTankAuras_Mixin:ShowMockDebuffs()
             frame.expirationTime = nowTime + (duration - elapsed)
             SetPreviewHighlight(frame, stacks)
             SetPreviewTypeBorder(frame, i)
-            if highlightAt > 0 and stacks >= highlightAt then
-                anyAtThreshold = true
-            end
+            if highlightAt > 0 and stacks >= highlightAt then anyAtThreshold = true end
             frame:SetAlpha(1)
         else
             SetPreviewHighlight(frame, 0)
@@ -204,9 +172,7 @@ end
 -- addon never enumerates the co-tank's auras itself any more. This is only
 -- the test-mode preview path plus the alert check.
 function CoTankAuras_Mixin:UpdateDebuffs()
-    if mod.IsInEditMode() then
-        return
-    end
+    if mod.IsInEditMode() then return end
     if mod.isTestMode then
         if self:ShowDebuffs() then
             self:ShowMockDebuffs()
@@ -219,9 +185,7 @@ function CoTankAuras_Mixin:UpdateDebuffs()
     -- frames are already cleared and hidden by RefreshDebuffLayout when test
     -- mode ends.
     local unit = self:GetAttribute("unit")
-    if not unit or not UnitExists(unit) then
-        return
-    end
+    if not unit or not UnitExists(unit) then return end
     mod.Alert:Check(unit)
 end
 
@@ -240,9 +204,7 @@ function CoTankAuras_Mixin:UpdateHealthBarColor()
     local color
     if unit then
         local _, class = UnitClass(unit)
-        if class then
-            color = RAID_CLASS_COLORS[class]
-        end
+        if class then color = RAID_CLASS_COLORS[class] end
     end
     if color then
         self.health:SetStatusBarColor(
@@ -305,9 +267,7 @@ function CoTankAuras_Mixin:UpdateHealthBar()
         return
     end
     local unit = self:GetAttribute("unit")
-    if not unit or not UnitExists(unit) then
-        return
-    end
+    if not unit or not UnitExists(unit) then return end
     self.health:SetMinMaxValues(0, UnitHealthMax(unit))
     self.health:SetValue(UnitHealth(unit))
     self:UpdateHealthText()
@@ -321,9 +281,7 @@ function CoTankAuras_Mixin:UpdatePower()
         return
     end
     local unit = self:GetAttribute("unit")
-    if not unit or not UnitExists(unit) then
-        return
-    end
+    if not unit or not UnitExists(unit) then return end
     local _, powerToken = UnitPowerType(unit)
     self.power:SetMinMaxValues(0, UnitPowerMax(unit))
     self.power:SetValue(UnitPower(unit))
@@ -333,9 +291,7 @@ end
 
 -- ── Layout helpers ────────────────────────────────────────────────────────
 function CoTankAuras_Mixin:UpdateIconList(frameList, maxCount)
-    if InCombatLockdown() or not frameList then
-        return
-    end
+    if InCombatLockdown() or not frameList then return end
     for i, f in ipairs(frameList) do
         f:SetShown(i <= maxCount)
     end
@@ -369,18 +325,14 @@ end
 -- hidden and the container count is what matters.
 function CoTankAuras_Mixin:RefreshDebuffLayout()
     local preview = (mod.isTestMode or mod.IsInEditMode()) and self:ShowDebuffs()
-    if not preview then
-        self:ClearDebuffs()
-    end
+    if not preview then self:ClearDebuffs() end
     self:UpdateIconList(self.debuffs, preview and self:MaxShownDebuffs() or 0)
     mod.RefreshDebuffContainer(self)
 end
 
 function CoTankAuras_Mixin:RefreshDefensiveLayout()
     local preview = (mod.isTestMode or mod.IsInEditMode()) and self:ShowDefensives()
-    if not preview then
-        self:ClearBigDefensives()
-    end
+    if not preview then self:ClearBigDefensives() end
     self:UpdateIconList(self.bigDefensives, preview and self:MaxShownDefensives() or 0)
     mod.RefreshDefensiveContainer(self)
 end
@@ -413,9 +365,7 @@ function mod.ApplyIconSettings(f)
     local scaleInt = mod.SettingNumber("cdFontScale", K.CD_FONT_SCALE_DEFAULT)
     local scale = scaleInt / 10.0
     local cdAbove = saved.cdAbove or false
-    if f.cd.SetFontScale then
-        f.cd:SetFontScale(math.max(scale, 0.05))
-    end
+    if f.cd.SetFontScale then f.cd:SetFontScale(math.max(scale, 0.05)) end
     f.cd:SetHideCountdownNumbers(cdAbove or scale <= 0)
     if f.timerText then
         f.timerText:SetShown(cdAbove)
@@ -426,9 +376,7 @@ function mod.ApplyIconSettings(f)
 end
 
 function mod.RefreshAllFonts()
-    if not CoTankAuras then
-        return
-    end
+    if not CoTankAuras then return end
     local face = mod.FontPath()
     local flags = mod.FontFlags()
     if CoTankAuras.nameText then
@@ -439,19 +387,13 @@ function mod.RefreshAllFonts()
         CoTankAuras.hpText:SetFont(face, mod.SettingNumber("hpFontSize", K.DEFAULT_HP_FONT_SIZE), flags)
         CoTankAuras.hpText:SetTextColor(mod.FontColor("hpTextColor"))
     end
-    if CoTankAuras.deadText then
-        CoTankAuras.deadText:SetFont(face, 16, flags)
-    end
-    if mod.Alert and mod.Alert.RefreshFont then
-        mod.Alert:RefreshFont()
-    end
+    if CoTankAuras.deadText then CoTankAuras.deadText:SetFont(face, 16, flags) end
+    if mod.Alert and mod.Alert.RefreshFont then mod.Alert:RefreshFont() end
     mod.RefreshAllIconSettings()
 end
 
 function mod.RefreshAllIconSettings()
-    if not CoTankAuras then
-        return
-    end
+    if not CoTankAuras then return end
     if CoTankAuras.debuffs then
         for _, f in ipairs(CoTankAuras.debuffs) do
             mod.ApplyIconSettings(f)
@@ -468,13 +410,9 @@ function mod.RefreshAllIconSettings()
 end
 
 function mod.RefreshDebuffSpacing()
-    if not CoTankAuras then
-        return
-    end
+    if not CoTankAuras then return end
     mod.RefreshAuraContainerLayout(CoTankAuras)
-    if not CoTankAuras.debuffs then
-        return
-    end
+    if not CoTankAuras.debuffs then return end
     local spacing = mod.SettingNumber("debuffSpacing", K.DEBUFF_SPACING)
     for i, f in ipairs(CoTankAuras.debuffs) do
         f:ClearAllPoints()
@@ -510,29 +448,21 @@ local function ApplyPrivateAuraGrow(frames, spacing)
 end
 
 function mod.RefreshPrivateAuraSpacing()
-    if not CoTankAuras or not CoTankAuras.anchorFrames then
-        return
-    end
+    if not CoTankAuras or not CoTankAuras.anchorFrames then return end
     local spacing = mod.SettingNumber("privateAuraSpacing", K.DEBUFF_SPACING)
     ApplyPrivateAuraGrow(CoTankAuras.anchorFrames, spacing)
 end
 
 function mod.RefreshPrivateAuraGrow()
-    if not CoTankAuras or InCombatLockdown() then
-        return
-    end
+    if not CoTankAuras or InCombatLockdown() then return end
     CoTankAuras:CleanupPrivateAnchors()
     mod.RefreshPrivateAuraSpacing()
     CoTankAuras:AttachPrivateAnchors()
 end
 
 function mod.RefreshPrivateAuraSize()
-    if not CoTankAuras or not CoTankAuras.anchorFrames then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not CoTankAuras or not CoTankAuras.anchorFrames then return end
+    if InCombatLockdown() then return end
     local size = mod.SettingNumber("privateAuraSize", K.PRIVATE_AURA_SIZE_DEFAULT)
     for _, boxHolder in ipairs(CoTankAuras.anchorFrames) do
         boxHolder:SetSize(size, size)
@@ -546,20 +476,12 @@ end
 -- runs during normal play - only while the test or edit preview is up.
 local timerUpdater = CreateFrame("Frame")
 timerUpdater:SetScript("OnUpdate", function()
-    if not mod.DB().cdAbove then
-        return
-    end
-    if not CoTankAuras then
-        return
-    end
-    if not (mod.isTestMode or mod.IsInEditMode()) then
-        return
-    end
+    if not mod.DB().cdAbove then return end
+    if not CoTankAuras then return end
+    if not (mod.isTestMode or mod.IsInEditMode()) then return end
     local nowTime = GetTime()
     local function updateList(entries)
-        if not entries then
-            return
-        end
+        if not entries then return end
         for _, f in ipairs(entries) do
             if f.timerText and f:GetAlpha() > 0 and (f.expirationTime or 0) > 0 then
                 local rem = f.expirationTime - nowTime
@@ -620,18 +542,14 @@ local function CreateIconFrame(iconList, iconSize, anchorPoint, hostFrame, relat
     frame:EnableMouse(true)
     frame:SetScript("OnLeave", function()
         GameTooltip:Hide()
-        if GameTooltip.ClearLines then
-            GameTooltip:ClearLines()
-        end
+        if GameTooltip.ClearLines then GameTooltip:ClearLines() end
     end)
     frame:SetScript("OnEnter", function(button)
         -- TooltipInfo aura lookups by instance ID error while auras are
         -- secret. These frames are the test-mode preview only (live icons are
         -- AuraButtons, which carry their own engine tooltip), so bail out
         -- rather than risk the call.
-        if mod.AurasAreSecret() then
-            return
-        end
+        if mod.AurasAreSecret() then return end
         local unit = CoTankAuras and CoTankAuras:GetAttribute("unit")
         if unit and button.auraInstanceID then
             GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
@@ -660,9 +578,7 @@ function CoTankAuras_Mixin:CreateDebuffContainer()
 end
 
 function CoTankAuras_Mixin:CreateDefensiveContainer()
-    if InCombatLockdown() or self.bigDefensives then
-        return
-    end
+    if InCombatLockdown() or self.bigDefensives then return end
     self.bigDefensives = {}
     local iconSize = K.DEFAULT_HEIGHT - K.POWER_BAR_HEIGHT - 16
     for i = 1, K.BIG_DEFENSIVES_MAX_COUNT do
@@ -672,9 +588,7 @@ function CoTankAuras_Mixin:CreateDefensiveContainer()
 end
 
 function CoTankAuras_Mixin:CreatePrivateAnchorContainers()
-    if InCombatLockdown() or self.anchorFrames then
-        return
-    end
+    if InCombatLockdown() or self.anchorFrames then return end
     self.anchorFrames = {}
     local scaleFactor = mod.CalculateScaleFactor()
     local size = mod.SettingNumber("privateAuraSize", K.PRIVATE_AURA_SIZE_DEFAULT)
@@ -696,9 +610,7 @@ end
 
 -- ── Private aura anchors ──────────────────────────────────────────────────
 function CoTankAuras_Mixin:ShowMockPrivateAuras()
-    if not self.anchorFrames then
-        return
-    end
+    if not self.anchorFrames then return end
     local mocks = K.MOCK_PREVIEW_DEBUFF_ICONS
     local max = math.min(self:MaxShownPrivateAuras(), #mocks)
     for i, boxHolder in ipairs(self.anchorFrames) do
@@ -726,21 +638,15 @@ function CoTankAuras_Mixin:ShowMockPrivateAuras()
         elseif boxHolder.mockIcon then
             boxHolder.mockIcon:SetAlpha(0)
             boxHolder:SetBackdropBorderColor(0, 0, 0, 0)
-            if boxHolder.mockStack then
-                boxHolder.mockStack:Hide()
-            end
+            if boxHolder.mockStack then boxHolder.mockStack:Hide() end
         end
     end
 end
 
 function CoTankAuras_Mixin:HideMockPrivateAuras()
-    if not self.anchorFrames then
-        return
-    end
+    if not self.anchorFrames then return end
     for _, boxHolder in ipairs(self.anchorFrames) do
-        if boxHolder.mockIcon then
-            boxHolder.mockIcon:SetAlpha(0)
-        end
+        if boxHolder.mockIcon then boxHolder.mockIcon:SetAlpha(0) end
         boxHolder:SetBackdropBorderColor(0, 0, 0, 0)
     end
 end
@@ -748,18 +654,14 @@ end
 function CoTankAuras_Mixin:AttachPrivateAnchors()
     self:CleanupPrivateAnchors()
     self:RefreshAuraLayout()
-    if not self:IsVisible() or not self:ShowPrivateAuras() then
-        return
-    end
+    if not self:IsVisible() or not self:ShowPrivateAuras() then return end
     -- In test mode show placeholder icons instead of attaching real engine anchors
     if mod.isTestMode then
         self:ShowMockPrivateAuras()
         return
     end
     local unit = self:GetAttribute("unit")
-    if not unit then
-        return
-    end
+    if not unit then return end
     self.privateAnchorIDs = self.privateAnchorIDs or {}
     self.privateStackAnchorIDs = self.privateStackAnchorIDs or {}
     self.privateStackFrames = self.privateStackFrames or {}
@@ -787,9 +689,7 @@ function CoTankAuras_Mixin:AttachPrivateAnchors()
                 },
             },
         })
-        if ident then
-            table.insert(self.privateAnchorIDs, ident)
-        end
+        if ident then table.insert(self.privateAnchorIDs, ident) end
         if stackScale > 1 then
             if not self.privateStackFrames[i] then
                 local scrollFrame = CreateFrame("Frame", nil, self.anchorFrames[i])
@@ -824,9 +724,7 @@ function CoTankAuras_Mixin:AttachPrivateAnchors()
                     },
                 },
             })
-            if spellRef then
-                table.insert(self.privateStackAnchorIDs, spellRef)
-            end
+            if spellRef then table.insert(self.privateStackAnchorIDs, spellRef) end
         end
     end
 end
@@ -849,9 +747,7 @@ end
 
 -- ── Event handlers ────────────────────────────────────────────────────────
 function CoTankAuras_Mixin:OnAttributeChanged(name, value)
-    if name ~= "unit" then
-        return
-    end
+    if name ~= "unit" then return end
     self:UnregisterAllEvents()
     local watchUnit = mod.isTestMode and "player" or value
     if watchUnit then
@@ -862,17 +758,13 @@ function CoTankAuras_Mixin:OnAttributeChanged(name, value)
         self:RegisterUnitEvent("UNIT_DISPLAYPOWER", watchUnit)
         self:RegisterUnitEvent("UNIT_AURA", watchUnit)
         -- In test mode also watch the real co-tank's auras so debuffs update live
-        if mod.isTestMode and value and value ~= watchUnit then
-            self:RegisterUnitEvent("UNIT_AURA", value)
-        end
+        if mod.isTestMode and value and value ~= watchUnit then self:RegisterUnitEvent("UNIT_AURA", value) end
         self:AttachPrivateAnchors()
         mod.RefreshAuraContainers(self)
         mod.Alert:RegisterAuraSounds(value)
         self:UpdateVisuals()
     else
-        if not mod.isTestMode then
-            self:SetNameText("NO CO-TANK")
-        end
+        if not mod.isTestMode then self:SetNameText("NO CO-TANK") end
         self.health:SetValue(0)
         self.power:SetValue(0)
         self:ClearDebuffs()
@@ -882,9 +774,7 @@ function CoTankAuras_Mixin:OnAttributeChanged(name, value)
     end
 end
 
-function CoTankAuras_Mixin:OnSizeChangedHandler()
-    self:FitNameToWidth()
-end
+function CoTankAuras_Mixin:OnSizeChangedHandler() self:FitNameToWidth() end
 
 function CoTankAuras_Mixin:SetNameText(nameText)
     self.nameText.rawText = nameText
@@ -903,9 +793,7 @@ function CoTankAuras_Mixin:FitNameToWidth()
             local nextByte = raw:byte(i + 1)
             if not nextByte or nextByte < 0x80 or nextByte >= 0xC0 then
                 self.nameText:SetText(string.sub(raw, 1, i) .. "...")
-                if self.nameText:GetStringWidth() <= maxWidth then
-                    break
-                end
+                if self.nameText:GetStringWidth() <= maxWidth then break end
             end
         end
     end
@@ -932,9 +820,7 @@ function CoTankAuras_Mixin:UpdateVisuals(_event, _unusedUnit, _info)
     end
     self.nextUpdate = nowTime + K.UPDATE_THROTTLE
     local unit = self:GetAttribute("unit")
-    if not unit or not UnitExists(unit) then
-        return
-    end
+    if not unit or not UnitExists(unit) then return end
     self:UpdateHealthBar()
     self:UpdatePower()
     self:UpdateDebuffs()
@@ -942,9 +828,7 @@ function CoTankAuras_Mixin:UpdateVisuals(_event, _unusedUnit, _info)
     self:UpdateDeadState()
     if not mod.isTestMode then
         local name = UnitName(unit)
-        if name then
-            self:SetNameText(name)
-        end
+        if name then self:SetNameText(name) end
     end
 end
 

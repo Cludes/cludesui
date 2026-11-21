@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\BarsPage_Options.lua
 --  Cooldown Manager options: the CDM Bars page (BuildCDMBarsPage). Definitions
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CUI_CooldownManager_Options.lua), the preview from LivePreview_Options.lua.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
 -- host (a reused page or header, a kept menu) is handed out again reset to
@@ -29,16 +25,10 @@ local mountActive = {}
 function mountActive.OnEvent()
     local environ = mod._CDMO_OptEnv
     local preview = environ and (environ.optState._cdmPreview or CludesUI._cdmHeaderPreview)
-    if preview and preview:IsVisible() then
-        environ.UpdateCDMPreviewAndResize()
-    end
+    if preview and preview:IsVisible() then environ.UpdateCDMPreviewAndResize() end
 end
-function mountActive.Arm()
-    mountActive.frame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
-end
-function mountActive.Disarm()
-    mountActive.frame:UnregisterAllEvents()
-end
+function mountActive.Arm() mountActive.frame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED") end
+function mountActive.Disarm() mountActive.frame:UnregisterAllEvents() end
 
 local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local environ = mod._CDMO_OptEnv
@@ -58,27 +48,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local _, height, heading
 
     local profile = DB()
-    if not profile or not profile.cdmBars then
-        return math.abs(yOffset)
-    end
+    if not profile or not profile.cdmBars then return math.abs(yOffset) end
 
     local barList = profile.cdmBars.bars
-    if not barList or #barList == 0 then
-        return math.abs(yOffset)
-    end
+    if not barList or #barList == 0 then return math.abs(yOffset) end
 
     -- Clamp selection
-    if optionState.selectedCDMBarIndex < 1 then
-        optionState.selectedCDMBarIndex = 1
-    end
-    if optionState.selectedCDMBarIndex > #barList then
-        optionState.selectedCDMBarIndex = #barList
-    end
+    if optionState.selectedCDMBarIndex < 1 then optionState.selectedCDMBarIndex = 1 end
+    if optionState.selectedCDMBarIndex > #barList then optionState.selectedCDMBarIndex = #barList end
 
     local barInfo = barList[optionState.selectedCDMBarIndex]
-    if not barInfo then
-        return math.abs(yOffset)
-    end
+    if not barInfo then return math.abs(yOffset) end
 
     -- Tag every option registered by this build with the selected bar, so a global-search
     -- jump to a bar-specific setting (e.g. HoverCast/FocusKick-only rows) restores this exact
@@ -147,9 +127,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             ph:SetTextColor(0.5, 0.5, 0.5, 0.6)
             ph:SetPoint("LEFT", search, "LEFT", 6, 0)
             ph:SetText("Search...")
-            search:SetScript("OnEscapePressed", function(s)
-                s:ClearFocus()
-            end)
+            search:SetScript("OnEscapePressed", function(s) s:ClearFocus() end)
             -- Scrollable, capped list: a long cross-class spec list scrolls
             -- (mousewheel) inside a fixed max height instead of running off the
             -- screen. A thin thumb on the right shows when there is more to see.
@@ -188,19 +166,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end
             scroller:SetScript("OnMouseWheel", function(self, delta)
                 local maxScroll = math.max(0, listF:GetHeight() - self:GetHeight())
-                if maxScroll <= 0 then
-                    return
-                end
+                if maxScroll <= 0 then return end
                 local new =
                     math.max(0, math.min(maxScroll, (self:GetVerticalScroll() or 0) - delta * ROW_H * 2))
                 self:SetVerticalScroll(new)
                 UpdateThumb()
             end)
-            shade:SetScript("OnMouseDown", function()
-                shade:Hide()
-            end)
+            shade:SetScript("OnMouseDown", function() shade:Hide() end)
             dialog:SetScript("OnMouseDown", function() end)
-            SrcPopup.dimmer, SrcPopup.popup, SrcPopup.search, SrcPopup.ph, SrcPopup.list, SrcPopup.DDW = shade, dialog, search, ph, listF, DDW
+            SrcPopup.dimmer, SrcPopup.popup, SrcPopup.search, SrcPopup.ph, SrcPopup.list, SrcPopup.DDW =
+                shade, dialog, search, ph, listF, DDW
             SrcPopup.scroll, SrcPopup.updateThumb = scroller, UpdateThumb
         end
 
@@ -231,13 +206,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local tx = CludesUI.MakeFont(r, 13, nil, 1, 1, 1, 0.85)
                         tx:SetPoint("LEFT", iconTex, "RIGHT", 8, 0)
                         r._tx = tx
-                        r:SetScript("OnEnter", function(self)
-                            self._hl:Show()
-                        end)
+                        r:SetScript("OnEnter", function(self) self._hl:Show() end)
                         r:SetScript("OnLeave", function(self)
-                            if not self._isDefault then
-                                self._hl:Hide()
-                            end
+                            if not self._isDefault then self._hl:Hide() end
                         end)
                         SrcPopup.rows[isShown] = r
                     end
@@ -255,9 +226,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local barKey = s.key
                     r:SetScript("OnClick", function()
                         SrcPopup.dimmer:Hide()
-                        if onSelect then
-                            onSelect(barKey)
-                        end
+                        if onSelect then onSelect(barKey) end
                     end)
                     r:Show()
                 end
@@ -270,9 +239,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- Rebuilt while shown (search typing): refit the outline's bottom edge.
             SrcPopup.brd:Fit()
             SrcPopup.scroll:SetVerticalScroll(0)
-            if SrcPopup.updateThumb then
-                SrcPopup.updateThumb()
-            end
+            if SrcPopup.updateThumb then SrcPopup.updateThumb() end
         end
         SrcPopup.search:SetScript("OnTextChanged", function(self)
             SrcPopup.ph:SetShown((self:GetText() or "") == "")
@@ -282,9 +249,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         SrcPopup.ph:Show()
         Rebuild()
         SrcPopup.dimmer:Show()
-        C_Timer.After(0.05, function()
-            SrcPopup.search:SetFocus()
-        end)
+        C_Timer.After(0.05, function() SrcPopup.search:SetFocus() end)
     end
 
     -- Sync Generic CDs/Buffs across specs (per profile): trinkets, pots, racials
@@ -307,16 +272,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 elseif GetSpecializationInfoForSpecID then
                     num = select(2, GetSpecializationInfoForSpecID(srcID))
                 end
-                if num and num ~= "" then
-                    srcName = num
-                end
+                if num and num ~= "" then srcName = num end
             end
             -- WoW Forever: a key names a whole class there.
             if CludesUI.IS_FOREVER then
                 local t = CludesUI.SpecClassOf(tonumber(sourceKey))
-                if t then
-                    srcName = CludesUI.ForeverClassName(t)
-                end
+                if t then srcName = CludesUI.ForeverClassName(t) end
             end
             local specs = mod.GetCDMSpecInfo and mod.GetCDMSpecInfo() or {}
             for _, spec in ipairs(specs) do
@@ -342,17 +303,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     selectedSpecs[sourceKey] = true
                     local cnt = 0
                     for _, value in pairs(selectedSpecs) do
-                        if value then
-                            cnt = cnt + 1
-                        end
+                        if value then cnt = cnt + 1 end
                     end
                     if cnt <= 1 then
                         -- Only the source picked -> nothing to sync; clear any
                         -- existing sync and SAY so (one ticked spec is the
                         -- natural first guess at "sync FROM this spec").
-                        if mod.ClearRPTSync then
-                            mod.ClearRPTSync()
-                        end
+                        if mod.ClearRPTSync then mod.ClearRPTSync() end
                         CludesUI.Print(
                             "|cff4cc9f0CludesUI CDM:|r "
                                 .. CludesUI.L(
@@ -362,12 +319,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         CludesUI:RefreshPage(true)
                         return
                     end
-                    if mod.SetupRPTSync then
-                        mod.SetupRPTSync(selectedSpecs, sourceKey)
-                    end
-                    if mod.FullCDMRebuild then
-                        mod.FullCDMRebuild("profile_import")
-                    end
+                    if mod.SetupRPTSync then mod.SetupRPTSync(selectedSpecs, sourceKey) end
+                    if mod.FullCDMRebuild then mod.FullCDMRebuild("profile_import") end
                     -- Which bar each entry sits on is synced; its SLOT is not
                     -- (every spec keeps its own ordering) -- easily read as a
                     -- bug, so the print states it explicitly.
@@ -409,17 +362,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             onConfirm = function(selectedSpecs)
                 local cnt = 0
                 for _, value in pairs(selectedSpecs) do
-                    if value then
-                        cnt = cnt + 1
-                    end
+                    if value then cnt = cnt + 1 end
                 end
                 if cnt <= 1 then
                     -- One or zero specs left -> nothing to sync; clear it.
                     -- Announced for the same reason as the setup path: the
                     -- sync is discarded here, not merely left unchanged.
-                    if mod.ClearRPTSync then
-                        mod.ClearRPTSync()
-                    end
+                    if mod.ClearRPTSync then mod.ClearRPTSync() end
                     CludesUI.Print(
                         "|cff4cc9f0CludesUI CDM:|r "
                             .. CludesUI.L("Sync cleared -- fewer than two specs remained selected.")
@@ -427,12 +376,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage(true)
                     return
                 end
-                if mod.UpdateRPTSyncSpecs then
-                    mod.UpdateRPTSyncSpecs(selectedSpecs)
-                end
-                if mod.FullCDMRebuild then
-                    mod.FullCDMRebuild("profile_import")
-                end
+                if mod.UpdateRPTSyncSpecs then mod.UpdateRPTSyncSpecs(selectedSpecs) end
+                if mod.FullCDMRebuild then mod.FullCDMRebuild("profile_import") end
                 CludesUI:RefreshPage(true)
             end,
         })
@@ -464,9 +409,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 confirmText = "Repopulate",
                 cancelText = "Cancel",
                 onConfirm = function()
-                    if mod.RepopulateFromBlizzard then
-                        mod.RepopulateFromBlizzard()
-                    end
+                    if mod.RepopulateFromBlizzard then mod.RepopulateFromBlizzard() end
                     C_Timer.After(0.15, function()
                         if optionState._cdmPreview and optionState._cdmPreview.Update then
                             optionState._cdmPreview:Update()
@@ -480,9 +423,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local edge = SelectedCDMBar()
             local barType = edge and (edge.barType or edge.key) or "cooldowns"
             local isBuff = (barType == "buffs")
-            if mod.OpenBlizzardCDMTab then
-                mod.OpenBlizzardCDMTab(isBuff)
-            end
+            if mod.OpenBlizzardCDMTab then mod.OpenBlizzardCDMTab(isBuff) end
         end,
         DoRPTSync,
         225
@@ -515,52 +456,34 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local barId = barInfo.key
     local function BarList()
         local profile = DB()
-        if not profile or not profile.cdmBars or not profile.cdmBars.bars then
-            return barInfo
-        end
+        if not profile or not profile.cdmBars or not profile.cdmBars.bars then return barInfo end
         for _, bar in ipairs(profile.cdmBars.bars) do
-            if bar.key == barId then
-                return bar
-            end
+            if bar.key == barId then return bar end
         end
         return barInfo
     end
     -- Row accessors over BD(): a key read (or its default) and written.
     local function BDField(barKey)
-        return function(value)
-            BarList()[barKey] = value
-        end
+        return function(value) BarList()[barKey] = value end
     end
     local function BDFieldOr(barKey, default)
-        return function()
-            return BarList()[barKey] or default
-        end
+        return function() return BarList()[barKey] or default end
     end
     local function BDFieldIs(barKey)
-        return function()
-            return BarList()[barKey] == true
-        end
+        return function() return BarList()[barKey] == true end
     end
     local function BDFieldGet(barKey)
-        return function()
-            return BarList()[barKey]
-        end
+        return function() return BarList()[barKey] end
     end
     -- Row accessors over BD(): a key read (or its default) and written.
     local function BDField(barKey)
-        return function(value)
-            BarList()[barKey] = value
-        end
+        return function(value) BarList()[barKey] = value end
     end
     local function BDFieldOr(barKey, default)
-        return function()
-            return BarList()[barKey] or default
-        end
+        return function() return BarList()[barKey] or default end
     end
     local function BDFieldGet(barKey)
-        return function()
-            return BarList()[barKey]
-        end
+        return function() return BarList()[barKey] end
     end
 
     local isDefault = (barInfo.key == "cooldowns" or barInfo.key == "utility" or barInfo.key == "buffs")
@@ -698,9 +621,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local menuH = 4
             local customCount = 0
             for _, bar in ipairs(barList) do
-                if not BUILT_IN[bar.key] and not bar.isGhostBar then
-                    customCount = customCount + 1
-                end
+                if not BUILT_IN[bar.key] and not bar.isGhostBar then customCount = customCount + 1 end
             end
 
             -- Display list: array order, except CUSTOM bars render in the saved
@@ -828,12 +749,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local function Rest()
                         itemCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
-                        if delBtn then
-                            delBtn:SetAlpha(0.75)
-                        end
-                        if editBtn then
-                            editBtn:SetAlpha(0.75)
-                        end
+                        if delBtn then delBtn:SetAlpha(0.75) end
+                        if editBtn then editBtn:SetAlpha(0.75) end
                     end
                     if isCustom then
                         -- Hovering an icon lights it, the row and its partner.
@@ -889,18 +806,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             gripTex:SetPoint("CENTER", gripButton, "CENTER", 0, 0)
                             gripTex:SetText("=")
                             gripTex:SetTextColor(1, 1, 1, 0.2)
-                            gripButton:SetScript("OnEnter", function()
-                                gripTex:SetTextColor(1, 1, 1, 0.6)
-                            end)
+                            gripButton:SetScript("OnEnter", function() gripTex:SetTextColor(1, 1, 1, 0.6) end)
                             gripButton:SetScript("OnLeave", function()
                                 if not (drag.row == entry and drag.active) then
                                     gripTex:SetTextColor(1, 1, 1, 0.2)
                                 end
                             end)
                             gripButton:SetScript("OnMouseDown", function(_, mb)
-                                if mb ~= "LeftButton" then
-                                    return
-                                end
+                                if mb ~= "LeftButton" then return end
                                 local _, curY = GetCursorPosition()
                                 drag.row = entry
                                 drag.startY = curY
@@ -908,14 +821,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 drag.slot = nil
                             end)
                             gripButton:SetScript("OnUpdate", function()
-                                if drag.row ~= entry or not drag.startY then
-                                    return
-                                end
+                                if drag.row ~= entry or not drag.startY then return end
                                 local _, curY = GetCursorPosition()
                                 if not drag.active then
-                                    if math.abs(curY - drag.startY) < 3 then
-                                        return
-                                    end
+                                    if math.abs(curY - drag.startY) < 3 then return end
                                     drag.active = true
                                     entry:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
                                     entry:SetAlpha(0.8)
@@ -936,31 +845,21 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, cY - mT)
                             end)
                             gripButton:SetScript("OnMouseUp", function(_, mb)
-                                if mb ~= "LeftButton" or drag.row ~= entry then
-                                    return
-                                end
+                                if mb ~= "LeftButton" or drag.row ~= entry then return end
                                 local wasActive = drag.active
                                 local slot = drag.slot
                                 ResetDrag()
-                                if insLine then
-                                    insLine:Hide()
-                                end
-                                if not wasActive then
-                                    return
-                                end
+                                if insLine then insLine:Hide() end
+                                if not wasActive then return end
                                 local from
                                 local keyList = {}
                                 for ri, r2 in ipairs(customRows) do
                                     keyList[ri] = r2.key
-                                    if r2.item == entry then
-                                        from = ri
-                                    end
+                                    if r2.item == entry then from = ri end
                                 end
                                 local to = slot or from
                                 if from and to then
-                                    if from < to then
-                                        to = to - 1
-                                    end
+                                    if from < to then to = to - 1 end
                                     to = math.max(1, math.min(to, #keyList))
                                     if from ~= to then
                                         local mv = table.remove(keyList, from)
@@ -1016,17 +915,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 cancelText = "Cancel",
                                 onConfirm = function(newName)
                                     newName = newName and strtrim(newName) or ""
-                                    if newName == "" or newName == oldName then
-                                        return
-                                    end
+                                    if newName == "" or newName == oldName then return end
                                     bar.name = newName
                                     -- Other pages' saved headers name the bars; this
                                     -- page's header is built by its own rebuild below.
                                     CludesUI:InvalidateContentHeaderCache()
                                     CludesUI:RefreshPage(true)
-                                    if mod.RegisterCDMUnlockElements then
-                                        mod.RegisterCDMUnlockElements()
-                                    end
+                                    if mod.RegisterCDMUnlockElements then mod.RegisterCDMUnlockElements() end
                                 end,
                             })
                         end)
@@ -1040,9 +935,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         end
                     end)
                     entry:SetScript("OnLeave", function()
-                        if delBtn and (delBtn:IsMouseOver() or editBtn:IsMouseOver()) then
-                            return
-                        end
+                        if delBtn and (delBtn:IsMouseOver() or editBtn:IsMouseOver()) then return end
                         Rest()
                     end)
                     entry:SetScript("OnClick", function()
@@ -1122,18 +1015,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
             -- Close on left-click outside (non-blocking). Never dismiss while a custom-bar row is being dragged -- a fast drag can momentarily leave the menu bounds.
             dropMenu:SetScript("OnUpdate", function(frame)
-                if drag.active then
-                    return
-                end
-                if not frame:IsMouseOver() and not dropdownBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                if drag.active then return end
+                if
+                    not frame:IsMouseOver()
+                    and not dropdownBtn:IsMouseOver()
+                    and IsMouseButtonDown("LeftButton")
+                then
                     frame:Hide()
                 end
             end)
             -- Hooked once per dress: an in-place redraw keeps the dress's hook.
             if not inPlace then
-                dropMenu:HookScript("OnHide", function(m)
-                    m:SetScript("OnUpdate", nil)
-                end)
+                dropMenu:HookScript("OnHide", function(m) m:SetScript("OnUpdate", nil) end)
             end
 
             dropMenu:Show()
@@ -1147,9 +1040,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
         end)
         dropdownBtn:SetScript("OnLeave", function()
-            if ddMenu and ddMenu:IsShown() then
-                return
-            end
+            if ddMenu and ddMenu:IsShown() then return end
             dropCaption:SetAlpha(mTxtA)
             ddBrd:SetColor(1, 1, 1, mBrdA)
             ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
@@ -1162,9 +1053,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end
         end)
         dropdownBtn:HookScript("OnHide", function()
-            if ddMenu then
-                ddMenu:Hide()
-            end
+            if ddMenu then ddMenu:Hide() end
         end)
 
         Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, fy)
@@ -1188,9 +1077,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             mountActive.frame = CreateFrame("Frame")
             mountActive.frame:SetScript("OnEvent", mountActive.OnEvent)
         end
-        if hostFrame:IsVisible() then
-            mountActive.Arm()
-        end
+        if hostFrame:IsVisible() then mountActive.Arm() end
         hostFrame:HookScript("OnShow", mountActive.Arm)
         hostFrame:HookScript("OnHide", mountActive.Disarm)
     end
@@ -1215,13 +1102,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- identity and never receives global syncs.
     local function ForEachSyncBar(func)
         local profile = DB()
-        if not profile or not profile.cdmBars then
-            return
-        end
+        if not profile or not profile.cdmBars then return end
         for _, bar in ipairs(profile.cdmBars.bars) do
-            if not bar.isGhostBar and bar.key ~= "focuskick" then
-                func(bar)
-            end
+            if not bar.isGhostBar and bar.key ~= "focuskick" then func(bar) end
         end
     end
 
@@ -1230,9 +1113,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         cursorY = cursorY - height
         -- The selected bar's mover (the key is read at the click).
         CludesUI.BuildSectionUnlockJump(heading, {
-            key = function()
-                return "CDM_" .. BarList().key
-            end,
+            key = function() return "CDM_" .. BarList().key end,
         })
 
         -- Row 1: (Sync) Visibility. Mouseover stays structurally absent for CDM bars
@@ -1250,12 +1131,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- true on next login. Harmless for other bars: they never go through that
                 -- merge, so the checkbox reads store[k] == true either way.
                 trueDefaultOpts = { visHideHousing = true },
-                onChanged = function()
-                    mod.CDMApplyVisibility()
-                end,
-                onOptionChanged = function()
-                    mod.CDMApplyVisibility()
-                end,
+                onChanged = function() mod.CDMApplyVisibility() end,
+                onOptionChanged = function() mod.CDMApplyVisibility() end,
             },
             -- Number of Rows moved up into the slot the Visibility Options dropdown
             -- left behind; its Row Icons cog moved with it.
@@ -1284,9 +1161,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             -- with the rest of the split settings and re-store the
                             -- position in plain edge format from the bar's current spot.
                             edge.rowGrowDirection = nil
-                            if mod.RecaptureBarAnchor then
-                                mod.RecaptureBarAnchor(edge.key)
-                            end
+                            if mod.RecaptureBarAnchor then mod.RecaptureBarAnchor(edge.key) end
                         end
                     end
                     -- numRows change invalidates cached match dims (rows is one
@@ -1319,9 +1194,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 onClick = function()
                     local source = BarList()
                     ForEachSyncBar(function(bar)
-                        if bar ~= source then
-                            CludesUI.VisFullCopy(bar, source, "barVisibility")
-                        end
+                        if bar ~= source then CludesUI.VisFullCopy(bar, source, "barVisibility") end
                     end)
                     mod.CDMApplyVisibility()
                     CludesUI:RefreshPage()
@@ -1360,14 +1233,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 min = 0,
                 max = 100,
                 step = 1,
-                getValue = function()
-                    return math.floor((BarList().barOpacity or 1) * 100 + 0.5)
-                end,
+                getValue = function() return math.floor((BarList().barOpacity or 1) * 100 + 0.5) end,
                 setValue = function(value)
                     BarList().barOpacity = value / 100
-                    if mod.ApplyBarOpacity then
-                        mod.ApplyBarOpacity(BarList().key)
-                    end
+                    if mod.ApplyBarOpacity then mod.ApplyBarOpacity(BarList().key) end
                     UpdateCDMPreview()
                 end,
             }
@@ -1396,7 +1265,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     region,
                     opacityRow:GetFrameLevel() + 3,
                     function()
-                        return BarList().barBgR or 0, BarList().barBgG or 0, BarList().barBgB or 0, BarList().barBgA or 0.5
+                        return BarList().barBgR or 0,
+                            BarList().barBgG or 0,
+                            BarList().barBgB or 0,
+                            BarList().barBgA or 0.5
                     end,
                     function(red, green, blue, a)
                         BarList().barBgR = red
@@ -1410,16 +1282,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 )
                 Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
                 local block = CludesUI.NewSwatchBlocker(bgSwatch)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(bgSwatch, CludesUI.DisabledTooltip("Bar Background"))
-                end)
-                block:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                CludesUI.RegisterWidgetRefresh(function()
-                    if updateBgSwatch then
-                        updateBgSwatch()
+                block:SetScript(
+                    "OnEnter",
+                    function()
+                        CludesUI.ShowWidgetTooltip(bgSwatch, CludesUI.DisabledTooltip("Bar Background"))
                     end
+                )
+                block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+                CludesUI.RegisterWidgetRefresh(function()
+                    if updateBgSwatch then updateBgSwatch() end
                     local enabled = BarList().barBgEnabled == true
                     bgSwatch:SetAlpha(enabled and 1 or 0.3)
                     if enabled then
@@ -1447,21 +1318,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local edge = BarList()
                 return not edge or not edge.customTopRowEnabled
             end
-            local function rowsNotTwo()
-                return (BarList().numRows or 1) ~= 2
-            end
+            local function rowsNotTwo() return (BarList().numRows or 1) ~= 2 end
             -- Row-size options are locked while the bar is width/height matched,
             -- exactly like Icon Scale (a per-row size offset can't honor a match).
             local rsMatchKey = "CDM_" .. BarList().key
             local rsWDis, rsWTip = CludesUI.MatchGuard(rsMatchKey, "Width")
             local rsHDis, rsHTip = CludesUI.MatchGuard(rsMatchKey, "Height")
-            local function rowSizeMatched()
-                return rsWDis() or rsHDis()
-            end
+            local function rowSizeMatched() return rsWDis() or rsHDis() end
             local function rowSizeMatchTip()
-                if rsWDis() then
-                    return rsWTip()
-                end
+                if rsWDis() then return rsWTip() end
                 return rsHTip()
             end
             -- Row Growth dropdown: labels track the bar's orientation (rows
@@ -1495,22 +1360,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- bars are positioned by their anchor system, which
                         -- ignores the pin entirely.
                         disabled = function()
-                            if rowsNotTwo() then
-                                return true
-                            end
+                            if rowsNotTwo() then return true end
                             local barData = BarList()
-                            if barData.anchorTo and barData.anchorTo ~= "none" then
-                                return true
-                            end
-                            if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barData.key) then
+                            if barData.anchorTo and barData.anchorTo ~= "none" then return true end
+                            if
+                                CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. barData.key)
+                            then
                                 return true
                             end
                             return false
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then
-                                return "This option requires exactly 2 rows"
-                            end
+                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
                             return "Not available while this bar is anchored to another element"
                         end,
                         rawTooltip = true,
@@ -1520,9 +1381,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             edge.rowGrowDirection = (value ~= "CENTER") and value or nil
                             -- Recapture the corner from the bar's current spot BEFORE
                             -- rebuilding, so the new anchor pins where the bar sits now.
-                            if mod.RecaptureBarAnchor then
-                                mod.RecaptureBarAnchor(edge.key)
-                            end
+                            if mod.RecaptureBarAnchor then mod.RecaptureBarAnchor(edge.key) end
                             RebuildBars(true)
                         end,
                     },
@@ -1541,9 +1400,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         get = BDFieldGet("customTopRowEnabled"),
                         set = function(value)
                             BarList().customTopRowEnabled = value
-                            if value then
-                                BarList().customBottomRowEnabled = nil
-                            end
+                            if value then BarList().customBottomRowEnabled = nil end
                             RebuildBars(true)
                         end,
                     },
@@ -1554,38 +1411,26 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         max = 15,
                         step = 1,
                         tooltip = "How many icons to show on the base row (the row that fills first and that Row Growth keeps in place). The rest go on the second row.",
-                        disabled = function()
-                            return rowsNotTwo() or customTopOff()
-                        end,
+                        disabled = function() return rowsNotTwo() or customTopOff() end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then
-                                return "This option requires exactly 2 rows"
-                            end
+                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
                             return "Custom Base Row Count"
                         end,
                         get = function()
                             local edge = BarList()
-                            if edge.topRowCount and edge.topRowCount > 0 then
-                                return edge.topRowCount
-                            end
+                            if edge.topRowCount and edge.topRowCount > 0 then return edge.topRowCount end
                             local total = 0
                             local sdTR = mod.GetBarSpellData(edge.key)
                             if sdTR and sdTR.assignedSpells then
                                 for _, spellRef in ipairs(sdTR.assignedSpells) do
-                                    if spellRef and spellRef ~= 0 then
-                                        total = total + 1
-                                    end
+                                    if spellRef and spellRef ~= 0 then total = total + 1 end
                                 end
                             end
-                            if total == 0 then
-                                return 1
-                            end
+                            if total == 0 then return 1 end
                             return math.ceil(total / 2)
                         end,
                         set = function(value)
-                            if value == 0 then
-                                value = nil
-                            end
+                            if value == 0 then value = nil end
                             BarList().topRowCount = value
                             RebuildBars(true)
                         end,
@@ -1597,24 +1442,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- in the legacy customBottomRowSize* keys); also locked
                         -- while the bar is width/height matched (same as Icon Scale).
                         disabled = function()
-                            return rowsNotTwo() or rowSizeMatched() or BarList().customBottomRowSizeEnabled == true
+                            return rowsNotTwo()
+                                or rowSizeMatched()
+                                or BarList().customBottomRowSizeEnabled == true
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then
-                                return "This option requires exactly 2 rows"
-                            end
-                            if rowSizeMatched() then
-                                return rowSizeMatchTip()
-                            end
+                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
+                            if rowSizeMatched() then return rowSizeMatchTip() end
                             return "Disabled while Custom Second Row Size is enabled"
                         end,
                         rawTooltip = true,
                         get = BDFieldGet("customTopRowSizeEnabled"),
                         set = function(value)
                             BarList().customTopRowSizeEnabled = value
-                            if value then
-                                BarList().customBottomRowSizeEnabled = nil
-                            end
+                            if value then BarList().customBottomRowSizeEnabled = nil end
                             RebuildBars(true)
                         end,
                     },
@@ -1629,22 +1470,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return rowsNotTwo() or rowSizeMatched() or not BarList().customTopRowSizeEnabled
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then
-                                return "This option requires exactly 2 rows"
-                            end
-                            if rowSizeMatched() then
-                                return rowSizeMatchTip()
-                            end
+                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
+                            if rowSizeMatched() then return rowSizeMatchTip() end
                             return "Custom Base Row Size"
                         end,
-                        rawTooltip = function()
-                            return rowSizeMatched()
-                        end,
+                        rawTooltip = function() return rowSizeMatched() end,
                         get = BDFieldOr("topRowSizeOffset", 0),
                         set = function(value)
-                            if value == 0 then
-                                value = nil
-                            end
+                            if value == 0 then value = nil end
                             BarList().topRowSizeOffset = value
                             RebuildBars(true)
                         end,
@@ -1654,24 +1487,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         label = "Custom Second Row Size",
                         -- Flip of Custom Base Row Size; mutually exclusive with it.
                         disabled = function()
-                            return rowsNotTwo() or rowSizeMatched() or BarList().customTopRowSizeEnabled == true
+                            return rowsNotTwo()
+                                or rowSizeMatched()
+                                or BarList().customTopRowSizeEnabled == true
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then
-                                return "This option requires exactly 2 rows"
-                            end
-                            if rowSizeMatched() then
-                                return rowSizeMatchTip()
-                            end
+                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
+                            if rowSizeMatched() then return rowSizeMatchTip() end
                             return "Disabled while Custom Base Row Size is enabled"
                         end,
                         rawTooltip = true,
                         get = BDFieldGet("customBottomRowSizeEnabled"),
                         set = function(value)
                             BarList().customBottomRowSizeEnabled = value
-                            if value then
-                                BarList().customTopRowSizeEnabled = nil
-                            end
+                            if value then BarList().customTopRowSizeEnabled = nil end
                             RebuildBars(true)
                         end,
                     },
@@ -1683,25 +1512,19 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "Offsets the second row's icon size in pixels from Icon Scale. The base row keeps the base size.",
                         disabled = function()
-                            return rowsNotTwo() or rowSizeMatched() or not BarList().customBottomRowSizeEnabled
+                            return rowsNotTwo()
+                                or rowSizeMatched()
+                                or not BarList().customBottomRowSizeEnabled
                         end,
                         disabledTooltip = function()
-                            if rowsNotTwo() then
-                                return "This option requires exactly 2 rows"
-                            end
-                            if rowSizeMatched() then
-                                return rowSizeMatchTip()
-                            end
+                            if rowsNotTwo() then return "This option requires exactly 2 rows" end
+                            if rowSizeMatched() then return rowSizeMatchTip() end
                             return "Custom Second Row Size"
                         end,
-                        rawTooltip = function()
-                            return rowSizeMatched()
-                        end,
+                        rawTooltip = function() return rowSizeMatched() end,
                         get = BDFieldOr("bottomRowSizeOffset", 0),
                         set = function(value)
-                            if value == 0 then
-                                value = nil
-                            end
+                            if value == 0 then value = nil end
                             BarList().bottomRowSizeOffset = value
                             RebuildBars(true)
                         end,
@@ -1729,9 +1552,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         get = BDFieldIs("oocFadeEnabled"),
                         set = function(value)
                             BarList().oocFadeEnabled = value
-                            if mod.CDMApplyVisibility then
-                                mod.CDMApplyVisibility()
-                            end
+                            if mod.CDMApplyVisibility then mod.CDMApplyVisibility() end
                             UpdateCDMPreview()
                         end,
                     },
@@ -1741,19 +1562,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         min = 0,
                         max = 100,
                         step = 1,
-                        disabled = function()
-                            return not BarList().oocFadeEnabled
-                        end,
+                        disabled = function() return not BarList().oocFadeEnabled end,
                         disabledTooltip = "Enable Fade Out of Combat first",
                         rawTooltip = true,
-                        get = function()
-                            return math.floor((BarList().oocFadeAlpha or 0.5) * 100 + 0.5)
-                        end,
+                        get = function() return math.floor((BarList().oocFadeAlpha or 0.5) * 100 + 0.5) end,
                         set = function(value)
                             BarList().oocFadeAlpha = value / 100
-                            if mod.CDMApplyVisibility then
-                                mod.CDMApplyVisibility()
-                            end
+                            if mod.CDMApplyVisibility then mod.CDMApplyVisibility() end
                             UpdateCDMPreview()
                         end,
                     },
@@ -1777,11 +1592,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- would promise behavior that does not exist. Recipient = ANY bar (enabled or not -- re-enabling must not create the forbidden state) with an active cap+target pair pointing here.
             local function BarIsOverflowRecipient(barKey)
                 local profile = DB()
-                if not (profile and profile.cdmBars) then
-                    return false
-                end
+                if not (profile and profile.cdmBars) then return false end
                 for _, bar in ipairs(profile.cdmBars.bars) do
-                    if bar.key ~= barKey and bar.maxIcons and bar.maxIcons > 0 and bar.overflowTarget == barKey then
+                    if
+                        bar.key ~= barKey
+                        and bar.maxIcons
+                        and bar.maxIcons > 0
+                        and bar.overflowTarget == barKey
+                    then
                         return true
                     end
                 end
@@ -1845,14 +1663,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 rawTooltip = true,
                 getValue = BDFieldOr("maxIcons", 0),
                 setValue = function(value)
-                    if value == 0 then
-                        value = nil
-                    end
+                    if value == 0 then value = nil end
                     BarList().maxIcons = value
                     RebuildBars(true)
-                    C_Timer.After(0, function()
-                        CludesUI:RefreshPage()
-                    end)
+                    C_Timer.After(0, function() CludesUI:RefreshPage() end)
                 end,
             }, {
                 type = "dropdown",
@@ -1882,15 +1696,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 rawTooltip = true,
                 getValue = function()
                     local t = BarList().overflowTarget
-                    if t and ofVals[t] then
-                        return t
-                    end
+                    if t and ofVals[t] then return t end
                     return ""
                 end,
                 setValue = function(value)
-                    if value == "" then
-                        value = nil
-                    end
+                    if value == "" then value = nil end
                     BarList().overflowTarget = value
                     RebuildBars(true)
                 end,
@@ -1964,14 +1774,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local NP_SIDE_ORDER = { "LEFT", "RIGHT", "TOP", "BOTTOM" }
 
         local function ApplyAnchor()
-            if mod.ApplyFocusKickAnchor then
-                mod.ApplyFocusKickAnchor()
-            end
+            if mod.ApplyFocusKickAnchor then mod.ApplyFocusKickAnchor() end
         end
         local function RefreshReminders()
-            if mod.RefreshFocusReminders then
-                mod.RefreshFocusReminders()
-            end
+            if mod.RefreshFocusReminders then mod.RefreshFocusReminders() end
         end
         -- A cog slider over one of this bar's settings: read with its default,
         -- written and then applied by apply().
@@ -1982,9 +1788,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 min = minV,
                 max = maxV,
                 step = 1,
-                get = function()
-                    return BarList()[barKey] or default
-                end,
+                get = function() return BarList()[barKey] or default end,
                 set = function(value)
                     BarList()[barKey] = value
                     apply()
@@ -2056,9 +1860,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 npRow:GetFrameLevel() + 3,
                 function()
                     local brandGreen = CludesUI.CLUDES_GREEN
-                    if brandGreen then
-                        return brandGreen.r, brandGreen.g, brandGreen.b
-                    end
+                    if brandGreen then return brandGreen.r, brandGreen.g, brandGreen.b end
                     return 0.298, 0.788, 0.941
                 end,
                 function() end, -- read-only display, no picker
@@ -2082,7 +1884,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     return edge.focusReminderR or 1, edge.focusReminderG or 1, edge.focusReminderB or 1
                 end,
                 function(red, green, blue)
-                    BarList().focusReminderR, BarList().focusReminderG, BarList().focusReminderB = red, green, blue
+                    BarList().focusReminderR, BarList().focusReminderG, BarList().focusReminderB =
+                        red, green, blue
                     BarList().focusReminderUseAccent = false
                     RefreshReminders()
                 end,
@@ -2104,12 +1907,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end
             end)
-            customBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customColorSwatch, "Custom Color")
-            end)
-            customBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            customBlock:SetScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(customColorSwatch, "Custom Color") end
+            )
+            customBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             region._lastInline = customColorSwatch
 
             -- Disable both swatches + cog when Focus Text Reminders toggle is off
@@ -2117,12 +1919,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             enableBlock:SetAllPoints()
             enableBlock:SetFrameLevel(customColorSwatch:GetFrameLevel() + 20)
             enableBlock:EnableMouse(true)
-            enableBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customColorSwatch, CludesUI.DisabledTooltip("Focus Text Reminders"))
-            end)
-            enableBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            enableBlock:SetScript(
+                "OnEnter",
+                function()
+                    CludesUI.ShowWidgetTooltip(
+                        customColorSwatch,
+                        CludesUI.DisabledTooltip("Focus Text Reminders")
+                    )
+                end
+            )
+            enableBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
 
             local function UpdateFRSwatchState()
                 local edge = BarList()
@@ -2171,31 +1977,21 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             maxTextWidthPct = 0.8,
             searchable = true,
             iconAtlas = function(barKey)
-                if barKey == "none" then
-                    return nil
-                end
+                if barKey == "none" then return nil end
                 local paths = mod.FOCUSKICK_SOUND_PATHS
-                if not paths or not paths[barKey] then
-                    return nil
-                end
+                if not paths or not paths[barKey] then return nil end
                 return CludesUI.SOUND_ICON_ATLAS
             end,
             iconPressedAtlas = function(barKey)
-                if barKey == "none" then
-                    return nil
-                end
+                if barKey == "none" then return nil end
                 return CludesUI.SOUND_ICON_PRESSED_ATLAS
             end,
             iconOnClick = function(barKey)
                 local paths = mod.FOCUSKICK_SOUND_PATHS
                 local filePath = paths and paths[barKey]
-                if filePath then
-                    PlaySoundFile(filePath, "Master")
-                end
+                if filePath then PlaySoundFile(filePath, "Master") end
             end,
-            iconTooltip = function()
-                return "Preview Sound"
-            end,
+            iconTooltip = function() return "Preview Sound" end,
         }
 
         -- Spell dropdown values/order -- rebuilt live on every dropdown
@@ -2249,9 +2045,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                 end
             end
-            table.sort(kicks, function(lhs, rhs)
-                return lhs.name < rhs.name
-            end)
+            table.sort(kicks, function(lhs, rhs) return lhs.name < rhs.name end)
             if #kicks > 0 then
                 orderList[#orderList + 1] = "---"
                 for _, keyName in ipairs(kicks) do
@@ -2292,9 +2086,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             setValue = function(value)
                 BarList().focusCastSoundKey = value
                 -- Arm/disarm the cast proxy live (it is demand-gated on the sound).
-                if mod.RefreshFocusKickProxies then
-                    mod.RefreshFocusKickProxies()
-                end
+                if mod.RefreshFocusKickProxies then mod.RefreshFocusKickProxies() end
             end,
         }, {
             type = "dropdown",
@@ -2303,21 +2095,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             values = spellValues,
             order = orderList,
             getValue = function()
-                if BarList().focusCastSoundAnyCast == true then
-                    return "__any"
-                end
+                if BarList().focusCastSoundAnyCast == true then return "__any" end
                 local spellRef = BarList().focusKickInterruptSpellID
-                if not spellRef then
-                    return orderList[1]
-                end
+                if not spellRef then return orderList[1] end
                 -- No label means RebuildSpellOptions rejected it: either
                 -- this character cannot cast it, or it is not on the bar
                 -- and not castable. Show what the bar actually holds
                 -- rather than a selection the player never made.
                 local barKey = tostring(spellRef)
-                if not spellValues[barKey] then
-                    return orderList[1]
-                end
+                if not spellValues[barKey] then return orderList[1] end
                 return barKey
             end,
             setValue = function(value)
@@ -2327,9 +2113,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 else
                     BarList().focusKickInterruptSpellID = tonumber(value)
                 end
-                if mod.RefreshFocusKickProxies then
-                    mod.RefreshFocusKickProxies()
-                end
+                if mod.RefreshFocusKickProxies then mod.RefreshFocusKickProxies() end
             end,
         })
         cursorY = cursorY - height
@@ -2344,12 +2128,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local origOnClick = dropdownBtn:GetScript("OnClick")
                 dropdownBtn:SetScript("OnClick", function(self, ...)
                     RebuildSpellOptions()
-                    if dropdownBtn._invalidateMenu then
-                        dropdownBtn._invalidateMenu()
-                    end
-                    if origOnClick then
-                        origOnClick(self, ...)
-                    end
+                    if dropdownBtn._invalidateMenu then dropdownBtn._invalidateMenu() end
+                    if origOnClick then origOnClick(self, ...) end
                 end)
             end
         end
@@ -2362,12 +2142,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             getValue = BDFieldIs("focusKickUseTarget"),
             setValue = function(value)
                 BarList().focusKickUseTarget = value
-                if mod.ApplyFocusKickAnchor then
-                    mod.ApplyFocusKickAnchor()
-                end
-                if mod.RefreshFocusCastProxyUnit then
-                    mod.RefreshFocusCastProxyUnit()
-                end
+                if mod.ApplyFocusKickAnchor then mod.ApplyFocusKickAnchor() end
+                if mod.RefreshFocusCastProxyUnit then mod.RefreshFocusCastProxyUnit() end
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
@@ -2412,9 +2188,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- fully gated, so the row (and this cog with it) is hidden by the widget factory.
     local function AttachCropCog(region)
         CludesUI.BuildInlineCog(region, {
-            disabled = function()
-                return (BarList().iconShape or "none") ~= "cropped"
-            end,
+            disabled = function() return (BarList().iconShape or "none") ~= "cropped" end,
             disabledTooltip = "This option requires Custom Icon Shape to be set to Cropped",
             title = "Custom Icon Shape",
             rows = {
@@ -2425,9 +2199,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     max = 25,
                     step = 1,
                     tooltip = "How much is trimmed from the icon's top and bottom, as a percentage per side. 10% is the classic cropped look.",
-                    get = function()
-                        return mod.CdmCropPercent(BarList())
-                    end,
+                    get = function() return mod.CdmCropPercent(BarList()) end,
                     set = function(value)
                         local edge = BarList()
                         edge.iconCropPercent = value
@@ -2474,9 +2246,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- The Icon Shape, Icon Zoom and Border Style sync icons, the same in
     -- the buff-bar layout and the regular one.
     local function IconShapeSync(region)
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         CludesUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Icon Shape to all Bars",
@@ -2522,9 +2292,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         })
     end
     local function IconZoomSync(region)
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         CludesUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Icon Zoom to all Bars",
@@ -2532,26 +2300,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local value = BarList().iconZoom or 0.08
                 local inSync = true
                 ForEachSyncBar(function(bar)
-                    if (bar.iconZoom or 0.08) ~= value then
-                        inSync = false
-                    end
+                    if (bar.iconZoom or 0.08) ~= value then inSync = false end
                 end)
                 return inSync
             end,
             onClick = function()
                 local value = BarList().iconZoom or 0.08
-                ForEachSyncBar(function(bar)
-                    bar.iconZoom = value
-                end)
+                ForEachSyncBar(function(bar) bar.iconZoom = value end)
                 RebuildBars()
                 CludesUI:RefreshPage()
             end,
         })
     end
     local function BorderStyleSync(region)
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         CludesUI.BuildSyncIcon({
             region = region,
             tooltip = "Apply Border Style to all Bars",
@@ -2577,9 +2339,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     bar.borderThickness = th
                     bar.borderSize = sz
                     local pxv = px
-                    if pxv == nil and bar.borderSizePx ~= nil then
-                        pxv = false
-                    end
+                    if pxv == nil and bar.borderSizePx ~= nil then pxv = false end
                     bar.borderSizePx = pxv
                     bar.borderBehind = bh
                     bar.borderR = br
@@ -2601,18 +2361,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local bh = edge.borderBehind or false
                 local inSync = true
                 ForEachSyncBar(function(bar)
-                    if (bar.borderTexture or "solid") ~= bt then
-                        inSync = false
-                    end
-                    if bar.borderTextureOffset ~= ox or bar.borderTextureOffsetY ~= oy then
-                        inSync = false
-                    end
-                    if bar.borderTextureShiftX ~= sx or bar.borderTextureShiftY ~= sy then
-                        inSync = false
-                    end
-                    if (bar.borderBehind or false) ~= bh then
-                        inSync = false
-                    end
+                    if (bar.borderTexture or "solid") ~= bt then inSync = false end
+                    if bar.borderTextureOffset ~= ox or bar.borderTextureOffsetY ~= oy then inSync = false end
+                    if bar.borderTextureShiftX ~= sx or bar.borderTextureShiftY ~= sy then inSync = false end
+                    if (bar.borderBehind or false) ~= bh then inSync = false end
                 end)
                 return inSync
             end,
@@ -2653,16 +2405,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         end
         local icsWDis, icsWTip, icsWRaw = CludesUI.MatchGuard("CDM_" .. barId, "Width")
         local icsHDis, icsHTip = CludesUI.MatchGuard("CDM_" .. barId, "Height")
-        local icsDis = function()
-            return icsWDis() or icsHDis()
-        end
+        local icsDis = function() return icsWDis() or icsHDis() end
         local icsTip = function()
-            if icsWDis() then
-                return icsWTip()
-            end
-            if icsHDis() then
-                return icsHTip()
-            end
+            if icsWDis() then return icsWTip() end
+            if icsHDis() then return icsHTip() end
             return false
         end
         scaleAnimRow, height = W:DualRow(hostFrame, cursorY, row1Left, {
@@ -2691,18 +2437,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local leftRegion = scaleAnimRow._leftRegion
             CludesUI.BuildInlineCog(leftRegion, {
                 anchorTo = leftRegion._control,
-                disabled = function()
-                    return not BarList().showInactiveBuffIcons
-                end,
+                disabled = function() return not BarList().showInactiveBuffIcons end,
                 disabledTooltip = "Always Show Buffs",
                 title = "Always Show Buffs",
                 rows = {
                     {
                         type = "toggle",
                         label = "Desaturate Off CD",
-                        get = function()
-                            return BarList().desaturateInactiveBuffs ~= false
-                        end,
+                        get = function() return BarList().desaturateInactiveBuffs ~= false end,
                         set = BDField("desaturateInactiveBuffs"),
                     },
                 },
@@ -2755,13 +2497,21 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 values = SHAPE_VALUES,
                 order = SHAPE_ORDER,
                 itemDisabled = function(value)
-                    if value ~= "none" and value ~= "cropped" and (BarList().borderTexture or "solid") ~= "solid" then
+                    if
+                        value ~= "none"
+                        and value ~= "cropped"
+                        and (BarList().borderTexture or "solid") ~= "solid"
+                    then
                         return true
                     end
                     return false
                 end,
                 itemDisabledTooltip = function(value)
-                    if value ~= "none" and value ~= "cropped" and (BarList().borderTexture or "solid") ~= "solid" then
+                    if
+                        value ~= "none"
+                        and value ~= "cropped"
+                        and (BarList().borderTexture or "solid") ~= "solid"
+                    then
                         return "This option requires the Border Style to be set to Solid"
                     end
                 end,
@@ -2843,26 +2593,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             else
                 buffSizeCfg = CludesUI.BorderPxSliderCfg({
                     text = "Border Size",
-                    getStep = function()
-                        return BarList().borderSize or 1
-                    end,
+                    getStep = function() return BarList().borderSize or 1 end,
                     setStep = function(step)
                         local edge = BarList()
                         edge.borderThickness = CludesUI.BORDER_LABEL_OF_STEP[step] or "thin"
                         edge.borderSize = step
                     end,
-                    getTex = function()
-                        return BarList().borderTexture or "solid"
-                    end,
-                    getPx = function()
-                        return BarList().borderSizePx
-                    end,
-                    setPx = function(value)
-                        BarList().borderSizePx = value
-                    end,
-                    apply = function()
-                        RebuildBars()
-                    end,
+                    getTex = function() return BarList().borderTexture or "solid" end,
+                    getPx = function() return BarList().borderSizePx end,
+                    setPx = function(value) BarList().borderSizePx = value end,
+                    apply = function() RebuildBars() end,
                 })
             end
             buffBsRow, height = W:DualRow(
@@ -2872,9 +2612,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 CludesUI.BlizzStyle.Gate("cdmicons", {
                     type = "dropdown",
                     text = "Border Style",
-                    disabled = function()
-                        return CustomShapeOn()
-                    end,
+                    disabled = function() return CustomShapeOn() end,
                     disabledTooltip = "This option requires a non-custom button shape",
                     values = texValues,
                     order = texOrder,
@@ -2902,9 +2640,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             edge.borderThickness = defTh
                             edge.borderSize = BORDER_SIZES[defTh] or 1
                         end
-                        if edge.borderSizePx then
-                            edge.borderSizePx = false
-                        end
+                        if edge.borderSizePx then edge.borderSizePx = false end
                         RebuildBars()
                         CludesUI:RefreshPage(true)
                     end,
@@ -2920,37 +2656,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if tex0 ~= "" and tex0 ~= "solid" then
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "cdm",
-                        disabled = function()
-                            return CustomShapeOn()
-                        end,
+                        disabled = function() return CustomShapeOn() end,
                         disabledTooltip = "This option requires a non-custom button shape",
-                        getTex = function()
-                            return BarList().borderTexture or "solid"
-                        end,
-                        getStep = function()
-                            return BarList().borderSize or 1
-                        end,
-                        getSizeKey = function()
-                            return BarList().borderThickness or "thin"
-                        end,
-                        getPx = function()
-                            return BarList().borderSizePx
-                        end,
-                        getX = function()
-                            return BarList().borderTextureOffset
-                        end,
-                        setX = function(value)
-                            BarList().borderTextureOffset = value
-                        end,
-                        getY = function()
-                            return BarList().borderTextureOffsetY
-                        end,
-                        setY = function(value)
-                            BarList().borderTextureOffsetY = value
-                        end,
-                        apply = function()
-                            RebuildBars()
-                        end,
+                        getTex = function() return BarList().borderTexture or "solid" end,
+                        getStep = function() return BarList().borderSize or 1 end,
+                        getSizeKey = function() return BarList().borderThickness or "thin" end,
+                        getPx = function() return BarList().borderSizePx end,
+                        getX = function() return BarList().borderTextureOffset end,
+                        setX = function(value) BarList().borderTextureOffset = value end,
+                        getY = function() return BarList().borderTextureOffsetY end,
+                        setY = function(value) BarList().borderTextureOffsetY = value end,
+                        apply = function() RebuildBars() end,
                     })
                     _, height = W:DualRow(
                         hostFrame,
@@ -2975,9 +2691,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             step = 1,
                             get = function()
                                 local value = BarList().borderTextureShiftX
-                                if value then
-                                    return value
-                                end
+                                if value then return value end
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
@@ -2997,9 +2711,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             step = 1,
                             get = function()
                                 local value = BarList().borderTextureShiftY
-                                if value then
-                                    return value
-                                end
+                                if value then return value end
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
@@ -3045,9 +2757,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     function()
                         local _, class = UnitClass("player")
                         local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if classColor then
-                            return classColor.r, classColor.g, classColor.b
-                        end
+                        if classColor then return classColor.r, classColor.g, classColor.b end
                         return 1, 1, 1
                     end,
                     function() end,
@@ -3056,9 +2766,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 )
                 Pix.Point(classBorderSwatch, "RIGHT", control, "LEFT", -8, 0)
                 classBorderSwatch:SetScript("OnClick", function()
-                    if CludesUI.BlizzStyle.Get("cdmicons") then
-                        return
-                    end
+                    if CludesUI.BlizzStyle.Get("cdmicons") then return end
                     BarList().borderClassColor = true
                     mod.RefreshCDMIconAppearance(BarList().key)
                     Refresh()
@@ -3071,9 +2779,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     leftRegion,
                     buffBsRow:GetFrameLevel() + 3,
-                    function()
-                        return BarList().borderR or 0, BarList().borderG or 0, BarList().borderB or 0
-                    end,
+                    function() return BarList().borderR or 0, BarList().borderG or 0, BarList().borderB or 0 end,
                     function(red, green, blue)
                         -- Picking a color always switches off class color so the chosen custom color actually applies.
                         BarList().borderClassColor = false
@@ -3094,7 +2800,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local origClick = colorSwatch:GetScript("OnClick")
                 colorSwatch:SetScript("OnClick", function(self, ...)
                     -- No border selected (or Blizzard Style): don't open the color picker
-                    if (BarList().borderThickness or "thin") == "none" or CludesUI.BlizzStyle.Get("cdmicons") then
+                    if
+                        (BarList().borderThickness or "thin") == "none" or CludesUI.BlizzStyle.Get("cdmicons")
+                    then
                         return
                     end
                     if BarList().borderClassColor then
@@ -3105,9 +2813,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         updateSwatch()
                         UpdateBorderState()
                     end
-                    if origClick then
-                        origClick(self, ...)
-                    end
+                    if origClick then origClick(self, ...) end
                 end)
 
                 function UpdateBorderState()
@@ -3156,9 +2862,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             bar.borderThickness = value
                             bar.borderSize = sz
                             local pxv = px
-                            if pxv == nil and bar.borderSizePx ~= nil then
-                                pxv = false
-                            end
+                            if pxv == nil and bar.borderSizePx ~= nil then pxv = false end
                             bar.borderSizePx = pxv
                             bar.borderClassColor = classColor
                         end)
@@ -3173,16 +2877,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     else
         local icsWDis2, icsWTip2 = CludesUI.MatchGuard("CDM_" .. barId, "Width")
         local icsHDis2, icsHTip2 = CludesUI.MatchGuard("CDM_" .. barId, "Height")
-        local icsDis2 = function()
-            return icsWDis2() or icsHDis2()
-        end
+        local icsDis2 = function() return icsWDis2() or icsHDis2() end
         local icsTip2 = function()
-            if icsWDis2() then
-                return icsWTip2()
-            end
-            if icsHDis2() then
-                return icsHTip2()
-            end
+            if icsWDis2() then return icsWTip2() end
+            if icsHDis2() then return icsHTip2() end
             return false
         end
         scaleAnimRow, height = W:DualRow(hostFrame, cursorY, {
@@ -3234,9 +2932,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local value = BarList().spacing or 2
                     local inSync = true
                     ForEachSyncBar(function(bar)
-                        if (bar.spacing or 2) ~= value then
-                            inSync = false
-                        end
+                        if (bar.spacing or 2) ~= value then inSync = false end
                     end)
                     return inSync
                 end,
@@ -3276,9 +2972,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     step = 1,
                     get = BDFieldOr("minSizeIcons", 0),
                     set = function(value)
-                        if value == 0 then
-                            value = nil
-                        end
+                        if value == 0 then value = nil end
                         local edge = BarList()
                         edge.minSizeIcons = value
                         -- Growth-axis extent changed: cached match dims stale.
@@ -3325,26 +3019,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             else
                 sizeCfg = CludesUI.BorderPxSliderCfg({
                     text = "Border Size",
-                    getStep = function()
-                        return BarList().borderSize or 1
-                    end,
+                    getStep = function() return BarList().borderSize or 1 end,
                     setStep = function(step)
                         local edge = BarList()
                         edge.borderThickness = CludesUI.BORDER_LABEL_OF_STEP[step] or "thin"
                         edge.borderSize = step
                     end,
-                    getTex = function()
-                        return BarList().borderTexture or "solid"
-                    end,
-                    getPx = function()
-                        return BarList().borderSizePx
-                    end,
-                    setPx = function(value)
-                        BarList().borderSizePx = value
-                    end,
-                    apply = function()
-                        RebuildBars()
-                    end,
+                    getTex = function() return BarList().borderTexture or "solid" end,
+                    getPx = function() return BarList().borderSizePx end,
+                    setPx = function(value) BarList().borderSizePx = value end,
+                    apply = function() RebuildBars() end,
                 })
             end
             bsRow, height = W:DualRow(
@@ -3353,9 +3037,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 CludesUI.BlizzStyle.Gate("cdmicons", {
                     type = "dropdown",
                     text = "Border Style",
-                    disabled = function()
-                        return CustomShapeOn()
-                    end,
+                    disabled = function() return CustomShapeOn() end,
                     disabledTooltip = "This option requires a non-custom button shape",
                     values = texValues,
                     order = texOrder,
@@ -3383,9 +3065,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             edge.borderThickness = defTh
                             edge.borderSize = BORDER_SIZES[defTh] or 1
                         end
-                        if edge.borderSizePx then
-                            edge.borderSizePx = false
-                        end
+                        if edge.borderSizePx then edge.borderSizePx = false end
                         RebuildBars()
                         CludesUI:RefreshPage(true)
                     end,
@@ -3402,37 +3082,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 if tex0 ~= "" and tex0 ~= "solid" then
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "cdm",
-                        disabled = function()
-                            return CustomShapeOn()
-                        end,
+                        disabled = function() return CustomShapeOn() end,
                         disabledTooltip = "This option requires a non-custom button shape",
-                        getTex = function()
-                            return BarList().borderTexture or "solid"
-                        end,
-                        getStep = function()
-                            return BarList().borderSize or 1
-                        end,
-                        getSizeKey = function()
-                            return BarList().borderThickness or "thin"
-                        end,
-                        getPx = function()
-                            return BarList().borderSizePx
-                        end,
-                        getX = function()
-                            return BarList().borderTextureOffset
-                        end,
-                        setX = function(value)
-                            BarList().borderTextureOffset = value
-                        end,
-                        getY = function()
-                            return BarList().borderTextureOffsetY
-                        end,
-                        setY = function(value)
-                            BarList().borderTextureOffsetY = value
-                        end,
-                        apply = function()
-                            RebuildBars()
-                        end,
+                        getTex = function() return BarList().borderTexture or "solid" end,
+                        getStep = function() return BarList().borderSize or 1 end,
+                        getSizeKey = function() return BarList().borderThickness or "thin" end,
+                        getPx = function() return BarList().borderSizePx end,
+                        getX = function() return BarList().borderTextureOffset end,
+                        setX = function(value) BarList().borderTextureOffset = value end,
+                        getY = function() return BarList().borderTextureOffsetY end,
+                        setY = function(value) BarList().borderTextureOffsetY = value end,
+                        apply = function() RebuildBars() end,
                     })
                     _, height = W:DualRow(
                         hostFrame,
@@ -3457,9 +3117,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             step = 1,
                             get = function()
                                 local value = BarList().borderTextureShiftX
-                                if value then
-                                    return value
-                                end
+                                if value then return value end
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
@@ -3479,9 +3137,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             step = 1,
                             get = function()
                                 local value = BarList().borderTextureShiftY
-                                if value then
-                                    return value
-                                end
+                                if value then return value end
                                 local edge = BarList()
                                 local texture = edge.borderTexture or "solid"
                                 local th = edge.borderThickness or "thin"
@@ -3530,9 +3186,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     function()
                         local _, class = UnitClass("player")
                         local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if classColor then
-                            return classColor.r, classColor.g, classColor.b
-                        end
+                        if classColor then return classColor.r, classColor.g, classColor.b end
                         return 1, 1, 1
                     end,
                     function() end,
@@ -3541,9 +3195,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 )
                 Pix.Point(classBorderSwatch, "RIGHT", control, "LEFT", -8, 0)
                 classBorderSwatch:SetScript("OnClick", function()
-                    if CludesUI.BlizzStyle.Get("cdmicons") then
-                        return
-                    end
+                    if CludesUI.BlizzStyle.Get("cdmicons") then return end
                     BarList().borderClassColor = true
                     mod.RefreshCDMIconAppearance(BarList().key)
                     Refresh()
@@ -3556,9 +3208,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     rightRegion,
                     bsRow:GetFrameLevel() + 3,
-                    function()
-                        return BarList().borderR or 0, BarList().borderG or 0, BarList().borderB or 0
-                    end,
+                    function() return BarList().borderR or 0, BarList().borderG or 0, BarList().borderB or 0 end,
                     function(red, green, blue)
                         BarList().borderR, BarList().borderG, BarList().borderB = red, green, blue
                         mod.RefreshCDMIconAppearance(BarList().key)
@@ -3574,9 +3224,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- Click the dimmed custom swatch to switch back from class color (no block overlay)
                 local origClick = colorSwatch:GetScript("OnClick")
                 colorSwatch:SetScript("OnClick", function(self, ...)
-                    if CludesUI.BlizzStyle.Get("cdmicons") then
-                        return
-                    end
+                    if CludesUI.BlizzStyle.Get("cdmicons") then return end
                     if BarList().borderClassColor then
                         BarList().borderClassColor = false
                         mod.RefreshCDMIconAppearance(BarList().key)
@@ -3586,12 +3234,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         return
                     end
                     -- No border selected: allow swapping boxes but do not open the color picker
-                    if (BarList().borderThickness or "thin") == "none" then
-                        return
-                    end
-                    if origClick then
-                        origClick(self, ...)
-                    end
+                    if (BarList().borderThickness or "thin") == "none" then return end
+                    if origClick then origClick(self, ...) end
                 end)
 
                 local function UpdateBorderSwatchState()
@@ -3661,9 +3305,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             bar.borderThickness = value
                             bar.borderSize = sz
                             local pxv = px
-                            if pxv == nil and bar.borderSizePx ~= nil then
-                                pxv = false
-                            end
+                            if pxv == nil and bar.borderSizePx ~= nil then pxv = false end
                             bar.borderSizePx = pxv
                             bar.borderClassColor = classColor
                             bar.borderTexture = bt
@@ -3697,13 +3339,21 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 values = SHAPE_VALUES,
                 order = SHAPE_ORDER,
                 itemDisabled = function(value)
-                    if value ~= "none" and value ~= "cropped" and (BarList().borderTexture or "solid") ~= "solid" then
+                    if
+                        value ~= "none"
+                        and value ~= "cropped"
+                        and (BarList().borderTexture or "solid") ~= "solid"
+                    then
                         return true
                     end
                     return false
                 end,
                 itemDisabledTooltip = function(value)
-                    if value ~= "none" and value ~= "cropped" and (BarList().borderTexture or "solid") ~= "solid" then
+                    if
+                        value ~= "none"
+                        and value ~= "cropped"
+                        and (BarList().borderTexture or "solid") ~= "solid"
+                    then
                         return "This option requires the Border Style to be set to Solid"
                     end
                 end,
@@ -3792,9 +3442,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Show Duration",
-                    get = function()
-                        return BarList().showCooldownText ~= false
-                    end,
+                    get = function() return BarList().showCooldownText ~= false end,
                     set = function(value)
                         BarList().showCooldownText = value
                         mod.RefreshCDMIconAppearance(BarList().key)
@@ -3848,7 +3496,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             leftRegion,
             durationRow:GetFrameLevel() + 3,
             function()
-                return BarList().cooldownTextR or 1, BarList().cooldownTextG or 1, BarList().cooldownTextB or 1
+                return BarList().cooldownTextR or 1,
+                    BarList().cooldownTextG or 1,
+                    BarList().cooldownTextB or 1
             end,
             function(red, green, blue)
                 BarList().cooldownTextR = red
@@ -3865,16 +3515,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         leftRegion._lastInline = durSwatch
 
         local durBlock = CludesUI.NewSwatchBlocker(durSwatch)
-        durBlock:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(durSwatch, CludesUI.DisabledTooltip("Duration Text"))
-        end)
-        durBlock:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        durBlock:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(durSwatch, CludesUI.DisabledTooltip("Duration Text")) end
+        )
+        durBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         CludesUI.RegisterWidgetRefresh(function()
-            if updateDurSwatch then
-                updateDurSwatch()
-            end
+            if updateDurSwatch then updateDurSwatch() end
             local enabled = BarList().showCooldownText ~= false
             durSwatch:SetAlpha(enabled and 1 or 0.3)
             if enabled then
@@ -3910,9 +3557,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     values = { never = "Never", always = "Always", ooc = "Out of Combat" },
                     order = { "never", "always", "ooc" },
                     get = function()
-                        if BarList().itemCountOOC then
-                            return "ooc"
-                        end
+                        if BarList().itemCountOOC then return "ooc" end
                         return (BarList().showItemCount ~= false) and "always" or "never"
                     end,
                     set = function(value)
@@ -3933,9 +3578,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     get = BDFieldIs("showItemQuality"),
                     set = function(value)
                         BarList().showItemQuality = value
-                        if mod.FullCDMRebuild then
-                            mod.FullCDMRebuild("item_quality_toggle")
-                        end
+                        if mod.FullCDMRebuild then mod.FullCDMRebuild("item_quality_toggle") end
                     end,
                 },
                 -- Buff-family only (stripped below for cd/utility): those
@@ -3945,9 +3588,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Show Charge/Stack Text",
                     tooltip = "Show the charge and stack counters on this bar's icons.",
-                    get = function()
-                        return BarList().showChargeStackText ~= false
-                    end,
+                    get = function() return BarList().showChargeStackText ~= false end,
                     -- if/else, NOT `v and nil or false`: that expression is
                     -- ALWAYS false (the nil arm falls through the or).
                     set = function(value)
@@ -4022,9 +3663,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             },
         }
         -- Show Charge/Stack Text (row 3) is buff-family only -- see its comment.
-        if not buffGlowBar then
-            table.remove(scPopupSpec.rows, 3)
-        end
+        if not buffGlowBar then table.remove(scPopupSpec.rows, 3) end
         CludesUI.BuildInlineCog(rightRegion, scPopupSpec)
 
         local scSwatch, updateScSwatch = CludesUI.BuildColorSwatch(
@@ -4047,16 +3686,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         rightRegion._lastInline = scSwatch
 
         local scBlock = CludesUI.NewSwatchBlocker(scSwatch)
-        scBlock:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(scSwatch, CludesUI.DisabledTooltip("Item Count"))
-        end)
-        scBlock:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        scBlock:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(scSwatch, CludesUI.DisabledTooltip("Item Count")) end
+        )
+        scBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         CludesUI.RegisterWidgetRefresh(function()
-            if updateScSwatch then
-                updateScSwatch()
-            end
+            if updateScSwatch then updateScSwatch() end
             local enabled = BarList().showItemCount ~= false
             scSwatch:SetAlpha(enabled and 1 or 0.3)
             if enabled then
@@ -4099,9 +3735,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 setValue = function(value)
                     BarList().pixelGlowThickness = value
                     mod.BuildAllCDMBars()
-                    if mod.RequestBarGlowUpdate then
-                        mod.RequestBarGlowUpdate()
-                    end
+                    if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
                     Refresh()
                 end,
             })
@@ -4122,9 +3756,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             set = function(value)
                                 BarList().pixelGlowLines = value
                                 mod.BuildAllCDMBars()
-                                if mod.RequestBarGlowUpdate then
-                                    mod.RequestBarGlowUpdate()
-                                end
+                                if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
                             end,
                         },
                         {
@@ -4133,15 +3765,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             min = 1,
                             max = 8,
                             step = 1,
-                            get = function()
-                                return 9 - (BarList().pixelGlowSpeed or 4)
-                            end,
+                            get = function() return 9 - (BarList().pixelGlowSpeed or 4) end,
                             set = function(value)
                                 BarList().pixelGlowSpeed = 9 - value
                                 mod.BuildAllCDMBars()
-                                if mod.RequestBarGlowUpdate then
-                                    mod.RequestBarGlowUpdate()
-                                end
+                                if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
                             end,
                         },
                         {
@@ -4151,9 +3779,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             set = function(value)
                                 BarList().pixelGlowBackground = value and true or nil
                                 mod.BuildAllCDMBars()
-                                if mod.RequestBarGlowUpdate then
-                                    mod.RequestBarGlowUpdate()
-                                end
+                                if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
                             end,
                         },
                         {
@@ -4169,13 +3795,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 BarList().pixelGlowBackgroundG = green
                                 BarList().pixelGlowBackgroundB = blue
                                 mod.BuildAllCDMBars()
-                                if mod.RequestBarGlowUpdate then
-                                    mod.RequestBarGlowUpdate()
-                                end
+                                if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
                             end,
-                            disabled = function()
-                                return BarList().pixelGlowBackground ~= true
-                            end,
+                            disabled = function() return BarList().pixelGlowBackground ~= true end,
                             disabledTooltip = "Pixel Glow Background",
                         },
                     },
@@ -4201,9 +3823,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             setValue = function(value)
                 BarList().buffGlowThickness = value
                 mod.BuildAllCDMBars()
-                if mod.RefreshBuffGlows then
-                    mod.RefreshBuffGlows()
-                end
+                if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                 Refresh()
             end,
         }, {
@@ -4234,9 +3854,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         set = function(value)
                             BarList().buffGlowLines = value
                             mod.BuildAllCDMBars()
-                            if mod.RefreshBuffGlows then
-                                mod.RefreshBuffGlows()
-                            end
+                            if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                         end,
                     },
                     {
@@ -4245,15 +3863,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         min = 1,
                         max = 8,
                         step = 1,
-                        get = function()
-                            return 9 - (BarList().buffGlowSpeed or 4)
-                        end,
+                        get = function() return 9 - (BarList().buffGlowSpeed or 4) end,
                         set = function(value)
                             BarList().buffGlowSpeed = 9 - value
                             mod.BuildAllCDMBars()
-                            if mod.RefreshBuffGlows then
-                                mod.RefreshBuffGlows()
-                            end
+                            if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                         end,
                     },
                     {
@@ -4263,9 +3877,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         set = function(value)
                             BarList().buffGlowBackground = value and true or nil
                             mod.BuildAllCDMBars()
-                            if mod.RefreshBuffGlows then
-                                mod.RefreshBuffGlows()
-                            end
+                            if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                         end,
                     },
                     {
@@ -4281,13 +3893,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             BarList().buffGlowBackgroundG = green
                             BarList().buffGlowBackgroundB = blue
                             mod.BuildAllCDMBars()
-                            if mod.RefreshBuffGlows then
-                                mod.RefreshBuffGlows()
-                            end
+                            if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                         end,
-                        disabled = function()
-                            return BarList().buffGlowBackground ~= true
-                        end,
+                        disabled = function() return BarList().buffGlowBackground ~= true end,
                         disabledTooltip = "Pixel Glow Background",
                     },
                 },
@@ -4345,9 +3953,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             getValue = BDFieldIs("hideItemsIfMissing"),
             setValue = function(value)
                 BarList().hideItemsIfMissing = value
-                if mod.FullCDMRebuild then
-                    mod.FullCDMRebuild("hide_missing_toggle")
-                end
+                if mod.FullCDMRebuild then mod.FullCDMRebuild("hide_missing_toggle") end
             end,
         }
         -- Buffs get "Show Tooltip on Hover" only (auras aren't cast -> no keybind);
@@ -4425,7 +4031,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
             if not CludesUI._prebuilding then
                 local leftRegion = panGlowRow._leftRegion
-                leftRegion._lastInline = GO.BuildPreview(leftRegion, panDesc, { anchor = leftRegion._control, x = -8 })
+                leftRegion._lastInline =
+                    GO.BuildPreview(leftRegion, panDesc, { anchor = leftRegion._control, x = -8 })
                 GO.AttachInline(leftRegion, panDesc, panGlowRow._rightRegion)
 
                 if CludesUI.BuildSyncIcon and CludesUI.ApplyPandemicGlowToAll then
@@ -4462,9 +4069,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             getValue = BDFieldIs("showPassiveTrinkets"),
             setValue = function(value)
                 BarList().showPassiveTrinkets = value
-                if mod.FullCDMRebuild then
-                    mod.FullCDMRebuild("trinket_toggle")
-                end
+                if mod.FullCDMRebuild then mod.FullCDMRebuild("trinket_toggle") end
             end,
         }
         if not CludesUI.IS_FOREVER then
@@ -4472,9 +4077,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 type = "toggle",
                 text = "Show Rotation Helper",
                 tooltip = "Highlight Blizzard's next recommended ability on all CDM bars. Requires Assisted Highlight to be enabled in Blizzard's options. Disabling this hides only the CDM highlight.\n\nPress the normal ability's keybind yourself. This does not cast spells or use the Single-Button Assistant, so it does not add that assistant's global cooldown penalty. Only abilities present on your CDM bars can be highlighted.",
-                disabled = function()
-                    return not mod.RotationAssistAvailable()
-                end,
+                disabled = function() return not mod.RotationAssistAvailable() end,
                 disabledTooltip = "This option requires Blizzard's Assisted Highlight to be enabled",
                 rawTooltip = true,
                 getValue = function()
@@ -4488,9 +4091,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local profile = DB()
                     if profile and profile.cdmBars then
                         profile.cdmBars.hideRotationHelper = not value
-                        if mod.UpdateRotationHighlights then
-                            mod.UpdateRotationHighlights()
-                        end
+                        if mod.UpdateRotationHighlights then mod.UpdateRotationHighlights() end
                         -- The Style and Thickness rows below exist only while this
                         -- is on (the Glows page rebuilds its listing on every return).
                         CludesUI:RefreshPage(true)
@@ -4518,15 +4119,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             return (rotBars and rotBars[barKey]) or default
         end
         local function RotRedraw()
-            if mod.UpdateRotationHighlights then
-                mod.UpdateRotationHighlights()
-            end
+            if mod.UpdateRotationHighlights then mod.UpdateRotationHighlights() end
         end
         local function RotSet(barKey, value)
             local rotBars = RotationBars()
-            if rotBars then
-                rotBars[barKey] = value
-            end
+            if rotBars then rotBars[barKey] = value end
             RotRedraw()
         end
         local function RotCustomRGB()
@@ -4552,12 +4149,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local rotBars = RotationBars()
             local s = (rotBars and rotBars.rotationAssistStyle) or "blizzard"
             local barKey = 0
-            if s ~= "blizzard" then
-                barKey = 1
-            end
-            if s == "solid" or s == "pixel" then
-                barKey = barKey + 2
-            end
+            if s ~= "blizzard" then barKey = 1 end
+            if s == "solid" or s == "pixel" then barKey = barKey + 2 end
             return barKey
         end
 
@@ -4584,9 +4177,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 values = ROT_STYLE_NAMES,
                 order = ROT_STYLE_ORDER,
                 tooltip = "Choose the profile-wide border or glow used for Blizzard's Assisted Combat suggestion.",
-                getValue = function()
-                    return RotGet("rotationAssistStyle", "blizzard")
-                end,
+                getValue = function() return RotGet("rotationAssistStyle", "blizzard") end,
                 setValue = function(value)
                     local rotBars = RotationBars()
                     if rotBars then
@@ -4614,14 +4205,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                     local colorSwatch, defaultSwatch, classSwatch =
                         CludesUI.BuildTrioColorSwatch(colorRgn, rotStyleRow:GetFrameLevel() + 3, {
-                            getMode = function()
-                                return RotGet("rotationAssistColorMode", "default")
-                            end,
+                            getMode = function() return RotGet("rotationAssistColorMode", "default") end,
                             setMode = function(mode)
                                 local rotBars = RotationBars()
-                                if not rotBars or rotBars.rotationAssistStyle == "blizzard" then
-                                    return
-                                end
+                                if not rotBars or rotBars.rotationAssistStyle == "blizzard" then return end
                                 -- Spec Overrides: the slot this write belongs to, read
                                 -- before the write (as the widget factory does).
                                 local snap = CludesUI._SOAttribution(colorRgn)
@@ -4632,9 +4219,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             getCustomRGB = RotCustomRGB,
                             setCustomRGB = RotSetCustomRGB,
                             hasClassColor = true,
-                            onChange = function()
-                                CludesUI:RefreshPage()
-                            end,
+                            onChange = function() CludesUI:RefreshPage() end,
                             disabled = rotColorOff,
                             disabledAlpha = 0.15,
                         })
@@ -4659,12 +4244,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 text = "Rotation Assist Color Mode",
                                 values = { default = "Default", custom = "Custom", class = "Class Color" },
                                 order = { "default", "custom", "class" },
-                                getValue = function()
-                                    return RotGet("rotationAssistColorMode", "default")
-                                end,
-                                setValue = function(mode)
-                                    RotSet("rotationAssistColorMode", mode)
-                                end,
+                                getValue = function() return RotGet("rotationAssistColorMode", "default") end,
+                                setValue = function(mode) RotSet("rotationAssistColorMode", mode) end,
                             },
                             {
                                 type = "colorpicker",
@@ -4692,12 +4273,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     step = 1,
                     trackWidth = 120,
                     tooltip = "Thickness in physical pixels for Solid Border and Pixel Glow.",
-                    getValue = function()
-                        return RotGet("rotationAssistThickness", 3)
-                    end,
-                    setValue = function(value)
-                        RotSet("rotationAssistThickness", value)
-                    end,
+                    getValue = function() return RotGet("rotationAssistThickness", 3) end,
+                    setValue = function(value) RotSet("rotationAssistThickness", value) end,
                 }
                 local outsetCfg = {
                     type = "slider",
@@ -4707,12 +4284,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     step = 1,
                     trackWidth = 120,
                     tooltip = "How many pixels the custom effect extends beyond the icon.",
-                    getValue = function()
-                        return RotGet("rotationAssistOutset", 1)
-                    end,
-                    setValue = function(value)
-                        RotSet("rotationAssistOutset", value)
-                    end,
+                    getValue = function() return RotGet("rotationAssistOutset", 1) end,
+                    setValue = function(value) RotSet("rotationAssistOutset", value) end,
                 }
                 if rotRows >= 2 then
                     local rotThRow
@@ -4728,9 +4301,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- Thickness (it sits on this row itself).
                         local rotCogRows = {}
                         for _, r in ipairs(CludesUI.GlowOptions.CogRows(mod._CDM_RotationGlowDesc())) do
-                            if r.label ~= "Thickness" then
-                                rotCogRows[#rotCogRows + 1] = r
-                            end
+                            if r.label ~= "Thickness" then rotCogRows[#rotCogRows + 1] = r end
                         end
                         CludesUI.BuildInlineCog(rotThRow._leftRegion, {
                             title = "Pixel Glow Settings",
@@ -4761,9 +4332,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 getValue = BDFieldIs("pressMirror"),
                 setValue = function(value)
                     BarList().pressMirror = value
-                    if mod.ClearCdmPressPush then
-                        mod.ClearCdmPressPush()
-                    end
+                    if mod.ClearCdmPressPush then mod.ClearCdmPressPush() end
                 end,
             })
             cursorY = cursorY - height
@@ -4805,32 +4374,22 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end,
             setValue = function(value)
                 local profile = DB()
-                if not profile or not profile.cdmBars then
-                    return
-                end
+                if not profile or not profile.cdmBars then return end
                 profile.cdmBars.glowsOnlyInCombat = value and true or false
                 -- Re-read the cached gate, then let the sweep take the running
                 -- glows down (or bring the suppressed ones back) right away
                 -- instead of waiting for the next combat edge.
                 local first = value and mod._cdmGlowGateEverOn ~= true
-                if mod.RefreshGlowCombatGate then
-                    mod.RefreshGlowCombatGate()
-                end
-                if mod.CDMGlowCombatSync then
-                    mod.CDMGlowCombatSync()
-                end
+                if mod.RefreshGlowCombatGate then mod.RefreshGlowCombatGate() end
+                if mod.CDMGlowCombatSync then mod.CDMGlowCombatSync() end
                 -- First enable of the session: glows lit before this point carry
                 -- no record (StartNativeGlow records only once the gate has been
                 -- on), so re-issue the bar and buff glows now -- they restart
                 -- suppressed. Proc, CD-ready and preset glows already lit follow
                 -- on their own next edge; every later login is exact from the start.
                 if first then
-                    if mod.RequestBarGlowUpdate then
-                        mod.RequestBarGlowUpdate()
-                    end
-                    if mod.RefreshBuffGlows then
-                        mod.RefreshBuffGlows()
-                    end
+                    if mod.RequestBarGlowUpdate then mod.RequestBarGlowUpdate() end
+                    if mod.RefreshBuffGlows then mod.RefreshBuffGlows() end
                 end
                 CludesUI:RefreshPage()
             end,
@@ -4885,9 +4444,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         do
             local function SetAddOffset(axisKey, value)
                 local barData = BarList()
-                if not barData then
-                    return
-                end
+                if not barData then return end
                 barData[axisKey] = (value ~= 0) and value or nil
                 -- The anchor extra-offset registry getter (registered for every eligible bar
                 -- by the unlock registration pass below) reads the live value, so no per-edit
@@ -4896,9 +4453,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- then re-apply positions: the build covers saved and module-anchored
                 -- placement, the cascade covers an unlock-anchored bar (the build leaves
                 -- those positions to the anchor system).
-                if mod.RegisterCDMUnlockElements then
-                    mod.RegisterCDMUnlockElements()
-                end
+                if mod.RegisterCDMUnlockElements then mod.RegisterCDMUnlockElements() end
                 mod.BuildAllCDMBars()
                 if
                     CludesUI.IsUnlockAnchored
@@ -4922,9 +4477,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local barData = BarList()
                     return (barData and barData.addOffsetX) or 0
                 end,
-                setValue = function(value)
-                    SetAddOffset("addOffsetX", value)
-                end,
+                setValue = function(value) SetAddOffset("addOffsetX", value) end,
             }, {
                 type = "slider",
                 pixel = true,
@@ -4938,9 +4491,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local barData = BarList()
                     return (barData and barData.addOffsetY) or 0
                 end,
-                setValue = function(value)
-                    SetAddOffset("addOffsetY", value)
-                end,
+                setValue = function(value) SetAddOffset("addOffsetY", value) end,
             })
             cursorY = cursorY - height
         end

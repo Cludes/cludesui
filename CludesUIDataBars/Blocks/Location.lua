@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Location.lua - Info Bar blocks: the zone, and map coordinates.
 --
@@ -35,9 +33,7 @@ mod.LOC_MAX_WIDTH_DEFAULT = DEFAULT_WIDTH
 local ICON_EXTRA = 4
 
 -- The width mode, in one place for the block and the options page.
-function mod.LocationWidthMode(cfg)
-    return cfg.widthMode or "auto"
-end
+function mod.LocationWidthMode(cfg) return cfg.widthMode or "auto" end
 
 local COORD_FORMAT = { [0] = "%.0f, %.0f", [1] = "%.1f, %.1f", [2] = "%.2f, %.2f" }
 local COORD_WIDEST = { [0] = "88, 88", [1] = "88.8, 88.8", [2] = "88.88, 88.88" }
@@ -49,31 +45,23 @@ local CONTINENT = (Enum and Enum.UIMapType and Enum.UIMapType.Continent) or 2
 local function PlaceName(withSubzone)
     local zone = GetRealZoneText() or ""
     local sub = GetMinimapZoneText() or ""
-    if withSubzone and sub ~= "" and sub ~= zone then
-        return zone .. ": " .. sub
-    end
+    if withSubzone and sub ~= "" and sub ~= zone then return zone .. ": " .. sub end
     return sub ~= "" and sub or zone
 end
 
 local function Position()
     local mapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     local position = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
-    if not position then
-        return nil
-    end
+    if not position then return nil end
     local x, y = position:GetXY()
     -- Places with no player map report 0, 0 rather than nothing.
-    if not (x and y) or (x == 0 and y == 0) then
-        return nil
-    end
+    if not (x and y) or (x == 0 and y == 0) then return nil end
     return x * 100, y * 100
 end
 
 local function Coordinates(precision)
     local x, y = Position()
-    if not x then
-        return "-"
-    end
+    if not x then return "-" end
     return format(COORD_FORMAT[precision] or COORD_FORMAT[0], x, y)
 end
 
@@ -81,12 +69,8 @@ local function Continent()
     local mapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
     while mapID and mapID ~= 0 do
         local info = C_Map.GetMapInfo(mapID)
-        if not info then
-            return nil
-        end
-        if info.mapType == CONTINENT then
-            return info.name
-        end
+        if not info then return nil end
+        if info.mapType == CONTINENT then return info.name end
         mapID = info.parentMapID
     end
 end
@@ -103,12 +87,8 @@ local PVP_WORDS = {
 }
 local function Status()
     local pvp = C_PvP and C_PvP.GetZonePVPInfo and C_PvP.GetZonePVPInfo()
-    if PVP_WORDS[pvp] then
-        return _G[PVP_WORDS[pvp]]
-    end
-    if IsInInstance() then
-        return AGGRO_WARNING_IN_INSTANCE
-    end
+    if PVP_WORDS[pvp] then return _G[PVP_WORDS[pvp]] end
+    if IsInInstance() then return AGGRO_WARNING_IN_INSTANCE end
     return CONTESTED_TERRITORY
 end
 
@@ -118,9 +98,7 @@ local function ShowTooltip(owner)
     mod.Tip_Begin(owner)
     mod.Tip_AddDouble(ZONE, PlaceName(true), 0.6, 0.6, 0.6, 1, 1, 1)
     local continent = Continent()
-    if continent then
-        mod.Tip_AddDouble(_G.CONTINENT, continent, 0.6, 0.6, 0.6, 1, 1, 1)
-    end
+    if continent then mod.Tip_AddDouble(_G.CONTINENT, continent, 0.6, 0.6, 0.6, 1, 1, 1) end
     local sr, sg, sb = K.ZoneReactionColor()
     mod.Tip_AddDouble(STATUS, Status(), 0.6, 0.6, 0.6, sr, sg, sb)
     mod.Tip_AddLine(" ")
@@ -190,13 +168,9 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     -- (the state driver drops it) but it keeps the hover.
     local secure
     local function EnsureSecure()
-        if secure or InCombatLockdown() then
-            return
-        end
+        if secure or InCombatLockdown() then return end
         local micro = _G.QuestLogMicroButton
-        if not micro then
-            return
-        end
+        if not micro then return end
         secure = CreateFrame(
             "Button",
             "CUIInfoBar_Loc_" .. inst.key,
@@ -225,16 +199,12 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
         secure:SetScript("OnLeave", Leave)
     end
 
-    local function Collapsed()
-        return spec.collapse and spec.collapse() or false
-    end
+    local function Collapsed() return spec.collapse and spec.collapse() or false end
 
     -- text: the string if the caller already read it (a position read allocates).
     function inst:Refresh(text)
         EnsureSecure()
-        if not secure then
-            owed = true
-        end
+        if not secure then owed = true end
         local collapsed = Collapsed()
         -- Show/Hide are protected once the secure button exists: only on a
         -- real change, and not in combat.
@@ -328,17 +298,13 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
             contentFrame:SetSize(width, barH)
         end
-        if secure and not InCombatLockdown() then
-            owed = false
-        end
+        if secure and not InCombatLockdown() then owed = false end
         K.MaybeRelayout(self)
     end
 
     -- A new text: nothing if the same, just the text at a fixed width, else a pass.
     local function Show(text)
-        if text == drawnText then
-            return
-        end
+        if text == drawnText then return end
         if fixed and drawnText then
             label:SetText(text)
             drawnText = text
@@ -352,9 +318,7 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     -- pass if the block appears or leaves, else only a changed text.
     inst.eventFrame = K.MakeEventFrame(inst, function(self, event)
         if event == "PLAYER_REGEN_ENABLED" then
-            if owed then
-                self:Refresh()
-            end
+            if owed then self:Refresh() end
             return
         end
         if owed or Collapsed() ~= (drawnText == nil) then
@@ -365,9 +329,7 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end)
 
     function inst:Enable()
-        if not contentFrame:IsShown() and not InCombatLockdown() then
-            contentFrame:Show()
-        end
+        if not contentFrame:IsShown() and not InCombatLockdown() then contentFrame:Show() end
         drawnText = nil
         EnsureSecure()
         K.RegisterInstEvents(self)
@@ -376,9 +338,7 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
         if spec.tick and not ticker then
             ticker = C_Timer.NewTicker(spec.tick, function()
                 -- Off the bar (in an instance): leaving it is an event, so nothing to do.
-                if not Collapsed() then
-                    Show(spec.text())
-                end
+                if not Collapsed() then Show(spec.text()) end
             end)
         end
     end
@@ -395,12 +355,8 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end
 
     function inst:GetAutoLength()
-        if not contentFrame:IsShown() then
-            return 0
-        end
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if not contentFrame:IsShown() then return 0 end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 
@@ -414,18 +370,14 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
             K.ParkSecureFrame(secure, self.key .. "_loc")
             secure = nil
         end
-        if not InCombatLockdown() then
-            contentFrame:Hide()
-        end
+        if not InCombatLockdown() then contentFrame:Hide() end
     end
 
     return inst
 end
 
 mod.BlockFactories.location = function(blockCfg, slot, contentFrame, barCtx)
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
     return TextBlock(blockCfg, slot, contentFrame, barCtx, {
         events = {
             "ZONE_CHANGED",
@@ -434,43 +386,29 @@ mod.BlockFactories.location = function(blockCfg, slot, contentFrame, barCtx)
             "PLAYER_ENTERING_WORLD",
             "PLAYER_REGEN_ENABLED",
         },
-        text = function()
-            return PlaceName(Settings().showSubZone ~= false)
-        end,
+        text = function() return PlaceName(Settings().showSubZone ~= false) end,
         -- Sized from the live name (zone changes are rare; reserving the
         -- longest zone name would waste the space all the time).
         width = function()
             local cfg = Settings()
-            if mod.LocationWidthMode(cfg) ~= "manual" then
-                return nil
-            end
+            if mod.LocationWidthMode(cfg) ~= "manual" then return nil end
             return cfg.maxWidth or DEFAULT_WIDTH
         end,
     })
 end
 
 mod.BlockFactories.coords = function(blockCfg, slot, contentFrame, barCtx)
-    local function Settings()
-        return blockCfg.settings or {}
-    end
-    local function Precision()
-        return Settings().precision or 0
-    end
+    local function Settings() return blockCfg.settings or {} end
+    local function Precision() return Settings().precision or 0 end
     return TextBlock(blockCfg, slot, contentFrame, barCtx, {
         events = { "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED" },
         tick = 0.5,
-        text = function()
-            return Coordinates(Precision())
-        end,
-        widest = function()
-            return COORD_WIDEST[Precision()] or COORD_WIDEST[0]
-        end,
+        text = function() return Coordinates(Precision()) end,
+        widest = function() return COORD_WIDEST[Precision()] or COORD_WIDEST[0] end,
         -- Off the bar in dungeons and raids. Housing counts as an instance
         -- but has a real map (its coordinates work); being a sanctuary tells it apart.
         collapse = function()
-            if Settings().hideInInstance == false or not IsInInstance() then
-                return false
-            end
+            if Settings().hideInInstance == false or not IsInInstance() then return false end
             local pvp = C_PvP and C_PvP.GetZonePVPInfo and C_PvP.GetZonePVPInfo()
             return pvp ~= "sanctuary"
         end,

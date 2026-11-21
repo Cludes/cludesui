@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Defaults.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local UnitClass, GetShapeshiftFormID = UnitClass, GetShapeshiftFormID
@@ -33,25 +29,17 @@ local function FormBucket()
 end
 -- Druid "hide bar text per form", driven by cfg.textDisabledForms.
 _G._CURB_TextHiddenByForm = function(conf)
-    if playerClassFile ~= "DRUID" then
-        return false
-    end
+    if playerClassFile ~= "DRUID" then return false end
     local df = conf and conf.textDisabledForms
-    if not df then
-        return false
-    end
+    if not df then return false end
     return df[FormBucket()] and true or false
 end
 -- Druid "hide whole bar per form", driven by cfg.barDisabledForms (the WoW
 -- Forever swing timer reads it too). Alpha-based hide, safe to flip mid-combat.
 _G._CURB_BarHiddenByForm = function(conf)
-    if playerClassFile ~= "DRUID" then
-        return false
-    end
+    if playerClassFile ~= "DRUID" then return false end
     local df = conf and conf.barDisabledForms
-    if not df then
-        return false
-    end
+    if not df then return false end
     return df[FormBucket()] and true or false
 end
 -- Static neutral defaults for custom fill colors; used only as the initial custom

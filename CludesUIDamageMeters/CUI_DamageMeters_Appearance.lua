@@ -1,12 +1,8 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Optional row decorations use window overlays with their own viewport clips.
 local _, mod = ...
 local Inner = mod._dmInternals
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI, Pix = CludesUI, CludesUI.PP
@@ -73,9 +69,7 @@ function mod.DMPrepareValueGradient(window, sources, total)
     end
     range.count, range.low, range.high, range.key = total, nil, nil, nil
     local kind = window.curDMType
-    if kind == "threat" or kind == Enum.DamageMeterType.Deaths then
-        return
-    end
+    if kind == "threat" or kind == Enum.DamageMeterType.Deaths then return end
     local perSecond = mod.EDM.DB().numberFormat == 0
         and kind ~= Enum.DamageMeterType.Interrupts
         and kind ~= Enum.DamageMeterType.Dispels
@@ -108,17 +102,13 @@ function mod.DMPaintValueGradient(barFrame, window, source, index)
     t = math.max(0, math.min(1, t)) * 2
     -- Painted only when the colour moves; the row's other colour passes clear
     -- the memo (a full rebuild, the pinned row's hand-back).
-    if barFrame._gradT == t then
-        return
-    end
+    if barFrame._gradT == t then return end
     barFrame._gradT = t
     barFrame.amount:SetTextColor(math.min(1, t), math.min(1, 2 - t), 0)
 end
 
 local function Style(cfg)
-    if cached and cached.cfg == cfg then
-        return cached
-    end
+    if cached and cached.cfg == cfg then return cached end
     local pixels = not mod.DMBlizz()
         and (cfg.borderSize or 0) > 0
         and CUI.GetBorderCompanion(cfg.borderTexture, "sepH") ~= nil
@@ -140,14 +130,10 @@ end
 -- Parks a host (hidden, out of the UI-scale pass). Returns at once when it is
 -- parked already: the marker-only mode parks every other row's host each refresh.
 local function HideRowDecor(owner)
-    if owner.active == false and owner.shownAs == false then
-        return
-    end
+    if owner.active == false and owner.shownAs == false then return end
     owner.active, owner.shownAs, owner.placed = false, false, nil
     owner:Hide()
-    if owner.iconHost then
-        owner.iconHost:Hide()
-    end
+    if owner.iconHost then owner.iconHost:Hide() end
     CUI.RegisterPxReapply(owner, nil)
 end
 
@@ -160,15 +146,12 @@ local function PositionRowDecor(owner)
     if owner.shownAs ~= visible then
         owner.shownAs = visible
         owner:SetShown(visible)
-        if owner.iconHost then
-            owner.iconHost:SetShown(visible)
-        end
+        if owner.iconHost then owner.iconHost:SetShown(visible) end
     end
-    if not visible then
-        return
-    end
+    if not visible then return end
     local es = owner:GetEffectiveScale()
-    local hgt, _, stride = mod._RowMetrics(owner.style.cfg.barHeight or 18, owner.style.cfg.barSpacing or 2, es)
+    local hgt, _, stride =
+        mod._RowMetrics(owner.style.cfg.barHeight or 18, owner.style.cfg.barSpacing or 2, es)
     local scroll = owner.slot > 0 and wid.viewport:GetVerticalScroll() or 0
     local total, viewH = wid.visibleCount or 0, wid.viewport:GetHeight()
     local atTop = wid.stickyAtTop == true
@@ -199,9 +182,7 @@ local function PositionRowDecor(owner)
             or (owner.slot < total and owner.slot * stride < scroll + viewH)
             or (owner.slot == total and total * stride <= viewH)
         )
-    if owner.line then
-        owner.line:SetShown(owner.lineVisible)
-    end
+    if owner.line then owner.line:SetShown(owner.lineVisible) end
     local clip = owner.slot <= 0 and wid.frame or wid.viewport
     owner:ClearAllPoints()
     owner:SetAllPoints(clip)
@@ -243,9 +224,7 @@ local function PlaceRow(owner)
     local thick = CUI.BorderCompanionThickness(key, step, px, es)
     local red, green, blue, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
     if owner.style.bars then
-        if not owner.line then
-            owner.line = NewTexture(owner)
-        end
+        if not owner.line then owner.line = NewTexture(owner) end
         local texture = owner.line
         local lead = Pix.SnapForES(thick * 2 / CUI.GetBorderCompanion(key, "sepSize"), es)
         texture:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
@@ -289,9 +268,7 @@ local function PlaceRow(owner)
         local topY, bottom = 0, 0
         -- Pinned rows have a separate rail; the scrolling row trims shorten their divider.
         if owner.style.bars and owner.slot > 0 then
-            if owner.slot > 1 then
-                topY = math.max(0, thick / 32 - gap / 2)
-            end
+            if owner.slot > 1 then topY = math.max(0, thick / 32 - gap / 2) end
             bottom = math.max(0, thick * 3 / 32 - gap / 2)
         end
         topY = Pix.SnapForES(topY, es)
@@ -301,12 +278,8 @@ local function PlaceRow(owner)
             topY = topY + Pix.perfect / es
         end
         bottom = Pix.SnapForES(bottom, es)
-        if owner.joinBottom then
-            bottom = bottom - Pix.perfect / es
-        end
-        if owner.slot == 0 then
-            bottom = bottom + Pix.perfect / es
-        end
+        if owner.joinBottom then bottom = bottom - Pix.perfect / es end
+        if owner.slot == 0 then bottom = bottom + Pix.perfect / es end
         if topY + bottom >= hgt then
             texture:Hide()
         else
@@ -359,30 +332,22 @@ function mod.DMSyncRowDecor(wid)
     for _, barFrame in ipairs(wid.rowPool) do
         -- A parked host has nothing to follow.
         local owner = barFrame._decor
-        if owner and (owner.active or not enabled) then
-            SyncRowDecor(owner, enabled)
-        end
+        if owner and (owner.active or not enabled) then SyncRowDecor(owner, enabled) end
     end
-    if wid.stickyPlayer._decor then
-        SyncRowDecor(wid.stickyPlayer._decor, enabled)
-    end
+    if wid.stickyPlayer._decor then SyncRowDecor(wid.stickyPlayer._decor, enabled) end
     wid._decorSync = enabled or nil
 end
 
 function mod.DMApplyRowDecor(barFrame, window, source, slot)
     local c, owner = mod.EDM.DB(), barFrame._decor
     if not (c.barSeparators or c.iconSeparator or c.showPlayerMarker) then
-        if owner then
-            HideRowDecor(owner)
-        end
+        if owner then HideRowDecor(owner) end
         return
     end
     local style = Style(c)
     local own = style.marker and mod._IsOwnRow(source) or false
     if not style.bars and not style.icons and not own then
-        if owner then
-            HideRowDecor(owner)
-        end
+        if owner then HideRowDecor(owner) end
         return
     end
     if not owner then
@@ -414,9 +379,7 @@ function mod.DMApplyRowDecor(barFrame, window, source, slot)
         and owner.strata == strata
         and owner.pinTop == pinTop
     then
-        if PositionRowDecor(owner) then
-            PlaceRow(owner)
-        end
+        if PositionRowDecor(owner) then PlaceRow(owner) end
         return
     end
     owner.gen, owner.style, owner.slot, owner.own = generation, style, slot, own
@@ -465,9 +428,7 @@ function mod.DMApplyHeaderSeparator(wid)
         if owner then
             owner:Hide()
             CUI.RegisterPxReapply(owner, nil)
-            if not mod.DMBlizz() then
-                wid.header._bottomBorder:SetShown((c.hdrBottomBorderSize or 0) > 0)
-            end
+            if not mod.DMBlizz() then wid.header._bottomBorder:SetShown((c.hdrBottomBorderSize or 0) > 0) end
         end
         return
     end

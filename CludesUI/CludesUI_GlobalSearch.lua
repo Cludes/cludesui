@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_GlobalSearch.lua
 --  Unified fuzzy search across every registered CludesUI sub-addon's
@@ -33,9 +31,7 @@ local function ModuleLabel(moduleConfig, moduleFolder)
 end
 
 -- A page's name as its tab shows it (CUI_NS.GetTabLabel), localized.
-local function PageLabel(moduleFolder, pageEntry)
-    return CludesUI.L(mod.GetTabLabel(moduleFolder, pageEntry))
-end
+local function PageLabel(moduleFolder, pageEntry) return CludesUI.L(mod.GetTabLabel(moduleFolder, pageEntry)) end
 
 -------------------------------------------------------------------------------
 --  Index storage
@@ -60,29 +56,17 @@ function CludesUI._RegisterSearchEntry(
     -- Opt-out for whole UI regions: a builder sets this around widget
     -- construction it wants excluded from the search entirely (e.g. the QoL
     -- Macro Factory, whose rows must never be indexed or deep-linked).
-    if CludesUI._searchIndexSuppress then
-        return
-    end
+    if CludesUI._searchIndexSuppress then return end
     -- Composite labels (DualRow/TripleRow with an empty slot) can come in as whitespace
     -- only (e.g. a single joining space with nothing on either side) -- trim before the
     -- emptiness check so those don't register as inert, unmatchable junk entries.
-    if label then
-        label = label:match("^%s*(.-)%s*$")
-    end
-    if not label or label == "" or not moduleFolder or not pageEntry then
-        return
-    end
+    if label then label = label:match("^%s*(.-)%s*$") end
+    if not label or label == "" or not moduleFolder or not pageEntry then return end
     local key = moduleFolder .. "\1" .. pageEntry .. "\1" .. label
-    if _seenKeys[key] then
-        return
-    end
+    if _seenKeys[key] then return end
     _seenKeys[key] = true
-    if localLabel == "" then
-        localLabel = nil
-    end
-    if type(tipText) ~= "string" or tipText == "" then
-        tipText = nil
-    end
+    if localLabel == "" then localLabel = nil end
+    if type(tipText) ~= "string" or tipText == "" then tipText = nil end
     _searchIndex[#_searchIndex + 1] = {
         label = label,
         -- Lowercased once here so a keystroke never re-lowers the whole index.
@@ -121,14 +105,10 @@ local function FuzzyScore(haystack, needle)
     -- Forward pass only finds where the earliest full match ends.
     local hitIndex, nameIndex = 1, 1
     while hitIndex <= hLen and nameIndex <= nLen do
-        if haystack:byte(hitIndex) == needle:byte(nameIndex) then
-            nameIndex = nameIndex + 1
-        end
+        if haystack:byte(hitIndex) == needle:byte(nameIndex) then nameIndex = nameIndex + 1 end
         hitIndex = hitIndex + 1
     end
-    if nameIndex <= nLen then
-        return nil
-    end -- not every needle char found in order
+    if nameIndex <= nLen then return nil end -- not every needle char found in order
     local lastMatch = hitIndex - 1
     -- Backward pass from there finds the latest start, so the match is not
     -- anchored on a stray early letter ("stats" on "secondary stat display"
@@ -153,9 +133,7 @@ local function FuzzyScore(haystack, needle)
     -- real fuzzy match. Flat +8 slack keeps short abbreviations ("aoc" over "Auto Open
     -- Containers") alive while capping how far a longer word may scatter.
     local span = lastMatch - firstMatch + 1
-    if span > nLen + 8 then
-        return nil
-    end
+    if span > nLen + 8 then return nil end
 
     return (score * 100) / span -- density: tighter matches for the same needle score higher
 end
@@ -165,13 +143,9 @@ end
 -- below it; within a tier, earlier position / denser match wins.
 local TIER = 10000
 local function FieldScore(hgt, nh, needle, stem, mod, exactTier, fuzzyTier)
-    if not hgt then
-        return nil
-    end
+    if not hgt then return nil end
     local idx = hgt:find(needle, 1, true)
-    if idx then
-        return exactTier * TIER + math.max(0, TIER - 1 - idx)
-    end
+    if idx then return exactTier * TIER + math.max(0, TIER - 1 - idx) end
     if stem then
         -- Singular form must end its word: "stat" in "stat display", not "status".
         idx = hgt:find(stem, 1, true)
@@ -184,13 +158,9 @@ local function FieldScore(hgt, nh, needle, stem, mod, exactTier, fuzzyTier)
         end
     end
     idx = nh:find(mod, 1, true)
-    if idx then
-        return (exactTier - 1) * TIER + math.max(0, TIER - 1 - idx)
-    end
+    if idx then return (exactTier - 1) * TIER + math.max(0, TIER - 1 - idx) end
     local s = FuzzyScore(hgt, needle)
-    if s then
-        return fuzzyTier * TIER + math.min(s, TIER - 1)
-    end
+    if s then return fuzzyTier * TIER + math.min(s, TIER - 1) end
 end
 
 local function ScoreEntry(record, needle, stem, mod)
@@ -200,15 +170,9 @@ local function ScoreEntry(record, needle, stem, mod)
     -- Page results also score on the tab name alone: "fonts" hits "Fonts" at
     -- position 1 instead of late in "Global Settings Fonts".
     local d = FieldScore(record.lPage, record.nPage, needle, stem, mod, 5, 1)
-    if b and (not a or b > a) then
-        a = b
-    end
-    if c and (not a or c > a) then
-        a = c
-    end
-    if d and (not a or d > a) then
-        a = d
-    end
+    if b and (not a or b > a) then a = b end
+    if c and (not a or c > a) then a = c end
+    if d and (not a or d > a) then a = d end
     return a
 end
 
@@ -230,37 +194,25 @@ do
     end
 end
 local function SortResults(a, b)
-    if a.score ~= b.score then
-        return a.score > b.score
-    end
+    if a.score ~= b.score then return a.score > b.score end
     local xa, xb = a.exact == true, b.exact == true
-    if xa ~= xb then
-        return xa
-    end
+    if xa ~= xb then return xa end
     local entryA, entryB = a.entry, b.entry
     local ta = entryA.displayLabel or entryA.label
     local tb = entryB.displayLabel or entryB.label
-    if #ta ~= #tb then
-        return #ta < #tb
-    end
+    if #ta ~= #tb then return #ta < #tb end
     local ka = KIND_RANK[entryA.kind] or (entryA.isSection and 2 or 3)
     local kb = KIND_RANK[entryB.kind] or (entryB.isSection and 2 or 3)
-    if ka ~= kb then
-        return ka < kb
-    end
+    if ka ~= kb then return ka < kb end
     if entryA.module ~= entryB.module then
         local ra, rb = _moduleRank[entryA.module] or 1000, _moduleRank[entryB.module] or 1000
-        if ra ~= rb then
-            return ra < rb
-        end
+        if ra ~= rb then return ra < rb end
         return entryA.module < entryB.module
     end
     if entryA.order and entryB.order and entryA.order ~= entryB.order then
         return entryA.order < entryB.order
     end
-    if entryA.page ~= entryB.page then
-        return entryA.page < entryB.page
-    end
+    if entryA.page ~= entryB.page then return entryA.page < entryB.page end
     return entryA.label < entryB.label
 end
 
@@ -319,26 +271,18 @@ local function BuildModuleAliases()
     _moduleAliases = {}
     local seen = {}
     local function Add(aliasName, moduleFolder)
-        if not aliasName then
-            return
-        end
+        if not aliasName then return end
         aliasName = aliasName:lower():gsub("^%s+", ""):gsub("%s+$", "")
-        if aliasName == "" then
-            return
-        end
+        if aliasName == "" then return end
         local key = aliasName .. "\1" .. moduleFolder
-        if seen[key] then
-            return
-        end
+        if seen[key] then return end
         seen[key] = true
         _moduleAliases[#_moduleAliases + 1] = { alias = aliasName, folder = moduleFolder }
     end
     for moduleFolder, moduleConfig in pairs(mod.modules or {}) do
         Add(moduleConfig.title and CludesUI.L(moduleConfig.title), moduleFolder)
         -- A plugin's section label filters to all of that plugin's modules.
-        if moduleConfig._pluginLabel then
-            Add(CludesUI.L(moduleConfig._pluginLabel), moduleFolder)
-        end
+        if moduleConfig._pluginLabel then Add(CludesUI.L(moduleConfig._pluginLabel), moduleFolder) end
     end
     if CludesUI.ADDON_ROSTER then
         for _, record in ipairs(CludesUI.ADDON_ROSTER) do
@@ -378,9 +322,7 @@ local function BuildModuleAliases()
             end
         end
     end
-    table.sort(_moduleAliases, function(lhs, rhs)
-        return #lhs.alias > #rhs.alias
-    end)
+    table.sort(_moduleAliases, function(lhs, rhs) return #lhs.alias > #rhs.alias end)
 end
 
 -- Alternate spellings a query may use for a feature whose option labels
@@ -445,23 +387,15 @@ local QUERY_SYNONYMS = {
     { "compact", { "bag display", "bank display" } },
 }
 -- WoW Forever's Name Format (first or last names; Forever Essentials > General).
-if CludesUI.IS_FOREVER then
-    QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = { "surname", { "name format" } }
-end
+if CludesUI.IS_FOREVER then QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = { "surname", { "name format" } } end
 local SYNONYM_MIN_PREFIX = 3
 
 local function SearchIndex(searchText, maxResults)
     maxResults = maxResults or 30
     local needle = (searchText or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-    if needle == "" then
-        return {}
-    end
-    if not _coarseCandidates then
-        BuildCoarseCandidates()
-    end
-    if not _moduleAliases then
-        BuildModuleAliases()
-    end
+    if needle == "" then return {} end
+    if not _coarseCandidates then BuildCoarseCandidates() end
+    if not _moduleAliases then BuildModuleAliases() end
 
     -- Detect a module name ANYWHERE in the query (whole words only, longest alias
     -- first) and split it off as an ADDITIVE boost: "raid frames border style" and
@@ -478,9 +412,7 @@ local function SearchIndex(searchText, maxResults)
                 -- Several modules can share one alias (a plugin section label).
                 filterKeys = {}
                 for _, other in ipairs(_moduleAliases) do
-                    if other.alias == a then
-                        filterKeys[other.folder] = true
-                    end
+                    if other.alias == a then filterKeys[other.folder] = true end
                 end
                 subNeedle = (needle:sub(1, s - 1) .. " " .. needle:sub(e + 1))
                     :gsub("%s+", " ")
@@ -490,9 +422,7 @@ local function SearchIndex(searchText, maxResults)
             end
             s, e = needle:find(a, s + 1, true)
         end
-        if filterKeys then
-            break
-        end
+        if filterKeys then break end
     end
 
     -- Progressive variant: while a module name is still being TYPED, the
@@ -611,9 +541,7 @@ local function SearchIndex(searchText, maxResults)
                 end
                 s, e = needle:find(pre, s + 1, true)
             end
-            if matched then
-                break
-            end
+            if matched then break end
         end
     end
     if altNeedles then
@@ -702,54 +630,24 @@ local _absorberMeta
 _absorberMeta = {
     __index = function(_, key)
         -- Numeric keys read as ABSENT so ipairs()/#/array probes terminate.
-        if type(key) == "number" then
-            return nil
-        end
+        if type(key) == "number" then return nil end
         return setmetatable({}, _absorberMeta)
     end,
-    __call = function()
-        return setmetatable({}, _absorberMeta)
-    end,
-    __add = function()
-        return 100
-    end,
-    __sub = function()
-        return 100
-    end,
-    __mul = function()
-        return 100
-    end,
-    __div = function()
-        return 1
-    end,
-    __mod = function()
-        return 0
-    end,
-    __pow = function()
-        return 1
-    end,
-    __unm = function()
-        return -100
-    end,
-    __concat = function()
-        return ""
-    end,
-    __len = function()
-        return 0
-    end,
-    __lt = function()
-        return false
-    end,
-    __le = function()
-        return false
-    end,
-    __tostring = function()
-        return "CUIAbsorber"
-    end,
+    __call = function() return setmetatable({}, _absorberMeta) end,
+    __add = function() return 100 end,
+    __sub = function() return 100 end,
+    __mul = function() return 100 end,
+    __div = function() return 1 end,
+    __mod = function() return 0 end,
+    __pow = function() return 1 end,
+    __unm = function() return -100 end,
+    __concat = function() return "" end,
+    __len = function() return 0 end,
+    __lt = function() return false end,
+    __le = function() return false end,
+    __tostring = function() return "CUIAbsorber" end,
 }
-local function MakeAbsorber()
-    return setmetatable({}, _absorberMeta)
-end
+local function MakeAbsorber() return setmetatable({}, _absorberMeta) end
 
 -- Mirrors IndexSlotForSearch in CludesUI_Widgets.lua exactly: empty
 -- labels skip, localized form rides along only when it differs, section is
@@ -757,12 +655,8 @@ end
 -- frame; the absorber parent is shared, so the pass tracks it here), and
 -- the selector context comes from the same global the live path uses.
 local function RegisterAbsorbed(labelText, tooltipText, isSection)
-    if not CludesUI._RegisterSearchEntry then
-        return
-    end
-    if type(labelText) ~= "string" or labelText == "" then
-        return
-    end
+    if not CludesUI._RegisterSearchEntry then return end
+    if type(labelText) ~= "string" or labelText == "" then return end
     local loc = CludesUI.L(labelText)
     local sel = CludesUI._buildingSelector
     CludesUI._RegisterSearchEntry(
@@ -826,9 +720,7 @@ end
 function AbsorberW:DualRow(hostFrame, yOffset, leftConfig, rightConfig)
     -- A row the live factory hides for Blizzard Style has nothing to find.
     local BS = CludesUI.BlizzStyle
-    if BS and BS.RowHidden and BS.RowHidden(leftConfig, rightConfig) then
-        return MakeAbsorber(), 0
-    end
+    if BS and BS.RowHidden and BS.RowHidden(leftConfig, rightConfig) then return MakeAbsorber(), 0 end
     RegisterAbsorbed(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
     RegisterAbsorbed(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
     return MakeAbsorber(), 40
@@ -896,9 +788,7 @@ function AbsorberW:TripleSlider(hostFrame, configList, yOffset)
     -- no slots, so the absorber registers nothing either.
     return MakeAbsorber(), 40
 end
-function AbsorberW:Spacer(hostFrame, yOffset, height)
-    return MakeAbsorber(), height or 20
-end
+function AbsorberW:Spacer(hostFrame, yOffset, height) return MakeAbsorber(), height or 20 end
 -- Any factory method NOT stubbed above (added later, or missed): absorb it
 -- rather than erroring the whole page -- the page still indexes everything
 -- its known widgets register; dev mode announces the gap so the stub gets
@@ -912,9 +802,7 @@ setmetatable(AbsorberW, {
                     .. " -- its rows are invisible to search until built live. Add a stub."
             )
         end
-        return function()
-            return MakeAbsorber(), 40
-        end
+        return function() return MakeAbsorber(), 40 end
     end,
 })
 
@@ -923,9 +811,7 @@ local function PrebuildOnce(moduleConfig, moduleFolder, pageEntry, selectorSette
         _hiddenParent = CreateFrame("Frame", nil, UIParent)
         _hiddenParent:Hide()
     end
-    if selectorSetter and selectorKey then
-        selectorSetter(selectorKey)
-    end
+    if selectorSetter and selectorKey then selectorSetter(selectorKey) end
 
     -- ONE reused wrapper for every job: with the widget factory absorbed,
     -- the only things ever created on it are the rare custom-chrome frames
@@ -968,9 +854,7 @@ local function PrebuildOnce(moduleConfig, moduleFolder, pageEntry, selectorSette
                 .. tostring(err)
         )
     end
-    if refreshSnap then
-        CludesUI._RestoreWidgetRefreshList(refreshSnap)
-    end
+    if refreshSnap then CludesUI._RestoreWidgetRefreshList(refreshSnap) end
 
     -- Some buildPage implementations register cleanup (event listeners, etc.) via
     -- parent:HookScript("OnHide", ...), expecting it to fire once the user navigates
@@ -994,9 +878,7 @@ end
 -- budget in RunPrebuildPass then spreads them across frames.
 local function PrebuildJob(task)
     local moduleConfig = task.config
-    if not moduleConfig.buildPage then
-        return
-    end
+    if not moduleConfig.buildPage then return end
     -- Re-check (not just at job-list-build time): the staggered pass spans many
     -- frames, so the player may have visited and cached this exact page live in the
     -- meantime -- rebuilding it hidden would be a redundant, wasted build. The selector
@@ -1016,9 +898,7 @@ local function PrebuildJob(task)
     end
     -- Set on the LAST variant job of a page: restore whatever the player actually had
     -- selected so a later live visit isn't left showing the last-built variant.
-    if task.restoreSetter and task.restoreKey then
-        task.restoreSetter(task.restoreKey)
-    end
+    if task.restoreSetter and task.restoreKey then task.restoreSetter(task.restoreKey) end
 end
 
 -- Deliberately NOT run at login: even frameless, running every page builder costs real
@@ -1031,9 +911,7 @@ end
 local PREBUILD_BUDGET_MS = 4
 
 local function RunPrebuildPass(onComplete)
-    if _prebuildDone then
-        return
-    end
+    if _prebuildDone then return end
     _prebuildDone = true
 
     local jobs = {}
@@ -1056,7 +934,8 @@ local function RunPrebuildPass(onComplete)
                     -- Selector-driven pages (CDM bar / unit dropdowns) expand to one
                     -- job PER variant so each tick stays one build; the last variant
                     -- job carries the restore of the player's own selection.
-                    local spellings = moduleConfig.getPrebuildVariants and moduleConfig.getPrebuildVariants(pageEntry)
+                    local spellings = moduleConfig.getPrebuildVariants
+                        and moduleConfig.getPrebuildVariants(pageEntry)
                     if spellings and spellings.keys and #spellings.keys > 0 then
                         for k, key in ipairs(spellings.keys) do
                             local task = {
@@ -1085,9 +964,7 @@ local function RunPrebuildPass(onComplete)
         -- A full page build is a multi-millisecond main-thread hit; never do
         -- that during combat. Pause the pass and resume once combat ends.
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer(StepJob, function()
-                C_Timer.After(0.05, StepJob)
-            end)
+            CludesUI.CombatQueue.Defer(StepJob, function() C_Timer.After(0.05, StepJob) end)
             return
         end
         -- As many builds as fit in a small per-frame budget (at least one),
@@ -1097,9 +974,7 @@ local function RunPrebuildPass(onComplete)
             idx = idx + 1
             local task = jobs[idx]
             if not task then
-                if onComplete then
-                    onComplete()
-                end
+                if onComplete then onComplete() end
                 return
             end
             PrebuildJob(task)
@@ -1135,14 +1010,10 @@ local MAX_VISIBLE_RESULTS = 12
 
 local function GetModuleDisplayName(moduleFolder)
     local moduleConfig = mod.modules and mod.modules[moduleFolder]
-    if moduleConfig and moduleConfig.title then
-        return (ModuleLabel(moduleConfig, moduleFolder))
-    end
+    if moduleConfig and moduleConfig.title then return (ModuleLabel(moduleConfig, moduleFolder)) end
     if CludesUI.ADDON_ROSTER then
         for _, record in ipairs(CludesUI.ADDON_ROSTER) do
-            if record.folder == moduleFolder then
-                return CludesUI.L(record.display)
-            end
+            if record.folder == moduleFolder then return CludesUI.L(record.display) end
         end
     end
     return moduleFolder
@@ -1152,9 +1023,7 @@ local function JoinBreadcrumb(...)
     local parts = {}
     for idx = 1, select("#", ...) do
         local val = select(idx, ...)
-        if val and val ~= "" then
-            parts[#parts + 1] = val
-        end
+        if val and val ~= "" then parts[#parts + 1] = val end
     end
     return table.concat(parts, BREADCRUMB_ARROW)
 end
@@ -1167,14 +1036,8 @@ local function TitleCaseSection(text)
     -- Only ALL-CAPS names need the conversion. Already mixed-case section
     -- labels (window-skin card titles like "LFG Menu") pass through
     -- untouched -- lowering them first would mangle acronyms ("Lfg Menu").
-    if text ~= text:upper() then
-        return text
-    end
-    return (
-        text:lower():gsub("(%a)([%w']*)", function(first, rest)
-            return first:upper() .. rest
-        end)
-    )
+    if text ~= text:upper() then return text end
+    return (text:lower():gsub("(%a)([%w']*)", function(first, rest) return first:upper() .. rest end))
 end
 
 local function JumpToResult(record, sidebarSearchBox)
@@ -1203,9 +1066,7 @@ local function JumpToResult(record, sidebarSearchBox)
         -- Settings' preSelectFn) so the row is actually there to find.
         local preSelectFn
         if record.selectorSetter and record.selectorKey then
-            preSelectFn = function()
-                record.selectorSetter(record.selectorKey)
-            end
+            preSelectFn = function() record.selectorSetter(record.selectorKey) end
         end
         CludesUI:NavigateToElementSettings(
             record.module,
@@ -1215,23 +1076,15 @@ local function JumpToResult(record, sidebarSearchBox)
             record.label
         )
     end
-    if dialog then
-        dialog:Hide()
-    end
-    if sidebarSearchBox then
-        sidebarSearchBox:SetText("")
-    end
+    if dialog then dialog:Hide() end
+    if sidebarSearchBox then sidebarSearchBox:SetText("") end
 end
 
 local function EnsureSearchUI()
-    if _searchUIBuilt then
-        return
-    end
+    if _searchUIBuilt then return end
     local clickArea = CludesUI._clickArea
     local sidebarSearchBox = CludesUI._sidebarSearchBox
-    if not clickArea or not sidebarSearchBox then
-        return
-    end
+    if not clickArea or not sidebarSearchBox then return end
     _searchUIBuilt = true
 
     local Pix = CludesUI.PanelPP or CludesUI.PP
@@ -1294,12 +1147,11 @@ local function EnsureSearchUI()
         sub:SetPoint("LEFT", line, "LEFT", 8, -9)
         sub:SetJustifyH("LEFT")
 
-        line:SetScript("OnEnter", function()
-            Wash(highlight, true)
-        end)
-        line:SetScript("OnLeave", function()
-            Wash(highlight, (idx == selIdx and results[idx]) and true or false)
-        end)
+        line:SetScript("OnEnter", function() Wash(highlight, true) end)
+        line:SetScript(
+            "OnLeave",
+            function() Wash(highlight, (idx == selIdx and results[idx]) and true or false) end
+        )
 
         line._hl = highlight
         line._label = labelFS
@@ -1321,14 +1173,10 @@ local function EnsureSearchUI()
     -- Started on focus, before the first letter, so the index is usually
     -- complete by the time a query is typed.
     local function StartPrebuild()
-        if _prebuildDone then
-            return
-        end
+        if _prebuildDone then return end
         RunPrebuildPass(function()
             indexReady = true
-            if sidebarSearchBox:GetText() ~= "" then
-                RunSearch()
-            end
+            if sidebarSearchBox:GetText() ~= "" then RunSearch() end
         end)
     end
     sidebarSearchBox:HookScript("OnEditFocusGained", StartPrebuild)
@@ -1341,12 +1189,8 @@ local function EnsureSearchUI()
         -- Less Common" section renders force-expanded with no link line; clearing the
         -- box collapses them back to their session state (transitions rebuild -- see
         -- SetLessCommonSearchActive in CludesUI_Widgets.lua).
-        if CludesUI.SetLessCommonSearchActive then
-            CludesUI.SetLessCommonSearchActive(searchText ~= "")
-        end
-        if searchText ~= "" then
-            StartPrebuild()
-        end
+        if CludesUI.SetLessCommonSearchActive then CludesUI.SetLessCommonSearchActive(searchText ~= "") end
+        if searchText ~= "" then StartPrebuild() end
         results = SearchIndex(searchText, MAX_VISIBLE_RESULTS)
         -- Accent-colored "Page:"/"Section:" prefixes. Hex is computed per
         -- search, so a live accent change is picked up on the next keystroke.
@@ -1383,9 +1227,7 @@ local function EnsureSearchUI()
                         )
                     )
                 end
-                line:SetScript("OnClick", function()
-                    JumpToResult(record, sidebarSearchBox)
-                end)
+                line:SetScript("OnClick", function() JumpToResult(record, sidebarSearchBox) end)
                 line:EnableMouse(true)
                 line:Show()
             else
@@ -1422,19 +1264,13 @@ local function EnsureSearchUI()
     -- them, so the sidebar addon/page filtering it already does keeps working.
     sidebarSearchBox:HookScript("OnTextChanged", RunSearch)
     sidebarSearchBox:HookScript("OnEnterPressed", function(self)
-        if results[selIdx] then
-            JumpToResult(results[selIdx], self)
-        end
+        if results[selIdx] then JumpToResult(results[selIdx], self) end
     end)
     local function Step(d)
         local num = #results
-        if num > 0 and dialog:IsShown() then
-            SetSelected((selIdx - 1 + d) % num + 1)
-        end
+        if num > 0 and dialog:IsShown() then SetSelected((selIdx - 1 + d) % num + 1) end
     end
-    sidebarSearchBox:HookScript("OnTabPressed", function()
-        Step(IsShiftKeyDown() and -1 or 1)
-    end)
+    sidebarSearchBox:HookScript("OnTabPressed", function() Step(IsShiftKeyDown() and -1 or 1) end)
     sidebarSearchBox:HookScript("OnArrowPressed", function(_, key)
         if key == "UP" then
             Step(-1)
@@ -1450,16 +1286,10 @@ local function EnsureSearchUI()
     -- lands while the cursor is over the popup, so results stay clickable.
     local clickOff = CreateFrame("Frame")
     clickOff:SetScript("OnEvent", function()
-        if not dialog:IsMouseOver() and not sidebarSearchBox:IsMouseOver() then
-            dialog:Hide()
-        end
+        if not dialog:IsMouseOver() and not sidebarSearchBox:IsMouseOver() then dialog:Hide() end
     end)
-    dialog:SetScript("OnShow", function()
-        clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN")
-    end)
-    dialog:SetScript("OnHide", function()
-        clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN")
-    end)
+    dialog:SetScript("OnShow", function() clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
+    dialog:SetScript("OnHide", function() clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
 end
 
 -------------------------------------------------------------------------------

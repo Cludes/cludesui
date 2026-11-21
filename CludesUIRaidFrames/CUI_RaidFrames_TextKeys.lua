@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_TextKeys.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs = ipairs
@@ -97,17 +93,13 @@ for _, t in ipairs(TEXTS) do
         NEW_SCALE_KEYS[#NEW_SCALE_KEYS + 1] = t.size
         NEW_SCALE_KEYS[#NEW_SCALE_KEYS + 1] = t.x
         NEW_SCALE_KEYS[#NEW_SCALE_KEYS + 1] = t.y
-        if t.mode then
-            p[t.mode] = "none"
-        end
+        if t.mode then p[t.mode] = "none" end
         p[t.pos] = (t.kind == "custom") and "none" or "bottom"
         p[t.x], p[t.y], p[t.size], p[t.cm] = 0, 0, (t.kind == "custom") and 10 or 9, "custom"
         p[t.col] = { r = 1, g = 1, b = 1 }
     end
     -- Show Above Icons per text: new for every text but the name (no default).
-    if t.id ~= "name" then
-        NEW_KEYS[#NEW_KEYS + 1] = t.above
-    end
+    if t.id ~= "name" then NEW_KEYS[#NEW_KEYS + 1] = t.above end
 end
 mod.RF_TEXT_NEW_KEYS, mod.RF_TEXT_NEW_SCALE_KEYS = NEW_KEYS, NEW_SCALE_KEYS
 

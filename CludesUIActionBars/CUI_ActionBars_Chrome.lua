@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Chrome.lua
 --
@@ -133,9 +131,7 @@ end
 -- the pair matches.
 function mod.AB_CapsVal(key, k)
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return nil
-    end
+    if not profile then return nil end
     local cfg = profile.bars and profile.bars[key]
     local val = cfg and cfg[k]
     if val == nil then
@@ -153,12 +149,8 @@ end
 -- while showEndCaps; the CludesUI style while cuiEndCaps names art this
 -- client draws.
 function mod.AB_CapsMainDefault(profile)
-    if mod.AB_Forever() then
-        return profile.foreverHideEndCaps ~= true
-    end
-    if mod.AB_Style() == "cui" then
-        return mod.AB_CapsArtOK(profile.cuiEndCaps)
-    end
+    if mod.AB_Forever() then return profile.foreverHideEndCaps ~= true end
+    if mod.AB_Style() == "cui" then return mod.AB_CapsArtOK(profile.cuiEndCaps) end
     return profile.showEndCaps == true
 end
 
@@ -172,9 +164,7 @@ end
 function mod.AB_CapsSides(key)
     local profile = ABAR.db and ABAR.db.profile
     local cfg = profile and profile.bars and profile.bars[key]
-    if not cfg then
-        return false, false
-    end
+    if not cfg then return false, false end
     local left, right = cfg.endCapLeft, cfg.endCapRight
     if left == nil or right == nil then
         local sl, sr = profile.endCapSpanLeft, profile.endCapSpanRight
@@ -186,12 +176,8 @@ function mod.AB_CapsSides(key)
             local skinData = mod.AB_CapsMainDefault(profile)
             dl, dr = skinData and sl == key, skinData and sr == key
         end
-        if left == nil then
-            left = dl
-        end
-        if right == nil then
-            right = dr
-        end
+        if left == nil then left = dl end
+        if right == nil then right = dr end
     end
     return left and true or false, right and true or false
 end
@@ -200,9 +186,7 @@ end
 -- pick; none, or art this client lacks, reads Modern.
 function mod.AB_CapsArt(key)
     local art = mod.AB_CapsVal(key, "endCapArt")
-    if mod.AB_CapsArtOK(art) then
-        return art
-    end
+    if mod.AB_CapsArtOK(art) then return art end
     return "blizzard"
 end
 
@@ -212,17 +196,13 @@ end
 -- the art the player picks.
 function mod.AB_CapsLook(key)
     local left, right = mod.AB_CapsSides(key)
-    if not (left or right) then
-        return nil
-    end
+    if not (left or right) then return nil end
     local style
     if mod.AB_Forever() then
         style = "forever"
     else
         style = mod.AB_Style()
-        if style == "cui" then
-            style = mod.AB_CapsArt(key)
-        end
+        if style == "cui" then style = mod.AB_CapsArt(key) end
     end
     return style, left, right
 end
@@ -241,9 +221,7 @@ end
 function mod.AB_ChromeStamp(key)
     local style, left, right = mod.AB_CapsLook(key)
     local fv = mod.AB_ForeverBg(key)
-    if not style then
-        return fv and "fv" or "-"
-    end
+    if not style then return fv and "fv" or "-" end
     local _, dx, dy, sc = mod.AB_CapsTweak(key)
     return style
         .. (left and "L" or "")
@@ -310,9 +288,7 @@ end
 -- faction (kept as st.capKnown).
 function mod.AB_CapsFaction(st)
     local capL, capR = st.capL, st.capR
-    if not capL then
-        return true
-    end
+    if not capL then return true end
     local c = st.capsOn and mod.AB_CAPS[st.capLook]
     local fac = c and c.art and UnitFactionGroup("player")
     local set = c and (c.any or (fac and c.art[fac])) or nil
@@ -340,9 +316,7 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, 
     st.capSideL, st.capSideR = sideL and true or false, sideR and true or false
     local owner = st.capHost
     if not st.capsOn then
-        if owner then
-            owner:Hide()
-        end
+        if owner then owner:Hide() end
         return
     end
     if not owner then
@@ -356,9 +330,7 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, 
     end
     local sc, dx, dy = mod.AB_CapsTweak(key)
     local kc = btnW / c.unit
-    if kc > 1 then
-        kc = 1
-    end
+    if kc > 1 then kc = 1 end
     kc = kc * sc
     -- The offsets in the host's (scaled) units.
     dx, dy = dx * (pxK or 1) / kc, dy * (pxK or 1) / kc
@@ -371,9 +343,7 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, 
         capR:ClearAllPoints()
         capL:SetPoint(g[1], owner, g[2], g[3] - dx, g[4] + dy)
         capR:SetPoint(g[5], owner, g[6], g[7] + dx, g[8] + dy)
-        if st.capLook ~= style then
-            st.capSet = nil
-        end
+        if st.capLook ~= style then st.capSet = nil end
         st.capLook, st.capGeo, st.capDX, st.capDY = style, g, dx, dy
     end
     owner:SetFrameLevel(ownerFrame:GetFrameLevel() + c.lvl)
@@ -385,12 +355,8 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, 
 end
 
 function mod.AB_HideBarChrome(st)
-    if st.under then
-        st.under:Hide()
-    end
-    if st.capHost then
-        st.capHost:Hide()
-    end
+    if st.under then st.under:Hide() end
+    if st.capHost then st.capHost:Hide() end
     st.capsOn = false
 end
 
@@ -547,17 +513,13 @@ function mod.AB_CapsEvSync()
             local c = st.capsOn and mod.AB_CAPS[st.capLook]
             if c and c.art then
                 need = true
-                if not st.capKnown then
-                    waiting = true
-                end
+                if not st.capKnown then waiting = true end
             end
         end
     end
     local ev = mod._abCapsEv
     if not need then
-        if ev then
-            ev:UnregisterAllEvents()
-        end
+        if ev then ev:UnregisterAllEvents() end
         return
     end
     if not ev then
@@ -565,13 +527,9 @@ function mod.AB_CapsEvSync()
         ev:SetScript("OnEvent", function(self, evt)
             local known = true
             for _, cs in pairs(mod._abChrome) do
-                if not mod.AB_CapsFaction(cs) then
-                    known = false
-                end
+                if not mod.AB_CapsFaction(cs) then known = false end
             end
-            if known and evt == "PLAYER_ENTERING_WORLD" then
-                self:UnregisterEvent(evt)
-            end
+            if known and evt == "PLAYER_ENTERING_WORLD" then self:UnregisterEvent(evt) end
         end)
         mod._abCapsEv = ev
     end
@@ -655,9 +613,7 @@ mod.AB_CAP_EXTRAS = { MicroBar = true, BagBar = true }
 
 -- The frame whose level the buttons ride on.
 function mod.AB_ExtraCapsBase(key)
-    if key == "MicroBar" then
-        return _G.MicroMenu
-    end
+    if key == "MicroBar" then return _G.MicroMenu end
     return _G.BagsBar
 end
 
@@ -670,9 +626,7 @@ end
 function mod.AB_ExtraCapsShown(key)
     local st = mod._abChrome and mod._abChrome[key]
     local owner = st and st.capHost
-    if not owner then
-        return
-    end
+    if not owner then return end
     local bf = _G[BAR_LOOKUP[key].frameName]
     local enabled = st.capsOn and bf ~= nil and bf:IsShown()
     if enabled and key == "MicroBar" then
@@ -685,9 +639,7 @@ end
 
 -- After EAB itself hid or showed one of the two Blizzard frames.
 function mod.AB_ExtraCapsFor(widget)
-    if not mod._abCapHooked then
-        return
-    end
+    if not mod._abCapHooked then return end
     if widget == _G.MicroMenuContainer then
         mod.AB_ExtraCapsShown("MicroBar")
     elseif widget == _G.BagsBar then
@@ -700,15 +652,11 @@ end
 function mod.AB_ExtraCapsHooks(key)
     local done = mod._abCapHooked or {}
     mod._abCapHooked = done
-    if done[key] then
-        return
-    end
+    if done[key] then return end
     done[key] = true
     local m = _G.MicroMenu
     if key == "MicroBar" and m and m.OverrideMicroMenuPosition then
-        hooksecurefunc(m, "OverrideMicroMenuPosition", function()
-            mod.AB_ExtraCapsShown("MicroBar")
-        end)
+        hooksecurefunc(m, "OverrideMicroMenuPosition", function() mod.AB_ExtraCapsShown("MicroBar") end)
     end
 end
 
@@ -722,16 +670,12 @@ function mod.AB_ExtraCapsPadFlush()
     mod.AB_ExtraCapsShown("BagBar")
 end
 function mod.AB_ExtraCapsPad()
-    if not CludesUI.IS_FOREVER then
-        return
-    end
+    if not CludesUI.IS_FOREVER then return end
     local all = mod._abChrome
     local enabled = all and ((all.MicroBar and all.MicroBar.capsOn) or (all.BagBar and all.BagBar.capsOn))
     local ev = mod._abCapStyleEv
     if not enabled then
-        if ev then
-            ev:UnregisterAllEvents()
-        end
+        if ev then ev:UnregisterAllEvents() end
         return
     end
     if not ev then
@@ -744,9 +688,7 @@ function mod.AB_ExtraCapsPad()
         end
         ev = mod.TakeShell()
         ev:SetScript("OnEvent", function()
-            if mod._abCapStyleArmed then
-                return
-            end
+            if mod._abCapStyleArmed then return end
             mod._abCapStyleArmed = true
             C_Timer_After(0, mod.AB_ExtraCapsPadFlush)
         end)
@@ -765,32 +707,22 @@ function mod.AB_BagEdge(widget, hs, highlight, minL, maxR)
         if left and right then
             local k = widget:GetEffectiveScale() / hs
             left, right = left * k - highlight, right * k - highlight
-            if not minL or left < minL then
-                minL = left
-            end
-            if not maxR or right > maxR then
-                maxR = right
-            end
+            if not minL or left < minL then minL = left end
+            if not maxR or right > maxR then maxR = right end
         end
     end
     return minL, maxR
 end
 function mod.AB_BagCapsExtent(holderFrame)
     local bb, mgr = _G.BagsBar, _G.MainMenuBarBagManager
-    if not bb or bb.hideExpandToggle or not (mgr and mgr.EnumerateBagButtons) then
-        return nil
-    end
+    if not bb or bb.hideExpandToggle or not (mgr and mgr.EnumerateBagButtons) then return nil end
     local hs, highlight = holderFrame:GetEffectiveScale(), holderFrame:GetLeft()
-    if not highlight then
-        return nil
-    end
+    if not highlight then return nil end
     local minL, maxR = mod.AB_BagEdge(_G.BagBarExpandToggle, hs, highlight, nil, nil)
     for _, btn in mgr:EnumerateBagButtons() do
         minL, maxR = mod.AB_BagEdge(btn, hs, highlight, minL, maxR)
     end
-    if not minL or maxR - minL < 1 then
-        return nil
-    end
+    if not minL or maxR - minL < 1 then return nil end
     return minL, maxR - minL
 end
 -- Collapsing or expanding the bag bar repaints its caps (one frame later,
@@ -800,17 +732,13 @@ function mod.AB_BagCapsExpandFlush()
     mod.AB_ExtraCaps("BagBar")
 end
 function mod.AB_BagCapsExpandChanged()
-    if mod._abBagArmed then
-        return
-    end
+    if mod._abBagArmed then return end
     mod._abBagArmed = true
     C_Timer_After(0, mod.AB_BagCapsExpandFlush)
 end
 function mod.AB_BagCapsWatch(enabled)
     local bb = _G.BagsBar
-    if not (bb and not bb.hideExpandToggle and EventRegistry) then
-        return
-    end
+    if not (bb and not bb.hideExpandToggle and EventRegistry) then return end
     if enabled then
         if not mod._abBagWatch then
             mod._abBagWatch = true
@@ -831,9 +759,7 @@ end
 function mod.AB_ExtraCaps(key)
     local holderFrame = extraBarHolders[key]
     local bf = holderFrame and _G[BAR_LOOKUP[key].frameName]
-    if not bf then
-        return
-    end
+    if not bf then return end
     local all = mod._abChrome
     local st = all and all[key]
     local style, sL, sR
@@ -843,14 +769,10 @@ function mod.AB_ExtraCaps(key)
     if not style then
         if st and st.capsOn then
             mod.AB_HideBarChrome(st)
-            if mod._abFadeTwin then
-                mod._abFadeTwin[bf] = nil
-            end
+            if mod._abFadeTwin then mod._abFadeTwin[bf] = nil end
             mod.AB_CapsEvSync()
             mod.AB_ExtraCapsPad()
-            if key == "BagBar" then
-                mod.AB_BagCapsWatch(false)
-            end
+            if key == "BagBar" then mod.AB_BagCapsWatch(false) end
         end
         return
     end
@@ -901,14 +823,10 @@ function mod.AB_ExtraCaps(key)
         or st.xStr ~= strata
         or st.xOX ~= ox
     then
-        if holderFrame:GetFrameStrata() ~= strata then
-            holderFrame:SetFrameStrata(strata)
-        end
+        if holderFrame:GetFrameStrata() ~= strata then holderFrame:SetFrameStrata(strata) end
         holderFrame:SetFrameLevel(lvl)
         if ownerFrame ~= holderFrame then
-            if ownerFrame:GetFrameStrata() ~= strata then
-                ownerFrame:SetFrameStrata(strata)
-            end
+            if ownerFrame:GetFrameStrata() ~= strata then ownerFrame:SetFrameStrata(strata) end
             ownerFrame:SetFrameLevel(lvl)
         end
         mod.AB_PaintCaps(st, ownerFrame, ox, 0, wid, hgt, u, style, false, nil, key, sL, sR)
@@ -921,17 +839,11 @@ function mod.AB_ExtraCaps(key)
             mod._abFadeTwin = tw
         end
         tw[bf] = st.capsOn and st.capHost or nil
-        if st.capHost then
-            st.capHost:SetAlpha(_fadeAlpha[bf] or 1)
-        end
-        if st.capsOn then
-            mod.AB_ExtraCapsHooks(key)
-        end
+        if st.capHost then st.capHost:SetAlpha(_fadeAlpha[bf] or 1) end
+        if st.capsOn then mod.AB_ExtraCapsHooks(key) end
         mod.AB_CapsEvSync()
         mod.AB_ExtraCapsPad()
-        if key == "BagBar" then
-            mod.AB_BagCapsWatch(st.capsOn)
-        end
+        if key == "BagBar" then mod.AB_BagCapsWatch(st.capsOn) end
     end
     mod.AB_ExtraCapsShown(key)
 end
@@ -944,9 +856,7 @@ end
 -- Repaints the bars that carry Action Bar 1's caps (its cap settings reach them).
 function mod.AB_CapsSpanApply()
     local profile = ABAR.db and ABAR.db.profile
-    if not profile then
-        return
-    end
+    if not profile then return end
     local left, right = profile.endCapSpanLeft, profile.endCapSpanRight
     for index = 1, 2 do
         local k = (index == 1) and left or right

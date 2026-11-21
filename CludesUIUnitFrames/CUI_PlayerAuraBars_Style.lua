@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_PlayerAuraBars_Style.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._pabInternals
 -- CludesUIUnitFrames_PlayerAuraBars.lua or an earlier Player Aura Bars
 -- file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local PAB_ApplyDmFx, PAB_FxListView = Inner.PAB_ApplyDmFx, Inner.PAB_FxListView
@@ -138,9 +134,7 @@ local OPPOSITE_POINT = {
 }
 
 local function SetTexturePixelSnap(texture, enabled)
-    if not (texture and texture.SetSnapToPixelGrid) then
-        return
-    end
+    if not (texture and texture.SetSnapToPixelGrid) then return end
     texture:SetSnapToPixelGrid(enabled)
     texture:SetTexelSnappingBias(0)
 end
@@ -195,9 +189,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
                 style.durationUpdateInterval
             )
             local success, full = AK.SetDurationTextSafe(btnFrame, skinData.duration, durationOpts)
-            if success and (full or not style.durationColorCurve) then
-                skinData.durationFmtS = wantFmt
-            end
+            if success and (full or not style.durationColorCurve) then skinData.durationFmtS = wantFmt end
         end
     end
     if skinData.stack then
@@ -240,9 +232,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
         if skinData.pabHideSwipe and not skinData._pabSwipeHooked then
             skinData._pabSwipeHooked = true
             hooksecurefunc(skinData.cooldown, "Show", function()
-                if skinData.pabHideSwipe then
-                    skinData.cooldown:Hide()
-                end
+                if skinData.pabHideSwipe then skinData.cooldown:Hide() end
             end)
         end
         local a = skinData.pabHideSwipe and 0 or 1
@@ -269,9 +259,7 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
     if skinData.pabCenteredSnap and skinData.icon and not skinData.pabIconSnapHooked then
         skinData.pabIconSnapHooked = true
         hooksecurefunc(skinData.icon, "SetTexture", function(texture)
-            if skinData.pabCenteredSnap then
-                SetTexturePixelSnap(texture, true)
-            end
+            if skinData.pabCenteredSnap then SetTexturePixelSnap(texture, true) end
         end)
     end
     SetTexturePixelSnap(skinData.icon, skinData.pabCenteredSnap)
@@ -296,15 +284,9 @@ end
 -- "Outline Icon Text", then the global/per-module choice. A per-bar Font Outline pick
 -- overrides that; every branch stays slug-gated centrally via "Never Show Slug".
 local function ResolveFontFlag(mode)
-    if mode == "none" then
-        return ""
-    end
-    if mode == "outline" then
-        return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE"
-    end
-    if mode == "thick" then
-        return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE"
-    end
+    if mode == "none" then return "" end
+    if mode == "outline" then return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE" end
+    if mode == "thick" then return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE" end
     return (CludesUI.GetIconTextOutlineFlag("unitFrames")) or "OUTLINE"
 end
 
@@ -312,9 +294,7 @@ local function BuildStyle(isBuff, conf)
     local iconZoom = conf.iconZoom
     -- Blizzard Style: zoom 0 -- the stock buff frame draws the whole icon,
     -- and the icon art's own dark edge is the border a stock buff shows.
-    if mod.PAB_Blizz() then
-        iconZoom = 0
-    end
+    if mod.PAB_Blizz() then iconZoom = 0 end
     local borderSize = conf.borderSize or 1
     local borderR = conf.borderR or 0
     local borderG = conf.borderG or 0
@@ -358,9 +338,7 @@ local function BuildStyle(isBuff, conf)
     end
     -- Blizzard Style: no CUI ring on any bar -- buffs go borderless like the
     -- stock buff frame, debuffs take the engine-stamped stock border below.
-    if mod.PAB_Blizz() then
-        border = nil
-    end
+    if mod.PAB_Blizz() then border = nil end
 
     -- Positions may arrive mixed-case ("Bottom") rather than the uppercase anchor
     -- constants SetPoint expects; normalized here so a mismatched-case default or
@@ -566,9 +544,7 @@ end
 -- runs (e.g. 1h 58m 57m ... then 11h 54m 6m). The saved value keeps the dropdown key.
 local function ResolveSortMethod(conf)
     local key = conf.sortMethod or "Default"
-    if not AuraContainerSortMethod then
-        return nil
-    end
+    if not AuraContainerSortMethod then return nil end
     local native = (key == "Expiration" and "ExpirationOnly") or (key == "Name" and "NameOnly") or nil
     return (native and AuraContainerSortMethod[native]) or AuraContainerSortMethod[key]
 end
@@ -584,9 +560,7 @@ end
 -- ONLY excludes permanent (duration=0) buffs, whatever a timed buff's duration is.
 local function BuffCandidateExtras(conf)
     local result
-    if conf and conf.hasDuration then
-        result = { maxDuration = math.huge }
-    end
+    if conf and conf.hasDuration then result = { maxDuration = math.huge } end
     -- Blacklist (Edit Blacklist in the Filters dropdown): applied exactly while the
     -- dropdown offers it (All Buffs or Has Duration on) and rides every buff group via
     -- this extras merge -- catch-all AND spells group -- so a blacklisted spell never
@@ -615,17 +589,13 @@ end
 -- the engine's only duration filter (Blizzard_AuraContainerUtil), so Has
 -- Duration exists as a show-side AND-modifier only, never a hide-lane entry.
 local function DebuffCandidateExtras(conf)
-    if not conf then
-        return nil
-    end
+    if not conf then return nil end
     -- Max Duration (seconds) is the same gate with a real cap and implies Has
     -- Duration; nil = Unlimited = no extras at all (the candidate fingerprint
     -- sees the cap value, so edits re-declare like any payload change).
     local cap = conf.maxDurSec or (conf.hasDuration and math.huge) or nil
     local result
-    if cap then
-        result = { maxDuration = cap }
-    end
+    if cap then result = { maxDuration = cap } end
     -- Hide Exhaustion (the Filters dropdown, off by default): the Bloodlust
     -- lockouts leave every group of the bar. They are never-secret, so the
     -- exclude works on the player. Fresh table: merged maps never alias the set.
@@ -647,18 +617,12 @@ end
 -- nothing narrower is selected -- All Debuffs on, or Has Duration checked with
 -- no class filters picked (alone = every timed debuff).
 local function DebuffCatchAllOn(conf)
-    if conf.showAllDebuffs ~= false then
-        return true
-    end
-    if conf.hasDuration ~= true then
-        return false
-    end
+    if conf.showAllDebuffs ~= false then return true end
+    if conf.hasDuration ~= true then return false end
     local castFrame = conf.classFilters
     if castFrame then
         for _, val in pairs(castFrame) do
-            if val == true then
-                return false
-            end
+            if val == true then return false end
         end
     end
     return true

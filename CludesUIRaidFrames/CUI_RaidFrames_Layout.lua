@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Layout.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local abs = math.abs
@@ -27,13 +23,9 @@ local separatedHdrs, ApplySortToHeaders = Inner.separatedHdrs, Inner.ApplySortTo
 local SetContainerFrame = Inner.SetContainerFrame
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local containerFrame
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val) containerFrame = val end
 
 -------------------------------------------------------------------------------
 --  Header creation
@@ -45,15 +37,9 @@ end
 -- ReloadFrames/_CURF_RefreshAll. Combat blocks secure creation -- a combat-time
 -- flip flags the REGEN reload path to build there instead.
 mod._BuildHeaderSet = function(merge)
-    if not containerFrame then
-        return
-    end
-    if merge and mod._flatHeader then
-        return
-    end
-    if not merge and separatedHdrs[1] then
-        return
-    end
+    if not containerFrame then return end
+    if merge and mod._flatHeader then return end
+    if not merge and separatedHdrs[1] then return end
     if InCombatLockdown() then
         mod._sizeTierDirtyInCombat = true
         return
@@ -85,9 +71,7 @@ mod._BuildHeaderSet = function(merge)
     -- chain): a set built with the container hidden (a Merge Groups flip while
     -- solo or in a party) shows the container around the pre-spawn below.
     local hid = not containerFrame:IsShown()
-    if hid then
-        containerFrame:Show()
-    end
+    if hid then containerFrame:Show() end
 
     if not merge then
         -----------------------------------------------------------
@@ -172,18 +156,14 @@ mod._BuildHeaderSet = function(merge)
             end
         end
     end
-    if hid then
-        containerFrame:Hide()
-    end
+    if hid then containerFrame:Hide() end
 
     -- Freshly built headers need the current sort attributes.
     ApplySortToHeaders()
 end
 
 local function CreateHeaders()
-    if containerFrame then
-        return
-    end
+    if containerFrame then return end
 
     local cfg = saved.profile
 
@@ -239,27 +219,19 @@ local groupFlowSlots = {}
 -- LayoutGroups (early-returns in combat), SetPoints only our own FontStrings.
 function mod._UpdateGroupNumbers()
     local labels = mod._groupNumberLabels
-    if not labels then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not labels then return end
+    if InCombatLockdown() then return end
     local cfg = saved.profile
     if (not cfg.showGroupNumbers) or cfg.mergeGroups or (not IsInRaid()) then
         for g = 1, 8 do
-            if labels[g] then
-                labels[g]:Hide()
-            end
+            if labels[g] then labels[g]:Hide() end
         end
         return
     end
     -- Effective unit growth (mirror the LayoutGroups tier override)
     local unitGrowth = cfg.unitGrowth or "DOWN"
     local activeOv = mod._activeTierOverride
-    if activeOv and activeOv.unitGrowth then
-        unitGrowth = activeOv.unitGrowth
-    end
+    if activeOv and activeOv.unitGrowth then unitGrowth = activeOv.unitGrowth end
     local vg = mod._VisibleGroups() or { true, true, true, true, true, true, false, false }
     local size = cfg.groupNumberSize or 10
     local gc = cfg.groupNumberColor or {}
@@ -307,9 +279,7 @@ local function OccupiedGroups()
     local tbl = {}
     for ri = 1, GetNumGroupMembers() or 0 do
         local _, _, sub = GetRaidRosterInfo(ri)
-        if sub then
-            tbl[sub] = true
-        end
+        if sub then tbl[sub] = true end
     end
     return tbl
 end
@@ -319,12 +289,8 @@ end
 -- SetAttribute) and resizing the container makes Blizzard re-anchor their children
 -- synchronously, which can re-enter layout through our own hooks. Stored on ns.
 mod._LayoutGroupsImpl = function()
-    if not containerFrame then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not containerFrame then return end
+    if InCombatLockdown() then return end
 
     local cfg = saved.profile
     local merged = cfg.mergeGroups
@@ -377,17 +343,13 @@ mod._LayoutGroupsImpl = function()
         -- Hide separated headers
         for set = 1, 8 do
             local heading = separatedHdrs[set]
-            if heading and heading:IsShown() then
-                heading:Hide()
-            end
+            if heading and heading:IsShown() then heading:Hide() end
         end
 
         -- Build groupFilter from visible groups
         local gfParts = {}
         for index = 1, 8 do
-            if vg[index] ~= false then
-                gfParts[#gfParts + 1] = tostring(index)
-            end
+            if vg[index] ~= false then gfParts[#gfParts + 1] = tostring(index) end
         end
         local gfStr = table.concat(gfParts, ",")
 
@@ -455,9 +417,7 @@ mod._LayoutGroupsImpl = function()
         --  Per-group mode: 8 separated headers
         ---------------------------------------------------------------
         -- Hide flat header
-        if mod._flatHeader and mod._flatHeader:IsShown() then
-            mod._flatHeader:Hide()
-        end
+        if mod._flatHeader and mod._flatHeader:IsShown() then mod._flatHeader:Hide() end
 
         -- Group slot origins along the growth flow: a plain direction is one
         -- continuous run, the grid flow ("Down and then Right") stacks
@@ -512,9 +472,7 @@ mod._LayoutGroupsImpl = function()
                 local set = groupOrder and groupOrder[slot] or slot
                 if separatedHdrs[set] and vg[set] ~= false and not (occupied and not occupied[set]) then
                     isShown = isShown + 1
-                    if occ[set] then
-                        num = isShown
-                    end
+                    if occ[set] then num = isShown end
                 end
             end
             shiftX, shiftY = mod._RFCenterShift(slots, num)
@@ -524,9 +482,7 @@ mod._LayoutGroupsImpl = function()
             local heading = separatedHdrs[set]
             if heading then
                 if vg[set] == false or (occupied and not occupied[set]) then
-                    if heading:IsShown() then
-                        heading:Hide()
-                    end
+                    if heading:IsShown() then heading:Hide() end
                 else
                     local posX = PixelSnap(slots[visSlot][1] - minX + hdrOffX) + shiftX
                     local posY = PixelSnap(slots[visSlot][2] - maxY + hdrOffY) + shiftY

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_BuffBarFrames.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._buffBarInternals
 -- CludesUICdmBuffBars.lua or an earlier Tracking Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pcall = pcall
@@ -38,9 +34,7 @@ local function CreateTrackedBuffBarFrame(hostFrame, position)
     wrapFrame:SetScript("OnHide", _MarkTBBReflowDirty)
 
     local barFrame = CreateFrame("StatusBar", "ECME_TBB" .. position, wrapFrame)
-    if barFrame.EnableMouseClicks then
-        barFrame:EnableMouseClicks(false)
-    end
+    if barFrame.EnableMouseClicks then barFrame:EnableMouseClicks(false) end
     barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     barFrame:SetMinMaxValues(0, 1)
     barFrame:SetValue(0.65)
@@ -156,13 +150,9 @@ local function EnsureTBBThresholdOverlay(barFrame, i)
         pool = {}
         barFrame._threshOverlays = pool
     end
-    if pool[i] then
-        return pool[i]
-    end
+    if pool[i] then return pool[i] end
     local scrollBar = barFrame._bar
-    if not scrollBar then
-        return nil
-    end
+    if not scrollBar then return nil end
     local overlayFrame = CreateFrame("StatusBar", nil, pool[i - 1] or scrollBar)
     overlayFrame:SetAllPoints(scrollBar:GetStatusBarTexture())
     overlayFrame:SetFrameLevel(scrollBar:GetFrameLevel() + 2)
@@ -176,25 +166,17 @@ end
 
 local function HideTBBThresholdOverlaysFrom(barFrame, first)
     local pool = barFrame._threshOverlays
-    if not pool then
-        return
-    end
+    if not pool then return end
     for i = first, #pool do
-        if pool[i] then
-            pool[i]:Hide()
-        end
+        if pool[i] then pool[i]:Hide() end
     end
 end
 
 -- Multi-threshold list only when opted in and non-empty; nil means the legacy single-threshold keys own the rendering.
 local function TBBMultiThresholdList(conf)
-    if not conf.stackThresholdMulti then
-        return nil
-    end
+    if not conf.stackThresholdMulti then return nil end
     local entries = conf.stackThresholds
-    if not entries or #entries == 0 then
-        return nil
-    end
+    if not entries or #entries == 0 then return nil end
     return entries
 end
 
@@ -217,9 +199,7 @@ local function ApplyTBBThresholdOverlay(
     overlayFrame:SetReverseFill(reverse)
     local texture = overlayFrame:GetStatusBarTexture()
     -- Blizzard Style: the segment takes the same atlas as the fill it covers.
-    if blizzAtlas then
-        texture:SetAtlas("UI-HUD-CoolDownManager-Bar")
-    end
+    if blizzAtlas then texture:SetAtlas("UI-HUD-CoolDownManager-Bar") end
     texture:SetVertexColor(region, g, b, a)
     texture:SetDrawLayer("ARTWORK", i)
     overlayFrame:ClearAllPoints()
@@ -235,9 +215,7 @@ local function SetupTBBThresholdOverlay(barFrame, conf)
         return
     end
     local scrollBar = barFrame._bar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
     local texPath =
         CludesUI.ResolveTexturePath(TBB_TEXTURES, conf.texture or "none", "Interface\\Buttons\\WHITE8x8")
     local orient = conf.verticalOrientation and "VERTICAL" or "HORIZONTAL"
@@ -250,9 +228,7 @@ local function SetupTBBThresholdOverlay(barFrame, conf)
         for i = 1, #entries do
             local color = entries[i]
             local overlayFrame = EnsureTBBThresholdOverlay(barFrame, i)
-            if not overlayFrame then
-                break
-            end
+            if not overlayFrame then break end
             ApplyTBBThresholdOverlay(
                 overlayFrame,
                 scrollBar,
@@ -294,15 +270,11 @@ end
 
 local function FeedTBBThresholdOverlay(barFrame)
     local pool = barFrame._threshOverlays
-    if not pool then
-        return
-    end
+    if not pool then return end
     local val = barFrame._stackCount or 0
     for i = 1, #pool do
         local overlayFrame = pool[i]
-        if overlayFrame and overlayFrame:IsShown() then
-            overlayFrame:SetValue(val)
-        end
+        if overlayFrame and overlayFrame:IsShown() then overlayFrame:SetValue(val) end
     end
 end
 
@@ -314,9 +286,7 @@ end
 -- a saved talent override that is no longer learned.
 local function StableCooldownSpellID(conf)
     local spellRef = conf and conf.spellID
-    if type(spellRef) ~= "number" or spellRef <= 0 then
-        return nil
-    end
+    if type(spellRef) ~= "number" or spellRef <= 0 then return nil end
     local base = conf.baseSpellID
     if
         type(base) == "number"
@@ -331,18 +301,12 @@ local function StableCooldownSpellID(conf)
 end
 
 local function GetTBBMaxCharges(conf)
-    if not conf or conf.trackType ~= "cooldown" then
-        return nil
-    end
+    if not conf or conf.trackType ~= "cooldown" then return nil end
     local spellRef = StableCooldownSpellID(conf)
     local ch = spellRef and C_Spell and C_Spell.GetSpellCharges and C_Spell.GetSpellCharges(spellRef)
     local maxCharges = ch and ch.maxCharges
-    if issecretvalue and issecretvalue(maxCharges) then
-        return nil
-    end
-    if type(maxCharges) == "number" and maxCharges > 1 then
-        return math.floor(maxCharges + 0.5)
-    end
+    if issecretvalue and issecretvalue(maxCharges) then return nil end
+    if type(maxCharges) == "number" and maxCharges > 1 then return math.floor(maxCharges + 0.5) end
     return nil
 end
 mod.GetTBBMaxCharges = GetTBBMaxCharges
@@ -351,17 +315,13 @@ mod.GetTBBMaxCharges = GetTBBMaxCharges
 -- stacks give N-1 interior divisions, the same convention as the charge hash
 -- lines below. Numbers listed alongside it are redundant and ignored.
 local function ParseTickValues(text, maxStacks)
-    if not text or text == "" then
-        return nil
-    end
+    if not text or text == "" then return nil end
     local vals = {}
     for s in text:gmatch("[^,]+") do
         local tok = s:match("^%s*(.-)%s*$")
         if tok:lower() == "all" then
             local m = maxStacks and math.floor(maxStacks) or 0
-            if m < 2 then
-                return nil
-            end
+            if m < 2 then return nil end
             local result = {}
             for i = 1, m - 1 do
                 result[i] = i
@@ -369,9 +329,7 @@ local function ParseTickValues(text, maxStacks)
             return result
         end
         local num = tonumber(tok)
-        if num and num > 0 then
-            vals[#vals + 1] = num
-        end
+        if num and num > 0 then vals[#vals + 1] = num end
     end
     return #vals > 0 and vals or nil
 end
@@ -409,9 +367,7 @@ local function ApplyTBBTickMarks(scrollBar, conf, tickCache, isVert, tickParent)
     local tickG = conf.stackThresholdTickG or 1
     local tickB = conf.stackThresholdTickB or 1
     local tickA = conf.stackThresholdTickA
-    if tickA == nil then
-        tickA = 1
-    end
+    if tickA == nil then tickA = 1 end
 
     local onePx = Pix and Pix.Scale(1) or 1
     local barW, barH = scrollBar:GetWidth(), scrollBar:GetHeight()
@@ -450,13 +406,9 @@ mod.ApplyTBBTickMarks = ApplyTBBTickMarks
 -- N-1 separators. Equal divisions do not move when Reverse Fill changes the
 -- recovery origin; vertical bars just rotate the marks.
 local function ApplyTBBChargeHashLines(barFrame, conf, maxCharges)
-    if not barFrame or not conf then
-        return
-    end
+    if not barFrame or not conf then return end
     local scrollBar = barFrame._bar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
 
     local ticks = barFrame._chargeHashTicks
     if
@@ -471,9 +423,7 @@ local function ApplyTBBChargeHashLines(barFrame, conf, maxCharges)
             end
         end
         barFrame._chargeHashLineCacheValid = nil
-        if barFrame._chargeHashOverlay then
-            barFrame._chargeHashOverlay:Hide()
-        end
+        if barFrame._chargeHashOverlay then barFrame._chargeHashOverlay:Hide() end
         return
     end
 
@@ -484,9 +434,7 @@ local function ApplyTBBChargeHashLines(barFrame, conf, maxCharges)
                 ticks[i]:Hide()
             end
         end
-        if barFrame._chargeHashOverlay then
-            barFrame._chargeHashOverlay:Hide()
-        end
+        if barFrame._chargeHashOverlay then barFrame._chargeHashOverlay:Hide() end
         barFrame._chargeHashLineCacheValid = nil
         return
     end
@@ -497,9 +445,7 @@ local function ApplyTBBChargeHashLines(barFrame, conf, maxCharges)
     local lineG = conf.chargeHashLineG or 0
     local lineB = conf.chargeHashLineB or 0
     local lineA = conf.chargeHashLineA
-    if lineA == nil then
-        lineA = 1
-    end
+    if lineA == nil then lineA = 1 end
     local isVert = conf.verticalOrientation and true or false
     local reverse = conf.reverseFill and true or false
     local effectiveScale = scrollBar:GetEffectiveScale() or 1
@@ -637,9 +583,7 @@ mod.ApplyTBBChargeHashLines = ApplyTBBChargeHashLines
 
 local function AnchorTBBSparkState(barFrame, anchor, isVert, reverse, flushToEdge)
     local scrollBar, spark = barFrame and barFrame._bar, barFrame and barFrame._spark
-    if not scrollBar or not spark or not anchor then
-        return
-    end
+    if not scrollBar or not spark or not anchor then return end
     isVert = isVert and true or false
     reverse = reverse and true or false
     flushToEdge = flushToEdge and true or false
@@ -666,18 +610,14 @@ local function AnchorTBBSparkState(barFrame, anchor, isVert, reverse, flushToEdg
         else
             spark:SetSize(barW, 8)
         end
-        if not barFrame._blizzSpark then
-            spark:SetTexCoord(0, 1, 1, 1, 0, 0, 1, 0)
-        end
+        if not barFrame._blizzSpark then spark:SetTexCoord(0, 1, 1, 1, 0, 0, 1, 0) end
     else
         if classicSz then
             spark:SetSize(classicSz, classicSz)
         else
             spark:SetSize(8, barH)
         end
-        if not barFrame._blizzSpark then
-            spark:SetTexCoord(0, 0, 0, 1, 1, 0, 1, 1)
-        end
+        if not barFrame._blizzSpark then spark:SetTexCoord(0, 0, 0, 1, 1, 0, 1, 1) end
     end
     spark:ClearAllPoints()
     if isVert then
@@ -700,9 +640,7 @@ local function AnchorTBBSparkState(barFrame, anchor, isVert, reverse, flushToEdg
 end
 
 local function AnchorTBBSpark(barFrame, conf, anchor, flushToEdge)
-    if not conf then
-        return
-    end
+    if not conf then return end
     AnchorTBBSparkState(barFrame, anchor, conf.verticalOrientation, conf.reverseFill, flushToEdge)
 end
 
@@ -714,9 +652,7 @@ end
 mod.ApplyTBBBlizzIconArt = function(barFrame, iSize)
     local icon = barFrame._icon
     local texture = icon and icon._tex
-    if not texture then
-        return
-    end
+    if not texture then return end
     local classic = mod.CdmClassicBars()
     if not barFrame._blizzIconOverlay then
         texture:SetTexCoord(0, 1, 0, 1)
@@ -743,9 +679,7 @@ mod.ApplyTBBBlizzIconArt = function(barFrame, iSize)
     -- re-asserted here because a strata change collapses child levels.
     if barFrame._bar then
         local lvl = barFrame._bar:GetFrameLevel() + (classic and 7 or 3)
-        if icon:GetFrameLevel() ~= lvl then
-            icon:SetFrameLevel(lvl)
-        end
+        if icon:GetFrameLevel() ~= lvl then icon:SetFrameLevel(lvl) end
     end
     if barFrame._blizzIconSize ~= iSize then
         barFrame._blizzIconSize = iSize
@@ -785,9 +719,7 @@ end
 mod.CDM_CLASSIC_BAR_SPARK = "Interface\\CastingBar\\UI-CastingBar-Spark"
 mod.ApplyTBBClassicChrome = function(barFrame, scrollBar, isVert, thick, pct)
     local CF = CludesUI.ClassicFrame
-    if not CF then
-        return
-    end
+    if not CF then return end
     local art = barFrame._classicArt
     if not art then
         art = CreateFrame("Frame", nil, barFrame)
@@ -800,9 +732,7 @@ mod.ApplyTBBClassicChrome = function(barFrame, scrollBar, isVert, thick, pct)
     -- (+4) and the charge hash lines (+5); below the icon (+7) and the text
     -- overlay (+7). Re-asserted because a strata change collapses child levels.
     local lvl = scrollBar:GetFrameLevel() + 6
-    if art:GetFrameLevel() ~= lvl then
-        art:SetFrameLevel(lvl)
-    end
+    if art:GetFrameLevel() ~= lvl then art:SetFrameLevel(lvl) end
     CF.Seat(barFrame._classicChrome, art, CF.ScaleK(pct), isVert)
 end
 
@@ -818,13 +748,9 @@ end
 --  Apply Visual Settings
 -------------------------------------------------------------------------------
 local function ApplyTrackedBuffBarSettings(barFrame, conf)
-    if not barFrame or not conf then
-        return
-    end
+    if not barFrame or not conf then return end
     local scrollBar = barFrame._bar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
     -- Stock styles (Global Settings > Style) with every setting still
     -- applied: Blizzard Style = the viewer's bar, background and pip art;
     -- Classic WoW UI = the vanilla cast bar frame and spark round the user's
@@ -850,9 +776,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
             so:SetClipsChildren(false)
         end
     end
-    if _restoreTBBNormalFill then
-        _restoreTBBNormalFill(barFrame, conf)
-    end
+    if _restoreTBBNormalFill then _restoreTBBNormalFill(barFrame, conf) end
 
     -- User-selectable strata for the whole bar (options setter keeps grouped bars
     -- uniform). A parent strata change COLLAPSES child frame levels, so the wrap
@@ -865,18 +789,14 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
         barFrame:SetFrameLevel(100)
         local base = barFrame:GetFrameLevel()
         scrollBar:SetFrameLevel(base + 1)
-        if barFrame._gradClip then
-            barFrame._gradClip:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
-        end
+        if barFrame._gradClip then barFrame._gradClip:SetFrameLevel(scrollBar:GetFrameLevel() + 1) end
         if barFrame._chargeHashFillClip then
             barFrame._chargeHashFillClip:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
         end
         if barFrame._threshOverlays then
             for i = 1, #barFrame._threshOverlays do
                 local shade = barFrame._threshOverlays[i]
-                if shade then
-                    shade:SetFrameLevel(scrollBar:GetFrameLevel() + 2)
-                end
+                if shade then shade:SetFrameLevel(scrollBar:GetFrameLevel() + 2) end
             end
         end
         -- Spark sits one level ABOVE the threshold overlays: at equal level it
@@ -889,9 +809,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
             barFrame._sparkOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + (classicBar and 8 or 3))
         end
         -- Tick overlay MUST be re-asserted here too: SetFrameStrata collapses descendant levels, so otherwise ticks land at a default level.
-        if barFrame._tickOverlay then
-            barFrame._tickOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 4)
-        end
+        if barFrame._tickOverlay then barFrame._tickOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 4) end
         if barFrame._chargeHashOverlay then
             barFrame._chargeHashOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 5)
         end
@@ -899,16 +817,10 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
         -- would TIE the border cross-subtree, and the lazily-created tick overlay wins
         -- ties, putting ticks ON TOP of the border. One level up keeps the border above
         -- ticks; charge hash lines tie it and win via later creation, as intended.
-        if barFrame._barBorder then
-            barFrame._barBorder:SetFrameLevel(base + 6)
-        end
+        if barFrame._barBorder then barFrame._barBorder:SetFrameLevel(base + 6) end
         -- Glow +8: the border's PP strips draw at +7 and would tie it; text stays on top.
-        if barFrame._pandemicGlowOverlay then
-            barFrame._pandemicGlowOverlay:SetFrameLevel(base + 8)
-        end
-        if barFrame._textOverlay then
-            barFrame._textOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 8)
-        end
+        if barFrame._pandemicGlowOverlay then barFrame._pandemicGlowOverlay:SetFrameLevel(base + 8) end
+        if barFrame._textOverlay then barFrame._textOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 8) end
     end
 
     -- width/height are always VISUAL dimensions describing the bar's TOTAL footprint,
@@ -916,9 +828,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
     -- square out of the fill. Horizontal: width=long side, height=short side.
     -- Vertical: width=short side, height=long side.
     local PPt = CludesUI and CludesUI.PP
-    local snap = PPt and PPt.Snap or function(val)
-        return val
-    end
+    local snap = PPt and PPt.Snap or function(val) return val end
     local wid = snap(conf.width or 270)
     local hgt = snap(conf.height or 24)
     local isVert = conf.verticalOrientation
@@ -929,9 +839,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
     if hasIcon then
         -- Never let the icon square consume the whole footprint
         local long = isVert and hgt or wid
-        if iSize > long - 1 then
-            iSize = max(1, long - 1)
-        end
+        if iSize > long - 1 then iSize = max(1, long - 1) end
     end
 
     barFrame:SetSize(wid, hgt)
@@ -999,9 +907,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
     if blizzBar and not classicBar then
         -- The viewer's shadowed bar background overhangs the fill, so it lives
         -- on the wrap (the StatusBar clips its own regions).
-        if barFrame._bg then
-            barFrame._bg:Hide()
-        end
+        if barFrame._bg then barFrame._bg:Hide() end
         local bbg = barFrame._blizzBg
         if not bbg then
             bbg = barFrame:CreateTexture(nil, "BACKGROUND")
@@ -1051,18 +957,14 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
         barFrame._gradClip:Show()
         barFrame._gradientActive = true
     else
-        if barFrame._gradClip then
-            barFrame._gradClip:Hide()
-        end
+        if barFrame._gradClip then barFrame._gradClip:Hide() end
         barFrame._gradientActive = nil
         fillTex:SetVertexColor(fR, fG, fB, fA)
     end
 
     -- Opacity
     barFrame._opacityTarget = conf.opacity or 1.0
-    if not barFrame._tbbReady then
-        barFrame:SetAlpha(barFrame._opacityTarget)
-    end
+    if not barFrame._tbbReady then barFrame:SetAlpha(barFrame._opacityTarget) end
 
     SetTBBTextColor(barFrame._timerText, conf, "timer")
     SetTBBTextColor(barFrame._nameText, conf, "name")
@@ -1176,9 +1078,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
                 barFrame._icon:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
             end
         end
-        if blizzBar then
-            mod.ApplyTBBBlizzIconArt(barFrame, iSize)
-        end
+        if blizzBar then mod.ApplyTBBBlizzIconArt(barFrame, iSize) end
         barFrame._icon:Show()
     elseif barFrame._icon then
         barFrame._icon:Hide()
@@ -1216,9 +1116,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
         local textureKey = conf.borderTexture or "solid"
         -- Exact size (borderSizePx) for the bar's own step; a stock style forces 0 and stays legacy.
         local edgePx
-        if not blizzBar then
-            edgePx = CludesUI.BorderPx(conf.borderSizePx, bSz, textureKey)
-        end
+        if not blizzBar then edgePx = CludesUI.BorderPx(conf.borderSizePx, bSz, textureKey) end
         -- Border container is a child of the bar: +6 draws in front of the fill AND above
         -- the tick marks at sb+4 (=bar+5, which would tie and lose to the lazily-created
         -- tick overlay); "Show Behind" uses level-1. Set BEFORE ApplyBorderStyle so the textured backdrop inherits it.
@@ -1245,9 +1143,7 @@ local function ApplyTrackedBuffBarSettings(barFrame, conf)
 
     -- Threshold overlay + tick marks
     SetupTBBThresholdOverlay(barFrame, conf)
-    if not barFrame._threshTicks then
-        barFrame._threshTicks = {}
-    end
+    if not barFrame._threshTicks then barFrame._threshTicks = {} end
     if not barFrame._tickOverlay then
         local to = CreateFrame("Frame", nil, scrollBar)
         to:SetAllPoints(scrollBar)
@@ -1274,20 +1170,14 @@ mod.ApplyTBBBarSettings = ApplyTrackedBuffBarSettings
 -- the bar: its effective scale (a position scale rides on it) is the grid the
 -- border's anchors snap to.
 function mod.TBBBorderMatchPad(conf, widget)
-    if not conf or not CludesUI.BorderMatchPad or mod.CdmBlizzBars() then
-        return nil
-    end
+    if not conf or not CludesUI.BorderMatchPad or mod.CdmBlizzBars() then return nil end
     local bSz = conf.borderSize or 0
     local textureKey = conf.borderTexture or "solid"
-    if textureKey == "solid" then
-        return nil
-    end
+    if textureKey == "solid" then return nil end
     local es
     if widget then
         local success, s = pcall(widget.GetEffectiveScale, widget)
-        if success then
-            es = s
-        end
+        if success then es = s end
     end
     return CludesUI.BorderMatchPad(
         bSz,

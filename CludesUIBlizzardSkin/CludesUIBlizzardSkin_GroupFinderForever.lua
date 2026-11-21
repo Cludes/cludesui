@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  Looking For Group on WoW Forever
 --
@@ -13,13 +11,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
 local CUI = _G.CludesUI
-if not (CUI and CUI.IS_FOREVER) then
-    return
-end
+if not (CUI and CUI.IS_FOREVER) then return end
 local Skin = mod.WSkin
-if not (Skin and Skin.RegisterWindow and Skin.Shell) then
-    return
-end
+if not (Skin and Skin.RegisterWindow and Skin.Shell) then return end
 
 local FFD, GetFFD = CUI.NewFrameData()
 
@@ -70,9 +64,7 @@ do
     -- comments, guild names) takes the house font as a font family, which draws the
     -- scripts that font lacks.
     local function FontOnce(fontStr, family)
-        if fonted[fontStr] then
-            return
-        end
+        if fonted[fontStr] then return end
         fonted[fontStr] = true
         if family then
             Skin.FontFamily(fontStr)
@@ -87,20 +79,14 @@ do
     local WRITING_KEYS = { "Name", "GuildName", "Variable", "Comment" }
     local function ShowsWriting(found, fontStr)
         for idx = 1, #WRITING_KEYS do
-            if found[WRITING_KEYS[idx]] == fontStr then
-                return true
-            end
+            if found[WRITING_KEYS[idx]] == fontStr then return true end
         end
         return false
     end
 
     local function FadeLFGArt(found, depth)
-        if depth > 5 or not found or found:IsForbidden() then
-            return
-        end
-        if depth > 0 and Skin.IsForeignFrame(found) then
-            return
-        end
+        if depth > 5 or not found or found:IsForbidden() then return end
+        if depth > 0 and Skin.IsForeignFrame(found) then return end
         local regionList = { found:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
@@ -129,23 +115,15 @@ do
     -- House font on the window's text. Buttons and edit boxes keep Blizzard's font;
     -- browse rows get theirs from SkinBrowseFrame.
     local function ApplyFont(found, depth)
-        if depth > 9 or not found or found:IsForbidden() then
-            return
-        end
+        if depth > 9 or not found or found:IsForbidden() then return end
         if depth > 0 then
-            if found:IsObjectType("Button") or found:IsObjectType("EditBox") then
-                return
-            end
-            if Skin.IsForeignFrame(found) then
-                return
-            end
+            if found:IsObjectType("Button") or found:IsObjectType("EditBox") then return end
+            if Skin.IsForeignFrame(found) then return end
         end
         local regionList = { found:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region:GetObjectType() == "FontString" then
-                FontOnce(region)
-            end
+            if region:GetObjectType() == "FontString" then FontOnce(region) end
         end
         local children = { found:GetChildren() }
         for idx = 1, #children do
@@ -158,13 +136,9 @@ do
     -- and a gold title; result rows lose the light list stripe. Both get white hover
     -- and selection washes. Role, leader, class and newcomer glyphs stay stock.
     local function SkinBrowseFrame(row)
-        if not row or row:IsForbidden() then
-            return
-        end
+        if not row or row:IsForbidden() then return end
         local skinData = GetFFD(row)
-        if skinData.skinned then
-            return
-        end
+        if skinData.skinned then return end
         skinData.skinned = true
         local backdrop, highlight, sel = row.ResultBG, row.Highlight, row.Selected
         if row.CategoryLabel then
@@ -174,47 +148,31 @@ do
                 fillTex:SetColorTexture(0.08, 0.08, 0.08, 0.92)
                 fillTex:SetAllPoints(backdrop)
             end
-            if highlight then
-                highlight:SetColorTexture(1, 1, 1, 0.05)
-            end
+            if highlight then highlight:SetColorTexture(1, 1, 1, 0.05) end
             Skin.Font(row.CategoryLabel, 0.95, 0.78, 0.32)
             return
         end
         local a = backdrop and backdrop.GetAtlas and backdrop:GetAtlas()
-        if a and a:lower():find("button-list-", 1, true) then
-            backdrop:SetAlpha(0)
-        end
-        if highlight then
-            highlight:SetColorTexture(1, 1, 1, 0.1)
-        end
-        if sel then
-            sel:SetColorTexture(1, 1, 1, 0.15)
-        end
+        if a and a:lower():find("button-list-", 1, true) then backdrop:SetAlpha(0) end
+        if highlight then highlight:SetColorTexture(1, 1, 1, 0.1) end
+        if sel then sel:SetColorTexture(1, 1, 1, 0.15) end
         local regionList = { row:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region:GetObjectType() == "FontString" then
-                FontOnce(region, ShowsWriting(row, region))
-            end
+            if region:GetObjectType() == "FontString" then FontOnce(region, ShowsWriting(row, region)) end
         end
     end
 
     -- A pooled who list row: house font, once.
     local function SkinWhoRow(row)
-        if not row or row:IsForbidden() then
-            return
-        end
+        if not row or row:IsForbidden() then return end
         local skinData = GetFFD(row)
-        if skinData.skinned then
-            return
-        end
+        if skinData.skinned then return end
         skinData.skinned = true
         local regionList = { row:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region:GetObjectType() == "FontString" then
-                FontOnce(region, ShowsWriting(row, region))
-            end
+            if region:GetObjectType() == "FontString" then FontOnce(region, ShowsWriting(row, region)) end
         end
     end
 
@@ -225,9 +183,7 @@ do
         local partData = GetFFD(scrollBar)
         if not partData.clampPt then
             local subFrame = _G.LFGBrowseFrame
-            if not subFrame then
-                return
-            end
+            if not subFrame then return end
             local line
             local regionList = { subFrame:GetRegions() }
             for idx = 1, #regionList do
@@ -243,9 +199,7 @@ do
             end
             local target = line and line:GetTop()
             local current = scrollBar:GetBottom()
-            if not (target and current and (target - current) > 1) then
-                return
-            end
+            if not (target and current and (target - current) > 1) then return end
             for idx = 1, scrollBar:GetNumPoints() do
                 local point, relTo, relPoint, posX, posY = scrollBar:GetPoint(idx)
                 if point and point:find("BOTTOM", 1, true) and posY then
@@ -255,26 +209,18 @@ do
             end
         end
         local c = partData.clampPt
-        if c then
-            scrollBar:SetPoint(c[1], c[2], c[3], c[4], c[5])
-        end
+        if c then scrollBar:SetPoint(c[1], c[2], c[3], c[4], c[5]) end
     end
 
     -- The group-entry tooltip is its own frame, not a GameTooltip, so the tooltip
     -- skin never reaches it: same look on every show, plus the house font.
     local function FontTip(found, depth)
-        if depth > 4 or not found then
-            return
-        end
-        if depth > 0 and Skin.IsForeignFrame(found) then
-            return
-        end
+        if depth > 4 or not found then return end
+        if depth > 0 and Skin.IsForeignFrame(found) then return end
         local regionList = { found:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region:GetObjectType() == "FontString" then
-                FontOnce(region, ShowsWriting(found, region))
-            end
+            if region:GetObjectType() == "FontString" then FontOnce(region, ShowsWriting(found, region)) end
         end
         local children = { found:GetChildren() }
         for idx = 1, #children do
@@ -282,24 +228,16 @@ do
         end
     end
     local function SkinLFGTooltip(t)
-        if t:IsForbidden() or (CludesUIDB and CludesUIDB.customTooltips == false) then
-            return
-        end
+        if t:IsForbidden() or (CludesUIDB and CludesUIDB.customTooltips == false) then return end
         CUI._skinBlizzardTooltipFrame(t)
         FontTip(t, 0)
     end
 
     -- Checkboxes in the List Self view (roles, Show All Level Ranges, dungeon rows).
     local function SkinChecksIn(found, depth)
-        if depth > 6 or not found or found:IsForbidden() then
-            return
-        end
-        if depth > 0 and Skin.IsForeignFrame(found) then
-            return
-        end
-        if found:IsObjectType("CheckButton") then
-            Skin.Checkbox(found, CHECK_OPTS)
-        end
+        if depth > 6 or not found or found:IsForbidden() then return end
+        if depth > 0 and Skin.IsForeignFrame(found) then return end
+        if found:IsObjectType("CheckButton") then Skin.Checkbox(found, CHECK_OPTS) end
         local children = { found:GetChildren() }
         for idx = 1, #children do
             SkinChecksIn(children[idx], depth + 1)
@@ -308,9 +246,7 @@ do
     -- A pooled dungeon row, once (a pooled frame keeps its template).
     local function SkinActivityRow(row)
         local skinData = GetFFD(row)
-        if skinData.checksSkinned then
-            return
-        end
+        if skinData.checksSkinned then return end
         skinData.checksSkinned = true
         SkinChecksIn(row, 0)
     end
@@ -318,16 +254,18 @@ do
     -- 1px border hugging a tile's content (its Icon, else its largest visible art).
     local function BorderContent(button)
         local skinData = GetFFD(button)
-        if skinData.contentBorder then
-            return
-        end
+        if skinData.contentBorder then return end
         local anchor = button.Icon
         if not anchor then
             local best, bestArea
             local regionList = { button:GetRegions() }
             for idx = 1, #regionList do
                 local region = regionList[idx]
-                if region:GetObjectType() == "Texture" and region:IsShown() and (region:GetAlpha() or 0) > 0.1 then
+                if
+                    region:GetObjectType() == "Texture"
+                    and region:IsShown()
+                    and (region:GetAlpha() or 0) > 0.1
+                then
                     local atl = region.GetAtlas and region:GetAtlas()
                     if not (atl and atl:lower():find("background", 1, true)) then
                         local area = (region:GetWidth() or 0) * (region:GetHeight() or 0)
@@ -348,15 +286,9 @@ do
     end
     -- Category tiles (the wide buttons only).
     local function BorderTiles(found, depth)
-        if depth > 5 or not found or found:IsForbidden() then
-            return
-        end
-        if depth > 0 and Skin.IsForeignFrame(found) then
-            return
-        end
-        if found:GetObjectType() == "Button" and (found:GetWidth() or 0) >= 100 then
-            BorderContent(found)
-        end
+        if depth > 5 or not found or found:IsForbidden() then return end
+        if depth > 0 and Skin.IsForeignFrame(found) then return end
+        if found:GetObjectType() == "Button" and (found:GetWidth() or 0) >= 100 then BorderContent(found) end
         local children = { found:GetChildren() }
         for idx = 1, #children do
             BorderTiles(children[idx], depth + 1)
@@ -365,9 +297,7 @@ do
 
     local function Skin_LFGVanilla()
         local frame = _G.LFGParentFrame
-        if not frame then
-            return
-        end
+        if not frame then return end
         Skin.Shell("lfg", frame)
         Skin.RemovePortrait(frame)
         -- The big animated eye in the portrait slot is a button of its own (no
@@ -423,7 +353,8 @@ do
                 end
             end
         end
-        local titleText = (frame.TitleContainer and frame.TitleContainer.TitleText) or _G.LFGParentFrameTitleText
+        local titleText = (frame.TitleContainer and frame.TitleContainer.TitleText)
+            or _G.LFGParentFrameTitleText
         if titleText then
             Skin.Font(titleText)
             Skin.White(titleText)
@@ -431,19 +362,13 @@ do
 
         for _, num in ipairs(DROPDOWNS) do
             local dropdown = _G[num]
-            if dropdown then
-                Skin.Dropdown(dropdown)
-            end
+            if dropdown then Skin.Dropdown(dropdown) end
         end
         -- The listing's Playstyle pick (a group needs one to post) and its Voice
         -- Chat pick.
         local av = _G.LFGListingFrameActivityView
-        if av and av.PlayStyleDropdown then
-            Skin.Dropdown(av.PlayStyleDropdown)
-        end
-        if av and av.VoiceChatDropdown then
-            Skin.Dropdown(av.VoiceChatDropdown)
-        end
+        if av and av.PlayStyleDropdown then Skin.Dropdown(av.PlayStyleDropdown) end
+        if av and av.VoiceChatDropdown then Skin.Dropdown(av.VoiceChatDropdown) end
         for _, num in ipairs(BUTTONS) do
             local button = _G[num]
             if button then
@@ -461,28 +386,20 @@ do
             cog.Icon:SetVertexColor(1, 1, 1)
         end
         local who = _G.LFGWhoListFrame
-        if who and who.EditBox then
-            Skin.EditBox(who.EditBox)
-        end
+        if who and who.EditBox then Skin.EditBox(who.EditBox) end
         local wsb = who and who.ScrollBox
         if wsb and wsb.ForEachFrame then
             wsb:ForEachFrame(SkinWhoRow)
             local wd = GetFFD(wsb)
             if not wd.hooked then
                 wd.hooked = true
-                hooksecurefunc(wsb, "Update", function()
-                    wsb:ForEachFrame(SkinWhoRow)
-                end)
+                hooksecurefunc(wsb, "Update", function() wsb:ForEachFrame(SkinWhoRow) end)
             end
         end
-        if _G.LFGBrowseFrameScrollBar then
-            Skin.ScrollBar(_G.LFGBrowseFrameScrollBar)
-        end
+        if _G.LFGBrowseFrameScrollBar then Skin.ScrollBar(_G.LFGBrowseFrameScrollBar) end
         for _, vn in ipairs(VIEWS) do
             local val = _G[vn]
-            if val then
-                Skin.ControlsIn(val)
-            end
+            if val then Skin.ControlsIn(val) end
         end
 
         -- Side view tabs.
@@ -515,22 +432,16 @@ do
             end
         end
 
-        if _G.LFGListingFrame then
-            SkinChecksIn(_G.LFGListingFrame, 0)
-        end
+        if _G.LFGListingFrame then SkinChecksIn(_G.LFGListingFrame, 0) end
         local asb = _G.LFGListingFrameActivityViewScrollBox
         if asb and asb.ForEachFrame then
             local ad = GetFFD(asb)
             if not ad.hooked then
                 ad.hooked = true
-                hooksecurefunc(asb, "Update", function()
-                    asb:ForEachFrame(SkinActivityRow)
-                end)
+                hooksecurefunc(asb, "Update", function() asb:ForEachFrame(SkinActivityRow) end)
             end
         end
-        if _G.LFGListingFrameCategoryView then
-            BorderTiles(_G.LFGListingFrameCategoryView, 0)
-        end
+        if _G.LFGListingFrameCategoryView then BorderTiles(_G.LFGListingFrameCategoryView, 0) end
         ApplyFont(frame, 0)
 
         local scrollBar = _G.LFGBrowseFrameScrollBox
@@ -543,9 +454,7 @@ do
             if not partData.hooked then
                 partData.hooked = true
                 hooksecurefunc(scrollBar, "Update", function()
-                    if not partData.clampPt then
-                        ClampBrowseBottom(scrollBar)
-                    end
+                    if not partData.clampPt then ClampBrowseBottom(scrollBar) end
                     scrollBar:ForEachFrame(SkinBrowseFrame)
                 end)
             end
@@ -558,9 +467,7 @@ do
                 titleData.hooked = true
                 tipText:HookScript("OnShow", SkinLFGTooltip)
             end
-            if tipText:IsShown() then
-                SkinLFGTooltip(tipText)
-            end
+            if tipText:IsShown() then SkinLFGTooltip(tipText) end
         end
 
         -- Repaint (debounced) on the window's show and on each view swap.
@@ -568,16 +475,12 @@ do
         if not skinData.hooked then
             skinData.hooked = true
             local repaint = Skin.Debounce(function()
-                if frame:IsVisible() then
-                    Skin_LFGVanilla()
-                end
+                if frame:IsVisible() then Skin_LFGVanilla() end
             end)
             Skin.HookShow(frame, repaint)
             for _, vn in ipairs(SHOW_VIEWS) do
                 local val = _G[vn]
-                if val then
-                    Skin.HookShow(val, repaint)
-                end
+                if val then Skin.HookShow(val, repaint) end
             end
         end
     end

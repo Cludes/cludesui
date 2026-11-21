@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Pushed.lua
 --
@@ -53,9 +51,7 @@ do
             EFD(button)[storeKey] = edges
             if driverTex then
                 hooksecurefunc(driverTex, "Show", function()
-                    if not edges._active then
-                        return
-                    end
+                    if not edges._active then return end
                     for jdx = 1, 4 do
                         edges[jdx]:Show()
                     end
@@ -113,9 +109,7 @@ do
 
     local function _hideBorderEdges(button, storeKey)
         local edges = EFD(button)[storeKey]
-        if not edges then
-            return
-        end
+        if not edges then return end
         edges._active = false
         for jdx = 1, 4 do
             edges[jdx]:Hide()
@@ -210,9 +204,7 @@ mod._ixStyle = function(button, fd, cfg)
         px
     )
     local edge = CludesUI._bdBorderData[owner]
-    if edge then
-        edge:SetFrameLevel(mod._eabBorderLevel(button, cfg.borderBehind, cfg.borderAboveEffects))
-    end
+    if edge then edge:SetFrameLevel(mod._eabBorderLevel(button, cfg.borderBehind, cfg.borderAboveEffects)) end
     fd.ixStyled = true
 end
 
@@ -221,9 +213,7 @@ end
 -- edge. Runs from hooks in and out of combat: our own frames only.
 mod._ixPaint = function(button, fd)
     local wid = fd.ixBorder
-    if not wid then
-        return
-    end
+    if not wid then return end
     local bdData = CludesUI._bdBorderData
     local edge = bdData[fd.ixHost]
     local c
@@ -253,9 +243,7 @@ mod._ixPaint = function(button, fd)
         fd.ixLit = nil
         wid:Hide()
         local base = bdData[button]
-        if base then
-            base:SetAlpha(fd.ixBaseA or 1)
-        end
+        if base then base:SetAlpha(fd.ixBaseA or 1) end
     end
 end
 
@@ -286,28 +274,20 @@ mod._ixHookPress = function(button, fd)
     fd.ixPressHooked = true
     local pt = button.PushedTexture
     if pt then
-        hooksecurefunc(pt, "Show", function()
-            mod._ixPressOn(button)
-        end)
-        hooksecurefunc(pt, "Hide", function()
-            mod._ixPressOff(button)
-        end)
+        hooksecurefunc(pt, "Show", function() mod._ixPressOn(button) end)
+        hooksecurefunc(pt, "Hide", function() mod._ixPressOff(button) end)
     end
     button:HookScript("OnMouseDown", mod._ixPressOn)
     button:HookScript("OnMouseUp", mod._ixPressOff)
     button:HookScript("OnHide", mod._ixPressOff)
-    if _controllerButtons[button] then
-        button:HookScript("OnDragStart", mod._ixPressOff)
-    end
+    if _controllerButtons[button] then button:HookScript("OnDragStart", mod._ixPressOff) end
 end
 
 -- Reads the checked state and paints only when it really changed. A secret
 -- value is skipped without a retry; the next SetChecked samples again.
 mod._ixSampleChecked = function(button, fd)
     local c = button:GetChecked()
-    if issecretvalue and issecretvalue(c) then
-        return
-    end
+    if issecretvalue and issecretvalue(c) then return end
     c = c and true or nil
     if fd.ixChecked ~= c then
         fd.ixChecked = c
@@ -322,9 +302,7 @@ mod._ixHookChecked = function(button, fd)
     fd.ixCheckHooked = true
     hooksecurefunc(button, "SetChecked", function()
         local skinData = mod._eabFD[button]
-        if skinData and skinData.ixCast then
-            mod._ixSampleChecked(button, skinData)
-        end
+        if skinData and skinData.ixCast then mod._ixSampleChecked(button, skinData) end
     end)
 end
 
@@ -353,21 +331,13 @@ mod._ixRole = function(button, s, role, enabled)
                 fd.ixBorder, fd.ixHost = wid, owner
                 mod._ixEver = true
             end
-            if not fd.ixStyled then
-                mod._ixStyle(button, fd, s)
-            end
-            if role == "ixPush" and not fd.ixPressHooked then
-                mod._ixHookPress(button, fd)
-            end
-            if role == "ixCast" and not fd.ixCheckHooked then
-                mod._ixHookChecked(button, fd)
-            end
+            if not fd.ixStyled then mod._ixStyle(button, fd, s) end
+            if role == "ixPush" and not fd.ixPressHooked then mod._ixHookPress(button, fd) end
+            if role == "ixCast" and not fd.ixCheckHooked then mod._ixHookChecked(button, fd) end
         end
         fd[role] = true
         -- A (re)armed cast role starts from the button's real state.
-        if role == "ixCast" then
-            mod._ixSampleChecked(button, fd)
-        end
+        if role == "ixCast" then mod._ixSampleChecked(button, fd) end
         mod._ixPaint(button, fd)
         return true
     elseif fd[role] then
@@ -469,9 +439,7 @@ function ABAR:ApplyPushedTextures()
                     end
                     -- Stock styles, other pushed types, the option off and
                     -- bars that left eligibility all land here.
-                    if ixEver and not ixBar then
-                        mod._ixRole(button, s, "ixPush", false)
-                    end
+                    if ixEver and not ixBar then mod._ixRole(button, s, "ixPush", false) end
                 end
             end
         end
@@ -492,9 +460,7 @@ do
     local _btnKeys = {} -- btn -> { k1, k2 } (reused, no alloc per press)
     local _pollFrame
     function ABAR:HookPushedFlash()
-        if _pushedHooked then
-            return
-        end
+        if _pushedHooked then return end
         _pushedHooked = true
         _pollFrame = mod.TakeShell()
         _pollFrame:SetScript("OnUpdate", function()
@@ -516,52 +482,34 @@ do
                     end
                 end
                 if not held then
-                    if button.PushedTexture then
-                        button.PushedTexture:Hide()
-                    end
+                    if button.PushedTexture then button.PushedTexture:Hide() end
                     _activePushed[button] = nil
                     _activePushedN = _activePushedN - 1
                 end
             end
-            if _activePushedN == 0 then
-                _pollFrame:Hide()
-            end
+            if _activePushedN == 0 then _pollFrame:Hide() end
         end)
         _pollFrame:Hide()
         -- Extract the base key from a compound binding ("SHIFT-1" -> "1",
         -- "CTRL-Q" -> "Q"): IsKeyDown only accepts raw key names.
         local function BaseKey(binding)
-            if not binding then
-                return nil
-            end
+            if not binding then return nil end
             -- The minus key's name is the literal "-", so "-" and modifier
             -- combos like "SHIFT--" END in "-": the trailing char IS the key,
             -- and the pattern below would find no non-hyphen run (nil).
-            if binding:sub(-1) == "-" then
-                return "-"
-            end
+            if binding:sub(-1) == "-" then return "-" end
             return binding:match("[^%-]+$")
         end
         local function ShowPushedForSlot(slot)
             local prof = ABAR.db and ABAR.db.profile
-            if not prof then
-                return
-            end
-            if mod.AB_Style() == "cui" and (prof.pushedTextureType or 2) == 6 then
-                return
-            end
+            if not prof then return end
+            if mod.AB_Style() == "cui" and (prof.pushedTextureType or 2) == 6 then return end
             local button = allButtons[slot]
-            if not button or not button.PushedTexture then
-                return
-            end
+            if not button or not button.PushedTexture then return end
             local cmd = button.commandName
-            if not cmd then
-                return
-            end
+            if not cmd then return end
             local k1, k2 = GetBindingKey(cmd)
-            if not k1 then
-                return
-            end
+            if not k1 then return end
             local keyList = _btnKeys[button]
             if not keyList then
                 keyList = {}
@@ -579,24 +527,16 @@ do
         end
         local function HidePushedForSlot(slot)
             local button = allButtons[slot]
-            if not (button and _activePushed[button]) then
-                return
-            end
-            if button.PushedTexture then
-                button.PushedTexture:Hide()
-            end
+            if not (button and _activePushed[button]) then return end
+            if button.PushedTexture then button.PushedTexture:Hide() end
             _activePushed[button] = nil
             _activePushedN = _activePushedN - 1
         end
         -- ActionButtonDown/MultiActionButtonDown fire on key press regardless
         -- of "cast on key down" CVar. This ensures pushed texture shows while
         -- the key is held for both key-down and key-up casting modes.
-        hooksecurefunc("ActionButtonDown", function(ident)
-            ShowPushedForSlot(ident)
-        end)
-        hooksecurefunc("ActionButtonUp", function(ident)
-            HidePushedForSlot(ident)
-        end)
+        hooksecurefunc("ActionButtonDown", function(ident) ShowPushedForSlot(ident) end)
+        hooksecurefunc("ActionButtonUp", function(ident) HidePushedForSlot(ident) end)
         if MultiActionButtonDown then
             local multiBarPage = {
                 MultiBarBottomLeft = 6,
@@ -609,18 +549,14 @@ do
             }
             hooksecurefunc("MultiActionButtonDown", function(barName, ident)
                 local page = multiBarPage[barName]
-                if not page then
-                    return
-                end
+                if not page then return end
                 local slot = (page - 1) * 12 + ident
                 ShowPushedForSlot(slot)
             end)
             if MultiActionButtonUp then
                 hooksecurefunc("MultiActionButtonUp", function(barName, ident)
                     local page = multiBarPage[barName]
-                    if page then
-                        HidePushedForSlot((page - 1) * 12 + ident)
-                    end
+                    if page then HidePushedForSlot((page - 1) * 12 + ident) end
                 end)
             end
         end
@@ -668,9 +604,7 @@ function ABAR:ApplyHighlightTextures()
             if buttons then
                 for index = 1, #buttons do
                     local button = buttons[index]
-                    if button then
-                        mod._ixRole(button, nil, "ixHover", false)
-                    end
+                    if button then mod._ixRole(button, nil, "ixHover", false) end
                 end
             end
         else
@@ -737,15 +671,11 @@ function ABAR:ApplyHighlightTextures()
                                 button.HighlightTexture:SetColorTexture(cr, cg, callback, 0.35)
                             end
                         end
-                        if ixEver and not ixBar then
-                            mod._ixRole(button, s, "ixHover", false)
-                        end
+                        if ixEver and not ixBar then mod._ixRole(button, s, "ixHover", false) end
                     end
                     if ixCast and ixEver and button then
                         local fd = mod._eabFD[button]
-                        if fd and fd.ixCast then
-                            mod._ixPaint(button, fd)
-                        end
+                        if fd and fd.ixCast then mod._ixPaint(button, fd) end
                     end
                     _quickKeybindState.art.RefreshButton(button)
                 end

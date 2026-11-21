@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_ClassicArt.lua
 --
@@ -30,9 +28,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the style is off (no caller reaches it).
 -------------------------------------------------------------------------------
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 
 local FILE = "Interface\\CastingBar\\UI-CastingBar-Border"
 -- Sheet cut lines as texcoords (columns 16, 48, 208, 240 of 256; rows 16,
@@ -55,9 +51,7 @@ CF.OVER_L, CF.OVER_R, CF.OVER_T, CF.OVER_B = OVER_L, OVER_R, OVER_T, OVER_B
 -- slider stores on the bar's settings (nil = BORDER_DEFAULT), as the scale k
 -- Seat and Pad take. Caps, rims and reach all scale together.
 CF.BORDER_DEFAULT = 60
-function CF.ScaleK(pct)
-    return (pct or CF.BORDER_DEFAULT) / 100
-end
+function CF.ScaleK(pct) return (pct or CF.BORDER_DEFAULT) / 100 end
 
 -- How far the frame's VISIBLE rim reaches past the bar, in sheet pixels: the
 -- caps' vertical rims start at columns 27 and 228, 3.5 outside the bar's ends
@@ -71,9 +65,7 @@ local RIM_L, RIM_R, RIM_T, RIM_B = 3.5, 3.5, 6, 5
 -- width, extra height.
 function CF.Pad(scale, vertical)
     scale = scale or 1
-    if vertical then
-        return (RIM_T + RIM_B) * scale, (RIM_L + RIM_R) * scale
-    end
+    if vertical then return (RIM_T + RIM_B) * scale, (RIM_L + RIM_R) * scale end
     return (RIM_L + RIM_R) * scale, (RIM_T + RIM_B) * scale
 end
 
@@ -116,14 +108,10 @@ end
 -- Lays the frame round `rect` at scale k (1 = the sheet's pixels). Memoized
 -- on rect, k and orientation; every layout pass may call it.
 function CF.Seat(pieces, rect, scale, vertical)
-    if not (pieces and rect) then
-        return
-    end
+    if not (pieces and rect) then return end
     scale = scale or 1
     vertical = vertical and true or false
-    if pieces._rect == rect and pieces._k == scale and pieces._vert == vertical then
-        return
-    end
+    if pieces._rect == rect and pieces._k == scale and pieces._vert == vertical then return end
     pieces._rect, pieces._k, pieces._vert = rect, scale, vertical
     for idx = 1, N do
         pieces[idx]:ClearAllPoints()

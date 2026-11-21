@@ -1,23 +1,17 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_GroupFinder_Extras.lua - the extra filters and looks:
 --  has / missing rows, specific roles, menu icons, group settings columns,
 --  region tags, row art, the scrolling strips, the person / raid icons
 -------------------------------------------------------------------------------
 local FOLDER, mod = ...
-if CludesUI.HELD_BACK_ADDONS[FOLDER] then
-    return
-end -- held back (CludesUIGroupFinder.lua)
+if CludesUI.HELD_BACK_ADDONS[FOLDER] then return end -- held back (CludesUIGroupFinder.lua)
 mod.CUI = CludesUI
 
 -- runs fn once blizzard's group finder loads
 function mod.WhenGroupFinder(func)
     -- module off: nothing hooks in
-    if not mod.Enabled() or mod.Blocked() then
-        return
-    end
+    if not mod.Enabled() or mod.Blocked() then return end
     if C_AddOns.IsAddOnLoaded("Blizzard_GroupFinder") and PVEFrame then
         func()
         return
@@ -25,9 +19,7 @@ function mod.WhenGroupFinder(func)
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("ADDON_LOADED")
     frame:SetScript("OnEvent", function(self, _, label)
-        if label ~= "Blizzard_GroupFinder" then
-            return
-        end
+        if label ~= "Blizzard_GroupFinder" then return end
         self:UnregisterAllEvents()
         func()
     end)
@@ -64,9 +56,7 @@ local ARROW = "Interface\\AddOns\\" .. FOLDER .. "\\media\\icons\\cui-arrow.png"
 local pops = {}
 GFNS.ExtraInside = function()
     for _, frame in ipairs(pops) do
-        if frame:IsShown() and frame:IsMouseOver() then
-            return true
-        end
+        if frame:IsShown() and frame:IsMouseOver() then return true end
     end
     return false
 end
@@ -88,9 +78,7 @@ local function RoundIcon(hostFrame, iconTex, after)
     local ic = hostFrame:CreateTexture(nil, "OVERLAY")
     ic:SetSize(12, 12)
     ic:SetPoint("LEFT", after, "RIGHT", 4, 0)
-    if iconTex then
-        PaintIcon(ic, iconTex)
-    end
+    if iconTex then PaintIcon(ic, iconTex) end
     local mask = hostFrame:CreateMaskTexture()
     mask:SetTexture(MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:SetAllPoints(ic)
@@ -189,9 +177,7 @@ local function Dropdown(ownerFrame, SortKit, modes, Get, Set, up)
         entry.text, entry.hint = TwoPart(entry, SortKit)
         entry.text:SetText(modeName.label)
         entry.hint:SetText(modeName.hint or "")
-        if modeName.icon then
-            RoundIcon(entry, modeName.icon, entry.text)
-        end
+        if modeName.icon then RoundIcon(entry, modeName.icon, entry.text) end
         local ihl = entry:CreateTexture(nil, "HIGHLIGHT")
         ihl:SetAllPoints()
         ihl:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A or 0.08)
@@ -207,9 +193,7 @@ local function Dropdown(ownerFrame, SortKit, modes, Get, Set, up)
     entries:SetHeight(4 + #modes * SortKit.ITEM_H)
     button.list = entries
     pops[#pops + 1] = entries
-    SortKit.ClickOff(entries, function(self)
-        return self:IsMouseOver() or button:IsMouseOver()
-    end)
+    SortKit.ClickOff(entries, function(self) return self:IsMouseOver() or button:IsMouseOver() end)
     entries:Hide()
 
     button:SetScript("OnClick", function()
@@ -237,12 +221,8 @@ local function Dropdown(ownerFrame, SortKit, modes, Get, Set, up)
         end
         entries:Show()
     end)
-    button:SetScript("OnHide", function()
-        entries:Hide()
-    end)
-    button:SetScript("OnShow", function(self)
-        self:ShowMode()
-    end)
+    button:SetScript("OnHide", function() entries:Hide() end)
+    button:SetScript("OnShow", function(self) self:ShowMode() end)
     button:SetScript("OnLeave", SortKit.Untip)
     return button
 end
@@ -294,9 +274,7 @@ local MATCH = {
 local function CountsOn(cfg)
     local num = 0
     for _, rule in pairs(type(cfg.roleCounts) == "table" and cfg.roleCounts or {}) do
-        if type(rule) == "table" and rule.on then
-            num = num + 1
-        end
+        if type(rule) == "table" and rule.on then num = num + 1 end
     end
     return num
 end
@@ -355,9 +333,7 @@ GFNS.ExtraRoleCounts = function(m, posY, SortKit)
         hintText:SetPoint("LEFT", t.label, "RIGHT", 3, 0)
         hintText:SetTextColor(HINT_GREY, HINT_GREY, HINT_GREY, 1)
         hintText:SetText(modeName.hint)
-        t:HookScript("OnEnter", function(self)
-            SortKit.Tip(self, modeName.tip)
-        end)
+        t:HookScript("OnEnter", function(self) SortKit.Tip(self, modeName.tip) end)
         t:HookScript("OnLeave", SortKit.Untip)
         toggles[#toggles + 1] = t
         py = py + SortKit.ITEM_H
@@ -370,9 +346,15 @@ GFNS.ExtraRoleCounts = function(m, posY, SortKit)
         py = SortKit.AddCountRow(popup, py, region.key, region.label)
     end
     popup:SetHeight(py + 2)
-    SortKit.ClickOff(popup, function(self)
-        return self:IsMouseOver() or button:IsMouseOver() or (SortKit.OpListOver and SortKit.OpListOver()) or false
-    end)
+    SortKit.ClickOff(
+        popup,
+        function(self)
+            return self:IsMouseOver()
+                or button:IsMouseOver()
+                or (SortKit.OpListOver and SortKit.OpListOver())
+                or false
+        end
+    )
     popup:Hide()
 
     -- "(2 active)" so ticked rows aren't forgotten
@@ -402,9 +384,7 @@ GFNS.ExtraRoleCounts = function(m, posY, SortKit)
         OpenNear(popup, button, m)
     end)
     button:SetScript("OnShow", ShowHint)
-    button:SetScript("OnHide", function()
-        popup:Hide()
-    end)
+    button:SetScript("OnHide", function() popup:Hide() end)
     ShowHint()
     return posY + SortKit.ITEM_H
 end
@@ -417,9 +397,7 @@ local ARROW_W = 14
 local ARROW_DIR = "Interface\\AddOns\\CludesUI\\media\\icons\\"
 
 local function PlaceStrip(s)
-    if not s.list then
-        return
-    end
+    if not s.list then return end
     local per = s.size + s.gap
     -- whole steps only, stops once the last square is fully in view
     local full = math.max(1, math.floor((s.clipW + s.gap) / per))
@@ -446,13 +424,9 @@ end
 
 local function ScrollStrip(cfg, step)
     cfg.offset = cfg.offset + step
-    if GFNS.ExtraHideBossPick then
-        GFNS.ExtraHideBossPick()
-    end
+    if GFNS.ExtraHideBossPick then GFNS.ExtraHideBossPick() end
     PlaceStrip(cfg)
-    if cfg.paint then
-        cfg.paint()
-    end -- recolor the squares now in view
+    if cfg.paint then cfg.paint() end -- recolor the squares now in view
 end
 
 local function StripArrow(s, line, file, step)
@@ -461,17 +435,11 @@ local function StripArrow(s, line, file, step)
     widget.tex:SetTexture(ARROW_DIR .. file)
     widget.tex:SetSize(16, 16)
     widget.tex:SetPoint("CENTER")
-    widget:SetScript("OnClick", function()
-        ScrollStrip(s, step)
-    end)
+    widget:SetScript("OnClick", function() ScrollStrip(s, step) end)
     widget:SetScript("OnEnter", function(self)
-        if self.live then
-            self.tex:SetAlpha(1)
-        end
+        if self.live then self.tex:SetAlpha(1) end
     end)
-    widget:SetScript("OnLeave", function(self)
-        self.tex:SetAlpha(self.live and 0.8 or 0.2)
-    end)
+    widget:SetScript("OnLeave", function(self) self.tex:SetAlpha(self.live and 0.8 or 0.2) end)
     return widget
 end
 
@@ -484,9 +452,7 @@ local function NewStrip(key, fillTex)
             cfg.clip = CreateFrame("Frame", nil, line)
             cfg.clip:SetClipsChildren(true)
             cfg.clip:EnableMouseWheel(true)
-            cfg.clip:SetScript("OnMouseWheel", function(_, delta)
-                ScrollStrip(cfg, delta > 0 and -1 or 1)
-            end)
+            cfg.clip:SetScript("OnMouseWheel", function(_, delta) ScrollStrip(cfg, delta > 0 and -1 or 1) end)
             cfg.left = StripArrow(cfg, line, "cui-arrow-left.png", -1)
             cfg.right = StripArrow(cfg, line, "cui-arrow-right.png", 1)
         end
@@ -505,7 +471,8 @@ local function NewStrip(key, fillTex)
         local startX = spacing + (slots - cols) * per
         local room = cols * per - spacing
         local fits = #entries * per - spacing <= room
-        local vis = fits and #entries or math.max(1, math.floor((room - 2 * (ARROW_W + spacing) + spacing) / per))
+        local vis = fits and #entries
+            or math.max(1, math.floor((room - 2 * (ARROW_W + spacing) + spacing) / per))
         cfg.clip:ClearAllPoints()
         cfg.left:ClearAllPoints()
         cfg.right:ClearAllPoints()
@@ -538,9 +505,7 @@ local function NewStrip(key, fillTex)
                 sq = Make()
                 squares[index] = sq
             end
-            if sq:GetParent() ~= cfg.clip then
-                sq:SetParent(cfg.clip)
-            end
+            if sq:GetParent() ~= cfg.clip then sq:SetParent(cfg.clip) end
             sq[key] = skinData
             fillTex(sq, skinData)
             sq:SetSize(px, px)
@@ -555,31 +520,26 @@ local function NewStrip(key, fillTex)
     end
 end
 
-GFNS.ExtraBossStrip = NewStrip("boss", function(sq, skinData)
-    sq.icon:SetTexture(skinData.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-end)
+GFNS.ExtraBossStrip = NewStrip(
+    "boss",
+    function(sq, skinData) sq.icon:SetTexture(skinData.icon or "Interface\\Icons\\INV_Misc_QuestionMark") end
+)
 -- delves: the module dresses its squares
 GFNS.ExtraDelveStrip = NewStrip("delve", function(sq, skinData)
-    if GFNS.GFDressDelve then
-        GFNS.GFDressDelve(sq, skinData)
-    end
+    if GFNS.GFDressDelve then GFNS.GFDressDelve(sq, skinData) end
 end)
 
 -- filters menu spans search box to refresh
 GFNS.ExtraWidenMenu = function(m, anchor, spacing, right)
     local sp = LFGListFrame and LFGListFrame.SearchPanel
     local leftX = sp and (sp.SearchBox or sp.BackButton)
-    if not (leftX and leftX:IsVisible() and leftX:GetLeft() and anchor:GetLeft()) then
-        return
-    end
+    if not (leftX and leftX:IsVisible() and leftX:GetLeft() and anchor:GetLeft()) then return end
     -- split evenly
     if m.side and right and right:GetRight() then
         local sum = (
             right:GetRight() * right:GetEffectiveScale() - leftX:GetLeft() * leftX:GetEffectiveScale()
         ) / m:GetEffectiveScale()
-        if sum > 100 then
-            m.side:SetWidth(math.floor(sum / 2 + 0.5))
-        end
+        if sum > 100 then m.side:SetWidth(math.floor(sum / 2 + 0.5)) end
     end
     local sideW = m.side and m.side:GetWidth() or 0
     local dx = (leftX:GetLeft() * leftX:GetEffectiveScale() - anchor:GetLeft() * anchor:GetEffectiveScale())
@@ -659,18 +619,14 @@ local CLASS_ROWS = {
 
 -- the row's keys on this tab
 local function Keys(line, raids)
-    if raids and line.raidKey then
-        return line.raidKey, line.raidPick
-    end
+    if raids and line.raidKey then return line.raidKey, line.raidPick end
     return line.key, line.pick
 end
 
 local function Missing(cfg, line, raids)
     local _, pick = Keys(line, raids)
     local val = cfg[pick]
-    if val == nil then
-        return line.missingDefault == true
-    end
+    if val == nil then return line.missingDefault == true end
     return val == true
 end
 
@@ -689,9 +645,7 @@ GFNS.ExtraClassRows = function(m, posY, SortKit)
     local ry, my = 0, 0
     for _, line in ipairs(CLASS_ROWS) do
         local function ShowTip(self)
-            if self.list and self.list:IsShown() then
-                return
-            end
+            if self.list and self.list:IsShown() then return end
             local title, lines = line.Tip(SortKit)
             SortKit.Tip(self, title, unpack(lines))
         end
@@ -720,15 +674,11 @@ GFNS.ExtraClassRows = function(m, posY, SortKit)
         local button = Dropdown(entry, SortKit, {
             { label = has, button = hasBtn, icon = iconTex },
             { label = missing, button = missingBtn, icon = iconTex },
-        }, function()
-            return Missing(SortKit.Cfg(), line, raids) and 2 or 1
-        end, function(index)
+        }, function() return Missing(SortKit.Cfg(), line, raids) and 2 or 1 end, function(index)
             -- picking turns the class row on; lust / brez leave the box alone
             local c = SortKit.Cfg()
             c[pick] = (index == 2)
-            if inRoles then
-                c[key] = true
-            end
+            if inRoles then c[key] = true end
         end)
         button:SetHeight(SortKit.ITEM_H - 2)
         button:SetPoint("LEFT", entry, "LEFT", 8 + SortKit.CHECK_SZ + 7, 0)
@@ -748,37 +698,23 @@ end
 -- false = drop the group. secret members don't count
 GFNS.ExtraClassKeep = function(ident, details, cfg, raids)
     local mineKey = raids and "raidMyClass" or "extraMyClass"
-    if not (cfg.hasLust or cfg.hasBrez or cfg[mineKey]) then
-        return true
-    end
+    if not (cfg.hasLust or cfg.hasBrez or cfg[mineKey]) then return true end
     local num = details and details.numMembers
-    if type(num) ~= "number" or Secret(num) then
-        return true
-    end
+    if type(num) ~= "number" or Secret(num) then return true end
     local _, mine = MyClass()
     local have = { hasLust = false, hasBrez = false, extraMyClass = false }
     for index = 1, num do
         local p = C_LFGList.GetSearchResultPlayerInfo(ident, index)
-        if p and (Secret(p) or (canaccesstable and not canaccesstable(p))) then
-            p = nil
-        end
+        if p and (Secret(p) or (canaccesstable and not canaccesstable(p))) then p = nil end
         local cls = p and p.classFilename
         if cls and not Secret(cls) then
-            if LUST[cls] then
-                have.hasLust = true
-            end
-            if BREZ[cls] then
-                have.hasBrez = true
-            end
-            if cls == mine then
-                have.extraMyClass = true
-            end
+            if LUST[cls] then have.hasLust = true end
+            if BREZ[cls] then have.hasBrez = true end
+            if cls == mine then have.extraMyClass = true end
         end
     end
     for _, line in ipairs(CLASS_ROWS) do
-        if cfg[Keys(line, raids)] and have[line.key] == Missing(cfg, line, raids) then
-            return false
-        end
+        if cfg[Keys(line, raids)] and have[line.key] == Missing(cfg, line, raids) then return false end
     end
     return true
 end
@@ -793,17 +729,11 @@ end
 
 local function RegionOf(resultID)
     local details = C_LFGList.GetSearchResultInfo(resultID)
-    if not details or Secret(details) or (canaccesstable and not canaccesstable(details)) then
-        return nil
-    end
+    if not details or Secret(details) or (canaccesstable and not canaccesstable(details)) then return nil end
     local leader = details.leaderName
-    if not leader or Secret(leader) then
-        return nil
-    end
+    if not leader or Secret(leader) then return nil end
     local realm = leader:match("%-(.+)$") or (GetNormalizedRealmName and GetNormalizedRealmName())
-    if not realm or Secret(realm) then
-        return nil
-    end
+    if not realm or Secret(realm) then return nil end
     return mod.RegionOfRealm(realm)
 end
 
@@ -811,36 +741,24 @@ local tagOf = setmetatable({}, { __mode = "k" })
 
 -- for our results list: tag, color, flag
 function mod.RegionTagOf(resultID)
-    if not TagsOn() then
-        return nil
-    end
+    if not TagsOn() then return nil end
     local skinData = mod.RegionInfo(RegionOf(resultID))
-    if skinData then
-        return skinData.tag, skinData.r, skinData.g, skinData.b, skinData.flag
-    end
+    if skinData then return skinData.tag, skinData.r, skinData.g, skinData.b, skinData.flag end
 end
 
 -- same tag for an applicant's "name-realm"
 function mod.RegionTagOfName(label)
-    if not TagsOn() or not label or Secret(label) then
-        return nil
-    end
+    if not TagsOn() or not label or Secret(label) then return nil end
     local realm = label:match("%-(.+)$") or (GetNormalizedRealmName and GetNormalizedRealmName())
-    if not realm or Secret(realm) then
-        return nil
-    end
+    if not realm or Secret(realm) then return nil end
     local skinData = mod.RegionInfo(mod.RegionOfRealm(realm))
-    if skinData then
-        return skinData.tag, skinData.r, skinData.g, skinData.b, skinData.flag
-    end
+    if skinData then return skinData.tag, skinData.r, skinData.g, skinData.b, skinData.flag end
 end
 
 -- "Relaxed | OCE [flag]" after the playstyle on blizzard's row
 local function Parts(record)
     local p = tagOf[record]
-    if p then
-        return p
-    end
+    if p then return p end
     local frame = CreateFrame("Frame", nil, record)
     frame:SetAllPoints(record)
     frame:SetFrameLevel(record:GetFrameLevel() + 4)
@@ -868,20 +786,14 @@ end
 local ART_CROP = { 0.205, 0.795, 0.25, 0.50 } -- a strip clear of the art's frame
 local artOf = {}
 local function Art(mapID)
-    if not mapID or Secret(mapID) then
-        return nil
-    end
+    if not mapID or Secret(mapID) then return nil end
     local a = artOf[mapID]
-    if a ~= nil then
-        return a or nil
-    end
+    if a ~= nil then return a or nil end
     a = false
     local CMode = C_ChallengeMode
     for _, cm in ipairs(CMode and CMode.GetMapTable and CMode.GetMapTable() or {}) do
         local _, _, _, _, bgTex, mid = CMode.GetMapUIInfo(cm)
-        if mid == mapID and bgTex then
-            a = bgTex
-        end
+        if mid == mapID and bgTex then a = bgTex end
     end
     local CEJ = C_EncounterJournal
     if not a and CEJ and CEJ.GetInstanceForGameMap and EJ_GetInstanceInfo then
@@ -897,18 +809,12 @@ end
 
 local function Activity(resultID)
     local details = C_LFGList.GetSearchResultInfo(resultID)
-    if not details or Secret(details) or (canaccesstable and not canaccesstable(details)) then
-        return nil
-    end
+    if not details or Secret(details) or (canaccesstable and not canaccesstable(details)) then return nil end
     local acts = details.activityIDs
     local act = type(acts) == "table" and not Secret(acts) and acts[1]
-    if not act or Secret(act) then
-        return nil
-    end
+    if not act or Secret(act) then return nil end
     local ai = C_LFGList.GetActivityInfoTable(act)
-    if not ai or Secret(ai) or (canaccesstable and not canaccesstable(ai)) then
-        return nil
-    end
+    if not ai or Secret(ai) or (canaccesstable and not canaccesstable(ai)) then return nil end
     return ai
 end
 
@@ -917,17 +823,13 @@ local FADE_MASK = "Interface\\AddOns\\" .. FOLDER .. "\\media\\masks\\fade.png"
 
 -- for our results list: a group's art (nil when off)
 function mod.RowArtFor(resultID)
-    if not RowArtOn() then
-        return nil
-    end
+    if not RowArtOn() then return nil end
     local ai = Activity(resultID)
     return ai and Art(ai.mapID)
 end
 -- the same for an instance's map id (the settings preview)
 function mod.RowArtForMap(mapID)
-    if not RowArtOn() then
-        return nil
-    end
+    if not RowArtOn() then return nil end
     return Art(mapID)
 end
 mod.ROW_ART = { crop = ART_CROP, share = ART_SHARE, alpha = ART_ALPHA, mask = FADE_MASK }
@@ -938,9 +840,7 @@ local function RowArt(record, profile)
     local ai = art and Activity(record.resultID)
     art = ai and Art(ai.mapID)
     if not art then
-        if profile.art then
-            profile.art:Hide()
-        end
+        if profile.art then profile.art:Hide() end
         return
     end
     if not profile.art then
@@ -962,29 +862,21 @@ local function RowArt(record, profile)
 end
 
 local function TagEntry(record)
-    if not (record and record.Playstyle) then
-        return
-    end
+    if not (record and record.Playstyle) then return end
     local p = Parts(record)
     RowArt(record, p)
     p.sep:Hide()
     p.tag:Hide()
     p.flag:Hide()
-    if not (TagsOn() and record.resultID) then
-        return
-    end
+    if not (TagsOn() and record.resultID) then return end
     local skinData = mod.RegionInfo(RegionOf(record.resultID))
-    if not skinData then
-        return
-    end
+    if not skinData then return end
     local play = record.Playstyle
     local success, _, px = pcall(play.GetFont, play)
     if success and type(px) == "number" and not Secret(px) and px > 0 then
         for _, fontStr in ipairs({ p.sep, p.tag }) do
             local filePath, _, flags = fontStr:GetFont()
-            if filePath then
-                fontStr:SetFont(filePath, px, flags or "")
-            end
+            if filePath then fontStr:SetFont(filePath, px, flags or "") end
         end
     else
         px = 10
@@ -1016,22 +908,16 @@ end
 local function RetagRows()
     local sp = LFGListFrame and LFGListFrame.SearchPanel
     local box = sp and sp.ScrollBox
-    if box and box.ForEachFrame then
-        box:ForEachFrame(TagEntry)
-    end
+    if box and box.ForEachFrame then box:ForEachFrame(TagEntry) end
     -- our results list too
-    if mod.OwnListRefresh then
-        mod.OwnListRefresh()
-    end
+    if mod.OwnListRefresh then mod.OwnListRefresh() end
 end
 
 mod.GFRetagRows = RetagRows -- for the settings page
 
 if mod.WhenGroupFinder then
     mod.WhenGroupFinder(function()
-        if LFGListSearchEntry_Update then
-            hooksecurefunc("LFGListSearchEntry_Update", TagEntry)
-        end
+        if LFGListSearchEntry_Update then hooksecurefunc("LFGListSearchEntry_Update", TagEntry) end
     end)
 end
 
@@ -1059,22 +945,23 @@ local function ChoiceItem(colour, posY, specInfo, G, up)
     local function Get()
         local val = G.Cfg()[specInfo.key]
         for index, modeName in ipairs(modes) do
-            if modeName.key == val then
-                return index
-            end
+            if modeName.key == val then return index end
         end
         return 1
     end
-    local button = Dropdown(entry, G, modes, Get, function(index)
-        G.Cfg()[specInfo.key] = modes[index].key
-    end, up)
+    local button = Dropdown(
+        entry,
+        G,
+        modes,
+        Get,
+        function(index) G.Cfg()[specInfo.key] = modes[index].key end,
+        up
+    )
     button:SetHeight(G.ITEM_H - 2)
     button:SetPoint("LEFT", entry.label, "RIGHT", 10, 0)
     button:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
     entry.btn = button
-    function entry:Paint()
-        self.btn:ShowMode()
-    end
+    function entry:Paint() self.btn:ShowMode() end
     return entry
 end
 
@@ -1101,9 +988,7 @@ end
 -- misc in two columns, lined up with the side panel
 local function LayoutMisc(dropMenu, side)
     local roleG, miscG, sg = dropMenu.extraClassGrp, dropMenu.extraMiscGrp, dropMenu.extraSpecGrp
-    if not (roleG and miscG and sg and dropMenu.extraRolesEnd) then
-        return
-    end
+    if not (roleG and miscG and sg and dropMenu.extraRolesEnd) then return end
     local posY = dropMenu.extraRolesEnd
     PlaceBlock(sg, dropMenu, posY)
     posY = posY + sg:GetHeight()
@@ -1136,15 +1021,11 @@ local function LayoutMisc(dropMenu, side)
     end
     local hgt = math.max(side and side.extraEndY and (side.extraEndY + 3) or 0, posY + 3)
     dropMenu:SetHeight(hgt)
-    if side then
-        side:SetHeight(hgt)
-    end
+    if side then side:SetHeight(hgt) end
 end
 
 GFNS.ExtraDecorateMenu = function(dropMenu, side)
-    if dropMenu then
-        LayoutMisc(dropMenu, side)
-    end
+    if dropMenu then LayoutMisc(dropMenu, side) end
     for _, ownerFrame in ipairs({ dropMenu, side }) do
         local itemList = ownerFrame and ownerFrame.items
         if itemList then

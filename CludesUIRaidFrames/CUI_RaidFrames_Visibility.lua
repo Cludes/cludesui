@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Visibility.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -39,13 +35,9 @@ local playerFriendlySpell = Inner.playerFriendlySpell or nil
 local playerRezSpell = Inner.playerRezSpell or nil
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local containerFrame
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val) containerFrame = val end
 
 -- Assigned below; CUI_RaidFrames_Reload.lua holds the forward declaration
 -- ReloadFrames calls through.
@@ -83,9 +75,7 @@ do
         local bmA = button._bmSavedAlpha or 1
         button:SetAlpha(bmA * rangeAlpha)
         -- A 3D party portrait does not take the button's alpha: mirror it.
-        if skinData.pt and skinData.pt._3dOn then
-            mod.RF_PtModelAlpha(skinData, bmA * rangeAlpha)
-        end
+        if skinData.pt and skinData.pt._3dOn then mod.RF_PtModelAlpha(skinData, bmA * rangeAlpha) end
     end
 
     -- Secret-safe range alpha via SetAlphaFromBoolean (UnitInRange can return a
@@ -172,9 +162,7 @@ do
     -- tight spell range (one-shot resync via _rangeWasDead). Living, non-spell-range units
     -- are owned by the event and skipped here, so the poll does ~no work for a stable raid.
     local function RefineButtonRange(unitToken, button)
-        if not UnitExists(unitToken) or UnitIsUnit(unitToken, "player") then
-            return
-        end
+        if not UnitExists(unitToken) or UnitIsUnit(unitToken, "player") then return end
         local skinData = GetFFD(button)
         if UnitIsDeadOrGhost(unitToken) then
             skinData._rangeWasDead = true
@@ -279,15 +267,9 @@ local function GhostAuraCheck()
                 -- unitToButton only ever gains entries, so unit/btn can be a stale
                 -- pairing: re-parse only containers still bound to this unit.
                 if skinData.rfcUnit == unitToken and skinData.ghostUnit == unitToken then
-                    if skinData.rfcDebuffs then
-                        skinData.rfcDebuffs:UpdateAllAuras()
-                    end
-                    if skinData.rfcDispLoc then
-                        skinData.rfcDispLoc:UpdateAllAuras()
-                    end
-                    if skinData.rfcBm then
-                        skinData.rfcBm:UpdateAllAuras()
-                    end
+                    if skinData.rfcDebuffs then skinData.rfcDebuffs:UpdateAllAuras() end
+                    if skinData.rfcDispLoc then skinData.rfcDispLoc:UpdateAllAuras() end
+                    if skinData.rfcBm then skinData.rfcBm:UpdateAllAuras() end
                     if skinData.rfcBmChain then
                         for _, cc in pairs(skinData.rfcBmChain) do
                             cc:UpdateAllAuras()
@@ -315,9 +297,7 @@ local function GhostAuraCheck()
 end
 
 local function StartGhostTicker()
-    if not ghostTicker then
-        ghostTicker = C_Timer.NewTicker(1.0, GhostAuraCheck)
-    end
+    if not ghostTicker then ghostTicker = C_Timer.NewTicker(1.0, GhostAuraCheck) end
 end
 
 local function StopGhostTicker()
@@ -344,9 +324,7 @@ end
 --  Visibility: show/hide based on solo/group/raid setting
 -------------------------------------------------------------------------------
 local framesVisible = false
-Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val)
-    framesVisible = val
-end
+Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val) framesVisible = val end
 
 -- True when the player is inside an arena instance. Arena puts you in a RAID
 -- group, but we deliberately show our PARTY frames there (the party header is
@@ -365,18 +343,14 @@ end
 -- "party or raid frames" decision reads this, never ns._InArena directly;
 -- the group-1 filter itself lives in _LayoutPartyFrames (ns._SmallRaidGroup).
 mod._PartyInRaid = function()
-    if mod._InArena() then
-        return true
-    end
+    if mod._InArena() then return true end
     return saved.profile.partySmallRaid == true and IsInRaid() and GetNumGroupMembers() < 10
 end
 
 -- The subgroup the party header is limited to in Small Raid mode; nil in
 -- arena (whole team) and outside party-in-raid mode.
 mod._SmallRaidGroup = function()
-    if mod._InArena() or not mod._PartyInRaid() then
-        return nil
-    end
+    if mod._InArena() or not mod._PartyInRaid() then return nil end
     return 1
 end
 
@@ -388,9 +362,7 @@ mod._RFVisWanted = function()
     if not IsInGroup() then
         return cfg.showWhenSolo and true or false, cfg.partyShowWhenSolo and true or false
     end
-    if IsInRaid() and not mod._PartyInRaid() then
-        return true, false
-    end
+    if IsInRaid() and not mod._PartyInRaid() then return true, false end
     return false, true
 end
 
@@ -437,9 +409,7 @@ mod._RF_VIS_MACROS = {
 -- registration is a protected action: out of combat, or the login window).
 mod._RFSyncVisDrivers = function()
     local pc = mod._partyContainerFrame
-    if not containerFrame or not pc or InCombatLockdown() then
-        return
-    end
+    if not containerFrame or not pc or InCombatLockdown() then return end
     local cfg = saved.profile
     local M = mod._RF_VIS_MACROS
     local mode = (mod._InArena() and "arena") or ((cfg.partySmallRaid == true) and "small") or "group"
@@ -461,25 +431,17 @@ end
 mod._RFForgetOccupants = function(entries)
     for index = 1, #entries do
         local skinData = FFD[entries[index]]
-        if skinData then
-            skinData._lastGuid = nil
-        end
+        if skinData then skinData._lastGuid = nil end
     end
 end
 
 local function UpdateVisibility()
-    if not containerFrame then
-        return
-    end
-    if InCombatLockdown() then
-        return
-    end
+    if not containerFrame then return end
+    if InCombatLockdown() then return end
 
     -- Preview overrides all visibility logic -- real buttons stay suppressed
     -- (alpha), no state changes; the preview close re-runs this.
-    if mod._raidPvActive then
-        return
-    end
+    if mod._raidPvActive then return end
 
     -- Defensive: re-assert full opacity unless a preview is intentionally
     -- dimming the real frames. The preview system is the only thing that lowers
@@ -487,9 +449,7 @@ local function UpdateVisibility()
     -- above) and heals any case where alpha was left at 0 with the flags cleared.
     -- Gated on the party-preview flag too so a raid-visibility recompute never
     -- un-hides the raid container behind an active party preview.
-    if not mod._sizePreviewTier and not mod._partyPvActive then
-        containerFrame:SetAlpha(1)
-    end
+    if not mod._sizePreviewTier and not mod._partyPvActive then containerFrame:SetAlpha(1) end
 
     local cfg = saved.profile
     -- Arena and Small Raid mode hide the raid frames. The player is in a raid
@@ -502,9 +462,7 @@ local function UpdateVisibility()
     mod._raidFramesVisible = visible -- mirror for readers outside this file (the FrameSort provider)
     -- Raid frames coming or going is the one change a tracker cannot learn from
     -- its own roster events (mirrors the party call in _UpdatePartyVisibility).
-    if mod._NotifyTrackerProviders then
-        mod._NotifyTrackerProviders()
-    end
+    if mod._NotifyTrackerProviders then mod._NotifyTrackerProviders() end
 
     -- Update showSolo attribute on all headers, but ONLY when it actually
     -- differs from the header's current value. Re-setting a SecureGroupHeader
@@ -528,14 +486,10 @@ local function UpdateVisibility()
     containerFrame:SetShown(visible)
     if visible then
         -- Suppress Blizzard party frames when we're showing for groups
-        if (IsInGroup() and not IsInRaid()) and mod._SuppressBlizzParty then
-            mod._SuppressBlizzParty()
-        end
+        if (IsInGroup() and not IsInRaid()) and mod._SuppressBlizzParty then mod._SuppressBlizzParty() end
         -- Headers last laid out hidden (native order) take the shown layout
         -- before the rebuild reads their buttons.
-        if mod._rfRaidLaidVis ~= true then
-            LayoutGroups()
-        end
+        if mod._rfRaidLaidVis ~= true then LayoutGroups() end
         -- Skip heavy refresh at combat end if roster didn't change. Per-unit events
         -- (UNIT_HEALTH, UNIT_AURA, etc.) kept buttons in sync during combat, so a full
         -- rebuild is only needed when the roster changed or we transition from hidden
@@ -551,9 +505,7 @@ local function UpdateVisibility()
         mod._visForceRebuild = nil
         if (not wasVisible) or forceRebuild then
             RebuildUnitMap()
-            if mod.UpdatePowerEventRegistration then
-                mod.UpdatePowerEventRegistration()
-            end
+            if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
             UpdateAllButtons()
         end
         if IsInGroup() or IsInRaid() then
@@ -563,18 +515,14 @@ local function UpdateVisibility()
     else
         StopRangeTicker()
         StopGhostTicker()
-        if wasVisible then
-            mod._RFForgetOccupants(allButtons)
-        end
+        if wasVisible then mod._RFForgetOccupants(allButtons) end
         wipe(unitToButton)
         -- A hidden set runs native order and keeps every group header up, so the
         -- driver can show it mid-fight with every member in place.
         if mod._rfRaidLaidVis ~= false then
             LayoutGroups()
             -- The dormant container's footprint (see _ApplyTierOffset).
-            if mod._ApplyTierOffset then
-                mod._ApplyTierOffset()
-            end
+            if mod._ApplyTierOffset then mod._ApplyTierOffset() end
         end
     end
 end

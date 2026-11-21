@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Movers.lua
 --  CreateMover: the draggable mover built for each registered element.
@@ -41,18 +39,10 @@ CUI_NS.unlockParts.Movers = function(LM)
     end
 
     local function OverlapModifierDown(snapMethod)
-        if snapMethod == "scroll" then
-            return true
-        end
-        if snapMethod == "shiftscroll" then
-            return IsShiftKeyDown()
-        end
-        if snapMethod == "controlscroll" then
-            return IsControlKeyDown()
-        end
-        if snapMethod == "altscroll" then
-            return IsAltKeyDown()
-        end
+        if snapMethod == "scroll" then return true end
+        if snapMethod == "shiftscroll" then return IsShiftKeyDown() end
+        if snapMethod == "controlscroll" then return IsControlKeyDown() end
+        if snapMethod == "altscroll" then return IsAltKeyDown() end
         return false
     end
 
@@ -82,9 +72,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     button:EnableMouseWheel(enabled)
                 end
             end
-            if handle._cogBtn then
-                handle._cogBtn:EnableMouseWheel(enabled)
-            end
+            if handle._cogBtn then handle._cogBtn:EnableMouseWheel(enabled) end
         end
     end
     CludesUI.RefreshUnlockOverlapMethod = LM.UpdateMoverMouseWheel
@@ -96,20 +84,14 @@ CUI_NS.unlockParts.Movers = function(LM)
         end
         local hits = {}
         for _, handle in pairs(handles) do
-            if handle._dragging then
-                return
-            end
+            if handle._dragging then return end
             if handle:IsShown() and handle:IsMouseOver() then
                 hits[#hits + 1] = { mover = handle, base = handle._baseLevel, raised = handle._raisedLevel }
             end
         end
-        if #hits < 2 then
-            return
-        end
+        if #hits < 2 then return end
         table.sort(hits, function(lhs, rhs)
-            if lhs.base == rhs.base then
-                return lhs.mover._barKey < rhs.mover._barKey
-            end
+            if lhs.base == rhs.base then return lhs.mover._barKey < rhs.mover._barKey end
             return lhs.base > rhs.base
         end)
         local index
@@ -119,9 +101,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 break
             end
         end
-        if not index then
-            return
-        end
+        if not index then return end
         index = (index - 1 + (delta > 0 and -1 or 1)) % #hits + 1
         local goal = hits[index].mover
         for idx = 1, #hits do
@@ -138,17 +118,11 @@ CUI_NS.unlockParts.Movers = function(LM)
         for _, hit in ipairs(hits) do
             local m = hit.mover
             if m ~= goal then
-                if m._forceCollapse then
-                    m._forceCollapse()
-                end
+                if m._forceCollapse then m._forceCollapse() end
                 m:SetFrameLevel(m._baseLevel)
-                if m._cogBtn then
-                    m._cogBtn:SetFrameLevel(m._baseLevel + 10)
-                end
+                if m._cogBtn then m._cogBtn:SetFrameLevel(m._baseLevel + 10) end
                 if not m._selected then
-                    if not LM.darkOverlaysEnabled then
-                        m:SetAlpha(MOVER_ALPHA)
-                    end
+                    if not LM.darkOverlaysEnabled then m:SetAlpha(MOVER_ALPHA) end
                     m._brd:SetColor(accR, accG, accB, 0.6)
                 end
             end
@@ -161,9 +135,9 @@ CUI_NS.unlockParts.Movers = function(LM)
     -- Blizzard Style unit frame's box around its aura stack). Nothing measures it then.
     local function RectSecret(frame)
         return issecretvalue
-                and (issecretvalue(frame:GetLeft()) or issecretvalue(frame:GetTop()) or issecretvalue(frame:GetWidth()) or issecretvalue(
-                    frame:GetHeight()
-                ))
+                and (issecretvalue(frame:GetLeft()) or issecretvalue(frame:GetTop()) or issecretvalue(
+                    frame:GetWidth()
+                ) or issecretvalue(frame:GetHeight()))
             or false
     end
 
@@ -190,7 +164,8 @@ CUI_NS.unlockParts.Movers = function(LM)
     function MenuPool.Begin(dropMenu, shadowed, fineDivs)
         local pool = dropMenu._pool
         if not pool then
-            pool = { shadowed = shadowed, fineDivs = fineDivs, items = {}, fields = {}, titles = {}, divs = {} }
+            pool =
+                { shadowed = shadowed, fineDivs = fineDivs, items = {}, fields = {}, titles = {}, divs = {} }
             dropMenu._pool = pool
         end
         pool.nItems, pool.nFields, pool.nTitles, pool.nDivs = 0, 0, 0, 0
@@ -201,18 +176,14 @@ CUI_NS.unlockParts.Movers = function(LM)
         for idx = pool.nItems + 1, #pool.items do
             local entry = pool.items[idx]
             entry:Hide()
-            if entry._sub then
-                entry._sub:Hide()
-            end
+            if entry._sub then entry._sub:Hide() end
         end
         for idx = pool.nFields + 1, #pool.fields do
             local row = pool.fields[idx]
             row:Hide()
             -- A hidden edit box keeps the keyboard: release it with the row.
             local checkBox = row._box
-            if checkBox and checkBox:HasFocus() then
-                checkBox:ClearFocus()
-            end
+            if checkBox and checkBox:HasFocus() then checkBox:ClearFocus() end
         end
         for idx = pool.nTitles + 1, #pool.titles do
             pool.titles[idx]:Hide()
@@ -265,15 +236,9 @@ CUI_NS.unlockParts.Movers = function(LM)
         labelFS:SetPoint("LEFT", entry, "LEFT", 10, 0)
         labelFS:SetWordWrap(true)
         labelFS:SetTextColor(0.75, 0.75, 0.75, 0.9)
-        if entry._arrow then
-            entry._arrow:Hide()
-        end
-        if entry._check then
-            entry._check:Hide()
-        end
-        if entry._sub then
-            entry._sub:Hide()
-        end
+        if entry._arrow then entry._arrow:Hide() end
+        if entry._check then entry._check:Hide() end
+        if entry._sub then entry._sub:Hide() end
         entry:Show()
         return entry, highlight, labelFS
     end
@@ -353,9 +318,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         labelFS:SetTextColor(0.75, 0.75, 0.75, 0.9)
         local checkBox = row._box
         -- A hidden edit box keeps the keyboard, so a reused or retired box lets go.
-        if checkBox and checkBox:HasFocus() then
-            checkBox:ClearFocus()
-        end
+        if checkBox and checkBox:HasFocus() then checkBox:ClearFocus() end
         if withBox then
             if not checkBox then
                 checkBox = CreateFrame("EditBox", nil, row)
@@ -436,20 +399,14 @@ CUI_NS.unlockParts.Movers = function(LM)
                 or (element.isAnchored and element.isAnchored() and not element.keepMoverWhenAnchored)
             )
         then
-            if existing then
-                existing:Hide()
-            end
+            if existing then existing:Hide() end
             return nil
         end
 
-        if existing then
-            return existing
-        end
+        if existing then return existing end
 
         local barFrame = LM.GetBarFrame(barId)
-        if not barFrame then
-            return nil
-        end
+        if not barFrame then return nil end
 
         local accR, accG, accB = GetAccent()
         local labelText = LM.GetBarLabel(barId)
@@ -467,15 +424,11 @@ CUI_NS.unlockParts.Movers = function(LM)
         handle:SetMovable(true)
         handle:RegisterForDrag("LeftButton")
         handle:EnableMouse(true)
-        local function OnMoverWheel(_, delta)
-            CycleOverlappingMovers(handle, delta)
-        end
+        local function OnMoverWheel(_, delta) CycleOverlappingMovers(handle, delta) end
         handle:EnableMouseWheel(OverlapScrollDown())
         handle:SetScript("OnMouseWheel", OnMoverWheel)
         handle:SetScript("OnMouseDown", function(self, btnFrame)
-            if btnFrame == "LeftButton" then
-                _mouseHeld = true
-            end
+            if btnFrame == "LeftButton" then _mouseHeld = true end
         end)
         -- OnMouseUp is set later (after link buttons are created) to also handle link drag forwarding
 
@@ -514,9 +467,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         nameText:SetNonSpaceWrap(false)
         nameText:SetPoint("CENTER", handle, "CENTER")
         handle._label = nameText
-        if not LM.darkOverlaysEnabled then
-            nameText:Hide()
-        end
+        if not LM.darkOverlaysEnabled then nameText:Hide() end
 
         -- Optional dimmed subtitle under the label (element definition field)
         if regElem and regElem.subtitle then
@@ -532,9 +483,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             subLabel:SetPoint("LEFT", nameTag, "LEFT", 8, 0)
             subLabel:SetPoint("RIGHT", nameTag, "RIGHT", -8, 0)
             handle._subtitle = subLabel
-            if not LM.darkOverlaysEnabled then
-                subLabel:Hide()
-            end
+            if not LM.darkOverlaysEnabled then subLabel:Hide() end
         end
 
         -- Coordinate readout (shows during drag and selection, top-left of mover)
@@ -697,9 +646,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             if canAnchorTo and not mod.IsMoverPosLocked(barId) then
                 t[#t + 1] = { btn = atBtn, fs = anchorText, fb = 45 }
             end
-            if canGrow then
-                t[#t + 1] = { btn = growBtn, fs = growLabel, fb = 30 }
-            end
+            if canGrow then t[#t + 1] = { btn = growBtn, fs = growLabel, fb = 30 } end
             return t
         end
 
@@ -710,17 +657,13 @@ CUI_NS.unlockParts.Movers = function(LM)
         local function PlaceActionLinks()
             local gap = 8
             local itemList = ActiveLinks()
-            if #itemList == 0 then
-                return
-            end
+            if #itemList == 0 then return end
             local divs = { rule1, rule2, div3 }
             local totalW = 0
             for idx, entry in ipairs(itemList) do
                 entry.w = entry.fs:GetStringWidth() or entry.fb
                 totalW = totalW + entry.w
-                if idx < #itemList then
-                    totalW = totalW + gap + 1 + gap
-                end
+                if idx < #itemList then totalW = totalW + gap + 1 + gap end
             end
             local posX = -totalW / 2
             for idx, entry in ipairs(itemList) do
@@ -771,9 +714,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             moverCX = cx
             moverCY = cy
         end
-        handle._getCenterXY = function()
-            return moverCX, moverCY
-        end
+        handle._getCenterXY = function() return moverCX, moverCY end
 
         -- Re-anchor the mover directly to the bar frame so both share the exact same
         -- screen position with zero coordinate math (pixel-perfect). The bar's CENTER
@@ -783,26 +724,21 @@ CUI_NS.unlockParts.Movers = function(LM)
             local barKey = self._barKey
             local self2 = self
             C_Timer.After(0, function()
-                if self2._dragging then
-                    return
-                end
+                if self2._dragging then return end
                 local widget = LM.GetBarFrame(barKey)
-                if not widget then
-                    return
-                end
+                if not widget then return end
                 -- A bar riding an engine aura container reports a secret rect
                 -- outside unlock mode (the follow provider is inert inside it, so
                 -- the bar rests plain there): nothing to attach to yet.
-                if RectSecret(widget) then
-                    return
-                end
+                if RectSecret(widget) then return end
                 local scale = widget:GetEffectiveScale()
                 local uiZoom = UIParent:GetEffectiveScale()
                 local elemScale = scale / uiZoom
                 -- Update size from bar (+ any below-frame extra, e.g. boss castbar).
                 local element = registeredElements[barKey]
-                local extra = (element and element.getBottomExtra and (element.getBottomExtra(barKey) or 0) or 0)
-                    * elemScale
+                local extra = (
+                    element and element.getBottomExtra and (element.getBottomExtra(barKey) or 0) or 0
+                ) * elemScale
                 -- Visual insets (optional, e.g. a Blizzard Style unit frame whose stock
                 -- box carries transparent padding round its art): the mover outlines
                 -- the rect inside them. Left, right, top, bottom in the bar's units.
@@ -816,12 +752,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
                 local wid = (widget:GetWidth() or 50) * elemScale - il - ir
                 local hgt = (widget:GetHeight() or 50) * elemScale + extra - entry - ib
-                if wid > 10 then
-                    realW = wid
-                end
-                if hgt > 10 then
-                    realH = hgt
-                end
+                if wid > 10 then realW = wid end
+                if hgt > 10 then realH = hgt end
                 self2:SetSize(realW, realH)
                 -- Recompute moverCX/moverCY from bar's current center. Shift the
                 -- stored center DOWN by half the extra so the box stays top-pinned
@@ -1021,14 +953,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                     hoverState = hoverTarget
                     self:SetScript("OnUpdate", nil)
                     -- Snap back to bar anchor when fully collapsed
-                    if hoverState == 0 and handle.ReanchorToBar then
-                        handle:ReanchorToBar()
-                    end
+                    if hoverState == 0 and handle.ReanchorToBar then handle:ReanchorToBar() end
                     -- Show coordinates when fully expanded
                     if hoverState == 1 and handle._coordFS then
-                        if handle.UpdateCoordText then
-                            handle:UpdateCoordText()
-                        end
+                        if handle.UpdateCoordText then handle:UpdateCoordText() end
                     end
                 end
                 PaintHover(hoverState)
@@ -1054,9 +982,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local gap = 8
                     for idx, entry in ipairs(links) do
                         rowW = rowW + (entry.fs:GetStringWidth() or entry.fb)
-                        if idx < #links then
-                            rowW = rowW + gap + 1 + gap
-                        end
+                        if idx < #links then rowW = rowW + gap + 1 + gap end
                     end
                 end
                 local contentW = math.max(nameW, rowW)
@@ -1077,9 +1003,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     end
                 end
             end
-            if not linkHovered then
-                SyncLinkStates()
-            end
+            if not linkHovered then SyncLinkStates() end
             PlaceActionLinks()
             AnimateHoverTo(1)
             pickText:Hide()
@@ -1088,9 +1012,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         local function HideOverlayText()
             handle._hoverConfirmed = false
             -- Hide coordinates when collapsing (unless coords-always-on)
-            if handle._coordFS and not LM.coordsEnabled then
-                handle._coordFS:Hide()
-            end
+            if handle._coordFS and not LM.coordsEnabled then handle._coordFS:Hide() end
             AnimateHoverTo(0)
         end
 
@@ -1114,9 +1036,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         local function HidePickText()
             pickText:Hide()
-            if LM.darkOverlaysEnabled then
-                nameText:SetAlpha(1)
-            end
+            if LM.darkOverlaysEnabled then nameText:SetAlpha(1) end
         end
 
         handle._showOverlayText = ShowOverlayText
@@ -1130,14 +1050,10 @@ CUI_NS.unlockParts.Movers = function(LM)
             hoverState = 0
             hoverTarget = 0
             handle._hoverConfirmed = false
-            if handle._coordFS and not LM.coordsEnabled then
-                handle._coordFS:Hide()
-            end
+            if handle._coordFS and not LM.coordsEnabled then handle._coordFS:Hide() end
             animFrame:SetScript("OnUpdate", nil)
             PaintHover(0)
-            if handle.ReanchorToBar then
-                handle:ReanchorToBar()
-            end
+            if handle.ReanchorToBar then handle:ReanchorToBar() end
         end
 
         -- Refresh the anchored text (called after anchor changes)
@@ -1145,9 +1061,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             SyncAnchoredIdle()
             SyncLinkStates()
             -- If not hovered, apply idle state to show/hide anchored text
-            if not self:IsMouseOver() then
-                PaintHover(hoverState)
-            end
+            if not self:IsMouseOver() then PaintHover(hoverState) end
         end
 
         -- Hover effects for action buttons (brighten to white on hover, keep mover highlighted)
@@ -1171,7 +1085,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
             end
             if isBlocked then
-                CludesUI.ShowWidgetTooltip(button, "This element doesn't support both Height and Width matching")
+                CludesUI.ShowWidgetTooltip(
+                    button,
+                    "This element doesn't support both Height and Width matching"
+                )
                 return
             end
             fontStr:SetTextColor(1, 1, 1, 1)
@@ -1181,28 +1098,18 @@ CUI_NS.unlockParts.Movers = function(LM)
             local tipText
             if matchType == "width" then
                 local goal = MatchH.GetWidthMatchInfo(barId)
-                if goal then
-                    tipText = LM.GetBarLabel(goal) or goal
-                end
+                if goal then tipText = LM.GetBarLabel(goal) or goal end
             elseif matchType == "height" then
                 local goal = MatchH.GetHeightMatchInfo(barId)
-                if goal then
-                    tipText = LM.GetBarLabel(goal) or goal
-                end
+                if goal then tipText = LM.GetBarLabel(goal) or goal end
             elseif matchType == "anchor" then
                 local details = GetAnchorInfo(barId)
-                if details then
-                    tipText = LM.GetBarLabel(details.target) or details.target
-                end
+                if details then tipText = LM.GetBarLabel(details.target) or details.target end
             elseif matchType == "grow" then
                 local gd = GetBarGrowDir(barId)
-                if gd then
-                    tipText = "Grow " .. gd:sub(1, 1) .. gd:sub(2):lower()
-                end
+                if gd then tipText = "Grow " .. gd:sub(1, 1) .. gd:sub(2):lower() end
             end
-            if tipText then
-                CludesUI.ShowWidgetTooltip(button, tipText)
-            end
+            if tipText then CludesUI.ShowWidgetTooltip(button, tipText) end
         end
         local function BtnLeave(button, fontStr, matchType)
             CludesUI.HideWidgetTooltip()
@@ -1247,32 +1154,18 @@ CUI_NS.unlockParts.Movers = function(LM)
                     end
                     if not overChild then
                         handle:SetFrameLevel(handle._baseLevel)
-                        if handle._cogBtn then
-                            handle._cogBtn:SetFrameLevel(handle._baseLevel + 10)
-                        end
+                        if handle._cogBtn then handle._cogBtn:SetFrameLevel(handle._baseLevel + 10) end
                         handle._brd:SetColor(accR, accG, accB, 0.6)
                     end
                 end
             end)
         end
-        wmBtn:SetScript("OnEnter", function(self)
-            BtnEnter(self, widthMatchText, "width")
-        end)
-        wmBtn:SetScript("OnLeave", function(self)
-            BtnLeave(self, widthMatchText, "width")
-        end)
-        hmBtn:SetScript("OnEnter", function(self)
-            BtnEnter(self, heightMatchText, "height")
-        end)
-        hmBtn:SetScript("OnLeave", function(self)
-            BtnLeave(self, heightMatchText, "height")
-        end)
-        atBtn:SetScript("OnEnter", function(self)
-            BtnEnter(self, anchorText, "anchor")
-        end)
-        atBtn:SetScript("OnLeave", function(self)
-            BtnLeave(self, anchorText, "anchor")
-        end)
+        wmBtn:SetScript("OnEnter", function(self) BtnEnter(self, widthMatchText, "width") end)
+        wmBtn:SetScript("OnLeave", function(self) BtnLeave(self, widthMatchText, "width") end)
+        hmBtn:SetScript("OnEnter", function(self) BtnEnter(self, heightMatchText, "height") end)
+        hmBtn:SetScript("OnLeave", function(self) BtnLeave(self, heightMatchText, "height") end)
+        atBtn:SetScript("OnEnter", function(self) BtnEnter(self, anchorText, "anchor") end)
+        atBtn:SetScript("OnLeave", function(self) BtnLeave(self, anchorText, "anchor") end)
 
         -- Forward drag from link buttons to the mover using OnMouseDown/Up instead of
         -- WoW's drag system: RegisterForDrag fires OnDragStop as soon as the button
@@ -1282,9 +1175,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         local linkDragStartX, linkDragStartY = 0, 0
 
         local function LinkMouseDown(button, btnFrame)
-            if btnFrame ~= "LeftButton" then
-                return
-            end
+            if btnFrame ~= "LeftButton" then return end
             local uiScale = UIParent:GetEffectiveScale()
             linkDragStartX, linkDragStartY = GetCursorPosition()
             linkDragStartX = linkDragStartX / uiScale
@@ -1292,9 +1183,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             linkDragPending = true
             -- Poll for movement threshold before committing to drag
             handle:SetScript("OnUpdate", function(s)
-                if not linkDragPending then
-                    return
-                end
+                if not linkDragPending then return end
                 local sc2 = UIParent:GetEffectiveScale()
                 local curX, curY = GetCursorPosition()
                 curX = curX / sc2
@@ -1303,22 +1192,16 @@ CUI_NS.unlockParts.Movers = function(LM)
                     linkDragPending = false
                     -- Now fire the real drag start
                     local script = handle:GetScript("OnDragStart")
-                    if script then
-                        script(handle)
-                    end
+                    if script then script(handle) end
                 end
             end)
         end
         local function LinkMouseUp(button, btnFrame)
-            if btnFrame ~= "LeftButton" then
-                return
-            end
+            if btnFrame ~= "LeftButton" then return end
             linkDragPending = false
             if handle._dragging then
                 local script = handle:GetScript("OnDragStop")
-                if script then
-                    script(handle)
-                end
+                if script then script(handle) end
             else
                 -- No drag committed -- clear the pending OnUpdate
                 handle:SetScript("OnUpdate", nil)
@@ -1336,9 +1219,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         handle:SetScript("OnMouseUp", function(self, btnFrame)
             if btnFrame == "LeftButton" then
                 _mouseHeld = false
-                if linkDragPending or self._dragging then
-                    LinkMouseUp(self, btnFrame)
-                end
+                if linkDragPending or self._dragging then LinkMouseUp(self, btnFrame) end
             end
         end)
 
@@ -1414,9 +1295,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         atBtn:SetScript("OnClick", function()
             CludesUI.HideWidgetTooltip()
-            if mod.IsMoverPosLocked(barId) then
-                return
-            end
+            if mod.IsMoverPosLocked(barId) then return end
             if GetAnchorInfo(barId) then
                 ClearAnchorInfo(barId)
                 -- Capture current screen position so Save & Exit persists it.
@@ -1537,13 +1416,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                     and eab3.db.profile
                     and eab3.db.profile.bars
                     and eab3.db.profile.bars[barId]
-                if s3 then
-                    vertical = (s3.orientation == "vertical")
-                end
+                if s3 then vertical = (s3.orientation == "vertical") end
             end
             local growOptions = {}
             if barId:sub(1, 4) == "PAB_" then
-                growOptions[#growOptions + 1] = { label = "Grow Centered Horizontal", val = "CENTER_HORIZONTAL" }
+                growOptions[#growOptions + 1] =
+                    { label = "Grow Centered Horizontal", val = "CENTER_HORIZONTAL" }
                 growOptions[#growOptions + 1] = { label = "Grow Centered Vertical", val = "CENTER_VERTICAL" }
             else
                 growOptions[#growOptions + 1] = { label = "Grow Centered", val = "CENTER" }
@@ -1575,9 +1453,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 currentVal = CludesUI.GetTotemGrowDir and CludesUI.GetTotemGrowDir()
                     or (vertical and "DOWN" or "RIGHT")
             elseif barId == "EABR_Reminders" then
-                if CludesUI.GetAuraBuffGrowDir then
-                    currentVal = CludesUI.GetAuraBuffGrowDir()
-                end
+                if CludesUI.GetAuraBuffGrowDir then currentVal = CludesUI.GetAuraBuffGrowDir() end
             elseif barId:sub(1, 4) == "PAB_" then
                 local euf4 = CludesUI.Lite.GetAddon("CludesUIUnitFrames", true)
                 currentVal = (euf4 and euf4.GetGrowDirectionForBar and euf4:GetGrowDirectionForBar(barId))
@@ -1589,9 +1465,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     and eab4.db.profile
                     and eab4.db.profile.bars
                     and eab4.db.profile.bars[barId]
-                if s4 then
-                    currentVal = (s4.growDirection or "up"):upper()
-                end
+                if s4 then currentVal = (s4.growDirection or "up"):upper() end
             end
 
             MenuPool.Begin(LM.growDropdownFrame, true)
@@ -1604,12 +1478,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                 if isDisabled then
                     labelFS:SetTextColor(0.4, 0.4, 0.4, 0.5)
                     local tipText = "Deselect a grow direction to return to centered"
-                    menuItem:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(menuItem, tipText)
-                    end)
-                    menuItem:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
+                    menuItem:SetScript(
+                        "OnEnter",
+                        function() CludesUI.ShowWidgetTooltip(menuItem, tipText) end
+                    )
+                    menuItem:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 else
                     local baseR, baseG, baseB, baseA =
                         isCurrent and 1 or 0.75,
@@ -1631,9 +1504,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         LM.growDropdownCatcher:Hide()
 
                         -- If already on this direction, just close the popup
-                        if sideVal == currentVal then
-                            return
-                        end
+                        if sideVal == currentVal then return end
 
                         CludesUI._unlockSetGrowDirection(barId, sideVal)
                         SyncLinkStates()
@@ -1647,19 +1518,13 @@ CUI_NS.unlockParts.Movers = function(LM)
             LM.growDropdownFrame:Show()
             LM.growDropdownCatcher:Show()
         end)
-        growBtn:SetScript("OnEnter", function(self)
-            BtnEnter(self, growLabel, "grow")
-        end)
-        growBtn:SetScript("OnLeave", function(self)
-            BtnLeave(self, growLabel, "grow")
-        end)
+        growBtn:SetScript("OnEnter", function(self) BtnEnter(self, growLabel, "grow") end)
+        growBtn:SetScript("OnLeave", function(self) BtnLeave(self, growLabel, "grow") end)
 
         -- Helper: update coordinate readout from mover's current position
         function handle:UpdateCoordText()
             local fontStr = self._coordFS
-            if not fontStr then
-                return
-            end
+            if not fontStr then return end
             local barKey = self._barKey
             local PixKit = CludesUI and CludesUI.PP
             local toPx = (PixKit and PixKit.ToPixels) or round
@@ -1676,9 +1541,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     if type(place) ~= "table" or place._anchored or not place.point then
                         local element = registeredElements[barKey]
                         place = element and element.loadPosition and element.loadPosition(barKey) or nil
-                        if not place then
-                            place = LoadBarPosition(barKey)
-                        end
+                        if not place then place = LoadBarPosition(barKey) end
                     end
                     if
                         type(place) == "table"
@@ -1723,7 +1586,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                         format(
                             "%.0f, %.0f",
                             c2p and c2p(liveCX, widget:GetWidth(), widget:GetEffectiveScale()) or toPx(liveCX),
-                            c2p and c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale()) or toPx(liveCY)
+                            c2p and c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale())
+                                or toPx(liveCY)
                         )
                     )
                     fontStr:Show()
@@ -1733,9 +1597,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- Fallback (frameless elements): saved CENTER position, same pixel units.
             local element = registeredElements[barKey]
             local place = element and element.loadPosition and element.loadPosition(barKey)
-            if not place then
-                place = LoadBarPosition(barKey)
-            end
+            if not place then place = LoadBarPosition(barKey) end
             if place and place.x and place.y then
                 fontStr:SetText(format("%.0f, %.0f", toPx(place.x), toPx(place.y)))
                 fontStr:Show()
@@ -1792,9 +1654,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 local nb = bgTint and bgTint.b or 0.141
                 if self._bgR ~= nr or self._bgG ~= ng or self._bgB ~= nb then
                     self._bgR, self._bgG, self._bgB = nr, ng, nb
-                    if self._bg and LM.darkOverlaysEnabled then
-                        self._bg:SetColorTexture(nr, ng, nb, 0.95)
-                    end
+                    if self._bg and LM.darkOverlaysEnabled then self._bg:SetColorTexture(nr, ng, nb, 0.95) end
                 end
             end
 
@@ -1823,17 +1683,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                     wid, hgt = gw, gh
                     centerYOff = gyOff or 0
                 end
-                if wid < 10 then
-                    wid = 100
-                end
-                if hgt < 10 then
-                    hgt = 30
-                end
+                if wid < 10 then wid = 100 end
+                if hgt < 10 then hgt = 30 end
                 realW, realH = wid, hgt
                 self:SetSize(wid, hgt)
-                if self._label then
-                    self._label:SetWidth(wid * 0.95)
-                end
+                if self._label then self._label:SetWidth(wid * 0.95) end
                 local place = element.loadPosition and element.loadPosition(barKey)
                 if place then
                     self:ClearAllPoints()
@@ -1865,17 +1719,13 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- mode, so that places it absolutely -- and sync from the plain rect.
             -- If the rect has not resolved yet, sync again next frame.
             if RectSecret(widget) then
-                if CludesUI.ReapplyOwnAnchor then
-                    CludesUI.ReapplyOwnAnchor(barKey)
-                end
+                if CludesUI.ReapplyOwnAnchor then CludesUI.ReapplyOwnAnchor(barKey) end
                 if RectSecret(widget) then
                     self:Hide()
                     local num = self._secretResync or 0
                     if num < 2 then
                         self._secretResync = num + 1
-                        C_Timer.After(0, function()
-                            self:Sync()
-                        end)
+                        C_Timer.After(0, function() self:Sync() end)
                     end
                     return
                 end
@@ -1928,9 +1778,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
             realW, realH = wid, hgt
             self:SetSize(wid, hgt)
-            if self._label then
-                self._label:SetWidth(wid * 0.95)
-            end
+            if self._label then self._label:SetWidth(wid * 0.95) end
 
             -- Position: convert bar's screen position to UIParent-relative
             -- Center the mover on the bar's visual center for pixel-perfect alignment.
@@ -1946,7 +1794,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local bCX, bCY = widget:GetCenter()
                     if bCX and bCY then
                         cx = bCX * scale / uiZoom + (il - ir) * 0.5 - wid * 0.5
-                        cy = bCY * scale / uiZoom + (ib - entry) * 0.5 - UIParent:GetHeight() + hgt * 0.5 + centerYOff
+                        cy = bCY * scale / uiZoom
+                            + (ib - entry) * 0.5
+                            - UIParent:GetHeight()
+                            + hgt * 0.5
+                            + centerYOff
                     elseif boxLeft and bT then
                         cx = boxLeft * scale / uiZoom
                         cy = bT * scale / uiZoom - UIParent:GetHeight()
@@ -2001,12 +1853,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- (LayoutCDMBar, LayoutBar, etc.) already snapped dimensions to the
                 -- physical pixel grid. Re-rounding to the nearest integer shifts values
                 -- off the pixel grid when PP.mult != 1.0 (e.g. 214.4 -> 214 instead of staying 214.4, exactly 402 physical pixels at mult=0.533).
-                if gw and gw > 0 then
-                    realW = gw
-                end
-                if gh and gh > 0 then
-                    realH = gh
-                end
+                if gw and gw > 0 then realW = gw end
+                if gh and gh > 0 then realH = gh end
             else
                 local widget = LM.GetBarFrame(barKey)
                 if widget then
@@ -2027,15 +1875,9 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         -- Drag handlers: manual cursor-based positioning for live snap + live bar movement
         handle:SetScript("OnDragStart", function(self)
-            if InCombatLockdown() then
-                return
-            end
-            if LM.pickMode == "pointAnchor" then
-                return
-            end
-            if LM.PointPicker.Active() then
-                CancelPickMode()
-            end
+            if InCombatLockdown() then return end
+            if LM.pickMode == "pointAnchor" then return end
+            if LM.PointPicker.Active() then CancelPickMode() end
             -- Position-locked: the module's anchor option owns this bar's position
             if mod.IsMoverPosLocked(self._barKey) then
                 SelectMover(self)
@@ -2115,12 +1957,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 local PPd = CludesUI and CludesUI.PP
                 if PPd and PPd.SnapForES then
                     local lockX, lockY = CludesUI._snapAxisLocked()
-                    if not lockX then
-                        barX0 = PPd.SnapForES(barX0, bS0)
-                    end
-                    if not lockY then
-                        barY0 = PPd.SnapForES(barY0, bS0)
-                    end
+                    if not lockX then barX0 = PPd.SnapForES(barX0, bS0) end
+                    if not lockY then barY0 = PPd.SnapForES(barY0, bS0) end
                 end
                 pcall(function()
                     CludesUI.ClearFramePoints(bar0)
@@ -2129,9 +1967,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- Element follow-up to the one-point placement above (an element
                 -- whose rect needs a second anchor -- main chat's size corner --
                 -- restores it here), before the collapsed rect ever renders.
-                if element and element.onLiveMove then
-                    pcall(element.onLiveMove, self._barKey)
-                end
+                if element and element.onLiveMove then pcall(element.onLiveMove, self._barKey) end
                 self:ClearAllPoints()
                 if element and element.detachedMover then
                     -- The bar refuses dependents (see AttachMoverToBar): same spot, absolute.
@@ -2169,9 +2005,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local adx = abs(rawCX - s._dragStartCX)
                         local ady = abs(rawCY - s._dragStartCY)
                         -- Determine axis once movement exceeds 3px threshold
-                        if adx > 3 or ady > 3 then
-                            s._shiftAxis = (adx >= ady) and "X" or "Y"
-                        end
+                        if adx > 3 or ady > 3 then s._shiftAxis = (adx >= ady) and "X" or "Y" end
                     end
                     if s._shiftAxis == "X" then
                         rawCY = s._dragStartCY
@@ -2221,12 +2055,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                         -- The unsnapped barX/barY already matches the target's edge
                         -- exactly. Re-snapping would shift it to a different pixel.
                         local lockX, lockY = CludesUI._snapAxisLocked()
-                        if not lockX then
-                            barX = PPd.SnapForES(barX, bS)
-                        end
-                        if not lockY then
-                            barY = PPd.SnapForES(barY, bS)
-                        end
+                        if not lockX then barX = PPd.SnapForES(barX, bS) end
+                        if not lockY then barY = PPd.SnapForES(barY, bS) end
                     end
                     pcall(function()
                         CludesUI.ClearFramePoints(barFrame)
@@ -2260,9 +2090,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- anchor (main chat's size corner) restores it here, so dependents
                 -- anchor against the true rect on the same tick.
                 local element = registeredElements[s._barKey]
-                if element and element.onLiveMove then
-                    pcall(element.onLiveMove, s._barKey)
-                end
+                if element and element.onLiveMove then pcall(element.onLiveMove, s._barKey) end
 
                 -- Show live coordinates during drag (only on elements >= 20px tall).
                 -- Physical-pixel counts, matching the cog X/Y boxes and the overlay.
@@ -2277,9 +2105,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
                 -- Anchor chain: propagate recursively down the chain
                 local anchorDB = GetAnchorDB()
-                if anchorDB then
-                    LM.PropagateAnchorChain(s._barKey)
-                end
+                if anchorDB then LM.PropagateAnchorChain(s._barKey) end
 
                 ShowAlignmentGuides(s._barKey)
 
@@ -2287,9 +2113,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- (e.g. during a link-initiated drag), stop the drag now.
                 if not IsMouseButtonDown("LeftButton") then
                     local stopScript = s:GetScript("OnDragStop")
-                    if stopScript then
-                        stopScript(s)
-                    end
+                    if stopScript then stopScript(s) end
                 end
             end)
         end)
@@ -2320,30 +2144,22 @@ CUI_NS.unlockParts.Movers = function(LM)
             HideAllGuidesAndHighlight()
             -- Re-show links after drag if still hovered
             if self:IsMouseOver() then
-                if self._showOverlayText then
-                    self._showOverlayText()
-                end
+                if self._showOverlayText then self._showOverlayText() end
             end
             -- Re-anchor toolbar in case mover moved near/away from screen top
-            if self._anchorToolbar then
-                self._anchorToolbar()
-            end
+            if self._anchorToolbar then self._anchorToolbar() end
 
             -- Check if the mover actually moved (avoids false dirty flag from
             -- click-and-hold without movement)
             local cxL, cxR = self:GetLeft(), self:GetRight()
             local cyT, cyB = self:GetTop(), self:GetBottom()
-            if not cxL or not cxR or not cyT or not cyB then
-                return
-            end
+            if not cxL or not cxR or not cyT or not cyB then return end
             local cx = (cxL + cxR) / 2
             local cy = (cyT + cyB) / 2
             local startCX = self._dragStartCX or cx
             local startCY = self._dragStartCY or cy
             local moved = (abs(cx - startCX) > 0.5) or (abs(cy - startCY) > 0.5)
-            if not moved then
-                return
-            end
+            if not moved then return end
 
             -- Store position in pending table (NOT saved until user clicks Save & Exit)
 
@@ -2438,7 +2254,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                             end
                         end
                         if anchorInfo.side == "BOTTOM" and CludesUI._GetAnchorFollowFrame then
-                            local fol = CludesUI._GetAnchorFollowFrame(self._barKey, anchorInfo.target, anchorInfo.side)
+                            local fol = CludesUI._GetAnchorFollowFrame(
+                                self._barKey,
+                                anchorInfo.target,
+                                anchorInfo.side
+                            )
                             local fB = fol and fol:GetBottom()
                             if not (issecretvalue and issecretvalue(fB)) and fB then
                                 tB = fB * fol:GetEffectiveScale() / uiZoom
@@ -2495,10 +2315,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- The cross-axis screen edge rides the same recapture, else the next
                 -- apply pulls that axis back to where the edge offset still points.
                 if anchorInfo.edge and anchorInfo.edge.key then
-                    local eo = CludesUI._CaptureScreenEdgeOffset(self._barKey, anchorInfo.edge.key, anchorInfo.edge.side)
-                    if eo then
-                        anchorInfo.edge.offset = eo
-                    end
+                    local eo = CludesUI._CaptureScreenEdgeOffset(
+                        self._barKey,
+                        anchorInfo.edge.key,
+                        anchorInfo.edge.side
+                    )
+                    if eo then anchorInfo.edge.offset = eo end
                 end
                 -- Growth bars: recapture the growth-edge pin from the dropped
                 -- position (the user may have carried the bar to the other
@@ -2512,15 +2334,11 @@ CUI_NS.unlockParts.Movers = function(LM)
             LM.PropagateAnchorChain(self._barKey)
 
             local element = registeredElements[self._barKey]
-            if element and element.onLiveMove then
-                pcall(element.onLiveMove, self._barKey)
-            end
+            if element and element.onLiveMove then pcall(element.onLiveMove, self._barKey) end
 
             -- Keep the mover selected after drag so arrow keys can nudge it.
             -- Drop frame level back to normal so it doesn't block other movers.
-            if self._selected then
-                self:SetFrameLevel(self._baseLevel or self:GetFrameLevel())
-            end
+            if self._selected then self:SetFrameLevel(self._baseLevel or self:GetFrameLevel()) end
 
             -- Re-anchor mover to bar for pixel-perfect alignment
             self:ReanchorToBar()
@@ -2529,49 +2347,35 @@ CUI_NS.unlockParts.Movers = function(LM)
         -- Hover effects
         handle:SetScript("OnEnter", function(self)
             if not self._dragging then
-                if _mouseHeld and not self._dragging then
-                    return
-                end
+                if _mouseHeld and not self._dragging then return end
                 self._cycleLowered = nil
                 -- Collapse any other expanded mover before expanding this one
                 if LM.hoveredMover and LM.hoveredMover ~= self and not LM.hoveredMover._dragging then
-                    if LM.hoveredMover._hideOverlayText then
-                        LM.hoveredMover._hideOverlayText()
-                    end
+                    if LM.hoveredMover._hideOverlayText then LM.hoveredMover._hideOverlayText() end
                     LM.hoveredMover = nil
                 end
                 -- Collapse selected mover's overlay if hovering a different one
                 if LM.selectedMover and LM.selectedMover ~= self and not LM.selectedMover._dragging then
-                    if LM.selectedMover._hideOverlayText then
-                        LM.selectedMover._hideOverlayText()
-                    end
+                    if LM.selectedMover._hideOverlayText then LM.selectedMover._hideOverlayText() end
                 end
                 LM.hoveredMover = self
                 -- Raise above all other movers
                 self:SetFrameLevel(self._raisedLevel + 100)
-                if self._cogBtn then
-                    self._cogBtn:SetFrameLevel(self:GetFrameLevel() + 10)
-                end
+                if self._cogBtn then self._cogBtn:SetFrameLevel(self:GetFrameLevel() + 10) end
                 LM.PointPicker.Enter(self)
                 -- Select Element mode: white border highlight on hover targets
                 if LM.selectElementPicker and LM.selectElementPicker ~= self then
                     self._brd:SetColor(1, 1, 1, 0.9)
-                    if not LM.darkOverlaysEnabled then
-                        self:SetAlpha(MOVER_HOVER)
-                    end
+                    if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_HOVER) end
                     return
                 end
                 -- Pick mode (width/height match, anchor to): white border on hover targets
                 if LM.pickModeMover and LM.pickModeMover ~= self and LM.pickMode then
                     self._brd:SetColor(1, 1, 1, 0.9)
-                    if not LM.darkOverlaysEnabled then
-                        self:SetAlpha(MOVER_HOVER)
-                    end
+                    if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_HOVER) end
                     return
                 end
-                if not LM.darkOverlaysEnabled then
-                    self:SetAlpha(MOVER_HOVER)
-                end
+                if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_HOVER) end
                 self._brd:SetColor(1, 1, 1, 0.9)
                 -- Don't show links if this mover is the pick mode source
                 if LM.pickModeMover == self and LM.pickMode then
@@ -2582,9 +2386,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     self._hoverPending = true
                     local m = self
                     C_Timer.After(CludesUI._unlockHoverIntentDelay, function()
-                        if not m._hoverPending then
-                            return
-                        end
+                        if not m._hoverPending then return end
                         if not m:IsMouseOver() and not (m._cogBtn and m._cogBtn:IsMouseOver()) then
                             local overLink = false
                             if m._linkBtns then
@@ -2601,9 +2403,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             end
                         end
                         local function DoExpand()
-                            if not m._hoverPending then
-                                return
-                            end
+                            if not m._hoverPending then return end
                             m._hoverPending = false
                             local stillOver = m:IsMouseOver() or (m._cogBtn and m._cogBtn:IsMouseOver())
                             if not stillOver and m._linkBtns then
@@ -2644,23 +2444,17 @@ CUI_NS.unlockParts.Movers = function(LM)
             if not self._dragging then
                 -- Delay so hovering child buttons (cog, link buttons) doesn't flicker
                 C_Timer.After(0.12, function()
-                    if self._dragging or self._cycleLowered then
-                        return
-                    end
+                    if self._dragging or self._cycleLowered then return end
                     if self:IsMouseOver() or self._pointHandleHovered then
                         self:SetFrameLevel(self._raisedLevel + 100)
                         self._brd:SetColor(1, 1, 1, 0.9)
-                        if not LM.darkOverlaysEnabled then
-                            self:SetAlpha(MOVER_HOVER)
-                        end
+                        if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_HOVER) end
                         return
                     end
                     if self._cogBtn and self._cogBtn:IsMouseOver() then
                         self:SetFrameLevel(self._raisedLevel + 100)
                         self._brd:SetColor(1, 1, 1, 0.9)
-                        if not LM.darkOverlaysEnabled then
-                            self:SetAlpha(MOVER_HOVER)
-                        end
+                        if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_HOVER) end
                         return
                     end
                     if self._linkBtns then
@@ -2668,27 +2462,19 @@ CUI_NS.unlockParts.Movers = function(LM)
                             if button:IsMouseOver() then
                                 self:SetFrameLevel(self._raisedLevel + 100)
                                 self._brd:SetColor(1, 1, 1, 0.9)
-                                if not LM.darkOverlaysEnabled then
-                                    self:SetAlpha(MOVER_HOVER)
-                                end
+                                if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_HOVER) end
                                 return
                             end
                         end
                     end
                     -- Truly left the element -- cancel any pending expand and collapse
                     self._hoverPending = false
-                    if self._hideOverlayText then
-                        self._hideOverlayText()
-                    end
-                    if LM.hoveredMover == self then
-                        LM.hoveredMover = nil
-                    end
+                    if self._hideOverlayText then self._hideOverlayText() end
+                    if LM.hoveredMover == self then LM.hoveredMover = nil end
                     -- Keep highlight border and raised level if selected (arrow keys)
                     if not self._selected then
                         self:SetFrameLevel(self._baseLevel)
-                        if not LM.darkOverlaysEnabled then
-                            self:SetAlpha(MOVER_ALPHA)
-                        end
+                        if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_ALPHA) end
                         self._brd:SetColor(accR, accG, accB, 0.6)
                     end
                 end)
@@ -2697,9 +2483,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         -- Left-click to select
         handle:SetScript("OnClick", function(self, btnFrame)
-            if LM.PointPicker.BodyClick(self, btnFrame) then
-                return
-            end
+            if LM.PointPicker.BodyClick(self, btnFrame) then return end
             if btnFrame == "LeftButton" then
                 -- Width Match / Height Match / Anchor To pick mode handling
                 -- Clicking the source mover itself cancels the pick mode
@@ -2743,9 +2527,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local sm = handles[sourceKey]
                         if sm then
                             sm:SyncSize()
-                            if sm.RefreshAnchoredText then
-                                sm:RefreshAnchoredText()
-                            end
+                            if sm.RefreshAnchoredText then sm:RefreshAnchoredText() end
                         end
                         local anchorInfo = GetAnchorInfo(sourceKey)
                         if anchorInfo then
@@ -2779,9 +2561,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local sm = handles[sourceKey]
                         if sm then
                             sm:SyncSize()
-                            if sm.RefreshAnchoredText then
-                                sm:RefreshAnchoredText()
-                            end
+                            if sm.RefreshAnchoredText then sm:RefreshAnchoredText() end
                         end
                         local anchorInfo = GetAnchorInfo(sourceKey)
                         if anchorInfo then
@@ -2861,9 +2641,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                                 if not seen[k] then
                                     seen[k] = true
                                     local details = GetAnchorInfo(k)
-                                    if details and details.target then
-                                        stack[#stack + 1] = details.target
-                                    end
+                                    if details and details.target then stack[#stack + 1] = details.target end
                                     if details and details.fallback and details.fallback.target then
                                         stack[#stack + 1] = details.fallback.target
                                     end
@@ -2914,9 +2692,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             local aWalk = menuBarKey
                             while aWalk do
                                 local aInfo = GetAnchorInfo(aWalk)
-                                if not aInfo or not aInfo.target then
-                                    break
-                                end
+                                if not aInfo or not aInfo.target then break end
                                 ancestorDepth = ancestorDepth + 1
                                 if aInfo.target == targetBar and ancestorDepth >= 2 then
                                     CancelPickMode()
@@ -3124,18 +2900,18 @@ CUI_NS.unlockParts.Movers = function(LM)
                                 LM.ApplyAnchorPosition(menuBarKey, targetBar, sideVal)
                                 -- Propagate to children after layout flushes so
                                 -- they read the correct bounds from the newly-anchored parent
-                                C_Timer.After(0, function()
-                                    LM.PropagateAnchorChain(menuBarKey)
-                                end)
+                                C_Timer.After(0, function() LM.PropagateAnchorChain(menuBarKey) end)
                                 LM.hasChanges = true
                                 -- Refresh the anchored mover's text
                                 if handles[menuBarKey] and handles[menuBarKey].RefreshAnchoredText then
                                     handles[menuBarKey]:RefreshAnchoredText()
                                 end
                                 -- Sync mover position to follow the element after anchor placement
-                                DeferMoverSync(handles[menuBarKey], function(m)
-                                    m:Sync()
-                                end, LM.GetBarFrame(menuBarKey))
+                                DeferMoverSync(
+                                    handles[menuBarKey],
+                                    function(m) m:Sync() end,
+                                    LM.GetBarFrame(menuBarKey)
+                                )
                             end)
                             menuY = menuY - DD_ITEM_H
                         end
@@ -3221,16 +2997,15 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     -- pixel-snapped like the side pick's own offsets). Sizes, not
                                     -- rects: the target's bounds are read before anything moves.
                                     local offX, offY = 0, 0
-                                    local childF, targetF = LM.GetBarFrame(menuBarKey), LM.GetBarFrame(targetBar)
+                                    local childF, targetF =
+                                        LM.GetBarFrame(menuBarKey), LM.GetBarFrame(targetBar)
                                     if childF and targetF then
                                         local uiZoom = UIParent:GetEffectiveScale()
                                         local cS, tS =
                                             childF:GetEffectiveScale() / uiZoom,
                                             targetF:GetEffectiveScale() / uiZoom
                                         local snap = (CludesUI.PP and CludesUI.PP.Snap)
-                                            or function(v)
-                                                return math.floor(v + 0.5)
-                                            end
+                                            or function(v) return math.floor(v + 0.5) end
                                         if vertical then
                                             local half = (
                                                 (targetF:GetHeight() or 0) * tS
@@ -3270,18 +3045,18 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     CludesUI._unlockSetGrowDirection(menuBarKey, growVal)
                                     -- Propagate to children after layout flushes so
                                     -- they read the correct bounds from the newly-anchored parent
-                                    C_Timer.After(0, function()
-                                        LM.PropagateAnchorChain(menuBarKey)
-                                    end)
+                                    C_Timer.After(0, function() LM.PropagateAnchorChain(menuBarKey) end)
                                     LM.hasChanges = true
                                     -- Refresh the anchored mover's text
                                     if handles[menuBarKey] and handles[menuBarKey].RefreshAnchoredText then
                                         handles[menuBarKey]:RefreshAnchoredText()
                                     end
                                     -- Sync mover position to follow the element after anchor placement
-                                    DeferMoverSync(handles[menuBarKey], function(m)
-                                        m:Sync()
-                                    end, LM.GetBarFrame(menuBarKey))
+                                    DeferMoverSync(
+                                        handles[menuBarKey],
+                                        function(m) m:Sync() end,
+                                        LM.GetBarFrame(menuBarKey)
+                                    )
                                 end)
                                 menuY = menuY - DD_ITEM_H
                             end
@@ -3333,13 +3108,9 @@ CUI_NS.unlockParts.Movers = function(LM)
                     FadeOverlayForSelectElement(false)
                     -- Restore this mover's normal colors
                     self._brd:SetColor(accR, accG, accB, 0.6)
-                    if not LM.darkOverlaysEnabled then
-                        self:SetAlpha(MOVER_ALPHA)
-                    end
+                    if not LM.darkOverlaysEnabled then self:SetAlpha(MOVER_ALPHA) end
                     -- Update the picker's dropdown label
-                    if picker._updateSnapLabel then
-                        picker._updateSnapLabel()
-                    end
+                    if picker._updateSnapLabel then picker._updateSnapLabel() end
                     return
                 end
                 -- Toggle: clicking the already-selected mover deselects it
@@ -3349,39 +3120,25 @@ CUI_NS.unlockParts.Movers = function(LM)
                     SelectMover(self)
                 end
             elseif btnFrame == "RightButton" then
-                if LM.selectElementPicker then
-                    return
-                end
+                if LM.selectElementPicker then return end
                 -- Shift+Right Click temporarily hides this element's overlay for the
                 -- current unlock session. The _tempHidden flag is cleared when unlock
                 -- mode is next entered, so the overlay reappears then. Purely a visual
                 -- toggle on the overlay -- it never touches the underlying element.
                 if IsShiftKeyDown() then
-                    if LM.pickModeMover == self and LM.PointPicker.Active() then
-                        CancelPickMode()
-                    end
+                    if LM.pickModeMover == self and LM.PointPicker.Active() then CancelPickMode() end
                     self._tempHidden = true
                     self._hoverPending = false
-                    if LM.selectedMover == self then
-                        DeselectMover()
-                    end
-                    if LM.hoveredMover == self then
-                        LM.hoveredMover = nil
-                    end
-                    if self._hideOverlayText then
-                        self._hideOverlayText()
-                    end
+                    if LM.selectedMover == self then DeselectMover() end
+                    if LM.hoveredMover == self then LM.hoveredMover = nil end
+                    if self._hideOverlayText then self._hideOverlayText() end
                     -- Hide the cog too; its OnHide closes any open cog menu.
-                    if self._cogBtn then
-                        self._cogBtn:Hide()
-                    end
+                    if self._cogBtn then self._cogBtn:Hide() end
                     self:Hide()
                     return
                 end
                 SelectMover(self)
-                if self._openCogMenu then
-                    self._openCogMenu()
-                end
+                if self._openCogMenu then self._openCogMenu() end
             end
         end)
         handle:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -3426,9 +3183,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 self._icon:SetAlpha(1)
                 handle:SetFrameLevel(handle._raisedLevel + 100)
                 handle._brd:SetColor(1, 1, 1, 0.9)
-                if not LM.darkOverlaysEnabled then
-                    handle:SetAlpha(MOVER_HOVER)
-                end
+                if not LM.darkOverlaysEnabled then handle:SetAlpha(MOVER_HOVER) end
             end)
             gearButton:SetScript("OnLeave", function(self)
                 self._bg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
@@ -3456,9 +3211,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- Restore mover highlight immediately (mover:OnLeave resets it when mouse moves to cog)
             handle:SetFrameLevel(handle._raisedLevel + 100)
             handle._brd:SetColor(1, 1, 1, 0.9)
-            if not LM.darkOverlaysEnabled then
-                handle:SetAlpha(MOVER_HOVER)
-            end
+            if not LM.darkOverlaysEnabled then handle:SetAlpha(MOVER_HOVER) end
         end)
         gearButton:SetScript("OnLeave", function(self)
             self._bg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
@@ -3502,9 +3255,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         end)
         snapDropdown:SetScript("OnLeave", function(self)
             CludesUI.HideWidgetTooltip()
-            if not LM.snapEnabled then
-                return
-            end
+            if not LM.snapEnabled then return end
             self._bg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
             self._brd:SetColor(1, 1, 1, 0.20)
             snapDropdownText:SetTextColor(1, 1, 1, 0.50)
@@ -3532,13 +3283,9 @@ CUI_NS.unlockParts.Movers = function(LM)
         local regSubMenus = {}
 
         local function HideSnapMenu()
-            if snapList then
-                snapList:Hide()
-            end
+            if snapList then snapList:Hide() end
             for _, rs in pairs(regSubMenus) do
-                if rs and rs.Hide then
-                    rs:Hide()
-                end
+                if rs and rs.Hide then rs:Hide() end
             end
         end
 
@@ -3572,9 +3319,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     childFrame:SetParent(nil)
                 end
                 for _, tex in ipairs({ snapList:GetRegions() }) do
-                    if tex.Hide then
-                        tex:Hide()
-                    end
+                    if tex.Hide then tex:Hide() end
                 end
             end
             snapList = snapList or CreateFrame("Frame", nil, LM.unlockFrame)
@@ -3656,14 +3401,15 @@ CUI_NS.unlockParts.Movers = function(LM)
 
             local curTarget = handle._snapTarget
 
-            MakeItem(snapList, "All Elements", function()
-                handle._snapTarget = nil
-            end, not curTarget)
+            MakeItem(snapList, "All Elements", function() handle._snapTarget = nil end, not curTarget)
 
             -- None (per-mover snap disable)
-            MakeItem(snapList, "None", function()
-                handle._snapTarget = "_disable_"
-            end, curTarget == "_disable_")
+            MakeItem(
+                snapList,
+                "None",
+                function() handle._snapTarget = "_disable_" end,
+                curTarget == "_disable_"
+            )
 
             -- Divider before element groups
             local div = snapList:CreateTexture(nil, "ARTWORK")
@@ -3690,12 +3436,18 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
             -- Add visibility-only bars (MicroBar, BagBar) to "Other" group
             for _, barKey in ipairs(ALL_BAR_ORDER) do
-                if GetVisibilityOnly()[barKey] and barKey ~= barId and handles[barKey] and handles[barKey]:IsShown() then
+                if
+                    GetVisibilityOnly()[barKey]
+                    and barKey ~= barId
+                    and handles[barKey]
+                    and handles[barKey]:IsShown()
+                then
                     if not regGroups["Other"] then
                         regGroups["Other"] = {}
                         regGroupOrder[#regGroupOrder + 1] = "Other"
                     end
-                    regGroups["Other"][#regGroups["Other"] + 1] = { key = barKey, label = LM.GetBarLabel(barKey) }
+                    regGroups["Other"][#regGroups["Other"] + 1] =
+                        { key = barKey, label = LM.GetBarLabel(barKey) }
                 end
             end
             wipe(regSubMenus)
@@ -3727,9 +3479,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 local function ShowRegSub()
                     -- Close any other open leaf sub-menus first
                     for otherName, rs in pairs(regSubMenus) do
-                        if otherName ~= gName and rs and rs:IsShown() then
-                            rs:Hide()
-                        end
+                        if otherName ~= gName and rs and rs:IsShown() then rs:Hide() end
                     end
                     if regionFlyout then
                         for _, childFrame in ipairs({ regionFlyout:GetChildren() }) do
@@ -3737,9 +3487,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             childFrame:SetParent(nil)
                         end
                         for _, tex in ipairs({ regionFlyout:GetRegions() }) do
-                            if tex.Hide then
-                                tex:Hide()
-                            end
+                            if tex.Hide then tex:Hide() end
                         end
                     end
                     regionFlyout = regionFlyout or CreateFrame("Frame", nil, LM.unlockFrame)
@@ -3772,9 +3520,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         subLabel:SetJustifyH("LEFT")
                         subLabel:SetPoint("LEFT", subItem, "LEFT", 10, 0)
                         subLabel:SetText(CludesUI.L(eLbl))
-                        if isSel then
-                            subLabel:SetTextColor(1, 1, 1, 1)
-                        end
+                        if isSel then subLabel:SetTextColor(1, 1, 1, 1) end
                         subItem:SetScript("OnEnter", function()
                             subHighlight:SetColorTexture(1, 1, 1, 0.08)
                             subLabel:SetTextColor(1, 1, 1, 1)
@@ -3797,9 +3543,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local tw = (CludesUI.MeasureText and CludesUI.MeasureText(eInfo.label, FONT_PATH, 11))
                             or 0
                         local needed = 10 + tw + 10 + 2
-                        if needed > rsMaxW then
-                            rsMaxW = needed
-                        end
+                        if needed > rsMaxW then rsMaxW = needed end
                     end
                     regionFlyout:SetWidth(rsMaxW)
                     regionFlyout:EnableMouse(true)
@@ -3847,16 +3591,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                 snapClickCatcher:SetAllPoints(UIParent)
                 snapClickCatcher._umCatcher = true -- not an element for the hover bar
                 snapClickCatcher:RegisterForClicks("AnyUp")
-                snapClickCatcher:SetScript("OnClick", function()
-                    HideSnapMenu()
-                end)
+                snapClickCatcher:SetScript("OnClick", function() HideSnapMenu() end)
             end
             snapClickCatcher:Show()
         end
         local function HideClickCatcher()
-            if snapClickCatcher then
-                snapClickCatcher:Hide()
-            end
+            if snapClickCatcher then snapClickCatcher:Hide() end
         end
 
         local origCloseSnapMenu = HideSnapMenu
@@ -3868,9 +3608,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         snapDropdown:SetScript("OnClick", function()
             -- Block opening when global snap is disabled
-            if not LM.snapEnabled then
-                return
-            end
+            if not LM.snapEnabled then return end
             if snapList and snapList:IsShown() then
                 HideSnapMenu()
             else
@@ -3890,9 +3628,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         local function IsNearScreenTop()
             local mTop = handle:GetTop()
-            if not mTop then
-                return false
-            end
+            if not mTop then return false end
             local uiZoom = UIParent:GetEffectiveScale()
             local mS = handle:GetEffectiveScale()
             local screenTop = UIParent:GetHeight()
@@ -3932,24 +3668,16 @@ CUI_NS.unlockParts.Movers = function(LM)
         local cogClickCatcher
 
         local function HideGearMenu()
-            if gearMenu then
-                gearMenu:Hide()
-            end
-            if handle._cogEdgeSub then
-                handle._cogEdgeSub:Hide()
-            end
-            if cogClickCatcher then
-                cogClickCatcher:Hide()
-            end
+            if gearMenu then gearMenu:Hide() end
+            if handle._cogEdgeSub then handle._cogEdgeSub:Hide() end
+            if cogClickCatcher then cogClickCatcher:Hide() end
             handle._menuOpen = false
             handle._syncCogPos = nil
             handle._syncCogSize = nil
         end
 
         local function BuildCogMenu()
-            if handle._cogEdgeSub then
-                handle._cogEdgeSub:Hide()
-            end
+            if handle._cogEdgeSub then handle._cogEdgeSub:Hide() end
             -- A fresh build shows the links as they stand (see CloseEdgeSub).
             handle._cogEdgeDirty = nil
             -- Cleared up front: the rows below point these at this open's boxes, and
@@ -3993,9 +3721,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         .. CludesUI.L("Shift+Right Click to temporarily hide overlay")
                 )
                 local hintH = hintText:GetStringHeight()
-                if not hintH or hintH < 1 then
-                    hintH = 28
-                end
+                if not hintH or hintH < 1 then hintH = 28 end
                 rowOffset = rowOffset - (hintH + 10)
 
                 -- Divider below the hint
@@ -4035,24 +3761,23 @@ CUI_NS.unlockParts.Movers = function(LM)
                     HideGearMenu()
                     if opensEditMode then
                         -- Open Blizzard Edit Mode, exactly as the Blizz-owned overlays do.
-                        if InCombatLockdown() then
-                            return
-                        end
+                        if InCombatLockdown() then return end
                         if EditModeManagerFrame then
-                            mod.RequestClose(false, function()
-                                ShowUIPanel(EditModeManagerFrame)
-                            end)
+                            mod.RequestClose(false, function() ShowUIPanel(EditModeManagerFrame) end)
                         end
                     else
-                        mod.RequestClose(true, function()
-                            CludesUI:NavigateToElementSettings(
-                                settingsMap.module,
-                                settingsMap.page,
-                                settingsMap.sectionName,
-                                settingsMap.preSelectFn,
-                                settingsMap.highlightText
-                            )
-                        end)
+                        mod.RequestClose(
+                            true,
+                            function()
+                                CludesUI:NavigateToElementSettings(
+                                    settingsMap.module,
+                                    settingsMap.page,
+                                    settingsMap.sectionName,
+                                    settingsMap.preSelectFn,
+                                    settingsMap.highlightText
+                                )
+                            end
+                        )
                     end
                 end)
                 rowOffset = rowOffset - ITEM_H
@@ -4093,23 +3818,24 @@ CUI_NS.unlockParts.Movers = function(LM)
                         checkBox:Disable()
                         checkBox:SetTextColor(0.4, 0.4, 0.4, 0.7)
                         local targetName = LM.GetBarLabel(matchTarget) or matchTarget
-                        checkBox:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(
-                                checkBox,
-                                isWidth
-                                        and CludesUI.Lf(
-                                            "Width matched to %1$s. Unmatch to edit.",
+                        checkBox:SetScript(
+                            "OnEnter",
+                            function()
+                                CludesUI.ShowWidgetTooltip(
+                                    checkBox,
+                                    isWidth
+                                            and CludesUI.Lf(
+                                                "Width matched to %1$s. Unmatch to edit.",
+                                                CludesUI.L(targetName)
+                                            )
+                                        or CludesUI.Lf(
+                                            "Height matched to %1$s. Unmatch to edit.",
                                             CludesUI.L(targetName)
                                         )
-                                    or CludesUI.Lf(
-                                        "Height matched to %1$s. Unmatch to edit.",
-                                        CludesUI.L(targetName)
-                                    )
-                            )
-                        end)
-                        checkBox:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
+                                )
+                            end
+                        )
+                        checkBox:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                     end
 
                     checkBox:SetScript("OnEnterPressed", function(self)
@@ -4117,58 +3843,38 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local value = math.max(1, math.floor(self:GetNumber() + 0.5))
                         local scrollBar = LM.GetBarFrame(barId)
                         local savedAlpha = scrollBar and CludesUI._GetFFD(scrollBar).restoreAlpha
-                        if scrollBar and not savedAlpha then
-                            CludesUI._UnlockSetBarAlpha(scrollBar, 0)
-                        end
+                        if scrollBar and not savedAlpha then CludesUI._UnlockSetBarAlpha(scrollBar, 0) end
                         if dim == "Width" then
-                            if element.setWidth then
-                                element.setWidth(barId, value)
-                            end
+                            if element.setWidth then element.setWidth(barId, value) end
                             for childKey, targetBar in pairs(MatchH.GetWidthMatchDB() or {}) do
-                                if targetBar == barId then
-                                    MatchH.ApplyWidthMatch(childKey, barId)
-                                end
+                                if targetBar == barId then MatchH.ApplyWidthMatch(childKey, barId) end
                             end
                         else
-                            if element.setHeight then
-                                element.setHeight(barId, value)
-                            end
+                            if element.setHeight then element.setHeight(barId, value) end
                             for childKey, targetBar in pairs(MatchH.GetHeightMatchDB() or {}) do
-                                if targetBar == barId then
-                                    MatchH.ApplyHeightMatch(childKey, barId)
-                                end
+                                if targetBar == barId then MatchH.ApplyHeightMatch(childKey, barId) end
                             end
                         end
                         LM.hasChanges = true
                         self:ClearFocus()
                         CludesUI.RecenterBarAnchor(barId)
                         if scrollBar and not savedAlpha then
-                            C_Timer.After(0, function()
-                                CludesUI._UnlockSetBarAlpha(scrollBar, 1)
-                            end)
+                            C_Timer.After(0, function() CludesUI._UnlockSetBarAlpha(scrollBar, 1) end)
                         end
                         local bm = handles[barId]
-                        if bm then
-                            bm:SyncSize()
-                        end
+                        if bm then bm:SyncSize() end
                         for childKey, _ in pairs(handles) do
                             if handles[childKey] and handles[childKey].SyncSize then
                                 local wm = MatchH.GetWidthMatchInfo(childKey)
                                 local hm = MatchH.GetHeightMatchInfo(childKey)
-                                if wm == barId or hm == barId then
-                                    handles[childKey]:SyncSize()
-                                end
+                                if wm == barId or hm == barId then handles[childKey]:SyncSize() end
                             end
                         end
                         -- Refresh both input boxes to reflect actual post-resize dimensions
                         if element.getSize then
                             local nw, nh = element.getSize(barId)
-                            if wBox then
-                                wBox:SetNumber(floor((nw or 0) + 0.5))
-                            end
-                            if hBox then
-                                hBox:SetNumber(floor((nh or 0) + 0.5))
-                            end
+                            if wBox then wBox:SetNumber(floor((nw or 0) + 0.5)) end
+                            if hBox then hBox:SetNumber(floor((nh or 0) + 0.5)) end
                         end
                         LM.PropagateAnchorChain(barId)
                     end)
@@ -4193,16 +3899,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                     hBox = element.setHeight and MakeSizeRow("Height", curH) or nil
                     -- Re-read both boxes after an Extra Width / Height commit.
                     handle._syncCogSize = function()
-                        if not element.getSize then
-                            return
-                        end
+                        if not element.getSize then return end
                         local nw, nh = element.getSize(barId)
-                        if wBox then
-                            wBox:SetNumber(floor((nw or 0) + 0.5))
-                        end
-                        if hBox then
-                            hBox:SetNumber(floor((nh or 0) + 0.5))
-                        end
+                        if wBox then wBox:SetNumber(floor((nw or 0) + 0.5)) end
+                        if hBox then hBox:SetNumber(floor((nh or 0) + 0.5)) end
                     end
                 end
 
@@ -4216,9 +3916,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- one arrow-key nudge; PP.mult is only 1 at pixel-perfect UI scale.
                     local function AxisToPx(ax)
                         local PixKit = CludesUI and CludesUI.PP
-                        if not PixKit or not PixKit.ToPixels then
-                            return nil
-                        end
+                        if not PixKit or not PixKit.ToPixels then return nil end
                         -- STORED value first for unanchored CENTER/CENTER elements (same
                         -- reasoning as UpdateCoordText): the box must echo the user's own
                         -- typed value back; a live-derived center is off by half a pixel for odd-pixel-dimension frames.
@@ -4228,9 +3926,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             if type(place) ~= "table" or place._anchored or not place.point then
                                 local elemX = registeredElements[barId]
                                 place = elemX and elemX.loadPosition and elemX.loadPosition(barId) or nil
-                                if not place then
-                                    place = LoadBarPosition(barId)
-                                end
+                                if not place then place = LoadBarPosition(barId) end
                             end
                             if
                                 type(place) == "table"
@@ -4259,14 +3955,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                             end
                         end
                         local widget = LM.GetBarFrame(barId)
-                        if not widget then
-                            return nil
-                        end
+                        if not widget then return nil end
                         local boxLeft, bR = widget:GetLeft(), widget:GetRight()
                         local bT, bB = widget:GetTop(), widget:GetBottom()
-                        if not (boxLeft and bR and bT and bB) then
-                            return nil
-                        end
+                        if not (boxLeft and bR and bT and bB) then return nil end
                         local scaleRatio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                         -- Parity-aware live conversion: odd-pixel dims rest their
                         -- center on a half pixel; plain ToPixels reads that back
@@ -4275,15 +3967,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local c2p = PixKit.CenterToPixels
                         if ax == "X" then
                             local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - sw * 0.5
-                            if c2p then
-                                return c2p(liveCX, widget:GetWidth(), widget:GetEffectiveScale())
-                            end
+                            if c2p then return c2p(liveCX, widget:GetWidth(), widget:GetEffectiveScale()) end
                             return PixKit.ToPixels(liveCX)
                         end
                         local liveCY = ((bT + bB) * 0.5 * scaleRatio) - sh * 0.5
-                        if c2p then
-                            return c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale())
-                        end
+                        if c2p then return c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale()) end
                         return PixKit.ToPixels(liveCY)
                     end
 
@@ -4298,18 +3986,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                         checkBox:SetScript("OnEnterPressed", function(self)
                             local value = tonumber(self:GetText())
                             self:ClearFocus()
-                            if not value then
-                                return
-                            end
+                            if not value then return end
                             local PixKit = CludesUI and CludesUI.PP
-                            if InCombatLockdown() or not PixKit then
-                                return
-                            end
+                            if InCombatLockdown() or not PixKit then return end
                             -- Current value from LIVE geometry (never the stale moverCX).
                             local curPx = AxisToPx(dim)
-                            if not curPx then
-                                return
-                            end
+                            if not curPx then return end
                             local deltaPx = value - curPx
                             if deltaPx ~= 0 then
                                 -- One physical pixel == PP.mult UIParent units. Apply an
@@ -4324,15 +4006,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     CludesUI._unlockNudge(0, stepUnits, handle, true)
                                 end
                             end
-                            if handle.ReanchorToBar then
-                                handle:ReanchorToBar()
-                            end
+                            if handle.ReanchorToBar then handle:ReanchorToBar() end
                             -- Re-sync the text to where the bar ACTUALLY landed so it can
                             -- never snap back to the old number.
                             local landed = AxisToPx(dim)
-                            if landed then
-                                self:SetText(tostring(landed))
-                            end
+                            if landed then self:SetText(tostring(landed)) end
                         end)
                         checkBox:SetScript("OnEscapePressed", function(self)
                             self:ClearFocus()
@@ -4351,15 +4029,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                     handle._syncCogPos = function()
                         if xBox then
                             local px = AxisToPx("X")
-                            if px then
-                                xBox:SetText(tostring(px))
-                            end
+                            if px then xBox:SetText(tostring(px)) end
                         end
                         if yBox then
                             local py = AxisToPx("Y")
-                            if py then
-                                yBox:SetText(tostring(py))
-                            end
+                            if py then yBox:SetText(tostring(py)) end
                         end
                     end
                 end
@@ -4384,9 +4058,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     and not (element and element.matchUnavailable and element.matchUnavailable(barId))
                 then
                     local XROW_H = 22
-                    local function ExtraText(dim)
-                        return tostring(CludesUI.GetMatchExtra(dim, barId) or 0)
-                    end
+                    local function ExtraText(dim) return tostring(CludesUI.GetMatchExtra(dim, barId) or 0) end
                     local function MakeExtraRow(textValue, dim)
                         local _, labelFS, checkBox = MenuPool.Field(gearMenu, rowOffset, XROW_H, true)
                         labelFS:SetWordWrap(false)
@@ -4403,12 +4075,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                             if value and not InCombatLockdown() then
                                 MatchH.CommitMatchExtra(dim, barId, value)
                                 -- An anchored element may have moved with its new size.
-                                if handle._syncCogPos then
-                                    handle._syncCogPos()
-                                end
-                                if handle._syncCogSize then
-                                    handle._syncCogSize()
-                                end
+                                if handle._syncCogPos then handle._syncCogPos() end
+                                if handle._syncCogSize then handle._syncCogSize() end
                             end
                             self:SetText(ExtraText(dim))
                         end)
@@ -4418,12 +4086,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                         end)
                         rowOffset = rowOffset - XROW_H
                     end
-                    if wT then
-                        MakeExtraRow(CludesUI.L("Extra Width"), "w")
-                    end
-                    if hT then
-                        MakeExtraRow(CludesUI.L("Extra Height"), "h")
-                    end
+                    if wT then MakeExtraRow(CludesUI.L("Extra Width"), "w") end
+                    if hT then MakeExtraRow(CludesUI.L("Extra Height"), "h") end
                     MenuPool.Div(gearMenu, rowOffset - 4, Pix and Pix.mult or 1)
                     rowOffset = rowOffset - 9
                 end
@@ -4440,7 +4104,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local AROW_H = 22
                     local tgtName = LM.GetBarLabel(aiM.target) or aiM.target
                     local function MakeAnchorRow(textValue, withBox)
-                        local rowFrame, labelFS, checkBox = MenuPool.Field(gearMenu, rowOffset, AROW_H, withBox)
+                        local rowFrame, labelFS, checkBox =
+                            MenuPool.Field(gearMenu, rowOffset, AROW_H, withBox)
                         labelFS:SetWordWrap(false)
                         labelFS:SetText(textValue)
                         rowOffset = rowOffset - AROW_H
@@ -4466,14 +4131,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local function OffsetPx(key)
                         local a = GetAnchorInfo(barId)
                         local v = a and a[key] or 0
-                        if PPo and PPo.ToPixels then
-                            v = PPo.ToPixels(v)
-                        end
+                        if PPo and PPo.ToPixels then v = PPo.ToPixels(v) end
                         return math.floor(v + 0.5)
                     end
-                    local function OffsetText(key)
-                        return tostring(OffsetPx(key))
-                    end
+                    local function OffsetText(key) return tostring(OffsetPx(key)) end
                     local function MakeOffsetRow(textValue, key)
                         local _, _, checkBox = MakeAnchorRow(textValue, true)
                         checkBox:SetNumeric(false)
@@ -4491,9 +4152,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                                         CludesUI._unlockNudge(0, stepUnits, handle, true)
                                     end
                                     -- The bar just moved: the X/Y Position boxes follow right away.
-                                    if handle._syncCogPos then
-                                        handle._syncCogPos()
-                                    end
+                                    if handle._syncCogPos then handle._syncCogPos() end
                                 end
                             end
                             self:SetText(OffsetText(key))
@@ -4516,15 +4175,9 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- lockstep, the same way the X/Y boxes are.
                     local prevSync = handle._syncCogPos
                     handle._syncCogPos = function()
-                        if prevSync then
-                            prevSync()
-                        end
-                        if not oxBox:HasFocus() then
-                            oxBox:SetText(OffsetText("offsetX"))
-                        end
-                        if not oyBox:HasFocus() then
-                            oyBox:SetText(OffsetText("offsetY"))
-                        end
+                        if prevSync then prevSync() end
+                        if not oxBox:HasFocus() then oxBox:SetText(OffsetText("offsetX")) end
+                        if not oyBox:HasFocus() then oyBox:SetText(OffsetText("offsetY")) end
                     end
                     MenuPool.Div(gearMenu, rowOffset - 4, Pix and Pix.mult or 1)
                     rowOffset = rowOffset - 9
@@ -4589,14 +4242,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                 menuItem:SetScript("OnLeave", function()
                     highlight:SetColorTexture(1, 1, 1, 0)
                     labelFS:SetTextColor(0.75, 0.75, 0.75, 0.9)
-                    if hoverFullText and CludesUI.HideWidgetTooltip then
-                        CludesUI.HideWidgetTooltip()
-                    end
+                    if hoverFullText and CludesUI.HideWidgetTooltip then CludesUI.HideWidgetTooltip() end
                 end)
                 menuItem:SetScript("OnClick", function()
-                    if hoverFullText and CludesUI.HideWidgetTooltip then
-                        CludesUI.HideWidgetTooltip()
-                    end
+                    if hoverFullText and CludesUI.HideWidgetTooltip then CludesUI.HideWidgetTooltip() end
                     HideGearMenu()
                     onClick()
                 end)
@@ -4605,15 +4254,11 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
 
             MakeActionItem("Center on Screen", function()
-                if InCombatLockdown() then
-                    return
-                end
+                if InCombatLockdown() then return end
                 local barKey = handle._barKey
                 local PPc = CludesUI and CludesUI.PP
                 local widget = LM.GetBarFrame(barKey)
-                if not widget or not PPc or not PPc.ToPixels or not PPc.FromPixels then
-                    return
-                end
+                if not widget or not PPc or not PPc.ToPixels or not PPc.FromPixels then return end
                 -- Drive the move through the SAME stored-first delta path the cog X box
                 -- uses when the user types 0: read current X from the pending/stored
                 -- logical value for unanchored CENTER/CENTER elements (a live-derived
@@ -4628,9 +4273,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     if type(place) ~= "table" or place._anchored or not place.point then
                         local elemC = registeredElements[barKey]
                         place = elemC and elemC.loadPosition and elemC.loadPosition(barKey) or nil
-                        if not place then
-                            place = LoadBarPosition(barKey)
-                        end
+                        if not place then place = LoadBarPosition(barKey) end
                     end
                     if
                         type(place) == "table"
@@ -4653,9 +4296,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- the centering delta then lands the frame a full pixel left of an
                     -- identical element centered from its stored value ("dragged first, then centered" 1px mismatch).
                     local boxLeft, bR = widget:GetLeft(), widget:GetRight()
-                    if not (boxLeft and bR) then
-                        return
-                    end
+                    if not (boxLeft and bR) then return end
                     local scaleRatio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                     local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - UIParent:GetWidth() * 0.5
                     if PPc.CenterToPixels then
@@ -4667,22 +4308,14 @@ CUI_NS.unlockParts.Movers = function(LM)
                 if curPx and curPx ~= 0 then
                     CludesUI._unlockNudge(PPc.FromPixels(-curPx), 0, handle, true)
                 end
-                if handle.ReanchorToBar then
-                    handle:ReanchorToBar()
-                end
+                if handle.ReanchorToBar then handle:ReanchorToBar() end
                 -- Collapse the mover if the mouse moved away during centering
                 C_Timer.After(0.15, function()
                     if not handle:IsMouseOver() and not (handle._cogBtn and handle._cogBtn:IsMouseOver()) then
-                        if handle._hideOverlayText then
-                            handle._hideOverlayText()
-                        end
-                        if LM.hoveredMover == handle then
-                            LM.hoveredMover = nil
-                        end
+                        if handle._hideOverlayText then handle._hideOverlayText() end
+                        if LM.hoveredMover == handle then LM.hoveredMover = nil end
                         handle._hoverPending = false
-                        if not handle._selected then
-                            handle:SetFrameLevel(handle._baseLevel)
-                        end
+                        if not handle._selected then handle:SetFrameLevel(handle._baseLevel) end
                     end
                 end)
             end)
@@ -4715,18 +4348,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- offsets (0/0) before its no-move capture runs, and the next apply would
                 -- snap the element onto the edge.
                 local function LinkToScreenEdge(edgeKey, side)
-                    if InCombatLockdown() then
-                        return
-                    end
+                    if InCombatLockdown() then return end
                     local offX, offY = CludesUI._CaptureAnchorOffsets(barId, edgeKey, side)
-                    if offX == nil then
-                        return
-                    end
+                    if offX == nil then return end
                     SetAnchorInfo(barId, edgeKey, side, offX, offY)
                     LM.ApplyAnchorPosition(barId, edgeKey, side, nil, true)
-                    if handle.RefreshAnchoredText then
-                        handle:RefreshAnchoredText()
-                    end
+                    if handle.RefreshAnchoredText then handle:RefreshAnchoredText() end
                 end
 
                 -- Which slot a picked edge lands in: with nothing anchored it becomes the
@@ -4736,9 +4363,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- SetAnchorInfo keeps the other edge); otherwise it becomes the cross-axis
                 -- edge and the primary keeps its own axis.
                 local function SetScreenAnchor(edgeKey, side)
-                    if InCombatLockdown() then
-                        return
-                    end
+                    if InCombatLockdown() then return end
                     local anchorInfo = GetAnchorInfo(barId)
                     local dim = CludesUI._ScreenEdgeAxis(edgeKey)
                     local hasCrossEdge = anchorInfo
@@ -4754,26 +4379,21 @@ CUI_NS.unlockParts.Movers = function(LM)
                         return
                     end
                     local off = CludesUI._CaptureScreenEdgeOffset(barId, edgeKey, side)
-                    if off == nil then
-                        return
-                    end
+                    if off == nil then return end
                     -- A link that never got offsets (module default, imported layout) would
                     -- take the side-snap branch below and bank FLUSH offsets for the axis
                     -- the primary keeps. Fill them from the live rect first.
                     if anchorInfo.offsetX == nil or anchorInfo.offsetY == nil then
-                        local pX, pY = CludesUI._CaptureAnchorOffsets(barId, anchorInfo.target, anchorInfo.side)
-                        if pX == nil then
-                            return
-                        end
+                        local pX, pY =
+                            CludesUI._CaptureAnchorOffsets(barId, anchorInfo.target, anchorInfo.side)
+                        if pX == nil then return end
                         anchorInfo.offsetX, anchorInfo.offsetY = pX, pY
                     end
                     anchorInfo.edge = { key = edgeKey, side = side, offset = off }
                     CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
                     LM.ApplyAnchorPosition(barId, anchorInfo.target, anchorInfo.side, nil, true)
                     LM.hasChanges = true
-                    if handle.RefreshAnchoredText then
-                        handle:RefreshAnchoredText()
-                    end
+                    if handle.RefreshAnchoredText then handle:RefreshAnchoredText() end
                 end
                 -- The side says where the element sits relative to the strip, so it is
                 -- the opposite of the edge it hugs; opp is the edge across the screen,
@@ -4792,9 +4412,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- an edge is checked (on) or unchecked: Left and Right set or clear its
                 -- horizontal half, Top and Bottom its vertical one. No edge is Center.
                 local function ScreenPointWith(cur, edgeKey, on)
-                    if not edgeKey then
-                        return "CENTER"
-                    end
+                    if not edgeKey then return "CENTER" end
                     cur = cur or "CENTER"
                     local v = cur:match("TOP") or cur:match("BOTTOM") or ""
                     local hgt = cur:match("LEFT") or cur:match("RIGHT") or ""
@@ -4817,7 +4435,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 local function DropCrossEdge(anchorInfo)
                     anchorInfo.edge = nil
                     CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
-                    local offX, offY = CludesUI._CaptureAnchorOffsets(barId, anchorInfo.target, anchorInfo.side)
+                    local offX, offY =
+                        CludesUI._CaptureAnchorOffsets(barId, anchorInfo.target, anchorInfo.side)
                     if offX ~= nil then
                         anchorInfo.offsetX, anchorInfo.offsetY = offX, offY
                     end
@@ -4832,17 +4451,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- Center: drop the SCREEN anchors only. A link to another element stays,
                 -- that one belongs to the link button.
                 local function ClearScreenAnchor()
-                    if InCombatLockdown() then
-                        return
-                    end
+                    if InCombatLockdown() then return end
                     local anchorInfo = GetAnchorInfo(barId)
-                    if not anchorInfo then
-                        return
-                    end
+                    if not anchorInfo then return end
                     local primaryIsEdge = anchorInfo.target and CludesUI.IsScreenEdgeKey(anchorInfo.target)
-                    if not primaryIsEdge and not anchorInfo.edge then
-                        return
-                    end
+                    if not primaryIsEdge and not anchorInfo.edge then return end
                     if primaryIsEdge then
                         -- Nothing holds the element afterwards: clear the record and
                         -- capture the live position so Save & Exit persists it, the same
@@ -4859,29 +4472,21 @@ CUI_NS.unlockParts.Movers = function(LM)
                         DropCrossEdge(anchorInfo)
                     end
                     LM.hasChanges = true
-                    if handle.RefreshAnchoredText then
-                        handle:RefreshAnchoredText()
-                    end
+                    if handle.RefreshAnchoredText then handle:RefreshAnchoredText() end
                 end
 
                 -- Unchecking an edge drops that edge alone. A primary edge hands its
                 -- slot to the cross-axis edge when there is one (the link a pick of
                 -- that edge makes); a lone primary edge goes the way Center takes it.
                 local function DropScreenEdge(edgeKey)
-                    if InCombatLockdown() then
-                        return
-                    end
+                    if InCombatLockdown() then return end
                     local anchorInfo = GetAnchorInfo(barId)
-                    if not anchorInfo then
-                        return
-                    end
+                    if not anchorInfo then return end
                     local cross = anchorInfo.edge
                     if cross and cross.key == edgeKey then
                         DropCrossEdge(anchorInfo)
                         LM.hasChanges = true
-                        if handle.RefreshAnchoredText then
-                            handle:RefreshAnchoredText()
-                        end
+                        if handle.RefreshAnchoredText then handle:RefreshAnchoredText() end
                     elseif anchorInfo.target == edgeKey then
                         if cross and cross.key then
                             LinkToScreenEdge(cross.key, cross.side)
@@ -4923,9 +4528,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- built under the cursor, it would push the flyout away mid-pick.
                 local function CloseEdgeSub(flyout)
                     flyout:Hide()
-                    if handle._cogEdgeDirty and gearMenu and gearMenu:IsShown() then
-                        BuildCogMenu()
-                    end
+                    if handle._cogEdgeDirty and gearMenu and gearMenu:IsShown() then BuildCogMenu() end
                 end
 
                 local function ShowEdgeSub()
@@ -4970,7 +4573,9 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local seY = -4
                     for idx = 1, #EDGE_ITEMS do
                         local edgeItem = EDGE_ITEMS[idx]
-                        local checked = (edgeItem.key ~= nil and (edgeItem.key == nowT or edgeItem.key == curEdge))
+                        local checked = (
+                            edgeItem.key ~= nil and (edgeItem.key == nowT or edgeItem.key == curEdge)
+                        )
                             or (edgeItem.key == nil and centered)
                         -- An edge cannot join the one across the screen from it, and
                         -- Center has nothing to clear while no screen edge is checked
@@ -4985,9 +4590,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         if checked then
                             red, green, blue, a = 1, 0.7, 0.3, 1
                         end
-                        if disabled then
-                            a = 0.3
-                        end
+                        if disabled then a = 0.3 end
                         local subItem, subHighlight, subLabel = MenuPool.Item(edgeFlyout, seY, ITEM_H)
                         MenuPool.Check(subItem, checked, disabled)
                         subHighlight:SetColorTexture(1, 1, 1, checked and 0.04 or 0)
@@ -5004,26 +4607,24 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     subLabel:SetTextColor(1, 1, 1, 1)
                                 end
                                 -- Preview: show the line the element would hold on to.
-                                if edgeItem.key then
-                                    CludesUI._ShowScreenEdgeMarker(edgeItem.key)
-                                end
+                                if edgeItem.key then CludesUI._ShowScreenEdgeMarker(edgeItem.key) end
                             end
                             subItem:SetScript("OnEnter", OnEnter)
                             subItem:SetScript("OnLeave", function()
                                 subHighlight:SetColorTexture(1, 1, 1, checked and 0.04 or 0)
                                 subLabel:SetTextColor(red, green, blue, a)
-                                if edgeItem.key then
-                                    CludesUI._HideScreenEdgeMarker(edgeItem.key)
-                                end
+                                if edgeItem.key then CludesUI._HideScreenEdgeMarker(edgeItem.key) end
                             end)
                             subItem:SetScript("OnClick", function()
-                                if InCombatLockdown() or (checked and not edgeItem.key) then
-                                    return
-                                end
+                                if InCombatLockdown() or (checked and not edgeItem.key) then return end
                                 if ownScreen then
                                     ownScreen.setScreenPoint(
                                         barId,
-                                        ScreenPointWith(ownScreen.getScreenPoint(barId), edgeItem.key, not checked)
+                                        ScreenPointWith(
+                                            ownScreen.getScreenPoint(barId),
+                                            edgeItem.key,
+                                            not checked
+                                        )
                                     )
                                 elseif not edgeItem.key then
                                     ClearScreenAnchor()
@@ -5034,16 +4635,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                                 end
                                 handle._cogEdgeDirty = true
                                 -- The anchor rows' offset boxes read the links live.
-                                if handle._syncCogPos then
-                                    handle._syncCogPos()
-                                end
+                                if handle._syncCogPos then handle._syncCogPos() end
                                 SERestColor()
                                 ShowEdgeSub()
                             end)
                             -- The row just clicked is still under the cursor.
-                            if foci and foci[1] == subItem then
-                                OnEnter()
-                            end
+                            if foci and foci[1] == subItem then OnEnter() end
                         end
                         seY = seY - ITEM_H
                     end
@@ -5079,7 +4676,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                     SERestColor()
                     C_Timer.After(0.05, function()
                         local flyout = handle._cogEdgeSub
-                        if flyout and flyout:IsShown() and not flyout:IsMouseOver() and not seItem:IsMouseOver() then
+                        if
+                            flyout
+                            and flyout:IsShown()
+                            and not flyout:IsMouseOver()
+                            and not seItem:IsMouseOver()
+                        then
                             CloseEdgeSub(flyout)
                         end
                     end)
@@ -5089,17 +4691,15 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- Toggle Orientation (hidden for vis-only bars)
             if not isVisOnly then
                 MakeActionItem("Toggle Orientation", function()
-                    if InCombatLockdown() then
-                        return
-                    end
-                    if not ABAR then
-                        return
-                    end
+                    if InCombatLockdown() then return end
+                    if not ABAR then return end
                     ABAR:ToggleOrientationForBar(handle._barKey)
                     LM.hasChanges = true
-                    DeferMoverSync(handles[handle._barKey], function(m)
-                        m:Sync()
-                    end, LM.GetBarFrame(handle._barKey))
+                    DeferMoverSync(
+                        handles[handle._barKey],
+                        function(m) m:Sync() end,
+                        LM.GetBarFrame(handle._barKey)
+                    )
                 end)
             end
 
@@ -5129,9 +4729,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     )
                     if hasFb then
                         MakeActionItem("Fallback Anchor: Clear", function()
-                            if CludesUI.ClearAnchorFallback then
-                                CludesUI.ClearAnchorFallback(barId)
-                            end
+                            if CludesUI.ClearAnchorFallback then CludesUI.ClearAnchorFallback(barId) end
                         end)
                     end
                 end
@@ -5221,9 +4819,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     and CludesUI.MeasureText(entry.text, FONT_PATH, entry.title and 10 or 11)
                                 ) or 0
                                 local needed = 10 + tw + 10 + 2
-                                if needed > maxW then
-                                    maxW = needed
-                                end
+                                if needed > maxW then maxW = needed end
                             end
                             MenuPool.End(flyout)
                             flyout:SetSize(maxW, -rsY + 4)
@@ -5340,9 +4936,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 cogClickCatcher:SetAllPoints(UIParent)
                 cogClickCatcher._umCatcher = true -- not an element for the hover bar
                 cogClickCatcher:RegisterForClicks("AnyUp")
-                cogClickCatcher:SetScript("OnClick", function()
-                    HideGearMenu()
-                end)
+                cogClickCatcher:SetScript("OnClick", function() HideGearMenu() end)
             end
             cogClickCatcher:Show()
         end
@@ -5395,25 +4989,13 @@ CUI_NS.unlockParts.Movers = function(LM)
         handle:HookScript("OnEnter", function()
             local el = registeredElements[barId]
             local tip = el and el.moverTooltip
-            if not tip then
-                return
-            end
-            if _mouseHeld or LM.pickMode or LM.selectElementPicker then
-                return
-            end
-            if type(tip) == "function" then
-                tip = tip(barId)
-            end
-            if tip and CludesUI.ShowWidgetTooltip then
-                CludesUI.ShowWidgetTooltip(handle, tip)
-            end
+            if not tip then return end
+            if _mouseHeld or LM.pickMode or LM.selectElementPicker then return end
+            if type(tip) == "function" then tip = tip(barId) end
+            if tip and CludesUI.ShowWidgetTooltip then CludesUI.ShowWidgetTooltip(handle, tip) end
         end)
-        handle:HookScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
-        handle:HookScript("OnDragStart", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        handle:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        handle:HookScript("OnDragStart", function() CludesUI.HideWidgetTooltip() end)
         -- Element filter (CUI_UnlockMode_Filter.lua): a new or re-shown mover stays hidden while filtered.
         if LM.FilterOnShow then
             handle:HookScript("OnShow", LM.FilterOnShow)
@@ -5431,9 +5013,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         local _origRegister = CludesUI.RegisterUnlockElements
         function CludesUI:RegisterUnlockElements(elements, folder)
             _origRegister(self, elements, folder)
-            if not LM.isUnlocked then
-                return
-            end
+            if not LM.isUnlocked then return end
             -- Unlock mode is open -- spawn movers for any newly registered keys,
             -- and hide existing movers whose element is now intentionally hidden.
             local spawned = false

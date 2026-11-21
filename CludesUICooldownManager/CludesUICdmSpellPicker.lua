@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmSpellPicker.lua
 --  Interactive Preview Helpers (used by options spell picker): spell list
@@ -32,44 +30,28 @@ local ComputeTopRowStride = mod.ComputeTopRowStride
 -- viewer frames can return a secret, and `id > 0` on it taints us.
 -- issecretvalue/type() read safely without touching the value.
 local function _IsUsableSID(ident)
-    if type(ident) ~= "number" then
-        return false
-    end
-    if issecretvalue and issecretvalue(ident) then
-        return false
-    end
+    if type(ident) ~= "number" then return false end
+    if issecretvalue and issecretvalue(ident) then return false end
     return ident > 0 and ident == math.floor(ident)
 end
 
 local function _GetBase(spellRef)
-    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then
-        return nil
-    end
+    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then return nil end
     local b = C_Spell.GetBaseSpell(spellRef)
-    if _IsUsableSID(b) and b ~= spellRef then
-        return b
-    end
+    if _IsUsableSID(b) and b ~= spellRef then return b end
     return nil
 end
 
 local function _GetOverride(spellRef)
-    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetOverrideSpell then
-        return nil
-    end
+    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetOverrideSpell then return nil end
     local o = C_Spell.GetOverrideSpell(spellRef)
-    if _IsUsableSID(o) and o ~= spellRef then
-        return o
-    end
+    if _IsUsableSID(o) and o ~= spellRef then return o end
     return nil
 end
 
 local function _StoreIfValid(target, ident, value, preserveExisting)
-    if not _IsUsableSID(ident) then
-        return
-    end
-    if preserveExisting and target[ident] ~= nil then
-        return
-    end
+    if not _IsUsableSID(ident) then return end
+    if preserveExisting and target[ident] ~= nil then return end
     target[ident] = value
 end
 
@@ -77,13 +59,9 @@ end
 -- base, so without it the winner would depend on collection order and the
 -- slot could change bars as the spell transforms. Derived keys fill gaps only.
 local function StoreVariantValue(target, spellId, value, preserveExisting, directSet)
-    if type(target) ~= "table" or not _IsUsableSID(spellId) then
-        return
-    end
+    if type(target) ~= "table" or not _IsUsableSID(spellId) then return end
     _StoreIfValid(target, spellId, value, preserveExisting)
-    if type(directSet) == "table" then
-        directSet[spellId] = value
-    end
+    if type(directSet) == "table" then directSet[spellId] = value end
     _StoreIfValid(target, _GetOverride(spellId), value, true)
     local baseId = _GetBase(spellId)
     if baseId then
@@ -93,65 +71,43 @@ local function StoreVariantValue(target, spellId, value, preserveExisting, direc
 end
 
 local function ResolveVariantValue(sourceMap, spellId)
-    if type(sourceMap) ~= "table" or not _IsUsableSID(spellId) then
-        return nil
-    end
+    if type(sourceMap) ~= "table" or not _IsUsableSID(spellId) then return nil end
     local direct = sourceMap[spellId]
-    if direct ~= nil then
-        return direct
-    end
+    if direct ~= nil then return direct end
     local baseId = _GetBase(spellId)
     if baseId then
         local v = sourceMap[baseId]
-        if v ~= nil then
-            return v
-        end
+        if v ~= nil then return v end
     end
     local overrideID = _GetOverride(spellId)
     if overrideID then
         local v = sourceMap[overrideID]
-        if v ~= nil then
-            return v
-        end
+        if v ~= nil then return v end
     end
     if baseId then
         local baseOverrideID = _GetOverride(baseId)
         if baseOverrideID then
             local v = sourceMap[baseOverrideID]
-            if v ~= nil then
-                return v
-            end
+            if v ~= nil then return v end
         end
     end
     return nil
 end
 
 local function IsVariantOf(spellIDA, spellIDB)
-    if not _IsUsableSID(spellIDA) or not _IsUsableSID(spellIDB) then
-        return false
-    end
-    if spellIDA == spellIDB then
-        return true
-    end
+    if not _IsUsableSID(spellIDA) or not _IsUsableSID(spellIDB) then return false end
+    if spellIDA == spellIDB then return true end
     -- Some rotating viewer spells expose no reversible relationship through
     -- GetBaseSpell/GetOverrideSpell in one of their live states.  The hook
     -- layer persists the clean, spec-scoped pairing when the viewer does expose
     -- it; consult that ledger so moving/re-adding Sacred Weapon also removes a
     -- stale Holy Bulwark/base entry from the old bar or ghost list.
-    if mod.IsLearnedVariantOf and mod.IsLearnedVariantOf(spellIDA, spellIDB) then
-        return true
-    end
-    if _GetBase(spellIDA) == spellIDB or _GetBase(spellIDB) == spellIDA then
-        return true
-    end
-    if _GetOverride(spellIDA) == spellIDB or _GetOverride(spellIDB) == spellIDA then
-        return true
-    end
+    if mod.IsLearnedVariantOf and mod.IsLearnedVariantOf(spellIDA, spellIDB) then return true end
+    if _GetBase(spellIDA) == spellIDB or _GetBase(spellIDB) == spellIDA then return true end
+    if _GetOverride(spellIDA) == spellIDB or _GetOverride(spellIDB) == spellIDA then return true end
     local baseA = _GetBase(spellIDA)
     local baseB = _GetBase(spellIDB)
-    if baseA and baseB and baseA == baseB then
-        return true
-    end
+    if baseA and baseB and baseA == baseB then return true end
     return false
 end
 
@@ -170,15 +126,11 @@ local RankName
 if CludesUI.IS_FOREVER then
     local nameList = {}
     RankName = function(ident)
-        if not _IsUsableSID(ident) then
-            return nil
-        end
+        if not _IsUsableSID(ident) then return nil end
         local n = nameList[ident]
         if n == nil then
             n = C_Spell.GetSpellName(ident)
-            if n then
-                nameList[ident] = n
-            end
+            if n then nameList[ident] = n end
         end
         return n
     end
@@ -218,13 +170,9 @@ end
 -- gate. Degrades to identity on any invalid/secret id or missing API so
 -- callers can key tables on the result without a separate validity check.
 function mod.NormalizeToBase(spellRef)
-    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then
-        return spellRef
-    end
+    if not _IsUsableSID(spellRef) or not C_Spell or not C_Spell.GetBaseSpell then return spellRef end
     local base = C_Spell.GetBaseSpell(spellRef)
-    if _IsUsableSID(base) then
-        return base
-    end
+    if _IsUsableSID(base) then return base end
     return spellRef
 end
 
@@ -238,9 +186,7 @@ function mod.ResolveToLive(spellRef)
         return spellRef
     end
     local ovr = C_SpellBook.FindSpellOverrideByID(spellRef)
-    if _IsUsableSID(ovr) then
-        return ovr
-    end
+    if _IsUsableSID(ovr) then return ovr end
     return spellRef
 end
 
@@ -268,13 +214,9 @@ local _buffAliasSeen = {}
 -- CUI_CDM_HookResolve.lua) keeps repeat observations of an already-known pairing from
 -- touching the profile table.
 function mod.LearnBuffVariantAlias(displaySID, linkedList)
-    if type(linkedList) ~= "table" or #linkedList == 0 then
-        return
-    end
+    if type(linkedList) ~= "table" or #linkedList == 0 then return end
     local idList
-    if _IsUsableSID(displaySID) then
-        idList = { displaySID }
-    end
+    if _IsUsableSID(displaySID) then idList = { displaySID } end
     for i = 1, #linkedList do
         local lid = linkedList[i]
         if _IsUsableSID(lid) then
@@ -282,9 +224,7 @@ function mod.LearnBuffVariantAlias(displaySID, linkedList)
             idList[#idList + 1] = lid
         end
     end
-    if not idList or #idList < 2 then
-        return
-    end
+    if not idList or #idList < 2 then return end
 
     local ledgerTbl
     for i = 1, #idList do
@@ -297,12 +237,8 @@ function mod.LearnBuffVariantAlias(displaySID, linkedList)
                     local spellRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
                     local sk = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
                     local profileTbl = spellRec and sk and spellRec[sk]
-                    if not profileTbl then
-                        return
-                    end
-                    if not profileTbl.buffVariantAliases then
-                        profileTbl.buffVariantAliases = {}
-                    end
+                    if not profileTbl then return end
+                    if not profileTbl.buffVariantAliases then profileTbl.buffVariantAliases = {} end
                     ledgerTbl = profileTbl.buffVariantAliases
                 end
                 ledgerTbl[a] = ledgerTbl[a] or {}
@@ -348,9 +284,7 @@ local _cleanSidByCDID = mod._cdmCleanSidByCDID
 -- 4. base of (1) as fallback. (linkedSpellIDs is deliberately NOT a rung --
 -- see the comment at the info branch.)
 local function GetCanonicalSpellIDForFrame(widget)
-    if not widget then
-        return nil
-    end
+    if not widget then return nil end
 
     local fnGetSpellID = widget.GetSpellID
     if type(fnGetSpellID) == "function" then
@@ -358,9 +292,7 @@ local function GetCanonicalSpellIDForFrame(widget)
         if _IsUsableSID(spellRef) then
             -- Clean read: cache by cooldownID so a later secret read still resolves.
             local cdid = widget.cooldownID
-            if type(cdid) == "number" then
-                _cleanSidByCDID[cdid] = spellRef
-            end
+            if type(cdid) == "number" then _cleanSidByCDID[cdid] = spellRef end
             return spellRef
         end
     end
@@ -374,9 +306,7 @@ local function GetCanonicalSpellIDForFrame(widget)
             -- Clean read: prime the cooldownID cache here too, so buff frames
             -- (no GetSpellID) still resolve while their aura is up.
             local cdid = widget.cooldownID
-            if type(cdid) == "number" then
-                _cleanSidByCDID[cdid] = spellRef
-            end
+            if type(cdid) == "number" then _cleanSidByCDID[cdid] = spellRef end
             return spellRef
         end
     end
@@ -387,26 +317,18 @@ local function GetCanonicalSpellIDForFrame(widget)
     local cdid = widget.cooldownID
     if type(cdid) == "number" then
         local cached = _cleanSidByCDID[cdid]
-        if cached then
-            return cached
-        end
+        if cached then return cached end
     end
 
     local details = widget.cooldownInfo
     if not details then
         local fnGetInfo = widget.GetCooldownInfo
-        if type(fnGetInfo) == "function" then
-            details = fnGetInfo(widget)
-        end
+        if type(fnGetInfo) == "function" then details = fnGetInfo(widget) end
     end
 
     if details then
-        if _IsUsableSID(details.overrideSpellID) then
-            return details.overrideSpellID
-        end
-        if _IsUsableSID(details.spellID) then
-            return details.spellID
-        end
+        if _IsUsableSID(details.overrideSpellID) then return details.overrideSpellID end
+        if _IsUsableSID(details.spellID) then return details.spellID end
         -- Deliberately NOT falling back to linkedSpellIDs[1] here: the frame's
         -- own info is the MERGED provider table (Blizzard caches
         -- GetCooldownInfoForID at SetCooldownID), where linked lists are
@@ -456,9 +378,7 @@ local function GetCanonicalSpellIDForFrame(widget)
         local raw = fnGetSpellID(widget)
         if _IsUsableSID(raw) then
             local base = _GetBase(raw)
-            if base then
-                return base
-            end
+            if base then return base end
             return raw
         end
     end
@@ -514,12 +434,8 @@ local function EnumerateCDMViewerSpells(includeBuffViewer)
     end
 
     table.sort(entryList, function(lhs, rhs)
-        if lhs.viewerOrder ~= rhs.viewerOrder then
-            return lhs.viewerOrder < rhs.viewerOrder
-        end
-        if lhs.layoutIndex ~= rhs.layoutIndex then
-            return lhs.layoutIndex < rhs.layoutIndex
-        end
+        if lhs.viewerOrder ~= rhs.viewerOrder then return lhs.viewerOrder < rhs.viewerOrder end
+        if lhs.layoutIndex ~= rhs.layoutIndex then return lhs.layoutIndex < rhs.layoutIndex end
         return lhs.sid < rhs.sid
     end)
 
@@ -541,29 +457,21 @@ mod.EnumerateCDMViewerSpells = EnumerateCDMViewerSpells
 --- <= -100) match by exact equality -- variant resolution doesn't apply to
 --- injection markers.
 local function FindVariantIndex(spellArray, spellId)
-    if type(spellArray) ~= "table" or type(spellId) ~= "number" or spellId == 0 then
-        return nil
-    end
+    if type(spellArray) ~= "table" or type(spellId) ~= "number" or spellId == 0 then return nil end
     if spellId > 0 then
         for i = 1, #spellArray do
             local existing = spellArray[i]
-            if _IsUsableSID(existing) and IsVariantOf(existing, spellId) then
-                return i
-            end
+            if _IsUsableSID(existing) and IsVariantOf(existing, spellId) then return i end
         end
         local label = RankName and RankName(spellId)
         if label then
             for i = 1, #spellArray do
-                if RankName(spellArray[i]) == label then
-                    return i
-                end
+                if RankName(spellArray[i]) == label then return i end
             end
         end
     else
         for i = 1, #spellArray do
-            if spellArray[i] == spellId then
-                return i
-            end
+            if spellArray[i] == spellId then return i end
         end
     end
     return nil
@@ -573,19 +481,11 @@ mod.FindVariantIndexInList = FindVariantIndex
 --- Add a spellID to a bar's assignedSpells list. Idempotent under variant
 --- equivalence (no-op if any family member is present). True on add, else false.
 function mod.AddSpellToBar(barId, spellId)
-    if not _IsUsableSID(spellId) then
-        return false
-    end
+    if not _IsUsableSID(spellId) then return false end
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
-    if not barSpells.assignedSpells then
-        barSpells.assignedSpells = {}
-    end
-    if FindVariantIndex(barSpells.assignedSpells, spellId) then
-        return false
-    end
+    if not barSpells then return false end
+    if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
+    if FindVariantIndex(barSpells.assignedSpells, spellId) then return false end
     barSpells.assignedSpells[#barSpells.assignedSpells + 1] = spellId
     mod._spellOrderDirty = true
     -- Mutual exclusivity with the ghost bar: the route map gives the ghost
@@ -611,34 +511,20 @@ end
 function mod.RemoveSpellFromBar(barId, spellId)
     -- Accepts positive (real spell) or negative (trinket/item preset) IDs;
     -- FindVariantIndex dispatches internally.
-    if type(spellId) ~= "number" or spellId == 0 then
-        return nil
-    end
+    if type(spellId) ~= "number" or spellId == 0 then return nil end
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells or not barSpells.assignedSpells then
-        return nil
-    end
+    if not barSpells or not barSpells.assignedSpells then return nil end
     local position = FindVariantIndex(barSpells.assignedSpells, spellId)
-    if not position then
-        return nil
-    end
+    if not position then return nil end
     local removed = table.remove(barSpells.assignedSpells, position)
     mod._spellOrderDirty = true
     -- Clean up auxiliary per-spell metadata for the removed entry
-    if barSpells.customSpellDurations then
-        barSpells.customSpellDurations[removed] = nil
-    end
-    if barSpells.spellDurations then
-        barSpells.spellDurations[removed] = nil
-    end
-    if barSpells.customSpellIDs then
-        barSpells.customSpellIDs[removed] = nil
-    end
+    if barSpells.customSpellDurations then barSpells.customSpellDurations[removed] = nil end
+    if barSpells.spellDurations then barSpells.spellDurations[removed] = nil end
+    if barSpells.customSpellIDs then barSpells.customSpellIDs[removed] = nil end
     if barSpells.customSpellGroups then
         for variantID, primaryId in pairs(barSpells.customSpellGroups) do
-            if primaryId == removed then
-                barSpells.customSpellGroups[variantID] = nil
-            end
+            if primaryId == removed then barSpells.customSpellGroups[variantID] = nil end
         end
     end
     -- Default buffs bar: scrub the removed custom buff's stable order key. Absent keys
@@ -654,9 +540,7 @@ function mod.RemoveSpellFromBar(barId, spellId)
         local t = barSpells.buffDisplayOrder
         local skey = "s" .. removed
         for i = #t, 1, -1 do
-            if t[i] == skey then
-                table.remove(t, i)
-            end
+            if t[i] == skey then table.remove(t, i) end
         end
     end
     -- Hosted-buff bookkeeping: removing the MARKER (or a legacy plain entry that
@@ -695,9 +579,7 @@ function mod.RemoveSpellFromBar(barId, spellId)
     -- declaration-fixed -- without this it keeps matching the removed id
     -- until the next full rebuild). Signature-gated: a no-op for every
     -- other kind of removal.
-    if mod.UpdateCustomBuffAuraTracking then
-        mod.UpdateCustomBuffAuraTracking()
-    end
+    if mod.UpdateCustomBuffAuraTracking then mod.UpdateCustomBuffAuraTracking() end
     return removed
 end
 
@@ -710,45 +592,31 @@ end
 -- Essential + Utility only.
 function mod.EnumerateCDMSettingsCatalog(wantSet)
     local evc = Enum and Enum.CooldownViewerCategory
-    if not evc then
-        return nil
-    end
+    if not evc then return nil end
     -- Default (no arg): full CD/utility catalog via ns.CDM_ICON_CD_CATS
     -- (Essential, Utility, SpecAgnosticEssential, EquipSlotEssential). Buff
     -- (ns.CDM_BUFF_CATS) / tracked-bar (TrackedBar=3) callers pass an explicit
     -- { [catValue] = true } set so each bar type scopes its own catalog.
     if wantSet == nil then
-        if evc.Essential == nil or evc.Utility == nil then
-            return nil
-        end
+        if evc.Essential == nil or evc.Utility == nil then return nil end
         wantSet = mod.CDM_ICON_CD_CATS
     end
     local prefs = _G.CooldownViewerSettings
-    if not prefs or type(prefs.GetDataProvider) ~= "function" then
-        return nil
-    end
+    if not prefs or type(prefs.GetDataProvider) ~= "function" then return nil end
     local okP, provider = pcall(prefs.GetDataProvider, prefs)
-    if not okP or type(provider) ~= "table" then
-        return nil
-    end
+    if not okP or type(provider) ~= "table" then return nil end
     -- Read the already-built display table, never the getters that would
     -- build it (see ns.CDMGetProviderDisplayData, CUI_CDM_Reconcile.lua).
     local ordered, infoByID = mod.CDMGetProviderDisplayData(provider)
-    if not ordered then
-        return nil
-    end
+    if not ordered then return nil end
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not getCdInfo then
-        return nil
-    end
+    if not getCdInfo then return nil end
 
     local result = {}
     for _, cooldownId in ipairs(ordered) do
         local pInfo = _IsUsableSID(cooldownId) and infoByID[cooldownId]
         local category
-        if type(pInfo) == "table" then
-            category = pInfo.category
-        end
+        if type(pInfo) == "table" then category = pInfo.category end
         if category ~= nil and wantSet[category] then
             -- Same shape the migration and spell caches use. Prefer override
             -- only when the player actually has it -- CDM info can report a
@@ -779,23 +647,15 @@ end
 -- left out, as the list leaves it out: it has no Blizzard frame, so CUI draws
 -- its own and those settings work. Built per call (Add Custom Spell only).
 function mod.IsCDMTrackedCooldown(spellId)
-    if not _IsUsableSID(spellId) then
-        return false
-    end
+    if not _IsUsableSID(spellId) then return false end
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local set = {}
     local function Add(cooldownId, spellRef)
-        if _IsUsableSID(spellRef) then
-            set[spellRef] = true
-        end
+        if _IsUsableSID(spellRef) then set[spellRef] = true end
         local details = getCdInfo and _IsUsableSID(cooldownId) and getCdInfo(cooldownId)
         if details then
-            if _IsUsableSID(details.spellID) then
-                set[details.spellID] = true
-            end
-            if _IsUsableSID(details.overrideSpellID) then
-                set[details.overrideSpellID] = true
-            end
+            if _IsUsableSID(details.spellID) then set[details.spellID] = true end
+            if _IsUsableSID(details.overrideSpellID) then set[details.overrideSpellID] = true end
         end
     end
     for _, entry in ipairs(EnumerateCDMViewerSpells(false)) do
@@ -832,9 +692,7 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
             if spellRef and spellRef ~= 0 then
                 StoreVariantValue(ourPool, spellRef, true, false)
                 local n = ourNames and RankName(spellRef)
-                if n then
-                    ourNames[n] = true
-                end
+                if n then ourNames[n] = true end
             end
         end
     end
@@ -874,9 +732,7 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
             local evc = Enum and Enum.CooldownViewerCategory
             local seenCd, seenSid = {}, {}
             for _, entry in ipairs(entryList) do
-                if entry.cdID ~= nil then
-                    seenCd[entry.cdID] = true
-                end
+                if entry.cdID ~= nil then seenCd[entry.cdID] = true end
                 StoreVariantValue(seenSid, entry.sid, true, false)
             end
             for _, ce in ipairs(catalog) do
@@ -885,9 +741,7 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
                     local texture = C_Spell.GetSpellTexture(ce.sid)
                     if label then
                         local known = false
-                        if IsPlayerSpell and IsPlayerSpell(ce.sid) then
-                            known = true
-                        end
+                        if IsPlayerSpell and IsPlayerSpell(ce.sid) then known = true end
                         spellSet[#spellSet + 1] = {
                             cdID = ce.cdID,
                             spellID = ce.sid,
@@ -915,9 +769,7 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
         if catalog then
             local seenCd, seenSid = {}, {}
             for _, entry in ipairs(entryList) do
-                if entry.cdID ~= nil then
-                    seenCd[entry.cdID] = true
-                end
+                if entry.cdID ~= nil then seenCd[entry.cdID] = true end
                 StoreVariantValue(seenSid, entry.sid, true, false)
             end
             for _, ce in ipairs(catalog) do
@@ -926,9 +778,7 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
                     local texture = C_Spell.GetSpellTexture(ce.sid)
                     if label then
                         local known = false
-                        if IsPlayerSpell and IsPlayerSpell(ce.sid) then
-                            known = true
-                        end
+                        if IsPlayerSpell and IsPlayerSpell(ce.sid) then known = true end
                         spellSet[#spellSet + 1] = {
                             cdID = ce.cdID,
                             spellID = ce.sid,
@@ -949,9 +799,7 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
 
     -- Viewer order first (Essential before Utility), then alpha.
     table.sort(spellSet, function(lhs, rhs)
-        if lhs.cdmCat ~= rhs.cdmCat then
-            return (lhs.cdmCat or 0) < (rhs.cdmCat or 0)
-        end
+        if lhs.cdmCat ~= rhs.cdmCat then return (lhs.cdmCat or 0) < (rhs.cdmCat or 0) end
         return lhs.name < rhs.name
     end)
 
@@ -977,26 +825,18 @@ end
 --- assignedSpells. Ghost buff bar cleanup is handled by EnsureGhostBars.
 function mod.MigrateSpecToBarFilterModelV6()
     local spellRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not spellRec then
-        return
-    end
+    if not spellRec then return end
 
     local specKey = mod.GetActiveSpecKey()
-    if not specKey or specKey == "0" then
-        return
-    end
+    if not specKey or specKey == "0" then return end
 
     local profileTbl = spellRec[specKey]
-    if not profileTbl or profileTbl._barFilterModelV6 then
-        return
-    end
+    if not profileTbl or profileTbl._barFilterModelV6 then return end
     -- Never consume import ghosting in the import session: this pass reads the LIVE
     -- Blizzard CDM tracked set, which an installer that rewrites Blizzard's own layout
     -- leaves unlaundered until a reload -- so return without stamping and retry next
     -- session. Fail-open: unplaced spells stay visible until then.
-    if profileTbl._importGhostMode and CludesUI and CludesUI._cdmImportGhostDeferred then
-        return
-    end
+    if profileTbl._importGhostMode and CludesUI and CludesUI._cdmImportGhostDeferred then return end
     if not profileTbl.barSpells then
         profileTbl._barFilterModelV6 = true
         return
@@ -1004,9 +844,7 @@ function mod.MigrateSpecToBarFilterModelV6()
 
     local profile = ECME.db and ECME.db.profile
     local barList = profile and profile.cdmBars and profile.cdmBars.bars
-    if type(barList) ~= "table" then
-        return
-    end
+    if type(barList) ~= "table" then return end
 
     -- Step 1: orphan cleanup -- drop spell data for bars that no longer exist
     local liveBarKeys = {
@@ -1016,14 +854,10 @@ function mod.MigrateSpecToBarFilterModelV6()
         ["__ghost_cd"] = true,
     }
     for _, edge in ipairs(barList) do
-        if edge.key then
-            liveBarKeys[edge.key] = true
-        end
+        if edge.key then liveBarKeys[edge.key] = true end
     end
     for barId in pairs(profileTbl.barSpells) do
-        if not liveBarKeys[barId] then
-            profileTbl.barSpells[barId] = nil
-        end
+        if not liveBarKeys[barId] then profileTbl.barSpells[barId] = nil end
     end
 
     -- Skip if both default CD/util bars are empty: nothing to preserve.
@@ -1051,9 +885,7 @@ function mod.MigrateSpecToBarFilterModelV6()
         end
         return false
     end
-    if not HasPopulatedPool() then
-        return
-    end
+    if not HasPopulatedPool() then return end
 
     -- Step 2: build assignedSet from the LIVE bar list. Default bars
     -- (cooldowns/utility) contribute too -- their assignedSpells under the
@@ -1079,9 +911,7 @@ function mod.MigrateSpecToBarFilterModelV6()
                         local n = assignedNames
                             and not (bs.customSpellIDs and bs.customSpellIDs[spellRef])
                             and RankName(spellRef)
-                        if n then
-                            assignedNames[n] = true
-                        end
+                        if n then assignedNames[n] = true end
                     end
                 end
             end
@@ -1093,9 +923,7 @@ function mod.MigrateSpecToBarFilterModelV6()
         ghostBs = {}
         profileTbl.barSpells.__ghost_cd = ghostBs
     end
-    if not ghostBs.assignedSpells then
-        ghostBs.assignedSpells = {}
-    end
+    if not ghostBs.assignedSpells then ghostBs.assignedSpells = {} end
 
     -- WoW Forever: one ghost entry per spell, whatever its rank.
     local existingGhost = {}
@@ -1104,9 +932,7 @@ function mod.MigrateSpecToBarFilterModelV6()
         if type(spellRef) == "number" and spellRef > 0 then
             StoreVariantValue(existingGhost, spellRef, true, false)
             local n = ghostNames and RankName(spellRef)
-            if n then
-                ghostNames[n] = true
-            end
+            if n then ghostNames[n] = true end
         end
     end
 
@@ -1119,9 +945,7 @@ function mod.MigrateSpecToBarFilterModelV6()
 
     local entryList = EnumerateCDMViewerSpells(false)
     for _, entry in ipairs(entryList) do
-        if _IsUsableSID(entry.sid) then
-            sidUnion[entry.sid] = true
-        end
+        if _IsUsableSID(entry.sid) then sidUnion[entry.sid] = true end
     end
 
     local gcs = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet
@@ -1137,9 +961,7 @@ function mod.MigrateSpecToBarFilterModelV6()
                     local details = getCdInfo(cooldownId)
                     if details then
                         local spellRef = details.overrideSpellID or details.spellID
-                        if _IsUsableSID(spellRef) then
-                            sidUnion[spellRef] = true
-                        end
+                        if _IsUsableSID(spellRef) then sidUnion[spellRef] = true end
                     end
                 end
             end
@@ -1155,9 +977,7 @@ function mod.MigrateSpecToBarFilterModelV6()
         if not isAssigned and not isGhosted then
             ghostBs.assignedSpells[#ghostBs.assignedSpells + 1] = spellRef
             StoreVariantValue(existingGhost, spellRef, true, false)
-            if label then
-                ghostNames[label] = true
-            end
+            if label then ghostNames[label] = true end
             addedCount = addedCount + 1
         end
     end
@@ -1176,19 +996,13 @@ end
 --- Flagged per-spec via prof._dormantMerged (runs once).
 function mod.MergeDormantSpellsIntoAssigned()
     local spellRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not spellRec then
-        return
-    end
+    if not spellRec then return end
 
     local specKey = mod.GetActiveSpecKey()
-    if not specKey or specKey == "0" then
-        return
-    end
+    if not specKey or specKey == "0" then return end
 
     local profileTbl = spellRec[specKey]
-    if not profileTbl or profileTbl._dormantMerged then
-        return
-    end
+    if not profileTbl or profileTbl._dormantMerged then return end
     if not profileTbl.barSpells then
         profileTbl._dormantMerged = true
         return
@@ -1196,9 +1010,7 @@ function mod.MergeDormantSpellsIntoAssigned()
 
     for _barKey, bs in pairs(profileTbl.barSpells) do
         if type(bs) == "table" and type(bs.dormantSpells) == "table" then
-            if not bs.assignedSpells then
-                bs.assignedSpells = {}
-            end
+            if not bs.assignedSpells then bs.assignedSpells = {} end
 
             -- Collect dormant entries sorted by saved slot (lowest first)
             -- so earlier inserts don't shift later slots.
@@ -1208,9 +1020,7 @@ function mod.MergeDormantSpellsIntoAssigned()
                     returning[#returning + 1] = { sid = spellRef, slot = slot }
                 end
             end
-            table.sort(returning, function(lhs, rhs)
-                return lhs.slot < rhs.slot
-            end)
+            table.sort(returning, function(lhs, rhs) return lhs.slot < rhs.slot end)
 
             -- Build dedup set for the active list so we don't double-insert
             local activeSet = {}
@@ -1221,12 +1031,8 @@ function mod.MergeDormantSpellsIntoAssigned()
             for _, record in ipairs(returning) do
                 if not activeSet[record.sid] then
                     local insertAt = record.slot
-                    if insertAt > #bs.assignedSpells + 1 then
-                        insertAt = #bs.assignedSpells + 1
-                    end
-                    if insertAt < 1 then
-                        insertAt = 1
-                    end
+                    if insertAt > #bs.assignedSpells + 1 then insertAt = #bs.assignedSpells + 1 end
+                    if insertAt < 1 then insertAt = 1 end
                     table.insert(bs.assignedSpells, insertAt, record.sid)
                     activeSet[record.sid] = true
                 end
@@ -1243,16 +1049,10 @@ end
 --- by reorder helpers (Swap/Move) on an empty-assignedSpells bar to capture
 --- the visible order so the reorder has something to manipulate.
 local function EnsureBarOrderSeeded(barId, barSpells)
-    if barSpells.assignedSpells and #barSpells.assignedSpells > 0 then
-        return
-    end
-    if not barSpells.assignedSpells then
-        barSpells.assignedSpells = {}
-    end
+    if barSpells.assignedSpells and #barSpells.assignedSpells > 0 then return end
+    if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
     local icons = cdmBarIcons and cdmBarIcons[barId]
-    if not icons then
-        return
-    end
+    if not icons then return end
     local fcCache = mod._ecmeFC
     -- Buff-family bars seed by the DISPLAYED/canonical id (what per-icon
     -- settings and preview key off), not fc.spellID (cooldownInfo base /
@@ -1286,14 +1086,10 @@ end
 --- Swap two tracked spell positions
 function mod.SwapTrackedSpells(barId, idx1, idx2)
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
+    if not barSpells then return false end
     EnsureBarOrderSeeded(barId, barSpells)
     local t = barSpells.assignedSpells
-    if idx1 < 1 or idx2 < 1 then
-        return false
-    end
+    if idx1 < 1 or idx2 < 1 then return false end
     local maxIdx = math.max(idx1, idx2)
     while #t < maxIdx do
         t[#t + 1] = 0
@@ -1304,32 +1100,20 @@ function mod.SwapTrackedSpells(barId, idx1, idx2)
     end
     mod._spellOrderDirty = true
     local widget = cdmBarFrames[barId]
-    if widget then
-        widget._blizzCache = nil
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if widget then widget._blizzCache = nil end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
 --- Move a tracked spell from one position to another (insert, not swap)
 function mod.MoveTrackedSpell(barId, fromIdx, toIdx)
-    if fromIdx == toIdx then
-        return false
-    end
+    if fromIdx == toIdx then return false end
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
+    if not barSpells then return false end
     EnsureBarOrderSeeded(barId, barSpells)
     local t = barSpells.assignedSpells
-    if fromIdx < 1 or fromIdx > #t then
-        return false
-    end
-    if toIdx < 1 then
-        toIdx = 1
-    end
+    if fromIdx < 1 or fromIdx > #t then return false end
+    if toIdx < 1 then toIdx = 1 end
     while #t < toIdx do
         t[#t + 1] = 0
     end
@@ -1340,50 +1124,30 @@ function mod.MoveTrackedSpell(barId, fromIdx, toIdx)
     end
     mod._spellOrderDirty = true
     local widget = cdmBarFrames[barId]
-    if widget then
-        widget._blizzCache = nil
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if widget then widget._blizzCache = nil end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
 --- Stable display-order key for a Blizzard-tracked buff (cooldownID) or custom.
 local function BuffDisplayStableKey(spellRef, cooldownId)
-    if type(cooldownId) == "number" then
-        return "c" .. cooldownId
-    end
-    if type(spellRef) == "number" and spellRef > 0 then
-        return "s" .. spellRef
-    end
+    if type(cooldownId) == "number" then return "c" .. cooldownId end
+    if type(spellRef) == "number" and spellRef > 0 then return "s" .. spellRef end
     return nil
 end
 mod.BuffDisplayStableKey = BuffDisplayStableKey
 
 --- Spell ids associated with a stored buffDisplayOrder key ("c"..cdID / "s"..sid).
 local function SpellIdsForBuffOrderKey(barKey)
-    if type(barKey) ~= "string" then
-        return nil
-    end
+    if type(barKey) ~= "string" then return nil end
     local pfx, num = string.sub(barKey, 1, 1), tonumber(string.sub(barKey, 2))
-    if not num or num <= 0 then
-        return nil
-    end
-    if pfx == "s" then
-        return num
-    end
+    if not num or num <= 0 then return nil end
+    if pfx == "s" then return num end
     if pfx == "c" and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
         local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(num)
-        if not details then
-            return nil
-        end
-        if _IsUsableSID(details.overrideSpellID) then
-            return details.overrideSpellID
-        end
-        if _IsUsableSID(details.spellID) then
-            return details.spellID
-        end
+        if not details then return nil end
+        if _IsUsableSID(details.overrideSpellID) then return details.overrideSpellID end
+        if _IsUsableSID(details.spellID) then return details.spellID end
     end
     return nil
 end
@@ -1391,31 +1155,19 @@ end
 --- True when a live buff entry matches a stored buffDisplayOrder key, including
 --- hero-talent / override variants (cooldownID can drift across talent swaps).
 local function BuffOrderKeyMatchesEntry(barKey, spellRef, cooldownId, widget)
-    if not barKey then
-        return false
-    end
+    if not barKey then return false end
     local stable = BuffDisplayStableKey(spellRef, cooldownId)
-    if stable and stable == barKey then
-        return true
-    end
+    if stable and stable == barKey then return true end
     local storedSid = SpellIdsForBuffOrderKey(barKey)
-    if not storedSid then
-        return false
-    end
-    if spellRef and IsVariantOf(storedSid, spellRef) then
-        return true
-    end
+    if not storedSid then return false end
+    if spellRef and IsVariantOf(storedSid, spellRef) then return true end
     if widget and mod.GetCanonicalSpellIDForFrame then
         local canon = mod.GetCanonicalSpellIDForFrame(widget)
-        if canon and IsVariantOf(storedSid, canon) then
-            return true
-        end
+        if canon and IsVariantOf(storedSid, canon) then return true end
     end
     if cooldownId and type(cooldownId) == "number" and mod._cdmCleanSidByCDID then
         local clean = mod._cdmCleanSidByCDID[cooldownId]
-        if clean and IsVariantOf(storedSid, clean) then
-            return true
-        end
+        if clean and IsVariantOf(storedSid, clean) then return true end
     end
     return false
 end
@@ -1464,9 +1216,7 @@ function mod.CollectDefaultBuffTrackEntries()
         end
     end
 
-    if mod.PruneEquipmentBuffRows then
-        mod.PruneEquipmentBuffRows()
-    end
+    if mod.PruneEquipmentBuffRows then mod.PruneEquipmentBuffRows() end
     local out = {}
     local seenSet = {}
     local entryList = mod.EnumerateCDMViewerSpells and mod.EnumerateCDMViewerSpells(true) or {}
@@ -1561,9 +1311,7 @@ function mod.CollectDefaultBuffTrackEntries()
     end
 
     table.sort(out, function(lhs, rhs)
-        if lhs.layoutIndex ~= rhs.layoutIndex then
-            return lhs.layoutIndex < rhs.layoutIndex
-        end
+        if lhs.layoutIndex ~= rhs.layoutIndex then return lhs.layoutIndex < rhs.layoutIndex end
         return (lhs.key or "") < (rhs.key or "")
     end)
     return out
@@ -1587,17 +1335,13 @@ function mod.CollidedBuffSids()
         end
     end
     for spellRef, n in pairs(counts) do
-        if n > 1 then
-            out[spellRef] = true
-        end
+        if n > 1 then out[spellRef] = true end
     end
     return out
 end
 
 function mod.IsCollidedBuffSid(spellRef)
-    if type(spellRef) ~= "number" or spellRef <= 0 then
-        return false
-    end
+    if type(spellRef) ~= "number" or spellRef <= 0 then return false end
     return mod.CollidedBuffSids()[spellRef] == true
 end
 
@@ -1610,16 +1354,12 @@ local function IsTrackedTrinketRow(cooldownId)
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     local details = getCdInfo and getCdInfo(cooldownId)
     local cat = details and details.category
-    if type(cat) ~= "number" or (issecretvalue and issecretvalue(cat)) then
-        return false
-    end
+    if type(cat) ~= "number" or (issecretvalue and issecretvalue(cat)) then return false end
     return cat == (Enum and Enum.CooldownViewerCategory and Enum.CooldownViewerCategory.EquipSlotTracked or 8)
 end
 
 function mod.ClaimBuffByCdID(spellRef, cooldownId)
-    if type(cooldownId) ~= "number" or cooldownId <= 0 then
-        return false
-    end
+    if type(cooldownId) ~= "number" or cooldownId <= 0 then return false end
     return IsTrackedTrinketRow(cooldownId) or mod.IsCollidedBuffSid(spellRef)
 end
 
@@ -1636,9 +1376,7 @@ local function DropTrinketSidClaims(cooldownId, spellRef)
         return
     end
     local profile = ECME.db.profile
-    if not (profile and profile.cdmBars and profile.cdmBars.bars) then
-        return
-    end
+    if not (profile and profile.cdmBars and profile.cdmBars.bars) then return end
     for _, bar in ipairs(profile.cdmBars.bars) do
         if bar.barType ~= "custom_buff" then
             if mod.IsBarBuffFamily(bar) then
@@ -1658,12 +1396,8 @@ function mod.BuffFamHasCdKey(storage)
     -- Accept caller's store (runtime resolver already holds it) to skip a
     -- second spec/profile lookup per buff-frame resolve.
     storage = storage or (mod.GetSpellSettingsStore and mod.GetSpellSettingsStore("buffs"))
-    if not storage then
-        return false
-    end
-    if _cdKeyGate and _cdKeyGate.store == storage then
-        return _cdKeyGate.has
-    end
+    if not storage then return false end
+    if _cdKeyGate and _cdKeyGate.store == storage then return _cdKeyGate.has end
     local hit = false
     for key in pairs(storage) do
         if type(key) == "string" and string.byte(key, 1) == 99 then
@@ -1687,24 +1421,19 @@ end
 --- Reorder present keys to match Blizzard viewer order while absent keys (talent
 --- gaps, untalented catalog entries) keep their stored slots.
 local function SyncPresentBuffOrderToBlizzard(sequence, present, entryList)
-    if not sequence or #sequence == 0 or not entryList or #entryList == 0 then
-        return sequence
-    end
+    if not sequence or #sequence == 0 or not entryList or #entryList == 0 then return sequence end
     local blizzRank = {}
     for i, entry in ipairs(entryList) do
-        if blizzRank[entry.key] == nil then
-            blizzRank[entry.key] = i
-        end
+        if blizzRank[entry.key] == nil then blizzRank[entry.key] = i end
     end
     local sortedPresent = {}
     for _, barKey in ipairs(sequence) do
-        if present[barKey] then
-            sortedPresent[#sortedPresent + 1] = barKey
-        end
+        if present[barKey] then sortedPresent[#sortedPresent + 1] = barKey end
     end
-    table.sort(sortedPresent, function(lhs, rhs)
-        return (blizzRank[lhs] or 99999) < (blizzRank[rhs] or 99999)
-    end)
+    table.sort(
+        sortedPresent,
+        function(lhs, rhs) return (blizzRank[lhs] or 99999) < (blizzRank[rhs] or 99999) end
+    )
     local pi = 1
     local synced = {}
     for _, barKey in ipairs(sequence) do
@@ -1730,13 +1459,9 @@ mod._cdmBuffOrderDirty = true
 --- Keep stored buffDisplayOrder across talent/spec gaps, seed on first stable
 --- pass, and insert newly-tracked buffs by Blizzard layoutIndex (not at tail).
 function mod.ReconcileBuffDisplayOrder()
-    if mod._cdmSpecRebuildStale then
-        return
-    end
+    if mod._cdmSpecRebuildStale then return end
     local barSpells = mod.GetBarSpellData("buffs")
-    if not barSpells then
-        return
-    end
+    if not barSpells then return end
 
     local sequence = barSpells.buffDisplayOrder
     if sequence and type(sequence[1]) == "number" then
@@ -1745,9 +1470,7 @@ function mod.ReconcileBuffDisplayOrder()
     end
 
     local entryList = mod.CollectDefaultBuffTrackEntries()
-    if #entryList == 0 then
-        return
-    end
+    if #entryList == 0 then return end
 
     local present = {}
     for _, entry in ipairs(entryList) do
@@ -1776,15 +1499,11 @@ function mod.ReconcileBuffDisplayOrder()
 
     local newcomers = {}
     for _, entry in ipairs(entryList) do
-        if not seenSet[entry.key] then
-            newcomers[#newcomers + 1] = entry
-        end
+        if not seenSet[entry.key] then newcomers[#newcomers + 1] = entry end
     end
     if #newcomers > 0 then
         table.sort(newcomers, function(lhs, rhs)
-            if lhs.layoutIndex ~= rhs.layoutIndex then
-                return lhs.layoutIndex < rhs.layoutIndex
-            end
+            if lhs.layoutIndex ~= rhs.layoutIndex then return lhs.layoutIndex < rhs.layoutIndex end
             return (lhs.key or "") < (rhs.key or "")
         end)
         local blizzRank = {}
@@ -1826,9 +1545,7 @@ end
 
 --- Resolve a buff bar entry's sort index from buffDisplayOrder (variant-aware).
 function mod.ResolveBuffDisplaySortIndex(record, buffOrder, isDefaultBuffs)
-    if not buffOrder or not record then
-        return nil
-    end
+    if not buffOrder or not record then return nil end
     if isDefaultBuffs then
         local cd = record.frame and record.frame.cooldownID
         local spellRef = record.spellID
@@ -1837,13 +1554,9 @@ function mod.ResolveBuffDisplaySortIndex(record, buffOrder, isDefaultBuffs)
         -- so it's reserved for genuine talent-gap frames whose cooldownID drifted.
         local stable = BuffDisplayStableKey(spellRef, cd)
         local direct = stable and buffOrder[stable]
-        if direct then
-            return direct
-        end
+        if direct then return direct end
         for barKey, position in pairs(buffOrder) do
-            if BuffOrderKeyMatchesEntry(barKey, spellRef, cd, record.frame) then
-                return position
-            end
+            if BuffOrderKeyMatchesEntry(barKey, spellRef, cd, record.frame) then return position end
         end
         return nil
     end
@@ -1853,9 +1566,7 @@ function mod.ResolveBuffDisplaySortIndex(record, buffOrder, isDefaultBuffs)
     -- tell them apart. Check cooldownID first (same stable-key convention as
     -- the isDefaultBuffs branch above).
     local cdKey = ef and ef.cooldownID and BuffDisplayStableKey(nil, ef.cooldownID)
-    if cdKey and buffOrder[cdKey] then
-        return buffOrder[cdKey]
-    end
+    if cdKey and buffOrder[cdKey] then return buffOrder[cdKey] end
     local canon = ef and mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(ef)
     return (canon and buffOrder[canon])
         or (record.spellID and buffOrder[record.spellID])
@@ -1876,9 +1587,7 @@ end
 --- rendered slots' stable keys (pf._buffSlotKeys), resolved live at call time.
 local function BuffOrderIndexOf(t, barKey)
     for i = 1, #t do
-        if t[i] == barKey then
-            return i
-        end
+        if t[i] == barKey then return i end
     end
     return nil
 end
@@ -1887,27 +1596,17 @@ local function FinishBuffOrderWrite(barSpells)
     barSpells._buffDisplayOrderUserModified = true
     mod._spellOrderDirty = true
     local widget = cdmBarFrames["buffs"]
-    if widget then
-        widget._blizzCache = nil
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if widget then widget._blizzCache = nil end
+    if mod.QueueReanchor then mod.QueueReanchor() end
 end
 
 function mod.SwapBuffDisplayKeys(key1, key2)
-    if not key1 or not key2 or key1 == key2 then
-        return false
-    end
+    if not key1 or not key2 or key1 == key2 then return false end
     local barSpells = mod.GetBarSpellData("buffs")
     local tbl = barSpells and barSpells.buffDisplayOrder
-    if not tbl then
-        return false
-    end
+    if not tbl then return false end
     local i1, i2 = BuffOrderIndexOf(tbl, key1), BuffOrderIndexOf(tbl, key2)
-    if not i1 or not i2 then
-        return false
-    end
+    if not i1 or not i2 then return false end
     tbl[i1], tbl[i2] = tbl[i2], tbl[i1]
     FinishBuffOrderWrite(barSpells)
     return true
@@ -1916,26 +1615,16 @@ end
 --- Move dragKey so it renders immediately before beforeKey; nil beforeKey
 --- appends after everything (drop past the last rendered slot).
 function mod.MoveBuffDisplayKey(dragKey, beforeKey)
-    if not dragKey or dragKey == beforeKey then
-        return false
-    end
+    if not dragKey or dragKey == beforeKey then return false end
     local barSpells = mod.GetBarSpellData("buffs")
     local text = barSpells and barSpells.buffDisplayOrder
-    if not text then
-        return false
-    end
+    if not text then return false end
     local from = BuffOrderIndexOf(text, dragKey)
-    if not from then
-        return false
-    end
+    if not from then return false end
     local val = table.remove(text, from)
     local to
-    if beforeKey then
-        to = BuffOrderIndexOf(text, beforeKey)
-    end
-    if not to then
-        to = #text + 1
-    end
+    if beforeKey then to = BuffOrderIndexOf(text, beforeKey) end
+    if not to then to = #text + 1 end
     table.insert(text, to, val)
     FinishBuffOrderWrite(barSpells)
     return true
@@ -1955,19 +1644,11 @@ local function ResolveBarType(bdOrKey)
         edge = barDataByKey[barKey]
     end
 
-    if edge and edge.barType then
-        return edge.barType
-    end
+    if edge and edge.barType then return edge.barType end
 
-    if barKey == "cooldowns" then
-        return "cooldowns"
-    end
-    if barKey == "utility" then
-        return "utility"
-    end
-    if barKey == "buffs" then
-        return "buffs"
-    end
+    if barKey == "cooldowns" then return "cooldowns" end
+    if barKey == "utility" then return "utility" end
+    if barKey == "buffs" then return "buffs" end
 
     return nil
 end
@@ -1987,9 +1668,7 @@ local function IsBarBuffFamily(bdOrKey)
         edge = barDataByKey[barKey]
     end
 
-    if barKey == "__ghost_cd" then
-        return false
-    end
+    if barKey == "__ghost_cd" then return false end
 
     local barKind = ResolveBarType(edge or barKey)
     return barKind == "buffs"
@@ -2012,9 +1691,7 @@ local GetBarType = ResolveBarType
 --- A different track type never blocks a pick (distinct, legitimate picks).
 function mod.SpellUsedOnAnyOtherTBB(spellId, excludeIdx, trackType)
     local tbb = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
-    if not tbb or not tbb.bars then
-        return nil
-    end
+    if not tbb or not tbb.bars then return nil end
     for i, conf in ipairs(tbb.bars) do
         if i ~= excludeIdx then
             if (conf.trackType or "buff") ~= (trackType or "buff") then
@@ -2025,9 +1702,7 @@ function mod.SpellUsedOnAnyOtherTBB(spellId, excludeIdx, trackType)
                 end
                 if conf.spellIDs then
                     for _, spellRef in ipairs(conf.spellIDs) do
-                        if spellRef == spellId then
-                            return conf.name or ("Tracking Bar " .. i)
-                        end
+                        if spellRef == spellId then return conf.name or ("Tracking Bar " .. i) end
                     end
                 end
             end
@@ -2046,40 +1721,28 @@ local _knownSpellSet = {} -- learned spells (cat, false)
 local _allSpellSet = {} -- all spells including unlearned (cat, true)
 local _cdmSpellCacheDirty = true
 
-function mod.MarkCDMSpellCacheDirty()
-    _cdmSpellCacheDirty = true
-end
+function mod.MarkCDMSpellCacheDirty() _cdmSpellCacheDirty = true end
 
 local function RebuildCDMSpellCaches()
-    if not _cdmSpellCacheDirty then
-        return
-    end
+    if not _cdmSpellCacheDirty then return end
     _cdmSpellCacheDirty = false
     wipe(_knownSpellSet)
     wipe(_allSpellSet)
-    if not C_CooldownViewer or not C_CooldownViewer.GetCooldownViewerCategorySet then
-        return
-    end
+    if not C_CooldownViewer or not C_CooldownViewer.GetCooldownViewerCategorySet then return end
     local gci = C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not gci then
-        return
-    end
+    if not gci then return end
     for cat = 0, 3 do
         local knownIDs = C_CooldownViewer.GetCooldownViewerCategorySet(cat, false)
         if knownIDs then
             for _, cooldownId in ipairs(knownIDs) do
                 local details = gci(cooldownId)
                 if details then
-                    if details.spellID and details.spellID > 0 then
-                        _knownSpellSet[details.spellID] = true
-                    end
+                    if details.spellID and details.spellID > 0 then _knownSpellSet[details.spellID] = true end
                     if details.overrideSpellID and details.overrideSpellID > 0 then
                         _knownSpellSet[details.overrideSpellID] = true
                     end
                     local spellRef = mod.ResolveInfoSpellID(details)
-                    if spellRef and spellRef > 0 then
-                        _knownSpellSet[spellRef] = true
-                    end
+                    if spellRef and spellRef > 0 then _knownSpellSet[spellRef] = true end
                 end
             end
         end
@@ -2088,16 +1751,12 @@ local function RebuildCDMSpellCaches()
             for _, cooldownId in ipairs(allIDs) do
                 local details = gci(cooldownId)
                 if details then
-                    if details.spellID and details.spellID > 0 then
-                        _allSpellSet[details.spellID] = true
-                    end
+                    if details.spellID and details.spellID > 0 then _allSpellSet[details.spellID] = true end
                     if details.overrideSpellID and details.overrideSpellID > 0 then
                         _allSpellSet[details.overrideSpellID] = true
                     end
                     local spellRef = mod.ResolveInfoSpellID(details)
-                    if spellRef and spellRef > 0 then
-                        _allSpellSet[spellRef] = true
-                    end
+                    if spellRef and spellRef > 0 then _allSpellSet[spellRef] = true end
                 end
             end
         end
@@ -2106,9 +1765,7 @@ end
 mod.RebuildCDMSpellCaches = RebuildCDMSpellCaches
 
 function mod.IsSpellKnownInCDM(spellId)
-    if not spellId or spellId <= 0 then
-        return false
-    end
+    if not spellId or spellId <= 0 then return false end
     RebuildCDMSpellCaches()
     return _knownSpellSet[spellId] == true
 end
@@ -2118,12 +1775,8 @@ end
 --- shows). Other bars: adds primary ID with duration/group metadata.
 function mod.AddPresetToBar(barId, preset)
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
-    if not barSpells.assignedSpells then
-        barSpells.assignedSpells = {}
-    end
+    if not barSpells then return false end
+    if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
     local spellArray = barSpells.assignedSpells
 
     -- Buff-family bars use the same cast-timer custom-buff path as custom_buff
@@ -2142,34 +1795,24 @@ function mod.AddPresetToBar(barId, preset)
             -- adding preset {700, 701, 702}).
             for _, spellRef in ipairs(preset.spellIDs) do
                 for _, existing in ipairs(spellArray) do
-                    if existing == spellRef then
-                        return false, "exists"
-                    end
+                    if existing == spellRef then return false, "exists" end
                 end
             end
             local primaryId = preset.spellIDs[1]
             spellArray[#spellArray + 1] = primaryId
-            if not barSpells.spellDurations then
-                barSpells.spellDurations = {}
-            end
+            if not barSpells.spellDurations then barSpells.spellDurations = {} end
             barSpells.spellDurations[primaryId] = preset.duration or 30
         end
     else
         -- Legacy: add primary ID with duration/group metadata
         local primaryId = preset.spellIDs[1]
         for _, existing in ipairs(spellArray) do
-            if existing == primaryId then
-                return false, "exists"
-            end
+            if existing == primaryId then return false, "exists" end
         end
         spellArray[#spellArray + 1] = primaryId
-        if not barSpells.customSpellDurations then
-            barSpells.customSpellDurations = {}
-        end
+        if not barSpells.customSpellDurations then barSpells.customSpellDurations = {} end
         barSpells.customSpellDurations[primaryId] = preset.duration
-        if not barSpells.customSpellGroups then
-            barSpells.customSpellGroups = {}
-        end
+        if not barSpells.customSpellGroups then barSpells.customSpellGroups = {} end
         for _, spellRef in ipairs(preset.spellIDs) do
             barSpells.customSpellGroups[spellRef] = primaryId
         end
@@ -2190,14 +1833,10 @@ end
 function mod.IsPresetOnBar(barId, preset)
     local barSpells = mod.GetBarSpellData(barId)
     local spellArray = barSpells and barSpells.assignedSpells
-    if not spellArray or type(preset.spellIDs) ~= "table" then
-        return false
-    end
+    if not spellArray or type(preset.spellIDs) ~= "table" then return false end
     for _, spellRef in ipairs(preset.spellIDs) do
         for _, existing in ipairs(spellArray) do
-            if existing == spellRef then
-                return true
-            end
+            if existing == spellRef then return true end
         end
     end
     return false
@@ -2213,28 +1852,18 @@ function mod.AddTrackedSpell(barId, ident)
     -- Non-zero integer required. Positive = real spell; negative = injection
     -- marker Phase 3 of CollectAndReanchor uses for custom frames (trinkets
     -- at -13/-14, item presets at <= -100) -- both valid.
-    if type(ident) ~= "number" or ident == 0 then
-        return false
-    end
+    if type(ident) ~= "number" or ident == 0 then return false end
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
-    if not barSpells.assignedSpells then
-        barSpells.assignedSpells = {}
-    end
+    if not barSpells then return false end
+    if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
 
     -- Dedup against THIS bar: variant-aware for positive IDs; exact-match
     -- linear scan for negatives (FindVariantIndex bails on non-positives).
     if ident > 0 then
-        if FindVariantIndex(barSpells.assignedSpells, ident) then
-            return false
-        end
+        if FindVariantIndex(barSpells.assignedSpells, ident) then return false end
     else
         for _, existing in ipairs(barSpells.assignedSpells) do
-            if existing == ident then
-                return false
-            end
+            if existing == ident then return false end
         end
     end
 
@@ -2251,9 +1880,7 @@ function mod.AddTrackedSpell(barId, ident)
     if profile and profile.cdmBars and profile.cdmBars.bars then
         for _, bar in ipairs(profile.cdmBars.bars) do
             if bar.key ~= barId and bar.barType ~= "custom_buff" then
-                if IsBarBuffFamily(bar) == targetIsBuff then
-                    mod.RemoveSpellFromBar(bar.key, ident)
-                end
+                if IsBarBuffFamily(bar) == targetIsBuff then mod.RemoveSpellFromBar(bar.key, ident) end
             end
         end
     end
@@ -2261,14 +1888,10 @@ function mod.AddTrackedSpell(barId, ident)
     -- Top-row insertion for multi-row bars.
     local curCount = #barSpells.assignedSpells
     local stride, _, topRowCount = ComputeTopRowStride(targetBd or {}, curCount)
-    if stride < 1 then
-        stride = 1
-    end
+    if stride < 1 then stride = 1 end
     local newCount = curCount + 1
     local newStride, _, newTopRow = ComputeTopRowStride(targetBd or {}, newCount)
-    if newStride < 1 then
-        newStride = 1
-    end
+    if newStride < 1 then newStride = 1 end
     if newStride == stride and newTopRow > topRowCount then
         table.insert(barSpells.assignedSpells, topRowCount + 1, ident)
     else
@@ -2276,26 +1899,18 @@ function mod.AddTrackedSpell(barId, ident)
     end
     mod._spellOrderDirty = true
 
-    if barSpells.removedSpells then
-        barSpells.removedSpells[ident] = nil
-    end
+    if barSpells.removedSpells then barSpells.removedSpells[ident] = nil end
     -- Picked from the picker: the entry is the preset's own (an entry the reseed
     -- listed for Blizzard's row of this item stood for that row alone).
-    if barSpells.nativeItems then
-        barSpells.nativeItems[ident] = nil
-    end
+    if barSpells.nativeItems then barSpells.nativeItems[ident] = nil end
 
     local widget = cdmBarFrames[barId]
     if widget then
         widget._blizzCache = nil
         widget._prevVisibleCount = nil
     end
-    if mod.RebuildSpellRouteMap then
-        mod.RebuildSpellRouteMap()
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
@@ -2306,27 +1921,15 @@ end
 --- un-ghosts it (AddTrackedSpell's sweep). Any mark that the entry stood for
 --- Blizzard's row goes with it. Nothing for every other entry.
 function mod.NoteItemEntryRemoved(barSpells, barKey)
-    if not mod.IsItemPresetKey(barKey) then
-        return
-    end
-    if barSpells and barSpells.nativeItems then
-        barSpells.nativeItems[barKey] = nil
-    end
+    if not mod.IsItemPresetKey(barKey) then return end
+    if barSpells and barSpells.nativeItems then barSpells.nativeItems[barKey] = nil end
     local pr = mod.ItemPresetForKey(barKey)
-    if not (pr and pr.nativeCategory) then
-        return
-    end
+    if not (pr and pr.nativeCategory) then return end
     local gsd = mod.GetBarSpellData(mod.GHOST_CD_BAR_KEY)
-    if not gsd then
-        return
-    end
-    if not gsd.assignedSpells then
-        gsd.assignedSpells = {}
-    end
+    if not gsd then return end
+    if not gsd.assignedSpells then gsd.assignedSpells = {} end
     for _, g in ipairs(gsd.assignedSpells) do
-        if g == barKey then
-            return
-        end
+        if g == barKey then return end
     end
     gsd.assignedSpells[#gsd.assignedSpells + 1] = barKey
 end
@@ -2336,17 +1939,11 @@ end
 --- stands in once Blizzard's row is gone. False for any other entry.
 function mod.AdoptNativeItemEntry(barId, barKey)
     local barSpells = mod.GetBarSpellData(barId)
-    if not (barSpells and barSpells.nativeItems and barSpells.nativeItems[barKey]) then
-        return false
-    end
+    if not (barSpells and barSpells.nativeItems and barSpells.nativeItems[barKey]) then return false end
     barSpells.nativeItems[barKey] = nil
-    if next(barSpells.nativeItems) == nil then
-        barSpells.nativeItems = nil
-    end
+    if next(barSpells.nativeItems) == nil then barSpells.nativeItems = nil end
     mod._spellOrderDirty = true
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
@@ -2361,9 +1958,7 @@ end
 --- viewer pool, never assignedSpells, so adding a slot to it releases every
 --- other buff bar's claim on that slot instead.
 function mod.AddTrackedBuffByCdID(barId, cooldownId, spellRef)
-    if type(cooldownId) ~= "number" or cooldownId <= 0 then
-        return false
-    end
+    if type(cooldownId) ~= "number" or cooldownId <= 0 then return false end
     DropTrinketSidClaims(cooldownId, spellRef)
     local marker = mod.CdClaimMarker(cooldownId)
     if barId == "buffs" then
@@ -2375,12 +1970,8 @@ function mod.AddTrackedBuffByCdID(barId, cooldownId, spellRef)
                 end
             end
         end
-        if mod.RebuildSpellRouteMap then
-            mod.RebuildSpellRouteMap()
-        end
-        if mod.QueueReanchor then
-            mod.QueueReanchor()
-        end
+        if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+        if mod.QueueReanchor then mod.QueueReanchor() end
         return true
     end
     return mod.AddTrackedSpell(barId, marker)
@@ -2397,13 +1988,9 @@ end
 --- (CUI_CDM_AuraIcons.lua). Additive: only our own data table is written
 --- (variant-keyed).
 function mod.AddBuffToCDUtilBar(barId, spellId)
-    if type(spellId) ~= "number" or spellId <= 0 then
-        return false
-    end
+    if type(spellId) ~= "number" or spellId <= 0 then return false end
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
+    if not barSpells then return false end
     -- Already hosted (marker entry, or legacy plain entry pre-marker model): no-op.
     if
         barSpells.hostedBuffSpellIDs
@@ -2424,18 +2011,12 @@ function mod.AddBuffToCDUtilBar(barId, spellId)
     -- Flag keyed by picked/canonical spellID so route-map/drop-pass/self-heal
     -- match it directly; the route map expands variants on write, so the
     -- LIVE frame resolves regardless of talent/override form.
-    if not barSpells.hostedBuffSpellIDs then
-        barSpells.hostedBuffSpellIDs = {}
-    end
+    if not barSpells.hostedBuffSpellIDs then barSpells.hostedBuffSpellIDs = {} end
     barSpells.hostedBuffSpellIDs[spellId] = true
     -- Host flip changes resolution routing: retire memoized results.
     mod._cdmResGen = (mod._cdmResGen or 0) + 1
-    if mod.RebuildSpellRouteMap then
-        mod.RebuildSpellRouteMap()
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
@@ -2447,16 +2028,10 @@ end
 --- buff may stand in for one cooldown per bar; the same buff on another entry
 --- is cleared here. buffCdID names a cd-claimed collided slot.
 function mod.SetCooldownBuffReplacement(barId, targetSID, buffSID, buffCdID)
-    if type(targetSID) ~= "number" or targetSID <= 0 then
-        return false
-    end
-    if buffSID ~= nil and (type(buffSID) ~= "number" or buffSID <= 0) then
-        return false
-    end
+    if type(targetSID) ~= "number" or targetSID <= 0 then return false end
+    if buffSID ~= nil and (type(buffSID) ~= "number" or buffSID <= 0) then return false end
     local storage = mod.GetSpellSettingsStore(barId, true)
-    if not storage then
-        return false
-    end
+    if not storage then return false end
     if buffSID then
         for barKey, other in pairs(storage) do
             if barKey ~= targetSID and type(other) == "table" then
@@ -2467,43 +2042,29 @@ function mod.SetCooldownBuffReplacement(barId, targetSID, buffSID, buffCdID)
                 if same then
                     other.replaceBuffID = nil
                     other.replaceBuffCdID = nil
-                    if next(other) == nil then
-                        storage[barKey] = nil
-                    end
+                    if next(other) == nil then storage[barKey] = nil end
                 end
             end
         end
     end
     local ss = storage[targetSID]
     if not ss then
-        if not buffSID then
-            return true
-        end
+        if not buffSID then return true end
         ss = {}
         storage[targetSID] = ss
     end
     ss.replaceBuffID = buffSID
     ss.replaceBuffCdID = buffSID and buffCdID or nil
-    if next(ss) == nil then
-        storage[targetSID] = nil
-    end
-    if buffSID then
-        mod._cdmAnyBuffReplace = true
-    end
+    if next(ss) == nil then storage[targetSID] = nil end
+    if buffSID then mod._cdmAnyBuffReplace = true end
     mod._cdmResGen = (mod._cdmResGen or 0) + 1
     mod._spellOrderDirty = true
-    if mod.RebuildSpellRouteMap then
-        mod.RebuildSpellRouteMap()
-    end
+    if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
     -- User-settings edge: the BuffIcon viewer's alpha vote now includes this
     -- bar (BarUsesBuffViewer), so re-apply visibility here rather than wait
     -- for the next combat/zone edge.
-    if mod.CDMApplyVisibility then
-        mod.CDMApplyVisibility()
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.CDMApplyVisibility then mod.CDMApplyVisibility() end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
@@ -2516,13 +2077,9 @@ end
 --- non-collided buffs keep AddBuffToCDUtilBar's sid path (survives talent
 --- swaps).
 function mod.AddHostedBuffByCdID(barId, cooldownId, spellRef)
-    if type(cooldownId) ~= "number" or cooldownId <= 0 then
-        return false
-    end
+    if type(cooldownId) ~= "number" or cooldownId <= 0 then return false end
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
+    if not barSpells then return false end
     DropTrinketSidClaims(cooldownId, spellRef)
     -- Empty-table sentinel: ResolveSpellSettings' hostedFrame gate
     -- (CUI_CDM_HookResolve.lua) short-circuits on this table being non-nil to
@@ -2537,13 +2094,9 @@ end
 --- Picker-driven remove path. Wraps RemoveSpellFromBar.
 function mod.RemoveTrackedSpell(barId, position)
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
+    if not barSpells then return false end
     local list = barSpells.assignedSpells
-    if not list or position < 1 or position > #list then
-        return false
-    end
+    if not list or position < 1 or position > #list then return false end
     local removedID = list[position]
     table.remove(list, position)
     mod._spellOrderDirty = true
@@ -2577,32 +2130,22 @@ function mod.RemoveTrackedSpell(barId, position)
         if removedID and barSpells.customSpellDurations then
             barSpells.customSpellDurations[removedID] = nil
         end
-        if removedID and barSpells.spellDurations then
-            barSpells.spellDurations[removedID] = nil
-        end
-        if removedID and barSpells.customSpellIDs then
-            barSpells.customSpellIDs[removedID] = nil
-        end
+        if removedID and barSpells.spellDurations then barSpells.spellDurations[removedID] = nil end
+        if removedID and barSpells.customSpellIDs then barSpells.customSpellIDs[removedID] = nil end
         if removedID and barSpells.customSpellGroups then
             for variantID, primaryId in pairs(barSpells.customSpellGroups) do
-                if primaryId == removedID then
-                    barSpells.customSpellGroups[variantID] = nil
-                end
+                if primaryId == removedID then barSpells.customSpellGroups[variantID] = nil end
             end
         end
         -- An Empty Slot's id is never reused (NewEmptySlotMarker), so its own
         -- settings entry (its Talent Conditions) goes with it.
         if removedID and mod.IsEmptySlotMarker(removedID) then
             local storage = mod.GetSpellSettingsStore(barId)
-            if storage then
-                storage[removedID] = nil
-            end
+            if storage then storage[removedID] = nil end
         end
         -- An item preset Blizzard's own row can render under: ghosted like a
         -- racial (ns.NoteItemEntryRemoved), CD/utility bars only.
-        if removedID and not IsBarBuffFamily(barId) then
-            mod.NoteItemEntryRemoved(barSpells, removedID)
-        end
+        if removedID and not IsBarBuffFamily(barId) then mod.NoteItemEntryRemoved(barSpells, removedID) end
 
         -- Route to the ghost CD bar so frames stay routed but hidden. Buff-family bars
         -- don't ghost (visibility managed by Blizzard's CDM settings); negative IDs and
@@ -2627,37 +2170,25 @@ function mod.RemoveTrackedSpell(barId, position)
         widget._blizzCache = nil
         widget._prevVisibleCount = nil
     end
-    if mod.RebuildSpellRouteMap then
-        mod.RebuildSpellRouteMap()
-    end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
 --- Replace a tracked spell at a given index with a new spellID
 function mod.ReplaceTrackedSpell(barId, position, newID)
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return false
-    end
-    if not barSpells.assignedSpells then
-        barSpells.assignedSpells = {}
-    end
+    if not barSpells then return false end
+    if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
     local list = barSpells.assignedSpells
-    if position < 1 then
-        return false
-    end
+    if position < 1 then return false end
     while #list < position do
         list[#list + 1] = 0
     end
     for i, existing in ipairs(list) do
         if existing == newID and i ~= position then
             table.remove(list, i)
-            if i < position then
-                position = position - 1
-            end
+            if i < position then position = position - 1 end
             break
         end
     end
@@ -2665,17 +2196,13 @@ function mod.ReplaceTrackedSpell(barId, position, newID)
     while #list > 0 and (list[#list] == 0 or list[#list] == nil) do
         list[#list] = nil
     end
-    if barSpells.removedSpells then
-        barSpells.removedSpells[newID] = nil
-    end
+    if barSpells.removedSpells then barSpells.removedSpells[newID] = nil end
     local widget = cdmBarFrames[barId]
     if widget then
         widget._blizzCache = nil
         widget._prevVisibleCount = nil
     end
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     return true
 end
 
@@ -2693,9 +2220,7 @@ function mod.AddCDMBar(barKind, label, numRows)
             customCount = customCount + 1
         end
     end
-    if customCount >= MAX_CUSTOM_BARS then
-        return nil
-    end
+    if customCount >= MAX_CUSTOM_BARS then return nil end
     barKind = barKind or "cooldowns"
     local typeLabel = barKind == "cooldowns" and "Cooldowns"
         or barKind == "utility" and "Utility"
@@ -2704,9 +2229,7 @@ function mod.AddCDMBar(barKind, label, numRows)
         or "Cooldowns"
     local typeCount = 0
     for _, bar in ipairs(bars) do
-        if bar.barType == barKind then
-            typeCount = typeCount + 1
-        end
+        if bar.barType == barKind then typeCount = typeCount + 1 end
     end
     local barKey = "custom_" .. (#bars + 1) .. "_" .. GetTime()
     barKey = barKey:gsub("%.", "_")
@@ -2772,14 +2295,10 @@ function mod.AddCDMBar(barKind, label, numRows)
         pandemicGlowSpeed = 4,
     }
     local barSpells = mod.GetBarSpellData(barKey)
-    if barSpells then
-        barSpells.assignedSpells = {}
-    end
+    if barSpells then barSpells.assignedSpells = {} end
     BuildAllCDMBars()
     LayoutCDMBar(barKey)
-    if mod.QueueReanchor then
-        mod.QueueReanchor()
-    end
+    if mod.QueueReanchor then mod.QueueReanchor() end
     RegisterCDMUnlockElements()
     return barKey
 end
@@ -2788,17 +2307,13 @@ end
 -- the deleted bar are migrated to the matching ghost bar for their family so they stay
 -- hidden, instead of spilling back onto the default bar for their viewer category.
 function mod.RemoveCDMBar(barKey)
-    if barKey == "cooldowns" or barKey == "utility" or barKey == "buffs" then
-        return false
-    end
+    if barKey == "cooldowns" or barKey == "utility" or barKey == "buffs" then return false end
     local RegisterCDMUnlockElements = mod.RegisterCDMUnlockElements
     local profile = ECME.db.profile
     for i, barInfo in ipairs(profile.cdmBars.bars) do
         if barInfo.key == barKey then
             local widget = cdmBarFrames[barKey]
-            if widget then
-                CludesUI.SetElementVisibility(widget, false)
-            end
+            if widget then CludesUI.SetElementVisibility(widget, false) end
             cdmBarFrames[barKey] = nil
             cdmBarIcons[barKey] = nil
             profile.cdmBarPositions[barKey] = nil
@@ -2806,9 +2321,7 @@ function mod.RemoveCDMBar(barKey)
             -- Max Icons overflow: clear targets pointing at the removed bar
             -- (runtime fail-safes on a dangling key; this is config hygiene).
             for _, bar in ipairs(profile.cdmBars.bars) do
-                if bar.overflowTarget == barKey then
-                    bar.overflowTarget = nil
-                end
+                if bar.overflowTarget == barKey then bar.overflowTarget = nil end
             end
             -- Deletion shifts every later bar's array index, so captured
             -- override paths into cdmBars.bars would point at the WRONG bars.
@@ -2833,12 +2346,8 @@ function mod.RemoveCDMBar(barKey)
             -- Re-register remaining bars to update linkedKeys
             RegisterCDMUnlockElements()
             -- Reanchor so frames re-route to the ghost bar (or wherever)
-            if mod.RebuildSpellRouteMap then
-                mod.RebuildSpellRouteMap()
-            end
-            if mod.CollectAndReanchor then
-                mod.CollectAndReanchor()
-            end
+            if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+            if mod.CollectAndReanchor then mod.CollectAndReanchor() end
             return true
         end
     end
@@ -2869,7 +2378,9 @@ function mod.PruneEquipmentBuffRows()
     -- Viewer source: trusted only with CDM data loaded and a populated
     -- enumeration. These guards gate THIS source alone -- the equipped-item
     -- source below needs neither and must run regardless.
-    local entryList = mod._cdmDataLoaded and mod.EnumerateCDMViewerSpells and mod.EnumerateCDMViewerSpells(true)
+    local entryList = mod._cdmDataLoaded
+            and mod.EnumerateCDMViewerSpells
+            and mod.EnumerateCDMViewerSpells(true)
         or nil
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     if entryList and entryList[1] and getCdInfo then
@@ -2903,14 +2414,10 @@ function mod.PruneEquipmentBuffRows()
             end
         end
     end
-    if not any then
-        return
-    end
+    if not any then return end
     local profile = ECME and ECME.db and ECME.db.profile
     local bars = profile and profile.cdmBars and profile.cdmBars.bars
-    if not bars then
-        return
-    end
+    if not bars then return end
     for _, edge in ipairs(bars) do
         -- Every bar type: dual-lane-era auto-adds landed item use-spells on
         -- cooldowns/utility bars too, not just buff bars. Only positive ids

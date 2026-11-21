@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_Visibility.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = _G.CludesUI
@@ -28,40 +24,28 @@ local SetChatAlphaCurrent, SetVisChatVisible = Inner.SetChatAlphaCurrent, Inner.
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local _sidebarFadeAlpha = Inner._sidebarFadeAlpha
-Inner.sidebarFadeAlphaSetters[#Inner.sidebarFadeAlphaSetters + 1] = function(val)
-    _sidebarFadeAlpha = val
-end
+Inner.sidebarFadeAlphaSetters[#Inner.sidebarFadeAlphaSetters + 1] = function(val) _sidebarFadeAlpha = val end
 local _chatAlphaCurrent = Inner._chatAlphaCurrent
-Inner.chatAlphaCurrentSetters[#Inner.chatAlphaCurrentSetters + 1] = function(val)
-    _chatAlphaCurrent = val
-end
+Inner.chatAlphaCurrentSetters[#Inner.chatAlphaCurrentSetters + 1] = function(val) _chatAlphaCurrent = val end
 
 -- Unified fade system: all alpha changes go through a target + lerp.
 local _visChatVisible = true
-Inner.visChatVisibleSetters[#Inner.visChatVisibleSetters + 1] = function(val)
-    _visChatVisible = val
-end
+Inner.visChatVisibleSetters[#Inner.visChatVisibleSetters + 1] = function(val) _visChatVisible = val end
 local _idleFadeActive = false
-Inner.idleFadeActiveSetters[#Inner.idleFadeActiveSetters + 1] = function(val)
-    _idleFadeActive = val
-end
+Inner.idleFadeActiveSetters[#Inner.idleFadeActiveSetters + 1] = function(val) _idleFadeActive = val end
 local _chatAlphaTarget = 1
 local _visAlpha = 1
 
 -- Frame cache for _ApplyAlpha, so the fade loop does no repeated _G lookups.
 local _alphaFrames
 -- CUI_Chat_Skin.lua drops the cache through this when it skins a frame.
-local function SetAlphaFrames(val)
-    _alphaFrames = val
-end
+local function SetAlphaFrames(val) _alphaFrames = val end
 -- A live sidebar visibility change must refresh the cached sidebar mode, or
 -- the fade keeps writing the old mode's alpha (a painted sidebar comes back).
 -- Updated in place: this runs on every passthrough exit, and nothing else in
 -- the cache depends on the mode.
 function CHAT.InvalidateAlphaCache()
-    if not _alphaFrames then
-        return
-    end
+    if not _alphaFrames then return end
     local conf = CHAT.DB()
     _alphaFrames._sidebarMode = conf and conf.sidebarVisibility or "always"
 end
@@ -84,9 +68,7 @@ local function _BuildAlphaCache()
     local conf = CHAT.DB()
     _alphaFrames._sidebarMode = conf and conf.sidebarVisibility or "always"
     -- A chat-anchored scroll button does not inherit the sidebar alpha.
-    if conf and conf.scrollButtonOnChat and cf1 then
-        _alphaFrames._chatScrollBtn = CFD(cf1).scrollBtn
-    end
+    if conf and conf.scrollButtonOnChat and cf1 then _alphaFrames._chatScrollBtn = CFD(cf1).scrollBtn end
 end
 
 -- Full-hide mouse passthrough. At effective alpha 0 every mouse surface over the panel
@@ -115,13 +97,9 @@ local function GetMouseChannels(frame)
     else
         click = frame:IsMouseEnabled()
     end
-    if issecretvalue and issecretvalue(click) then
-        click = false
-    end
+    if issecretvalue and issecretvalue(click) then click = false end
     local motion = frame.IsMouseMotionEnabled and frame:IsMouseMotionEnabled()
-    if issecretvalue and issecretvalue(motion) then
-        motion = false
-    end
+    if issecretvalue and issecretvalue(motion) then motion = false end
     return click and true or false, motion and true or false
 end
 -- Forward declaration: the write helpers below arm it when a lockdown-
@@ -148,9 +126,7 @@ local function SetMouseChannels(frame, click, motion)
     if curClick ~= click then
         local func = frame.SetMouseClickEnabled or frame.EnableMouse
         if InCombatLockdown() then
-            if not pcall(func, frame, click) then
-                success = false
-            end
+            if not pcall(func, frame, click) then success = false end
         else
             func(frame, click)
         end
@@ -159,9 +135,7 @@ local function SetMouseChannels(frame, click, motion)
         local func = frame.SetMouseMotionEnabled or frame.EnableMouseMotion
         if func then
             if InCombatLockdown() then
-                if not pcall(func, frame, motion) then
-                    success = false
-                end
+                if not pcall(func, frame, motion) then success = false end
             else
                 func(frame, motion)
             end
@@ -171,9 +145,7 @@ local function SetMouseChannels(frame, click, motion)
 end
 
 local function PMOff(skinData, key, frame)
-    if not frame then
-        return
-    end
+    if not frame then return end
     -- Capture on first sight only, but ASSERT the disable every sweep:
     -- Blizzard's message pipeline re-enables click on chat widgets while we
     -- are engaged, and a skipped re-disable leaves an invisible click zombie.
@@ -182,9 +154,7 @@ local function PMOff(skinData, key, frame)
         skinData[key] = click
         skinData[key .. "M"] = motion
     end
-    if not SetMouseChannels(frame, false, false) then
-        ArmChatPMRegen()
-    end
+    if not SetMouseChannels(frame, false, false) then ArmChatPMRegen() end
 end
 local function PMOn(skinData, key, frame)
     if frame and skinData[key] ~= nil then
@@ -204,9 +174,7 @@ end
 -- children only, NEVER recursive -- with per-child state captured on first
 -- sight in a weak side store and restored exactly from it.
 local function PMOffChildren(skinData, key, hostFrame)
-    if not hostFrame then
-        return
-    end
+    if not hostFrame then return end
     local storage = skinData[key]
     if not storage then
         storage = setmetatable({}, { __mode = "k" })
@@ -222,16 +190,12 @@ local function PMOffChildren(skinData, key, hostFrame)
             local click, motion = GetMouseChannels(c)
             storage[c] = { click, motion }
         end
-        if not SetMouseChannels(c, false, false) then
-            ArmChatPMRegen()
-        end
+        if not SetMouseChannels(c, false, false) then ArmChatPMRegen() end
     end
 end
 local function PMOnChildren(skinData, key, hostFrame)
     local storage = skinData[key]
-    if not storage or not hostFrame then
-        return
-    end
+    if not storage or not hostFrame then return end
     local kids = { hostFrame:GetChildren() }
     for index = 1, #kids do
         local c = kids[index]
@@ -280,12 +244,8 @@ local function PassthroughFrames(enabled)
     -- Blizzard's tabs and dock overflow are hidden wholesale now (owned tab
     -- strip); hidden frames cannot receive input, so no mouse work for them.
     -- Our own surfaces hide outright while passthrough is engaged.
-    if CHAT.EngineSetPassthrough then
-        CHAT.EngineSetPassthrough(enabled)
-    end
-    if CHAT.TabsSetPassthrough then
-        CHAT.TabsSetPassthrough(enabled)
-    end
+    if CHAT.EngineSetPassthrough then CHAT.EngineSetPassthrough(enabled) end
+    if CHAT.TabsSetPassthrough then CHAT.TabsSetPassthrough(enabled) end
 end
 
 -- Hover-wake while fully hidden: a passthrough panel cannot receive mouse
@@ -310,9 +270,7 @@ local function StartPTWake()
         local shade = mod._chatHoverOverlay
         if shade and shade:IsMouseOver() then
             CancelWakeTicker()
-            if CHAT.ResetIdleTimer then
-                CHAT.ResetIdleTimer()
-            end
+            if CHAT.ResetIdleTimer then CHAT.ResetIdleTimer() end
         end
     end)
 end
@@ -411,18 +369,12 @@ end
 -- the module combat queue: zero idle cost.
 local function ChatPMRegenReapply()
     PassthroughFrames(_chatPassthrough)
-    if _chatPassthrough and not _visChatVisible then
-        ShowChatStack(false)
-    end
+    if _chatPassthrough and not _visChatVisible then ShowChatStack(false) end
 end
-ArmChatPMRegen = function()
-    mod.CombatQueue.Defer("ChatPassthroughReapply", ChatPMRegenReapply)
-end
+ArmChatPMRegen = function() mod.CombatQueue.Defer("ChatPassthroughReapply", ChatPMRegenReapply) end
 
 local function SetChatMousePassthrough(enabled)
-    if _chatPassthrough == enabled then
-        return
-    end
+    if _chatPassthrough == enabled then return end
     _chatPassthrough = enabled
     mod._chatPassthrough = enabled
     -- Reveal BEFORE the restore pass: TabsSweepBlizzard (run by the tab
@@ -433,9 +385,7 @@ local function SetChatMousePassthrough(enabled)
     -- after combat with in-combat hide once the engage completes cleanly).
     -- The engage direction keeps the reverse order: sweep first (its
     -- passthrough flag alone forces click-off), stack-hide after.
-    if not enabled then
-        ShowChatStack(true)
-    end
+    if not enabled then ShowChatStack(true) end
     PassthroughFrames(enabled)
     if enabled then
         if not _visChatVisible then
@@ -443,42 +393,28 @@ local function SetChatMousePassthrough(enabled)
             -- A visibility hide counts as idle: the reveal then finds the chat
             -- already faded instead of showing it until the leftover idle delay
             -- runs out. Here, not at the flip, so the hide keeps its own fade speed.
-            if CHAT.StartIdleFadeNow then
-                CHAT.StartIdleFadeNow()
-            end
+            if CHAT.StartIdleFadeNow then CHAT.StartIdleFadeNow() end
         end
         local cf1 = _G.ChatFrame1
         local scrollBar = cf1 and CFD(cf1).sidebar
         if scrollBar then
             scrollBar:EnableMouse(false)
-            if scrollBar.EnableMouseMotion then
-                scrollBar:EnableMouseMotion(false)
-            end
+            if scrollBar.EnableMouseMotion then scrollBar:EnableMouseMotion(false) end
         end
-        if CHAT.ApplySidebarIcons then
-            CHAT.ApplySidebarIcons()
-        end
+        if CHAT.ApplySidebarIcons then CHAT.ApplySidebarIcons() end
         -- _visChatVisible excludes the visibility-hidden regimes, where
         -- hover-wake must not exist.
-        if _idleFadeActive and _visChatVisible and CHAT.DB().idleFadeEnabled ~= false then
-            StartPTWake()
-        end
+        if _idleFadeActive and _visChatVisible and CHAT.DB().idleFadeEnabled ~= false then StartPTWake() end
     else
         CancelWakeTicker()
         -- Our sidebar always runs with motion on (hover fade/reveal); the
         -- mode-specific click state is re-derived by ApplySidebarVisibility.
         local cf1 = _G.ChatFrame1
         local scrollBar = cf1 and CFD(cf1).sidebar
-        if scrollBar and scrollBar.EnableMouseMotion then
-            scrollBar:EnableMouseMotion(true)
-        end
-        if CHAT.ApplySidebarVisibility then
-            CHAT.ApplySidebarVisibility()
-        end
+        if scrollBar and scrollBar.EnableMouseMotion then scrollBar:EnableMouseMotion(true) end
+        if CHAT.ApplySidebarVisibility then CHAT.ApplySidebarVisibility() end
     end
-    if CHAT.ApplyIdleFadeHoverMotion then
-        CHAT.ApplyIdleFadeHoverMotion()
-    end
+    if CHAT.ApplyIdleFadeHoverMotion then CHAT.ApplyIdleFadeHoverMotion() end
 end
 
 -- Late joiners while engaged: a frame skinned or integrated during a
@@ -487,40 +423,28 @@ end
 -- widgets, so no recurring sweeps exist.
 local _ptSweepQueued = false
 local function RequestPassthroughSweep()
-    if not _chatPassthrough or _ptSweepQueued then
-        return
-    end
+    if not _chatPassthrough or _ptSweepQueued then return end
     _ptSweepQueued = true
     C_Timer.After(0, function()
         _ptSweepQueued = false
-        if not _chatPassthrough then
-            return
-        end
+        if not _chatPassthrough then return end
         PassthroughFrames(true)
-        if not _visChatVisible then
-            ShowChatStack(false)
-        end
+        if not _visChatVisible then ShowChatStack(false) end
     end)
 end
 
 local function _ApplyAlpha(alpha)
     SetChatAlphaCurrent(alpha)
     SetChatMousePassthrough(alpha <= 0)
-    if not _alphaFrames then
-        _BuildAlphaCache()
-    end
+    if not _alphaFrames then _BuildAlphaCache() end
     -- Our tab strip (UIParent-parented) fades directly; its buttons inherit.
-    if mod._chatTabStrip then
-        mod._chatTabStrip:SetAlpha(alpha)
-    end
+    if mod._chatTabStrip then mod._chatTabStrip:SetAlpha(alpha) end
     -- Blizzard Style shows Blizzard's real docked tabs: they fade at DOCK
     -- level, the same container-alpha write the tab sweep makes for the
     -- CludesUI look (never the per-tab alphas or their globals).
     if mod.ChatBlizzTabs() then
         local gdm = _G.GeneralDockManager
-        if gdm then
-            gdm:SetAlpha(alpha)
-        end
+        if gdm then gdm:SetAlpha(alpha) end
     end
     for index = 1, #_alphaFrames do
         local af = _alphaFrames[index]
@@ -533,28 +457,16 @@ local function _ApplyAlpha(alpha)
             local eb = af.eb
             if eb then
                 local focused = eb:HasFocus()
-                if issecretvalue and issecretvalue(focused) then
-                    focused = false
-                end
-                if castFrame.isTemporary or not focused then
-                    eb:SetAlpha(alpha)
-                end
+                if issecretvalue and issecretvalue(focused) then focused = false end
+                if castFrame.isTemporary or not focused then eb:SetAlpha(alpha) end
             end
-            if af.resizeGrip then
-                af.resizeGrip:SetAlpha(alpha * 0.4)
-            end
+            if af.resizeGrip then af.resizeGrip:SetAlpha(alpha * 0.4) end
         end
     end
     -- Behind-tabs extension is UIParent-parented: fade it directly.
-    if mod._chatBgExt then
-        mod._chatBgExt:SetAlpha(alpha)
-    end
-    if mod._chatPanelBorder then
-        mod._chatPanelBorder:SetAlpha(alpha)
-    end
-    if mod._sidebarSeparateBorder then
-        mod._sidebarSeparateBorder:SetAlpha(min(alpha, _sidebarFadeAlpha))
-    end
+    if mod._chatBgExt then mod._chatBgExt:SetAlpha(alpha) end
+    if mod._chatPanelBorder then mod._chatPanelBorder:SetAlpha(alpha) end
+    if mod._sidebarSeparateBorder then mod._sidebarSeparateBorder:SetAlpha(min(alpha, _sidebarFadeAlpha)) end
     -- The panel bottom separator is a texture on bg and inherits the chat frame's alpha
     -- automatically -- no explicit write needed. Sidebar (mode cached at build time)
     local scrollBar = _alphaFrames._sidebar
@@ -567,9 +479,7 @@ local function _ApplyAlpha(alpha)
         end
     end
     -- Chat-anchored scroll button (UIParent-parented, fades with the panel)
-    if _alphaFrames._chatScrollBtn then
-        _alphaFrames._chatScrollBtn:SetAlpha(alpha)
-    end
+    if _alphaFrames._chatScrollBtn then _alphaFrames._chatScrollBtn:SetAlpha(alpha) end
 end
 
 -- Scroll-to-bottom button seat: sidebar bottom (default) or the chat panel's
@@ -578,16 +488,12 @@ function CHAT.ApplyScrollButtonPosition()
     local cf1 = _G.ChatFrame1
     local skinData = cf1 and CFD(cf1)
     local button = skinData and skinData.scrollBtn
-    if not button then
-        return
-    end
+    if not button then return end
     local conf = CHAT.DB()
     -- Seat memo: this runs on every icon-layout pass (including sidebar hover
     -- edges); an unchanged seat needs no re-anchor and no alpha invalidation.
     local seat = conf.scrollButtonOnChat and "chat" or "sidebar"
-    if skinData.scrollSeat == seat then
-        return
-    end
+    if skinData.scrollSeat == seat then return end
     skinData.scrollSeat = seat
     local scrollBar = skinData.sidebar
     button:ClearAllPoints()
@@ -648,14 +554,10 @@ _chatFadeFrame:SetScript("OnUpdate", function(self, elapsed)
     -- The alpha step accumulates every frame but is only pushed to widgets on a
     -- throttle. Still smooth; saves ~75% of SetAlpha calls at 120fps.
     _fadeApplyAccum = _fadeApplyAccum + elapsed
-    if _fadeApplyAccum < 0.016 then
-        return
-    end
+    if _fadeApplyAccum < 0.016 then return end
     _fadeApplyAccum = 0
     _ApplyAlpha(_chatAlphaCurrent)
-    if _chatAlphaCurrent == _chatAlphaTarget then
-        self:Hide()
-    end
+    if _chatAlphaCurrent == _chatAlphaTarget then self:Hide() end
 end)
 
 -- Animated alpha for the visibility/mouseover system. Top-level authority:
@@ -670,9 +572,7 @@ function CHAT.SetChatAlpha(alpha)
     if _chatPassthrough and wasVisible ~= _visChatVisible then
         if _visChatVisible then
             ShowChatStack(true)
-            if _idleFadeActive and CHAT.DB().idleFadeEnabled ~= false then
-                StartPTWake()
-            end
+            if _idleFadeActive and CHAT.DB().idleFadeEnabled ~= false then StartPTWake() end
         else
             CancelWakeTicker()
             ShowChatStack(false)
@@ -682,18 +582,14 @@ function CHAT.SetChatAlpha(alpha)
 end
 
 -- Animated idle-fade alpha, clamped to the visibility alpha
-function CHAT.SetIdleFadeAlpha(alpha)
-    _SetAlphaTarget(min(alpha, _visAlpha))
-end
+function CHAT.SetIdleFadeAlpha(alpha) _SetAlphaTarget(min(alpha, _visAlpha)) end
 
 -- Re-derive visibility from DB settings (combat, mouseover, always, ...)
 function CHAT.RefreshVisibility()
     local conf = CHAT.DB()
 
     local vis = true
-    if CUI and CUI.EvalVisibility then
-        vis = CUI.EvalVisibility(conf)
-    end
+    if CUI and CUI.EvalVisibility then vis = CUI.EvalVisibility(conf) end
 
     local alpha
     if vis == false then

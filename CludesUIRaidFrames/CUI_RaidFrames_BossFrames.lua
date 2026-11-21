@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_BossFrames.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs = ipairs
@@ -34,13 +30,9 @@ local ResolveHealthTexture, separatedHdrs = Inner.ResolveHealthTexture, Inner.se
 local GetSafeHealthPercent = Inner.GetSafeHealthPercent
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local Pix
-Inner.PPSetters[#Inner.PPSetters + 1] = function(val)
-    Pix = val
-end
+Inner.PPSetters[#Inner.PPSetters + 1] = function(val) Pix = val end
 
 -------------------------------------------------------------------------------
 --  Friendly Boss Frames (any group): five standalone secure unit buttons for
@@ -75,13 +67,9 @@ do
     BossKit.tgt = setmetatable({}, { __mode = "k" })
     BossKit.ReadTarget = function(b, unitToken)
         local t = unitToken and UnitIsUnit(unitToken, "target")
-        if issecretvalue(t) then
-            t = false
-        end
+        if issecretvalue(t) then t = false end
         t = t and true or nil
-        if BossKit.tgt[b] == t then
-            return false
-        end
+        if BossKit.tgt[b] == t then return false end
         BossKit.tgt[b] = t
         return true
     end
@@ -105,9 +93,7 @@ do
     -- first); nil when the class has none or has not learned one yet.
     BossKit.ForeverKnownHeal = function(pClass)
         local entries = CludesUI.FOREVER_HEAL_SPELLS[pClass]
-        if not entries then
-            return nil
-        end
+        if not entries then return nil end
         local bank = C_SpellBook and C_SpellBook.IsSpellInSpellBook and Enum.SpellBookSpellBank
         for index = 1, #entries do
             local ident = entries[index]
@@ -117,9 +103,7 @@ do
             else
                 known = IsSpellKnown and IsSpellKnown(ident)
             end
-            if known then
-                return ident
-            end
+            if known then return ident end
         end
         return nil
     end
@@ -129,9 +113,7 @@ do
     -- evaluable), which it rejects -- treat NIL as in range. issecretvalue runs FIRST so the nil check
     -- never touches a secret.
     BossKit.ApplyRange = function(widget)
-        if not BossKit.rangeSpell then
-            return
-        end
+        if not BossKit.rangeSpell then return end
         local cfg = mod._scaledProfile or saved.profile
         local inRange = C_Spell.IsSpellInRange(BossKit.rangeSpell, BossKit.UnitOf(widget))
         if issecretvalue(inRange) or inRange ~= nil then
@@ -143,9 +125,7 @@ do
 
     BossKit.RangeTick = function()
         for _, btn in ipairs(BossKit.buttons) do
-            if btn:IsVisible() then
-                BossKit.ApplyRange(btn)
-            end
+            if btn:IsVisible() then BossKit.ApplyRange(btn) end
         end
     end
 
@@ -162,26 +142,16 @@ do
 
     -- Current unit for a button. The slot controller collapses friendly bosses into the FIRST slots
     -- (slot 1 may show boss2), so the secure "unit" attribute is truth; _fbUnit is the build default.
-    BossKit.UnitOf = function(widget)
-        return widget:GetAttribute("unit") or widget._fbUnit
-    end
+    BossKit.UnitOf = function(widget) return widget:GetAttribute("unit") or widget._fbUnit end
 
-    BossKit.Settings = function()
-        return saved and saved.profile and saved.profile.friendlyBoss
-    end
+    BossKit.Settings = function() return saved and saved.profile and saved.profile.friendlyBoss end
 
     BossKit.ShouldBeActive = function()
         local fallback = BossKit.Settings()
-        if not fallback then
-            return false
-        end
+        if not fallback then return false end
         -- Arena never has friendly bosses; an empty group there only takes room beside the party frames.
-        if mod._InArena() then
-            return false
-        end
-        if fallback.display == "always" then
-            return true
-        end
+        if mod._InArena() then return false end
+        if fallback.display == "always" then return true end
         if fallback.display == "healers" then
             -- WoW Forever: a class that can heal counts as its healing spec.
             if CludesUI.IS_FOREVER then
@@ -199,9 +169,7 @@ do
     -- hover (raised) > target (raised) > normal, using the button's border settings (FB.Source: the raid
     -- ones for the boss group) -- nothing separate.
     BossKit.ApplyBorderColor = function(widget)
-        if not Pix or not widget._borderFrame or not saved then
-            return
-        end
+        if not Pix or not widget._borderFrame or not saved then return end
         local cfg = BossKit.Source(widget)
         local targeted = BossKit.tgt[widget] and cfg.targetBorderEnabled ~= false
         if mod.RF_PetCompactOn(widget, cfg) then
@@ -214,9 +182,7 @@ do
             if widget._borderFrame:GetFrameLevel() ~= lvl then
                 widget._borderFrame:SetFrameLevel(lvl)
                 local boxHolder = Pix.GetBorders(widget._borderFrame)
-                if boxHolder then
-                    boxHolder:SetFrameLevel(lvl + 1)
-                end
+                if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
             end
             mod.RF_StockHighlight(widget, widget._borderFrame, cfg, hover, targeted)
             return
@@ -243,16 +209,14 @@ do
         -- The container too, like ApplyBorderLevel: FB.StyleBorder moves only the border
         -- frame, so a Show Behind flip would otherwise leave the strips on the old level.
         local boxHolder = Pix.GetBorders(widget._borderFrame)
-        if widget._borderFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1) then
+        if
+            widget._borderFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1)
+        then
             widget._borderFrame:SetFrameLevel(lvl)
-            if boxHolder then
-                boxHolder:SetFrameLevel(lvl + 1)
-            end
+            if boxHolder then boxHolder:SetFrameLevel(lvl + 1) end
             -- Textured styles: the backdrop child too (see ApplyBorderLevel).
             local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[widget._borderFrame]
-            if edge then
-                edge:SetFrameLevel(lvl)
-            end
+            if edge then edge:SetFrameLevel(lvl) end
         end
         if (cfg.borderSize or 1) <= 0 then
             mod.ApplyHighlightBorder(widget._borderFrame, cfg, hlSize, region, g, bcol, a, hlPx)
@@ -267,18 +231,14 @@ do
 
     -- Apply the border style (size/color/texture/offsets) to one button, from its FB.Source.
     BossKit.StyleBorder = function(widget)
-        if not Pix or not widget._borderFrame then
-            return
-        end
+        if not Pix or not widget._borderFrame then return end
         local cfg = BossKit.Source(widget)
         local bs = cfg.borderSize or 1
         local bc = cfg.borderColor or { r = 0, g = 0, b = 0 }
         local pl = widget:GetFrameLevel()
         local skinData = Inner.FFD[widget]
         local compact = mod.RF_PetCompactOn(widget, cfg)
-        if compact or (skinData and skinData._petCompactBorder) then
-            skinData._petCompactBorder = compact
-        end
+        if compact or (skinData and skinData._petCompactBorder) then skinData._petCompactBorder = compact end
         if compact then
             CludesUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
             BossKit.ApplyBorderColor(widget)
@@ -337,9 +297,7 @@ do
         local fbc = (ownerFrame.ColorSettings or ownerFrame.Settings)()
         fbc = fbc and fbc.healthColor
         local fillTex = healthBar:GetStatusBarTexture()
-        if fillTex then
-            fillTex:SetAlpha(1)
-        end
+        if fillTex then fillTex:SetAlpha(1) end
         healthBar:SetStatusBarColor(
             fbc and fbc.r or 23 / 255,
             fbc and fbc.g or 172 / 255,
@@ -355,9 +313,7 @@ do
     -- Name texts only (name events).
     BossKit.PaintName = function(b, unitToken, s)
         local st = BossKit.txs[b]
-        if not st then
-            return
-        end
+        if not st then return end
         mod._RFTextReady(st, s)
         mod.RF_TextNames(st, unitToken)
     end
@@ -378,9 +334,7 @@ do
         -- the texts keep the current-health pct. Dead units are not special-cased: there
         -- is no status colour here, so a full bar is what tells a dead unit apart.
         local barPct = pct
-        if healthBar._cuiInv then
-            barPct = GetSafeHealthPercent(unitToken, true)
-        end
+        if healthBar._cuiInv then barPct = GetSafeHealthPercent(unitToken, true) end
         if smooth then
             healthBar:SetValue(barPct, smooth)
         else
@@ -388,9 +342,7 @@ do
         end
 
         local st = BossKit.txs[b]
-        if not st then
-            return
-        end
+        if not st then return end
         if full then
             mod.RF_TextFull(st, cfg, unitToken)
             return
@@ -415,9 +367,7 @@ do
         local unitToken = BossKit.UnitOf(b)
         local flipped = BossKit.ReadTarget(b, unitToken)
         if not saved or not UnitExists(unitToken) then
-            if flipped then
-                BossKit.ApplyBorderColor(b)
-            end
+            if flipped then BossKit.ApplyBorderColor(b) end
             return
         end
         local s = BossKit.Source(b)
@@ -436,18 +386,14 @@ do
     BossKit.BuildVisuals = function(widget, texts)
         local backdrop = widget:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
-        if Pix then
-            Pix.DisablePixelSnap(backdrop)
-        end
+        if Pix then Pix.DisablePixelSnap(backdrop) end
         widget._bg = backdrop
 
         local healthBar = CreateFrame("StatusBar", nil, widget)
         healthBar:SetFrameLevel(widget:GetFrameLevel() + 2)
         healthBar:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
         healthBar:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
-        if Pix then
-            Pix.DisablePixelSnap(healthBar)
-        end
+        if Pix then Pix.DisablePixelSnap(healthBar) end
         healthBar:SetMinMaxValues(0, 100)
         healthBar:SetValue(100)
         widget._health = healthBar
@@ -469,17 +415,13 @@ do
         bdr:SetFrameLevel(widget:GetFrameLevel() + 8)
         widget._borderFrame = bdr
         -- Stock styles: the stock edge and highlights.
-        if mod.RF_Stock() then
-            mod.RF_StockBuild(widget, widget)
-        end
+        if mod.RF_Stock() then mod.RF_StockBuild(widget, widget) end
     end
 
     -- One-time construction of the container, the five buttons, click-cast registration and per-unit
     -- trackers. Buttons are created hidden; the secure visibility drivers own show/hide after that.
     BossKit.EnsureBuilt = function()
-        if BossKit.built then
-            return
-        end
+        if BossKit.built then return end
         BossKit.built = true
 
         local boxHolder = CreateFrame("Frame", "ERFFriendlyBossContainer", UIParent)
@@ -487,7 +429,8 @@ do
         BossKit.container = boxHolder
 
         for index = 1, 5 do
-            local widget = CreateFrame("Button", "ERFFriendlyBoss" .. index, boxHolder, "SecureUnitButtonTemplate")
+            local widget =
+                CreateFrame("Button", "ERFFriendlyBoss" .. index, boxHolder, "SecureUnitButtonTemplate")
             widget._fbUnit = "boss" .. index
             widget:SetAttribute("unit", widget._fbUnit)
             widget:SetAttribute("*type1", "target")
@@ -508,9 +451,7 @@ do
                 if mod.RFC_OnUnitAssigned then
                     local skinData = GetFFD(self)
                     local unitToken = BossKit.UnitOf(self)
-                    if skinData and unitToken then
-                        mod.RFC_OnUnitAssigned(self, skinData, unitToken)
-                    end
+                    if skinData and unitToken then mod.RFC_OnUnitAssigned(self, skinData, unitToken) end
                 end
                 BossKit.Update(self)
                 BossKit.ApplyRange(self)
@@ -539,9 +480,7 @@ do
                     if mod.RFC_OnUnitAssigned then
                         local skinData = GetFFD(self)
                         local unitToken = BossKit.UnitOf(self)
-                        if skinData and unitToken then
-                            mod.RFC_OnUnitAssigned(self, skinData, unitToken)
-                        end
+                        if skinData and unitToken then mod.RFC_OnUnitAssigned(self, skinData, unitToken) end
                     end
                     BossKit.Update(self)
                     BossKit.ApplyRange(self)
@@ -549,9 +488,7 @@ do
             end)
 
             -- Full click-cast / hovercast binding suite (mouseover heals included)
-            if mod.CC_RegisterFrame then
-                mod.CC_RegisterFrame(widget)
-            end
+            if mod.CC_RegisterFrame then mod.CC_RegisterFrame(widget) end
 
             -- Boss units are outside the roster trackers; track here. The slot controller may have
             -- assigned this unit to ANY slot, so route the event to whichever button shows it.
@@ -631,9 +568,7 @@ do
     BossKit.Pitch = function(fallbackSet, cfg)
         if fallbackSet and fallbackSet.position ~= "free" then
             local party = (not IsInRaid() or mod._PartyInRaid()) and fallbackSet.showInDungeons == true
-            if mod.RF_CompactOn(saved.profile, party) then
-                return mod.RF_OnePixel(party)
-            end
+            if mod.RF_CompactOn(saved.profile, party) then return mod.RF_OnePixel(party) end
         end
         -- Same grid as FB.FreePin: the boss container's own scale.
         local c = BossKit.container
@@ -645,14 +580,15 @@ do
     -- an owner carries buttons/container/Settings and defaults to FB itself.
     BossKit.ApplyStyle = function(ownerFrame)
         ownerFrame = ownerFrame or BossKit
-        if not ownerFrame.built then
-            return
-        end
+        if not ownerFrame.built then return end
         local cfg = mod._scaledProfile or saved.profile
         local fallbackSet = ownerFrame.Settings()
         -- Per-group size offset on the shared raid frame size (Extra Width/Height sliders; clamped so a negative offset can't invert a small frame).
-        local wid = PixelSnap(math.max(10, (cfg.frameWidth or 125) + ((fallbackSet and fallbackSet.extraWidth) or 0)))
-        local hgt = PixelSnap(math.max(10, (cfg.frameHeight or 60) + ((fallbackSet and fallbackSet.extraHeight) or 0)))
+        local wid =
+            PixelSnap(math.max(10, (cfg.frameWidth or 125) + ((fallbackSet and fallbackSet.extraWidth) or 0)))
+        local hgt = PixelSnap(
+            math.max(10, (cfg.frameHeight or 60) + ((fallbackSet and fallbackSet.extraHeight) or 0))
+        )
         local sp = BossKit.Pitch(fallbackSet, cfg)
         ownerFrame.pitch = sp
         -- Free Move ignores the raid growth settings: vertical stack by default, horizontal via the
@@ -702,9 +638,7 @@ do
         local st = BossKit.txs[b]
         if st then
             st._txW = wid
-            if s or st._txL then
-                mod.RF_TextLayout(st, s or st._txS)
-            end
+            if s or st._txL then mod.RF_TextLayout(st, s or st._txS) end
         end
     end
 
@@ -714,9 +648,7 @@ do
         b._bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
         b._health:SetStatusBarTexture(texPath)
         local ft = b._health:GetStatusBarTexture()
-        if ft then
-            ft:SetHorizTile(false)
-        end
+        if ft then ft:SetHorizTile(false) end
         -- Fill axis follows the raid Health Bar setting. The bg is a full-button texture (not fill-tracking), so nothing else re-anchors.
         mod.RF_ApplyHealthOrientation(b._health, cfg)
         -- These carry aura containers (RFC_SetupButton below) and so can carry
@@ -767,12 +699,8 @@ do
             if anchorPoint == "CENTER" then
                 -- A secret size falls back to the even (whole-pixel) centre.
                 local wid, hgt = c:GetWidth(), c:GetHeight()
-                if issecretvalue(wid) then
-                    wid = nil
-                end
-                if issecretvalue(hgt) then
-                    hgt = nil
-                end
+                if issecretvalue(wid) then wid = nil end
+                if issecretvalue(hgt) then hgt = nil end
                 posX = P.SnapCenterForDim(unitX + posX, wid, es) - unitX
                 posY = P.SnapCenterForDim(unitY + posY, hgt, es) - unitY
             else
@@ -788,9 +716,7 @@ do
     -- goes through FB.Pin (owner.FreeAnchor included).
     BossKit.Anchor = function(ownerFrame)
         ownerFrame = ownerFrame or BossKit
-        if not ownerFrame.built then
-            return
-        end
+        if not ownerFrame.built then return end
         if InCombatLockdown() then
             ownerFrame.anchorDirty = true
             return
@@ -897,7 +823,8 @@ do
                         + mod.PT_Reserve(
                             cfg.partyHorizontal,
                             before,
-                            (ownerFrame == BossKit) and mod.PF_OwnerReserve(cfg.partyHorizontal, before) or nil
+                            (ownerFrame == BossKit) and mod.PF_OwnerReserve(cfg.partyHorizontal, before)
+                                or nil
                         )
                     -- Pets line up with the first party frame: Flip Frame Growth and Centered start
                     -- the stack away from the container's top-left.
@@ -956,18 +883,14 @@ do
                 end
                 for ri = 1, GetNumGroupMembers() or 0 do
                     local _, _, sub = GetRaidRosterInfo(ri)
-                    if sub then
-                        occupied[sub] = true
-                    end
+                    if sub then occupied[sub] = true end
                 end
                 local first, last
                 local groupOrder = cfg.customGroupOrder and mod._RFValidatedGroupOrder(cfg.groupOrder)
                 for slotIndex = 1, 8 do
                     local growInfo = groupOrder and groupOrder[slotIndex] or slotIndex
                     if vg[growInfo] ~= false and separatedHdrs[growInfo] and occupied[growInfo] then
-                        if not first then
-                            first = separatedHdrs[growInfo]
-                        end
+                        if not first then first = separatedHdrs[growInfo] end
                         last = separatedHdrs[growInfo]
                     end
                 end
@@ -975,9 +898,7 @@ do
                     for slotIndex = 1, 8 do
                         local growInfo = groupOrder and groupOrder[slotIndex] or slotIndex
                         if vg[growInfo] ~= false and separatedHdrs[growInfo] then
-                            if not first then
-                                first = separatedHdrs[growInfo]
-                            end
+                            if not first then first = separatedHdrs[growInfo] end
                             last = separatedHdrs[growInfo]
                         end
                     end
@@ -1022,9 +943,7 @@ do
         end
 
         -- Owner-specific free anchoring (Extra Frames pins the grid's growth corner so the group grows away from it); CENTER pin otherwise.
-        if ownerFrame.FreeAnchor and ownerFrame.FreeAnchor(c, fallback) then
-            return
-        end
+        if ownerFrame.FreeAnchor and ownerFrame.FreeAnchor(c, fallback) then return end
         local p = fallback.freePos or {}
         BossKit.FreePin(c, "CENTER", p.x or 100, p.y or 0)
     end
@@ -1035,25 +954,17 @@ do
     -- layout/visibility hooks skip the re-anchor entirely (zero added work for raid-only users).
     function mod.FB_ReAnchor()
         mod.PF_PartyRelayout()
-        if not BossKit.built then
-            return
-        end
+        if not BossKit.built then return end
         local fallback = BossKit.Settings and BossKit.Settings()
-        if fallback and fallback.showInDungeons == true then
-            BossKit.Anchor()
-        end
+        if fallback and fallback.showInDungeons == true then BossKit.Anchor() end
     end
 
     -- Master apply: activates, deactivates and refreshes the whole feature. Called from OnEnable, the
     -- options dropdowns, spec changes, profile swaps (_CURF_RefreshAll) and the post-combat dirty pass.
     function mod.FB_Apply()
-        if not saved or not saved.profile then
-            return
-        end
+        if not saved or not saved.profile then return end
         local fallback = BossKit.Settings()
-        if not fallback then
-            return
-        end
+        if not fallback then return end
         if InCombatLockdown() then
             BossKit.applyDirty = true
             return
@@ -1072,9 +983,7 @@ do
                 end
                 BossKit.container:Hide()
             end
-            if BossKit.mover then
-                BossKit.mover:Hide()
-            end
+            if BossKit.mover then BossKit.mover:Hide() end
             BossKit.rangeSpell = nil
             BossKit.UpdateRangeTicker()
             BossKit.SyncGroupEvents(false)
@@ -1095,18 +1004,18 @@ do
             or "[@raid1,exists] 1; 0"
         RegisterAttributeDriver(BossKit.controller, "state-ingroup", groupCond)
         for index = 1, 5 do
-            RegisterAttributeDriver(BossKit.controller, "state-fb" .. index, "[@boss" .. index .. ",help] 1; 0")
+            RegisterAttributeDriver(
+                BossKit.controller,
+                "state-fb" .. index,
+                "[@boss" .. index .. ",help] 1; 0"
+            )
         end
         -- Force one relayout now: the driver manager fires attribute handlers only on VALUE CHANGES, so
         -- a (re)apply with unchanged states would never run the initial layout. FB_Apply is OOC-only,
         -- so the insecure Execute is always legal here.
-        if SecureHandlerExecute then
-            SecureHandlerExecute(BossKit.controller, BossKit.RELAYOUT)
-        end
+        if SecureHandlerExecute then SecureHandlerExecute(BossKit.controller, BossKit.RELAYOUT) end
         for _, btn in ipairs(BossKit.buttons) do
-            if btn:IsVisible() then
-                BossKit.Update(btn)
-            end
+            if btn:IsVisible() then BossKit.Update(btn) end
         end
 
         -- Range dimming: healer specs only (regardless of display mode).
@@ -1115,18 +1024,14 @@ do
         local _, pClass = UnitClass("player")
         BossKit.rangeSpell = (role == "HEALER") and BossKit.RANGE_HEAL[pClass] or nil
         -- WoW Forever: a healing class range-checks with its best known heal.
-        if CludesUI.IS_FOREVER then
-            BossKit.rangeSpell = BossKit.ForeverKnownHeal(pClass)
-        end
+        if CludesUI.IS_FOREVER then BossKit.rangeSpell = BossKit.ForeverKnownHeal(pClass) end
         if not BossKit.rangeSpell then
             for _, btn in ipairs(BossKit.buttons) do
                 btn:SetAlpha(1)
             end
         else
             for _, btn in ipairs(BossKit.buttons) do
-                if btn:IsVisible() then
-                    BossKit.ApplyRange(btn)
-                end
+                if btn:IsVisible() then BossKit.ApplyRange(btn) end
             end
         end
         BossKit.UpdateRangeTicker()
@@ -1136,17 +1041,11 @@ do
     -- pitch moved (the Extra Frames first: a boss group may be chained behind them).
     function mod.FB_Repitch()
         local xf = mod._XF
-        if xf and xf.built and xf.container:IsShown() then
-            BossKit.Anchor(xf)
-        end
-        if BossKit.built and BossKit.container:IsShown() then
-            BossKit.Anchor()
-        end
+        if xf and xf.built and xf.container:IsShown() then BossKit.Anchor(xf) end
+        if BossKit.built and BossKit.container:IsShown() then BossKit.Anchor() end
     end
 
-    function mod.FB_IsMoverShown()
-        return BossKit.mover and BossKit.mover:IsShown() or false
-    end
+    function mod.FB_IsMoverShown() return BossKit.mover and BossKit.mover:IsShown() or false end
 
     -- Free Move corner pin (Extra Frames, Pet Frames): the corner a grid grows from (hDir, vDir: its
     -- horizontal and vertical growth), so its first frame stays put as frames come and go, and with a
@@ -1158,23 +1057,19 @@ do
         else
             corner = (hDir == "LEFT") and "TOPRIGHT" or "TOPLEFT"
         end
-        if not region then
-            return corner
-        end
-        return corner, (hDir == "LEFT") and region.right or region.left, (vDir == "UP") and region.bottom or region.top
+        if not region then return corner end
+        return corner,
+            (hDir == "LEFT") and region.right or region.left,
+            (vDir == "UP") and region.bottom or region.top
     end
 
     -- The shared mover's drag stop, for corner-pinned owners: the dropped rect, relative to UIParent's
     -- centre, into set.freeRect.
     BossKit.SaveMoverRect = function(mover, set)
-        if not set then
-            return
-        end
+        if not set then return end
         local unitX, unitY = UIParent:GetCenter()
         local l, b, mw, mh = mover:GetRect()
-        if not (unitX and l) then
-            return
-        end
+        if not (unitX and l) then return end
         set.freeRect = { left = l - unitX, right = l + mw - unitX, bottom = b - unitY, top = b + mh - unitY }
     end
 
@@ -1183,18 +1078,14 @@ do
     -- build their own movers through this exact code with their own name/label (stored at owner.mover).
     BossKit.SetMoverShown = function(ownerFrame, show, frameName, labelText)
         if not show then
-            if ownerFrame.mover then
-                ownerFrame.mover:Hide()
-            end
+            if ownerFrame.mover then ownerFrame.mover:Hide() end
             return
         end
         -- Owners whose overlay can place another context's spot (the pet frames' Party and Raid tabs)
         -- read the overlay's settings, and bring their live group up to date themselves.
         local moverSettings = ownerFrame.MoverSettings or ownerFrame.Settings
         local fallback = moverSettings()
-        if not fallback or fallback.position ~= "free" then
-            return
-        end
+        if not fallback or fallback.position ~= "free" then return end
         if ownerFrame.MoverPrep then
             ownerFrame.MoverPrep()
         else
@@ -1227,9 +1118,7 @@ do
             labelFS:SetPoint("CENTER", m, "CENTER")
             labelFS:SetWordWrap(false)
             labelFS:SetText(CludesUI.L(labelText))
-            m:SetScript("OnDragStart", function(self)
-                self:StartMoving()
-            end)
+            m:SetScript("OnDragStart", function(self) self:StartMoving() end)
             m:SetScript("OnDragStop", function(self)
                 self:StopMovingOrSizing()
                 local cx, cy = self:GetCenter()
@@ -1244,18 +1133,12 @@ do
                     end
                 end
                 -- Corner-pinned owners also capture the dropped rect
-                if ownerFrame.SaveFreeRect then
-                    ownerFrame.SaveFreeRect(self)
-                end
+                if ownerFrame.SaveFreeRect then ownerFrame.SaveFreeRect(self) end
                 BossKit.Anchor(ownerFrame)
             end)
             ownerFrame.mover = m
             -- Close the mover with the options panel so it can't be stranded.
-            if CludesUI._mainFrame then
-                CludesUI._mainFrame:HookScript("OnHide", function()
-                    m:Hide()
-                end)
-            end
+            if CludesUI._mainFrame then CludesUI._mainFrame:HookScript("OnHide", function() m:Hide() end) end
         end
 
         ownerFrame.mover:ClearAllPoints()
@@ -1287,9 +1170,7 @@ do
         eventName:RegisterEvent("PLAYER_REGEN_ENABLED")
         eventName:RegisterEvent("PLAYER_ENTERING_WORLD")
         BossKit.SyncGroupEvents = function(enabled)
-            if BossKit.groupEv == enabled then
-                return
-            end
+            if BossKit.groupEv == enabled then return end
             BossKit.groupEv = enabled
             if enabled then
                 eventName:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
@@ -1302,9 +1183,7 @@ do
             end
         end
         eventName:SetScript("OnEvent", function(_, evt)
-            if not saved then
-                return
-            end
+            if not saved then return end
             if evt == "PLAYER_SPECIALIZATION_CHANGED" then
                 mod.FB_Apply()
             elseif evt == "PLAYER_ENTERING_WORLD" then
@@ -1328,9 +1207,7 @@ do
                 return
             elseif evt == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
                 for _, btn in ipairs(BossKit.buttons) do
-                    if btn:IsVisible() then
-                        BossKit.Update(btn)
-                    end
+                    if btn:IsVisible() then BossKit.Update(btn) end
                 end
             elseif evt == "PLAYER_TARGET_CHANGED" then
                 -- Only the border state can change here, and only on the buttons that flipped

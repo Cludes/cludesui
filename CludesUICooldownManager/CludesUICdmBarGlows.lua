@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmBarGlows.lua
 --  Bar Glows: Overlays glow effects on action bar / CDM bar buttons when
@@ -11,14 +9,10 @@ local ADDON_NAME, mod = ...
 
 -- Glow functions from CUI_CDM_Glows.lua (available after it loads)
 local StartNativeGlow = function(...)
-    if mod.StartNativeGlow then
-        return mod.StartNativeGlow(...)
-    end
+    if mod.StartNativeGlow then return mod.StartNativeGlow(...) end
 end
 local StopNativeGlow = function(...)
-    if mod.StopNativeGlow then
-        return mod.StopNativeGlow(...)
-    end
+    if mod.StopNativeGlow then return mod.StopNativeGlow(...) end
 end
 
 -- Slot offsets per bar index (matches CludesUIActionBars BAR_SLOT_OFFSETS)
@@ -33,9 +27,7 @@ local function GetActionBarButton(barIdx, btnIdx)
     local off = BAR_OFFSETS[barIdx] or 0
     local slot = off + btnIdx
     local button = _G["EABButton" .. slot]
-    if button then
-        return button
-    end
+    if button then return button end
     local BLIZZ_PREFIXES = {
         "ActionButton",
         "MultiBarBottomLeftButton",
@@ -46,9 +38,7 @@ local function GetActionBarButton(barIdx, btnIdx)
         "MultiBar6Button",
         "MultiBar7Button",
     }
-    if barIdx >= 1 and barIdx <= #BLIZZ_PREFIXES then
-        button = _G[BLIZZ_PREFIXES[barIdx] .. btnIdx]
-    end
+    if barIdx >= 1 and barIdx <= #BLIZZ_PREFIXES then button = _G[BLIZZ_PREFIXES[barIdx] .. btnIdx] end
     return button
 end
 
@@ -56,15 +46,11 @@ end
 -- Walks all CDM bars (default + extras) since the 1-spell-per-bar invariant
 -- guarantees a cooldownID can only live on one bar at a time.
 local function FindCDMButtonByCooldownID(cooldownID)
-    if not mod.cdmBarIcons then
-        return nil
-    end
+    if not mod.cdmBarIcons then return nil end
     for _, icons in pairs(mod.cdmBarIcons) do
         for index = 1, #icons do
             local iconTex = icons[index]
-            if iconTex and iconTex.cooldownID == cooldownID then
-                return iconTex
-            end
+            if iconTex and iconTex.cooldownID == cooldownID then return iconTex end
         end
     end
     return nil
@@ -77,18 +63,12 @@ end
 --- Get barGlows data from SavedVariables (with lazy init)
 function mod.GetBarGlows()
     local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not specKey then
-        return { enabled = true, selectedBar = "cooldowns", assignments = {} }
-    end
+    if not specKey then return { enabled = true, selectedBar = "cooldowns", assignments = {} } end
     -- Bar glows are spec-specific and per-profile: specProfiles[specKey].barGlows
     -- under the active profile's bucket (ns.GetActiveSpecProfiles).
     local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfiles then
-        return { enabled = true, selectedBar = "cooldowns", assignments = {} }
-    end
-    if not specProfiles[specKey] then
-        specProfiles[specKey] = { barSpells = {} }
-    end
+    if not specProfiles then return { enabled = true, selectedBar = "cooldowns", assignments = {} } end
+    if not specProfiles[specKey] then specProfiles[specKey] = { barSpells = {} } end
     local prof = specProfiles[specKey]
     if not prof.barGlows or not next(prof.barGlows) then
         prof.barGlows = {
@@ -121,13 +101,9 @@ end
 --- Returns tracked (displayed in CDM) and untracked (known but not displayed)
 function mod.GetAllCDMBuffSpells()
     local ECME = mod.ECME
-    if not ECME or not ECME.db then
-        return {}, {}
-    end
+    if not ECME or not ECME.db then return {}, {} end
     local profile = ECME.db.profile
-    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
-        return {}, {}
-    end
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then return {}, {} end
 
     local trackedSet = {}
     local trackedOrder = {}
@@ -191,12 +167,8 @@ local stackGates = {} -- [key] = { gate,mask,fill, gate2,mask2,fill2, pad, thres
 
 local function StackGateSize(overlayFrame)
     local wid, hgt = overlayFrame:GetWidth(), overlayFrame:GetHeight()
-    if not wid or wid < 5 then
-        wid = 36
-    end
-    if not hgt or hgt < 5 then
-        hgt = wid
-    end
+    if not wid or wid < 5 then wid = 36 end
+    if not hgt or hgt < 5 then hgt = wid end
     return wid, hgt
 end
 
@@ -206,9 +178,7 @@ local function NewStackGate(overlayFrame, pad)
     gate:SetPoint("BOTTOMRIGHT", overlayFrame, "BOTTOMRIGHT", pad, -pad)
     gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     local fillTex = gate:GetStatusBarTexture()
-    if fillTex then
-        fillTex:SetAlpha(0)
-    end
+    if fillTex then fillTex:SetAlpha(0) end
     gate:EnableMouse(false)
     local mask = gate:CreateMaskTexture()
     mask:SetTexture("Interface\\Buttons\\WHITE8x8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
@@ -218,24 +188,14 @@ end
 local function SizeStackGateMasks(st, width, height)
     local wid, hgt = width + st.pad * 2, height + st.pad * 2
     st.mask:SetSize(wid, hgt)
-    if st.mask2 then
-        st.mask2:SetSize(wid, hgt)
-    end
+    if st.mask2 then st.mask2:SetSize(wid, hgt) end
 end
 
 local function StackGlowMatches(value, operator, threshold)
-    if operator == "lt" then
-        return value < threshold
-    end
-    if operator == "lte" then
-        return value <= threshold
-    end
-    if operator == "eq" then
-        return value == threshold
-    end
-    if operator == "gt" then
-        return value > threshold
-    end
+    if operator == "lt" then return value < threshold end
+    if operator == "lte" then return value <= threshold end
+    if operator == "eq" then return value == threshold end
+    if operator == "gt" then return value > threshold end
     return value >= threshold
 end
 
@@ -246,9 +206,7 @@ local function EnsureStackGate(overlayFrame, key)
         stackGates[key] = st
         local wid, hgt = StackGateSize(overlayFrame)
         local pad = math.ceil(math.max(wid, hgt) * 0.4)
-        if pad < 12 then
-            pad = 12
-        end
+        if pad < 12 then pad = 12 end
         st.pad = pad
         st.gate, st.mask, st.fill = NewStackGate(overlayFrame, pad)
         SizeStackGateMasks(st, wid, hgt)
@@ -262,9 +220,7 @@ end
 -- intersects one lower + one upper gate (both masks applied to the glow).
 local function ConfigureStackGate(overlayFrame, key, threshold, operator)
     local st = EnsureStackGate(overlayFrame, key)
-    if st.threshold == threshold and st.operator == operator then
-        return st
-    end
+    if st.threshold == threshold and st.operator == operator then return st end
     st.threshold, st.operator = threshold, operator
 
     local max = operator == "lt" or operator == "lte"
@@ -299,9 +255,7 @@ local function EntryHasSid(details, sids)
     local linked = details.linkedSpellIDs
     if linked then
         for index = 1, #linked do
-            if sids[linked[index]] then
-                return true
-            end
+            if sids[linked[index]] then return true end
         end
     end
     return false
@@ -313,15 +267,11 @@ end
 -- selfAura == true (Frost Mage's Shatter tracks its linked Freezing debuff on
 -- the target), so a harmful linked spell counts as well.
 local function EntryOnOtherUnit(details, harmful)
-    if details.selfAura == false then
-        return true
-    end
+    if details.selfAura == false then return true end
     local linked = details.linkedSpellIDs
     if harmful and linked then
         for index = 1, #linked do
-            if linked[index] and harmful(linked[index]) then
-                return true
-            end
+            if linked[index] and harmful(linked[index]) then return true end
         end
     end
     return false
@@ -335,9 +285,7 @@ end
 -- Walks the Tracked Buff / Tracked Bar category sets; called from
 -- SetupOverlays only (glow rebuilds), never per tick.
 local function AnyTargetAura(sids)
-    if not next(sids) then
-        return false
-    end
+    if not next(sids) then return false end
     local CV = C_CooldownViewer
     local cats = Enum and Enum.CooldownViewerCategory
     if not (cats and CV and CV.GetCooldownViewerCategorySet and CV.GetCooldownViewerCooldownInfo) then
@@ -381,24 +329,16 @@ local function RawButtonSpell(button)
         if slot and mod.SlotSpellID then
             -- The assisted-combat button shows whatever is suggested, not an ability of its own.
             local _, _, subType = GetActionInfo(slot)
-            if subType ~= "assistedcombat" then
-                spellRef = mod.SlotSpellID(slot)
-            end
+            if subType ~= "assistedcombat" then spellRef = mod.SlotSpellID(slot) end
         end
     end
-    if type(spellRef) ~= "number" or issecretvalue(spellRef) or spellRef <= 0 then
-        return nil
-    end
+    if type(spellRef) ~= "number" or issecretvalue(spellRef) or spellRef <= 0 then return nil end
     return spellRef
 end
 
-local function BaseSpell(spellRef)
-    return C_Spell.GetBaseSpell(spellRef) or spellRef
-end
+local function BaseSpell(spellRef) return C_Spell.GetBaseSpell(spellRef) or spellRef end
 
-local function LiveSpell(spellRef)
-    return C_SpellBook.FindSpellOverrideByID(spellRef) or spellRef
-end
+local function LiveSpell(spellRef) return C_SpellBook.FindSpellOverrideByID(spellRef) or spellRef end
 
 -- Glows on an action bar button are saved per ability ("spell_<base spellID>"),
 -- so a stance or form swap that repages the bar never moves a glow onto the
@@ -472,9 +412,7 @@ local function UsablePressable(spellRef)
 end
 
 local function SyncUsableEvents(on)
-    if on == usableEventsOn then
-        return
-    end
+    if on == usableEventsOn then return end
     usableEventsOn = on
     if on then
         if not usableEvents then
@@ -482,15 +420,11 @@ local function SyncUsableEvents(on)
             usableFlush:Hide()
             usableFlush:SetScript("OnUpdate", function(self)
                 self:Hide()
-                if UpdateOverlayVisuals then
-                    UpdateOverlayVisuals()
-                end
+                if UpdateOverlayVisuals then UpdateOverlayVisuals() end
             end)
             usableEvents = mod.TakeShell()
             usableEvents:SetScript("OnEvent", function(_, evt)
-                if evt ~= "SPELL_UPDATE_USABLE" then
-                    RefreshUsableCooldowns()
-                end
+                if evt ~= "SPELL_UPDATE_USABLE" then RefreshUsableCooldowns() end
                 usableFlush:Show()
             end)
         end
@@ -510,9 +444,7 @@ end
 -- stance may have repaged the bar) could be the wrong one, and the move deletes
 -- the old key.
 local function MigrateAbilityKeys(backdrop)
-    if backdrop._abilityKeysMigrated or not IsLoggedIn() or not GetActionBarButton(1, 1) then
-        return
-    end
+    if backdrop._abilityKeysMigrated or not IsLoggedIn() or not GetActionBarButton(1, 1) then return end
     backdrop._abilityKeysMigrated = true
     local moves -- { { oldKey, newKey, entry }, ... }
     for key, entries in pairs(backdrop.assignments) do
@@ -528,9 +460,7 @@ local function MigrateAbilityKeys(backdrop)
             end
         end
     end
-    if not moves then
-        return
-    end
+    if not moves then return end
     for _, m in ipairs(moves) do
         local old, new, e = m[1], m[2], m[3]
         local dst = backdrop.assignments[new]
@@ -546,9 +476,7 @@ local function MigrateAbilityKeys(backdrop)
                 break
             end
         end
-        if #source == 0 then
-            backdrop.assignments[old] = nil
-        end
+        if #source == 0 then backdrop.assignments[old] = nil end
     end
 end
 
@@ -583,9 +511,7 @@ local function ScanActionButtons()
                 end
                 t[#t + 1] = target
                 local slot = button.GetAttribute and button:GetAttribute("action") or button.action
-                if slot then
-                    slotBase[slot] = base
-                end
+                if slot then slotBase[slot] = base end
             end
         end
     end
@@ -652,23 +578,15 @@ local function BindOverlays(backdrop)
                         overlayFrame._abilitySid = abilitySid
                         overlayFrame:Show()
                         activeKeys[key] = true
-                        if record.spellID and record.spellID > 0 then
-                            glowSids[record.spellID] = true
-                        end
+                        if record.spellID and record.spellID > 0 then glowSids[record.spellID] = true end
                         -- The And condition's second buff can be a target debuff too.
                         local cond = record.andMode == "and"
                             and type(record.conditions) == "table"
                             and record.conditions[1]
                         local csid = type(cond) == "table" and tonumber(cond.spellID)
-                        if csid and csid > 0 then
-                            glowSids[csid] = true
-                        end
-                        if record.heroTree and not CludesUI.IS_FOREVER then
-                            anyHero = true
-                        end
-                        if record.mode == "USABLE" then
-                            anyUsable = true
-                        end
+                        if csid and csid > 0 then glowSids[csid] = true end
+                        if record.heroTree and not CludesUI.IS_FOREVER then anyHero = true end
+                        if record.mode == "USABLE" then anyUsable = true end
                         local spellRef = record.stackEnabled and record.spellID
                         if spellRef and spellRef > 0 then
                             stackSids = stackSids or {}
@@ -705,13 +623,9 @@ local function SyncRebindEvents(on)
         rebindFlush:SetScript("OnUpdate", function(self)
             self:Hide()
             local backdrop = _cachedBG
-            if not backdrop or not backdrop.enabled then
-                return
-            end
+            if not backdrop or not backdrop.enabled then return end
             BindOverlays(backdrop)
-            if UpdateOverlayVisuals then
-                UpdateOverlayVisuals()
-            end
+            if UpdateOverlayVisuals then UpdateOverlayVisuals() end
         end)
     elseif not on and rebindFlush then
         rebindFlush:Hide()
@@ -722,9 +636,7 @@ end
 -- a glow is saved for (slot is ACTIONBAR_SLOT_CHANGED's payload; 0 or nil = any slot).
 -- The slot's new ability is recorded either way so the next change compares against it.
 function mod.QueueBarGlowRebind(evt, slot)
-    if not rebindFlush then
-        return
-    end
+    if not rebindFlush then return end
     if evt == "ACTIONBAR_SLOT_CHANGED" and slot and slot ~= 0 and mod.SlotSpellID then
         local nowTime = mod.SlotSpellID(slot)
         nowTime = type(nowTime) == "number"
@@ -734,9 +646,7 @@ function mod.QueueBarGlowRebind(evt, slot)
             or nil
         local was = slotBase[slot]
         slotBase[slot] = nowTime
-        if not ((nowTime and glowedAbilities[nowTime]) or (was and glowedAbilities[was])) then
-            return
-        end
+        if not ((nowTime and glowedAbilities[nowTime]) or (was and glowedAbilities[was])) then return end
     end
     rebindFlush:Show()
 end
@@ -755,9 +665,7 @@ local function SetupOverlays()
         SyncUsableEvents(false)
         SyncRebindEvents(false)
         mod._bgWantTargetAuras = false
-        if mod.SetBarGlowTargetAuras then
-            mod.SetBarGlowTargetAuras(false)
-        end
+        if mod.SetBarGlowTargetAuras then mod.SetBarGlowTargetAuras(false) end
         return
     end
 
@@ -778,9 +686,7 @@ local function SetupOverlays()
     -- Listen to target auras only while some glow tracks a non-self aura (CludesUICdmHooks).
     local wantTarget = AnyTargetAura(glowSids)
     mod._bgWantTargetAuras = wantTarget
-    if mod.SetBarGlowTargetAuras then
-        mod.SetBarGlowTargetAuras(wantTarget)
-    end
+    if mod.SetBarGlowTargetAuras then mod.SetBarGlowTargetAuras(wantTarget) end
 
     -- Force re-evaluation on next tick
     wipe(lastStates)
@@ -790,9 +696,7 @@ end
 --- Called each CDM tick (~10Hz from BuffTicker).
 UpdateOverlayVisuals = function()
     local backdrop = _cachedBG
-    if not backdrop or not backdrop.enabled then
-        return
-    end
+    if not backdrop or not backdrop.enabled then return end
 
     for key, overlayFrame in pairs(overlayFrames) do
         if overlayFrame:IsShown() and overlayFrame._assignEntry then
@@ -804,9 +708,7 @@ UpdateOverlayVisuals = function()
             local auraActive = false
             if spellId and spellId > 0 and mode ~= "USABLE" then
                 local cache = mod._tickBlizzActiveCache
-                if cache and cache[spellId] then
-                    auraActive = true
-                end
+                if cache and cache[spellId] then auraActive = true end
             end
 
             local shouldGlow
@@ -960,6 +862,4 @@ mod.RequestUpdate = mod.RequestBarGlowUpdate
 -------------------------------------------------------------------------------
 
 -- Called once during CDMFinishSetup
-function mod.InitBarGlows()
-    SetupOverlays()
-end
+function mod.InitBarGlows() SetupOverlays() end

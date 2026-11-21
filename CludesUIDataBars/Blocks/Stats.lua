@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Stats.lua - Info Bar blocks: FPS, latency, durability, combat.
 --
@@ -25,9 +23,7 @@ local K = mod.BlockKit
 local InCombatLockdown = InCombatLockdown
 local format, floor, max, min = string.format, math.floor, math.max, math.min
 
-local function TextSize()
-    return max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
-end
+local function TextSize() return max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5)) end
 
 -------------------------------------------------------------------------------
 --  Colours
@@ -41,9 +37,7 @@ end
 -- Latency in three bands (ms), in the client's own green / yellow / red.
 local LAT_GOOD, LAT_FAIR = 100, 250
 local function FontColour(color, red, green, blue)
-    if color and color.GetRGB then
-        return color:GetRGB()
-    end
+    if color and color.GetRGB then return color:GetRGB() end
     return red, green, blue
 end
 local function LatencyColour(ms)
@@ -56,9 +50,7 @@ local function LatencyColour(ms)
 end
 
 local function Memory(kb)
-    if kb > 1024 then
-        return format("%.2f MB", kb / 1024)
-    end
+    if kb > 1024 then return format("%.2f MB", kb / 1024) end
     return format("%.0f KB", kb)
 end
 
@@ -112,23 +104,17 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end
 
     -- The template's digits: at least three, so 60 -> 100 fps keeps its width.
-    local function Digits()
-        return max(3, #tostring(value))
-    end
+    local function Digits() return max(3, #tostring(value)) end
 
     function inst:Refresh()
         local cfg = blockCfg.settings or {}
         local fontSize = TextSize()
         local barH = barCtx.GetThickness()
-        if value < 0 then
-            value = spec.sample()
-        end
+        if value < 0 then value = spec.sample() end
         local iconSize = 0
         if iconTex then
             K.SetBlockIcon(iconTex, blockCfg)
-            if cfg.showIcon ~= false then
-                iconSize = fontSize + (spec.iconExtra or 0)
-            end
+            if cfg.showIcon ~= false then iconSize = fontSize + (spec.iconExtra or 0) end
         end
         mod.SetFont(label, fontSize, barCtx.cfg)
         label:SetText(value .. spec.suffix())
@@ -189,9 +175,7 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     -- A new value: just the text while the template's width holds, a full
     -- pass when it would change (or on a side bar, where text wraps).
     local function Take(v)
-        if v == value then
-            return
-        end
+        if v == value then return end
         value = v
         if digitsDrawn and Digits() == digitsDrawn and not barCtx.IsVertical() then
             label:SetText(value .. spec.suffix())
@@ -199,16 +183,12 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
         else
             inst:Refresh()
         end
-        if hovered then
-            spec.tooltip(inst, true)
-        end
+        if hovered then spec.tooltip(inst, true) end
     end
 
     local function Tick()
         ticks = ticks + 1
-        if ticks < (spec.interval or 1) then
-            return
-        end
+        if ticks < (spec.interval or 1) then return end
         ticks = 0
         Take(spec.sample())
     end
@@ -217,9 +197,7 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
         Tick()
     end
     -- The tooltip resyncs the bar with what it just read.
-    function inst:ForceSample()
-        SampleNow()
-    end
+    function inst:ForceSample() SampleNow() end
 
     -- An event can fire before its data is in: one more look a moment later
     -- (one at a time, as damage arrives in bursts).
@@ -230,24 +208,18 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
             retrying = true
             C_Timer.After(spec.retryDelay, function()
                 retrying = false
-                if not inst._dead then
-                    SampleNow()
-                end
+                if not inst._dead then SampleNow() end
             end)
         end
     end
     -- A burst of events in one frame (durability and alerts per slot) is one sample.
     local queued = false
     local function OnEvent()
-        if queued then
-            return
-        end
+        if queued then return end
         queued = true
         C_Timer.After(0, function()
             queued = false
-            if not inst._dead then
-                SampleAndRetry()
-            end
+            if not inst._dead then SampleAndRetry() end
         end)
     end
 
@@ -261,14 +233,7 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
         mod.Tip_Hide(contentFrame)
         Paint()
     end)
-    if spec.click then
-        widget:SetScript(
-            "OnClick",
-            spec.click(inst, function()
-                return hovered
-            end)
-        )
-    end
+    if spec.click then widget:SetScript("OnClick", spec.click(inst, function() return hovered end)) end
 
     function inst:Enable()
         contentFrame:Show()
@@ -294,9 +259,7 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end
 
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 40)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 40) end
         return max(contentFrame:GetWidth() or 70, 40)
     end
 
@@ -315,18 +278,14 @@ end
 -- Addon memory, shared by every FPS block; rescanned at most every 30s.
 local memory = {}
 local lastMemoryScan = 0
-local function MostMemory(a, b)
-    return a.mem > b.mem
-end
+local function MostMemory(a, b) return a.mem > b.mem end
 
 -- UpdateAddOnMemoryUsage walks every addon and is a visible spike: never in
 -- combat (on a busy pull it can trip the "script ran too long" check), and
 -- the list may be up to 30s old anyway.
 local function ScanMemory()
     local now = GetTime()
-    if InCombatLockdown() or now - lastMemoryScan < 30 then
-        return
-    end
+    if InCombatLockdown() or now - lastMemoryScan < 30 then return end
     lastMemoryScan = now
     UpdateAddOnMemoryUsage()
     local count = 0
@@ -352,9 +311,7 @@ mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
         local fps = floor(GetFramerate())
         local red, green, blue = FPSColour(fps)
         mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, red, green, blue)
-        if not fromTick then
-            ScanMemory()
-        end
+        if not fromTick then ScanMemory() end
         if #memory > 0 then
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(L["MEMORY_USAGE"], 1, 1, 1)
@@ -371,29 +328,21 @@ mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
     return SingleValueBlock(blockCfg, slot, contentFrame, barCtx, {
         tickKey = "fps",
         interval = 3,
-        sample = function()
-            return floor(GetFramerate())
-        end,
+        sample = function() return floor(GetFramerate()) end,
         suffix = mod.GetFPSSuffix,
         tooltip = Tooltip,
         click = function(inst, isHovered)
             return function(_, mouseButton)
-                if mouseButton ~= "LeftButton" then
-                    return
-                end
+                if mouseButton ~= "LeftButton" then return end
                 -- A full collection stalls a frame: only with Shift; a plain
                 -- click just prints the figure.
-                if IsShiftKeyDown() then
-                    collectgarbage("collect")
-                end
+                if IsShiftKeyDown() then collectgarbage("collect") end
                 print(
                     "|cff4cc9f0Info Bar|r: Memory usage snapshot |cffffff00"
                         .. Memory(collectgarbage("count"))
                         .. "|r"
                 )
-                if isHovered() then
-                    Tooltip(inst, false)
-                end
+                if isHovered() then Tooltip(inst, false) end
             end
         end,
     })
@@ -405,9 +354,7 @@ end
 -- home | world | both (the old useWorldLatency flag reads as world). Shared
 -- with the options row, which must agree on what is selected.
 function mod.LatencyMode(cfg)
-    if cfg.latencyMode then
-        return cfg.latencyMode
-    end
+    if cfg.latencyMode then return cfg.latencyMode end
     return cfg.useWorldLatency and "world" or "home"
 end
 
@@ -418,9 +365,7 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
     inst.key = K.InstKey(barCtx, blockCfg)
     local tickKey = "ms:" .. inst.key
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     local hovered = false
     local drawn -- mode, icon and both values as last drawn
@@ -541,9 +486,7 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
                 end
                 part.text:SetPoint("LEFT", button, "LEFT", x, 0)
                 x = x + mod.SnapToPixelGrid(part.text:GetStringWidth())
-                if i < #links then
-                    x = x + 8
-                end
+                if i < #links then x = x + 8 end
             end
             local width = max(x + 4, 10)
             contentFrame:SetSize(width, barH)
@@ -584,9 +527,7 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
         contentFrame:Hide()
     end
     function inst:GetAutoLength()
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 30)
-        end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 30) end
         return max(contentFrame:GetWidth() or 60, 24)
     end
     function inst:Destroy()
@@ -606,9 +547,7 @@ mod.BlockFactories.durability = function(blockCfg, slot, contentFrame, barCtx)
         local lowest = 100
         for s = 1, 18 do
             local current, most = GetInventoryItemDurability(s)
-            if current and most and most > 0 then
-                lowest = min(lowest, current / most * 100)
-            end
+            if current and most and most > 0 then lowest = min(lowest, current / most * 100) end
         end
         local pct = floor(lowest)
         K.lastDurabilityPct = pct
@@ -633,9 +572,7 @@ mod.BlockFactories.durability = function(blockCfg, slot, contentFrame, barCtx)
         events = { "UPDATE_INVENTORY_DURABILITY", "UPDATE_INVENTORY_ALERTS", "PLAYER_ENTERING_WORLD" },
         retryDelay = 2,
         sample = Lowest,
-        suffix = function()
-            return "%"
-        end,
+        suffix = function() return "%" end,
         tooltip = Tooltip,
     })
 end
@@ -648,15 +585,9 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
     inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }
 
-    local function Fighting()
-        return UnitAffectingCombat("player") and 1 or 0
-    end
-    local function Words(v)
-        return v == 1 and L["IN_COMBAT"] or L["OUT_OF_COMBAT"]
-    end
-    local function OnlyInCombat()
-        return (blockCfg.settings or {}).onlyInCombat == true
-    end
+    local function Fighting() return UnitAffectingCombat("player") and 1 or 0 end
+    local function Words(v) return v == 1 and L["IN_COMBAT"] or L["OUT_OF_COMBAT"] end
+    local function OnlyInCombat() return (blockCfg.settings or {}).onlyInCombat == true end
 
     local function Tooltip()
         mod.Tip_Begin(contentFrame)
@@ -688,13 +619,9 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
 
     function inst:Refresh()
         local barH = barCtx.GetThickness()
-        if state < 0 then
-            state = Fighting()
-        end
+        if state < 0 then state = Fighting() end
         local collapsed = OnlyInCombat() and state ~= 1
-        if not collapsed and not contentFrame:IsShown() then
-            contentFrame:Show()
-        end
+        if not collapsed and not contentFrame:IsShown() then contentFrame:Show() end
         mod.SetFont(label, fontSize, barCtx.cfg)
         label:SetText(CludesUI.L(Words(state)))
         Paint()
@@ -738,14 +665,10 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
 
     local function OnEvent()
         local now = Fighting()
-        if now == state then
-            return
-        end
+        if now == state then return end
         state = now
         inst:Refresh()
-        if hovered then
-            Tooltip()
-        end
+        if hovered then Tooltip() end
     end
 
     widget:SetScript("OnEnter", function()
@@ -762,9 +685,7 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
     function inst:Enable()
         contentFrame:Show()
         state = -1
-        if not self.eventFrame then
-            self.eventFrame = K.MakeEventFrame(self, OnEvent)
-        end
+        if not self.eventFrame then self.eventFrame = K.MakeEventFrame(self, OnEvent) end
         K.RegisterInstEvents(self)
         OnEvent()
     end
@@ -775,12 +696,8 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:GetAutoLength()
-        if (OnlyInCombat() and state ~= 1) or not contentFrame:IsShown() then
-            return 0
-        end
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight() or 40, 40)
-        end
+        if (OnlyInCombat() and state ~= 1) or not contentFrame:IsShown() then return 0 end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight() or 40, 40) end
         return max(contentFrame:GetWidth() or 70, 40)
     end
 

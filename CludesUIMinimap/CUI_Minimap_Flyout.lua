@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Flyout.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local _addonVisible, cachedAddonButtons, SKIN = Inner._addonVisible, Inner.cachedAddonButtons, Inner.EBS
@@ -27,21 +23,15 @@ local SetFlyoutToggle = Inner.SetFlyoutToggle
 -- Assigned in CUI_Minimap_Layout.lua (see SetMOEvaluate), so the flyout
 -- panels created here can fire it from OnShow/OnHide.
 local MO_Evaluate
-Inner.moEvaluateSetters[#Inner.moEvaluateSetters + 1] = function(val)
-    MO_Evaluate = val
-end
+Inner.moEvaluateSetters[#Inner.moEvaluateSetters + 1] = function(val) MO_Evaluate = val end
 
 -------------------------------------------------------------------------------
 --  Minimap Button Flyout
 -------------------------------------------------------------------------------
 local flyoutToggle = nil -- the square trigger button
 local flyoutPanel = nil -- the popup grid container
-Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val)
-    flyoutToggle = val
-end
-Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val)
-    flyoutPanel = val
-end
+Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val) flyoutToggle = val end
+Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val) flyoutPanel = val end
 local flyoutSavedParents = {} -- original parent/point data for restore
 local flyoutSavedRegions = {} -- original region states for restore
 
@@ -66,15 +56,11 @@ local function IsJunkTexture(regionFrame)
         return false
     end
     local texID = regionFrame.GetTextureFileID and regionFrame:GetTextureFileID()
-    if texID and MINIMAP_BTN_JUNK[texID] then
-        return true
-    end
+    if texID and MINIMAP_BTN_JUNK[texID] then return true end
     local texPath = regionFrame:GetTexture()
     if texPath and type(texPath) == "string" then
         for pattern in pairs(MINIMAP_BTN_JUNK_PATH) do
-            if texPath:match(pattern) then
-                return true
-            end
+            if texPath:match(pattern) then return true end
         end
     end
     return false
@@ -118,40 +104,28 @@ end
 
 local function RestoreButtonDecorations(button)
     local saved = flyoutSavedRegions[button]
-    if not saved then
-        return
-    end
+    if not saved then return end
     for _, details in ipairs(saved.junk) do
         details.region:SetAlpha(details.alpha)
-        if details.shown then
-            details.region:Show()
-        end
+        if details.shown then details.region:Show() end
     end
     if saved.icon and saved.iconPoints then
         saved.icon:ClearAllPoints()
         for _, pt in ipairs(saved.iconPoints) do
             saved.icon:SetPoint(pt[1], pt[2], pt[3], pt[4], pt[5])
         end
-        if saved.iconTC and #saved.iconTC >= 8 then
-            saved.icon:SetTexCoord(unpack(saved.iconTC))
-        end
+        if saved.iconTC and #saved.iconTC >= 8 then saved.icon:SetTexCoord(unpack(saved.iconTC)) end
     end
-    if saved.btnW and saved.btnH then
-        button:SetSize(saved.btnW, saved.btnH)
-    end
+    if saved.btnW and saved.btnH then button:SetSize(saved.btnW, saved.btnH) end
     flyoutSavedRegions[button] = nil
 end
 
 local function IsUngrouped(button)
     -- A group of one has nothing to open: the only grouped button stands on
     -- the row by itself (decided per scan, see GatherMinimapButtons).
-    if button == SKIN._soloAddonButton then
-        return true
-    end
+    if button == SKIN._soloAddonButton then return true end
     local mp = SKIN.db and SKIN.db.profile.minimap
-    if not mp or not mp.ungroupedButtons then
-        return false
-    end
+    if not mp or not mp.ungroupedButtons then return false end
     local name = button:GetName()
     return name and mp.ungroupedButtons[name]
 end
@@ -171,9 +145,10 @@ local function CollectFlyoutButtons()
             collected[#collected + 1] = button
         end
     end
-    table.sort(collected, function(lhs, rhs)
-        return GetMinimapButtonLabel(lhs):lower() < GetMinimapButtonLabel(rhs):lower()
-    end)
+    table.sort(
+        collected,
+        function(lhs, rhs) return GetMinimapButtonLabel(lhs):lower() < GetMinimapButtonLabel(rhs):lower() end
+    )
     return collected
 end
 
@@ -204,9 +179,7 @@ end
 -- Raise popups an addon parents to its button after layout above the grid. The
 -- button's own black box stays below it, where the layout pinned it.
 function SKIN._RaiseLateFlyoutChildren(button)
-    if not flyoutPanel or button:GetParent() ~= flyoutPanel then
-        return
-    end
+    if not flyoutPanel or button:GetParent() ~= flyoutPanel then return end
     local combat = InCombatLockdown()
     local box = GetFFD(button).ungroupBg
     local function raise(widget, level)
@@ -225,21 +198,15 @@ end
 function SKIN._MouseOverFlyoutChild(panelFrame)
     local focus = GetMouseFoci()[1]
     while focus do
-        if focus:IsForbidden() then
-            return false
-        end
-        if focus == panelFrame then
-            return true
-        end
+        if focus:IsForbidden() then return false end
+        if focus == panelFrame then return true end
         focus = focus:GetParent()
     end
     return false
 end
 
 local function LayoutFlyoutButtons()
-    if not flyoutPanel then
-        return
-    end
+    if not flyoutPanel then return end
     local buttons = CollectFlyoutButtons()
     -- Same lockdown rule as HideMinimapChild: every per-button call in the loop below
     -- (SetParent/SetFrameStrata/SetPoint/SetSize/Show/SetFrameLevel) is protected and
@@ -306,16 +273,10 @@ local function LayoutFlyoutButtons()
 
         button:SetParent(flyoutPanel)
         -- Unlock fixed strata/level first (LibDBIcon locks these)
-        if button.SetFixedFrameStrata then
-            button:SetFixedFrameStrata(false)
-        end
-        if button.SetFixedFrameLevel then
-            button:SetFixedFrameLevel(false)
-        end
+        if button.SetFixedFrameStrata then button:SetFixedFrameStrata(false) end
+        if button.SetFixedFrameLevel then button:SetFixedFrameLevel(false) end
         button:SetFrameStrata("DIALOG")
-        if button.SetFixedFrameStrata then
-            button:SetFixedFrameStrata(true)
-        end
+        if button.SetFixedFrameStrata then button:SetFixedFrameStrata(true) end
         button:ClearAllPoints()
         button:SetPoint("TOPLEFT", flyoutPanel, "TOPLEFT", xOff, yOff)
         button:SetSize(btnSize, btnSize)
@@ -324,20 +285,12 @@ local function LayoutFlyoutButtons()
         button:Show()
         SKIN._suppressVisTrack = false
         button:SetFrameLevel(flyoutPanel:GetFrameLevel() + 5)
-        if button.SetFixedFrameLevel then
-            button:SetFixedFrameLevel(true)
-        end
+        if button.SetFixedFrameLevel then button:SetFixedFrameLevel(true) end
         StripButtonDecorations(button)
         -- Overlays left over from a previous ungroup cycle (or the other cell style)
-        if not boxes and GetFFD(button).ungroupBg then
-            GetFFD(button).ungroupBg:Hide()
-        end
-        if boxes and GetFFD(button).flyoutRing then
-            GetFFD(button).flyoutRing:Hide()
-        end
-        if button._ungroupRing then
-            button._ungroupRing:Hide()
-        end
+        if not boxes and GetFFD(button).ungroupBg then GetFFD(button).ungroupBg:Hide() end
+        if boxes and GetFFD(button).flyoutRing then GetFFD(button).flyoutRing:Hide() end
+        if button._ungroupRing then button._ungroupRing:Hide() end
         -- Children must ride the same strata/level as the button.
         for _, childFrame in ipairs({ button:GetChildren() }) do
             childFrame:SetFrameStrata("DIALOG")
@@ -371,9 +324,7 @@ local function LayoutFlyoutButtons()
             iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
             pcall(iconTex.SetTexCoord, iconTex, 0.05, 0.95, 0.05, 0.95)
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
-            if CludesUI.PP then
-                CludesUI.PP.DisablePixelSnap(iconTex)
-            end
+            if CludesUI.PP then CludesUI.PP.DisablePixelSnap(iconTex) end
         end
         if boxes then
             -- After the child loop above, which lifted the box over the icon
@@ -416,19 +367,13 @@ SKIN._Grow = {
 function SKIN._Grow.Dir()
     local mp = SKIN.db and SKIN.db.profile.minimap
     local g = (mp and mp.flyoutGrowDir) or "auto"
-    if g ~= "auto" then
-        return g
-    end
+    if g ~= "auto" then return g end
     local rp = (mp and mp.btnRowPosition) or "blUp"
-    if rp == "blUp" or rp == "tlDown" or rp == "brUp" or rp == "trDown" then
-        return "left"
-    end
+    if rp == "blUp" or rp == "tlDown" or rp == "brUp" or rp == "trDown" then return "left" end
     return "down"
 end
 
-function SKIN._Grow.TT()
-    return SKIN._Grow.tt[SKIN._Grow.Dir()] or "left"
-end
+function SKIN._Grow.TT() return SKIN._Grow.tt[SKIN._Grow.Dir()] or "left" end
 
 local _flyoutBuilt = false
 
@@ -451,14 +396,10 @@ local function EnsureFlyoutPanel()
         flyoutOwnedFrames[flyoutPanel] = true
         -- Keep the mouseover stack in sync while this flyout opens/closes.
         flyoutPanel:HookScript("OnShow", function()
-            if MO_Evaluate then
-                MO_Evaluate()
-            end
+            if MO_Evaluate then MO_Evaluate() end
         end)
         flyoutPanel:HookScript("OnHide", function()
-            if MO_Evaluate then
-                MO_Evaluate()
-            end
+            if MO_Evaluate then MO_Evaluate() end
         end)
         -- Start hidden: frames spawn SHOWN and OnShow fires only on a real hide->show,
         -- so without this the first open never installs the watcher below.
@@ -479,9 +420,7 @@ local function EnsureFlyoutPanel()
                 end
             end)
         end)
-        flyoutPanel:HookScript("OnHide", function(self)
-            self:SetScript("OnUpdate", nil)
-        end)
+        flyoutPanel:HookScript("OnHide", function(self) self:SetScript("OnUpdate", nil) end)
         -- Controller cursor: its cancel button presses the toggle (closing the
         -- grid); the layer shows exactly while the grid does.
         if overlayParent ~= UIParent then
@@ -498,16 +437,12 @@ local function BuildFlyoutContents()
     _flyoutBuilt = true
 end
 
-local function InvalidateFlyout()
-    _flyoutBuilt = false
-end
+local function InvalidateFlyout() _flyoutBuilt = false end
 
 -- Profile-swap refresh: invalidate for the next open, re-show buttons re-init hid.
 _G._CUMIN_RefreshFlyout = function()
     InvalidateFlyout()
-    if flyoutPanel and flyoutPanel:IsShown() then
-        BuildFlyoutContents()
-    end
+    if flyoutPanel and flyoutPanel:IsShown() then BuildFlyoutContents() end
     -- Re-assert alpha (profile swap re-hides via HideMinimapChild during re-init)
     for _, button in ipairs(cachedAddonButtons) do
         if button:GetParent() == flyoutPanel then
@@ -534,9 +469,7 @@ local function ShowFlyoutPanel()
     -- Show BEFORE layout: the addon-button Show hook checks IsShown() to skip the
     -- alpha-zero path.
     flyoutPanel:Show()
-    if not _flyoutBuilt then
-        BuildFlyoutContents()
-    end
+    if not _flyoutBuilt then BuildFlyoutContents() end
 end
 
 local function HideFlyoutPanel()
@@ -683,15 +616,9 @@ local function CreateFlyoutToggle()
         -- Re-apply the current accent so a later ApplyAll (e.g. at PLAYER_ENTERING_WORLD,
         -- after theme resolution mutated CLUDES_GREEN) picks up the right color.
         local EG2 = CludesUI.CLUDES_GREEN
-        if flyoutToggle._norm then
-            flyoutToggle._norm:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
-        end
-        if flyoutToggle._pushed then
-            flyoutToggle._pushed:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
-        end
-        if flyoutToggle._hl then
-            flyoutToggle._hl:SetVertexColor(EG2.r, EG2.g, EG2.b, 1)
-        end
+        if flyoutToggle._norm then flyoutToggle._norm:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
+        if flyoutToggle._pushed then flyoutToggle._pushed:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
+        if flyoutToggle._hl then flyoutToggle._hl:SetVertexColor(EG2.r, EG2.g, EG2.b, 1) end
         return flyoutToggle
     end
 
@@ -739,17 +666,13 @@ local function CreateFlyoutToggle()
     button._bg = backdrop
 
     button:SetScript("OnClick", function(self)
-        if GetFFD(self).freeMoveJustDragged then
-            return
-        end
+        if GetFFD(self).freeMoveJustDragged then return end
         -- Opening the grid replaces the label tooltip (same as M+ Portals)
         CludesUI.HideWidgetTooltip(true)
         ToggleFlyoutPanel()
     end)
     button:SetScript("OnEnter", function(self)
-        if flyoutPanel and flyoutPanel:IsShown() then
-            return
-        end
+        if flyoutPanel and flyoutPanel:IsShown() then return end
         if not GetFFD(self).freeMoveJustDragged and CludesUI.ShowWidgetTooltip then
             CludesUI.ShowWidgetTooltip(
                 self,
@@ -758,15 +681,11 @@ local function CreateFlyoutToggle()
             )
         end
     end)
-    button:SetScript("OnLeave", function(self)
-        CludesUI.HideWidgetTooltip()
-    end)
+    button:SetScript("OnLeave", function(self) CludesUI.HideWidgetTooltip() end)
 
     -- Blizzard/addon hooks on minimap children can disable mouse; re-assert on Show.
     button:HookScript("OnShow", function(self)
-        if not self:IsMouseEnabled() then
-            self:EnableMouse(true)
-        end
+        if not self:IsMouseEnabled() then self:EnableMouse(true) end
     end)
 
     SetFlyoutToggle(button)

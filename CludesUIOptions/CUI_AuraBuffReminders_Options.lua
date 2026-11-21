@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_AuraBuffReminders_Options.lua
 --  Registers the AuraBuff Reminders module with CludesUI
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIAuraBuffReminders"
 local ns = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not ns then
-    return
-end -- module disabled: no options page
+if not ns then return end -- module disabled: no options page
 
 local PAGE_REMINDERS = "Auras, Buffs & Consumables"
 local PAGE_TALENTS = "Talent Reminders"
@@ -47,22 +43,16 @@ CludesUI.AtOptionsLogin(function()
     local Pool = CludesUI._Pool
     local CreateFrame = Pool.CreateFrame
 
-    local function GetABROptOutline()
-        return CludesUI.GetFontOutlineFlag("auraBuff")
-    end
+    local function GetABROptOutline() return CludesUI.GetFontOutlineFlag("auraBuff") end
 
     ---------------------------------------------------------------------------
     --  DB helpers
     ---------------------------------------------------------------------------
     local db
-    C_Timer.After(0, function()
-        db = _G._CUABR_AceDB
-    end)
+    C_Timer.After(0, function() db = _G._CUABR_AceDB end)
 
     local function DB()
-        if not db then
-            db = _G._CUABR_AceDB
-        end
+        if not db then db = _G._CUABR_AceDB end
         return db and db.profile
     end
     -- One profile table's accessor (nil until the profile loads).
@@ -84,9 +74,7 @@ CludesUI.AtOptionsLogin(function()
         local pick = display and display.nameFont
         if pick and pick ~= "__global" and CludesUI.ResolveFontName then
             local path = CludesUI.ResolveFontName(pick)
-            if path and path ~= "" then
-                return path
-            end
+            if path and path ~= "" then return path end
         end
         return CludesUI.GetFontPath("auraBuff") or "Fonts\\ARIALN.TTF"
     end
@@ -102,9 +90,7 @@ CludesUI.AtOptionsLogin(function()
     --  Refresh
     ---------------------------------------------------------------------------
     local function RequestRefresh()
-        if _G._CUABR_RequestRefresh then
-            _G._CUABR_RequestRefresh()
-        end
+        if _G._CUABR_RequestRefresh then _G._CUABR_RequestRefresh() end
     end
 
     ---------------------------------------------------------------------------
@@ -115,9 +101,7 @@ CludesUI.AtOptionsLogin(function()
     local _previewContainer
     local _previewHintFS
 
-    local function IsPreviewHintDismissed()
-        return CludesUIDB and CludesUIDB.previewHintDismissed
-    end
+    local function IsPreviewHintDismissed() return CludesUIDB and CludesUIDB.previewHintDismissed end
 
     local function Known(id)
         return id
@@ -150,9 +134,7 @@ CludesUI.AtOptionsLogin(function()
     }
     local function ShortLabel(name, family)
         local word = family and LABEL_CLASS_OVERRIDES[family]
-        if word then
-            return CludesUI.L(word)
-        end
+        if word then return CludesUI.L(word) end
         return LABEL_OVERRIDES[name] or name:match("^(%S+)") or name
     end
 
@@ -166,24 +148,18 @@ CludesUI.AtOptionsLogin(function()
     -- The general consumables, in preview order: key, label, icon (called
     -- only when the row is on). Healthstone is on while unset, as its toggle.
     local function ItemIcon(id, fallback)
-        return function()
-            return C_Item.GetItemIconByID(id) or fallback
-        end
+        return function() return C_Item.GetItemIconByID(id) or fallback end
     end
     local GENERAL_CONSUMABLES = {
         {
             key = "flask",
             label = "Flask",
-            icon = function()
-                return 134830
-            end,
+            icon = function() return 134830 end,
         },
         {
             key = "food",
             label = "Food",
-            icon = function()
-                return 134062
-            end,
+            icon = function() return 134062 end,
         },
         { key = "augment_rune", label = "Rune", icon = ItemIcon(259085, 134400) },
         { key = "healthstone", label = "Stone", icon = ItemIcon(5512, 134400), onWhenUnset = true },
@@ -191,13 +167,9 @@ CludesUI.AtOptionsLogin(function()
     }
 
     local function ForSpec(specs, specID)
-        if not specs then
-            return true
-        end
+        if not specs then return true end
         for _, spec in ipairs(specs) do
-            if spec == specID then
-                return true
-            end
+            if spec == specID then return true end
         end
         return false
     end
@@ -208,9 +180,7 @@ CludesUI.AtOptionsLogin(function()
     -- on WoW Forever (no preview, and the spec lookups are retail-only).
     local function CollectPreviewIcons()
         local icons = {}
-        if FOREVER then
-            return icons
-        end
+        if FOREVER then return icons end
         local function Add(texture, label, cat, key)
             icons[#icons + 1] = { texture = texture, label = label, cat = cat, itemKey = key }
         end
@@ -250,9 +220,7 @@ CludesUI.AtOptionsLogin(function()
                 and ForSpec(aura.specs, specID)
             then
                 local isBeacon = aura.key == "bol" or aura.key == "bof"
-                if not (isBeacon and beacon) then
-                    AddSpell(aura, "aura")
-                end
+                if not (isBeacon and beacon) then AddSpell(aura, "aura") end
                 beacon = beacon or isBeacon
             end
         end
@@ -298,13 +266,9 @@ CludesUI.AtOptionsLogin(function()
     local function PreviewStartX(d, count, sz, spacing, boxW)
         local growDir = d and d.growDirection
         local edgeX = boxW / 2 - CludesUI.CONTENT_PAD
-        if growDir == "RIGHT" then
-            return -edgeX + (sz / 2)
-        end
+        if growDir == "RIGHT" then return -edgeX + (sz / 2) end
         local totalW = (count * sz) + ((count - 1) * spacing)
-        if growDir == "LEFT" then
-            return edgeX - totalW + (sz / 2)
-        end
+        if growDir == "LEFT" then return edgeX - totalW + (sz / 2) end
         return -(totalW / 2) + (sz / 2)
     end
 
@@ -329,9 +293,7 @@ CludesUI.AtOptionsLogin(function()
     local function StyleIcon(button, d, sz, iconH, glowSpec)
         button:SetSize(sz, iconH)
         button:SetAlpha(d.opacity or 1.0)
-        if _G._CUABR_ApplyIconBorder then
-            _G._CUABR_ApplyIconBorder(button, false)
-        end
+        if _G._CUABR_ApplyIconBorder then _G._CUABR_ApplyIconBorder(button, false) end
         if not button._glowWrapper then
             local wrap = CreateFrame("Frame", nil, button)
             wrap:SetAllPoints(button)
@@ -363,13 +325,9 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function SyncPreviewHeader()
-        if not _previewIcons or #_previewIcons == 0 then
-            return
-        end
+        if not _previewIcons or #_previewIcons == 0 then return end
         local display = DDB()
-        if not display then
-            return
-        end
+        if not display then return end
         local sz, iconH, spacing = IconMetrics(display)
         local glowSpec = _G._CUABR_GlowSpec and _G._CUABR_GlowSpec(display, {})
         -- Up to the first slot with no frame.
@@ -384,7 +342,8 @@ CludesUI.AtOptionsLogin(function()
 
         -- The row is centred in the header, as tall as the icons plus any
         -- text hanging below them; the header itself stays 80 (plus the hint).
-        local overhang = display.showText and (math.abs(display.textYOffset or -2) + (display.textSize or 11)) or 0
+        local overhang = display.showText and (math.abs(display.textYOffset or -2) + (display.textSize or 11))
+            or 0
         if _previewContainer then
             _previewContainer:SetHeight(iconH + overhang)
             _previewContainer:ClearAllPoints()
@@ -398,9 +357,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function ApplyIconBorders()
-        if _G._CUABR_ApplyAllIconBorders then
-            _G._CUABR_ApplyAllIconBorders()
-        end
+        if _G._CUABR_ApplyAllIconBorders then _G._CUABR_ApplyAllIconBorders() end
         RequestRefresh()
         SyncPreviewHeader()
     end
@@ -412,18 +369,14 @@ CludesUI.AtOptionsLogin(function()
     -- Rebuilds the preview header (SetContentHeader tears it down and builds
     -- it again). No preview header on WoW Forever.
     local function RebuildPreviewHeader()
-        if FOREVER then
-            return
-        end
+        if FOREVER then return end
         CludesUI:SetContentHeader(_previewHeaderBuilder)
     end
 
     -- Moves the existing preview icons into place without rebuilding the
     -- header (no scroll jump).
     local function RelayoutPreviewIcons()
-        if not _previewIcons or #_previewIcons == 0 then
-            return
-        end
+        if not _previewIcons or #_previewIcons == 0 then return end
         local display = DDB()
         local sz, _, spacing = IconMetrics(display)
         PlaceIcons(display, sz, spacing)
@@ -440,25 +393,19 @@ CludesUI.AtOptionsLogin(function()
 
     local function EABRNavigateToSetting(key)
         local m = _eabrClickMappings[key]
-        if not m or not m.section or not m.target then
-            return
-        end
+        if not m or not m.section or not m.target then return end
 
         CludesUI.DismissPreviewHint(_previewHintFS, _eabrHeaderBaseH, 35, 5)
 
         local sf = CludesUI._scrollFrame
-        if not sf then
-            return
-        end
+        if not sf then return end
 
         -- The glow plays a moment later: a target of the page pool that is
         -- dressed again for another row by then belongs to a newer build.
         local target = m.target
         local gen = Pool.Gen(target)
         local function PlayLater()
-            if Pool.Gen(target) ~= gen or Pool.IsIdle(target) then
-                return
-            end
+            if Pool.Gen(target) ~= gen or Pool.IsIdle(target) then return end
             EABRPlaySettingGlow(target)
         end
 
@@ -526,9 +473,7 @@ CludesUI.AtOptionsLogin(function()
         local textColor = (d and d.textColor) or { r = 1, g = 1, b = 1 }
         text:SetTextColor(textColor.r, textColor.g, textColor.b, 1)
         text:SetText(data.label or "")
-        if not (d and d.showText) then
-            text:Hide()
-        end
+        if not (d and d.showText) then text:Hide() end
         button._text = text
         return button
     end
@@ -536,13 +481,9 @@ CludesUI.AtOptionsLogin(function()
     -- The hint under the icons, kept across builds (out of the container's
     -- pool). Returns the height it adds.
     local function PlacePreviewHint(hdr, container)
-        if _previewHintFS and not _previewHintFS:GetParent() then
-            _previewHintFS = nil
-        end
+        if _previewHintFS and not _previewHintFS:GetParent() then _previewHintFS = nil end
         if IsPreviewHintDismissed() then
-            if _previewHintFS then
-                _previewHintFS:Hide()
-            end
+            if _previewHintFS then _previewHintFS:Hide() end
             return 0
         end
         if not _previewHintFS then
@@ -580,12 +521,8 @@ CludesUI.AtOptionsLogin(function()
                 if button then
                     button:SetFrameLevel(boxFrame:GetFrameLevel() + 1)
                     if data then
-                        if button._icon then
-                            button._icon:SetTexture(data.texture or 134400)
-                        end
-                        if button._text then
-                            button._text:SetText(data.label or "")
-                        end
+                        if button._icon then button._icon:SetTexture(data.texture or 134400) end
+                        if button._text then button._text:SetText(data.label or "") end
                         entry.data = data
                     end
                 end
@@ -597,7 +534,8 @@ CludesUI.AtOptionsLogin(function()
 
         local sz, iconH, spacing = IconMetrics(display)
         local showText = display and display.showText
-        local overhang = showText and (math.abs((display and display.textYOffset) or -2) + ((display and display.textSize) or 11))
+        local overhang = showText
+                and (math.abs((display and display.textYOffset) or -2) + ((display and display.textSize) or 11))
             or 0
         if _previewContainer then
             _previewContainer:SetParent(hdr)
@@ -616,9 +554,7 @@ CludesUI.AtOptionsLogin(function()
         -- icons are handed back in order and dressed again.
         Pool.Begin(container)
         for _, entry in ipairs(_previewIcons) do
-            if entry.frame then
-                entry.frame:Hide()
-            end
+            if entry.frame then entry.frame:Hide() end
         end
         wipe(_previewIcons)
         local x = PreviewStartX(display, #icons, sz, spacing, hdrW)
@@ -638,9 +574,7 @@ CludesUI.AtOptionsLogin(function()
                 data.itemKey and ("item:" .. data.itemKey) or data.cat or "display",
                 level
             )
-            if showText then
-                EABRCreateHitOverlay(entry.frame._text, "showText", level)
-            end
+            if showText then EABRCreateHitOverlay(entry.frame._text, "showText", level) end
         end
 
         _eabrHeaderBaseH = PREVIEW_H
@@ -702,13 +636,9 @@ CludesUI.AtOptionsLogin(function()
     local function WhereSet(store, changed)
         return function(keyName, value)
             local tbl = store(true)
-            if not tbl then
-                return
-            end
+            if not tbl then return end
             tbl[keyName] = value and true or false
-            if changed then
-                changed()
-            end
+            if changed then changed() end
         end
     end
     local function WhenGet(store)
@@ -720,13 +650,9 @@ CludesUI.AtOptionsLogin(function()
     local function WhenSet(store, changed)
         return function(keyName, value)
             local tbl = store()
-            if not tbl then
-                return
-            end
+            if not tbl then return end
             tbl[keyName] = value and true or false
-            if changed then
-                changed()
-            end
+            if changed then changed() end
         end
     end
 
@@ -734,9 +660,7 @@ CludesUI.AtOptionsLogin(function()
     local function SubTable(section, field)
         return function()
             local tbl = section()
-            if not tbl then
-                return nil
-            end
+            if not tbl then return nil end
             tbl[field] = tbl[field] or {}
             return tbl[field]
         end
@@ -750,9 +674,7 @@ CludesUI.AtOptionsLogin(function()
     local function CSpecialWhere(cls)
         return function(forWrite)
             local c, S = CDB(), _G._CUABR_SPECIALS
-            if not (c and S) then
-                return nil
-            end
+            if not (c and S) then return nil end
             local field = S[cls].where
             if forWrite and type(c[field]) ~= "table" then
                 local src = c.specialsWhereToShow
@@ -777,9 +699,7 @@ CludesUI.AtOptionsLogin(function()
     local function PreviewSound(key)
         local paths = CludesUI._groupDeathSoundPaths
         local path = paths and paths[key]
-        if path then
-            PlaySoundFile(path, "Master")
-        end
+        if path then PlaySoundFile(path, "Master") end
     end
 
     -- Inline cog holding a single "Sound" dropdown bound to getSec()[field]
@@ -800,9 +720,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 set = function(value)
                     local tbl = getSec()
-                    if not tbl then
-                        return
-                    end
+                    if not tbl then return end
                     tbl[field] = value ~= "none" and value or nil
                     PreviewSound(value)
                 end,
@@ -826,9 +744,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = tooltip,
             values = { _placeholder = "..." },
             order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
+            getValue = function() return "_placeholder" end,
             setValue = function() end,
         }
     end
@@ -842,9 +758,7 @@ CludesUI.AtOptionsLogin(function()
         local sec, special = settings.soundSec, settings.specialClass
         local own = settings.soundField or "sectionSound"
         local function Field()
-            if not special then
-                return own
-            end
+            if not special then return own end
             local S = _G._CUABR_SPECIALS
             return S and S[special].sound
         end
@@ -858,9 +772,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 local tbl = sec()
                 local f = tbl and Field()
-                if not f then
-                    return "none"
-                end
+                if not f then return "none" end
                 if special and _G._CUABR_SpecialsSound then
                     return _G._CUABR_SpecialsSound(tbl, f) or "none"
                 end
@@ -869,9 +781,7 @@ CludesUI.AtOptionsLogin(function()
             setValue = function(value)
                 local tbl = sec()
                 local f = tbl and Field()
-                if not f then
-                    return
-                end
+                if not f then return end
                 if value == "none" and not special then
                     tbl[f] = nil
                 else
@@ -884,9 +794,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Puts a checkbox dropdown in a DualRow region in place of its control.
     local function CheckList(region, items, get, set)
-        if region._control then
-            region._control:Hide()
-        end
+        if region._control then region._control:Hide() end
         local dropdown, refresh =
             CludesUI.BuildVisOptsCBDropdown(region, 220, region:GetFrameLevel() + 2, items, get, set)
         PP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
@@ -913,9 +821,7 @@ CludesUI.AtOptionsLogin(function()
             Placeholder("Where to Show", settings.whereTooltip),
             rightCfg or { type = "label", text = "" }
         )
-        if CludesUI._prebuilding then
-            return line, h
-        end
+        if CludesUI._prebuilding then return line, h end
 
         local where = settings.whereStore
         CheckList(
@@ -931,12 +837,8 @@ CludesUI.AtOptionsLogin(function()
                 SHOWWHEN_ITEMS,
                 WhenGet(settings.showWhenStore),
                 WhenSet(settings.showWhenStore, function()
-                    if settings.onShowWhenChange then
-                        settings.onShowWhenChange()
-                    end
-                    if settings.onChange then
-                        settings.onChange()
-                    end
+                    if settings.onShowWhenChange then settings.onShowWhenChange() end
+                    if settings.onChange then settings.onChange() end
                 end)
             )
             if settings.soundSec then
@@ -954,9 +856,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- "(min)" in smaller, dimmer text after each slider label of a dual row.
     local function AddMinSuffix(threshRow, leftLabel, rightLabel)
-        if CludesUI._prebuilding then
-            return
-        end
+        if CludesUI._prebuilding then return end
         local function LabelOf(region, text)
             for _, reg in ipairs({ region:GetRegions() }) do
                 -- (an idle pooled region still holds the text of an earlier dress)
@@ -972,9 +872,7 @@ CludesUI.AtOptionsLogin(function()
             suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
             local label = LabelOf(region, text)
-            if label then
-                suffix:SetPoint("LEFT", label, "RIGHT", 5, -1)
-            end
+            if label then suffix:SetPoint("LEFT", label, "RIGHT", 5, -1) end
             suffix:SetText(CludesUI.L("(min)"))
         end
     end
@@ -1009,7 +907,14 @@ CludesUI.AtOptionsLogin(function()
         cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", x, 0)
 
         local classColor = entry.classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[entry.classToken]
-        local label = CludesUI.MakeFont(cell, 13, nil, classColor and classColor.r or 1, classColor and classColor.g or 1, classColor and classColor.b or 1)
+        local label = CludesUI.MakeFont(
+            cell,
+            13,
+            nil,
+            classColor and classColor.r or 1,
+            classColor and classColor.g or 1,
+            classColor and classColor.b or 1
+        )
         label:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
         label:SetText(entry.label)
 
@@ -1020,8 +925,14 @@ CludesUI.AtOptionsLogin(function()
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
         NoSnap(boxBg)
-        local border =
-            CludesUI.MakeRoundedBorder(boxFrame, BOX_BORDER[1], BOX_BORDER[2], BOX_BORDER[3], BOX_BORDER[4], boxBg)
+        local border = CludesUI.MakeRoundedBorder(
+            boxFrame,
+            BOX_BORDER[1],
+            BOX_BORDER[2],
+            BOX_BORDER[3],
+            BOX_BORDER[4],
+            boxBg
+        )
         local check = boxFrame:CreateTexture(nil, "ARTWORK")
         check:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
         check:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
@@ -1047,25 +958,15 @@ CludesUI.AtOptionsLogin(function()
         click:SetScript("OnClick", function()
             entry.setVal(not entry.getVal())
             Paint()
-            if refreshFn then
-                refreshFn()
-            end
+            if refreshFn then refreshFn() end
         end)
         click:SetScript("OnEnter", function()
-            if not entry.getVal() then
-                label:SetAlpha(0.8)
-            end
-            if entry.tooltip then
-                CludesUI.ShowWidgetTooltip(cell, entry.tooltip)
-            end
+            if not entry.getVal() then label:SetAlpha(0.8) end
+            if entry.tooltip then CludesUI.ShowWidgetTooltip(cell, entry.tooltip) end
         end)
         click:SetScript("OnLeave", function()
-            if not entry.getVal() then
-                label:SetAlpha(0.5)
-            end
-            if entry.tooltip then
-                CludesUI.HideWidgetTooltip()
-            end
+            if not entry.getVal() then label:SetAlpha(0.5) end
+            if entry.tooltip then CludesUI.HideWidgetTooltip() end
         end)
 
         if entry.cogRows then
@@ -1106,13 +1007,9 @@ CludesUI.AtOptionsLogin(function()
             end
             for col = 0, GRID_COLS - 1 do
                 local entry = items[line * GRID_COLS + col + 1]
-                if not entry then
-                    break
-                end
+                if not entry then break end
                 local cell = GridCell(rowFrame, entry, col * colW, colW, refreshFn, accent)
-                if cellRefTable and entry.key then
-                    cellRefTable[entry.key] = cell
-                end
+                if cellRefTable and entry.key then cellRefTable[entry.key] = cell end
             end
         end
         return rows * GRID_ROW_H
@@ -1129,9 +1026,7 @@ CludesUI.AtOptionsLogin(function()
     end
     local function RebuildSoon()
         RequestRefresh()
-        C_Timer.After(0, function()
-            CludesUI:RefreshPage(true)
-        end)
+        C_Timer.After(0, function() CludesUI:RefreshPage(true) end)
     end
 
     -- A spell's row text: its name, then its ID dimmed.
@@ -1146,9 +1041,7 @@ CludesUI.AtOptionsLogin(function()
         if not (spellID and C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)) then
             return
         end
-        if tContains(entryList, spellID) then
-            return
-        end
+        if tContains(entryList, spellID) then return end
         entryList[#entryList + 1] = spellID
         RebuildSoon()
     end
@@ -1164,9 +1057,7 @@ CludesUI.AtOptionsLogin(function()
             onConfirm = function(text)
                 local name = strtrim(text or "")
                 local foreverCfg = FDB()
-                if name == "" or not foreverCfg then
-                    return
-                end
+                if name == "" or not foreverCfg then return end
                 if set then
                     set.name = name
                 else
@@ -1192,11 +1083,13 @@ CludesUI.AtOptionsLogin(function()
     -- Lays slots out two to a row (a blank in an odd last one); returns y.
     local function SlotRows(parent, y, slots, dress)
         for keyName = 1, #slots, 2 do
-            local line, h =
-                CludesUI.Widgets:DualRow(parent, y, slots[keyName], slots[keyName + 1] or CludesUI.BlankRowCfg())
-            if dress then
-                dress(line, keyName)
-            end
+            local line, h = CludesUI.Widgets:DualRow(
+                parent,
+                y,
+                slots[keyName],
+                slots[keyName + 1] or CludesUI.BlankRowCfg()
+            )
+            if dress then dress(line, keyName) end
             y = y - h
         end
         return y
@@ -1213,14 +1106,10 @@ CludesUI.AtOptionsLogin(function()
     -- Takes a spell out of a group, with its picked icon and rank pins.
     local function RemoveGroupSpell(set, index, spellID)
         table.remove(set.ids, index)
-        if set.castSpellID == spellID then
-            set.castSpellID = nil
-        end
+        if set.castSpellID == spellID then set.castSpellID = nil end
         if set.castRanks then
             set.castRanks[spellID] = nil
-            if not next(set.castRanks) then
-                set.castRanks = nil
-            end
+            if not next(set.castRanks) then set.castRanks = nil end
         end
         Rebuild()
     end
@@ -1236,25 +1125,22 @@ CludesUI.AtOptionsLogin(function()
                     placeholder = "Spell ID",
                     inputWidth = 110,
                     tooltip = GROUP_ADD_TIP,
-                    getValue = function()
-                        return ""
-                    end,
-                    setValue = function(text)
-                        AddSpellIDToList(set.ids, text)
-                    end,
+                    getValue = function() return "" end,
+                    setValue = function(text) AddSpellIDToList(set.ids, text) end,
                 },
-                ButtonSlot("Rename Group", "Rename", "Change this group's name.", function()
-                    PromptSpellGroupName(set)
-                end),
+                ButtonSlot(
+                    "Rename Group",
+                    "Rename",
+                    "Change this group's name.",
+                    function() PromptSpellGroupName(set) end
+                ),
             }
             for spellIndex, spellID in ipairs(set.ids) do
                 slots[#slots + 1] = ButtonSlot(
                     SpellText(spellID),
                     "Remove",
                     "Remove this spell from the group.",
-                    function()
-                        RemoveGroupSpell(set, spellIndex, spellID)
-                    end
+                    function() RemoveGroupSpell(set, spellIndex, spellID) end
                 )
             end
             slots[#slots + 1] = ButtonSlot(
@@ -1285,17 +1171,11 @@ CludesUI.AtOptionsLogin(function()
     local function RemoveCustomSpell(id)
         local foreverCfg = FDB()
         local entryList = foreverCfg and foreverCfg.customIDs
-        if not entryList then
-            return
-        end
+        if not entryList then return end
         for j = #entryList, 1, -1 do
-            if entryList[j] == id then
-                table.remove(entryList, j)
-            end
+            if entryList[j] == id then table.remove(entryList, j) end
         end
-        if foreverCfg.customClasses then
-            foreverCfg.customClasses[id] = nil
-        end
+        if foreverCfg.customClasses then foreverCfg.customClasses[id] = nil end
         Rebuild()
     end
 
@@ -1309,18 +1189,14 @@ CludesUI.AtOptionsLogin(function()
     -- stored, and an entry with none left goes.
     local function SetCustomClass(id, token, on)
         local foreverCfg = FDB()
-        if not foreverCfg then
-            return
-        end
+        if not foreverCfg then return end
         foreverCfg.customClasses = foreverCfg.customClasses or {}
         local all = foreverCfg.customClasses
         local isOff = all[id]
         if on then
             if isOff then
                 isOff[token] = nil
-                if not next(isOff) then
-                    all[id] = nil
-                end
+                if not next(isOff) then all[id] = nil end
             end
         else
             isOff = isOff or {}
@@ -1337,9 +1213,7 @@ CludesUI.AtOptionsLogin(function()
                 key = "_remove",
                 label = "Remove",
                 isTopAction = true,
-                onClick = function()
-                    RemoveCustomSpell(id)
-                end,
+                onClick = function() RemoveCustomSpell(id) end,
             },
         }
         for _, token in ipairs(CludesUI.ForeverClasses()) do
@@ -1354,9 +1228,7 @@ CludesUI.AtOptionsLogin(function()
     -- A tracked spell's slot: its icon before the name, and its classes
     -- (Remove at the top) on the right.
     local function DressCustomSlot(region, id)
-        if not id then
-            return
-        end
+        if not id then return end
         local label = region._label
         if label then
             local icon = region:CreateTexture(nil, "ARTWORK")
@@ -1372,12 +1244,8 @@ CludesUI.AtOptionsLogin(function()
             170,
             region:GetFrameLevel() + 2,
             CustomClassItems(id),
-            function(token)
-                return CustomClassOn(id, token)
-            end,
-            function(token, on)
-                SetCustomClass(id, token, on)
-            end
+            function(token) return CustomClassOn(id, token) end,
+            function(token, on) SetCustomClass(id, token, on) end
         )
         PP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
         region._control = dropdown
@@ -1394,9 +1262,7 @@ CludesUI.AtOptionsLogin(function()
                 "New Spell Group",
                 "Create",
                 "Creates a group of spells. A reminder shows if none of the auras from the group are active.",
-                function()
-                    PromptSpellGroupName()
-                end
+                function() PromptSpellGroupName() end
             ),
         }
         for _, id in ipairs(ids or {}) do
@@ -1434,26 +1300,20 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 get = function(f)
                     local display = DDB()
-                    if not display then
-                        return nil
-                    end
+                    if not display then return nil end
                     if f == "style" then
                         return display.glowType or 0
                     elseif f == "mode" then
                         -- Read-path migration: a profile activated mid-session may not
                         -- have a mode key yet; derive it from the stored color.
-                        if _G._CUABR_EnsureGlowModeMigrated then
-                            _G._CUABR_EnsureGlowModeMigrated(display)
-                        end
+                        if _G._CUABR_EnsureGlowModeMigrated then _G._CUABR_EnsureGlowModeMigrated(display) end
                         return display.glowColorMode or "default"
                     end
                     return CludesUI.GlowOptions.FlatGet(display, "glow", f)
                 end,
                 set = function(f, a, b2, c2)
                     local display = DDB()
-                    if not display then
-                        return
-                    end
+                    if not display then return end
                     if f == "style" then
                         display.glowType = a
                     elseif f == "mode" then
@@ -1497,26 +1357,18 @@ CludesUI.AtOptionsLogin(function()
         -- One rebuild per burst, a frame later: a cached page has finished showing
         local function Flush()
             queued = nil
-            if watcher:IsVisible() and IsHoly() ~= builtHoly then
-                CludesUI:RefreshPage(true)
-            end
+            if watcher:IsVisible() and IsHoly() ~= builtHoly then CludesUI:RefreshPage(true) end
         end
         local function Queue()
-            if queued then
-                return
-            end
+            if queued then return end
             queued = true
             C_Timer.After(0, Flush)
         end
         -- Each build of the page: whether the toggle shows
         BeaconRowShown = function(parent)
-            if not paladin then
-                return false
-            end
+            if not paladin then return false end
             local holy = IsHoly()
-            if CludesUI._prebuilding then
-                return holy
-            end
+            if CludesUI._prebuilding then return holy end
             builtHoly = holy
             if not watcher then
                 watcher = CreateFrame("Frame")
@@ -1524,13 +1376,12 @@ CludesUI.AtOptionsLogin(function()
                 watcher:SetScript("OnEvent", Queue)
                 watcher:SetScript("OnShow", function(self)
                     self:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
-                    if IsHoly() ~= builtHoly then
-                        Queue()
-                    end
+                    if IsHoly() ~= builtHoly then Queue() end
                 end)
-                watcher:SetScript("OnHide", function(self)
-                    self:UnregisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-                end)
+                watcher:SetScript(
+                    "OnHide",
+                    function(self) self:UnregisterEvent("PLAYER_SPECIALIZATION_CHANGED") end
+                )
             end
             watcher:Hide()
             watcher:SetParent(parent)
@@ -1559,9 +1410,7 @@ CludesUI.AtOptionsLogin(function()
     local function Set(key, after)
         return function(value)
             local display = DDB()
-            if not display then
-                return
-            end
+            if not display then return end
             display[key] = value;
             (after or Live)(value)
         end
@@ -1594,13 +1443,9 @@ CludesUI.AtOptionsLogin(function()
     local FOREVER_RED = { 1, 0.25, 0.25 }
     local function ForeverPurposeBanner(parent, y)
         local GAP, height = 6, 44
-        if CludesUI._prebuilding then
-            return y - (GAP + height + 14)
-        end
+        if CludesUI._prebuilding then return y - (GAP + height + 14) end
         local R, G, B = FOREVER_RED[1], FOREVER_RED[2], FOREVER_RED[3]
-        local function Red(host)
-            return CludesUI.MakeFont(host, 16, nil, R, G, B, 1)
-        end
+        local function Red(host) return CludesUI.MakeFont(host, 16, nil, R, G, B, 1) end
         local PAD = CludesUI.CONTENT_PAD
         local w = parent:GetWidth() - PAD * 2
         local host = CreateFrame("Frame", nil, parent)
@@ -1648,9 +1493,7 @@ CludesUI.AtOptionsLogin(function()
             link:SetScript("OnClick", function()
                 CludesUI.HideWidgetTooltip()
                 CludesUI:NavigateToElementSettings("CludesUICooldownManager", "CDM Bars", nil, function()
-                    if CludesUI._setCDMBar then
-                        CludesUI._setCDMBar("buffs")
-                    end
+                    if CludesUI._setCDMBar then CludesUI._setCDMBar("buffs") end
                 end)
             end)
         else
@@ -1677,9 +1520,7 @@ CludesUI.AtOptionsLogin(function()
                 return display and display.remindersEnabled ~= false
             end,
             setValue = Set("remindersEnabled", function()
-                if _G._CUABR_UpdateGroupAuraRegistration then
-                    _G._CUABR_UpdateGroupAuraRegistration()
-                end
+                if _G._CUABR_UpdateGroupAuraRegistration then _G._CUABR_UpdateGroupAuraRegistration() end
                 RequestRefresh()
                 CludesUI:RefreshPage()
             end),
@@ -1715,9 +1556,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Beacon M+ Reminders",
                 tooltip = "During Mythic+ boss fights, shows a glowing red Beacon on your tank's raid frame while they have your Beacon of Light or Beacon of Faith.",
-                disabled = function()
-                    return not CludesUI._ModuleNS["CludesUIRaidFrames"]
-                end,
+                disabled = function() return not CludesUI._ModuleNS["CludesUIRaidFrames"] end,
                 disabledTooltip = CludesUI.DisabledTooltip("CludesUI Raid & Party Frames"),
                 getValue = function()
                     local display = DDB()
@@ -1746,9 +1585,7 @@ CludesUI.AtOptionsLogin(function()
     local function Store(key)
         return function(value)
             local display = DDB()
-            if display then
-                display[key] = value
-            end
+            if display then display[key] = value end
         end
     end
     local function BorderTex()
@@ -1775,7 +1612,10 @@ CludesUI.AtOptionsLogin(function()
             order = order,
             itemDisabled = function(value)
                 local display = DDB()
-                return value ~= "none" and value ~= "cropped" and display and (display.borderTexture or "solid") ~= "solid"
+                return value ~= "none"
+                    and value ~= "cropped"
+                    and display
+                    and (display.borderTexture or "solid") ~= "solid"
             end,
             itemDisabledTooltip = "This option requires Border Style to be set to Solid",
             getValue = Get("iconShape", "none"),
@@ -1816,9 +1656,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 25,
                     step = 1,
                     tooltip = "How much is trimmed from the icon's top and bottom, per side (10% is the classic cropped look).",
-                    get = function()
-                        return ns.CropPercent(DDB())
-                    end,
+                    get = function() return ns.CropPercent(DDB()) end,
                     set = Set("iconCropPercent", Reshape),
                 },
             },
@@ -1830,9 +1668,7 @@ CludesUI.AtOptionsLogin(function()
     -- size, with no leftover offsets, shifts or exact pixels.
     local function PickBorderStyle(value)
         local display = DDB()
-        if not display then
-            return
-        end
+        if not display then return end
         display.borderTexture = value
         display.borderTextureOffset, display.borderTextureOffsetY = nil, nil
         display.borderTextureShiftX, display.borderTextureShiftY = nil, nil
@@ -1840,9 +1676,7 @@ CludesUI.AtOptionsLogin(function()
         display.borderR, display.borderG, display.borderB, display.borderA = color.r, color.g, color.b, 1
         display.borderBehind = behind
         display.borderSize = CludesUI.GetBorderDefaultSize("aurabuffreminders", value) or display.borderSize
-        if display.borderSizePx then
-            display.borderSizePx = false
-        end
+        if display.borderSizePx then display.borderSizePx = false end
         ApplyIconBorders()
         -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
         CludesUI:RefreshPage(true)
@@ -1865,9 +1699,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(value)
                     local display = DDB()
-                    if not display then
-                        return
-                    end
+                    if not display then return end
                     if value ~= "strong" then
                         display.borderSize = 0
                     elseif (display.borderSize or 1) <= 0 then
@@ -1899,12 +1731,8 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             get = function()
                 local display = DDB()
-                if not display then
-                    return 0
-                end
-                if display[key] ~= nil then
-                    return display[key]
-                end
+                if not display then return 0 end
+                if display[key] ~= nil then return display[key] end
                 return (
                     select(
                         which,
@@ -1936,9 +1764,7 @@ CludesUI.AtOptionsLogin(function()
         local line, h = W:DualRow(parent, y, {
             type = "dropdown",
             text = "Border Style",
-            disabled = function()
-                return ns.IconShapeMasked(DDB())
-            end,
+            disabled = function() return ns.IconShapeMasked(DDB()) end,
             disabledTooltip = "This option requires Icon Shape to be set to None or Cropped",
             values = values,
             order = order,
@@ -1964,9 +1790,7 @@ CludesUI.AtOptionsLogin(function()
             local _, offsetH = W:DualRow(parent, y, left, right)
             y = y - offsetH
         end
-        if CludesUI._prebuilding then
-            return y, line
-        end
+        if CludesUI._prebuilding then return y, line end
 
         local cog = CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Border Options",
@@ -2102,12 +1926,11 @@ CludesUI.AtOptionsLogin(function()
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = swatch
         local block = CludesUI.NewSwatchBlocker(swatch)
-        block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Name"))
-        end)
-        block:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        block:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Name")) end
+        )
+        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         local function Dim()
             local display = DDB()
             local isOff = not display or not display.showText
@@ -2175,9 +1998,7 @@ CludesUI.AtOptionsLogin(function()
             }
         )
         y = y - h
-        if abrGlowDesc then
-            GO.AttachInline(glowRow._leftRegion, abrGlowDesc)
-        end
+        if abrGlowDesc then GO.AttachInline(glowRow._leftRegion, abrGlowDesc) end
         if building then
             CludesUI.BuildInlineCog(glowRow._rightRegion, {
                 title = "Cursor Settings",
@@ -2238,9 +2059,7 @@ CludesUI.AtOptionsLogin(function()
             order = _G._CUABR_STRATA_ORDER or { "MEDIUM" },
             getValue = Get("frameStrata", "MEDIUM"),
             setValue = Set("frameStrata", function()
-                if _G._CUABR_ApplyStrata then
-                    _G._CUABR_ApplyStrata()
-                end
+                if _G._CUABR_ApplyStrata then _G._CUABR_ApplyStrata() end
             end),
         })
         y = y - h
@@ -2249,9 +2068,7 @@ CludesUI.AtOptionsLogin(function()
                 title = "Layout Settings",
                 rows = {
                     CogSlider("Y Offset", "yOffset", -600, 600, 0, function()
-                        if _G._CUABR_ApplyUnlockPos then
-                            _G._CUABR_ApplyUnlockPos()
-                        end
+                        if _G._CUABR_ApplyUnlockPos then _G._CUABR_ApplyUnlockPos() end
                     end),
                 },
             })
@@ -2338,15 +2155,11 @@ CludesUI.AtOptionsLogin(function()
             end,
             setVal = function(value)
                 local tbl = section()
-                if tbl and tbl.enabled then
-                    tbl.enabled[entry.key] = value
-                end
+                if tbl and tbl.enabled then tbl.enabled[entry.key] = value end
             end,
         }
     end
-    local function SpellLabel(entry)
-        return _G._CUABR_SpellName(entry.castSpell, entry.name)
-    end
+    local function SpellLabel(entry) return _G._CUABR_SpellName(entry.castSpell, entry.name) end
     -- After a grid tick: refresh, rebuild the preview, and first (groupAuras)
     -- re-register group aura tracking where an item turns it on or off.
     local function GridChanged(groupAuras)
@@ -2388,9 +2201,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 label = "Custom Request Text",
                 tooltip = "Send your own text instead of the default.",
-                disabled = function()
-                    return not RequestOn()
-                end,
+                disabled = function() return not RequestOn() end,
                 disabledTooltip = "Click to Request Buff",
                 get = function()
                     local r = RDB()
@@ -2398,9 +2209,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 set = function(value)
                     local r = RDB()
-                    if r then
-                        r.requestCustom = value
-                    end
+                    if r then r.requestCustom = value end
                 end,
             },
             {
@@ -2416,20 +2225,14 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Custom Request Text",
                 get = function()
                     local r = RDB()
-                    if not r then
-                        return ""
-                    end
+                    if not r then return "" end
                     return r.requestText or _G._CUABR_RequestExample()
                 end,
                 set = function(value)
                     local r = RDB()
-                    if not r then
-                        return
-                    end
+                    if not r then return end
                     local clean = _G._CUABR_CleanRequestText(value)
-                    if clean == _G._CUABR_RequestExample() then
-                        clean = nil
-                    end
+                    if clean == _G._CUABR_RequestExample() then clean = nil end
                     r.requestText = clean
                     if clean and not _G._CUABR_HasRequestToken(clean) then
                         local msg = CludesUI.Lf("Request text must include %1$s", _G._CUABR_REQUEST_TOKEN)
@@ -2461,9 +2264,7 @@ CludesUI.AtOptionsLogin(function()
             cogRows = (not FOREVER) and RequestRows() or nil,
             onChange = RequestRefresh,
             onShowWhenChange = function()
-                if _G._CUABR_UpdateGroupAuraRegistration then
-                    _G._CUABR_UpdateGroupAuraRegistration()
-                end
+                if _G._CUABR_UpdateGroupAuraRegistration then _G._CUABR_UpdateGroupAuraRegistration() end
             end,
         })
         y = y - h
@@ -2627,9 +2428,7 @@ CludesUI.AtOptionsLogin(function()
     local function DemonItems()
         local items = {}
         for _, pet in ipairs(_G._CUABR_WARLOCK_PETS or {}) do
-            local function Unlearned()
-                return not (_G._CUABR_Known and _G._CUABR_Known(pet.castSpell))
-            end
+            local function Unlearned() return not (_G._CUABR_Known and _G._CUABR_Known(pet.castSpell)) end
             items[#items + 1] = {
                 key = pet.key,
                 label = pet.name,
@@ -2685,9 +2484,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(value)
                     local a = ADB()
-                    if a and a.enabled then
-                        a.enabled.soulstone = value
-                    end
+                    if a and a.enabled then a.enabled.soulstone = value end
                     GridChanged(true)()
                 end,
             }
@@ -2697,16 +2494,12 @@ CludesUI.AtOptionsLogin(function()
         local wcc = RAID_CLASS_COLORS and RAID_CLASS_COLORS.WARLOCK
         if wcc then
             for _, region in ipairs({ ctrlRow._rightRegion, line._leftRegion, line._rightRegion }) do
-                if region._label then
-                    region._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1)
-                end
+                if region._label then region._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1) end
             end
         end
         if not CludesUI._prebuilding then
             local region = ctrlRow._rightRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local dropdown, refresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 220,
@@ -2745,12 +2538,11 @@ CludesUI.AtOptionsLogin(function()
     -- turns it on. Shown while that toggle is off.
     local function OffBlocker(target, toggleName)
         local block = CludesUI.NewSwatchBlocker(target)
-        block:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(target, CludesUI.DisabledTooltip(toggleName))
-        end)
-        block:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        block:SetScript(
+            "OnEnter",
+            function() CludesUI.ShowWidgetTooltip(target, CludesUI.DisabledTooltip(toggleName)) end
+        )
+        block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         return block
     end
 
@@ -2771,9 +2563,7 @@ CludesUI.AtOptionsLogin(function()
                     RequestRefresh()
                     RebuildPreviewHeader()
                 end
-                if after then
-                    after()
-                end
+                if after then after() end
             end,
         }
     end
@@ -2821,9 +2611,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Add Current Zone",
                 onClick = function(editBox)
                     local mapID = C_Map.GetBestMapForUnit("player")
-                    if not mapID then
-                        return
-                    end
+                    if not mapID then return end
                     local text = editBox:GetText() or ""
                     editBox:SetText(text == "" and tostring(mapID) or (text .. ", " .. mapID))
                 end,
@@ -2939,24 +2727,18 @@ CludesUI.AtOptionsLogin(function()
         rows.inky, h = W:DualRow(
             parent,
             y,
-            ConsumableToggle("inky_black", "Inky Black Potion", nil, function()
-                CludesUI:RefreshPage()
-            end),
+            ConsumableToggle("inky_black", "Inky Black Potion", nil, function() CludesUI:RefreshPage() end),
             { type = "label", text = "" }
         )
         y = y - h
-        if not CludesUI._prebuilding then
-            InkyZonesButton(rows.inky._rightRegion)
-        end
+        if not CludesUI._prebuilding then InkyZonesButton(rows.inky._rightRegion) end
         return y, rows
     end
 
     local MANA_WARN = "Ready Check Mana Warning"
     -- The mana warning text shown for a moment, as its cog's edits are made.
     local function ApplyManaWarning()
-        if _G._CUABR_RCWarnApply then
-            _G._CUABR_RCWarnApply()
-        end
+        if _G._CUABR_RCWarnApply then _G._CUABR_RCWarnApply() end
     end
 
     -- Ready Check Mana Warning's inlines, right to left: its cog (font,
@@ -2973,12 +2755,8 @@ CludesUI.AtOptionsLogin(function()
         local RefreshEye
         local function PreviewOn()
             previewing = true
-            if RefreshEye then
-                RefreshEye()
-            end
-            if _G._CUABR_RCWarnPreview then
-                _G._CUABR_RCWarnPreview()
-            end
+            if RefreshEye then RefreshEye() end
+            if _G._CUABR_RCWarnPreview then _G._CUABR_RCWarnPreview() end
         end
         local function Field(key, default, after)
             return function()
@@ -3029,9 +2807,7 @@ CludesUI.AtOptionsLogin(function()
         local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local cfg = CDB()
             local col = cfg and cfg.rcManaWarnColor
-            if col then
-                return col.r, col.g, col.b, 1
-            end
+            if col then return col.r, col.g, col.b, 1 end
             local mana = CludesUI.GetPowerColor("MANA")
             if mana then
                 return math.min(mana.r * 1.5, 1), math.min(mana.g * 1.5, 1), math.min(mana.b * 1.5, 1), 1
@@ -3077,9 +2853,7 @@ CludesUI.AtOptionsLogin(function()
             else
                 step = _G._CUABR_RCWarnHidePreview
             end
-            if step then
-                step()
-            end
+            if step then step() end
         end)
         local eyeBlock = OffBlocker(eye, MANA_WARN)
 
@@ -3125,21 +2899,13 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(value)
                 local cfg = CDB()
-                if cfg then
-                    cfg.rcManaWarn = value
-                end
-                if not value and _G._CUABR_RCWarnHidePreview then
-                    _G._CUABR_RCWarnHidePreview()
-                end
-                if _G._CUABR_RCWarnUpdateReg then
-                    _G._CUABR_RCWarnUpdateReg()
-                end
+                if cfg then cfg.rcManaWarn = value end
+                if not value and _G._CUABR_RCWarnHidePreview then _G._CUABR_RCWarnHidePreview() end
+                if _G._CUABR_RCWarnUpdateReg then _G._CUABR_RCWarnUpdateReg() end
                 CludesUI:RefreshPage()
             end,
         })
-        if not CludesUI._prebuilding then
-            ManaWarningInlines(line._rightRegion)
-        end
+        if not CludesUI._prebuilding then ManaWarningInlines(line._rightRegion) end
         return y - h
     end
 
@@ -3152,21 +2918,15 @@ CludesUI.AtOptionsLogin(function()
             tooltip = tooltip,
             getValue = function()
                 local foreverCfg = FDB()
-                if defaultOn then
-                    return not foreverCfg or foreverCfg[key] ~= false
-                end
+                if defaultOn then return not foreverCfg or foreverCfg[key] ~= false end
                 return foreverCfg and foreverCfg[key] == true
             end,
             setValue = function(value)
                 local foreverCfg = FDB()
-                if not foreverCfg then
-                    return
-                end
+                if not foreverCfg then return end
                 foreverCfg[key] = value
                 RequestRefresh()
-                if rebuild then
-                    CludesUI:RefreshPage()
-                end
+                if rebuild then CludesUI:RefreshPage() end
             end,
         }
     end
@@ -3190,9 +2950,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local tip = table.concat(nameList, "\n")
-        if buff.own then
-            tip = tip .. "\n\n" .. CludesUI.L("Only your own counts.")
-        end
+        if buff.own then tip = tip .. "\n\n" .. CludesUI.L("Only your own counts.") end
         return { key = buff.key, label = buff.menu or buff.label, tooltip = tip }
     end
 
@@ -3257,9 +3015,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 set = function(value)
                     local foreverCfg = FDB()
-                    if not foreverCfg then
-                        return
-                    end
+                    if not foreverCfg then return end
                     foreverCfg.weaponHands = foreverCfg.weaponHands or {}
                     foreverCfg.weaponHands[class] = foreverCfg.weaponHands[class] or {}
                     foreverCfg.weaponHands[class][field] = value ~= "auto" and value or nil
@@ -3279,9 +3035,7 @@ CludesUI.AtOptionsLogin(function()
             rows[#rows + 1] = Hand(side .. " Stone or Oil", prefix .. "Temp", tempValues, tempOrder)
         end
         Hands("Main Hand", "mh")
-        if not CanDualWield or CanDualWield() then
-            Hands("Off Hand", "oh")
-        end
+        if not CanDualWield or CanDualWield() then Hands("Off Hand", "oh") end
         rows[#rows + 1] = {
             type = "dropdown",
             label = "Rank to Use",
@@ -3464,9 +3218,7 @@ CludesUI.AtOptionsLogin(function()
             y = y - h
         end
         if building then
-            if classBuffs then
-                ClassBuffList(classRow._leftRegion, classBuffs)
-            end
+            if classBuffs then ClassBuffList(classRow._leftRegion, classBuffs) end
             CludesUI.BuildInlineCog(weaponRow._rightRegion, {
                 title = "Weapon Buffs",
                 disabled = function()
@@ -3487,9 +3239,7 @@ CludesUI.AtOptionsLogin(function()
             placeholder = "Spell ID",
             inputWidth = 110,
             tooltip = "Type a spell ID and press Enter to be reminded whenever that buff is missing.\nUnknown IDs are ignored.",
-            getValue = function()
-                return ""
-            end,
+            getValue = function() return "" end,
             setValue = function(text)
                 local foreverCfg = FDB()
                 if foreverCfg then
@@ -3517,9 +3267,7 @@ CludesUI.AtOptionsLogin(function()
     local function MapPreviewClicks(cfg, cells)
         local map = _eabrClickMappings
         wipe(map)
-        local function To(key, section, target)
-            map[key] = { section = section, target = target or section }
-        end
+        local function To(key, section, target) map[key] = { section = section, target = target or section } end
         To("display", cfg.display, cfg.border)
         To("showText", cfg.display, cfg.name)
         To("raidbuff", cfg.raid)
@@ -3548,15 +3296,11 @@ CludesUI.AtOptionsLogin(function()
         local cfg = {} -- the sections and rows the preview's clicks lead to
 
         -- The preview header (retail only; WoW Forever has no preview).
-        if not FOREVER then
-            CludesUI:SetContentHeader(_previewHeaderBuilder)
-        end
+        if not FOREVER then CludesUI:SetContentHeader(_previewHeaderBuilder) end
         parent._showRowDivider = true
 
         y = ClickInfoLine(parent, y)
-        if FOREVER then
-            y = ForeverPurposeBanner(parent, y)
-        end
+        if FOREVER then y = ForeverPurposeBanner(parent, y) end
         y = BuildCoreSection(parent, y)
         y, cfg.display, cfg.border, cfg.name = BuildDisplaySection(parent, y)
         y, cfg.raid = BuildRaidBuffSection(parent, y, cells)
@@ -3582,18 +3326,14 @@ CludesUI.AtOptionsLogin(function()
     local _trPopups = {}
 
     local function TalentRemindersChanged()
-        if _G._CUABR_TR_RequestRefresh then
-            _G._CUABR_TR_RequestRefresh()
-        end
+        if _G._CUABR_TR_RequestRefresh then _G._CUABR_TR_RequestRefresh() end
     end
 
     -- Whether a reminder covers a zone. One saved with the single zone of
     -- an older version holds it in zoneName while it has no list.
     local function ReminderHasZone(r, zoneName)
         local entryList = r.zoneNames
-        if entryList and #entryList > 0 then
-            return tContains(entryList, zoneName)
-        end
+        if entryList and #entryList > 0 then return tContains(entryList, zoneName) end
         return r.zoneName == zoneName
     end
     -- A reminder's zone list for an edit; an older version's single zone
@@ -3601,9 +3341,7 @@ CludesUI.AtOptionsLogin(function()
     local function EditableZoneList(r)
         r.zoneNames = r.zoneNames or {}
         local entryList = r.zoneNames
-        if #entryList == 0 and r.zoneName then
-            entryList[1] = r.zoneName
-        end
+        if #entryList == 0 and r.zoneName then entryList[1] = r.zoneName end
         return entryList
     end
 
@@ -3617,9 +3355,7 @@ CludesUI.AtOptionsLogin(function()
         local config = configID and C_Traits and C_Traits.GetConfigInfo and C_Traits.GetConfigInfo(configID)
         local treeID = config and config.treeIDs and config.treeIDs[1]
         local nodes = treeID and C_Traits.GetTreeNodes(treeID)
-        if not nodes then
-            return talents
-        end
+        if not nodes then return talents end
         local seen = {}
         local function Add(entryID)
             local entry = C_Traits.GetEntryInfo(configID, entryID)
@@ -3648,9 +3384,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
         end
-        table.sort(talents, function(lhs, rhs)
-            return lhs.name < rhs.name
-        end)
+        table.sort(talents, function(lhs, rhs) return lhs.name < rhs.name end)
         return talents
     end
 
@@ -3686,12 +3420,8 @@ CludesUI.AtOptionsLogin(function()
         return button, label
     end
     local function TRDropdownHover(button)
-        button:SetScript("OnEnter", function()
-            button._bg:SetColorTexture(unpack(TR_DD_BG_HOVER))
-        end)
-        button:SetScript("OnLeave", function()
-            button._bg:SetColorTexture(unpack(TR_DD_BG))
-        end)
+        button:SetScript("OnEnter", function() button._bg:SetColorTexture(unpack(TR_DD_BG_HOVER)) end)
+        button:SetScript("OnLeave", function() button._bg:SetColorTexture(unpack(TR_DD_BG)) end)
     end
 
     -- A kept list popup under button: a search box (placeholder while
@@ -3730,9 +3460,7 @@ CludesUI.AtOptionsLogin(function()
         placeholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
         placeholder:SetPoint("LEFT", searchBox, "LEFT", 4, 0)
         placeholder:SetText(CludesUI.L("Search..."))
-        searchBox:SetScript("OnEscapePressed", function(self)
-            self:ClearFocus()
-        end)
+        searchBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
 
         local scroll = CreateFrame("ScrollFrame", nil, dialog)
         scroll:SetPoint("TOPLEFT", dialog, "TOPLEFT", 0, -(TR_SEARCH_H + 10))
@@ -3748,17 +3476,16 @@ CludesUI.AtOptionsLogin(function()
             rightInset = 4,
             child = child,
         })
-        dialog:SetScript("OnMouseWheel", function(_, delta)
-            scroll:GetScript("OnMouseWheel")(scroll, delta)
-        end)
+        dialog:SetScript(
+            "OnMouseWheel",
+            function(_, delta) scroll:GetScript("OnMouseWheel")(scroll, delta) end
+        )
         dialog:SetScript("OnUpdate", function()
             if not dialog:IsMouseOver() and not button:IsMouseOver() and IsMouseButtonDown("LeftButton") then
                 dialog:Hide()
             end
         end)
-        button:SetScript("OnClick", function()
-            dialog:SetShown(not dialog:IsShown())
-        end)
+        button:SetScript("OnClick", function() dialog:SetShown(not dialog:IsShown()) end)
         return dialog, child, searchBox, placeholder, scrollTo
     end
 
@@ -3813,9 +3540,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- A red border that pulses for a moment on a row that is missing its pick.
     local function PulseRedBorder(line)
-        if not line then
-            return
-        end
+        if not line then return end
         if not line._redPulse then
             local frame = CreateFrame("Frame", nil, line)
             frame:SetAllPoints()
@@ -3925,9 +3650,7 @@ CludesUI.AtOptionsLogin(function()
             else
                 live = r.zoneName ~= nil and current[r.zoneName] == true
             end
-            if live then
-                visible[#visible + 1] = idx
-            end
+            if live then visible[#visible + 1] = idx end
         end
         return visible
     end
@@ -3947,14 +3670,10 @@ CludesUI.AtOptionsLogin(function()
         local zones = _G._CUABR_TALENT_REMINDER_ZONES or {}
         local zoneByName = {}
         for _, z in ipairs(zones) do
-            if z.name then
-                zoneByName[z.name] = z
-            end
+            if z.name then zoneByName[z.name] = z end
         end
         local function ZoneName(name)
-            if not name or name == "" then
-                return CludesUI.L("Unknown")
-            end
+            if not name or name == "" then return CludesUI.L("Unknown") end
             local z = zoneByName[name]
             local text = CludesUI.L(name)
             return (z and z.type == "raid") and (text .. CludesUI.L(" (Raid)")) or text
@@ -3963,13 +3682,9 @@ CludesUI.AtOptionsLogin(function()
         local function PickedZonesText()
             local nameList = {}
             for idx, on in pairs(pickedZones) do
-                if on and zones[idx] then
-                    nameList[#nameList + 1] = ZoneName(zones[idx].name)
-                end
+                if on and zones[idx] then nameList[#nameList + 1] = ZoneName(zones[idx].name) end
             end
-            if #nameList == 0 then
-                return "Select Dungeon/Raid/PvP Zone"
-            end
+            if #nameList == 0 then return "Select Dungeon/Raid/PvP Zone" end
             table.sort(nameList)
             return table.concat(nameList, ", ")
         end
@@ -3988,9 +3703,7 @@ CludesUI.AtOptionsLogin(function()
             "Select Dungeon/Raid/PvP Zone",
             fontPath,
             14,
-            function(button)
-                PP.Point(button, "TOP", zoneRow, "TOP", 0, 0)
-            end
+            function(button) PP.Point(button, "TOP", zoneRow, "TOP", 0, 0) end
         )
         -- Kept for the session and dressed again by every build; the global
         -- search's hidden pre-build makes none (nothing in it to index).
@@ -4046,9 +3759,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end)
             -- Closes with its page (rebuild, tab switch, panel close), as the talent list does.
-            zoneBtn:SetScript("OnHide", function()
-                dialog:Hide()
-            end)
+            zoneBtn:SetScript("OnHide", function() dialog:Hide() end)
         end
         TRDropdownHover(zoneBtn)
         y = y - (ZONE_H + 30)
@@ -4079,9 +3790,7 @@ CludesUI.AtOptionsLogin(function()
             "Select a talent...",
             fontPath,
             12,
-            function(button)
-                PP.Point(button, "TOPLEFT", talentRow, "TOPLEFT", talentX, -(LABEL_H + GAP_Y))
-            end
+            function(button) PP.Point(button, "TOPLEFT", talentRow, "TOPLEFT", talentX, -(LABEL_H + GAP_Y)) end
         )
         TRDropdownHover(talentBtn)
         if not CludesUI._prebuilding then
@@ -4136,9 +3845,7 @@ CludesUI.AtOptionsLogin(function()
                 searchBox:SetFocus()
                 scrollTo(0)
             end)
-            talentBtn:HookScript("OnHide", function()
-                dialog:Hide()
-            end)
+            talentBtn:HookScript("OnHide", function() dialog:Hide() end)
         end
         y = y - TALENT_ROW_H
 
@@ -4189,9 +3896,7 @@ CludesUI.AtOptionsLogin(function()
             local function ZoneCount(r)
                 local count = 0
                 for i = 1, #zones do
-                    if ReminderHasZone(r, zones[i].name) then
-                        count = count + 1
-                    end
+                    if ReminderHasZone(r, zones[i].name) then count = count + 1 end
                 end
                 return count
             end
@@ -4232,9 +3937,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 function(zoneName, on)
                     local r = Saved()
-                    if not r then
-                        return
-                    end
+                    if not r then return end
                     local zl = EditableZoneList(r)
                     if on then
                         if not ReminderHasZone(r, zoneName) then
@@ -4243,9 +3946,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     else
                         for i = #zl, 1, -1 do
-                            if zl[i] == zoneName then
-                                table.remove(zl, i)
-                            end
+                            if zl[i] == zoneName then table.remove(zl, i) end
                         end
                     end
                     TalentRemindersChanged()
@@ -4274,9 +3975,7 @@ CludesUI.AtOptionsLogin(function()
                 return (r and read) and read(r) or "never"
             end
             -- The label dims while the reminder is off, as it did under the checkbox.
-            local function Paint()
-                caption2:SetTextColor(1, 1, 1, (Mode() == "never") and 0.4 or 1)
-            end
+            local function Paint() caption2:SetTextColor(1, 1, 1, (Mode() == "never") and 0.4 or 1) end
             Paint()
             local modeDD = CludesUI.BuildDropdownControl(
                 line,
@@ -4287,9 +3986,7 @@ CludesUI.AtOptionsLogin(function()
                 Mode,
                 function(value)
                     local r = Saved()
-                    if not r then
-                        return
-                    end
+                    if not r then return end
                     r.notNeededMode = value
                     -- The old checkbox key follows, for a profile an older version reads.
                     r.showNotNeeded = (value ~= "never")
@@ -4306,9 +4003,7 @@ CludesUI.AtOptionsLogin(function()
         -- The list, or the empty notice; returns its height. The global
         -- search's pre-build makes no rows: they hold nothing to index.
         RebuildList = function()
-            if CludesUI._prebuilding then
-                return 0
-            end
+            if CludesUI._prebuilding then return 0 end
             -- On a page pool host the rows go back to the container's pool
             -- and are dressed again below, in order.
             Pool.Begin(entryList)
@@ -4317,9 +4012,7 @@ CludesUI.AtOptionsLogin(function()
             end
             wipe(listRows)
             local profile = DB()
-            if not profile then
-                return 0
-            end
+            if not profile then return 0 end
             local reminders = profile.talentReminders or {}
             local visible = VisibleReminders(reminders)
             if #visible == 0 then
@@ -4358,9 +4051,7 @@ CludesUI.AtOptionsLogin(function()
         addBtn:SetScript("OnClick", function()
             local nameList = {}
             for idx, on in pairs(pickedZones) do
-                if on and zones[idx] then
-                    nameList[#nameList + 1] = zones[idx].name
-                end
+                if on and zones[idx] then nameList[#nameList + 1] = zones[idx].name end
             end
             local anyPicked = false
             for _, on in pairs(pickedZones) do
@@ -4375,18 +4066,14 @@ CludesUI.AtOptionsLogin(function()
                 return
             end
             local profile = DB()
-            if not profile then
-                return
-            end
+            if not profile then return end
             profile.talentReminders = profile.talentReminders or {}
             table.sort(nameList)
             for _, r in ipairs(profile.talentReminders) do
                 if r.spellID == pickedSpellID then
                     local zl = EditableZoneList(r)
                     for _, zoneName in ipairs(nameList) do
-                        if not ReminderHasZone(r, zoneName) then
-                            zl[#zl + 1] = zoneName
-                        end
+                        if not ReminderHasZone(r, zoneName) then zl[#zl + 1] = zoneName end
                     end
                     table.sort(zl)
                     ResetForm()
@@ -4443,9 +4130,7 @@ CludesUI.AtOptionsLogin(function()
     local function Call(name)
         return function()
             local fn = _G[name]
-            if fn then
-                fn()
-            end
+            if fn then fn() end
         end
     end
 
@@ -4455,27 +4140,19 @@ CludesUI.AtOptionsLogin(function()
         pages = FOREVER and { PAGE_REMINDERS } or { PAGE_REMINDERS, PAGE_TALENTS },
         buildPage = function(pageName, parent, yOffset)
             local build = PAGE_BUILDERS[pageName]
-            if build then
-                return build(pageName, parent, yOffset)
-            end
+            if build then return build(pageName, parent, yOffset) end
         end,
         getHeaderBuilder = function(pageName)
-            if pageName == PAGE_REMINDERS and not FOREVER then
-                return _previewHeaderBuilder
-            end
+            if pageName == PAGE_REMINDERS and not FOREVER then return _previewHeaderBuilder end
             return nil
         end,
         onPageCacheRestore = function(pageName)
-            if pageName == PAGE_REMINDERS and not FOREVER then
-                RestoreRemindersPage()
-            end
+            if pageName == PAGE_REMINDERS and not FOREVER then RestoreRemindersPage() end
         end,
         onShow = Call("_CUABR_HideAllIcons"),
         onHide = Call("_CUABR_RequestRefresh"),
         onReset = function()
-            if _G._CUABR_AceDB then
-                _G._CUABR_AceDB:ResetProfile()
-            end
+            if _G._CUABR_AceDB then _G._CUABR_AceDB:ResetProfile() end
             Call("_CUABR_RequestRefresh")()
         end,
         -- Tears down the Ready Check Mana Warning preview on module switch.
@@ -4491,9 +4168,7 @@ CludesUI.AtOptionsLogin(function()
     SLASH_EABR1 = "/cabr"
     SLASH_EABR2 = "/cbr"
     SlashCmdList.EABR = function()
-        if InCombatLockdown and InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown and InCombatLockdown() then return end
         CludesUI:ShowModule("CludesUIAuraBuffReminders")
     end
 end)

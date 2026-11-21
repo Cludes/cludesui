@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_PreviewBuffs.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._previewInternals
 -- CUI_RaidFrames_Preview.lua or an earlier preview file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs = pairs
@@ -29,9 +25,7 @@ local PvSettings, StartPvAuraTicker = Inner.PvSettings, Inner.StartPvAuraTicker
 local StopPvAuraTicker = Inner.StopPvAuraTicker
 
 local previewActive = false
-Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val)
-    previewActive = val
-end
+Inner.previewActiveSetters[#Inner.previewActiveSetters + 1] = function(val) previewActive = val end
 
 -------------------------------------------------------------------------------
 --  Preview Buff Ticker (test mode only: cycles configured buffs across frames)
@@ -44,14 +38,16 @@ local function GetConfiguredBuffSpells()
     -- spec (every bucket it draws from, Show In and per-spec disables applied,
     -- spell unions resolved), at the live frames' size.
     local indicators = mod.BM2_SpecIndicators and mod.BM2_SpecIndicators("raid")
-    if not indicators then
-        return {}
-    end
+    if not indicators then return {} end
     local iscale = mod._bmScale or 1
     local spells = {}
     local seen = {}
     for _, indicator in ipairs(indicators) do
-        if indicator.enabled and indicator.spells and (indicator.type == "icon" or indicator.type == "square") then
+        if
+            indicator.enabled
+            and indicator.spells
+            and (indicator.type == "icon" or indicator.type == "square")
+        then
             for _, spellRef in ipairs(indicator.spells) do
                 if not seen[spellRef] then
                     seen[spellRef] = true
@@ -64,7 +60,8 @@ local function GetConfiguredBuffSpells()
                         id = spellRef,
                         icon = iconTex,
                         indType = indicator.type,
-                        color = (indicator.spellColors and indicator.spellColors[spellRef]) or indicator.color,
+                        color = (indicator.spellColors and indicator.spellColors[spellRef])
+                            or indicator.color,
                         size = mod.RFC_BmSize(indicator, iscale),
                         position = indicator.position or "TOPLEFT",
                         offsetX = indicator.offsetX or 0,
@@ -82,9 +79,7 @@ local function GetConfiguredBuffSpells()
 end
 
 mod.PvBuffAnchor = function(iconTex, frame, spellInfo, prevIcon)
-    if not frame._health then
-        return
-    end
+    if not frame._health then return end
     iconTex:SetSize(spellInfo.size, spellInfo.size)
     iconTex:ClearAllPoints()
     if prevIcon then
@@ -109,13 +104,9 @@ end
 
 mod.PvBuffApply = function(spellInfo, frameIndex, slot)
     local frame = previewFrames[frameIndex]
-    if not frame or not frame._pvBuffs then
-        return
-    end
+    if not frame or not frame._pvBuffs then return end
     local iconTex = frame._pvBuffs[slot]
-    if not iconTex then
-        return
-    end
+    if not iconTex then return end
 
     if spellInfo.indType == "icon" then
         iconTex._tex:SetTexture(spellInfo.icon or 136243)
@@ -150,9 +141,7 @@ mod.PvBuffApply = function(spellInfo, frameIndex, slot)
 end
 
 mod.PvBuffTick = function()
-    if not previewActive or not mod._testBuffsVisible then
-        return
-    end
+    if not previewActive or not mod._testBuffsVisible then return end
     local nowTime = GetTime()
     local PREVIEW_COUNT2 = #previewFrames
 
@@ -181,9 +170,7 @@ mod.PvBuffTick = function()
             if frame and frame._pvBuffs and frame._pvBuffs[details.slot] then
                 local ic = frame._pvBuffs[details.slot]
                 ic:Hide()
-                if ic._cooldown then
-                    ic._cooldown:SetCooldown(0, 0)
-                end
+                if ic._cooldown then ic._cooldown:SetCooldown(0, 0) end
             end
             -- Pick new frame (skip frame 1 = player)
             local newFi = math.random(2, PREVIEW_COUNT2)
@@ -200,15 +187,11 @@ mod.PvBuffTick = function()
 end
 
 mod.StartPvBuffTicker = function()
-    if mod._pvBuffTicker then
-        return
-    end
+    if mod._pvBuffTicker then return end
     wipe(mod._pvBuffAssignments)
 
     local spells = GetConfiguredBuffSpells()
-    if #spells == 0 then
-        return
-    end
+    if #spells == 0 then return end
 
     local nowTime = GetTime()
     local PREVIEW_COUNT2 = #previewFrames
@@ -224,9 +207,7 @@ mod.StartPvBuffTicker = function()
             posCounts[place] = (posCounts[place] or 0) + 1
             if posCounts[place] <= 3 then
                 playerSlot = playerSlot + 1
-                if playerSlot > 8 then
-                    break
-                end
+                if playerSlot > 8 then break end
                 local previous = posLastIcon[place]
                 mod.PvBuffApply(sp, 1, playerSlot)
                 local iconTex = playerF._pvBuffs[playerSlot]
@@ -251,9 +232,7 @@ mod.StartPvBuffTicker = function()
         local fi = ((index - 1) % (PREVIEW_COUNT2 - 1)) + 2
         frameSlotsUsed[fi] = (frameSlotsUsed[fi] or 0) + 1
         local slot = frameSlotsUsed[fi]
-        if slot > 4 then
-            break
-        end
+        if slot > 4 then break end
         mod._pvBuffAssignments[sp.id] = {
             spellInfo = sp,
             frameIndex = fi,
@@ -277,9 +256,7 @@ mod.StopPvBuffTicker = function()
         if frame._pvBuffs then
             for _, ic in ipairs(frame._pvBuffs) do
                 ic:Hide()
-                if ic._cooldown then
-                    ic._cooldown:SetCooldown(0, 0)
-                end
+                if ic._cooldown then ic._cooldown:SetCooldown(0, 0) end
             end
         end
     end
@@ -299,9 +276,7 @@ mod.RestartPvAuraTicker = RestartPvAuraTicker
 mod._PvAuraReanchorFrame = PvAuraReanchorFrame
 mod.RefreshPvAuraVisuals = function()
     local s2 = PvSettings()
-    if not s2 then
-        return
-    end
+    if not s2 then return end
     local _pvFrames = PvFrames()
     local _reanchor = mod._PvAuraReanchorFrame
     local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"

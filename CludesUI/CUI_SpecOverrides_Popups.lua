@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Popups.lua
 --
@@ -13,9 +11,7 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ACCENT_B, ACCENT_G, ACCENT_R = Inner.ACCENT_B, Inner.ACCENT_G, Inner.ACCENT_R
@@ -37,13 +33,9 @@ local SetRefreshCardsPopup = Inner.SetRefreshCardsPopup
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val)
-    _editGroup = val
-end
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val) _editGroup = val end
 local _activeSpec = nil
-Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(val)
-    _activeSpec = val
-end
+Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(val) _activeSpec = val end
 
 -- Forward declarations (assigned further down in this file)
 local UpdateIndicator, RefreshCardsPopup
@@ -71,9 +63,7 @@ local function ApplyGroupIcon(texture, glyph)
         texture:SetTexture(GLYPH_SPRITE)
         local _, class = UnitClass("player")
         local c = class and CLASS_COORDS[class]
-        if c then
-            texture:SetTexCoord(c[1], c[2], c[3], c[4])
-        end
+        if c then texture:SetTexCoord(c[1], c[2], c[3], c[4]) end
     end
 end
 CludesUI.SpecOverrides_ApplyGroupIcon = ApplyGroupIcon
@@ -87,9 +77,7 @@ CludesUI.SpecOverrides_GroupListingPages = CludesUI.SpecOverrides_GroupListingPa
 local function RedrawGroupListing()
     local ap = CludesUI:GetActivePage()
     local pages = CludesUI.SpecOverrides_GroupListingPages[CludesUI:GetActiveModule()]
-    if ap == LIST_PAGE or (pages and pages[ap]) then
-        CludesUI:RefreshPage(true)
-    end
+    if ap == LIST_PAGE or (pages and pages[ap]) then CludesUI:RefreshPage(true) end
 end
 
 -------------------------------------------------------------------------------
@@ -101,9 +89,7 @@ local specButton, indicatorBtn
 -- tooltip regardless of editing/active state (no icon or tooltip morphing).
 -- The second indicator icon stays retired.
 UpdateIndicator = function()
-    if indicatorBtn then
-        indicatorBtn:Hide()
-    end -- retired second icon
+    if indicatorBtn then indicatorBtn:Hide() end -- retired second icon
 end
 SetUpdateIndicator(UpdateIndicator)
 
@@ -112,16 +98,12 @@ SetUpdateIndicator(UpdateIndicator)
 --- dimmed, click refused, explanatory tooltip. Re-evaluated on every
 --- module/page selection (called from OnPageRebuilt).
 CludesUI._specOvBtnPageState = function()
-    if not specButton then
-        return
-    end
+    if not specButton then return end
     local off = IsExcludedContext()
     -- Buff Manager page bound to a live fork: block the dropdown entirely (the
     -- page edits that fork no matter what).
     local bmLock = false
-    if not off and CludesUI.SpecOverrides_BmPageLocked then
-        bmLock = CludesUI.SpecOverrides_BmPageLocked()
-    end
+    if not off and CludesUI.SpecOverrides_BmPageLocked then bmLock = CludesUI.SpecOverrides_BmPageLocked() end
     if not bmLock and not off and CludesUI.SpecOverrides_DmPageLocked then
         bmLock = CludesUI.SpecOverrides_DmPageLocked()
     end
@@ -145,9 +127,7 @@ local function StopButtonPulse()
 end
 
 function CludesUI.SpecOverrides_PulseButton()
-    if not specButton then
-        return
-    end
+    if not specButton then return end
     local dialog = specButton._pulse
     if not dialog then
         dialog = CreateFrame("Frame", nil, specButton)
@@ -175,9 +155,7 @@ function CludesUI.SpecOverrides_PulseButton()
         a2:SetSmoothing("IN_OUT")
         accG:SetScript("OnLoop", function(self)
             self._loops = (self._loops or 0) + 1
-            if self._loops >= 8 then
-                StopButtonPulse()
-            end
+            if self._loops >= 8 then StopButtonPulse() end
         end)
         specButton._pulse = dialog
         specButton._pulseAG = accG
@@ -260,23 +238,17 @@ function CludesUI.SpecOverrides_SetupButton(button)
             return
         end
         self:SetAlpha(1)
-        if self._brd then
-            self._brd:SetColor(1, 1, 1, 0.22)
-        end
+        if self._brd then self._brd:SetColor(1, 1, 1, 0.22) end
         CludesUI.ShowWidgetTooltip(self, L("Settings Overrides"))
     end)
     button:SetScript("OnLeave", function(self)
-        if self._brd then
-            self._brd:SetColor(1, 1, 1, 0.10)
-        end
+        if self._brd then self._brd:SetColor(1, 1, 1, 0.10) end
         self:SetAlpha((self._ovPageDisabled or self._ovBmLocked) and 0.35 or 0.9)
         CludesUI.HideWidgetTooltip()
     end)
     button:SetScript("OnClick", function(self)
         StopButtonPulse() -- attention served the moment it is clicked
-        if self._ovPageDisabled then
-            return
-        end
+        if self._ovPageDisabled then return end
         if self._ovBmLocked then
             -- Blocked: explain at the icon instead of opening the dropdown.
             CludesUI.ShowWidgetTooltip(
@@ -338,12 +310,8 @@ local function BuildNameIconPopup(groupDefs, onCreate)
     local nameBoxBg = CludesUI.SolidTex(nameInput, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
     nameBoxBg:SetAllPoints()
     CludesUI.MakeRoundedBorder(nameInput, 1, 1, 1, 0.12, nameBoxBg)
-    nameInput:SetScript("OnEscapePressed", function(self)
-        self:ClearFocus()
-    end)
-    nameInput:SetScript("OnEnterPressed", function(self)
-        self:ClearFocus()
-    end)
+    nameInput:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    nameInput:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
     dialog._nameBox = nameInput
 
     local iconLbl = CludesUI.MakeFont(dialog, 12, nil, 1, 1, 1, 0.6)
@@ -392,18 +360,12 @@ local function BuildNameIconPopup(groupDefs, onCreate)
     clbl:SetPoint("CENTER")
     dialog._createLbl = clbl
     create:SetScript("OnEnter", function()
-        if cbrd and cbrd.SetColor then
-            cbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.9)
-        end
+        if cbrd and cbrd.SetColor then cbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.9) end
     end)
     create:SetScript("OnLeave", function()
-        if cbrd and cbrd.SetColor then
-            cbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.5)
-        end
+        if cbrd and cbrd.SetColor then cbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.5) end
     end)
-    create:SetScript("OnClick", function()
-        onCreate(dialog)
-    end)
+    create:SetScript("OnClick", function() onCreate(dialog) end)
 
     local cancelBtn = CreateFrame("Button", nil, dialog)
     cancelBtn:SetSize(80, 28)
@@ -415,24 +377,16 @@ local function BuildNameIconPopup(groupDefs, onCreate)
     xlbl:SetPoint("CENTER")
     xlbl:SetText(L("Cancel"))
     cancelBtn:SetScript("OnEnter", function()
-        if xbrd and xbrd.SetColor then
-            xbrd:SetColor(1, 1, 1, 0.4)
-        end
+        if xbrd and xbrd.SetColor then xbrd:SetColor(1, 1, 1, 0.4) end
     end)
     cancelBtn:SetScript("OnLeave", function()
-        if xbrd and xbrd.SetColor then
-            xbrd:SetColor(1, 1, 1, 0.22)
-        end
+        if xbrd and xbrd.SetColor then xbrd:SetColor(1, 1, 1, 0.22) end
     end)
-    cancelBtn:SetScript("OnClick", function()
-        dialog:Hide()
-    end)
+    cancelBtn:SetScript("OnClick", function() dialog:Hide() end)
 
     -- Controller cursor: its cancel press backs out through Cancel, and the
     -- panel is a blocker, not a stop.
-    if CludesUI.PadCP() then
-        dialog.CloseButton = cancelBtn
-    end
+    if CludesUI.PadCP() then dialog.CloseButton = cancelBtn end
     CludesUI.TrackOverlay(dialog)
     CludesUI.PadHint(dialog, "nodepass")
     return dialog
@@ -465,17 +419,11 @@ local function ShowNameIconPopup(specIDs, isEditing)
                     changed = true
                 end
                 dialog:Hide()
-                if UpdateIndicator then
-                    UpdateIndicator()
-                end
-                if RefreshCardsPopup then
-                    RefreshCardsPopup()
-                end
+                if UpdateIndicator then UpdateIndicator() end
+                if RefreshCardsPopup then RefreshCardsPopup() end
                 -- SetGroupSpecs already rebuilt the listing pages; only a new
                 -- name or icon needs another rebuild.
-                if changed then
-                    RedrawGroupListing()
-                end
+                if changed then RedrawGroupListing() end
                 return
             end
             local specList = dialog._specs
@@ -490,9 +438,7 @@ local function ShowNameIconPopup(specIDs, isEditing)
             end
             local ident = NextGroupId()
             local label = dialog._nameBox:GetText()
-            if not label or label == "" then
-                label = L("Group") .. " " .. ident
-            end
+            if not label or label == "" then label = L("Group") .. " " .. ident end
             local group = {
                 id = ident,
                 name = label,
@@ -505,19 +451,13 @@ local function ShowNameIconPopup(specIDs, isEditing)
             -- Apply it before the session opens, so every exit of that session
             -- (and a create the page lock refuses) sees it. While a session is
             -- open this stands down and that session's user exit applies it.
-            if CludesUI.IS_FOREVER then
-                CludesUI._SO_ForeverConverge()
-            end
+            if CludesUI.IS_FOREVER then CludesUI._SO_ForeverConverge() end
             -- Auto-activate: a new group goes straight into its "Editing as"
             -- session. EnterGroupEdit self-guards the BM page lock and tears
             -- down any active session.
             EnterGroupEdit(group)
-            if UpdateIndicator then
-                UpdateIndicator()
-            end -- current spec may have joined
-            if RefreshCardsPopup then
-                RefreshCardsPopup()
-            end
+            if UpdateIndicator then UpdateIndicator() end -- current spec may have joined
+            if RefreshCardsPopup then RefreshCardsPopup() end
         end)
         CludesUI._specOvNamePopup = nameIconDialog -- panel-hide hook closes it (lexical: local declared below the hook)
     end
@@ -537,9 +477,7 @@ local function ShowNameIconPopup(specIDs, isEditing)
                 and otherBtn._def.kind == isEditing.icon.kind
                 and otherBtn._def.key == isEditing.icon.key
             or false
-        if sel then
-            nameIconDialog._selectedIcon = otherBtn._def
-        end
+        if sel then nameIconDialog._selectedIcon = otherBtn._def end
         otherBtn:SetAlpha(sel and 1 or 0.7)
         if otherBtn._brd and otherBtn._brd.SetColor then
             if sel then
@@ -555,9 +493,7 @@ local function ShowNameIconPopup(specIDs, isEditing)
 end
 
 local function StartGroupCreation()
-    if not CludesUI.ShowSpecAssignPopup then
-        return
-    end
+    if not CludesUI.ShowSpecAssignPopup then return end
     local dummyDB = { _specOv = { _specs = {} } }
     CludesUI:ShowSpecAssignPopup({
         db = dummyDB,
@@ -573,14 +509,10 @@ local function StartGroupCreation()
             -- while editing this one.
             local specList = {}
             for specID, on in pairs(assignments or {}) do
-                if on and type(specID) == "number" then
-                    specList[#specList + 1] = specID
-                end
+                if on and type(specID) == "number" then specList[#specList + 1] = specID end
             end
             table.sort(specList)
-            if #specList == 0 then
-                return
-            end
+            if #specList == 0 then return end
             ShowNameIconPopup(specList)
         end,
     })
@@ -633,19 +565,13 @@ local function BuildCardRow(hostFrame, posY, options)
     glyph:SetTexCoord(0, 1, 0, 1)
     glyph:SetDesaturated(false)
     glyph:SetVertexColor(1, 1, 1, 1)
-    if options.iconApply then
-        options.iconApply(glyph)
-    end
+    if options.iconApply then options.iconApply(glyph) end
     local label = line._nameFS
     label:SetTextColor(1, 1, 1, options.dim and 0.55 or 0.9)
     label:SetText(options.name)
     if options.tooltip then
-        line:SetScript("OnEnter", function(self)
-            CludesUI.ShowWidgetTooltip(self, options.tooltip)
-        end)
-        line:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        line:SetScript("OnEnter", function(self) CludesUI.ShowWidgetTooltip(self, options.tooltip) end)
+        line:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
     else
         line:SetScript("OnEnter", nil)
         line:SetScript("OnLeave", nil)
@@ -654,14 +580,17 @@ local function BuildCardRow(hostFrame, posY, options)
         -- BM page lock: not selectable while another override's Buff Manager is
         -- bound to the open page. Dim + inert (tooltip only).
         line:SetAlpha(0.4)
-        line:SetScript("OnClick", function(self)
-            CludesUI.ShowWidgetTooltip(
-                self,
-                L(
-                    "The active override's Buff Manager is bound to the open page. Leave the Buff Manager tab to switch overrides."
+        line:SetScript(
+            "OnClick",
+            function(self)
+                CludesUI.ShowWidgetTooltip(
+                    self,
+                    L(
+                        "The active override's Buff Manager is bound to the open page. Leave the Buff Manager tab to switch overrides."
+                    )
                 )
-            )
-        end)
+            end
+        )
     else
         line:SetScript("OnClick", options.onClick)
     end
@@ -761,9 +690,7 @@ local function BuildCardRow(hostFrame, posY, options)
         local enabled = options.unlockEnabled
         unbindBtn:SetAlpha(enabled and 0.75 or 0.3)
         unbindBtn:SetScript("OnEnter", function(self)
-            if enabled then
-                self:SetAlpha(1)
-            end
+            if enabled then self:SetAlpha(1) end
             if CludesUI.ShowWidgetTooltip then
                 local tipText
                 if enabled then
@@ -782,9 +709,7 @@ local function BuildCardRow(hostFrame, posY, options)
             CludesUI.HideWidgetTooltip()
         end)
         unbindBtn:SetScript("OnClick", function()
-            if enabled then
-                options.onUnlock()
-            end
+            if enabled then options.onUnlock() end
         end)
     elseif line._ub then
         line._ub:Hide()
@@ -797,9 +722,7 @@ end
 -- onto every spec added to the group. Returns a fresh filtered table per call (never
 -- aliases one table across member ids), nil when nothing survives.
 local function CopySeedMap(seedMap)
-    if not seedMap then
-        return nil
-    end
+    if not seedMap then return nil end
     local result
     for key, val in pairs(seedMap) do
         if not MatchOwnedFKey(key) then
@@ -815,9 +738,7 @@ end
 -- stored values (reverting to the baseline on their next apply). The live profile
 -- re-syncs immediately so a current-spec join/leave takes effect without a spec swap.
 local function SetGroupSpecs(group, newSpecs)
-    if _editGroup == group then
-        ExitGroupEdit(true)
-    end
+    if _editGroup == group then ExitGroupEdit(true) end
     -- Bank live Buff/Debuff Manager edits into the layer that holds them before
     -- the membership change can move fork ownership (the apply below never harvests).
     CludesUI.SpecOverrides_HarvestBmLayout()
@@ -836,9 +757,7 @@ local function SetGroupSpecs(group, newSpecs)
             -- member itself may be leaving)
             local seedMap = seed and record.values[seed]
             for ident in pairs(oldSet) do
-                if not newSet[ident] then
-                    record.values[ident] = nil
-                end
+                if not newSet[ident] then record.values[ident] = nil end
             end
             for _, ident in ipairs(newSpecs) do
                 if not oldSet[ident] then
@@ -875,9 +794,7 @@ local function SetGroupSpecs(group, newSpecs)
                         -- Fresh filtered copy PER id; nil when only
                         -- match-owned keys existed.
                         local copy = CopySeedMap(seedMap)
-                        if copy then
-                            record.values[ident] = copy
-                        end
+                        if copy then record.values[ident] = copy end
                     end
                 end
             end
@@ -894,9 +811,7 @@ local function SetGroupSpecs(group, newSpecs)
     for ident in pairs(oldSet) do
         if not newSet[ident] and not SpecInAnyGroup(ident) then
             for _, record in ipairs(GetStore() or {}) do
-                if record.values and record.group ~= nil then
-                    record.values[ident] = nil
-                end
+                if record.values and record.group ~= nil then record.values[ident] = nil end
             end
         end
     end
@@ -949,12 +864,8 @@ local function SetGroupSpecs(group, newSpecs)
 end
 
 local function EditGroupSpecs(group)
-    if not CludesUI.ShowSpecAssignPopup then
-        return
-    end
-    if cardsDialog then
-        cardsDialog:Hide()
-    end
+    if not CludesUI.ShowSpecAssignPopup then return end
+    if cardsDialog then cardsDialog:Hide() end
     local preChecked = {}
     for _, ident in ipairs(group.specs or {}) do
         preChecked[ident] = true
@@ -971,9 +882,7 @@ local function EditGroupSpecs(group)
         onConfirm = function(assignments)
             local specList = {}
             for specID, on in pairs(assignments or {}) do
-                if on and type(specID) == "number" then
-                    specList[#specList + 1] = specID
-                end
+                if on and type(specID) == "number" then specList[#specList + 1] = specID end
             end
             table.sort(specList)
             SetGroupSpecs(group, specList)
@@ -985,9 +894,7 @@ end
 
 RefreshCardsPopup = function()
     local dialog = cardsDialog
-    if not dialog or not dialog:IsShown() then
-        return
-    end
+    if not dialog or not dialog:IsShown() then return end
     -- The card rows are pooled (BuildCardRow): hide them all, then lay out the
     -- ones this refresh uses again from the first.
     local cards = dialog._cards
@@ -999,9 +906,7 @@ RefreshCardsPopup = function()
     dialog._cardN = 0
 
     local posY = -40
-    local function add(_, hgt)
-        posY = posY - hgt
-    end
+    local function add(_, hgt) posY = posY - hgt end
 
     -- Default editing mode (exit editing-as). The border tracks the EDITING selection
     -- only (which card's values the panel edits), never the runtime-applied state:
@@ -1009,15 +914,11 @@ RefreshCardsPopup = function()
     add(BuildCardRow(dialog, posY, {
         name = L("Default Editing Mode"),
         active = not _editGroup and not Cond._edit,
-        iconApply = function(texture)
-            ApplyGroupIcon(texture, nil)
-        end,
+        iconApply = function(texture) ApplyGroupIcon(texture, nil) end,
         tooltip = L("Edit normally: changes apply to your current spec"),
         onClick = function()
             ExitGroupEdit()
-            if Cond.ExitEdit then
-                Cond.ExitEdit()
-            end
+            if Cond.ExitEdit then Cond.ExitEdit() end
             RefreshCardsPopup()
         end,
     }))
@@ -1049,21 +950,15 @@ RefreshCardsPopup = function()
         local isMember = false
         for _, ident in ipairs(group.specs or {}) do
             nameList[#nameList + 1] = SpecName(ident)
-            if ident == curSpec then
-                isMember = true
-            end
+            if ident == curSpec then isMember = true end
         end
-        if CludesUI.IS_FOREVER then
-            nameList = CludesUI._SO_ForeverGroupNames(group.specs, curSpec)
-        end
+        if CludesUI.IS_FOREVER then nameList = CludesUI._SO_ForeverGroupNames(group.specs, curSpec) end
         local ownerLocked = (isMember and curOwnerGid and curOwnerGid ~= group.id) or false
         add(BuildCardRow(dialog, posY, {
             name = group.name or "?",
             active = _editGroup == group,
             locked = (bmLockKind and not (bmLockKind == "spec" and bmLockGid == group.id)) or nil,
-            iconApply = function(texture)
-                ApplyGroupIcon(texture, group.icon)
-            end,
+            iconApply = function(texture) ApplyGroupIcon(texture, group.icon) end,
             tooltip = table.concat(nameList, "\n"),
             deletable = true,
             unlockEnabled = isMember and not ownerLocked,
@@ -1079,9 +974,7 @@ RefreshCardsPopup = function()
                 dialog:Hide()
                 CludesUI.SpecOverrides_EnterUnlockForGroup(group)
             end,
-            onEdit = function()
-                CludesUI.SpecOverrides_EditOverrideGroup("spec", group.id)
-            end,
+            onEdit = function() CludesUI.SpecOverrides_EditOverrideGroup("spec", group.id) end,
             onClick = function()
                 if _editGroup == group then
                     ExitGroupEdit()
@@ -1102,9 +995,7 @@ RefreshCardsPopup = function()
                     confirmText = L("Delete"),
                     cancelText = L("Cancel"),
                     onConfirm = function()
-                        if _editGroup == group then
-                            ExitGroupEdit(true)
-                        end
+                        if _editGroup == group then ExitGroupEdit(true) end
                         local groupList = GetGroups()
                         if groupList then
                             for idx, gg in ipairs(groupList) do
@@ -1164,9 +1055,7 @@ RefreshCardsPopup = function()
                         RebuildFKeyIndex()
                         RequestGoldWalk()
                         -- WoW Forever: the delete can move the spec the class acts as.
-                        if CludesUI.IS_FOREVER then
-                            CludesUI._SO_ForeverConverge()
-                        end
+                        if CludesUI.IS_FOREVER then CludesUI._SO_ForeverConverge() end
                         UpdateIndicator() -- current spec may have been a member
                         RefreshCardsPopup()
                         RedrawGroupListing()
@@ -1217,12 +1106,16 @@ RefreshCardsPopup = function()
             -- Border = editing selection only (never the runtime-applied
             -- state); the keybind toggle state gets a text badge.
             name = (group.name or "?")
-                .. (group.conds and group.conds.keybind and group.keyOn and ("  |cffc7a65a" .. L("On") .. "|r") or ""),
+                .. (
+                    group.conds
+                        and group.conds.keybind
+                        and group.keyOn
+                        and ("  |cffc7a65a" .. L("On") .. "|r")
+                    or ""
+                ),
             active = Cond._edit == group,
             locked = (bmLockKind and not (bmLockKind == "cond" and bmLockGid == group.id)) or nil,
-            iconApply = function(texture)
-                ApplyGroupIcon(texture, group.icon)
-            end,
+            iconApply = function(texture) ApplyGroupIcon(texture, group.icon) end,
             tooltip = Cond.GroupTooltip(group),
             deletable = true,
             -- Dark Mode groups are values-only: no custom unlock mode can exist
@@ -1232,9 +1125,7 @@ RefreshCardsPopup = function()
                 dialog:Hide()
                 CludesUI.Conditions_EnterUnlockForGroup(group)
             end or nil,
-            onEdit = function()
-                CludesUI.SpecOverrides_EditOverrideGroup("cond", group.id)
-            end,
+            onEdit = function() CludesUI.SpecOverrides_EditOverrideGroup("cond", group.id) end,
             onClick = function()
                 -- Click = editing-as toggle, exactly like spec group cards.
                 if Cond._edit == group then
@@ -1256,9 +1147,7 @@ RefreshCardsPopup = function()
                     confirmText = L("Delete"),
                     cancelText = L("Cancel"),
                     onConfirm = function()
-                        if Cond._edit == group then
-                            Cond.ExitEdit()
-                        end
+                        if Cond._edit == group then Cond.ExitEdit() end
                         local groupList = CludesUI.Conditions_GetGroups()
                         if groupList then
                             for idx, gg in ipairs(groupList) do
@@ -1283,9 +1172,7 @@ RefreshCardsPopup = function()
                                     table.remove(st, idx)
                                 end
                             end
-                            if next(touched) then
-                                RunRefreshers(touched)
-                            end
+                            if next(touched) then RunRefreshers(touched) end
                         end
                         Cond.RebuildIndex()
                         CludesUI.Conditions_RemoveUnlockLayout(group.id)
@@ -1297,9 +1184,7 @@ RefreshCardsPopup = function()
                         if CludesUI.Conditions_RebuildKeyBindings then
                             CludesUI.Conditions_RebuildKeyBindings()
                         end
-                        if CludesUI.Conditions_Recheck then
-                            CludesUI.Conditions_Recheck()
-                        end
+                        if CludesUI.Conditions_Recheck then CludesUI.Conditions_Recheck() end
                         RequestGoldWalk()
                         RefreshCardsPopup()
                         -- FORCED rebuild on EVERY page, not just the management tabs: deleting
@@ -1337,12 +1222,8 @@ RefreshCardsPopup = function()
         ll:SetPoint("CENTER")
         ll:SetText(L("View All / Remove Overrides"))
         itemLink._ll = ll
-        itemLink:SetScript("OnEnter", function()
-            ll:SetTextColor(ACCENT_R, ACCENT_G, ACCENT_B, 1)
-        end)
-        itemLink:SetScript("OnLeave", function()
-            ll:SetTextColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.9)
-        end)
+        itemLink:SetScript("OnEnter", function() ll:SetTextColor(ACCENT_R, ACCENT_G, ACCENT_B, 1) end)
+        itemLink:SetScript("OnLeave", function() ll:SetTextColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.9) end)
         itemLink:SetScript("OnClick", function()
             dialog:Hide()
             -- Profiles & Presets is session-locked (excluded module): leave any
@@ -1361,9 +1242,7 @@ RefreshCardsPopup = function()
 
     dialog:SetHeight(-posY + 12)
     -- The height lands after the outline's seat: refit so the bottom edge stays sharp.
-    if dialog._brd then
-        dialog._brd:Fit()
-    end
+    if dialog._brd then dialog._brd:Fit() end
 end
 SetRefreshCardsPopup(RefreshCardsPopup)
 
@@ -1403,13 +1282,9 @@ function CludesUI.SpecOverrides_ToggleCardsPopup(anchorBtn)
             -- A modal dialog (delete confirm / spec picker) owns clicks while
             -- shown; interacting with it must not close the popup.
             local confirmDim = _G.CUIConfirmDimmer
-            if confirmDim and confirmDim:IsShown() then
-                return
-            end
+            if confirmDim and confirmDim:IsShown() then return end
             local assignDim = _G.CUISpecAssignDimmer
-            if assignDim and assignDim:IsShown() then
-                return
-            end
+            if assignDim and assignDim:IsShown() then return end
             if
                 dialog:IsShown()
                 and not dialog:IsMouseOver()
@@ -1460,9 +1335,7 @@ function CludesUI.SpecOverrides_ToggleOverrideEdit(kindName, groupId)
     end
     if kindName == "spec" then
         local group = GroupById(groupId)
-        if not group then
-            return
-        end
+        if not group then return end
         -- Eligible: a member spec, and no OTHER group owns the live spec fork.
         local current, member = CurrentSpecID(), false
         for _, spellRef in ipairs(group.specs or {}) do
@@ -1479,9 +1352,7 @@ function CludesUI.SpecOverrides_ToggleOverrideEdit(kindName, groupId)
         end
     elseif kindName == "cond" then
         local group = CludesUI.Conditions_GroupById(groupId)
-        if not group then
-            return
-        end
+        if not group then return end
         -- A live spec fork means a spec owner exists, and spec wins.
         local force = lockKind ~= "spec"
         if Cond._edit == group then
@@ -1498,17 +1369,11 @@ end
 function CludesUI.SpecOverrides_EditOverrideGroup(kindName, groupId)
     if kindName == "spec" then
         local group = GroupById(groupId)
-        if group then
-            EditGroupSpecs(group)
-        end
+        if group then EditGroupSpecs(group) end
     elseif kindName == "cond" then
         local group = CludesUI.Conditions_GroupById(groupId)
-        if not group then
-            return
-        end
-        if cardsDialog then
-            cardsDialog:Hide()
-        end
+        if not group then return end
+        if cardsDialog then cardsDialog:Hide() end
         Cond.ShowPickerPopup(group)
     end
 end
@@ -1527,7 +1392,10 @@ function Cond.GroupTooltip(group)
             if groupDef.id == "keybind" then
                 line = line
                     .. ": "
-                    .. (group.key and (GetBindingText and GetBindingText(group.key) or group.key) or L("no key set"))
+                    .. (
+                        group.key and (GetBindingText and GetBindingText(group.key) or group.key)
+                        or L("no key set")
+                    )
             end
             parts[#parts + 1] = line
         end
@@ -1542,9 +1410,7 @@ function Cond.ShowNameIconPopup(conds, keyStr, current)
         -- Conditional icon set (one per condition), in ladder/display order.
         local groupDefs = {}
         for _, condDef in ipairs(CludesUI.CONDITIONS or {}) do
-            if Cond.ICONS[condDef.id] then
-                groupDefs[#groupDefs + 1] = { kind = "cond", key = condDef.id }
-            end
+            if Cond.ICONS[condDef.id] then groupDefs[#groupDefs + 1] = { kind = "cond", key = condDef.id } end
         end
         dialog = BuildNameIconPopup(groupDefs, function(dialog)
             local conds2 = dialog._conds
@@ -1556,17 +1422,11 @@ function Cond.ShowNameIconPopup(conds, keyStr, current)
             local newGroup
             if dialog._existing then
                 local group = dialog._existing
-                if label and label ~= "" then
-                    group.name = label
-                end
-                if dialog._selectedIcon then
-                    group.icon = dialog._selectedIcon
-                end
+                if label and label ~= "" then group.name = label end
+                if dialog._selectedIcon then group.icon = dialog._selectedIcon end
                 group.conds = conds2
                 group.key = conds2.keybind and dialog._key or nil
-                if not conds2.keybind then
-                    group.keyOn = nil
-                end
+                if not conds2.keybind then group.keyOn = nil end
             else
                 local groupList = CludesUI.Conditions_GetGroups(true)
                 if not groupList then
@@ -1574,9 +1434,7 @@ function Cond.ShowNameIconPopup(conds, keyStr, current)
                     return
                 end
                 local ident = CludesUI.Conditions_NewGroupId()
-                if not label or label == "" then
-                    label = L("Conditional") .. " " .. ident
-                end
+                if not label or label == "" then label = L("Conditional") .. " " .. ident end
                 -- Default icon: the first checked condition (ladder order).
                 local defIcon = dialog._selectedIcon
                 if not defIcon then
@@ -1597,18 +1455,12 @@ function Cond.ShowNameIconPopup(conds, keyStr, current)
                 groupList[#groupList + 1] = newGroup
             end
             dialog:Hide()
-            if CludesUI.Conditions_RebuildKeyBindings then
-                CludesUI.Conditions_RebuildKeyBindings()
-            end
-            if CludesUI.Conditions_Recheck then
-                CludesUI.Conditions_Recheck()
-            end
+            if CludesUI.Conditions_RebuildKeyBindings then CludesUI.Conditions_RebuildKeyBindings() end
+            if CludesUI.Conditions_Recheck then CludesUI.Conditions_Recheck() end
             -- Auto-activate: a new conditional goes straight into its edit
             -- session (matches the spec-group create flow). Cond.EnterEdit
             -- self-guards the BM page lock and any active session.
-            if newGroup then
-                Cond.EnterEdit(newGroup)
-            end
+            if newGroup then Cond.EnterEdit(newGroup) end
             Cond.RefreshCards()
             RedrawGroupListing()
         end)
@@ -1635,7 +1487,10 @@ function Cond.ShowNameIconPopup(conds, keyStr, current)
     end
     dialog._selectedIcon = nil
     for _, otherBtn in ipairs(dialog._iconBtns) do
-        local sel = wanted and otherBtn._def and wanted.kind == otherBtn._def.kind and wanted.key == otherBtn._def.key
+        local sel = wanted
+            and otherBtn._def
+            and wanted.kind == otherBtn._def.kind
+            and wanted.key == otherBtn._def.key
         otherBtn:SetAlpha(sel and 1 or 0.7)
         if otherBtn._brd and otherBtn._brd.SetColor then
             if sel then
@@ -1657,9 +1512,7 @@ end
 -- (which closes as combat starts). It lets go of the keyboard when it hides out
 -- of combat, and on every open.
 function Cond.ShowPickerPopup(current)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     EnsurePanelHideHook()
     local dialog = Cond._pickerPopup
     if not dialog then
@@ -1707,17 +1560,19 @@ function Cond.ShowPickerPopup(current)
             local labelFS = CludesUI.MakeFont(line, 12, nil, 1, 1, 1, groupDef.comingSoon and 0.35 or 0.85)
             labelFS:SetPoint("LEFT", box, "RIGHT", 8, 0)
             labelFS:SetText(
-                L(groupDef.label) .. (groupDef.comingSoon and ("  |cff888888" .. L("Coming Soon") .. "|r") or "")
+                L(groupDef.label)
+                    .. (groupDef.comingSoon and ("  |cff888888" .. L("Coming Soon") .. "|r") or "")
             )
             line._check = check
             line._condID = groupDef.id
             if groupDef.comingSoon then
-                line:SetScript("OnEnter", function(self)
-                    CludesUI.ShowWidgetTooltip(self, L("This condition is coming in a future update."))
-                end)
-                line:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                line:SetScript(
+                    "OnEnter",
+                    function(self)
+                        CludesUI.ShowWidgetTooltip(self, L("This condition is coming in a future update."))
+                    end
+                )
+                line:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             elseif groupDef.requires then
                 -- Requirement-gated condition (e.g. Dark Mode needs every Dark Mode row
                 -- but Class Resource Bar on). CHECKING is refused while unmet;
@@ -1727,15 +1582,11 @@ function Cond.ShowPickerPopup(current)
                 line._reqFn = groupDef.requires
                 line._lbl = labelFS
                 line:SetScript("OnClick", function(self)
-                    if not dialog._staged[self._condID] and not self._reqFn() then
-                        return
-                    end
+                    if not dialog._staged[self._condID] and not self._reqFn() then return end
                     dialog._staged[self._condID] = not dialog._staged[self._condID] or nil
                     self._check:SetShown(dialog._staged[self._condID] and true or false)
                     dialog._syncKeyRow()
-                    if dialog._refreshReqRows then
-                        dialog._refreshReqRows()
-                    end
+                    if dialog._refreshReqRows then dialog._refreshReqRows() end
                 end)
                 line:SetScript("OnEnter", function(self)
                     -- The requirement hint while it would refuse a check, else
@@ -1748,9 +1599,7 @@ function Cond.ShowPickerPopup(current)
                         CludesUI.ShowWidgetTooltip(self, L(tipText))
                     end
                 end)
-                line:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                line:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             else
                 line:SetScript("OnClick", function(self)
                     dialog._staged[self._condID] = not dialog._staged[self._condID] or nil
@@ -1759,12 +1608,11 @@ function Cond.ShowPickerPopup(current)
                 end)
                 -- A plain condition with a tooltip (WoW Forever's Gamepad Mode) shows it on hover.
                 if groupDef.tooltip then
-                    line:SetScript("OnEnter", function(self)
-                        CludesUI.ShowWidgetTooltip(self, L(groupDef.tooltip))
-                    end)
-                    line:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
+                    line:SetScript(
+                        "OnEnter",
+                        function(self) CludesUI.ShowWidgetTooltip(self, L(groupDef.tooltip)) end
+                    )
+                    line:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 end
             end
             dialog._rows[#dialog._rows + 1] = line
@@ -1814,20 +1662,14 @@ function Cond.ShowPickerPopup(current)
         -- releases again.
         local function ReleaseKeys()
             dialog._capturing = false
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             dialog:EnableKeyboard(false)
-            if dialog.SetPropagateKeyboardInput then
-                dialog:SetPropagateKeyboardInput(true)
-            end
+            if dialog.SetPropagateKeyboardInput then dialog:SetPropagateKeyboardInput(true) end
         end
         dialog._releaseKeys = ReleaseKeys
         dialog:SetScript("OnHide", ReleaseKeys)
         keyBtn:SetScript("OnClick", function()
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             dialog._capturing = not dialog._capturing
             dialog:EnableKeyboard(dialog._capturing and true or false)
             if dialog.SetPropagateKeyboardInput then
@@ -1836,9 +1678,7 @@ function Cond.ShowPickerPopup(current)
             SyncKeyText()
         end)
         dialog:SetScript("OnKeyDown", function(_, key)
-            if not dialog._capturing or InCombatLockdown() then
-                return
-            end
+            if not dialog._capturing or InCombatLockdown() then return end
             if
                 key == "LSHIFT"
                 or key == "RSHIFT"
@@ -1853,20 +1693,12 @@ function Cond.ShowPickerPopup(current)
             -- The key that ends the capture stays here: an Escape that cancels
             -- it must not close the options (and the picker with them). The
             -- keyboard is off now, and the next open restores propagation.
-            if dialog.SetPropagateKeyboardInput then
-                dialog:SetPropagateKeyboardInput(false)
-            end
+            if dialog.SetPropagateKeyboardInput then dialog:SetPropagateKeyboardInput(false) end
             if key ~= "ESCAPE" then
                 local mods = ""
-                if IsAltKeyDown() then
-                    mods = mods .. "ALT-"
-                end
-                if IsControlKeyDown() then
-                    mods = mods .. "CTRL-"
-                end
-                if IsShiftKeyDown() then
-                    mods = mods .. "SHIFT-"
-                end
+                if IsAltKeyDown() then mods = mods .. "ALT-" end
+                if IsControlKeyDown() then mods = mods .. "CTRL-" end
+                if IsShiftKeyDown() then mods = mods .. "SHIFT-" end
                 dialog._stagedKey = mods .. key
             end
             SyncKeyText()
@@ -1877,12 +1709,8 @@ function Cond.ShowPickerPopup(current)
         local kx = CludesUI.MakeFont(keyClear, 13, nil, 1, 1, 1, 0.6)
         kx:SetPoint("CENTER")
         kx:SetText("x")
-        keyClear:SetScript("OnEnter", function()
-            kx:SetTextColor(1, 0.4, 0.4, 1)
-        end)
-        keyClear:SetScript("OnLeave", function()
-            kx:SetTextColor(1, 1, 1, 0.6)
-        end)
+        keyClear:SetScript("OnEnter", function() kx:SetTextColor(1, 0.4, 0.4, 1) end)
+        keyClear:SetScript("OnLeave", function() kx:SetTextColor(1, 1, 1, 0.6) end)
         keyClear:SetScript("OnClick", function()
             dialog._stagedKey = nil
             SyncKeyText()
@@ -1908,19 +1736,13 @@ function Cond.ShowPickerPopup(current)
         nlbl:SetPoint("CENTER")
         nlbl:SetText(L("Next"))
         nextBtn:SetScript("OnEnter", function()
-            if nbrd and nbrd.SetColor then
-                nbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.9)
-            end
+            if nbrd and nbrd.SetColor then nbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.9) end
         end)
         nextBtn:SetScript("OnLeave", function()
-            if nbrd and nbrd.SetColor then
-                nbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.5)
-            end
+            if nbrd and nbrd.SetColor then nbrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.5) end
         end)
         nextBtn:SetScript("OnClick", function()
-            if not next(dialog._staged) then
-                return
-            end
+            if not next(dialog._staged) then return end
             if dialog._staged.keybind and not dialog._stagedKey then
                 CludesUI.ShowWidgetTooltip(nextBtn, L("Set the toggle key first (or uncheck Keybind)."))
                 return
@@ -1943,25 +1765,17 @@ function Cond.ShowPickerPopup(current)
         xlbl2:SetPoint("CENTER")
         xlbl2:SetText(L("Cancel"))
         cancelBtn:SetScript("OnEnter", function()
-            if xbrd2 and xbrd2.SetColor then
-                xbrd2:SetColor(1, 1, 1, 0.4)
-            end
+            if xbrd2 and xbrd2.SetColor then xbrd2:SetColor(1, 1, 1, 0.4) end
         end)
         cancelBtn:SetScript("OnLeave", function()
-            if xbrd2 and xbrd2.SetColor then
-                xbrd2:SetColor(1, 1, 1, 0.22)
-            end
+            if xbrd2 and xbrd2.SetColor then xbrd2:SetColor(1, 1, 1, 0.22) end
         end)
         -- The OnHide releases a capture in progress.
-        cancelBtn:SetScript("OnClick", function()
-            dialog:Hide()
-        end)
+        cancelBtn:SetScript("OnClick", function() dialog:Hide() end)
 
         -- Controller cursor: its cancel press backs out through Cancel, and the
         -- panel is a blocker, not a stop.
-        if CludesUI.PadCP() then
-            dialog.CloseButton = cancelBtn
-        end
+        if CludesUI.PadCP() then dialog.CloseButton = cancelBtn end
         CludesUI.TrackOverlay(dialog)
         CludesUI.PadHint(dialog, "nodepass")
         Cond._pickerPopup = dialog
@@ -1978,9 +1792,7 @@ function Cond.ShowPickerPopup(current)
     for _, line in ipairs(dialog._rows) do
         line._check:SetShown(dialog._staged[line._condID] and true or false)
     end
-    if dialog._refreshReqRows then
-        dialog._refreshReqRows()
-    end
+    if dialog._refreshReqRows then dialog._refreshReqRows() end
     dialog._title:SetText(
         current and string.format(L("Edit Conditional: %s"), current.name or "?")
             or L("New Conditional Group")
@@ -1995,9 +1807,7 @@ end
 -- Conditional cards render as a second section inside RefreshCardsPopup; this alias
 -- points every cond-side refresh at the one popup.
 Cond.RefreshCards = function()
-    if RefreshCardsPopup then
-        RefreshCardsPopup()
-    end
+    if RefreshCardsPopup then RefreshCardsPopup() end
 end
 
 Inner.broken = false

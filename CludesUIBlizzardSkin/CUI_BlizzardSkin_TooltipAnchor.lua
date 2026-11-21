@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_BlizzardSkin_TooltipAnchor.lua
 --
@@ -11,9 +9,7 @@ local _, mod = ...
 local Inner = mod._internals
 -- CludesUIBlizzardSkin.lua or an earlier CUI_BlizzardSkin_*.lua file
 -- failed to load.
-if not Inner or Inner.last ~= "Dialogs" then
-    return
-end
+if not Inner or Inner.last ~= "Dialogs" then return end
 
 -------------------------------------------------------------------------------
 --  UberTooltips CVar enforcement (only if user has manually set it in CUI)
@@ -23,9 +19,7 @@ do
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        if not CludesUIDB then
-            CludesUIDB = {}
-        end
+        if not CludesUIDB then CludesUIDB = {} end
         if CludesUIDB.uberTooltipsManual then
             CludesUI.SetCVar("UberTooltips", CludesUIDB.uberTooltips and "1" or "0", "CludesUIBlizzardSkin")
         else
@@ -53,13 +47,9 @@ end
 -- IsForbidden is the only method safe to call on such a frame, so it is asked
 -- first and nothing else is touched. File scope on purpose: the cursor and fixed anchor modes (separate do-blocks) both need it.
 local function TooltipOwnerUsable(hostFrame)
-    if not hostFrame then
-        return false
-    end
+    if not hostFrame then return false end
     local func = hostFrame.IsForbidden
-    if type(func) == "function" and func(hostFrame) then
-        return false
-    end
+    if type(func) == "function" and func(hostFrame) then return false end
     return true
 end
 
@@ -75,9 +65,7 @@ end
 -- SetPoint, no registration), so nothing Blizzard-side ever re-anchors a
 -- stand-in -- every re-build re-enters these hooks.
 local function TooltipIsGlobalLike(tipFrame)
-    if tipFrame == GameTooltip then
-        return true
-    end
+    if tipFrame == GameTooltip then return true end
     return type(tipFrame) == "table" and tipFrame.LIKE_GLOBAL_GAMETOOLTIP == true
 end
 
@@ -99,9 +87,7 @@ do
     local hooked = false
 
     local function EnsureCursorFrame()
-        if cursorAnchor then
-            return cursorAnchor
-        end
+        if cursorAnchor then return cursorAnchor end
         cursorAnchor = CreateFrame("Frame", "CludesUI_TooltipCursorAnchor", UIParent)
         cursorAnchor:SetSize(1, 1)
         cursorAnchor:SetFrameStrata("TOOLTIP")
@@ -109,9 +95,7 @@ do
         local lastX, lastY
         cursorAnchor:SetScript("OnUpdate", function(self)
             local scale = UIParent:GetEffectiveScale()
-            if scale <= 0 then
-                return
-            end
+            if scale <= 0 then return end
             local posX, posY = GetCursorPosition()
             if posX ~= lastX or posY ~= lastY then
                 lastX, lastY = posX, posY
@@ -135,20 +119,12 @@ do
     end
 
     local function ApplyCursorAnchor(tipFrame, hostFrame)
-        if not TooltipIsGlobalLike(tipFrame) then
-            return
-        end
+        if not TooltipIsGlobalLike(tipFrame) then return end
         -- Gated by the customTooltips master (matches the grayed-out option), so disabling the reskin restores the default tooltip position.
-        if CludesUIDB and CludesUIDB.customTooltips == false then
-            return
-        end
-        if not (CludesUIDB and CludesUIDB.tooltipAnchorCursor) then
-            return
-        end
+        if CludesUIDB and CludesUIDB.customTooltips == false then return end
+        if not (CludesUIDB and CludesUIDB.tooltipAnchorCursor) then return end
         -- Owner checked as well as the tooltip: a forbidden owner cannot be passed to SetOwner below. See TooltipOwnerUsable.
-        if not TooltipOwnerUsable(hostFrame) or tipFrame:IsForbidden() then
-            return
-        end
+        if not TooltipOwnerUsable(hostFrame) or tipFrame:IsForbidden() then return end
         -- "Show Tooltips" suppression parks the tip in a hidden host (CUI_BlizzardSkin_TooltipVisibility.lua): it stays alive and invisible so the peek modifier can reveal it, so anchor it normally -- it must already ride the cursor when revealed.
         local castFrame = EnsureCursorFrame()
         PositionCursorFrameNow(castFrame)
@@ -171,18 +147,10 @@ do
     -- AFTER content is set and before Show: re-shows + repositions the tracker
     -- and re-points the tooltip. No-op (safe unconditionally) when the cursor anchor or reskin master is off.
     CludesUI._repointTooltipAtCursor = function(tipFrame)
-        if tipFrame ~= GameTooltip then
-            return
-        end
-        if CludesUIDB and CludesUIDB.customTooltips == false then
-            return
-        end
-        if not (CludesUIDB and CludesUIDB.tooltipAnchorCursor) then
-            return
-        end
-        if tipFrame:IsForbidden() then
-            return
-        end
+        if tipFrame ~= GameTooltip then return end
+        if CludesUIDB and CludesUIDB.customTooltips == false then return end
+        if not (CludesUIDB and CludesUIDB.tooltipAnchorCursor) then return end
+        if tipFrame:IsForbidden() then return end
         local castFrame = EnsureCursorFrame()
         PositionCursorFrameNow(castFrame)
         local anchorPoint = POINT_FOR_POS[CludesUIDB.tooltipCursorPosition or "top"] or "BOTTOM"
@@ -197,28 +165,20 @@ do
     end
 
     local function InstallHook()
-        if hooked then
-            return
-        end
+        if hooked then return end
         hooked = true
         EnsureCursorFrame()
         -- Stop the tracker when the tooltip closes; ApplyCursorAnchor reshows it.
         GameTooltip:HookScript("OnHide", function()
-            if cursorAnchor then
-                cursorAnchor:Hide()
-            end
+            if cursorAnchor then cursorAnchor:Hide() end
         end)
         hooksecurefunc("GameTooltip_SetDefaultAnchor", ApplyCursorAnchor)
         -- World-unit tooltips fade out (~1-2s) on mouse-off instead of hiding instantly like
         -- unitframe/item/buff/CDM tips; while riding the cursor that lingering fade trails the pointer, so collapse it to an instant hide -- only while the cursor anchor is on.
         if GameTooltip.FadeOut then
             hooksecurefunc(GameTooltip, "FadeOut", function(self)
-                if self ~= GameTooltip then
-                    return
-                end
-                if CludesUIDB and CludesUIDB.tooltipAnchorCursor then
-                    self:Hide()
-                end
+                if self ~= GameTooltip then return end
+                if CludesUIDB and CludesUIDB.tooltipAnchorCursor then self:Hide() end
             end)
         end
     end
@@ -256,25 +216,17 @@ do
     local FIXED_W, FIXED_H = 280, 165
     local anchor
 
-    local function ActiveProfile()
-        return CludesUI.GetActiveProfileData()
-    end
+    local function ActiveProfile() return CludesUI.GetActiveProfileData() end
 
     -- Fixed mode is the permanent baseline: no toggle. Only the reskin master (off = vanilla tooltips) and Anchor to Cursor sideline it.
     local function WantFixed()
-        if CludesUIDB and CludesUIDB.customTooltips == false then
-            return false
-        end
-        if CludesUIDB and CludesUIDB.tooltipAnchorCursor then
-            return false
-        end
+        if CludesUIDB and CludesUIDB.customTooltips == false then return false end
+        if CludesUIDB and CludesUIDB.tooltipAnchorCursor then return false end
         return true
     end
 
     local function EnsureFixedFrame()
-        if anchor then
-            return anchor
-        end
+        if anchor then return anchor end
         anchor = CreateFrame("Frame", "CludesUI_TooltipFixedAnchor", UIParent)
         anchor:SetSize(FIXED_W, FIXED_H)
         anchor:EnableMouse(false)
@@ -290,9 +242,7 @@ do
     -- after login); a stored position (seeded or dragged) is never overwritten, so this runs at most once per profile.
     local function EnsureSeeded()
         local profileTbl = ActiveProfile()
-        if not profileTbl or profileTbl.tooltipFixedPos then
-            return
-        end
+        if not profileTbl or profileTbl.tooltipFixedPos then return end
         -- Adopt a position left under the old account-global key.
         if CludesUIDB and CludesUIDB.tooltipFixedPos then
             profileTbl.tooltipFixedPos = CludesUIDB.tooltipFixedPos
@@ -300,18 +250,12 @@ do
             return
         end
         local c = _G.GameTooltipDefaultContainer
-        if not c or not c.GetLeft then
-            return
-        end
+        if not c or not c.GetLeft then return end
         local l, button = c:GetLeft(), c:GetBottom()
-        if not l or not button then
-            return
-        end
+        if not l or not button then return end
         local wid, ch = c:GetWidth() or 0, c:GetHeight() or 0
         local us = UIParent:GetEffectiveScale() or 1
-        if us <= 0 then
-            return
-        end
+        if us <= 0 then return end
         local region = (c:GetEffectiveScale() or us) / us
         -- Blizzard pins the tooltip's corner to the container corner nearest the
         -- closest screen corner. Find that point, then park our box so ITS
@@ -374,16 +318,10 @@ do
     local _fixedArmed = false
 
     local function EnforceFixed(tipFrame)
-        if not WantFixed() then
-            return
-        end
-        if tipFrame:IsForbidden() then
-            return
-        end
+        if not WantFixed() then return end
+        if tipFrame:IsForbidden() then return end
         local anchorFrame = anchor
-        if not anchorFrame then
-            return
-        end
+        if not anchorFrame then return end
         local cornerPoint = CornerFor(anchorFrame)
         local anchorPoint, relTo = tipFrame:GetPoint(1)
         -- GetPoint can hand back a SECRET point: Blizzard anchors the world cursor
@@ -392,7 +330,12 @@ do
         -- ahead of the compares. A secret anchor is by definition not ours: treat it as
         -- a deviation and re-point. Our own write reads back clean, so the early-out works again from the next call on.
         local secretPt = issecretvalue and (issecretvalue(anchorPoint) or issecretvalue(relTo))
-        if not secretPt and tipFrame:GetNumPoints() == 1 and anchorPoint == cornerPoint and relTo == anchorFrame then
+        if
+            not secretPt
+            and tipFrame:GetNumPoints() == 1
+            and anchorPoint == cornerPoint
+            and relTo == anchorFrame
+        then
             return
         end
         _fixedEnforcing = true
@@ -402,15 +345,9 @@ do
     end
 
     local function ApplyFixedAnchor(tipFrame, hostFrame)
-        if not TooltipIsGlobalLike(tipFrame) then
-            return
-        end
-        if not WantFixed() then
-            return
-        end
-        if tipFrame:IsForbidden() then
-            return
-        end
+        if not TooltipIsGlobalLike(tipFrame) then return end
+        if not WantFixed() then return end
+        if tipFrame:IsForbidden() then return end
         -- A forbidden owner (nameplate aura button) cannot be anchored to:
         -- leave Blizzard's anchoring alone AND disarm SetPoint enforcement.
         -- Arming happens in the SetDefaultAnchor hook before this runs; leaving
@@ -431,54 +368,36 @@ do
     end
 
     hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tipFrame, hostFrame)
-        if not TooltipIsGlobalLike(tipFrame) then
-            return
-        end
+        if not TooltipIsGlobalLike(tipFrame) then return end
         -- Only the global tooltip can be armed: the SetPoint enforcement below
         -- is hooked onto GameTooltip's own setters. See TooltipIsGlobalLike.
-        if tipFrame == GameTooltip then
-            _fixedArmed = true
-        end
+        if tipFrame == GameTooltip then _fixedArmed = true end
         ApplyFixedAnchor(tipFrame, hostFrame)
     end)
     -- Every explicit tooltip build starts with SetOwner, which runs BEFORE the SetDefaultAnchor post-hook re-arms the flag, so explicitly-anchored uses (bags, other addons) never get their anchors rewritten.
     hooksecurefunc(GameTooltip, "SetOwner", function(self)
         _fixedArmed = false
-        if not anchor or self:IsForbidden() then
-            return
-        end
+        if not anchor or self:IsForbidden() then return end
         -- Left on our box, Blizzard's next restricted SetPoint fails with an anchor family error.
         -- pcall'd: an owner's forbidden layout aspect restricts the tooltip without
         -- IsForbidden reporting it (see _ttUsable), and this runs on every SetOwner.
         local success, _, relTo = pcall(self.GetPoint, self, 1)
-        if not success or (issecretvalue and issecretvalue(relTo)) then
-            return
-        end
-        if relTo == anchor then
-            self:ClearAllPoints()
-        end
+        if not success or (issecretvalue and issecretvalue(relTo)) then return end
+        if relTo == anchor then self:ClearAllPoints() end
     end)
     hooksecurefunc(GameTooltip, "SetPoint", function(tip)
-        if _fixedEnforcing or not _fixedArmed then
-            return
-        end
-        if tip ~= GameTooltip then
-            return
-        end
+        if _fixedEnforcing or not _fixedArmed then return end
+        if tip ~= GameTooltip then return end
         EnforceFixed(tip)
     end)
 
     -- Reposition (and seed if needed) now: login, world entry, reset paths.
-    CludesUI._applyTooltipFixedAnchor = function()
-        PlaceFromSaved()
-    end
+    CludesUI._applyTooltipFixedAnchor = function() PlaceFromSaved() end
 
     -- Unlock Mode element: a real draggable mover for the tooltip position. Writes ONLY
     -- our per-profile key, never Blizzard's tooltip container. Hidden while Anchor to Cursor is on or the reskin master is off (both leave the fixed anchor inactive).
     local function RegisterUnlock()
-        if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
-            return
-        end
+        if not (CludesUI and CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
         local MK = CludesUI.MakeUnlockElement
         CludesUI:RegisterUnlockElements({
             MK({
@@ -491,24 +410,18 @@ do
                 noAnchorTarget = true,
                 noAnchorTo = true,
                 noSizeMatchTarget = true,
-                isHidden = function()
-                    return not WantFixed()
-                end,
+                isHidden = function() return not WantFixed() end,
                 getFrame = function()
                     -- MUST stay side-effect-free: unlock mode calls getFrame from its drag
                     -- machinery (OnUpdate/OnDragStop), so parking from saved here would snap a live drag back on release. Boot/applyPos/loadPos do parking + seeding.
                     return EnsureFixedFrame()
                 end,
-                getSize = function()
-                    return FIXED_W, FIXED_H
-                end,
+                getSize = function() return FIXED_W, FIXED_H end,
                 savePos = function(_, _point, _relPoint, posX, posY)
                     -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                     -- still sits at the dragged spot, so never read the live position.
                     local profileTbl = ActiveProfile()
-                    if not profileTbl then
-                        return
-                    end
+                    if not profileTbl then return end
                     profileTbl.tooltipFixedPos = { centerX = posX, centerY = posY }
                 end,
                 loadPos = function()
@@ -523,14 +436,10 @@ do
                 clearPos = function()
                     -- Clearing the profile key makes the next apply re-seed from Blizzard's CURRENT Edit Mode spot, so "reset position" = wherever Blizzard would put it today.
                     local profileTbl = ActiveProfile()
-                    if profileTbl then
-                        profileTbl.tooltipFixedPos = nil
-                    end
+                    if profileTbl then profileTbl.tooltipFixedPos = nil end
                     PlaceFromSaved()
                 end,
-                applyPos = function()
-                    PlaceFromSaved()
-                end,
+                applyPos = function() PlaceFromSaved() end,
             }),
         })
     end
@@ -563,16 +472,10 @@ end
 -------------------------------------------------------------------------------
 do
     local function WantForcedDir()
-        if CludesUIDB and CludesUIDB.customTooltips == false then
-            return nil
-        end
+        if CludesUIDB and CludesUIDB.customTooltips == false then return nil end
         local direction = CludesUIDB and CludesUIDB.tooltipGrowthDirection
-        if direction ~= "up" and direction ~= "down" then
-            return nil
-        end
-        if CludesUIDB.tooltipAnchorCursor then
-            return nil
-        end
+        if direction ~= "up" and direction ~= "down" then return nil end
+        if CludesUIDB.tooltipAnchorCursor then return nil end
         return direction
     end
 
@@ -589,12 +492,8 @@ do
 
     local function Enforce(tipFrame)
         local direction = WantForcedDir()
-        if not direction then
-            return
-        end
-        if tipFrame:IsForbidden() then
-            return
-        end
+        if not direction then return end
+        if tipFrame:IsForbidden() then return end
         local anchorPoint, relTo, _, posX, posY = tipFrame:GetPoint(1)
         -- A point written by restricted code (world cursor tooltip) is SECRET:
         -- find() and == on it raise, and the forced corner cannot be derived from it
@@ -602,18 +501,12 @@ do
         if issecretvalue and (issecretvalue(anchorPoint) or issecretvalue(posX) or issecretvalue(posY)) then
             return
         end
-        if not anchorPoint then
-            return
-        end
+        if not anchorPoint then return end
         relTo = relTo or GameTooltipDefaultContainer
-        if not relTo then
-            return
-        end
+        if not relTo then return end
         local horiz = (anchorPoint:find("LEFT") and "LEFT") or (anchorPoint:find("RIGHT") and "RIGHT") or ""
         local newPoint = ((direction == "down") and "TOP" or "BOTTOM") .. horiz
-        if tipFrame:GetNumPoints() == 1 and anchorPoint == newPoint then
-            return
-        end
+        if tipFrame:GetNumPoints() == 1 and anchorPoint == newPoint then return end
         _growthEnforcing = true
         tipFrame:ClearAllPoints()
         tipFrame:SetPoint(newPoint, relTo, newPoint, posX or 0, posY or 0)
@@ -621,24 +514,16 @@ do
     end
 
     hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tipFrame)
-        if not TooltipIsGlobalLike(tipFrame) then
-            return
-        end
+        if not TooltipIsGlobalLike(tipFrame) then return end
         -- Only the global tooltip can be armed: the SetPoint enforcement below
         -- is hooked onto GameTooltip's own setters. See TooltipIsGlobalLike.
-        if tipFrame == GameTooltip then
-            _growthDefaultAnchored = true
-        end
+        if tipFrame == GameTooltip then _growthDefaultAnchored = true end
         Enforce(tipFrame)
     end)
     -- Every tooltip build starts with SetOwner (runs BEFORE the SetDefaultAnchor post-hook re-arms the flag), so explicitly-anchored uses (bags, other addons) never get their anchors rewritten.
-    hooksecurefunc(GameTooltip, "SetOwner", function()
-        _growthDefaultAnchored = false
-    end)
+    hooksecurefunc(GameTooltip, "SetOwner", function() _growthDefaultAnchored = false end)
     hooksecurefunc(GameTooltip, "SetPoint", function(tip)
-        if _growthEnforcing or not _growthDefaultAnchored then
-            return
-        end
+        if _growthEnforcing or not _growthDefaultAnchored then return end
         Enforce(tip)
     end)
 end

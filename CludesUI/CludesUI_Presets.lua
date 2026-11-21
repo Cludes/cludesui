@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Presets.lua
 --
@@ -213,9 +211,7 @@ do
     local playerClass -- the player's class token (never changes in a session)
 
     local function FV()
-        if flagValue then
-            return flagValue
-        end
+        if flagValue then return flagValue end
         -- specs/order: the Forever classes only. class/name/specName: every
         -- class in SPEC_DATA, plus each Forever spec ID -> its class.
         flagValue = { specs = {}, order = {}, class = {}, name = {}, specName = {} }
@@ -242,9 +238,7 @@ do
     end
 
     local function PlayerClass()
-        if not playerClass then
-            playerClass = select(2, UnitClass("player"))
-        end
+        if not playerClass then playerClass = select(2, UnitClass("player")) end
         return playerClass
     end
 
@@ -253,13 +247,9 @@ do
     -- the key new data is written under.
     local function Pick(idList, legacyID, predicate, arg)
         if predicate then
-            if legacyID and predicate(legacyID, arg) then
-                return legacyID
-            end
+            if legacyID and predicate(legacyID, arg) then return legacyID end
             for i = 1, #idList do
-                if predicate(idList[i], arg) then
-                    return idList[i]
-                end
+                if predicate(idList[i], arg) then return idList[i] end
             end
         end
         return idList[1]
@@ -271,14 +261,10 @@ do
     --- can hold data under it: the CDM spell store). token nil = the player.
     --- nil on retail and for a class Forever does not have.
     function CUI.ForeverClassSpec(classFile, predicate, arg, withLegacy)
-        if not CUI.IS_FOREVER then
-            return nil
-        end
+        if not CUI.IS_FOREVER then return nil end
         classFile = classFile or PlayerClass()
         local idList = classFile and FV().specs[classFile]
-        if not idList then
-            return nil
-        end
+        if not idList then return nil end
         return Pick(idList, withLegacy and CUI.FOREVER_CLASS_SPEC[classFile] or nil, predicate, arg)
     end
 
@@ -289,30 +275,20 @@ do
     --- (data held under it), else the player's class retail specs in class
     --- order, else the class's first retail spec.
     function CUI.SpecFor(rawID, predicate, arg)
-        if not CUI.IS_FOREVER or not rawID or rawID == 0 then
-            return rawID
-        end
+        if not CUI.IS_FOREVER or not rawID or rawID == 0 then return rawID end
         local tbl = FV()
         local ownerFrame = tbl.class[rawID]
-        if ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] ~= rawID then
-            return rawID
-        end
+        if ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] ~= rawID then return rawID end
         local idList = tbl.specs[PlayerClass() or ""]
-        if not idList then
-            return rawID
-        end
+        if not idList then return rawID end
         return Pick(idList, rawID, predicate, arg)
     end
 
     --- True when specID is a spec the player counts as: retail = the live spec;
     --- Forever = any retail spec of the player's class, or its Forever spec ID.
     function CUI.IsPlayerSpec(specID)
-        if not specID then
-            return false
-        end
-        if CUI.IS_FOREVER then
-            return FV().class[specID] == PlayerClass()
-        end
+        if not specID then return false end
+        if CUI.IS_FOREVER then return FV().class[specID] == PlayerClass() end
         local liveValue = CUI._specID
         if not liveValue or liveValue == 0 then
             CUI._RefreshSpecID()
@@ -325,26 +301,18 @@ do
     --- class's retail spec IDs in class order (shared tables, read only); the
     --- class owning a retail spec ID of ANY class or a Forever spec ID; the
     --- English spec name of a retail spec ID; class display name and icon.
-    function CUI.ForeverClasses()
-        return FV().order
-    end
-    function CUI.ForeverClassSpecIDs(classFile)
-        return classFile and FV().specs[classFile] or nil
-    end
-    function CUI.SpecClassOf(specID)
-        return specID and FV().class[specID] or nil
-    end
-    function CUI.RetailSpecName(specID)
-        return specID and FV().specName[specID] or nil
-    end
+    function CUI.ForeverClasses() return FV().order end
+    function CUI.ForeverClassSpecIDs(classFile) return classFile and FV().specs[classFile] or nil end
+    function CUI.SpecClassOf(specID) return specID and FV().class[specID] or nil end
+    function CUI.RetailSpecName(specID) return specID and FV().specName[specID] or nil end
     function CUI.ForeverClassName(classFile)
-        return (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classFile]) or FV().name[classFile] or classFile
+        return (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classFile])
+            or FV().name[classFile]
+            or classFile
     end
     function CUI.ForeverClassIcon(classFile)
         local cid = FOREVER_CLASS_ID[classFile]
-        if not (cid and GetSpecializationInfoForClassID) then
-            return nil
-        end
+        if not (cid and GetSpecializationInfoForClassID) then return nil end
         local _, _, _, icon = GetSpecializationInfoForClassID(cid, 1)
         return icon
     end
@@ -353,24 +321,18 @@ do
     --- every retail spec of its class (a new table; the input is untouched).
     --- Retail: the input.
     function CUI.ForeverExpandSpecSet(set)
-        if not CUI.IS_FOREVER or not set then
-            return set
-        end
+        if not CUI.IS_FOREVER or not set then return set end
         local t, result = FV(), {}
         for ident, val in pairs(set) do
             local ownerFrame = t.class[ident]
-            if not (ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] == ident) then
-                result[ident] = val
-            end
+            if not (ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] == ident) then result[ident] = val end
         end
         for ident, val in pairs(set) do
             local ownerFrame = t.class[ident]
             if ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] == ident then
                 local idList = t.specs[ownerFrame]
                 for i = 1, #idList do
-                    if result[idList[i]] == nil then
-                        result[idList[i]] = val
-                    end
+                    if result[idList[i]] == nil then result[idList[i]] = val end
                 end
             end
         end
@@ -379,12 +341,8 @@ do
 
     -- Store predicates for ForeverClassSpec / SpecFor (plain functions, so no
     -- call site builds a closure).
-    function CUI.SpecHasEntry(ident, tbl)
-        return tbl ~= nil and tbl[ident] ~= nil
-    end
-    function CUI.SpecHasStringEntry(ident, tbl)
-        return tbl ~= nil and tbl[tostring(ident)] ~= nil
-    end
+    function CUI.SpecHasEntry(ident, tbl) return tbl ~= nil and tbl[ident] ~= nil end
+    function CUI.SpecHasStringEntry(ident, tbl) return tbl ~= nil and tbl[tostring(ident)] ~= nil end
 
     -- 5-column layout, sorted alphabetically left-to-right, top-to-bottom
     local NUM_COLS = 5
@@ -407,12 +365,8 @@ do
         local onDone = options.onDone
 
         -- Ensure assignments table exists
-        if not saved[dbKey] then
-            saved[dbKey] = {}
-        end
-        if not saved[dbKey][presetKey] then
-            saved[dbKey][presetKey] = {}
-        end
+        if not saved[dbKey] then saved[dbKey] = {} end
+        if not saved[dbKey][presetKey] then saved[dbKey][presetKey] = {} end
         local assignments = saved[dbKey][presetKey]
 
         -- Build or reuse the popup
@@ -454,9 +408,7 @@ do
             dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
 
             local popFrame = CUI._popupFrames
-            if popFrame then
-                popFrame[#popFrame + 1] = { popup = dialog, dimmer = shade }
-            end
+            if popFrame then popFrame[#popFrame + 1] = { popup = dialog, dimmer = shade } end
             Pix.Size(dialog, POPUP_W, POPUP_H)
             Pix.Point(dialog, "CENTER", CUI._mainFrame, "CENTER", 0, 0)
 
@@ -476,8 +428,7 @@ do
             Pix.Point(title, "TOP", dialog, "TOP", 0, -32)
             -- WoW Forever has no specs: its rows are classes, and so is the wording.
             title:SetText(
-                CUI.IS_FOREVER and CUI.L("Assign Preset to Classes")
-                    or CUI.L("Assign Preset to Specs")
+                CUI.IS_FOREVER and CUI.L("Assign Preset to Classes") or CUI.L("Assign Preset to Specs")
             )
             dialog._title = title
 
@@ -520,12 +471,8 @@ do
                 else
                     Pix.Point(button, "TOPLEFT", dialog, "TOPLEFT", CONTENT_LEFT, LINK_Y)
                 end
-                button:SetScript("OnEnter", function()
-                    labelFS:SetTextColor(1, 1, 1, 0.80)
-                end)
-                button:SetScript("OnLeave", function()
-                    labelFS:SetTextColor(1, 1, 1, 0.45)
-                end)
+                button:SetScript("OnEnter", function() labelFS:SetTextColor(1, 1, 1, 0.80) end)
+                button:SetScript("OnLeave", function() labelFS:SetTextColor(1, 1, 1, 0.45) end)
                 prevLink = button
                 return button
             end
@@ -663,17 +610,13 @@ do
                 if defaultMenu:IsShown() then
                     defaultMenu:Hide()
                 else
-                    if dialog._rebuildDefMenu then
-                        dialog._rebuildDefMenu()
-                    end
+                    if dialog._rebuildDefMenu then dialog._rebuildDefMenu() end
                     defaultMenu:Show()
                     -- Controller cursor: move it into the list.
                     CUI.PadFocus(defaultMenu)
                 end
             end)
-            defaultButton:HookScript("OnHide", function()
-                defaultMenu:Hide()
-            end)
+            defaultButton:HookScript("OnHide", function() defaultMenu:Hide() end)
 
             defaultMenu:SetScript("OnShow", function(self)
                 local btnScale = defaultButton:GetEffectiveScale()
@@ -704,9 +647,7 @@ do
             CUI.TrackOverlay(defaultMenu)
             -- Controller cursor: its cancel press clicks the dropdown button,
             -- which folds the list.
-            if CUI.PadCP() then
-                defaultMenu.CloseButton = defaultButton
-            end
+            if CUI.PadCP() then defaultMenu.CloseButton = defaultButton end
 
             -- Done button
             local ACC = CLUDES_GREEN
@@ -758,9 +699,7 @@ do
             end)
             cancelButton:SetScript("OnClick", function()
                 shade:Hide()
-                if dialog._onCancel then
-                    dialog._onCancel()
-                end
+                if dialog._onCancel then dialog._onCancel() end
             end)
             cancelButton:Hide()
             dialog._cancelBtn = cancelButton
@@ -770,23 +709,17 @@ do
             shade:SetScript("OnMouseDown", function(self)
                 if not dialog:IsMouseOver() then
                     self:Hide()
-                    if dialog._onCancel then
-                        dialog._onCancel()
-                    end
+                    if dialog._onCancel then dialog._onCancel() end
                 end
             end)
 
             CUI.PopupTakeKeys(dialog, shade)
             dialog:SetScript("OnKeyDown", function(self, key)
-                if InCombatLockdown() then
-                    return
-                end
+                if InCombatLockdown() then return end
                 if key == "ESCAPE" then
                     self:SetPropagateKeyboardInput(false)
                     shade:Hide()
-                    if dialog._onCancel then
-                        dialog._onCancel()
-                    end
+                    if dialog._onCancel then dialog._onCancel() end
                 else
                     self:SetPropagateKeyboardInput(true)
                 end
@@ -799,9 +732,7 @@ do
                     padOnly = true,
                     onEscape = function()
                         shade:Hide()
-                        if dialog._onCancel then
-                            dialog._onCancel()
-                        end
+                        if dialog._onCancel then dialog._onCancel() end
                     end,
                 })
             end
@@ -825,8 +756,7 @@ do
             specDialog._title:SetText(CUI.L(options.title))
         else
             specDialog._title:SetText(
-                CUI.IS_FOREVER and CUI.L("Assign Preset to Classes")
-                    or CUI.L("Assign Preset to Specs")
+                CUI.IS_FOREVER and CUI.L("Assign Preset to Classes") or CUI.L("Assign Preset to Specs")
             )
         end
         if options.subtitle then
@@ -843,8 +773,7 @@ do
                 presetName = presetKey or ""
             end
             specDialog._subtitle:SetText(
-                CUI.IS_FOREVER
-                        and CUI.Lf("Select which classes you want %1$s to be assigned to", presetName)
+                CUI.IS_FOREVER and CUI.Lf("Select which classes you want %1$s to be assigned to", presetName)
                     or CUI.Lf("Select which specs you want %1$s to be assigned to", presetName)
             )
         end
@@ -852,7 +781,12 @@ do
         -- overwrite warning in the subtitle slot. Reset every call (popup is cached).
         if options.subtitleColor then
             local color = options.subtitleColor
-            specDialog._subtitle:SetTextColor(color.r or color[1] or 1, color.g or color[2] or 1, color.b or color[3] or 1, color.a or 1)
+            specDialog._subtitle:SetTextColor(
+                color.r or color[1] or 1,
+                color.g or color[2] or 1,
+                color.b or color[3] or 1,
+                color.a or 1
+            )
         else
             specDialog._subtitle:SetTextColor(1, 1, 1, 0.45)
         end
@@ -875,9 +809,7 @@ do
         end
 
         -- Update Done button text
-        if specDialog._closeLbl then
-            specDialog._closeLbl:SetText(CUI.L(options.buttonText or "Done"))
-        end
+        if specDialog._closeLbl then specDialog._closeLbl:SetText(CUI.L(options.buttonText or "Done")) end
 
         -- Populate columns
         local FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
@@ -1005,9 +937,7 @@ do
             for _, classIdx in ipairs(entries) do
                 local classKey = SPEC_DATA[classIdx]
 
-                if not isFirstClass then
-                    offsetY = offsetY + CLASS_GAP
-                end
+                if not isFirstClass then offsetY = offsetY + CLASS_GAP end
                 isFirstClass = false
 
                 -- Class header
@@ -1035,7 +965,8 @@ do
                     heading._label:SetTextColor(1, 1, 1, 0.7)
                 end
                 heading._label:SetText(
-                    (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classKey.class]) or classKey.name
+                    (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classKey.class])
+                        or classKey.name
                 )
                 offsetY = offsetY + CLASS_H + CLASS_PAD_BOT
 
@@ -1051,9 +982,7 @@ do
                     local locSpecName = specInfo.name
                     if GetSpecializationInfoByID then
                         local sn = select(2, GetSpecializationInfoByID(specInfo.id))
-                        if sn and sn ~= "" then
-                            locSpecName = sn
-                        end
+                        if sn and sn ~= "" then locSpecName = sn end
                     end
                     line._lbl:SetText(locSpecName)
                     line._specID = specInfo.id
@@ -1071,9 +1000,7 @@ do
                     checkList[#checkList + 1] = line
 
                     line:SetScript("OnClick", function(self)
-                        if self._lockedOn or self._locked or self._disabled then
-                            return
-                        end
+                        if self._lockedOn or self._locked or self._disabled then return end
                         self._checked = not self._checked
                         assignments[specInfo.id] = self._checked or nil
                         UpdateVisual(self)
@@ -1084,16 +1011,12 @@ do
                         elseif self._lockedOn and type(lockedOnTip) == "string" then
                             CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(lockedOnTip))
                         end
-                        if self._lockedOn or self._locked or self._disabled then
-                            return
-                        end
+                        if self._lockedOn or self._locked or self._disabled then return end
                         self._lbl:SetTextColor(1, 1, 1, 0.90)
                     end)
                     line:SetScript("OnLeave", function(self)
                         CUI.HideWidgetTooltip()
-                        if self._lockedOn or self._locked or self._disabled then
-                            return
-                        end
+                        if self._lockedOn or self._locked or self._disabled then return end
                         self._lbl:SetTextColor(1, 1, 1, 0.65)
                     end)
 
@@ -1145,15 +1068,9 @@ do
                 end
             end
         end
-        specDialog._checkTanks:SetScript("OnClick", function()
-            CheckRole("TANK")
-        end)
-        specDialog._checkHealers:SetScript("OnClick", function()
-            CheckRole("HEALER")
-        end)
-        specDialog._checkDPS:SetScript("OnClick", function()
-            CheckRole("DAMAGER")
-        end)
+        specDialog._checkTanks:SetScript("OnClick", function() CheckRole("TANK") end)
+        specDialog._checkHealers:SetScript("OnClick", function() CheckRole("HEALER") end)
+        specDialog._checkDPS:SetScript("OnClick", function() CheckRole("DAMAGER") end)
 
         -- WoW Forever: one checkbox row per class (the client has one spec per
         -- class; the stores keep retail spec IDs). A row stands for every
@@ -1196,9 +1113,7 @@ do
                     local dis = disabledSpecs[ident]
                     if dis ~= nil then
                         line._disabled = true
-                        if not line._fvDisTip and dis then
-                            line._fvDisTip = dis
-                        end
+                        if not line._fvDisTip and dis then line._fvDisTip = dis end
                     end
                 end
                 -- Owner: the first spec of the class assigned anywhere, in class
@@ -1225,9 +1140,7 @@ do
                 Tint(line, a)
             end
             local function SetOn(line, enabled)
-                if line._lockedOn or line._locked or line._disabled then
-                    return
-                end
+                if line._lockedOn or line._locked or line._disabled then return end
                 local idList = line._fvIDs
                 for i = 1, #idList do
                     local ident = idList[i]
@@ -1250,7 +1163,14 @@ do
                 local line = EnsureSpecRow(colour, r)
                 Pix.Size(line, COL_W, SPEC_H)
                 line:ClearAllPoints()
-                Pix.Point(line, "TOPLEFT", colour, "TOPLEFT", 0, -(CLASS_GAP + (r - 1) * (SPEC_H + CLASS_GAP)))
+                Pix.Point(
+                    line,
+                    "TOPLEFT",
+                    colour,
+                    "TOPLEFT",
+                    0,
+                    -(CLASS_GAP + (r - 1) * (SPEC_H + CLASS_GAP))
+                )
                 line:Show()
                 line._lbl:SetText(CUI.ForeverClassName(classFile))
                 line._fvClr = CLASS_COLOR_MAP[classFile]
@@ -1258,30 +1178,21 @@ do
                 line._specID = nil
                 rowList[num] = line
                 State(line)
-                line:SetScript("OnClick", function(self)
-                    SetOn(self, not self._checked)
-                end)
+                line:SetScript("OnClick", function(self) SetOn(self, not self._checked) end)
                 line:SetScript("OnEnter", function(self)
                     if self._disabled and self._fvDisTip then
                         CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(self._fvDisTip))
                     elseif self._lockedOn and self._fvOnTip then
                         CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(self._fvOnTip))
                     elseif self._locked and self._fvBy then
-                        CUI.ShowWidgetTooltip(
-                            self._box,
-                            CUI.Lf("Already assigned to %s", self._fvBy)
-                        )
+                        CUI.ShowWidgetTooltip(self._box, CUI.Lf("Already assigned to %s", self._fvBy))
                     end
-                    if self._lockedOn or self._locked or self._disabled then
-                        return
-                    end
+                    if self._lockedOn or self._locked or self._disabled then return end
                     Tint(self, 0.90)
                 end)
                 line:SetScript("OnLeave", function(self)
                     CUI.HideWidgetTooltip()
-                    if self._lockedOn or self._locked or self._disabled then
-                        return
-                    end
+                    if self._lockedOn or self._locked or self._disabled then return end
                     Tint(self, 0.65)
                 end)
             end
@@ -1307,18 +1218,10 @@ do
             specDialog._defDDContainer:Show()
 
             local function DefPresetDisplayName(key)
-                if not key then
-                    return ""
-                end
-                if key == "custom" then
-                    return CUI.L("Custom")
-                end
-                if key == "cludesui" then
-                    return "CludesUI"
-                end
-                if key:sub(1, 5) == "user:" then
-                    return key:sub(6)
-                end
+                if not key then return "" end
+                if key == "custom" then return CUI.L("Custom") end
+                if key == "cludesui" then return "CludesUI" end
+                if key:sub(1, 5) == "user:" then return key:sub(6) end
                 return key
             end
 
@@ -1338,8 +1241,7 @@ do
 
                 local presetList = allPresetKeysFn()
                 local mH = 4
-                local ITEM_FONT = CUI._font
-                    or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+                local ITEM_FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
                 for position, record in ipairs(presetList) do
                     local entry = itemList[position]
@@ -1406,9 +1308,7 @@ do
             Pix.Point(specDialog._closeBtn, "BOTTOM", specDialog, "BOTTOM", 0, 38)
         end
         -- Controller cursor: its cancel press backs out through a visible Cancel.
-        if CUI.PadCP() then
-            specDialog.CloseButton = options.onCancel and specDialog._cancelBtn or nil
-        end
+        if CUI.PadCP() then specDialog.CloseButton = options.onCancel and specDialog._cancelBtn or nil end
 
         -- Done button: validate default selection if spec feature is active
         specDialog._closeBtn:SetScript("OnClick", function()
@@ -1418,9 +1318,7 @@ do
             end
             if defaultKey and selectedDefaultKey then
                 saved[defaultKey] = selectedDefaultKey
-                if onDefaultChanged then
-                    onDefaultChanged()
-                end
+                if onDefaultChanged then onDefaultChanged() end
             end
             specDialog._dimmer:Hide()
             if options.onConfirm then

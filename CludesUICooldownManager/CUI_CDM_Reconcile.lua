@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Reconcile.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ALL_RACIAL_SPELLS, ECME, _myRacialsSet = Inner.ALL_RACIAL_SPELLS, Inner.ECME, Inner._myRacialsSet
@@ -33,21 +29,13 @@ local function CDMFirstLoginCapture()
         local limit = captured[barInfo.key]
         if limit then
             -- Icon size: visual size from child icon (base width * child scale).
-            if limit.iconSize then
-                barInfo.iconSize = limit.iconSize
-            end
+            if limit.iconSize then barInfo.iconSize = limit.iconSize end
             -- Spacing (icon padding from Edit Mode setting)
-            if limit.spacing then
-                barInfo.spacing = limit.spacing
-            end
+            if limit.spacing then barInfo.spacing = limit.spacing end
             -- Rows (counted from distinct Y positions of visible icons)
-            if limit.numRows then
-                barInfo.numRows = limit.numRows
-            end
+            if limit.numRows then barInfo.numRows = limit.numRows end
             if limit.isHorizontal ~= nil then
-                if not limit.isHorizontal then
-                    barInfo.growDirection = "DOWN"
-                end
+                if not limit.isHorizontal then barInfo.growDirection = "DOWN" end
                 barInfo.verticalOrientation = not limit.isHorizontal
             end
             -- Position: no scale division needed (scale is always 1)
@@ -69,9 +57,7 @@ end
 --- live bars but missing from assignedSpells. Called after CollectAndReanchor so the preview stays in sync with what the player actually sees on their CDM bars.
 function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
     local profile = ECME and ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars then
-        return
-    end
+    if not profile or not profile.cdmBars then return end
 
     -- Both-state guards (mirror EnsureAssignedSpells). This appends live-icon spells back into
     -- assignedSpells; without these it could re-materialize a spell that is currently HIDDEN
@@ -82,9 +68,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
     local activeProfile = specProfile and specKey and specProfile[specKey]
     -- Skip entirely while an imported layout is pending its first-load ghosting: its tracked
     -- spells spill onto default bars until the migration ghosts them, and materializing those spills would defeat the import-authoritative hide.
-    if activeProfile and activeProfile._importGhostMode then
-        return
-    end
+    if activeProfile and activeProfile._importGhostMode then return end
 
     -- Unlike every other assignedSpells mutation site (the picker's add/remove/move calls,
     -- BuildAllCDMBars), this one never marked the cached render-order map (spellOrder,
@@ -111,9 +95,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                     if type(csid) == "number" and csid > 0 then
                         ownerOf = ownerOf or {}
                         mod.StoreVariantValue(ownerOf, csid, key, false)
-                        if ALL_RACIAL_SPELLS[csid] then
-                            anyRacialOwned = true
-                        end
+                        if ALL_RACIAL_SPELLS[csid] then anyRacialOwned = true end
                     end
                 end
             end
@@ -169,9 +151,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
             end
             local nWalk = nLive + (tcHidden and #tcHidden or 0)
             if barSpells and (icons or nWalk > 0) then
-                if not barSpells.assignedSpells then
-                    barSpells.assignedSpells = {}
-                end
+                if not barSpells.assignedSpells then barSpells.assignedSpells = {} end
                 -- Insert each missing spell right after its left neighbour in the live icon order
                 -- (already Blizzard-layout order from CollectAndReanchor) instead of appending, so
                 -- the seeded list matches what the player sees and a re-talented cooldown returns
@@ -199,7 +179,9 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                                 local ic = icons[jdx]
                                 local li = ic.viewerFrame == vf and ic.layoutIndex
                                 local fcJ = li and mod._ecmeFC[ic]
-                                local at = fcJ and fcJ.spellID and FindVar(barSpells.assignedSpells, fcJ.spellID)
+                                local at = fcJ
+                                    and fcJ.spellID
+                                    and FindVar(barSpells.assignedSpells, fcJ.spellID)
                                 if at then
                                     if li < L then
                                         if not predLI or li > predLI then
@@ -243,9 +225,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                                     and (dec == hSid or (mod.IsVariantOf and mod.IsVariantOf(dec, hSid)))
                                 then
                                     -- Forward-only: never drag the cursor backward.
-                                    if not insertPos or index > insertPos then
-                                        insertPos = index
-                                    end
+                                    if not insertPos or index > insertPos then insertPos = index end
                                     break
                                 end
                             end
@@ -253,9 +233,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                         spellRef = nil
                     end
                     -- Skip overflow-diverted icons: they render on this bar only for the session but belong to their source bar's assignedSpells (mirrors the EnsureAssignedSpells skip).
-                    if spellRef and fc and fc._overflowLayoutBar then
-                        spellRef = nil
-                    end
+                    if spellRef and fc and fc._overflowLayoutBar then spellRef = nil end
                     -- Skip cd-claimed collided-buff icons: their membership is the cooldownID claim, never a spellID slot (mirrors the hosted-buff membership rule above).
                     if spellRef and claimedCd and iconTex.cooldownID and claimedCd[iconTex.cooldownID] then
                         spellRef = nil
@@ -297,9 +275,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                                     and fc.baseSpellID ~= fc.resolvedSid
                                 then
                                     local b = C_Spell.GetBaseSpell(spellRef)
-                                    if b and b > 0 then
-                                        nsid = b
-                                    end
+                                    if b and b > 0 then nsid = b end
                                 end
                                 local place = insertPos and (insertPos + 1) or 1
                                 table.insert(barSpells.assignedSpells, place, nsid)
@@ -319,9 +295,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                                 local place = insertPos and (insertPos + 1) or 1
                                 table.insert(barSpells.assignedSpells, place, spellRef)
                                 insertPos = place
-                                if not barSpells.nativeItems then
-                                    barSpells.nativeItems = {}
-                                end
+                                if not barSpells.nativeItems then barSpells.nativeItems = {} end
                                 barSpells.nativeItems[spellRef] = true
                                 didInsert = true
                             end
@@ -331,9 +305,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
             end
         end
     end
-    if didInsert then
-        mod._spellOrderDirty = true
-    end
+    if didInsert then mod._spellOrderDirty = true end
 end
 
 -- Parent-facing bridge for the automatic/export-time reconcile: cd and utility bars only
@@ -342,9 +314,7 @@ CludesUI.CDMReconcileActiveSpecSpells = function()
     mod.ReseedAssignedSpellsFromLiveIcons(true)
     -- Export serializes immediately after this bridge: erase any item rows
     -- the reseed just mirrored so exports can never ship them.
-    if mod.PruneEquipmentBuffRows then
-        mod.PruneEquipmentBuffRows()
-    end
+    if mod.PruneEquipmentBuffRows then mod.PruneEquipmentBuffRows() end
 end
 
 -- Shared after-combat waiter for the automatic keep/drop pass below, via the
@@ -356,9 +326,7 @@ local ArmCDMDropRegenWaiter
 do
     local function DropPassAfterCombat()
         mod._cdmDropPending = false
-        if mod.RequestCDMDropPass then
-            mod.RequestCDMDropPass("regen")
-        end
+        if mod.RequestCDMDropPass then mod.RequestCDMDropPass("regen") end
     end
     ArmCDMDropRegenWaiter = function()
         mod._cdmDropPending = true
@@ -376,35 +344,25 @@ end
 --- than risk dropping a legitimately-owned entry.
 function mod.ReconcileAssignedSpellDrops(barId)
     local barSpells = mod.GetBarSpellData(barId)
-    if not barSpells then
-        return barSpells
-    end
+    if not barSpells then return barSpells end
 
     local specProfile = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local activeProfile = specProfile and specKey and specProfile[specKey]
-    if not activeProfile or not activeProfile._barFilterModelV6 then
-        return barSpells
-    end
+    if not activeProfile or not activeProfile._barFilterModelV6 then return barSpells end
     -- aprof._importGhostMode is the options panel's "importPending" (same
     -- field, CUI_CooldownManager_Options.lua ~6367-6373): a mid-import pass
     -- would mark spilled tracked spells "assigned" and permanently defeat
     -- import-authoritative ghosting, so the whole pass no-ops instead.
-    if activeProfile._importGhostMode then
-        return barSpells
-    end
-    if not mod._cdmDataLoaded then
-        return barSpells
-    end
+    if activeProfile._importGhostMode then return barSpells end
+    if not mod._cdmDataLoaded then return barSpells end
 
     -- GHOST BAR EXEMPTION (field 2026-08-13, hunter Scare Beast classified
     -- keep=false in a reconcile dry-run): the ghost store holds spells the user DELIBERATELY removed --
     -- not-shown by definition, often uncatalogued -- and dropping a ghost entry
     -- erases the removal decision, so the spell re-materializes onto the visible
     -- bar. The classification ladder must never see this pseudo-bar.
-    if barId == GHOST_CD_BAR_KEY then
-        return barSpells
-    end
+    if barId == GHOST_CD_BAR_KEY then return barSpells end
     local edge = barDataByKey[barId]
     if mod.IsBarBuffFamily and mod.IsBarBuffFamily(edge or barId) then
         -- Buff-family drop needs the persisted variant-alias ledger so a
@@ -415,21 +373,15 @@ function mod.ReconcileAssignedSpellDrops(barId)
         return (mod.ReconcileBuffFamilyDrops and mod.ReconcileBuffFamilyDrops(barId)) or barSpells
     end
     local bt = edge and edge.barType
-    if not (bt == "cooldowns" or bt == "utility") then
-        return barSpells
-    end
+    if not (bt == "cooldowns" or bt == "utility") then return barSpells end
 
     if InCombatLockdown() then
         ArmCDMDropRegenWaiter()
         return barSpells
     end
 
-    if not barSpells.assignedSpells or #barSpells.assignedSpells == 0 then
-        return barSpells
-    end
-    if not mod.EnumerateCDMViewerSpells then
-        return barSpells
-    end
+    if not barSpells.assignedSpells or #barSpells.assignedSpells == 0 then return barSpells end
+    if not mod.EnumerateCDMViewerSpells then return barSpells end
 
     local NormalizeToBase = mod.NormalizeToBase
     local ResolveToLive = mod.ResolveToLive
@@ -445,9 +397,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
             displayed[spellRef] = true
             displayed[NormalizeToBase(spellRef)] = true
             local shade = ResolveToLive(spellRef)
-            if shade then
-                displayed[shade] = true
-            end
+            if shade then displayed[shade] = true end
             local num = RankName and RankName(spellRef)
             if num then
                 displayedNames = displayedNames or {}
@@ -455,9 +405,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
             end
         end
     end
-    if not (displayed and next(displayed)) then
-        return barSpells
-    end
+    if not (displayed and next(displayed)) then return barSpells end
 
     -- Blizzard's tracked-cooldown catalog (talent-independent, arrangement-
     -- aware, and category-0/1/5/7-aware once the picker's category-set
@@ -495,9 +443,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
                         liveSetByCat[ce.category] = lsl
                     end
                     local verdict = mod.CDMEntryHiddenOrRemoved(ce.cdID, nil, details, lsl)
-                    if verdict == "hidden" or verdict == "removed" then
-                        skip = true
-                    end
+                    if verdict == "hidden" or verdict == "removed" then skip = true end
                 end
                 if not skip then
                     local s = ce.sid
@@ -505,9 +451,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
                         catalogKeys[s] = true
                         catalogKeys[NormalizeToBase(s)] = true
                         local shade = ResolveToLive(s)
-                        if shade then
-                            catalogKeys[shade] = true
-                        end
+                        if shade then catalogKeys[shade] = true end
                     end
                     -- Also index every id the entry itself links (spellID/
                     -- overrideSpellID/linkedSpellIDs): a stored BASE id only
@@ -552,14 +496,10 @@ function mod.ReconcileAssignedSpellDrops(barId)
                 end
             end
         end
-        if nativeLive[ident] then
-            return true
-        end
+        if nativeLive[ident] then return true end
         local pr = mod.ItemPresetForKey(ident)
         local catalog = pr and pr.nativeCategory
-        if not catalog then
-            return true
-        end
+        if not catalog then return true end
         if nativeCats == nil then
             nativeCats = false
             local evicted = Enum and Enum.CooldownViewerCategory
@@ -575,23 +515,17 @@ function mod.ReconcileAssignedSpellDrops(barId)
                             if type(sc) == "number" and not (issecretvalue and issecretvalue(sc)) then
                                 -- An item row enumerates through this source: it may
                                 -- judge. A hidden or removed row is not visible.
-                                if not nativeCats then
-                                    nativeCats = {}
-                                end
+                                if not nativeCats then nativeCats = {} end
                                 local verdict = mod.CDMEntryHiddenOrRemoved
                                     and mod.CDMEntryHiddenOrRemoved(cooldownId, nil, details, keySet)
-                                if verdict == nil then
-                                    nativeCats[sc] = true
-                                end
+                                if verdict == nil then nativeCats[sc] = true end
                             end
                         end
                     end
                 end
             end
         end
-        if not nativeCats then
-            return true
-        end -- no item row enumerates: keep
+        if not nativeCats then return true end -- no item row enumerates: keep
         return nativeCats[catalog] == true
     end
 
@@ -620,12 +554,8 @@ function mod.ReconcileAssignedSpellDrops(barId)
     -- need (see below). A catalogue it cannot read keeps the spell (fails open).
     local foreverListed, defaultHidden
     local function DefaultHidden(ident)
-        if not CludesUI.IS_FOREVER then
-            return false
-        end
-        if defaultHidden == nil then
-            defaultHidden = mod.CDMDefaultHiddenSet() or false
-        end
+        if not CludesUI.IS_FOREVER then return false end
+        if defaultHidden == nil then defaultHidden = mod.CDMDefaultHiddenSet() or false end
         return not defaultHidden or mod.CDMIsDefaultHidden(defaultHidden, ident)
     end
     local writeIndex = 1
@@ -644,8 +574,8 @@ function mod.ReconcileAssignedSpellDrops(barId)
             and not (sdurs and sdurs[ident])
             and not (groups and groups[ident])
             and not (hosted and hosted[ident] and not (hostedMarkerFor and hostedMarkerFor[ident]))
-            -- Drawn by an aura icon of ours (the WoW Forever Seals stand-in):
-            -- user-added like a racial, never "owned but not displayed".
+            -- Drawn by an aura icon of ours (the WoW Forever Seals stand-in):
+            -- user-added like a racial, never "owned but not displayed".
             and not (mod.CDM_AuraIconKeeps and mod.CDM_AuraIconKeeps(ident))
         then
             -- Plain Blizzard cooldown. Keep if still displayed OR if the
@@ -700,9 +630,7 @@ function mod.ReconcileAssignedSpellDrops(barId)
                 -- lists (Not Displayed included). An id it does not list is
                 -- a spell this client cannot see (a retail layout's), so it
                 -- holds its place instead.
-                if foreverListed == nil then
-                    foreverListed = mod.CDMForeverListedSet() or false
-                end
+                if foreverListed == nil then foreverListed = mod.CDMForeverListedSet() or false end
                 keepSet = not (
                     foreverListed
                     and (
@@ -833,20 +761,14 @@ end
 --- bypass this and call ns.ReconcileAssignedSpellDrops directly.
 function mod.RequestCDMDropPass(reason)
     local profile = ECME and ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars then
-        return
-    end
+    if not profile or not profile.cdmBars then return end
 
     local specProfile = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local activeProfile = specProfile and specKey and specProfile[specKey]
-    if not activeProfile or not activeProfile._barFilterModelV6 then
-        return
-    end
+    if not activeProfile or not activeProfile._barFilterModelV6 then return end
 
-    if mod._cdmDropPending then
-        return
-    end -- already scheduled, coalesce
+    if mod._cdmDropPending then return end -- already scheduled, coalesce
 
     if InCombatLockdown() then
         ArmCDMDropRegenWaiter()
@@ -873,9 +795,7 @@ function mod.RequestCDMDropPass(reason)
     -- spillover, materializer) may have mirrored a native equipment entry
     -- into a store -- the same pass class erases it, so item rows can never
     -- persist. Tracking an item in Blizzard's CDM becomes a store no-op.
-    if mod.PruneEquipmentBuffRows then
-        mod.PruneEquipmentBuffRows()
-    end
+    if mod.PruneEquipmentBuffRows then mod.PruneEquipmentBuffRows() end
 end
 
 -------------------------------------------------------------------------------
@@ -893,12 +813,8 @@ end
 
 -- Reject secret-tainted/non-positive numbers before they key a table or get compared.
 local function _IsUsableSID(ident)
-    if type(ident) ~= "number" then
-        return false
-    end
-    if issecretvalue and issecretvalue(ident) then
-        return false
-    end
+    if type(ident) ~= "number" then return false end
+    if issecretvalue and issecretvalue(ident) then return false end
     return ident > 0 and ident == math.floor(ident)
 end
 
@@ -909,24 +825,16 @@ end
 -- taint the viewer until reload. A dirty provider returns nil (not the previous
 -- build): callers treat nil as "not ready" and fall back to keep-all/live-pool.
 function mod.CDMGetProviderDisplayData(provider)
-    if type(provider) ~= "table" or type(provider.GetDisplayData) ~= "function" then
-        return nil, nil
-    end
+    if type(provider) ~= "table" or type(provider.GetDisplayData) ~= "function" then return nil, nil end
     if type(provider.IsDirty) == "function" then
         local okD, dirty = pcall(provider.IsDirty, provider)
-        if not okD or dirty then
-            return nil, nil
-        end
+        if not okD or dirty then return nil, nil end
     end
     local success, displayData = pcall(provider.GetDisplayData, provider)
-    if not success or type(displayData) ~= "table" then
-        return nil, nil
-    end
+    if not success or type(displayData) ~= "table" then return nil, nil end
     local ordered = displayData.orderedCooldownIDs
     local infoByID = displayData.cooldownInfoByID
-    if type(ordered) ~= "table" or type(infoByID) ~= "table" then
-        return nil, nil
-    end
+    if type(ordered) ~= "table" or type(infoByID) ~= "table" then return nil, nil end
     return ordered, infoByID, displayData.cooldownDefaultsByID
 end
 
@@ -936,17 +844,11 @@ end
 -- only tracked on a preset the user switches to LATER in the session was
 -- invisible at the first reseed and must still get its own materialize pass.
 function mod.GetActiveCDMLayoutID()
-    if not (CooldownViewerSettings and CooldownViewerSettings.GetLayoutManager) then
-        return nil
-    end
+    if not (CooldownViewerSettings and CooldownViewerSettings.GetLayoutManager) then return nil end
     local okLM, layoutManager = pcall(CooldownViewerSettings.GetLayoutManager, CooldownViewerSettings)
-    if not okLM or not layoutManager or not layoutManager.GetActiveLayoutID then
-        return nil
-    end
+    if not okLM or not layoutManager or not layoutManager.GetActiveLayoutID then return nil end
     local okID, layoutID = pcall(layoutManager.GetActiveLayoutID, layoutManager)
-    if not okID then
-        return nil
-    end
+    if not okID then return nil end
     return layoutID
 end
 
@@ -955,29 +857,17 @@ end
 -- customized) is not "nothing hidden" evidence -- treated as unreachable and kept
 -- visible, same as every other fail-open path in this file.
 function mod.CDMIsGroupBuffSpellHidden(spellId)
-    if not _IsUsableSID(spellId) then
-        return false
-    end
-    if not (CooldownViewerSettings and CooldownViewerSettings.GetLayoutManager) then
-        return false
-    end
+    if not _IsUsableSID(spellId) then return false end
+    if not (CooldownViewerSettings and CooldownViewerSettings.GetLayoutManager) then return false end
     local okLM, layoutManager = pcall(CooldownViewerSettings.GetLayoutManager, CooldownViewerSettings)
-    if not okLM or not layoutManager then
-        return false
-    end
+    if not okLM or not layoutManager then return false end
     local accessOnly = (Enum and Enum.CDMLayoutMode and Enum.CDMLayoutMode.AccessOnly) or false
     local okLayout, layout = pcall(layoutManager.GetActiveLayout, layoutManager, accessOnly)
-    if not okLayout or not layout then
-        return false
-    end
+    if not okLayout or not layout then return false end
     local okList, hiddenList = pcall(CooldownManagerLayout_GetHiddenGroupBuffs, layout)
-    if not okList or type(hiddenList) ~= "table" then
-        return false
-    end
+    if not okList or type(hiddenList) ~= "table" then return false end
     for index = 1, #hiddenList do
-        if hiddenList[index] == spellId then
-            return true
-        end
+        if hiddenList[index] == spellId then return true end
     end
     return false
 end
@@ -991,22 +881,14 @@ end
 -- lookup[id] can tell "couldn't build" from "confirmed empty" -- collapsing the two
 -- would make a dead provider read as "everything in this category is gone".
 function mod.CDMBuildLiveCategorySetLookup(category)
-    if type(category) ~= "number" then
-        return nil
-    end
-    if not (C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet) then
-        return nil
-    end
+    if type(category) ~= "number" then return nil end
+    if not (C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCategorySet) then return nil end
     local success, ids = pcall(C_CooldownViewer.GetCooldownViewerCategorySet, category, true)
-    if not success or type(ids) ~= "table" then
-        return nil
-    end
+    if not success or type(ids) ~= "table" then return nil end
     local lookup = {}
     for index = 1, #ids do
         local ident = ids[index]
-        if _IsUsableSID(ident) then
-            lookup[ident] = true
-        end
+        if _IsUsableSID(ident) then lookup[ident] = true end
     end
     return lookup
 end
@@ -1016,12 +898,8 @@ end
 -- mergedInfo/rawInfo may be pre-fetched by the caller to batch a scan; liveSetLookup is
 -- this id's category lookup from CDMBuildLiveCategorySetLookup above.
 function mod.CDMEntryHiddenOrRemoved(cooldownId, combinedInfo, rawInfo, liveSetLookup)
-    if not _IsUsableSID(cooldownId) then
-        return nil
-    end
-    if not mod._cdmDataLoaded then
-        return nil
-    end -- pre-load reads see only static defaults
+    if not _IsUsableSID(cooldownId) then return nil end
+    if not mod._cdmDataLoaded then return nil end -- pre-load reads see only static defaults
 
     local evicted = Enum and Enum.CooldownViewerCategory
     local hiddenActive = evicted and evicted.HiddenActive or -1
@@ -1033,9 +911,7 @@ function mod.CDMEntryHiddenOrRemoved(cooldownId, combinedInfo, rawInfo, liveSetL
             and CooldownViewerSettings:GetDataProvider()
         if provider then
             local _, infoByID = mod.CDMGetProviderDisplayData(provider)
-            if infoByID then
-                combinedInfo = infoByID[cooldownId]
-            end
+            if infoByID then combinedInfo = infoByID[cooldownId] end
         end
     end
 
@@ -1054,36 +930,33 @@ function mod.CDMEntryHiddenOrRemoved(cooldownId, combinedInfo, rawInfo, liveSetL
 
     -- Only cats 4-8 need the raw (unreconciled) struct below; a mergedInfo hit already
     -- resolved to 0-3 is fully answered (visible) without another provider call.
-    if catalog == nil or catalog == groupBuff or catalog == spec5 or catalog == spec6 or catalog == equip7 or catalog == equip8 then
+    if
+        catalog == nil
+        or catalog == groupBuff
+        or catalog == spec5
+        or catalog == spec6
+        or catalog == equip7
+        or catalog == equip8
+    then
         if rawInfo == nil and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
             local success, details = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cooldownId)
-            if success then
-                rawInfo = details
-            end
+            if success then rawInfo = details end
         end
-        if catalog == nil then
-            catalog = rawInfo and rawInfo.category
-        end
+        if catalog == nil then catalog = rawInfo and rawInfo.category end
     end
 
-    if type(catalog) ~= "number" then
-        return nil
-    end -- nothing to classify against: keep
+    if type(catalog) ~= "number" then return nil end -- nothing to classify against: keep
 
     if catalog == groupBuff then
         local spellRef = (combinedInfo and combinedInfo.spellID) or (rawInfo and rawInfo.spellID)
-        if mod.CDMIsGroupBuffSpellHidden(spellRef) then
-            return "hidden"
-        end
+        if mod.CDMIsGroupBuffSpellHidden(spellRef) then return "hidden" end
         return nil
     end
 
     if catalog ~= spec5 and catalog ~= spec6 and catalog ~= equip7 and catalog ~= equip8 then
         return nil -- cats 0-3 already resolved above; nothing further indicates hidden/removed
     end
-    if rawInfo == nil then
-        return nil
-    end -- provider down: keep
+    if rawInfo == nil then return nil end -- provider down: keep
 
     -- HideByDefault must NOT convict here. Blizzard's own provider proves the
     -- flag is a DEFAULT DISPOSITION, not live state: their CheckBuildDisplayData
@@ -1123,22 +996,14 @@ end
 -- it no slot. nil off Forever or while the catalogue is not readable (callers
 -- then keep everything). Read-only, drop-pass and options time only.
 function mod.CDMForeverListedSet()
-    if not CludesUI.IS_FOREVER then
-        return nil
-    end
+    if not CludesUI.IS_FOREVER then return nil end
     local prefs = _G.CooldownViewerSettings
-    if not prefs or type(prefs.GetDataProvider) ~= "function" then
-        return nil
-    end
+    if not prefs or type(prefs.GetDataProvider) ~= "function" then return nil end
     local okP, provider = pcall(prefs.GetDataProvider, prefs)
-    if not okP or type(provider) ~= "table" then
-        return nil
-    end
+    if not okP or type(provider) ~= "table" then return nil end
     local ordered = mod.CDMGetProviderDisplayData(provider)
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not (ordered and getCdInfo) then
-        return nil
-    end
+    if not (ordered and getCdInfo) then return nil end
     local NormalizeToBase, ResolveToLive = mod.NormalizeToBase, mod.ResolveToLive
     local keySet = {}
     local function Add(val)
@@ -1160,9 +1025,7 @@ function mod.CDMForeverListedSet()
             end
         end
     end
-    if not next(keySet) then
-        return nil
-    end
+    if not next(keySet) then return nil end
     return keySet
 end
 
@@ -1174,34 +1037,22 @@ end
 -- an entry the player showed and hid again reads as default-hidden too. nil off
 -- Forever or while the catalogue is not readable. Read with ns.CDMIsDefaultHidden.
 function mod.CDMDefaultHiddenSet()
-    if not CludesUI.IS_FOREVER then
-        return nil
-    end
+    if not CludesUI.IS_FOREVER then return nil end
     local prefs = _G.CooldownViewerSettings
-    if not prefs or type(prefs.GetDataProvider) ~= "function" then
-        return nil
-    end
+    if not prefs or type(prefs.GetDataProvider) ~= "function" then return nil end
     local okP, provider = pcall(prefs.GetDataProvider, prefs)
-    if not okP or type(provider) ~= "table" then
-        return nil
-    end
+    if not okP or type(provider) ~= "table" then return nil end
     local _, infoByID, defaultsByID = mod.CDMGetProviderDisplayData(provider)
-    if not infoByID then
-        return nil
-    end
+    if not infoByID then return nil end
     local keySet = {}
     -- cooldownDefaultsByID is Blizzard's internal table, not an API: without it
     -- no entry reads as default-hidden, and an entry it lacks is left out.
-    if type(defaultsByID) ~= "table" then
-        return keySet
-    end
+    if type(defaultsByID) ~= "table" then return keySet end
     local evicted = Enum.CooldownViewerCategory
     local hidden = evicted.HiddenActive
     local NormalizeToBase, ResolveToLive, RankName = mod.NormalizeToBase, mod.ResolveToLive, mod.CDMRankName
     local function Mark(key, dh)
-        if key ~= nil and keySet[key] ~= false then
-            keySet[key] = dh
-        end
+        if key ~= nil and keySet[key] ~= false then keySet[key] = dh end
     end
     local function Add(val, dh)
         if _IsUsableSID(val) then
@@ -1233,15 +1084,9 @@ end
 --- no cooldown entry lists the id.
 function mod.CDMIsDefaultHidden(keySet, ident)
     local val = keySet[ident]
-    if val == nil then
-        val = keySet[mod.NormalizeToBase(ident)]
-    end
-    if val == nil then
-        val = keySet[mod.ResolveToLive(ident)]
-    end
-    if val == nil and mod.CDMRankName then
-        val = keySet[mod.CDMRankName(ident) or false]
-    end
+    if val == nil then val = keySet[mod.NormalizeToBase(ident)] end
+    if val == nil then val = keySet[mod.ResolveToLive(ident)] end
+    if val == nil and mod.CDMRankName then val = keySet[mod.CDMRankName(ident) or false] end
     return val == true
 end
 
@@ -1272,27 +1117,17 @@ end
 -- keeps all) if the provider/category APIs are unreachable or no entry is found.
 local function BuildBuffFamilyPresentSet()
     local prefs = _G.CooldownViewerSettings
-    if not prefs or type(prefs.GetDataProvider) ~= "function" then
-        return nil
-    end
+    if not prefs or type(prefs.GetDataProvider) ~= "function" then return nil end
     local okP, provider = pcall(prefs.GetDataProvider, prefs)
-    if not okP or type(provider) ~= "table" then
-        return nil
-    end
+    if not okP or type(provider) ~= "table" then return nil end
     -- Read the already-built display table, never the getters that would
     -- build it (see ns.CDMGetProviderDisplayData).
     local ordered, infoByID = mod.CDMGetProviderDisplayData(provider)
-    if not ordered then
-        return nil
-    end
+    if not ordered then return nil end
     local getCdInfo = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
-    if not getCdInfo then
-        return nil
-    end
+    if not getCdInfo then return nil end
     local evicted = Enum and Enum.CooldownViewerCategory
-    if not evicted then
-        return nil
-    end
+    if not evicted then return nil end
 
     local wantCats = {
         [evicted.TrackedBuff or 2] = true,
@@ -1325,33 +1160,23 @@ local function BuildBuffFamilyPresentSet()
             local verdict = mod.CDMEntryHiddenOrRemoved
                 and mod.CDMEntryHiddenOrRemoved(cooldownId, combinedInfo, rawInfo, liveSetByCat[category])
             if verdict == nil and rawInfo then
-                if _IsUsableSID(rawInfo.spellID) then
-                    present[rawInfo.spellID] = true
-                end
-                if _IsUsableSID(rawInfo.overrideSpellID) then
-                    present[rawInfo.overrideSpellID] = true
-                end
+                if _IsUsableSID(rawInfo.spellID) then present[rawInfo.spellID] = true end
+                if _IsUsableSID(rawInfo.overrideSpellID) then present[rawInfo.overrideSpellID] = true end
                 if type(rawInfo.linkedSpellIDs) == "table" then
                     for _, lsid in ipairs(rawInfo.linkedSpellIDs) do
-                        if _IsUsableSID(lsid) then
-                            present[lsid] = true
-                        end
+                        if _IsUsableSID(lsid) then present[lsid] = true end
                     end
                 end
             end
         end
     end
-    if not sawEntry then
-        return nil
-    end
+    if not sawEntry then return nil end
 
     -- Union live displayed buff-icon frame ids: shown always means keep, regardless of
     -- catalog/hidden-channel state.
     if mod.EnumerateCDMViewerSpells then
         for _, entry in ipairs(mod.EnumerateCDMViewerSpells(true)) do
-            if _IsUsableSID(entry.sid) then
-                present[entry.sid] = true
-            end
+            if _IsUsableSID(entry.sid) then present[entry.sid] = true end
         end
     end
     return present
@@ -1366,12 +1191,8 @@ end
 -- function to be reachable.
 function mod.ReconcileBuffFamilyDrops(barId)
     local profile = ECME and ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars then
-        return nil
-    end
-    if not (mod.IsBarBuffFamily and mod.IsBarBuffFamily(barId)) then
-        return nil
-    end
+    if not profile or not profile.cdmBars then return nil end
+    if not (mod.IsBarBuffFamily and mod.IsBarBuffFamily(barId)) then return nil end
     local barSpells = mod.GetBarSpellData and mod.GetBarSpellData(barId)
     if not barSpells or not barSpells.assignedSpells or #barSpells.assignedSpells == 0 then
         return barSpells
@@ -1380,15 +1201,11 @@ function mod.ReconcileBuffFamilyDrops(barId)
     local specProfile = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local prof = specProfile and specKey and specProfile[specKey]
-    if not prof or not prof._barFilterModelV6 or prof._importGhostMode then
-        return barSpells
-    end
+    if not prof or not prof._barFilterModelV6 or prof._importGhostMode then return barSpells end
     -- Data-loaded latch: unset until VARIABLES_LOADED + PLAYER_ENTERING_WORLD +
     -- COOLDOWN_VIEWER_DATA_LOADED have all fired, so this never drops against static
     -- defaults before persisted hide/recategorize overrides are merged in.
-    if not mod._cdmDataLoaded then
-        return barSpells
-    end
+    if not mod._cdmDataLoaded then return barSpells end
     if InCombatLockdown() then
         -- Shared regen waiter (defined with ns.ReconcileAssignedSpellDrops /
         -- ns.RequestCDMDropPass, RS3/RS4 above): queues the after-combat entry
@@ -1400,9 +1217,7 @@ function mod.ReconcileBuffFamilyDrops(barId)
     end
 
     local present = BuildBuffFamilyPresentSet()
-    if not present then
-        return barSpells
-    end -- provider unhealthy: fail open, keep everything
+    if not present then return barSpells end -- provider unhealthy: fail open, keep everything
 
     local ledger = prof.buffVariantAliases
     local custom = barSpells.customSpellIDs
@@ -1443,9 +1258,7 @@ function mod.ReconcileBuffFamilyDrops(barId)
             -- accepted June tradeoff. Family-of-one drop semantics silently
             -- resurrected the Vengeance Meta data-loss class and are FORBIDDEN.
             local vouched = false
-            if ledger and (ledger[ident] or ledger[seedBase] or ledger[seedLive]) then
-                vouched = true
-            end
+            if ledger and (ledger[ident] or ledger[seedBase] or ledger[seedLive]) then vouched = true end
             if ledger then
                 local frontier, num = {}, 0
                 for s0 in pairs(ledgerClosure) do
@@ -1492,9 +1305,7 @@ function mod.ReconcileBuffFamilyDrops(barId)
             -- layout's): it holds its place instead.
             local unseen = false
             if vouched and not anyPresent and CludesUI.IS_FOREVER then
-                if foreverListed == nil then
-                    foreverListed = mod.CDMForeverListedSet() or false
-                end
+                if foreverListed == nil then foreverListed = mod.CDMForeverListedSet() or false end
                 unseen = true
                 if foreverListed then
                     for member in pairs(family) do
@@ -1518,9 +1329,7 @@ function mod.ReconcileBuffFamilyDrops(barId)
     for index = writeIndex, #barSpells.assignedSpells do
         barSpells.assignedSpells[index] = nil
     end
-    if dropped then
-        mod._spellOrderDirty = true
-    end
+    if dropped then mod._spellOrderDirty = true end
     return barSpells
 end
 
@@ -1536,13 +1345,9 @@ end
 ---     Blizzard's viewers show it.
 function mod.RepopulateFromBlizzard(fromRequest)
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars then
-        return
-    end
+    if not profile or not profile.cdmBars then return end
     local specKey = mod.GetActiveSpecKey()
-    if not specKey or specKey == "0" then
-        return
-    end
+    if not specKey or specKey == "0" then return end
 
     -- Requested repopulate: the racial slot's place. A listed racial goes to the
     -- end of its bar (below); an unlisted one shown by Blizzard's viewers is
@@ -1564,37 +1369,23 @@ function mod.RepopulateFromBlizzard(fromRequest)
 
     -- A spell ID is "user-added" (preserved across repopulate) if it's a negative preset marker, a custom spell ID added via the picker, or a racial belonging to this character.
     local function IsUserAdded(barSpells, ident)
-        if type(ident) ~= "number" or ident == 0 then
-            return false
-        end
-        if ident < 0 then
-            return true
-        end
-        if barSpells.customSpellIDs and barSpells.customSpellIDs[ident] then
-            return true
-        end
-        if _myRacialsSet and _myRacialsSet[ident] and not racialMoves then
-            return true
-        end
+        if type(ident) ~= "number" or ident == 0 then return false end
+        if ident < 0 then return true end
+        if barSpells.customSpellIDs and barSpells.customSpellIDs[ident] then return true end
+        if _myRacialsSet and _myRacialsSet[ident] and not racialMoves then return true end
         -- Drawn by an aura icon of ours (the WoW Forever Seals stand-in): no
         -- Blizzard frame would bring it back.
-        if mod.CDM_AuraIconKeeps and mod.CDM_AuraIconKeeps(ident) then
-            return true
-        end
+        if mod.CDM_AuraIconKeeps and mod.CDM_AuraIconKeeps(ident) then return true end
         -- A positive id carrying a stored duration is one of OUR injected preset/custom buffs
         -- (Bloodlust/Heroism, potions, Time Spiral, custom buff IDs). Blizzard-tracked buffs are
         -- never written into assignedSpells with a duration, so this can only be a user-added entry -- preserve it. Presets predate the customSpellIDs flag, so the flag alone is not enough.
-        if barSpells.spellDurations and (barSpells.spellDurations[ident] or 0) > 0 then
-            return true
-        end
+        if barSpells.spellDurations and (barSpells.spellDurations[ident] or 0) > 0 then return true end
         return false
     end
 
     -- Filter a list in place: keep only entries IsUserAdded returns true for.
     local function FilterListPreservingUserAdded(barSpells, entries)
-        if type(entries) ~= "table" then
-            return
-        end
+        if type(entries) ~= "table" then return end
         local writeIndex = 1
         for readIdx = 1, #entries do
             local ident = entries[readIdx]
@@ -1610,13 +1401,9 @@ function mod.RepopulateFromBlizzard(fromRequest)
 
     -- Filter a set in place (keys = spell IDs): drop keys that aren't user-added.
     local function FilterSetPreservingUserAdded(barSpells, keySet)
-        if type(keySet) ~= "table" then
-            return
-        end
+        if type(keySet) ~= "table" then return end
         for ident in pairs(keySet) do
-            if not IsUserAdded(barSpells, ident) then
-                keySet[ident] = nil
-            end
+            if not IsUserAdded(barSpells, ident) then keySet[ident] = nil end
         end
     end
 
@@ -1661,9 +1448,7 @@ function mod.RepopulateFromBlizzard(fromRequest)
     -- Under the diversion-set model, "repopulate from Blizzard" is just "wipe diversions and let the route map's spillover show everything from the viewer" -- the wipes above are all that is needed.
 
     mod.FullCDMRebuild("repopulate")
-    if mod.CollectAndReanchor then
-        mod.CollectAndReanchor()
-    end
+    if mod.CollectAndReanchor then mod.CollectAndReanchor() end
 
     mod.ReseedAssignedSpellsFromLiveIcons()
 
@@ -1678,30 +1463,20 @@ function mod.RepopulateFromBlizzard(fromRequest)
             local entries = barSpells and barSpells.assignedSpells
             if entries then
                 for index = #entries, 1, -1 do
-                    if ALL_RACIAL_SPELLS[entries[index]] then
-                        table.remove(entries, index)
-                    end
+                    if ALL_RACIAL_SPELLS[entries[index]] then table.remove(entries, index) end
                 end
             end
         end
-        if not racialSD.assignedSpells then
-            racialSD.assignedSpells = {}
-        end
+        if not racialSD.assignedSpells then racialSD.assignedSpells = {} end
         racialSD.assignedSpells[#racialSD.assignedSpells + 1] = racialSid
         mod._spellOrderDirty = true
-        if mod.RebuildSpellRouteMap then
-            mod.RebuildSpellRouteMap()
-        end
-        if mod.QueueReanchor then
-            mod.QueueReanchor()
-        end
+        if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+        if mod.QueueReanchor then mod.QueueReanchor() end
     end
 
     C_Timer.After(1, function()
         local specKey = mod.GetActiveSpecKey()
-        if specKey and specKey ~= "0" then
-            SaveCurrentSpecProfile()
-        end
+        if specKey and specKey ~= "0" then SaveCurrentSpecProfile() end
     end)
     return true
 end
@@ -1723,48 +1498,34 @@ end
 -------------------------------------------------------------------------------
 local function LiveSpecID()
     local index = C_SpecializationInfo.GetSpecialization()
-    if not index or index == 0 then
-        return nil
-    end
+    if not index or index == 0 then return nil end
     local ident = C_SpecializationInfo.GetSpecializationInfo(index)
-    if not ident or ident == 0 then
-        return nil
-    end
+    if not ident or ident == 0 then return nil end
     return ident
 end
 
-local function IsSpecID(ident)
-    return type(ident) == "number" and ident > 0 and ident == math.floor(ident)
-end
+local function IsSpecID(ident) return type(ident) == "number" and ident > 0 and ident == math.floor(ident) end
 
 -- specIDs: nil = every spec of the player's class, or one spec ID, or a list of them.
 -- Returns true once queued, false when nothing valid was given.
 function CludesUI.RequestCDMRepopulate(specIDs)
-    if not CludesUIDB then
-        return false
-    end
+    if not CludesUIDB then return false end
     local ids = {}
     if specIDs == nil then
         local _, _, classID = UnitClass("player")
         local total = classID and C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
         for index = 1, total do
             local ident = GetSpecializationInfoForClassID(classID, index)
-            if IsSpecID(ident) then
-                ids[#ids + 1] = ident
-            end
+            if IsSpecID(ident) then ids[#ids + 1] = ident end
         end
     elseif IsSpecID(specIDs) then
         ids[1] = specIDs
     elseif type(specIDs) == "table" then
         for _, ident in ipairs(specIDs) do
-            if IsSpecID(ident) then
-                ids[#ids + 1] = ident
-            end
+            if IsSpecID(ident) then ids[#ids + 1] = ident end
         end
     end
-    if #ids == 0 then
-        return false
-    end
+    if #ids == 0 then return false end
     local waiting = CludesUIDB.cdmRepopulatePending or {}
     CludesUIDB.cdmRepopulatePending = waiting
     local characterKey = mod.GetCharKey()
@@ -1776,16 +1537,10 @@ function CludesUI.RequestCDMRepopulate(specIDs)
     local runs = finished and finished[characterKey]
     for _, ident in ipairs(ids) do
         mine[ident] = true
-        if runs then
-            runs[ident] = nil
-        end
+        if runs then runs[ident] = nil end
     end
-    if runs and not next(runs) then
-        finished[characterKey] = nil
-    end
-    if finished and not next(finished) then
-        CludesUIDB.cdmRepopulateDone = nil
-    end
+    if runs and not next(runs) then finished[characterKey] = nil end
+    if finished and not next(finished) then CludesUIDB.cdmRepopulateDone = nil end
     return true
 end
 
@@ -1793,25 +1548,15 @@ end
 -- character; "done", time(), layoutID once its queued run finished (layoutID
 -- nil when no saved Blizzard layout was active); nil otherwise.
 function CludesUI.GetCDMRepopulateStatus(specID)
-    if not CludesUIDB then
-        return nil
-    end
-    if specID == nil then
-        specID = LiveSpecID()
-    end
-    if not IsSpecID(specID) then
-        return nil
-    end
+    if not CludesUIDB then return nil end
+    if specID == nil then specID = LiveSpecID() end
+    if not IsSpecID(specID) then return nil end
     local characterKey = mod.GetCharKey()
     local waiting = CludesUIDB.cdmRepopulatePending
-    if waiting and waiting[characterKey] and waiting[characterKey][specID] then
-        return "pending"
-    end
+    if waiting and waiting[characterKey] and waiting[characterKey][specID] then return "pending" end
     local finished = CludesUIDB.cdmRepopulateDone
     local run = finished and finished[characterKey] and finished[characterKey][specID]
-    if run then
-        return "done", run.time, run.layoutID
-    end
+    if run then return "done", run.time, run.layoutID end
     return nil
 end
 
@@ -1822,18 +1567,12 @@ end
 -- so the request waits for the data-loaded wake in CUI_CDM_Lifecycle.lua.
 function mod.RunQueuedRepopulate()
     local waiting = CludesUIDB and CludesUIDB.cdmRepopulatePending
-    if not waiting then
-        return
-    end
+    if not waiting then return end
     local characterKey = mod.GetCharKey()
     local mine = waiting[characterKey]
-    if not mine then
-        return
-    end
+    if not mine then return end
     local ident = LiveSpecID()
-    if not ident or not mine[ident] then
-        return
-    end
+    if not ident or not mine[ident] then return end
     if not mod._cdmDataLoaded then
         mod._repopAwaitsLayouts = true
         return
@@ -1844,12 +1583,8 @@ function mod.RunQueuedRepopulate()
     end
     -- Taken off the queue before it runs, so a failure can never repeat it.
     mine[ident] = nil
-    if not next(mine) then
-        waiting[characterKey] = nil
-    end
-    if not next(waiting) then
-        CludesUIDB.cdmRepopulatePending = nil
-    end
+    if not next(mine) then waiting[characterKey] = nil end
+    if not next(waiting) then CludesUIDB.cdmRepopulatePending = nil end
     -- Recorded only once the run finished (GetCDMRepopulateStatus).
     if mod.RepopulateFromBlizzard(true) then
         local finished = CludesUIDB.cdmRepopulateDone or {}

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Patch Notes page builder; its content table stays in CUI__General_Options.lua.
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
@@ -12,9 +10,7 @@ local PoolKeep, PoolGen = CludesUI._Pool.Keep, CludesUI._Pool.Gen
 -- An accent-coloured piece repaints itself (paint(r, g, b)) when the accent
 -- changes. Keyed by the piece: the page pool forgets the entry when it resets
 -- it, and the kept Legends page registers each piece once.
-local function OnAccent(object, paint)
-    CludesUI.RegAccent({ type = "callback", obj = object, fn = paint })
-end
+local function OnAccent(object, paint) CludesUI.RegAccent({ type = "callback", obj = object, fn = paint }) end
 
 -------------------------------------------------------------------------------
 --  What's New page -- one expandable card per patch (the shared module card),
@@ -62,9 +58,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         return tag .. ((e.module and CludesUI.L(e.module) .. ": ") or "")
     end
     -- Display title: "Module: Title" (see PrefixOf).
-    local function TitleOf(e)
-        return PrefixOf(e) .. (CludesUI.L(e.title) or "")
-    end
+    local function TitleOf(e) return PrefixOf(e) .. (CludesUI.L(e.title) or "") end
 
     -- Stable sort by module display name; preserves authored order per module.
     local function SortByModule(entries)
@@ -76,9 +70,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             local am, bm = lhs[1].module or "", rhs[1].module or ""
             if am ~= bm then
                 -- Localization always closes the list.
-                if am == "Localization" or bm == "Localization" then
-                    return bm == "Localization"
-                end
+                if am == "Localization" or bm == "Localization" then return bm == "Localization" end
                 return am < bm
             end
             return lhs[2] < rhs[2]
@@ -94,9 +86,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- A module that is off (or not on this client) has no page to open, and the
     -- nav's preSelect may call that module's own setters; such a card renders static.
     local function NavTarget(nav)
-        if nav and nav.module and CludesUI:GetModuleTitle(nav.module) then
-            return nav
-        end
+        if nav and nav.module and CludesUI:GetModuleTitle(nav.module) then return nav end
     end
 
     -- Deep-link to a setting (opens the page; highlights the control if mapped).
@@ -124,14 +114,10 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         local backdrop, accent = brd.bg, brd.accent
 
         accent:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.6)
-        OnAccent(accent, function(red, green, blue)
-            accent:SetColorTexture(red, green, blue, 0.6)
-        end)
+        OnAccent(accent, function(red, green, blue) accent:SetColorTexture(red, green, blue, 0.6) end)
 
         local titleFs = MakeFont(cardFrame, 14, nil, ACC.r, ACC.g, ACC.b, 0.9)
-        OnAccent(titleFs, function(red, green, blue)
-            titleFs:SetTextColor(red, green, blue, 0.9)
-        end)
+        OnAccent(titleFs, function(red, green, blue) titleFs:SetTextColor(red, green, blue, 0.9) end)
         Pix.Point(titleFs, "TOPLEFT", cardFrame, "TOPLEFT", 16, -14)
         Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -16, 0)
         titleFs:SetJustifyH("LEFT")
@@ -189,14 +175,10 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         local ac = record.accent or ACC
         -- Only the theme accent follows accent changes; a per-entry one is fixed.
         local function OnBannerAccent(object, paint)
-            if not record.accent then
-                OnAccent(object, paint)
-            end
+            if not record.accent then OnAccent(object, paint) end
         end
         accent:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
-        OnBannerAccent(accent, function(red, green, blue)
-            accent:SetColorTexture(red, green, blue, 0.9)
-        end)
+        OnBannerAccent(accent, function(red, green, blue) accent:SetColorTexture(red, green, blue, 0.9) end)
 
         -- Flanking decorative bar-charts: dim white steps, accent "now" bar, faint baseline.
         -- They are the performance banner's art; a banner that carries its own
@@ -212,25 +194,22 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             else
                 Pix.Point(base, "RIGHT", cardFrame, "RIGHT", -inset, -12)
             end
-            if Pix.DisablePixelSnap then
-                Pix.DisablePixelSnap(base)
-            end
+            if Pix.DisablePixelSnap then Pix.DisablePixelSnap(base) end
             for i = 1, #heights do
                 local bar = cardFrame:CreateTexture(nil, "ARTWORK")
                 local a = alphas[i]
                 if a == "green" then
                     bar:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
-                    OnBannerAccent(bar, function(red, green, blue)
-                        bar:SetColorTexture(red, green, blue, 0.9)
-                    end)
+                    OnBannerAccent(
+                        bar,
+                        function(red, green, blue) bar:SetColorTexture(red, green, blue, 0.9) end
+                    )
                 else
                     bar:SetColorTexture(1, 1, 1, a)
                 end
                 Pix.Size(bar, BAR_W, heights[i])
                 Pix.Point(bar, "BOTTOMLEFT", base, "TOPLEFT", (i - 1) * (BAR_W + BAR_GAP2), 1)
-                if Pix.DisablePixelSnap then
-                    Pix.DisablePixelSnap(bar)
-                end
+                if Pix.DisablePixelSnap then Pix.DisablePixelSnap(bar) end
             end
         end
         if not record.logo then
@@ -240,9 +219,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         end
 
         local eyebrow = MakeFont(cardFrame, 11, nil, ac.r, ac.g, ac.b, 0.9)
-        OnBannerAccent(eyebrow, function(red, green, blue)
-            eyebrow:SetTextColor(red, green, blue, 0.9)
-        end)
+        OnBannerAccent(eyebrow, function(red, green, blue) eyebrow:SetTextColor(red, green, blue, 0.9) end)
         Pix.Point(eyebrow, "TOP", cardFrame, "TOP", 0, -18)
         eyebrow:SetJustifyH("CENTER")
         eyebrow:SetWordWrap(false)
@@ -257,9 +234,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             local lg = cardFrame:CreateTexture(nil, "ARTWORK")
             lg:SetTexture(record.logo.path)
             local c = record.logo.coords
-            if c then
-                lg:SetTexCoord(c[1], c[2], c[3], c[4])
-            end
+            if c then lg:SetTexCoord(c[1], c[2], c[3], c[4]) end
             Pix.Size(lg, record.logo.w or 250, record.logo.h or 100)
             Pix.Point(lg, "TOP", eyebrow, "BOTTOM", 0, -8)
             headline, headH = lg, record.logo.h or 100
@@ -360,9 +335,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- drawn on `host` (above the patch card's fill) from x to the card's inset.
     local function MakeFixLine(host, posX, rightInset, cy, textValue)
         local dot = MakeFont(host, 12, nil, ACC.r, ACC.g, ACC.b, 0.55)
-        OnAccent(dot, function(red, green, blue)
-            dot:SetTextColor(red, green, blue, 0.55)
-        end)
+        OnAccent(dot, function(red, green, blue) dot:SetTextColor(red, green, blue, 0.55) end)
         Pix.Point(dot, "TOPLEFT", hostFrame, "TOPLEFT", posX + 2, cy - 1)
         dot:SetText("\226\128\162") -- bullet glyph (ASCII-safe UTF-8 escape)
         local fontStr = MakeFont(host, 12, nil, 1, 1, 1, 0.5)
@@ -386,9 +359,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         rule:SetColorTexture(1, 1, 1, 0.07)
         Pix.Size(rule, wid, 1)
         Pix.Point(rule, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy - 34)
-        if Pix.DisablePixelSnap then
-            Pix.DisablePixelSnap(rule)
-        end
+        if Pix.DisablePixelSnap then Pix.DisablePixelSnap(rule) end
         return 40
     end
 
@@ -439,18 +410,12 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             end
         end
         Paint()
-        OnAccent(check, function()
-            Paint()
-        end)
+        OnAccent(check, function() Paint() end)
         row:SetScript("OnClick", function()
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if not CludesUIDB then CludesUIDB = {} end
             CludesUIDB.patchDotDisabled = (not CludesUIDB.patchDotDisabled) and true or nil
             Paint()
-            if CludesUI._UpdatePatchDot then
-                CludesUI._UpdatePatchDot()
-            end
+            if CludesUI._UpdatePatchDot then CludesUI._UpdatePatchDot() end
         end)
         row:SetScript("OnEnter", function(self)
             labelFS:SetAlpha(0.85)
@@ -508,9 +473,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                     end
                 end
             end
-            if col == 1 then
-                cy = cy - CARD_H - CARD_GAP
-            end
+            if col == 1 then cy = cy - CARD_H - CARD_GAP end
             cy = cy + CARD_GAP - 4
         end
 
@@ -547,9 +510,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     local MAX_PATCHES = 10
     local isShown = math.min(#patches, MAX_PATCHES)
     local newestKey = patches[1].version or 1
-    if whatsNewOpen[newestKey] == nil then
-        whatsNewOpen[newestKey] = true
-    end
+    if whatsNewOpen[newestKey] == nil then whatsNewOpen[newestKey] = true end
     for pi = 1, isShown do
         local patch = patches[pi]
         -- Header counts: hero cards (a launch-video banner is no feature), listings, fix lines.
@@ -559,25 +520,15 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         end
         local featN, fixN = #(patch.features or {}), #(patch.fixes or {})
         local parts = {}
-        if patch.mini then
-            parts[#parts + 1] = CludesUI.L("Mini Patch")
-        end
-        if heroN > 0 then
-            parts[#parts + 1] = CludesUI.L("Major Features") .. ": " .. heroN
-        end
-        if featN > 0 then
-            parts[#parts + 1] = CludesUI.L("Additional Features") .. ": " .. featN
-        end
-        if fixN > 0 then
-            parts[#parts + 1] = CludesUI.L("Bug Fixes") .. ": " .. fixN
-        end
+        if patch.mini then parts[#parts + 1] = CludesUI.L("Mini Patch") end
+        if heroN > 0 then parts[#parts + 1] = CludesUI.L("Major Features") .. ": " .. heroN end
+        if featN > 0 then parts[#parts + 1] = CludesUI.L("Additional Features") .. ": " .. featN end
+        if fixN > 0 then parts[#parts + 1] = CludesUI.L("Bug Fixes") .. ": " .. fixN end
         local tile = {
             key = patch.version or pi,
             display = "CludesUI " .. (patch.version or ""),
             desc = table.concat(parts, "    "),
-            buildContent = function(_, cy)
-                return BuildPatchContent(patch, cy)
-            end,
+            buildContent = function(_, cy) return BuildPatchContent(patch, cy) end,
         }
         local newest = pi == 1
         cursorY = CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
@@ -590,14 +541,10 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                 Pix.Size(icon, 28, 20)
                 Pix.Point(icon, "LEFT", heading, "LEFT", 14, 0)
                 icon:SetTexture(NOTES_ICON)
-                if Pix.DisablePixelSnap then
-                    Pix.DisablePixelSnap(icon)
-                end
+                if Pix.DisablePixelSnap then Pix.DisablePixelSnap(icon) end
                 if newest then
                     icon:SetVertexColor(ACC.r, ACC.g, ACC.b, 0.9)
-                    OnAccent(icon, function(red, green, blue)
-                        icon:SetVertexColor(red, green, blue, 0.9)
-                    end)
+                    OnAccent(icon, function(red, green, blue) icon:SetVertexColor(red, green, blue, 0.9) end)
                 else
                     icon:SetVertexColor(1, 1, 1, 0.45)
                 end
@@ -608,9 +555,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             local _, title = tile._descFS:GetPoint(1)
             if title then
                 local tag = MakeFont(tile._hdr, 11, nil, ACC.r, ACC.g, ACC.b, 0.9)
-                OnAccent(tag, function(red, green, blue)
-                    tag:SetTextColor(red, green, blue, 0.9)
-                end)
+                OnAccent(tag, function(red, green, blue) tag:SetTextColor(red, green, blue, 0.9) end)
                 Pix.Point(tag, "LEFT", title, "RIGHT", 10, 0)
                 tag:SetText(CludesUI.L("Latest"))
             end

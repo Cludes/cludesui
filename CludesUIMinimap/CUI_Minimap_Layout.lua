@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Layout.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local _addonVisible, cachedAddonButtons, SKIN = Inner._addonVisible, Inner.cachedAddonButtons, Inner.EBS
@@ -40,29 +36,17 @@ local SetMOEvaluate = Inner.SetMOEvaluate
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local flyoutBtn
-Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val)
-    flyoutBtn = val
-end
+Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val) flyoutBtn = val end
 local flyoutPanel
-Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val)
-    flyoutPanel = val
-end
+Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val) flyoutPanel = val end
 local _portalFlyout
-Inner.portalFlyoutSetters[#Inner.portalFlyoutSetters + 1] = function(val)
-    _portalFlyout = val
-end
+Inner.portalFlyoutSetters[#Inner.portalFlyoutSetters + 1] = function(val) _portalFlyout = val end
 local coordFrame
-Inner.coordFrameSetters[#Inner.coordFrameSetters + 1] = function(val)
-    coordFrame = val
-end
+Inner.coordFrameSetters[#Inner.coordFrameSetters + 1] = function(val) coordFrame = val end
 local coordTicker
-Inner.coordTickerSetters[#Inner.coordTickerSetters + 1] = function(val)
-    coordTicker = val
-end
+Inner.coordTickerSetters[#Inner.coordTickerSetters + 1] = function(val) coordTicker = val end
 local clockBack
-Inner.clockBgSetters[#Inner.clockBgSetters + 1] = function(val)
-    clockBack = val
-end
+Inner.clockBgSetters[#Inner.clockBgSetters + 1] = function(val) clockBack = val end
 
 -- Assigned below; SetMOEvaluate hands it to the earlier files. It runs once,
 -- at load: a file behind this one would have to import the function.
@@ -81,42 +65,30 @@ do
     local opened, watch = false, nil
     local function Done()
         opened = false
-        if watch then
-            watch:UnregisterEvent("GLOBAL_MOUSE_UP")
-        end
+        if watch then watch:UnregisterEvent("GLOBAL_MOUSE_UP") end
     end
-    local function MenuOpen(stockButton)
-        return stockButton.menu ~= nil and stockButton.menu:IsShown()
-    end
+    local function MenuOpen(stockButton) return stockButton.menu ~= nil and stockButton.menu:IsShown() end
     -- After our click opened it: closed by something else (a release off ours) forgets it.
     function SKIN._TrackingMenuOpened(stockButton, ours)
         opened = MenuOpen(stockButton)
-        if not opened then
-            return
-        end
+        if not opened then return end
         if not watch then
             watch = CreateFrame("Frame")
             watch:SetScript("OnEvent", function()
-                if not MenuOpen(stockButton) and not ours:IsMouseOver() then
-                    Done()
-                end
+                if not MenuOpen(stockButton) and not ours:IsMouseOver() then Done() end
             end)
         end
         watch:RegisterEvent("GLOBAL_MOUSE_UP")
     end
     -- True when this click closed the menu our click opened (it is gone now).
     function SKIN._TrackingMenuClosedByPress(stockButton)
-        if not opened or MenuOpen(stockButton) then
-            return false
-        end
+        if not opened or MenuOpen(stockButton) then return false end
         Done()
         return true
     end
     -- Closed while the mouse was away (Escape): forgotten on the way back in.
     function SKIN._TrackingMenuForget(stockButton)
-        if opened and not MenuOpen(stockButton) then
-            Done()
-        end
+        if opened and not MenuOpen(stockButton) then Done() end
     end
 end
 
@@ -147,17 +119,13 @@ local function BuildCustomIndicators(mapFrame)
                 return
             end
             local stockButton = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
-            if not stockButton or not stockButton.OpenMenu then
-                return
-            end
+            if not stockButton or not stockButton.OpenMenu then return end
 
             if stockButton.menu and stockButton.menu:IsShown() then
                 stockButton.menu:Hide()
                 return
             end
-            if SKIN._TrackingMenuClosedByPress(stockButton) then
-                return
-            end
+            if SKIN._TrackingMenuClosedByPress(stockButton) then return end
 
             -- Position hidden Blizzard button at our custom button
             stockButton:ClearAllPoints()
@@ -176,17 +144,11 @@ local function BuildCustomIndicators(mapFrame)
     local trackBaseEnter = _customIndicators.tracking:GetScript("OnEnter")
     local trackBaseLeave = _customIndicators.tracking:GetScript("OnLeave")
     _customIndicators.tracking:SetScript("OnEnter", function(self)
-        if trackBaseEnter then
-            trackBaseEnter(self)
-        end
+        if trackBaseEnter then trackBaseEnter(self) end
         -- Before a press: follow a live switch of the gamepad style and settle the hotspot.
-        if SKIN._TrackingHotspotActive() then
-            SKIN._TrackingClickState()
-        end
+        if SKIN._TrackingHotspotActive() then SKIN._TrackingClickState() end
         local stockButton = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
-        if stockButton then
-            SKIN._TrackingMenuForget(stockButton)
-        end
+        if stockButton then SKIN._TrackingMenuForget(stockButton) end
         if not GetFFD(self).freeMoveJustDragged then
             CludesUI.ShowWidgetTooltip(
                 self,
@@ -196,9 +158,7 @@ local function BuildCustomIndicators(mapFrame)
         end
     end)
     _customIndicators.tracking:SetScript("OnLeave", function(self)
-        if trackBaseLeave then
-            trackBaseLeave(self)
-        end
+        if trackBaseLeave then trackBaseLeave(self) end
         CludesUI.HideWidgetTooltip()
     end)
 
@@ -213,21 +173,15 @@ local function BuildCustomIndicators(mapFrame)
         calPrefix .. "-Down",
         function()
             DismissCalendarInvites()
-            if ToggleCalendar then
-                ToggleCalendar()
-            end
+            if ToggleCalendar then ToggleCalendar() end
         end
     )
     _customIndicators.calendar._calDay = calDay
     local calBaseEnter = _customIndicators.calendar:GetScript("OnEnter")
     local calBaseLeave = _customIndicators.calendar:GetScript("OnLeave")
     _customIndicators.calendar:SetScript("OnEnter", function(self)
-        if calBaseEnter then
-            calBaseEnter(self)
-        end
-        if GetFFD(self).freeMoveJustDragged then
-            return
-        end
+        if calBaseEnter then calBaseEnter(self) end
+        if GetFFD(self).freeMoveJustDragged then return end
         -- While the invite alert shows, the tooltip says why (as Blizzard's does).
         if self._invite and self._invite:IsShown() then
             CludesUI.ShowWidgetTooltip(
@@ -238,9 +192,7 @@ local function BuildCustomIndicators(mapFrame)
             return
         end
         local lockoutEntries
-        if not (CludesUI.InProtectedInstance()) then
-            lockoutEntries = GetCalendarLockoutEntries()
-        end
+        if not (CludesUI.InProtectedInstance()) then lockoutEntries = GetCalendarLockoutEntries() end
         if lockoutEntries then
             ShowCalendarTooltip(self, lockoutEntries)
         else
@@ -252,9 +204,7 @@ local function BuildCustomIndicators(mapFrame)
         end
     end)
     _customIndicators.calendar:SetScript("OnLeave", function(self)
-        if calBaseLeave then
-            calBaseLeave(self)
-        end
+        if calBaseLeave then calBaseLeave(self) end
         HideCalendarTooltip()
         CludesUI.HideWidgetTooltip()
     end)
@@ -271,12 +221,8 @@ local function BuildCustomIndicators(mapFrame)
     local mailBaseEnter = _customIndicators.mail:GetScript("OnEnter")
     local mailBaseLeave = _customIndicators.mail:GetScript("OnLeave")
     _customIndicators.mail:SetScript("OnEnter", function(self)
-        if SKIN._HVRevealMapHover then
-            SKIN._HVRevealMapHover()
-        end
-        if mailBaseEnter then
-            mailBaseEnter(self)
-        end
+        if SKIN._HVRevealMapHover then SKIN._HVRevealMapHover() end
+        if mailBaseEnter then mailBaseEnter(self) end
         if not GetFFD(self).freeMoveJustDragged then
             local labelText = HAVE_MAIL
             -- Up to three latest senders, as Blizzard's own mail icon lists them
@@ -293,9 +239,7 @@ local function BuildCustomIndicators(mapFrame)
         end
     end)
     _customIndicators.mail:SetScript("OnLeave", function(self)
-        if mailBaseLeave then
-            mailBaseLeave(self)
-        end
+        if mailBaseLeave then mailBaseLeave(self) end
         CludesUI.HideWidgetTooltip()
     end)
 
@@ -311,9 +255,7 @@ local function BuildCustomIndicators(mapFrame)
     local craftBaseEnter = _customIndicators.crafting:GetScript("OnEnter")
     local craftBaseLeave = _customIndicators.crafting:GetScript("OnLeave")
     _customIndicators.crafting:SetScript("OnEnter", function(self)
-        if craftBaseEnter then
-            craftBaseEnter(self)
-        end
+        if craftBaseEnter then craftBaseEnter(self) end
         if not GetFFD(self).freeMoveJustDragged then
             local labelText = "Crafting Orders"
             if C_CraftingOrders and C_CraftingOrders.GetPersonalOrdersInfo then
@@ -327,9 +269,7 @@ local function BuildCustomIndicators(mapFrame)
                             lines[#lines + 1] = total .. " " .. name .. " Order" .. (total > 1 and "s" or "")
                         end
                     end
-                    if #lines > 0 then
-                        labelText = labelText .. "\n" .. table.concat(lines, "\n")
-                    end
+                    if #lines > 0 then labelText = labelText .. "\n" .. table.concat(lines, "\n") end
                 end
             end
             CludesUI.ShowWidgetTooltip(
@@ -340,9 +280,7 @@ local function BuildCustomIndicators(mapFrame)
         end
     end)
     _customIndicators.crafting:SetScript("OnLeave", function(self)
-        if craftBaseLeave then
-            craftBaseLeave(self)
-        end
+        if craftBaseLeave then craftBaseLeave(self) end
         CludesUI.HideWidgetTooltip()
     end)
 
@@ -367,32 +305,20 @@ local function BuildCustomIndicators(mapFrame)
         CludesUI.RegAccent({ type = "vertex", obj = _customIndicators.friends._icon })
         -- Apply current accent immediately (initial accent pass already ran)
         local g = CludesUI.CLUDES_GREEN
-        if g then
-            _customIndicators.friends._icon:SetVertexColor(g.r, g.g, g.b, 1)
-        end
+        if g then _customIndicators.friends._icon:SetVertexColor(g.r, g.g, g.b, 1) end
         _customIndicators.friends._icon:SetAlpha(0.85)
     end
     local friendsBtnEnter = _customIndicators.friends:GetScript("OnEnter")
     local friendsBtnLeave = _customIndicators.friends:GetScript("OnLeave")
     _customIndicators.friends:SetScript("OnEnter", function(self)
-        if friendsBtnEnter then
-            friendsBtnEnter(self)
-        end
-        if self._icon then
-            self._icon:SetAlpha(1)
-        end
-        if GetFFD(self).freeMoveJustDragged then
-            return
-        end
+        if friendsBtnEnter then friendsBtnEnter(self) end
+        if self._icon then self._icon:SetAlpha(1) end
+        if GetFFD(self).freeMoveJustDragged then return end
         ShowFriendsTooltip(self)
     end)
     _customIndicators.friends:SetScript("OnLeave", function(self)
-        if friendsBtnLeave then
-            friendsBtnLeave(self)
-        end
-        if self._icon then
-            self._icon:SetAlpha(0.85)
-        end
+        if friendsBtnLeave then friendsBtnLeave(self) end
+        if self._icon then self._icon:SetAlpha(0.85) end
         HideFriendsTooltip()
     end)
 
@@ -418,12 +344,12 @@ do
     -- a press on ours closes it instead of close+reopen. Settled on release, enter and click.
     function SKIN._TrackingClickState()
         local stockButton = Btns()
-        if not (isActive and stockButton) then
-            return
-        end
+        if not (isActive and stockButton) then return end
         local mapCfg = SKIN.db and SKIN.db.profile.minimap
         local shift = mapCfg and mapCfg.freeMoveBtns and IsShiftKeyDown()
-        stockButton:SetMouseClickEnabled(not shift and not (stockButton.IsMenuOpen and stockButton:IsMenuOpen()))
+        stockButton:SetMouseClickEnabled(
+            not shift and not (stockButton.IsMenuOpen and stockButton:IsMenuOpen())
+        )
     end
     -- The style is read live (no event): our button's enter and click re-check it.
     function SKIN._TrackingHotspotActive()
@@ -435,9 +361,7 @@ do
     end
     SyncTrackingHotspot = function(profile)
         local stockButton, ours = Btns()
-        if not (stockButton and ours) then
-            return
-        end
+        if not (stockButton and ours) then return end
         local enabled = CludesUI.PadGamepadUI() and not profile.hideTrackingButton and ours:IsShown() or false
         if enabled then
             if not home then
@@ -447,9 +371,7 @@ do
             -- Its menu hangs from its bottom-left: the frame sits just above ours, so the menu
             -- opens beside ours (as the click handler places it); the hit rect is moved onto ours.
             local wid, hgt = ours:GetSize()
-            if stockButton:GetParent() ~= ours then
-                stockButton:SetParent(ours)
-            end
+            if stockButton:GetParent() ~= ours then stockButton:SetParent(ours) end
             stockButton:ClearAllPoints()
             stockButton:SetSize(wid, hgt)
             stockButton:SetPoint("BOTTOMLEFT", ours, "TOPLEFT", -4, 0)
@@ -460,9 +382,7 @@ do
             stockButton:SetParent(home[1])
             stockButton:ClearAllPoints()
             stockButton:SetSize(home[2], home[3])
-            if home[4] then
-                stockButton:SetPoint(home[4], home[5], home[6], home[7], home[8])
-            end
+            if home[4] then stockButton:SetPoint(home[4], home[5], home[6], home[7], home[8]) end
             stockButton:SetHitRectInsets(0, 0, 0, 0)
             stockButton:SetAlpha(1)
             stockButton:EnableMouse(false)
@@ -473,9 +393,7 @@ do
         isActive = enabled
         if enabled and not ev then
             ev = CreateFrame("Frame")
-            ev:SetScript("OnEvent", function()
-                SKIN._TrackingClickState()
-            end)
+            ev:SetScript("OnEvent", function() SKIN._TrackingClickState() end)
         end
         if ev then
             if enabled then
@@ -489,9 +407,7 @@ do
                 ev:UnregisterEvent("MODIFIER_STATE_CHANGED")
             end
         end
-        if not enabled then
-            return
-        end
+        if not enabled then return end
         -- Clicks only: hover stays on ours (its tooltip and art), Blizzard's tooltip never shows.
         stockButton:SetMouseMotionEnabled(false)
         SKIN._TrackingClickState()
@@ -507,9 +423,7 @@ local function HideBlizzardIndicators()
         -- The click and tooltip scripts live on the child button, and a
         -- parent's mouse state does not reach it: left enabled it is an
         -- invisible hotspot at the cluster's corner.
-        if tracking.Button then
-            tracking.Button:EnableMouse(false)
-        end
+        if tracking.Button then tracking.Button:EnableMouse(false) end
     end
     local gameTime = _G.GameTimeFrame
     if gameTime then
@@ -566,24 +480,16 @@ local function SetInviteShown(calendarBtn, show)
         fade:SetToAlpha(0)
         fade:SetDuration(1)
         fade:SetSmoothing("IN_OUT")
-        inviteIcon:SetScript("OnShow", function()
-            pulse:Play()
-        end)
-        inviteIcon:SetScript("OnHide", function()
-            pulse:Stop()
-        end)
+        inviteIcon:SetScript("OnShow", function() pulse:Play() end)
+        inviteIcon:SetScript("OnHide", function() pulse:Stop() end)
         calendarBtn._invite = inviteIcon
     end
-    if calendarBtn._invite then
-        calendarBtn._invite:SetShown(show)
-    end
+    if calendarBtn._invite then calendarBtn._invite:SetShown(show) end
 end
 
 SyncCalendarInvites = function()
     local calendarBtn = _customIndicators.calendar
-    if not calendarBtn then
-        return
-    end
+    if not calendarBtn then return end
     local mapCfg = SKIN.db and SKIN.db.profile.minimap
     local enabled = mapCfg and not mapCfg.hideGameTime or false
     if enabled ~= _inviteListening then
@@ -602,9 +508,7 @@ SyncCalendarInvites = function()
     end
     local pending = C_Calendar.GetNumPendingInvites() or 0
     -- Answering an invite lowers the count: the next new one must alert again.
-    if pending < _inviteSeen then
-        _inviteSeen = pending
-    end
+    if pending < _inviteSeen then _inviteSeen = pending end
     if pending == 0 then
         _inviteSeen = 0
         SetInviteShown(calendarBtn, false)
@@ -613,15 +517,11 @@ SyncCalendarInvites = function()
         SetInviteShown(calendarBtn, true)
     end
 end
-_inviteEvents:SetScript("OnEvent", function()
-    SyncCalendarInvites()
-end)
+_inviteEvents:SetScript("OnEvent", function() SyncCalendarInvites() end)
 
 DismissCalendarInvites = function()
     local calendarBtn = _customIndicators.calendar
-    if calendarBtn then
-        SetInviteShown(calendarBtn, false)
-    end
+    if calendarBtn then SetInviteShown(calendarBtn, false) end
 end
 
 local function SyncIndicatorVisibility()
@@ -631,14 +531,10 @@ local function SyncIndicatorVisibility()
         local hasMail = false
         if HasNewMail then
             local raw = HasNewMail()
-            if not issecretvalue(raw) then
-                hasMail = raw or false
-            end
+            if not issecretvalue(raw) then hasMail = raw or false end
         end
         local mapCfg = SKIN.db and SKIN.db.profile.minimap
-        if mapCfg and mapCfg.hideMail then
-            hasMail = false
-        end
+        if mapCfg and mapCfg.hideMail then hasMail = false end
         _customIndicators.mail:SetShown(hasMail)
     end
     if _customIndicators.crafting then
@@ -662,27 +558,17 @@ local _moHideTimer = nil
 local function MO_OverAny()
     if Minimap then
         local mapRegion = GetFFD(Minimap).pingBlocker or GetFFD(Minimap).layoutFrame or Minimap
-        if mapRegion:IsMouseOver() then
-            return true
-        end
+        if mapRegion:IsMouseOver() then return true end
     end
-    if _portalFlyout and _portalFlyout:IsShown() then
-        return true
-    end
-    if flyoutPanel and flyoutPanel:IsShown() then
-        return true
-    end
+    if _portalFlyout and _portalFlyout:IsShown() then return true end
+    if flyoutPanel and flyoutPanel:IsShown() then return true end
     -- The friends tooltip is interactive (whisper/invite rows), so it keeps the stack
     -- shown like a flyout; it self-hides on a real exit and its OnHide re-evaluates.
     local ftt = SKIN._friendsTT
-    if ftt and ftt:IsShown() then
-        return true
-    end
+    if ftt and ftt:IsShown() then return true end
     for i = 1, #_moButtons do
         local widget = _moButtons[i]
-        if widget:IsShown() and widget:IsMouseOver() then
-            return true
-        end
+        if widget:IsShown() and widget:IsMouseOver() then return true end
     end
     return false
 end
@@ -703,9 +589,7 @@ end
 
 -- Assign the forward-declared upvalue so the earlier flyout hooks can re-evaluate.
 MO_Evaluate = function()
-    if not _moActive then
-        return
-    end
+    if not _moActive then return end
     MO_KeepShown()
     if MO_OverAny() then
         MO_Fade(true)
@@ -714,18 +598,14 @@ MO_Evaluate = function()
         -- so crossing one doesn't flash the stack off and on.
         _moHideTimer = C_Timer.NewTimer(0.12, function()
             _moHideTimer = nil
-            if _moActive and not MO_OverAny() then
-                MO_Fade(false)
-            end
+            if _moActive and not MO_OverAny() then MO_Fade(false) end
         end)
     end
 end
 SetMOEvaluate(MO_Evaluate)
 
 local function MO_HookFrame(widget)
-    if not widget or _moHooked[widget] then
-        return
-    end
+    if not widget or _moHooked[widget] then return end
     _moHooked[widget] = true
     widget:HookScript("OnEnter", function()
         if _moActive then
@@ -734,9 +614,7 @@ local function MO_HookFrame(widget)
         end
     end)
     widget:HookScript("OnLeave", function()
-        if _moActive then
-            MO_Evaluate()
-        end
+        if _moActive then MO_Evaluate() end
     end)
 end
 
@@ -746,18 +624,12 @@ local function MO_Refresh(profile)
     wipe(_moButtons)
     local headerEdge = (profile and profile.hideExtraBtns) or {}
     if profile and profile.mouseoverExtraBtns then
-        if _greatVaultBtn and not headerEdge.greatVault then
-            _moButtons[#_moButtons + 1] = _greatVaultBtn
-        end
+        if _greatVaultBtn and not headerEdge.greatVault then _moButtons[#_moButtons + 1] = _greatVaultBtn end
         if _customIndicators.friends and not headerEdge.friendsOnline then
             _moButtons[#_moButtons + 1] = _customIndicators.friends
         end
-        if _portalBtn and not headerEdge.portals then
-            _moButtons[#_moButtons + 1] = _portalBtn
-        end
-        if flyoutBtn and not headerEdge.groupButton then
-            _moButtons[#_moButtons + 1] = flyoutBtn
-        end
+        if _portalBtn and not headerEdge.portals then _moButtons[#_moButtons + 1] = _portalBtn end
+        if flyoutBtn and not headerEdge.groupButton then _moButtons[#_moButtons + 1] = flyoutBtn end
         -- Ungrouped addon buttons count as extra buttons for this setting too.
         for _, button in ipairs(cachedAddonButtons) do
             if _addonVisible[button] ~= false and IsUngrouped(button) then
@@ -775,23 +647,13 @@ local function MO_Refresh(profile)
     else
         MO_KeepShown()
         -- Restore full alpha (harmless on buttons hidden by hideExtraBtns).
-        if _greatVaultBtn then
-            _greatVaultBtn:SetAlpha(1)
-        end
-        if _customIndicators.friends then
-            _customIndicators.friends:SetAlpha(1)
-        end
-        if _portalBtn then
-            _portalBtn:SetAlpha(1)
-        end
-        if flyoutBtn then
-            flyoutBtn:SetAlpha(1)
-        end
+        if _greatVaultBtn then _greatVaultBtn:SetAlpha(1) end
+        if _customIndicators.friends then _customIndicators.friends:SetAlpha(1) end
+        if _portalBtn then _portalBtn:SetAlpha(1) end
+        if flyoutBtn then flyoutBtn:SetAlpha(1) end
         -- Restore ungrouped addon buttons we may have dimmed.
         for _, button in ipairs(cachedAddonButtons) do
-            if IsUngrouped(button) then
-                button:SetAlpha(1)
-            end
+            if IsUngrouped(button) then button:SetAlpha(1) end
         end
     end
 end
@@ -814,13 +676,9 @@ local MAIL_CORNER_POINTS = { TOPLEFT = true, TOPRIGHT = true, BOTTOMLEFT = true,
 -- button's own icon textures; the CUI black box hides. Created once,
 -- re-applied per pass. Our own buttons only (keys are written on the button).
 function SKIN._ClassicRingButton(button, crop, ...)
-    if not button then
-        return
-    end
+    if not button then return end
     button:SetSize(31, 31)
-    if button._bg then
-        button._bg:Hide()
-    end
+    if button._bg then button._bg:Hide() end
     local ringTex = button._classicRing
     if not ringTex then
         ringTex = button:CreateTexture(nil, "OVERLAY")
@@ -918,13 +776,9 @@ function SKIN._RingInsets(button)
             SKIN._ringTex[button] = ringTex
         end
     end
-    if not ringTex or not ringTex:IsShown() then
-        return 0, 0, 0, 0
-    end
+    if not ringTex or not ringTex:IsShown() then return 0, 0, 0, 0 end
     local pt, relTo, relPoint, posX, posY = ringTex:GetPoint(1)
-    if pt ~= "TOPLEFT" or relPoint ~= "TOPLEFT" or relTo ~= button then
-        return 0, 0, 0, 0
-    end
+    if pt ~= "TOPLEFT" or relPoint ~= "TOPLEFT" or relTo ~= button then return 0, 0, 0, 0 end
     local wid, hgt = ringTex:GetWidth(), ringTex:GetHeight()
     posX, posY = posX or 0, -(posY or 0)
     return posX + wid * 4 / 64,
@@ -939,9 +793,7 @@ end
 -- puts everything back; a button never dressed is left alone.
 function SKIN._ClassicRingUndress(button, ...)
     local ringTex = button and button._classicRing
-    if not ringTex then
-        return
-    end
+    if not ringTex then return end
     ringTex:Hide()
     button._classicDisc:Hide()
     button._classicHL:Hide()
@@ -995,14 +847,10 @@ SKIN.FV_HEADER_BUTTONS = {
 -- calendar's icon before it. Our own buttons only.
 function SKIN._FvHeaderIndicator(button, key, s)
     local art = button and SKIN.FV_HEADER_BUTTONS[key]
-    if not art then
-        return
-    end
+    if not art then return end
     local atlas = art[1]
     button:SetSize(art[2] * s, art[3] * s)
-    if button._bg then
-        button._bg:Hide()
-    end
+    if button._bg then button._bg:Hide() end
     button._upAtlas, button._overAtlas, button._downAtlas = atlas, atlas, atlas
     local iconTex = button._icon
     iconTex:ClearAllPoints()
@@ -1040,14 +888,10 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
     local avail = size - inset * 2
     local stockHeader = SKIN._MinimapBlizz() and GetFFD(mapFrame).blizzHeader or nil
     local function ResizeIndicator(button)
-        if not button then
-            return
-        end
+        if not button then return end
         button:SetSize(size, size)
         -- Stock styles: no CUI black box behind the indicators.
-        if button._bg then
-            button._bg:SetShown(showBg and not stockHeader)
-        end
+        if button._bg then button._bg:SetShown(showBg and not stockHeader) end
         local ratio = button._upAtlas and INDICATOR_ATLAS_RATIO[button._upAtlas]
         if ratio and button._icon then
             local scale = INDICATOR_ATLAS_SCALE[button._upAtlas] or 1
@@ -1084,14 +928,10 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
     ResizeIndicator(indicators.mail)
     ResizeIndicator(indicators.crafting)
     -- Corner-pinned mail renders bare: no black box, just the mail icon
-    if mailIcon and indicators.mail and indicators.mail._bg then
-        indicators.mail._bg:SetShown(false)
-    end
+    if mailIcon and indicators.mail and indicators.mail._bg then indicators.mail._bg:SetShown(false) end
     if flyoutBtn then
         flyoutBtn:SetSize(size, size)
-        if flyoutBtn._bg then
-            flyoutBtn._bg:SetShown(showBg)
-        end
+        if flyoutBtn._bg then flyoutBtn._bg:SetShown(showBg) end
         -- Reset to base anchor so free-move offsets don't accumulate across relayouts
         local inRows = GetBtnRowMode(profile)
         local rowBaseX, rowBaseY = GetRowBase(inRows, profile.btnRowDistance)
@@ -1106,12 +946,11 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
         )
     end
 
-    if indicators.calendar then
-        indicators.calendar:SetShown(not profile.hideGameTime)
-    end
+    if indicators.calendar then indicators.calendar:SetShown(not profile.hideGameTime) end
 
     -- Difficulty flag (instance type/size indicator)
-    local difficultyFrame = (MinimapCluster and MinimapCluster.InstanceDifficulty) or _G.MiniMapInstanceDifficulty
+    local difficultyFrame = (MinimapCluster and MinimapCluster.InstanceDifficulty)
+        or _G.MiniMapInstanceDifficulty
     if difficultyFrame then
         difficultyFrame:SetParent(mapFrame)
         difficultyFrame:SetFrameLevel(flvl + 2)
@@ -1123,13 +962,9 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
         local suppressed = profile.hideRaidDifficulty or profile.diffTextEnabled
         difficultyFrame:SetAlpha(suppressed and 0 or 1)
         difficultyFrame:EnableMouseMotion(not suppressed)
-        if difficultyFrame.Guild then
-            difficultyFrame.Guild:EnableMouseMotion(not suppressed)
-        end
+        if difficultyFrame.Guild then difficultyFrame.Guild:EnableMouseMotion(not suppressed) end
     end
-    if not mapFrame.Layout then
-        mapFrame.Layout = function() end
-    end
+    if not mapFrame.Layout then mapFrame.Layout = function() end end
 
     if stockHeader then
         -- Stock styles: placement around the top bar -- tracking on its left,
@@ -1181,11 +1016,11 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
                 indicators.calendar:SetPoint("TOPLEFT", stockHeader, "TOPRIGHT", 1, 0)
             end
         end
-        local below = (indicators.tracking and indicators.tracking:IsShown() and not foreverBar) and indicators.tracking or nil
+        local below = (indicators.tracking and indicators.tracking:IsShown() and not foreverBar)
+                and indicators.tracking
+            or nil
         if indicators.mail and indicators.mail:IsShown() then
-            if foreverBar then
-                SKIN._FvHeaderIndicator(indicators.mail, "mail", hs)
-            end
+            if foreverBar then SKIN._FvHeaderIndicator(indicators.mail, "mail", hs) end
             if classic then
                 if mailIcon then
                     SKIN._ClassicRingUndress(indicators.mail, indicators.mail._icon)
@@ -1194,14 +1029,18 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
                     -- The dress squares its icon; the envelope keeps its atlas
                     -- aspect at the ring's 16px icon height.
                     local ratio = indicators.mail._upAtlas and INDICATOR_ATLAS_RATIO[indicators.mail._upAtlas]
-                    if ratio and indicators.mail._icon then
-                        indicators.mail._icon:SetSize(16 * ratio, 16)
-                    end
+                    if ratio and indicators.mail._icon then indicators.mail._icon:SetSize(16 * ratio, 16) end
                 end
             end
             indicators.mail:ClearAllPoints()
             if mailIcon then
-                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, profile.mailOffsetX or 0, profile.mailOffsetY or 0)
+                indicators.mail:SetPoint(
+                    mailIcon,
+                    mapAnchor,
+                    mailIcon,
+                    profile.mailOffsetX or 0,
+                    profile.mailOffsetY or 0
+                )
             elseif classic then
                 -- The vanilla mail frame: 33px, its TOPRIGHT 24,-37 off the map's
                 -- top-right corner, ring border hung from its top-left; placed by
@@ -1221,9 +1060,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
             end
         end
         if indicators.crafting and indicators.crafting:IsShown() then
-            if classic then
-                SKIN._ClassicRingButton(indicators.crafting, nil, indicators.crafting._icon)
-            end
+            if classic then SKIN._ClassicRingButton(indicators.crafting, nil, indicators.crafting._icon) end
             indicators.crafting:ClearAllPoints()
             if below then
                 indicators.crafting:SetPoint("TOP", below, "BOTTOM", 0, 0)
@@ -1269,15 +1106,19 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
         if indicators.mail and indicators.mail:IsShown() then
             if mailIcon then
                 indicators.mail:ClearAllPoints()
-                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, profile.mailOffsetX or 0, profile.mailOffsetY or 0)
+                indicators.mail:SetPoint(
+                    mailIcon,
+                    mapAnchor,
+                    mailIcon,
+                    profile.mailOffsetX or 0,
+                    profile.mailOffsetY or 0
+                )
             else
                 PlaceLeft(indicators.mail)
             end
         end
 
-        if indicators.crafting and indicators.crafting:IsShown() then
-            PlaceLeft(indicators.crafting)
-        end
+        if indicators.crafting and indicators.crafting:IsShown() then PlaceLeft(indicators.crafting) end
     else
         -- Square layout: element row (corner + growth from Element Row Position), same running-total
         -- placement as the button row below using each element's real width so horizontal rows stay flush despite varying atlas ratios.
@@ -1296,9 +1137,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
         local ptRight = inRows.point:find("RIGHT") ~= nil
         local ptTop = inRows.point:find("TOP") ~= nil
         local function PlaceElement(button)
-            if fvRings then
-                SKIN._RingIndicator(button)
-            end
+            if fvRings then SKIN._RingIndicator(button) end
             local advancedOn = (inRows.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
@@ -1321,26 +1160,26 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
             indicators.tracking:Hide()
         end
 
-        if indicators.calendar and not profile.hideGameTime then
-            PlaceElement(indicators.calendar)
-        end
+        if indicators.calendar and not profile.hideGameTime then PlaceElement(indicators.calendar) end
 
         if indicators.mail and indicators.mail:IsShown() then
             if mailIcon then
                 -- A corner mail renders bare, its ring dress off.
-                if fvRings then
-                    SKIN._ClassicRingUndress(indicators.mail, indicators.mail._icon)
-                end
+                if fvRings then SKIN._ClassicRingUndress(indicators.mail, indicators.mail._icon) end
                 indicators.mail:ClearAllPoints()
-                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, profile.mailOffsetX or 0, profile.mailOffsetY or 0)
+                indicators.mail:SetPoint(
+                    mailIcon,
+                    mapAnchor,
+                    mailIcon,
+                    profile.mailOffsetX or 0,
+                    profile.mailOffsetY or 0
+                )
             else
                 PlaceElement(indicators.mail)
             end
         end
 
-        if indicators.crafting and indicators.crafting:IsShown() then
-            PlaceElement(indicators.crafting)
-        end
+        if indicators.crafting and indicators.crafting:IsShown() then PlaceElement(indicators.crafting) end
     end
 
     -- Ungrouped buttons along the button row; the flyout toggle is its first slot.
@@ -1413,13 +1252,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
             end
         end
         if ringDress then
-            SKIN._ClassicRingButton(
-                flyoutBtn,
-                0.12,
-                flyoutBtn._norm,
-                flyoutBtn._pushed,
-                flyoutBtn._hl
-            )
+            SKIN._ClassicRingButton(flyoutBtn, 0.12, flyoutBtn._norm, flyoutBtn._pushed, flyoutBtn._hl)
         end
         -- WoW Forever: a row starting at the bottom-left corner starts past
         -- the queue eye Action Bars parks there (half the 45px eye, the gap
@@ -1445,28 +1278,18 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
             if _addonVisible[button] ~= false and IsUngrouped(button) then
                 local name = button:GetName()
                 local sequence = mapCfg and mapCfg.ungroupedButtons and mapCfg.ungroupedButtons[name] or 999
-                if type(sequence) == "boolean" then
-                    sequence = 999
-                end
+                if type(sequence) == "boolean" then sequence = 999 end
                 ungrouped[#ungrouped + 1] = { btn = button, order = sequence }
             end
         end
-        table.sort(ungrouped, function(lhs, rhs)
-            return lhs.order < rhs.order
-        end)
+        table.sort(ungrouped, function(lhs, rhs) return lhs.order < rhs.order end)
         for index, record in ipairs(ungrouped) do
             local button = record.btn
             -- Restore from flyout if needed
             if flyoutSavedParents[button] then
-                if GetFFD(button).flyoutRing then
-                    GetFFD(button).flyoutRing:Hide()
-                end
-                if button.SetFixedFrameStrata then
-                    button:SetFixedFrameStrata(false)
-                end
-                if button.SetFixedFrameLevel then
-                    button:SetFixedFrameLevel(false)
-                end
+                if GetFFD(button).flyoutRing then GetFFD(button).flyoutRing:Hide() end
+                if button.SetFixedFrameStrata then button:SetFixedFrameStrata(false) end
+                if button.SetFixedFrameLevel then button:SetFixedFrameLevel(false) end
                 flyoutSavedParents[button] = nil
             end
             button:SetParent(mapFrame)
@@ -1511,23 +1334,15 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
                     iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
                     pcall(iconTex.SetTexCoord, iconTex, 0.05, 0.95, 0.05, 0.95)
                     -- Foreign icon: no global SetTexCoord snap hook, so disable once.
-                    if CludesUI.PP then
-                        CludesUI.PP.DisablePixelSnap(iconTex)
-                    end
+                    if CludesUI.PP then CludesUI.PP.DisablePixelSnap(iconTex) end
                 end
                 SKIN._ShowAddonBtnBox(button)
-                if button._ungroupRing then
-                    button._ungroupRing:Hide()
-                end
+                if button._ungroupRing then button._ungroupRing:Hide() end
             else
                 -- No boxes: native appearance (restored above), our overlays hidden. Do NOT
                 -- override button size -- native ring textures have fixed anchors correct only at the original size.
-                if GetFFD(button).ungroupBg then
-                    GetFFD(button).ungroupBg:Hide()
-                end
-                if button._ungroupRing then
-                    button._ungroupRing:Hide()
-                end
+                if GetFFD(button).ungroupBg then GetFFD(button).ungroupBg:Hide() end
+                if button._ungroupRing then button._ungroupRing:Hide() end
             end
             SKIN._suppressVisTrack = true
             button:SetAlpha(1)
@@ -1562,9 +1377,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
                         indicators.friends:Hide()
                     else
                         indicators.friends:SetSize(size, size)
-                        if indicators.friends._bg then
-                            indicators.friends._bg:SetShown(showBg)
-                        end
+                        if indicators.friends._bg then indicators.friends._bg:SetShown(showBg) end
                         if ringDress then
                             SKIN._ClassicRingButton(indicators.friends, nil, indicators.friends._icon)
                         end
@@ -1581,9 +1394,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
                         _portalBtn:Hide()
                     else
                         SizePortalBtn(_portalBtn, showBg)
-                        if ringDress then
-                            SKIN._ClassicRingButton(_portalBtn, nil, _portalBtn._icon)
-                        end
+                        if ringDress then SKIN._ClassicRingButton(_portalBtn, nil, _portalBtn._icon) end
                         _portalBtn:SetParent(mapFrame)
                         _portalBtn:SetFrameLevel(mapFrame:GetFrameLevel() + 11)
                         _portalBtn:ClearAllPoints()
@@ -1611,9 +1422,7 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
         end
 
         -- Flyout toggle (CUI group button for addon icons)
-        if flyoutBtn and headerEdge.groupButton then
-            flyoutBtn:Hide()
-        end
+        if flyoutBtn and headerEdge.groupButton then flyoutBtn:Hide() end
     end
 
     -- Free Move: hook shift+drag on all indicator buttons and apply saved offsets
@@ -1626,35 +1435,21 @@ local function LayoutIndicatorFrames(mapFrame, profile, circleMode)
     if indicators.calendar and not profile.hideGameTime then
         fmTargets[#fmTargets + 1] = indicators.calendar
     end
-    if indicators.mail then
-        fmTargets[#fmTargets + 1] = indicators.mail
-    end
-    if indicators.crafting then
-        fmTargets[#fmTargets + 1] = indicators.crafting
-    end
-    if flyoutBtn then
-        fmTargets[#fmTargets + 1] = flyoutBtn
-    end
-    if _greatVaultBtn and not headerEdge.greatVault then
-        fmTargets[#fmTargets + 1] = _greatVaultBtn
-    end
-    if _portalBtn and not headerEdge.portals then
-        fmTargets[#fmTargets + 1] = _portalBtn
-    end
+    if indicators.mail then fmTargets[#fmTargets + 1] = indicators.mail end
+    if indicators.crafting then fmTargets[#fmTargets + 1] = indicators.crafting end
+    if flyoutBtn then fmTargets[#fmTargets + 1] = flyoutBtn end
+    if _greatVaultBtn and not headerEdge.greatVault then fmTargets[#fmTargets + 1] = _greatVaultBtn end
+    if _portalBtn and not headerEdge.portals then fmTargets[#fmTargets + 1] = _portalBtn end
     if indicators.friends and not headerEdge.friendsOnline then
         fmTargets[#fmTargets + 1] = indicators.friends
     end
     -- Include ungrouped addon buttons
     for _, button in ipairs(cachedAddonButtons) do
-        if _addonVisible[button] ~= false and IsUngrouped(button) then
-            fmTargets[#fmTargets + 1] = button
-        end
+        if _addonVisible[button] ~= false and IsUngrouped(button) then fmTargets[#fmTargets + 1] = button end
     end
     for _, widget in ipairs(fmTargets) do
         EnableFreeMove(widget)
-        if freeMove then
-            ApplyBtnOffset(widget)
-        end
+        if freeMove then ApplyBtnOffset(widget) end
     end
 
     SyncTrackingHotspot(profile)
@@ -1669,13 +1464,9 @@ end
 -------------------------------------------------------------------------------
 local function CaptureBlizzardMinimap()
     local mapFrame = Minimap
-    if not mapFrame then
-        return
-    end
+    if not mapFrame then return end
     local p = SKIN.db.profile.minimap
-    if p._capturedOnce then
-        return
-    end
+    if p._capturedOnce then return end
 
     local uiScale = UIParent:GetEffectiveScale()
     local mScale = mapFrame:GetEffectiveScale()
@@ -1735,9 +1526,7 @@ local function IsFolioReplacedByAddOn()
     for _, name in ipairs(FOLIO_REPLACEMENT_BUTTONS) do
         -- IsShown presence check: if anything squats one of these global names with a non-frame value, treat it as no replacement instead of erroring.
         local widget = _G[name]
-        if widget and widget.IsShown and widget:IsShown() then
-            return true
-        end
+        if widget and widget.IsShown and widget:IsShown() then return true end
     end
     return false
 end
@@ -1745,35 +1534,21 @@ end
 -- Folio mode with legacy fallback: pre-dropdown data carries showOmniumFolio (default ON; only false is ever stored).
 local function GetOmniumFolioMode(mapCfg)
     -- No expansion landing page on WoW Forever: every folio path reads "never".
-    if CludesUI.IS_FOREVER then
-        return "never"
-    end
-    if not mapCfg then
-        return "always"
-    end
-    if mapCfg.omniumFolioMode then
-        return mapCfg.omniumFolioMode
-    end
-    if mapCfg.showOmniumFolio == false then
-        return "never"
-    end
+    if CludesUI.IS_FOREVER then return "never" end
+    if not mapCfg then return "always" end
+    if mapCfg.omniumFolioMode then return mapCfg.omniumFolioMode end
+    if mapCfg.showOmniumFolio == false then return "never" end
     return "always"
 end
 
 -- Re-entrancy guard: PositionOmniumFolio calls the SetParent/SetScale/SetPoint we hook below, so our own writes must not recurse.
 local _omniumFolioApplying = false
 local function PositionOmniumFolio(button)
-    if not button or not Minimap then
-        return
-    end
+    if not button or not Minimap then return end
     local mapCfg = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if not mapCfg then
-        return
-    end
+    if not mapCfg then return end
     _omniumFolioApplying = true
-    if button:GetParent() ~= Minimap then
-        button:SetParent(Minimap)
-    end
+    if button:GetParent() ~= Minimap then button:SetParent(Minimap) end
     button:SetFrameStrata("HIGH")
     button:SetFrameLevel((Minimap:GetFrameLevel() or 0) + 10)
     button:SetScale(mapCfg.omniumFolioScale or 0.75)
@@ -1817,13 +1592,9 @@ end
 -- expanded rect ensures "engine entered" implies "this test passes", so the exit watcher never fires early.
 function SKIN._HoverStillOver(mapFrame)
     local hoverFrame = GetFFD(mapFrame).pingBlocker or GetFFD(mapFrame).layoutFrame or mapFrame
-    if hoverFrame:IsMouseOver(4, -4, -4, 4) then
-        return true
-    end
+    if hoverFrame:IsMouseOver(4, -4, -4, 4) then return true end
     local widget = _G.ExpansionLandingPageMinimapButton
-    if widget and widget:IsShown() and widget:IsMouseOver(4, -4, -4, 4) then
-        return true
-    end
+    if widget and widget:IsShown() and widget:IsMouseOver(4, -4, -4, 4) then return true end
     return false
 end
 
@@ -1833,36 +1604,24 @@ end
 -- element (those never fire a second minimap OnLeave). Cancels the watcher.
 function SKIN._HVHideNow()
     local mapFrame = Minimap
-    if not mapFrame then
-        return
-    end
+    if not mapFrame then return end
     local frameData = GetFFD(mapFrame)
     if frameData.hvWatcher then
         frameData.hvWatcher:Cancel()
         frameData.hvWatcher = nil
     end
     local zi, zo = mapFrame.ZoomIn, mapFrame.ZoomOut
-    if zi then
-        zi:Hide()
-    end
-    if zo then
-        zo:Hide()
-    end
+    if zi then zi:Hide() end
+    if zo then zo:Hide() end
     local m2 = SKIN.db and SKIN.db.profile.minimap
     if m2 then
         if GetOmniumFolioMode(m2) == "hover" then
             local widget = _G.ExpansionLandingPageMinimapButton
-            if widget then
-                widget:Hide()
-            end
+            if widget then widget:Hide() end
         end
         if GetCoordsModePos(m2) == "hover" then
-            if coordFrame then
-                coordFrame:Hide()
-            end
-            if coordTicker then
-                coordTicker:Hide()
-            end
+            if coordFrame then coordFrame:Hide() end
+            if coordTicker then coordTicker:Hide() end
         end
     end
     -- Extra buttons hide in the SAME instant: the 0.12s deferral only bridges gap-
@@ -1871,9 +1630,7 @@ function SKIN._HVHideNow()
     -- friends tooltip), OverAny keeps it shown via the normal path.
     if _moActive then
         if MO_OverAny() then
-            if MO_Evaluate then
-                MO_Evaluate()
-            end
+            if MO_Evaluate then MO_Evaluate() end
         else
             MO_KeepShown()
             MO_Fade(false)
@@ -1888,13 +1645,9 @@ end
 -- cursor truly leaves -- including exits FROM a child, which never fire a 2nd OnLeave.
 function SKIN._HVRevealMapHover()
     local mapFrame = Minimap
-    if not mapFrame then
-        return
-    end
+    if not mapFrame then return end
     local frameData = GetFFD(mapFrame)
-    if not frameData.active then
-        return
-    end
+    if not frameData.active then return end
     if not SKIN._HoverStillOver(mapFrame) then
         -- OnEnter is SINGLE-SHOT per hover: if this check fails at the boundary, nothing
         -- re-attempts the reveal for the whole hover (slow entries dwelt there and
@@ -1920,18 +1673,12 @@ function SKIN._HVRevealMapHover()
         frameData.hvRetry = nil
     end
     local mapCfg = SKIN.db and SKIN.db.profile.minimap
-    if not mapCfg then
-        return
-    end
+    if not mapCfg then return end
     local function raiseZoom()
         local zi, zo = mapFrame.ZoomIn, mapFrame.ZoomOut
         if UIFrameFadeRemoveFrame then
-            if zi then
-                UIFrameFadeRemoveFrame(zi)
-            end
-            if zo then
-                UIFrameFadeRemoveFrame(zo)
-            end
+            if zi then UIFrameFadeRemoveFrame(zi) end
+            if zo then UIFrameFadeRemoveFrame(zo) end
         end
         if zi then
             zi:SetAlpha(1)
@@ -1942,42 +1689,28 @@ function SKIN._HVRevealMapHover()
             zo:Show()
         end
     end
-    if not mapCfg.hideZoomButtons then
-        raiseZoom()
-    end
+    if not mapCfg.hideZoomButtons then raiseZoom() end
     if GetOmniumFolioMode(mapCfg) == "hover" and not IsFolioReplacedByAddOn() then
         local widget = _G.ExpansionLandingPageMinimapButton
         if widget then
             PositionOmniumFolio(widget)
-            if not widget:IsShown() and widget.RefreshButton then
-                widget:RefreshButton(true)
-            end
+            if not widget:IsShown() and widget.RefreshButton then widget:RefreshButton(true) end
         end
     end
     if GetCoordsModePos(mapCfg) == "hover" then
-        if coordFrame then
-            coordFrame:Show()
-        end
-        if coordTicker then
-            coordTicker:Show()
-        end
+        if coordFrame then coordFrame:Show() end
+        if coordTicker then coordTicker:Show() end
         UpdateCoords()
     end
     -- Same "map region hovered" notion; MO_Evaluate self-guards when the feature is off.
-    if MO_Evaluate then
-        MO_Evaluate()
-    end
-    if frameData.hvWatcher then
-        return
-    end
+    if MO_Evaluate then MO_Evaluate() end
+    if frameData.hvWatcher then return end
     frameData.hvWatcher = C_Timer.NewTicker(0.2, function()
         if SKIN._HoverStillOver(mapFrame) then
             -- Still over the map: keep defeating Blizzard's fader (an intervening
             -- OnLeave may have re-armed it).
             local m2 = SKIN.db and SKIN.db.profile.minimap
-            if m2 and not m2.hideZoomButtons then
-                raiseZoom()
-            end
+            if m2 and not m2.hideZoomButtons then raiseZoom() end
             return
         end
         SKIN._HVHideNow()
@@ -1987,17 +1720,11 @@ end
 local function ApplyOmniumFolio()
     -- No expansion landing page on WoW Forever: the button is left to
     -- Blizzard entirely (its own refresh path errors there), no hooks either.
-    if CludesUI.IS_FOREVER then
-        return
-    end
+    if CludesUI.IS_FOREVER then return end
     local button = _G.ExpansionLandingPageMinimapButton
-    if not button or not Minimap then
-        return
-    end
+    if not button or not Minimap then return end
     local mapCfg = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if not mapCfg then
-        return
-    end
+    if not mapCfg then return end
 
     -- One-time persistent hooks: Blizzard re-anchors/rescales/reparents this button
     -- after loading screens (RefreshButton, edit-mode relayout) often WITHOUT calling
@@ -2007,13 +1734,9 @@ local function ApplyOmniumFolio()
     if not _omniumFolioHooked then
         _omniumFolioHooked = true
         local function reassert(self)
-            if _omniumFolioApplying then
-                return
-            end
+            if _omniumFolioApplying then return end
             local m = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-            if not m then
-                return
-            end
+            if not m then return end
             local mode = GetOmniumFolioMode(m)
             -- Boundary-tolerant like the reveal path: RefreshButton Hide()/Show()s the button, and a raw IsMouseOver could veto that Show at the exact edge.
             if
@@ -2031,9 +1754,7 @@ local function ApplyOmniumFolio()
         hooksecurefunc(button, "SetPoint", reassert)
         hooksecurefunc(button, "SetScale", reassert)
         -- Hovering the folio counts as hovering the map region (also covers entering the map directly onto it).
-        button:HookScript("OnEnter", function()
-            SKIN._HVRevealMapHover()
-        end)
+        button:HookScript("OnEnter", function() SKIN._HVRevealMapHover() end)
     end
 
     local mode = GetOmniumFolioMode(mapCfg)
@@ -2042,9 +1763,7 @@ local function ApplyOmniumFolio()
         return
     end
     -- Replacement on screen: leave Blizzard's alone rather than resurrecting it beside the replacement (see IsFolioReplacedByAddOn).
-    if IsFolioReplacedByAddOn() then
-        return
-    end
+    if IsFolioReplacedByAddOn() then return end
     if mode == "hover" and not Minimap:IsMouseOver() then
         button:Hide()
         return
@@ -2057,9 +1776,7 @@ local function ApplyOmniumFolio()
     -- in an empty Garrison) and repaints the current expansion icon, so this never forces
     -- a stale button unlike a raw Show(). Its Show() re-fires our reposition hook.
     PositionOmniumFolio(button)
-    if not button:IsShown() and button.RefreshButton then
-        button:RefreshButton(true)
-    end
+    if not button:IsShown() and button.RefreshButton then button:RefreshButton(true) end
 end
 
 Inner.ApplyOmniumFolio, Inner.CaptureBlizzardMinimap = ApplyOmniumFolio, CaptureBlizzardMinimap

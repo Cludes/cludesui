@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUICdmBuffBars.lua
 --  Tracking Bars: StatusBar reskins driven entirely by Blizzard CDM children.
@@ -17,14 +15,10 @@ local pcall = pcall
 
 -- Glow helpers (from main CDM file)
 local function StartGlow(...)
-    if mod.StartNativeGlow then
-        return mod.StartNativeGlow(...)
-    end
+    if mod.StartNativeGlow then return mod.StartNativeGlow(...) end
 end
 local function StopGlow(...)
-    if mod.StopNativeGlow then
-        return mod.StopNativeGlow(...)
-    end
+    if mod.StopNativeGlow then return mod.StopNativeGlow(...) end
 end
 
 -- Weak-keyed external store for Blizzard bar FontString refs: never write custom properties onto Blizzard StatusBar frames (taint).
@@ -52,42 +46,24 @@ mod.TBB_TEXTURE_NAMES = TBB_TEXTURE_NAMES
 local function FormatTime(remaining)
     -- Whole SECONDS use ceil to match Blizzard's aura timers (16.5s reads "17"); flooring
     -- showed every buff one second low. Minutes/hours stay floor (unverified); sub-10s keeps tenths.
-    if remaining >= 3600 then
-        return format("%dh", floor(remaining / 3600))
-    end
-    if remaining >= 60 then
-        return format("%dm", floor(remaining / 60))
-    end
-    if remaining >= 10 then
-        return format("%d", ceil(remaining))
-    end
+    if remaining >= 3600 then return format("%dh", floor(remaining / 3600)) end
+    if remaining >= 60 then return format("%dm", floor(remaining / 60)) end
+    if remaining >= 10 then return format("%d", ceil(remaining)) end
     return format("%.1f", remaining)
 end
 
-local function SetFont(fontStr, size)
-    CludesUI.ApplyModuleFont(fontStr, nil, size, "cdm")
-end
+local function SetFont(fontStr, size) CludesUI.ApplyModuleFont(fontStr, nil, size, "cdm") end
 
 local function SetTBBTextColor(fontStr, conf, prefixText)
-    if not fontStr or not conf then
-        return
-    end
+    if not fontStr or not conf then return end
     local region = conf[prefixText .. "TextR"]
     local g = conf[prefixText .. "TextG"]
     local b = conf[prefixText .. "TextB"]
     local a = conf[prefixText .. "TextA"]
-    if region == nil then
-        region = 1
-    end
-    if g == nil then
-        g = 1
-    end
-    if b == nil then
-        b = 1
-    end
-    if a == nil then
-        a = 0.9
-    end
+    if region == nil then region = 1 end
+    if g == nil then g = 1 end
+    if b == nil then b = 1 end
+    if a == nil then a = 0.9 end
     fontStr:SetTextColor(region, g, b, a)
 end
 
@@ -106,9 +82,7 @@ mod._pandemicHooked = _pandemicHooked
 local function _PandemicShow(self)
     _pandemicState[self] = true
     mod._btDirty = true
-    if mod.ArmBuffTicker then
-        mod.ArmBuffTicker()
-    end
+    if mod.ArmBuffTicker then mod.ArmBuffTicker() end
     -- Hide Blizzard's PandemicIcon unless "Blizzard Default" (-1). Custom glow styles (>0) replace it; None (0/false) suppresses it.
     local fc = mod._ecmeFC and mod._ecmeFC[self]
     local bk = fc and fc.barKey
@@ -116,9 +90,7 @@ local function _PandemicShow(self)
         local edge = mod.barDataByKey and mod.barDataByKey[bk]
         local style = edge and edge.pandemicGlow and edge.pandemicGlowStyle
         if not style or style ~= -1 then
-            if self.PandemicIcon then
-                self.PandemicIcon:Hide()
-            end
+            if self.PandemicIcon then self.PandemicIcon:Hide() end
         end
     end
 end
@@ -126,25 +98,17 @@ end
 local function _PandemicHide(self)
     _pandemicState[self] = nil
     mod._btDirty = true
-    if mod.ArmBuffTicker then
-        mod.ArmBuffTicker()
-    end
+    if mod.ArmBuffTicker then mod.ArmBuffTicker() end
 end
 
 -- Installed LAZILY from the buff tick, per icon, only when that icon's bar uses a
 -- custom pandemic style (style ~= -1); idempotent. Default "Blizzard Default" hooks nothing, costs zero.
 function mod.HookPandemicState(widget)
-    if not widget or _pandemicHooked[widget] then
-        return
-    end
-    if not widget.ShowPandemicStateFrame then
-        return
-    end
+    if not widget or _pandemicHooked[widget] then return end
+    if not widget.ShowPandemicStateFrame then return end
     _pandemicHooked[widget] = true
     hooksecurefunc(widget, "ShowPandemicStateFrame", _PandemicShow)
-    if widget.HidePandemicStateFrame then
-        hooksecurefunc(widget, "HidePandemicStateFrame", _PandemicHide)
-    end
+    if widget.HidePandemicStateFrame then hooksecurefunc(widget, "HidePandemicStateFrame", _PandemicHide) end
 end
 
 local PANDEMIC_THRESHOLD = 0.3
@@ -168,9 +132,7 @@ local function CarryOver(unitToken, auraInstanceID)
             success, carry = true, ext - base
         end
     end
-    if success and carry and not issecretvalue(carry) then
-        return carry
-    end
+    if success and carry and not issecretvalue(carry) then return carry end
 end
 -- Pandemic fallback for auras Blizzard never flags (currently only Lifebloom).
 -- bar._isLifebloom is cached on our own frame; the call site skips entirely once a
@@ -178,54 +140,34 @@ end
 local function LifebloomPandemic(barFrame, blzChild)
     -- Resolve identity once. Spell data can be late-loading, so leave the flag nil (retry next frame) until both names resolve.
     if barFrame._isLifebloom == nil then
-        if not _lbName then
-            _lbName = C_Spell.GetSpellName(LIFEBLOOM_SPELL_ID)
-        end
+        if not _lbName then _lbName = C_Spell.GetSpellName(LIFEBLOOM_SPELL_ID) end
         local spellRef = mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(blzChild)
         local sName = spellRef and C_Spell.GetSpellName(spellRef)
-        if not (_lbName and sName) then
-            return false
-        end
+        if not (_lbName and sName) then return false end
         barFrame._isLifebloom = (_lbName == sName)
     end
-    if not barFrame._isLifebloom then
-        return false
-    end
+    if not barFrame._isLifebloom then return false end
 
     -- Throttle the unit scan to 10/sec; return the cached result if throttled.
     local nowTime = GetTime()
-    if (nowTime - _scanLast) < 0.1 then
-        return _scanResult
-    end
+    if (nowTime - _scanLast) < 0.1 then return _scanResult end
 
     local result = false
     local function check(unitToken)
-        if not UnitExists(unitToken) then
-            return
-        end
+        if not UnitExists(unitToken) then return end
         local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unitToken, _lbName, "HELPFUL|PLAYER")
-        if not success or not aura then
-            return
-        end
+        if not success or not aura then return end
         local dur, exp = aura.duration, aura.expirationTime
-        if not dur or not exp then
-            return
-        end
+        if not dur or not exp then return end
         local isSec = issecretvalue
-        if isSec and (isSec(dur) or isSec(exp)) then
-            return
-        end -- shouldn't be secret, for safety
-        if dur <= 0 then
-            return
-        end
+        if isSec and (isSec(dur) or isSec(exp)) then return end -- shouldn't be secret, for safety
+        if dur <= 0 then return end
         local remaining = exp - nowTime
         -- The carry-over equals the remaining time once inside the window and
         -- the cap before it (a hair of slack for the two clock reads).
         local carry = aura.auraInstanceID and CarryOver(unitToken, aura.auraInstanceID)
         if carry then
-            if carry > 0 and remaining <= carry + 0.05 then
-                result = true
-            end
+            if carry > 0 and remaining <= carry + 0.05 then result = true end
         elseif remaining <= dur * PANDEMIC_THRESHOLD then
             result = true
         end
@@ -237,16 +179,12 @@ local function LifebloomPandemic(barFrame, blzChild)
         if IsInRaid() then
             for index = 1, GetNumGroupMembers() do
                 check("raid" .. index)
-                if result then
-                    break
-                end
+                if result then break end
             end
         elseif IsInGroup() then
             for index = 1, GetNumGroupMembers() do
                 check("party" .. index)
-                if result then
-                    break
-                end
+                if result then break end
             end
         end
     end
@@ -393,20 +331,12 @@ mod.TBB_DEFAULT_BAR = TBB_DEFAULT_BAR
 function mod.GetTrackedBuffBars()
     -- TBB is spec-specific and per-profile: specProfiles[specKey] under the active profile's bucket.
     local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not specKey then
-        return { selectedBar = 1, bars = {} }
-    end
+    if not specKey then return { selectedBar = 1, bars = {} } end
     local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfiles then
-        return { selectedBar = 1, bars = {} }
-    end
-    if not specProfiles[specKey] then
-        specProfiles[specKey] = { barSpells = {} }
-    end
+    if not specProfiles then return { selectedBar = 1, bars = {} } end
+    if not specProfiles[specKey] then specProfiles[specKey] = { barSpells = {} } end
     local prof = specProfiles[specKey]
-    if not prof.trackedBuffBars then
-        prof.trackedBuffBars = { selectedBar = 1, bars = {} }
-    end
+    if not prof.trackedBuffBars then prof.trackedBuffBars = { selectedBar = 1, bars = {} } end
     local tbb = prof.trackedBuffBars
     -- Live migration: single tbb.groupEnabled toggle -> per-bar `grouped` (ENABLED = every
     -- bar checked, DISABLED/never-set = unchecked). TBB is per-spec/per-profile so there is
@@ -470,25 +400,17 @@ end
 -- The name the player gave a bar (Name Text Settings), or nil when it has none.
 function mod.TBBCustomName(conf)
     local num = conf.customName
-    if num and num ~= "" then
-        return num
-    end
+    if num and num ~= "" then return num end
 end
 
 function mod.GetTBBPositions()
     -- Spec-specific, stored alongside trackedBuffBars in the active profile's per-spec bucket.
     local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not specKey then
-        return {}
-    end
+    if not specKey then return {} end
     local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not specProfiles or not specProfiles[specKey] then
-        return {}
-    end
+    if not specProfiles or not specProfiles[specKey] then return {} end
     local prof = specProfiles[specKey]
-    if not prof.tbbPositions then
-        prof.tbbPositions = {}
-    end
+    if not prof.tbbPositions then prof.tbbPositions = {} end
     return prof.tbbPositions
 end
 

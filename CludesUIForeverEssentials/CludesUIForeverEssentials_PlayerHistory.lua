@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PlayerHistory.lua  (WoW Forever only)
 --  Player History: the players you group with, remembered on this computer:
@@ -48,29 +44,19 @@ local CHANNEL = {
     CHAT_MSG_INSTANCE_CHAT_LEADER = "INSTANCE_CHAT",
 }
 
-local function Secret(v)
-    return issecretvalue and issecretvalue(v)
-end
-local function Readable(v)
-    return type(v) == "string" and not Secret(v) and v ~= ""
-end
+local function Secret(v) return issecretvalue and issecretvalue(v) end
+local function Readable(v) return type(v) == "string" and not Secret(v) and v ~= "" end
 local function IsPlayerGUID(g)
     return type(g) == "string" and not Secret(g) and #g <= 64 and g:find("^Player%-") ~= nil
 end
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local function Cap(text, max)
-    if #text <= max then
-        return text
-    end
+    if #text <= max then return text end
     local cut = max
     while cut > 0 do
         local b = text:byte(cut + 1)
-        if b < 128 or b > 191 then
-            break
-        end
+        if b < 128 or b > 191 then break end
         cut = cut - 1
     end
     return text:sub(1, cut)
@@ -85,9 +71,7 @@ local function Clean(text, max)
             :gsub("|r", "")
             :gsub("|n", " ")
     end
-    if text == "" then
-        return nil
-    end
+    if text == "" then return nil end
     return Cap(text, max)
 end
 
@@ -96,9 +80,7 @@ local open, seen, curInst, curPlace, curType = {}, {}, nil, nil, nil
 local resume, resumeAt
 
 local function Load()
-    if players then
-        return true
-    end
+    if players then return true end
     local cfg = F.Cfg()
     cfg.players = cfg.players or {}
     cfg.notes = cfg.notes or {}
@@ -133,9 +115,7 @@ end
 
 local function Record(guid, now)
     local rec = players[guid]
-    if rec then
-        return rec
-    end
+    if rec then return rec end
     if count >= MAX_PLAYERS then
         local oldest, at
         for g, region in pairs(players) do
@@ -143,16 +123,12 @@ local function Record(guid, now)
                 oldest, at = g, region.lastSeen
             end
         end
-        if not oldest then
-            return nil
-        end
+        if not oldest then return nil end
         players[oldest] = nil
         count = count - 1
     end
     rec = { sessions = {}, chats = {}, firstSeen = now, lastSeen = now, groups = 0, dungeons = 0, raids = 0 }
-    if notes[guid] and notes[guid].name then
-        rec.name = notes[guid].name
-    end
+    if notes[guid] and notes[guid].name then rec.name = notes[guid].name end
     players[guid] = rec
     count = count + 1
     return rec
@@ -164,15 +140,11 @@ local function Learn(rec, unit)
         rec.name = Readable(second) and (first .. " " .. second) or first
     end
     local _, class = UnitClass(unit)
-    if Readable(class) then
-        rec.classFile = class
-    end
+    if Readable(class) then rec.classFile = class end
 end
 
 local function Enter(st)
-    if st.inst == curInst then
-        return
-    end
+    if st.inst == curInst then return end
     st.inst, st.place, st.instance = curInst, curPlace, curType
     if curType == "raid" then
         st.raids = st.raids + 1
@@ -183,17 +155,19 @@ end
 
 local function Open(guid, unit, now, raid)
     local rec = Record(guid, now)
-    if not rec then
-        return
-    end
+    if not rec then return end
     Learn(rec, unit)
     rec.lastSeen = now
     local st = { at = now, raid = raid, dungeons = 0, raids = 0, extend = false }
     local region = resume and resume[guid]
-    if resume then
-        resume[guid] = nil
-    end
-    if type(region) == "table" and resumeAt and now - resumeAt <= RESUME and region.at and region.at <= now then
+    if resume then resume[guid] = nil end
+    if
+        type(region) == "table"
+        and resumeAt
+        and now - resumeAt <= RESUME
+        and region.at
+        and region.at <= now
+    then
         st.at, st.raid = region.at, st.raid or region.raid
         st.inst, st.place, st.instance = region.inst, region.place, region.instance
         st.dungeons, st.raids = region.dungeons or 0, region.raids or 0
@@ -201,9 +175,7 @@ local function Open(guid, unit, now, raid)
         st.extend = region.kept == true and lastS ~= nil and lastS.at == region.at
     end
     open[guid] = st
-    if curInst then
-        Enter(st)
-    end
+    if curInst then Enter(st) end
 end
 
 local function Close(guid, now)
@@ -228,14 +200,10 @@ local function Scan(now)
     local members = GetNumGroupMembers() or 0
     local function Seen(unit, raid)
         local guid = UnitGUID(unit)
-        if not IsPlayerGUID(guid) or guid == myGUID then
-            return
-        end
+        if not IsPlayerGUID(guid) or guid == myGUID then return end
         seen[guid] = true
         if open[guid] then
-            if raid then
-                open[guid].raid = true
-            end
+            if raid then open[guid].raid = true end
         else
             Open(guid, unit, now, raid)
         end
@@ -250,9 +218,7 @@ local function Scan(now)
         end
     end
     for guid in pairs(open) do
-        if not seen[guid] then
-            Close(guid, now)
-        end
+        if not seen[guid] then Close(guid, now) end
     end
 end
 
@@ -309,53 +275,33 @@ local function Chat(event, text, sender, _, _, _, _, _, _, _, _, _, guid)
     end
     local channel = CHANNEL[event]
     if channel == "WHISPER" then
-        if guid == myGUID or not IsPlayerGUID(guid) then
-            return
-        end
+        if guid == myGUID or not IsPlayerGUID(guid) then return end
         local clean = Clean(text, MAX_TEXT)
-        if not clean then
-            return
-        end
+        if not clean then return end
         local rec = Record(guid, time())
-        if not rec then
-            return
-        end
-        if not rec.name and Readable(sender) then
-            rec.name = Ambiguate(sender, "none")
-        end
+        if not rec then return end
+        if not rec.name and Readable(sender) then rec.name = Ambiguate(sender, "none") end
         if not rec.classFile then
             local _, class = GetPlayerInfoByGUID(guid)
-            if Readable(class) then
-                rec.classFile = class
-            end
+            if Readable(class) then rec.classFile = class end
         end
         AddChat(rec, time(), event == "CHAT_MSG_WHISPER_INFORM", "WHISPER", clean)
     elseif guid == myGUID then
-        if next(open) == nil or IsInRaid() then
-            return
-        end
+        if next(open) == nil or IsInRaid() then return end
         local clean = Clean(text, MAX_TEXT)
-        if not clean then
-            return
-        end
+        if not clean then return end
         for other in pairs(open) do
-            if players[other] then
-                AddChat(players[other], time(), true, channel, clean)
-            end
+            if players[other] then AddChat(players[other], time(), true, channel, clean) end
         end
     elseif open[guid] and players[guid] then
         local clean = Clean(text, MAX_TEXT)
-        if clean then
-            AddChat(players[guid], time(), false, channel, clean)
-        end
+        if clean then AddChat(players[guid], time(), false, channel, clean) end
     end
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, event, ...)
-    if CHANNEL[event] then
-        return Chat(event, ...)
-    end
+    if CHANNEL[event] then return Chat(event, ...) end
     if event == "GROUP_ROSTER_UPDATE" then
         Scan(time())
     elseif event == "PLAYER_LOGOUT" then
@@ -375,12 +321,8 @@ function module.PlayerNote(guid)
 end
 
 function module.SetPlayerNote(guid, text, tag, name)
-    if not IsPlayerGUID(guid) or guid == UnitGUID("player") then
-        return false
-    end
-    if tag ~= nil and not TAG[tag] then
-        return false
-    end
+    if not IsPlayerGUID(guid) or guid == UnitGUID("player") then return false end
+    if tag ~= nil and not TAG[tag] then return false end
     Load()
     text = (type(text) == "string" and not Secret(text)) and Clean(text, MAX_NOTE) or nil
     if not text and not tag then
@@ -391,9 +333,7 @@ function module.SetPlayerNote(guid, text, tag, name)
     note.text, note.tag, note.at = text, tag, time()
     if Readable(name) then
         note.name = name
-        if players[guid] then
-            players[guid].name = name
-        end
+        if players[guid] then players[guid].name = name end
     end
     notes[guid] = note
     return true
@@ -401,13 +341,9 @@ end
 
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip, data)
-        if not Get("tooltip") or (tooltip.IsForbidden and tooltip:IsForbidden()) then
-            return
-        end
+        if not Get("tooltip") or (tooltip.IsForbidden and tooltip:IsForbidden()) then return end
         local guid = data and data.guid
-        if type(guid) ~= "string" or Secret(guid) then
-            return
-        end
+        if type(guid) ~= "string" or Secret(guid) then return end
         Load()
         local note, rec = notes[guid], players[guid]
         if note then
@@ -421,9 +357,7 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
             else
                 tooltip:AddLine("Note", CludesUI.Kit.Accent())
             end
-            if note.text then
-                tooltip:AddLine(note.text, 1, 1, 1, true)
-            end
+            if note.text then tooltip:AddLine(note.text, 1, 1, 1, true) end
         end
         if rec and Enabled() and (rec.groups or 0) > 0 then
             tooltip:AddLine(
@@ -472,37 +406,35 @@ StaticPopupDialogs["CLUDESUI_PLAYER_NOTE"] = {
 
 local menusAdded
 local function AddMenus()
-    if menusAdded or not (Menu and Menu.ModifyMenu) then
-        return
-    end
+    if menusAdded or not (Menu and Menu.ModifyMenu) then return end
     menusAdded = true
     local function Entries(_, root, ctx)
-        if type(ctx) ~= "table" then
-            return
-        end
+        if type(ctx) ~= "table" then return end
         local guid, name
         local unit = ctx.unit
         if type(unit) == "string" and not Secret(unit) then
-            if UnitIsUnit(unit, "player") then
-                return
-            end
+            if UnitIsUnit(unit, "player") then return end
             guid = UnitGUID(unit)
             local first, second = UnitFullName(unit)
-            if Readable(first) then
-                name = Readable(second) and (first .. " " .. second) or first
-            end
+            if Readable(first) then name = Readable(second) and (first .. " " .. second) or first end
         else
             guid = ctx.playerLocation and ctx.playerLocation.GetGUID and ctx.playerLocation:GetGUID()
             name = Readable(ctx.name) and ctx.name or nil
         end
-        if not IsPlayerGUID(guid) then
-            return
-        end
+        if not IsPlayerGUID(guid) then return end
         root:CreateDivider()
         local sub = root:CreateButton("Player Note")
-        sub:CreateButton("Write a Note", function()
-            StaticPopup_Show("CLUDESUI_PLAYER_NOTE", name or "this player", nil, { guid = guid, name = name })
-        end)
+        sub:CreateButton(
+            "Write a Note",
+            function()
+                StaticPopup_Show(
+                    "CLUDESUI_PLAYER_NOTE",
+                    name or "this player",
+                    nil,
+                    { guid = guid, name = name }
+                )
+            end
+        )
         for _, tag in ipairs(TAGS) do
             sub:CreateRadio(tag.label, function()
                 local n = module.PlayerNote(guid)
@@ -513,9 +445,7 @@ local function AddMenus()
                 module.SetPlayerNote(guid, n and n.text, tag, name)
             end)
         end
-        sub:CreateButton("Clear Note", function()
-            module.SetPlayerNote(guid, nil, nil)
-        end)
+        sub:CreateButton("Clear Note", function() module.SetPlayerNote(guid, nil, nil) end)
     end
     for _, which in ipairs({
         "PLAYER",
@@ -530,9 +460,11 @@ local function AddMenus()
         "COMMUNITIES_WOW_MEMBER",
         "GUILD",
     }) do
-        pcall(Menu.ModifyMenu, "MENU_UNIT_" .. which, function(owner, root, ctx)
-            pcall(Entries, owner, root, ctx)
-        end)
+        pcall(
+            Menu.ModifyMenu,
+            "MENU_UNIT_" .. which,
+            function(owner, root, ctx) pcall(Entries, owner, root, ctx) end
+        )
     end
 end
 
@@ -541,19 +473,13 @@ end
 -------------------------------------------------------------------------------
 local win, rows, scroll, content, search
 local function Ago(s)
-    if s < 3600 then
-        return math.floor(s / 60) .. "m"
-    end
-    if s < DAY then
-        return math.floor(s / 3600) .. "h"
-    end
+    if s < 3600 then return math.floor(s / 60) .. "m" end
+    if s < DAY then return math.floor(s / 3600) .. "h" end
     return math.floor(s / DAY) .. "d"
 end
 
 local function Refresh()
-    if not (win and win:IsShown()) then
-        return
-    end
+    if not (win and win:IsShown()) then return end
     Load()
     local filter = (search:GetText() or ""):lower()
     local list = {}
@@ -578,9 +504,7 @@ local function Refresh()
             end
         end
     end
-    table.sort(list, function(lhs, rhs)
-        return (lhs.rec.lastSeen or 0) > (rhs.rec.lastSeen or 0)
-    end)
+    table.sort(list, function(lhs, rhs) return (lhs.rec.lastSeen or 0) > (rhs.rec.lastSeen or 0) end)
     rows = rows or {}
     for i, entry in ipairs(list) do
         local region = rows[i]
@@ -595,9 +519,7 @@ local function Refresh()
         local rec, note = entry.rec, entry.note
         local c = rec.classFile and RAID_CLASS_COLORS[rec.classFile]
         local name = rec.name or "?"
-        if c then
-            name = c:WrapTextInColorCode(name)
-        end
+        if c then name = c:WrapTextInColorCode(name) end
         local tag = note and TAG[note.tag]
         region:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
         region:SetText(
@@ -640,9 +562,7 @@ function module.ShowPlayerHistory()
         win.count = win:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(win.count, 11, "essentials")
         win.count:SetPoint("LEFT", label, "RIGHT", 10, 0)
-        local close = CludesUI.Kit.Glyph(win, "x", function()
-            win:Hide()
-        end, nil, "essentials")
+        local close = CludesUI.Kit.Glyph(win, "x", function() win:Hide() end, nil, "essentials")
         close:SetPoint("TOPRIGHT", -5, -5)
         search = CludesUI.Kit.Input(win, 200, 20, "Search a name or tag", "essentials")
         search:SetPoint("TOPLEFT", 10, -34)
@@ -719,15 +639,11 @@ CludesUI._PlayerHistory = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,
-    Show = function()
-        module.ShowPlayerHistory()
-    end,
+    Show = function() module.ShowPlayerHistory() end,
     Clear = module.ClearPlayerHistory,
 }
 
 SLASH_CUIHISTORY1 = "/chistory"
-SlashCmdList.CUIHISTORY = function()
-    module.ShowPlayerHistory()
-end
+SlashCmdList.CUIHISTORY = function() module.ShowPlayerHistory() end
 
 F.Start(Apply)

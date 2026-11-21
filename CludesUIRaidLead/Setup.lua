@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Setup.lua -- Raid Lead: the setup manager.
 --
@@ -61,15 +59,11 @@ local function Roster()
 end
 
 local function CanSort()
-    if not IsInRaid() then
-        return false, "you are not in a raid group."
-    end
+    if not IsInRaid() then return false, "you are not in a raid group." end
     if not (UnitIsGroupLeader("player") or UnitIsGroupAssistant("player")) then
         return false, "only the raid leader or an assistant can move players."
     end
-    if InCombatLockdown() then
-        return false, "the game does not allow group moves in combat."
-    end
+    if InCombatLockdown() then return false, "the game does not allow group moves in combat." end
     return true
 end
 
@@ -77,23 +71,15 @@ local function Finish(textValue)
     job = nil
     widget:UnregisterEvent("GROUP_ROSTER_UPDATE")
     widget:UnregisterEvent("PLAYER_REGEN_DISABLED")
-    if textValue then
-        Say(textValue)
-    end
+    if textValue then Say(textValue) end
 end
 
 local function Step()
-    if not job then
-        return
-    end
+    if not job then return end
     local success, why = CanSort()
-    if not success then
-        return Finish("stopped: " .. why)
-    end
+    if not success then return Finish("stopped: " .. why) end
     local move = Planner.NextMove(Roster(), job.target)
-    if not move then
-        return Finish(job.label .. " done in " .. job.moves .. " moves.")
-    end
+    if not move then return Finish(job.label .. " done in " .. job.moves .. " moves.") end
     job.moves = job.moves + 1
     if job.moves > MAX_MOVES then
         return Finish(
@@ -118,9 +104,7 @@ local function Step()
 end
 
 widget:SetScript("OnEvent", function(_, evt)
-    if not job then
-        return
-    end
+    if not job then return end
     if evt == "PLAYER_REGEN_DISABLED" then
         Finish("stopped: combat started. Type the command again afterwards.")
     else
@@ -131,30 +115,18 @@ end)
 
 local function KindLine(cfg)
     local parts = {}
-    if cfg.TANK > 0 then
-        parts[#parts + 1] = cfg.TANK .. " tank"
-    end
-    if cfg.MELEE > 0 then
-        parts[#parts + 1] = cfg.MELEE .. " melee"
-    end
-    if cfg.RANGED > 0 then
-        parts[#parts + 1] = cfg.RANGED .. " ranged"
-    end
-    if cfg.HEALER > 0 then
-        parts[#parts + 1] = cfg.HEALER .. " heal"
-    end
+    if cfg.TANK > 0 then parts[#parts + 1] = cfg.TANK .. " tank" end
+    if cfg.MELEE > 0 then parts[#parts + 1] = cfg.MELEE .. " melee" end
+    if cfg.RANGED > 0 then parts[#parts + 1] = cfg.RANGED .. " ranged" end
+    if cfg.HEALER > 0 then parts[#parts + 1] = cfg.HEALER .. " heal" end
     return table.concat(parts, ", ")
 end
 
 local function Start(labelText, target, members, keepUndo)
-    if not keepUndo then
-        lastLayout = Planner.Snapshot(members)
-    end
+    if not keepUndo then lastLayout = Planner.Snapshot(members) end
     local summary = Planner.Summary(members, target)
     for g = 1, 8 do
-        if summary[g] then
-            Say("group " .. g .. ": " .. KindLine(summary[g]))
-        end
+        if summary[g] then Say("group " .. g .. ": " .. KindLine(summary[g])) end
     end
     job = { target = target, moves = 0, seen = 0, label = labelText }
     widget:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -172,20 +144,12 @@ local function Command(msg)
         end
         return
     end
-    if cmd == "break" then
-        return mod.StartBreak((msg or ""):match("^%s*%S+%s+(%S+)") or "")
-    end
+    if cmd == "break" then return mod.StartBreak((msg or ""):match("^%s*%S+%s+(%S+)") or "") end
     if cmd == "" then
-        if InCombatLockdown() then
-            return Say("the settings panel cannot open in combat.")
-        end
+        if InCombatLockdown() then return Say("the settings panel cannot open in combat.") end
         C_Timer.After(0, function()
-            if InCombatLockdown() then
-                return
-            end
-            if CUI.EnsureOptionsLoaded and not CUI.EnsureOptionsLoaded() then
-                return
-            end
+            if InCombatLockdown() then return end
+            if CUI.EnsureOptionsLoaded and not CUI.EnsureOptionsLoaded() then return end
             CUI:ShowModule("CludesUIRaidLead")
         end)
         return
@@ -199,18 +163,12 @@ local function Command(msg)
         Say("/raidlead break 5  -  a 5 minute break for the group (0 ends it)")
         return
     end
-    if job then
-        return Say("a sort is already under way. Type /raidlead stop first.")
-    end
+    if job then return Say("a sort is already under way. Type /raidlead stop first.") end
     local success, why = CanSort()
-    if not success then
-        return Say("cannot sort: " .. why)
-    end
+    if not success then return Say("cannot sort: " .. why) end
     local members = Roster()
     if cmd == "undo" then
-        if not lastLayout then
-            return Say("there is no earlier layout to go back to.")
-        end
+        if not lastLayout then return Say("there is no earlier layout to go back to.") end
         local target = lastLayout
         lastLayout = nil
         Start("Undo", target, members, true)

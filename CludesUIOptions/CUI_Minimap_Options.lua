@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Options.lua
 --  Registers the Minimap module with CludesUI.
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIMinimap"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 local PAGE_CHAT = "Chat"
 local PAGE_MINIMAP = "Minimap"
@@ -35,14 +31,10 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local saved
 
-    C_Timer.After(0, function()
-        saved = _G._CUMM_DB
-    end)
+    C_Timer.After(0, function() saved = _G._CUMM_DB end)
 
     local function DB()
-        if not saved then
-            saved = _G._CUMM_DB
-        end
+        if not saved then saved = _G._CUMM_DB end
         return saved and saved.profile
     end
 
@@ -59,9 +51,7 @@ CludesUI.AtOptionsLogin(function()
     -- Square and Rectangular share the rect layout/border engine (not the circle wrap).
     -- The WoW Forever look's Forever Square is the square map whatever Shape is stored.
     local function RectLayout()
-        if mod.MinimapFvSquare() then
-            return true
-        end
+        if mod.MinimapFvSquare() then return true end
         local mapDB = MinimapDB()
         local s = mapDB and mapDB.shape or "square"
         return s == "square" or s == "rectangular"
@@ -76,15 +66,11 @@ CludesUI.AtOptionsLogin(function()
     --  Refresh helpers
     ---------------------------------------------------------------------------
     local function RefreshChat()
-        if _G._CUBS_ApplyChat then
-            _G._CUBS_ApplyChat()
-        end
+        if _G._CUBS_ApplyChat then _G._CUBS_ApplyChat() end
     end
 
     local function ApplyMinimap()
-        if _G._CUMM_ApplyMinimap then
-            _G._CUMM_ApplyMinimap()
-        end
+        if _G._CUMM_ApplyMinimap then _G._CUMM_ApplyMinimap() end
     end
 
     -- A minimap setting read with its default, and written: false (nothing
@@ -96,24 +82,18 @@ CludesUI.AtOptionsLogin(function()
     end
     -- A row getter over MapGet: the key's value, or the default given.
     local function MapGetRow(key, default)
-        return function()
-            return MapGet(key, default)
-        end
+        return function() return MapGet(key, default) end
     end
     local function MapSet(key, value)
         local mapDB = MinimapDB()
-        if not mapDB then
-            return false
-        end
+        if not mapDB then return false end
         mapDB[key] = value
         ApplyMinimap()
         return true
     end
     -- Row setters over MapSet: the key written with the row's value.
     local function MapSetRow(key)
-        return function(value)
-            MapSet(key, value)
-        end
+        return function(value) MapSet(key, value) end
     end
 
     -- A cog slider over one minimap setting (min to max in steps of step).
@@ -124,12 +104,8 @@ CludesUI.AtOptionsLogin(function()
             min = minV,
             max = maxV,
             step = step,
-            get = function()
-                return MapGet(key, default)
-            end,
-            set = function(value)
-                MapSet(key, value)
-            end,
+            get = function() return MapGet(key, default) end,
+            set = function(value) MapSet(key, value) end,
         }
     end
 
@@ -142,15 +118,11 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function RefreshFriends()
-        if _G._CUBS_ApplyFriends then
-            _G._CUBS_ApplyFriends()
-        end
+        if _G._CUBS_ApplyFriends then _G._CUBS_ApplyFriends() end
     end
 
     local function RefreshAll()
-        if _G._CUBS_ApplyAll then
-            _G._CUBS_ApplyAll()
-        end
+        if _G._CUBS_ApplyAll then _G._CUBS_ApplyAll() end
     end
 
     ---------------------------------------------------------------------------
@@ -167,19 +139,13 @@ CludesUI.AtOptionsLogin(function()
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             onChanged = function()
-                if refreshFn then
-                    refreshFn()
-                end
-                if _G._CUBS_UpdateVisibility then
-                    _G._CUBS_UpdateVisibility()
-                end
+                if refreshFn then refreshFn() end
+                if _G._CUBS_UpdateVisibility then _G._CUBS_UpdateVisibility() end
             end,
             -- Option axes only need the dispatcher pass; the page rebuild is
             -- deferred to menu close by the row itself.
             onOptionChanged = function()
-                if _G._CUBS_UpdateVisibility then
-                    _G._CUBS_UpdateVisibility()
-                end
+                if _G._CUBS_UpdateVisibility then _G._CUBS_UpdateVisibility() end
             end,
         }, rightCfg)
         return visH, visRow
@@ -218,15 +184,11 @@ CludesUI.AtOptionsLogin(function()
         -- Latched for the session, like the look.
         local fvSquare = mod.MinimapFvSquare()
         local function Gate(rowConf)
-            if fvSquare then
-                return rowConf
-            end
+            if fvSquare then return rowConf end
             return CludesUI.BlizzStyle.Gate("minimap", rowConf)
         end
         local function BlockInline(widget)
-            if not fvSquare then
-                CludesUI.BlizzStyle.BlockInline("minimap", widget)
-            end
+            if not fvSquare then CludesUI.BlizzStyle.BlockInline("minimap", widget) end
         end
 
         -- Row 1: Visibility | Shape. On the WoW Forever look its Border Style
@@ -256,9 +218,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Forever Circle: the round map in WoW Forever's ring. Forever Square: the CludesUI square map in the bronze frame of WoW Forever's windows, with the zone name in its title bar. Slim Square: the same square map in a thin bronze frame. Applies after a UI reload.",
                 values = { circle = "Forever Circle", square = "Forever Square", slim = "Slim Square" },
                 order = { "circle", "square", "slim" },
-                disabled = function()
-                    return not CludesUI.ForeverHeavyOK()
-                end,
+                disabled = function() return not CludesUI.ForeverHeavyOK() end,
                 disabledTooltip = "This client is missing WoW Forever's window frame art.",
                 rawTooltip = true,
                 getValue = function()
@@ -268,21 +228,15 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     -- Forever Square is the default: the round map saves "circle",
                     -- the slim square "slim".
                     local square = value ~= "circle"
-                    if square ~= (mapDB.foreverBorder ~= "circle") then
-                        BorderClock(mapDB, square)
-                    end
+                    if square ~= (mapDB.foreverBorder ~= "circle") then BorderClock(mapDB, square) end
                     mapDB.foreverBorder = value
                     -- A reload only when the frame that renders changes (square
                     -- or not, heavy or slim): the module latches it.
-                    if not mod.MinimapFvBorderChanged(mapDB) then
-                        return
-                    end
+                    if not mod.MinimapFvBorderChanged(mapDB) then return end
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Border Style changed. A UI reload is needed to apply it.",
@@ -309,18 +263,12 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     -- Square is the default: the round map saves "circle".
                     local square = value == "square"
-                    if square ~= (mapDB.blizzBorder ~= "circle") then
-                        BorderClock(mapDB, square)
-                    end
+                    if square ~= (mapDB.blizzBorder ~= "circle") then BorderClock(mapDB, square) end
                     mapDB.blizzBorder = square and "square" or "circle"
-                    if square == mod.MinimapFvSquare() then
-                        return
-                    end
+                    if square == mod.MinimapFvSquare() then return end
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Border Style changed. A UI reload is needed to apply it.",
@@ -343,9 +291,7 @@ CludesUI.AtOptionsLogin(function()
                 order = { "square", "rectangular", "circle", "textured_circle" },
                 getValue = MapGetRow("shape", "square"),
                 setValue = function(value)
-                    if not MapSet("shape", value) then
-                        return
-                    end
+                    if not MapSet("shape", value) then return end
                     -- Rebuild: the Width | Height Offset row exists only on the rect layout.
                     CludesUI:RefreshPage(true)
                 end,
@@ -379,14 +325,10 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.opacity = value
                             -- One SetAlpha, not a full apply pass.
-                            if _G._CUMM_ApplyMapAlpha then
-                                _G._CUMM_ApplyMapAlpha()
-                            end
+                            if _G._CUMM_ApplyMapAlpha then _G._CUMM_ApplyMapAlpha() end
                         end,
                     },
                 },
@@ -404,9 +346,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = MapGetRow("mapSize", 140),
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.mapSize = value
                 -- Cover the map render during drag to mask the zoom-nudge blink.
                 -- Borders, buttons, etc. remain visible above the overlay.
@@ -436,9 +376,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 _G._CUBS_SizeDragTimer:Cancel()
                 _G._CUBS_SizeDragTimer = C_Timer.NewTimer(0.15, function()
-                    if sizeDragOverlay then
-                        sizeDragOverlay:Hide()
-                    end
+                    if sizeDragOverlay then sizeDragOverlay:Hide() end
                 end)
             end,
         }, {
@@ -469,20 +407,14 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             local mapDB = MinimapDB()
                             local value = mapDB and mapDB.iconScale
-                            if value then
-                                return value
-                            end
+                            if value then return value end
                             return (_G._CUMM_EditModeIconScale and _G._CUMM_EditModeIconScale()) or 100
                         end,
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.iconScale = value
-                            if _G._CUMM_ApplyIconScale then
-                                _G._CUMM_ApplyIconScale()
-                            end
+                            if _G._CUMM_ApplyIconScale then _G._CUMM_ApplyIconScale() end
                         end,
                     },
                 },
@@ -500,9 +432,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Border Style",
                 values = texValues,
                 order = texOrder,
-                disabled = function()
-                    return not RectLayout()
-                end,
+                disabled = function() return not RectLayout() end,
                 disabledTooltip = "Square or Rectangular Shape",
                 getValue = function()
                     local mapDB = MinimapDB()
@@ -510,9 +440,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     mapDB.borderTexture = value
                     mapDB.borderTextureOffset = nil
                     mapDB.borderTextureOffsetY = nil
@@ -525,12 +453,8 @@ CludesUI.AtOptionsLogin(function()
                     mapDB.borderUseClassColor = false
                     mapDB.useClassColor = false
                     local defSz = CludesUI.GetBorderDefaultSize("minimap", value)
-                    if defSz then
-                        mapDB.borderSize = defSz
-                    end
-                    if mapDB.borderSizePx then
-                        mapDB.borderSizePx = false
-                    end
+                    if defSz then mapDB.borderSize = defSz end
+                    if mapDB.borderSizePx then mapDB.borderSizePx = false end
                     ApplyMinimap()
                     -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
                     CludesUI:RefreshPage(true)
@@ -551,32 +475,22 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setStep = function(value)
                         local mapDB = MinimapDB()
-                        if mapDB then
-                            mapDB.borderSize = value
-                        end
+                        if mapDB then mapDB.borderSize = value end
                     end,
                     getTex = function()
-                        if not RectLayout() then
-                            return "solid"
-                        end
+                        if not RectLayout() then return "solid" end
                         local mapDB = MinimapDB()
                         return (mapDB and mapDB.borderTexture) or "solid"
                     end,
                     getPx = function()
-                        if not RectLayout() then
-                            return nil
-                        end
+                        if not RectLayout() then return nil end
                         local mapDB = MinimapDB()
                         return mapDB and mapDB.borderSizePx
                     end,
                     setPx = function(value)
-                        if not RectLayout() then
-                            return
-                        end
+                        if not RectLayout() then return end
                         local mapDB = MinimapDB()
-                        if mapDB then
-                            mapDB.borderSizePx = value
-                        end
+                        if mapDB then mapDB.borderSizePx = value end
                     end,
                     apply = ApplyMinimap,
                 })
@@ -617,9 +531,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setX = function(value)
                         local mapDB = MinimapDB()
-                        if mapDB then
-                            mapDB.borderTextureOffset = value
-                        end
+                        if mapDB then mapDB.borderTextureOffset = value end
                     end,
                     getY = function()
                         local mapDB = MinimapDB()
@@ -627,9 +539,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setY = function(value)
                         local mapDB = MinimapDB()
-                        if mapDB then
-                            mapDB.borderTextureOffsetY = value
-                        end
+                        if mapDB then mapDB.borderTextureOffsetY = value end
                     end,
                     apply = ApplyMinimap,
                 })
@@ -666,17 +576,13 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             local mapDB = MinimapDB()
                             local value = mapDB and mapDB.borderTextureShiftX
-                            if value then
-                                return value
-                            end
+                            if value then return value end
                             local _, _, dsx = CludesUI.GetBorderDefaults("minimap", BorderTex(), BorderSz())
                             return dsx
                         end,
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.borderTextureShiftX = (value ~= 0) and value or nil
                             ApplyMinimap()
                         end,
@@ -690,18 +596,14 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             local mapDB = MinimapDB()
                             local value = mapDB and mapDB.borderTextureShiftY
-                            if value then
-                                return value
-                            end
+                            if value then return value end
                             local _, _, _, dsy =
                                 CludesUI.GetBorderDefaults("minimap", BorderTex(), BorderSz())
                             return dsy
                         end,
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.borderTextureShiftY = (value ~= 0) and value or nil
                             ApplyMinimap()
                         end,
@@ -714,9 +616,7 @@ CludesUI.AtOptionsLogin(function()
                             return (mapDB and mapDB.borderBehind) or false
                         end,
                         set = function(value)
-                            if not MapSet("borderBehind", value) then
-                                return
-                            end
+                            if not MapSet("borderBehind", value) then return end
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -753,9 +653,7 @@ CludesUI.AtOptionsLogin(function()
             )
             accentSwatch:SetScript("OnClick", function()
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.useClassColor = true
                 mapDB.borderUseClassColor = false
                 ApplyMinimap()
@@ -770,9 +668,7 @@ CludesUI.AtOptionsLogin(function()
                 borderRow:GetFrameLevel() + 3,
                 function()
                     local classColor = CludesUI.GetClassColor(select(2, UnitClass("player")))
-                    if classColor then
-                        return classColor.r, classColor.g, classColor.b, 1
-                    end
+                    if classColor then return classColor.r, classColor.g, classColor.b, 1 end
                     return 1, 1, 1, 1
                 end,
                 function() end,
@@ -781,9 +677,7 @@ CludesUI.AtOptionsLogin(function()
             )
             classSwatch:SetScript("OnClick", function()
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.borderUseClassColor = true
                 mapDB.useClassColor = false
                 ApplyMinimap()
@@ -799,9 +693,7 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     local mapDB = MinimapDB()
                     local color = mapDB and mapDB.borderColor
-                    if color then
-                        return color.r, color.g, color.b, mapDB.borderA or 1
-                    end
+                    if color then return color.r, color.g, color.b, mapDB.borderA or 1 end
                     -- Legacy: pre-style users' border colour keys
                     if mapDB then
                         return mapDB.borderR or 0, mapDB.borderG or 0, mapDB.borderB or 0, mapDB.borderA or 1
@@ -810,9 +702,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 function(red, green, blue, a)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     mapDB.borderColor = { r = red, g = green, b = blue }
                     mapDB.borderA = a
                     ApplyMinimap()
@@ -832,42 +722,31 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                     return
                 end
-                if openPicker then
-                    openPicker(self)
-                end
+                if openPicker then openPicker(self) end
             end)
             PPl.Point(customSwatch, "RIGHT", region._lastInline, "LEFT", -8, 0)
             region._lastInline = customSwatch
 
-            accentSwatch:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            classSwatch:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(classSwatch, "Class Color")
-            end)
-            classSwatch:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            customSwatch:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            accentSwatch:HookScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
+            )
+            accentSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            classSwatch:HookScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(classSwatch, "Class Color") end
+            )
+            classSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            customSwatch:HookScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
+            )
+            customSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
 
             local function UpdateState()
-                if updateAccent then
-                    updateAccent()
-                end
-                if updateClass then
-                    updateClass()
-                end
-                if updateCustom then
-                    updateCustom()
-                end
+                if updateAccent then updateAccent() end
+                if updateClass then updateClass() end
+                if updateCustom then updateCustom() end
                 -- Blizzard Style draws the stock ring: every border colour is inert.
                 if CludesUI.BlizzStyle.Get("minimap") then
                     accentSwatch:SetAlpha(0.3)
@@ -951,9 +830,7 @@ CludesUI.AtOptionsLogin(function()
         local function TooFewButtons()
             local vis, num = _G._CUBS_AddonVisible or {}, 0
             for _, button in ipairs(_G._CUBS_CachedAddonButtons or {}) do
-                if vis[button] ~= false and button:GetName() then
-                    num = num + 1
-                end
+                if vis[button] ~= false and button:GetName() then num = num + 1 end
             end
             return num < 2
         end
@@ -966,9 +843,7 @@ CludesUI.AtOptionsLogin(function()
             disabled = TooFewButtons,
             disabledTooltip = "This option requires 2 or more minimap buttons.",
             rawTooltip = true,
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         }, {
             type = "slider",
@@ -985,9 +860,7 @@ CludesUI.AtOptionsLogin(function()
         -- Replace placeholder dropdown with checkbox dropdown
         if not CludesUI._prebuilding then
             local leftRegion = ungroupRow._leftRegion
-            if leftRegion._control then
-                leftRegion._control:Hide()
-            end
+            if leftRegion._control then leftRegion._control:Hide() end
 
             -- Build items from currently collected minimap buttons. Ungrouped
             -- buttons come first in their stored drag order (legacy boolean
@@ -1010,28 +883,18 @@ CludesUI.AtOptionsLogin(function()
                 end
                 local function OrderOf(key)
                     local value = ug[key]
-                    if type(value) == "number" then
-                        return value
-                    end
-                    if value then
-                        return math.huge
-                    end
+                    if type(value) == "number" then return value end
+                    if value then return math.huge end
                     return nil
                 end
                 table.sort(itemList, function(lhs, rhs)
                     local oa, ob = OrderOf(lhs.key), OrderOf(rhs.key)
                     if oa and ob then
-                        if oa ~= ob then
-                            return oa < ob
-                        end
+                        if oa ~= ob then return oa < ob end
                         return lhs.label < rhs.label
                     end
-                    if oa then
-                        return true
-                    end
-                    if ob then
-                        return false
-                    end
+                    if oa then return true end
+                    if ob then return false end
                     return lhs.label < rhs.label
                 end)
                 return itemList
@@ -1044,25 +907,17 @@ CludesUI.AtOptionsLogin(function()
                 GetUngroupItems(),
                 function(keyName)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return false
-                    end
+                    if not mapDB then return false end
                     return mapDB.ungroupedButtons and mapDB.ungroupedButtons[keyName] and true or false
                 end,
                 function(keyName, value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
-                    if not mapDB.ungroupedButtons then
-                        mapDB.ungroupedButtons = {}
-                    end
+                    if not mapDB then return end
+                    if not mapDB.ungroupedButtons then mapDB.ungroupedButtons = {} end
                     if value then
                         local maxOrder = 0
                         for _, ord in pairs(mapDB.ungroupedButtons) do
-                            if type(ord) == "number" and ord > maxOrder then
-                                maxOrder = ord
-                            end
+                            if type(ord) == "number" and ord > maxOrder then maxOrder = ord end
                         end
                         mapDB.ungroupedButtons[keyName] = maxOrder + 1
                     else
@@ -1074,15 +929,11 @@ CludesUI.AtOptionsLogin(function()
                     hint = "Drag to Reorder Buttons",
                     setOrder = function(orderedKeys)
                         local mapDB = MinimapDB()
-                        if not mapDB or not mapDB.ungroupedButtons then
-                            return
-                        end
+                        if not mapDB or not mapDB.ungroupedButtons then return end
                         -- Renumber only the ungrouped entries; unticked rows
                         -- have no stored order.
                         for idx, keyName in ipairs(orderedKeys) do
-                            if mapDB.ungroupedButtons[keyName] then
-                                mapDB.ungroupedButtons[keyName] = idx
-                            end
+                            if mapDB.ungroupedButtons[keyName] then mapDB.ungroupedButtons[keyName] = idx end
                         end
                         FullRebuildMinimap()
                     end,
@@ -1112,9 +963,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Show Extra Buttons",
             values = { __placeholder = "..." },
             order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
+            getValue = function() return "__placeholder" end,
             setValue = function() end,
         }, {
             type = "toggle",
@@ -1134,9 +983,7 @@ CludesUI.AtOptionsLogin(function()
         -- Replace placeholder with checkbox dropdown
         if not CludesUI._prebuilding then
             local leftRegion = extraBtnRow._leftRegion
-            if leftRegion._control then
-                leftRegion._control:Hide()
-            end
+            if leftRegion._control then leftRegion._control:Hide() end
 
             -- Checked = shown (stored inverted in hideExtraBtns, so existing
             -- profiles carry over with no migration). Movable rows follow the saved
@@ -1182,20 +1029,14 @@ CludesUI.AtOptionsLogin(function()
                 GetExtraBtnItems(),
                 function(keyName)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return true
-                    end
+                    if not mapDB then return true end
                     local heb = mapDB.hideExtraBtns
                     return not (heb and heb[keyName])
                 end,
                 function(keyName, value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
-                    if not mapDB.hideExtraBtns then
-                        mapDB.hideExtraBtns = {}
-                    end
+                    if not mapDB then return end
+                    if not mapDB.hideExtraBtns then mapDB.hideExtraBtns = {} end
                     mapDB.hideExtraBtns[keyName] = not value
                     ApplyMinimap()
                 end,
@@ -1203,9 +1044,7 @@ CludesUI.AtOptionsLogin(function()
                     hint = "Drag to Reorder Buttons",
                     setOrder = function(orderedKeys)
                         local mapDB = MinimapDB()
-                        if not mapDB then
-                            return
-                        end
+                        if not mapDB then return end
                         local tbl = {}
                         for idx, keyName in ipairs(orderedKeys) do
                             tbl[idx] = keyName
@@ -1234,9 +1073,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = MapGetRow("extraFlyoutScale", 1.0),
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.extraFlyoutScale = value
             end,
         }
@@ -1250,9 +1087,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.openMicroMenuOnMiddleClick = value
             end,
         }
@@ -1275,9 +1110,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = MapGetRow("friendsMaxRows", 0),
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.friendsMaxRows = value
             end,
         }, {
@@ -1290,9 +1123,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = MapGetRow("customTooltipScale", 1.0),
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.customTooltipScale = value
             end,
         })
@@ -1309,9 +1140,7 @@ CludesUI.AtOptionsLogin(function()
                         get = MapGetRow("friendsShowNotes", false),
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.friendsShowNotes = value
                         end,
                     },
@@ -1350,13 +1179,9 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Which minimap corner the button row builds out from and the direction it grows.",
             values = ROW_POS_VALUES,
             order = ROW_POS_ORDER,
-            itemDisabled = function(val)
-                return val == ElementRowPos()
-            end,
+            itemDisabled = function(val) return val == ElementRowPos() end,
             itemDisabledTooltip = function(val)
-                if val == ElementRowPos() then
-                    return "Already used by Element Row Position"
-                end
+                if val == ElementRowPos() then return "Already used by Element Row Position" end
             end,
             getValue = BtnRowPos,
             setValue = MapSetRow("btnRowPosition"),
@@ -1370,13 +1195,9 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.freeMoveBtns = value
-                if not value then
-                    mapDB.btnPositions = {}
-                end
+                if not value then mapDB.btnPositions = {} end
                 ApplyMinimap()
                 CludesUI:RefreshPage()
             end,
@@ -1431,9 +1252,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.btnBackgrounds = value
                             FullRebuildMinimap()
                         end,
@@ -1452,17 +1271,11 @@ CludesUI.AtOptionsLogin(function()
             local hitBtn = CreateFrame("Button", nil, region)
             hitBtn:SetAllPoints(resetFS)
             hitBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-            hitBtn:SetScript("OnEnter", function()
-                resetFS:SetTextColor(1, 0.3, 0.3, 1)
-            end)
-            hitBtn:SetScript("OnLeave", function()
-                resetFS:SetTextColor(1, 1, 1, 0.8)
-            end)
+            hitBtn:SetScript("OnEnter", function() resetFS:SetTextColor(1, 0.3, 0.3, 1) end)
+            hitBtn:SetScript("OnLeave", function() resetFS:SetTextColor(1, 1, 1, 0.8) end)
             hitBtn:SetScript("OnClick", function()
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.btnPositions = {}
                 ApplyMinimap()
             end)
@@ -1489,15 +1302,9 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUI.IS_FOREVER then
             local function OmniumMode()
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return "always"
-                end
-                if mapDB.omniumFolioMode then
-                    return mapDB.omniumFolioMode
-                end
-                if mapDB.showOmniumFolio == false then
-                    return "never"
-                end
+                if not mapDB then return "always" end
+                if mapDB.omniumFolioMode then return mapDB.omniumFolioMode end
+                if mapDB.showOmniumFolio == false then return "never" end
                 return "always"
             end
             local omniumRow
@@ -1509,9 +1316,7 @@ CludesUI.AtOptionsLogin(function()
                 order = { "never", "hover", "always" },
                 getValue = OmniumMode,
                 setValue = function(value)
-                    if not MapSet("omniumFolioMode", value) then
-                        return
-                    end
+                    if not MapSet("omniumFolioMode", value) then return end
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -1520,9 +1325,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 0.5,
                 max = 1.5,
                 step = 0.05,
-                disabled = function()
-                    return OmniumMode() == "never"
-                end,
+                disabled = function() return OmniumMode() == "never" end,
                 disabledTooltip = "Show Omnium Folio",
                 getValue = function()
                     local mapDB = MinimapDB()
@@ -1533,9 +1336,7 @@ CludesUI.AtOptionsLogin(function()
             cursorY = cursorY - height
             if not CludesUI._prebuilding then
                 local region = omniumRow._leftRegion
-                local function omniumOff()
-                    return OmniumMode() == "never"
-                end
+                local function omniumOff() return OmniumMode() == "never" end
                 CludesUI.BuildInlineCog(region, {
                     disabled = omniumOff,
                     disabledTooltip = "Show Omnium Folio",
@@ -1602,14 +1403,10 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Addon Compartment",
             tooltip = "Show Blizzard's addon compartment button on the minimap. Use the cog to choose its corner and nudge its position.",
-            getValue = function()
-                return not CompartmentOff()
-            end,
+            getValue = function() return not CompartmentOff() end,
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.hideAddonCompartment = not value
                 ApplyMinimap()
                 CludesUI:RefreshPage()
@@ -1704,9 +1501,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Show Blizzard Elements",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
+            getValue = function() return "_placeholder" end,
             setValue = function() end,
         }, {
             type = "toggle",
@@ -1720,9 +1515,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = blizzRow._leftRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
@@ -1730,9 +1523,7 @@ CludesUI.AtOptionsLogin(function()
                 blizzElements,
                 function(keyName)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return false
-                    end
+                    if not mapDB then return false end
                     for _, el in ipairs(blizzElements) do
                         if el.key == keyName then
                             if el.direct then
@@ -1746,9 +1537,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 function(keyName, value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     for _, el in ipairs(blizzElements) do
                         if el.key == keyName then
                             if el.direct then
@@ -1781,17 +1570,11 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Which minimap corner the Blizzard element row (tracking, calendar, mail, crafting) builds out from and the direction it grows.",
                 values = ROW_POS_VALUES,
                 order = ROW_POS_ORDER,
-                disabled = function()
-                    return not RectLayout()
-                end,
+                disabled = function() return not RectLayout() end,
                 disabledTooltip = "Square or Rectangular Shape",
-                itemDisabled = function(val)
-                    return val == BtnRowPos()
-                end,
+                itemDisabled = function(val) return val == BtnRowPos() end,
                 itemDisabledTooltip = function(val)
-                    if val == BtnRowPos() then
-                        return "Already used by Button Row Position"
-                    end
+                    if val == BtnRowPos() then return "Already used by Button Row Position" end
                 end,
                 getValue = ElementRowPos,
                 setValue = MapSetRow("elementRowPosition"),
@@ -1814,9 +1597,7 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Mail in Show Blizzard Elements",
                 getValue = MapGetRow("mailPosition", "button"),
                 setValue = function(value)
-                    if not MapSet("mailPosition", value) then
-                        return
-                    end
+                    if not MapSet("mailPosition", value) then return end
                     CludesUI:RefreshPage()
                 end,
             }
@@ -1833,7 +1614,8 @@ CludesUI.AtOptionsLogin(function()
                 disabled = mailOff,
                 disabledTooltip = function()
                     local mapDB = MinimapDB()
-                    return (mapDB and mapDB.hideMail) and "Mail in Show Blizzard Elements" or "a Mail Position corner"
+                    return (mapDB and mapDB.hideMail) and "Mail in Show Blizzard Elements"
+                        or "a Mail Position corner"
                 end,
                 title = "Mail Position",
                 rows = {
@@ -1845,9 +1627,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Element Row Position for icon spacing
         if not CludesUI._prebuilding then
             local region = elRowRow._leftRegion
-            local function elOff()
-                return not RectLayout()
-            end
+            local function elOff() return not RectLayout() end
             local cogBtn = CludesUI.BuildInlineCog(region, {
                 disabled = elOff,
                 disabledTooltip = "Square or Rectangular Shape",
@@ -1907,15 +1687,9 @@ CludesUI.AtOptionsLogin(function()
         -- Elements Clock checkbox (showClock == false meant hidden).
         local function ClockMode()
             local mapDB = MinimapDB()
-            if not mapDB then
-                return "inside"
-            end
-            if mapDB.clockMode ~= nil then
-                return mapDB.clockMode
-            end
-            if mapDB.showClock == false then
-                return "none"
-            end
+            if not mapDB then return "inside" end
+            if mapDB.clockMode ~= nil then return mapDB.clockMode end
+            if mapDB.showClock == false then return "none" end
             return (mapDB.clockInside == false) and "edge" or "inside"
         end
         local clockRow
@@ -1926,9 +1700,7 @@ CludesUI.AtOptionsLogin(function()
             order = { "none", "inside", "edge" },
             getValue = ClockMode,
             setValue = function(value)
-                if not MapSet("clockMode", value) then
-                    return
-                end
+                if not MapSet("clockMode", value) then return end
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -1936,9 +1708,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Clock Position",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
-            disabled = function()
-                return ClockMode() == "none"
-            end,
+            disabled = function() return ClockMode() == "none" end,
             disabledTooltip = "Clock Style",
             getValue = MapGetRow("clockPosition", "top"),
             setValue = MapSetRow("clockPosition"),
@@ -1947,9 +1717,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Clock Position for scale + X/Y offset
         if not CludesUI._prebuilding then
             local region = clockRow._rightRegion
-            local function clockOff()
-                return ClockMode() == "none"
-            end
+            local function clockOff() return ClockMode() == "none" end
             CludesUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = clockOff,
@@ -1965,14 +1733,10 @@ CludesUI.AtOptionsLogin(function()
                         get = MapGetRow("clockScale", 1.15),
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.clockScale = value
                             local backdrop = _G._CUBS_ClockBg
-                            if backdrop then
-                                backdrop:SetScale(value)
-                            end
+                            if backdrop then backdrop:SetScale(value) end
                         end,
                     },
                     MapSlider("X Offset", "clockOffsetX", 0, -500, 500, 1),
@@ -1990,15 +1754,9 @@ CludesUI.AtOptionsLogin(function()
         -- under all of them (the cog's scale and offsets still apply).
         local function LocationMode()
             local mapDB = MinimapDB()
-            if not mapDB then
-                return "inside"
-            end
-            if mapDB.locationMode ~= nil then
-                return mapDB.locationMode
-            end
-            if mapDB.hideZoneText == true then
-                return "none"
-            end
+            if not mapDB then return "inside" end
+            if mapDB.locationMode ~= nil then return mapDB.locationMode end
+            if mapDB.hideZoneText == true then return "none" end
             return mapDB.zoneInside and "inside" or "edge"
         end
         local zoneRow
@@ -2015,9 +1773,7 @@ CludesUI.AtOptionsLogin(function()
                 order = { "none", "inside", "edge" },
                 getValue = LocationMode,
                 setValue = function(value)
-                    if not MapSet("locationMode", value) then
-                        return
-                    end
+                    if not MapSet("locationMode", value) then return end
                     CludesUI:RefreshPage()
                 end,
             },
@@ -2026,9 +1782,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Zone Position",
                 values = MAP_POS_VALUES,
                 order = MAP_POS_ORDER,
-                disabled = function()
-                    return LocationMode() == "none"
-                end,
+                disabled = function() return LocationMode() == "none" end,
                 disabledTooltip = "Zone Text Style",
                 getValue = MapGetRow("locationPosition", "bottom"),
                 setValue = MapSetRow("locationPosition"),
@@ -2038,9 +1792,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Zone Text Style: reactive zone coloring
         if not CludesUI._prebuilding then
             local region = zoneRow._leftRegion
-            local function styleOff()
-                return LocationMode() == "none"
-            end
+            local function styleOff() return LocationMode() == "none" end
             CludesUI.BuildInlineCog(region, {
                 disabled = styleOff,
                 disabledTooltip = "Zone Text Style",
@@ -2064,9 +1816,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Zone Position for scale + X/Y offset
         if not CludesUI._prebuilding then
             local region = zoneRow._rightRegion
-            local function locOff()
-                return LocationMode() == "none"
-            end
+            local function locOff() return LocationMode() == "none" end
             CludesUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = locOff,
@@ -2082,14 +1832,10 @@ CludesUI.AtOptionsLogin(function()
                         get = MapGetRow("locationScale", 1.15),
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.locationScale = value
                             local backdrop = _G._CUBS_LocationBg
-                            if backdrop then
-                                backdrop:SetScale(value)
-                            end
+                            if backdrop then backdrop:SetScale(value) end
                         end,
                     },
                     MapSlider("X Offset", "locationOffsetX", 0, -500, 500, 1),
@@ -2103,9 +1849,7 @@ CludesUI.AtOptionsLogin(function()
         -- coordsBelow (true = always-on below the map).
         local function CoordsMode()
             local mapDB = MinimapDB()
-            if not mapDB then
-                return "always"
-            end
+            if not mapDB then return "always" end
             return mapDB.coordsMode or (mapDB.coordsBelow and "always") or "always"
         end
         local coordsRow
@@ -2116,9 +1860,7 @@ CludesUI.AtOptionsLogin(function()
             order = { "never", "hover", "always" },
             getValue = CoordsMode,
             setValue = function(value)
-                if not MapSet("coordsMode", value) then
-                    return
-                end
+                if not MapSet("coordsMode", value) then return end
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2126,15 +1868,11 @@ CludesUI.AtOptionsLogin(function()
             text = "Coordinates Position",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
-            disabled = function()
-                return CoordsMode() == "never"
-            end,
+            disabled = function() return CoordsMode() == "never" end,
             disabledTooltip = "Show Coordinates",
             getValue = function()
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return "topLeft"
-                end
+                if not mapDB then return "topLeft" end
                 return mapDB.coordsPosition or (mapDB.coordsBelow and "belowMap") or "topLeft"
             end,
             setValue = MapSetRow("coordsPosition"),
@@ -2143,9 +1881,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Show Coordinates for decimal precision
         if not CludesUI._prebuilding then
             local region = coordsRow._leftRegion
-            local function coordsOff()
-                return CoordsMode() == "never"
-            end
+            local function coordsOff() return CoordsMode() == "never" end
             CludesUI.BuildInlineCog(region, {
                 disabled = coordsOff,
                 disabledTooltip = "Show Coordinates",
@@ -2158,9 +1894,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Coordinates Position for X/Y offset
         if not CludesUI._prebuilding then
             local region = coordsRow._rightRegion
-            local function coordsOff()
-                return CoordsMode() == "never"
-            end
+            local function coordsOff() return CoordsMode() == "never" end
             CludesUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = coordsOff,
@@ -2176,14 +1910,10 @@ CludesUI.AtOptionsLogin(function()
                         get = MapGetRow("coordsScale", 1.0),
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.coordsScale = value
                             local castFrame = _G._CUBS_CoordFrame
-                            if castFrame then
-                                castFrame:SetScale(value)
-                            end
+                            if castFrame then castFrame:SetScale(value) end
                         end,
                     },
                     MapSlider("X Offset", "coordsBelowOffsetX", 0, -500, 500, 1),
@@ -2203,9 +1933,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Show FPS/MS",
             getValue = MapGetRow("showFPS", false),
             setValue = function(value)
-                if not MapSet("showFPS", value) then
-                    return
-                end
+                if not MapSet("showFPS", value) then return end
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2238,9 +1966,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             local mapDB = MinimapDB()
                             local sl = mapDB and mapDB.fpsShowLocalMS
-                            if sl == nil then
-                                return true
-                            end
+                            if sl == nil then return true end
                             return sl
                         end,
                         set = MapSetRow("fpsShowLocalMS"),
@@ -2273,14 +1999,10 @@ CludesUI.AtOptionsLogin(function()
                         get = MapGetRow("fpsScale", 1.0),
                         set = function(value)
                             local mapDB = MinimapDB()
-                            if not mapDB then
-                                return
-                            end
+                            if not mapDB then return end
                             mapDB.fpsScale = value
                             local fb = _G._CUBS_FpsBg
-                            if fb then
-                                fb:SetScale(value)
-                            end
+                            if fb then fb:SetScale(value) end
                         end,
                     },
                     MapSlider("X Offset", "fpsOffsetX", 0, -500, 500, 1),
@@ -2308,9 +2030,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 local mapDB = MinimapDB()
                 local value = mapDB and mapDB.fpsHoverTooltip or "none"
-                if CludesUI.IS_FOREVER and value == "vault" then
-                    value = "none"
-                end
+                if CludesUI.IS_FOREVER and value == "vault" then value = "none" end
                 return value
             end,
             setValue = MapSetRow("fpsHoverTooltip"),
@@ -2319,23 +2039,17 @@ CludesUI.AtOptionsLogin(function()
             text = "Show on Clock Hover",
             values = HOVER_TT_VALUES,
             order = HOVER_TT_ORDER,
-            disabled = function()
-                return ClockMode() == "none"
-            end,
+            disabled = function() return ClockMode() == "none" end,
             disabledTooltip = "Clock Style",
             getValue = function()
                 local mapDB = MinimapDB()
                 local value = mapDB and mapDB.clockHoverTooltip or "none"
-                if CludesUI.IS_FOREVER and value == "vault" then
-                    value = "none"
-                end
+                if CludesUI.IS_FOREVER and value == "vault" then value = "none" end
                 return value
             end,
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.clockHoverTooltip = value
             end,
         })
@@ -2353,9 +2067,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = DiffTextOn,
             setValue = function(value)
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.diffTextEnabled = value and true or false
                 ApplyMinimap()
                 CludesUI:RefreshPage()
@@ -2365,9 +2077,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Difficulty Position",
             values = MAP_POS_VALUES,
             order = MAP_POS_ORDER,
-            disabled = function()
-                return not DiffTextOn()
-            end,
+            disabled = function() return not DiffTextOn() end,
             disabledTooltip = "Show Instance Difficulty as Text",
             getValue = MapGetRow("diffTextPosition", "topLeft"),
             setValue = MapSetRow("diffTextPosition"),
@@ -2376,9 +2086,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline cog on Difficulty Position for text size + X/Y offset
         if not CludesUI._prebuilding then
             local region = diffRow._rightRegion
-            local function diffOff()
-                return not DiffTextOn()
-            end
+            local function diffOff() return not DiffTextOn() end
             CludesUI.BuildInlineCog(region, {
                 chain = false,
                 disabled = diffOff,
@@ -2425,17 +2133,13 @@ CludesUI.AtOptionsLogin(function()
             text = "Accented Text",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
+            getValue = function() return "_placeholder" end,
             setValue = function() end,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = accentRow._leftRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
@@ -2443,46 +2147,30 @@ CludesUI.AtOptionsLogin(function()
                 accentItems,
                 function(keyName)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return false
-                    end
-                    if keyName == "clock" then
-                        return mapDB.fpsColorClockAMPM or false
-                    end
+                    if not mapDB then return false end
+                    if keyName == "clock" then return mapDB.fpsColorClockAMPM or false end
                     if keyName == "fpsms" then
                         local value = mapDB.fpsColorSuffix
-                        if value == nil then
-                            return true
-                        end
+                        if value == nil then return true end
                         return value
                     end
-                    if keyName == "difficulty" then
-                        return mapDB.diffTextAccent or false
-                    end
-                    if keyName == "difficultyReactive" then
-                        return mapDB.diffTextReactive or false
-                    end
+                    if keyName == "difficulty" then return mapDB.diffTextAccent or false end
+                    if keyName == "difficultyReactive" then return mapDB.diffTextReactive or false end
                     return false
                 end,
                 function(keyName, value)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     if keyName == "clock" then
                         mapDB.fpsColorClockAMPM = value
                     elseif keyName == "fpsms" then
                         mapDB.fpsColorSuffix = value
                     elseif keyName == "difficulty" then
                         mapDB.diffTextAccent = value
-                        if value then
-                            mapDB.diffTextReactive = false
-                        end
+                        if value then mapDB.diffTextReactive = false end
                     elseif keyName == "difficultyReactive" then
                         mapDB.diffTextReactive = value
-                        if value then
-                            mapDB.diffTextAccent = false
-                        end
+                        if value then mapDB.diffTextAccent = false end
                     end
                     ApplyMinimap()
                 end
@@ -2506,9 +2194,7 @@ CludesUI.AtOptionsLogin(function()
             )
             accentSwatch:SetScript("OnClick", function()
                 local mapDB = MinimapDB()
-                if not mapDB then
-                    return
-                end
+                if not mapDB then return end
                 mapDB.fpsUseAccent = true
                 ApplyMinimap()
                 CludesUI:RefreshPage()
@@ -2523,16 +2209,12 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     local mapDB = MinimapDB()
                     local color = mapDB and mapDB.fpsColor
-                    if color then
-                        return color.r or 1, color.g or 1, color.b or 1, 1
-                    end
+                    if color then return color.r or 1, color.g or 1, color.b or 1, 1 end
                     return 1, 1, 1, 1
                 end,
                 function(red, green, blue)
                     local mapDB = MinimapDB()
-                    if not mapDB then
-                        return
-                    end
+                    if not mapDB then return end
                     mapDB.fpsColor = { r = red, g = green, b = blue }
                     ApplyMinimap()
                 end,
@@ -2548,33 +2230,25 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                     return
                 end
-                if openPicker then
-                    openPicker(self)
-                end
+                if openPicker then openPicker(self) end
             end)
             Pix.Point(customSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
             region._lastInline = customSwatch
 
-            accentSwatch:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            customSwatch:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            accentSwatch:HookScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color") end
+            )
+            accentSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            customSwatch:HookScript(
+                "OnEnter",
+                function() CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color") end
+            )
+            customSwatch:HookScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                if updateAccent then
-                    updateAccent()
-                end
-                if updateCustom then
-                    updateCustom()
-                end
+                if updateAccent then updateAccent() end
+                if updateCustom then updateCustom() end
                 local mapDB = MinimapDB()
                 local useAccent = mapDB and mapDB.fpsUseAccent
                 accentSwatch:SetAlpha(useAccent and 1 or 0.3)
@@ -2597,26 +2271,18 @@ CludesUI.AtOptionsLogin(function()
         description = "Custom minimap skin and layout.",
         pages = { "Minimap" },
         buildPage = function(page, hostFrame, yOffset)
-            if page == "Minimap" then
-                return BuildMinimapPage(page, hostFrame, yOffset)
-            end
+            if page == "Minimap" then return BuildMinimapPage(page, hostFrame, yOffset) end
         end,
         onReset = function()
-            if _G._CUMM_DB and _G._CUMM_DB.ResetProfile then
-                _G._CUMM_DB:ResetProfile()
-            end
+            if _G._CUMM_DB and _G._CUMM_DB.ResetProfile then _G._CUMM_DB:ResetProfile() end
             CludesUI:InvalidatePageCache()
-            if _G._CUMM_ApplyMinimap then
-                _G._CUMM_ApplyMinimap()
-            end
+            if _G._CUMM_ApplyMinimap then _G._CUMM_ApplyMinimap() end
         end,
     })
 
     SLASH_EMM1 = "/cmm"
     SlashCmdList.EMM = function()
-        if InCombatLockdown and InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown and InCombatLockdown() then return end
         CludesUI:ShowModule("CludesUIMinimap")
     end
 end)

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Overlays.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local pairs, type = pairs, type
@@ -27,9 +23,7 @@ local HP_BAR_SLOTS, SetFSFont = Inner.HP_BAR_SLOTS, Inner.SetFSFont
 local GetHealthBarWidth = Inner.GetHealthBarWidth
 
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 -------------------------------------------------------------------------------
 --  Lazy-creation helpers for target-only/focus-only UI objects: needed on 1 plate at a time,
@@ -41,9 +35,7 @@ local GLOW_CORNER = 12
 local GLOW_EXTEND = 6
 
 local function EnsureGlow(backing)
-    if backing.glow then
-        return
-    end
+    if backing.glow then return end
     backing.glowFrame = CreateFrame("Frame", nil, backing)
     backing.glowFrame:SetFrameStrata("BACKGROUND")
     backing.glowFrame:SetFrameLevel(1)
@@ -161,13 +153,9 @@ do
 
     local function AnyKnown(ids)
         local scrollBar = C_SpellBook
-        if not (scrollBar and scrollBar.IsSpellKnown) then
-            return false
-        end
+        if not (scrollBar and scrollBar.IsSpellKnown) then return false end
         for index = 1, #ids do
-            if scrollBar.IsSpellKnown(ids[index]) then
-                return true
-            end
+            if scrollBar.IsSpellKnown(ids[index]) then return true end
         end
         return false
     end
@@ -179,39 +167,25 @@ do
             specID = CludesUI._specID
         end
         local def = specID and EXEC[specID]
-        if not def then
-            return nil
-        end
+        if not def then return nil end
         -- Gate first: an unmet requirement means no execute exists at all.
-        if def.requires and not AnyKnown(def.requires) then
-            return nil
-        end
+        if def.requires and not AnyKnown(def.requires) then return nil end
         local pct = def.base
         if def.talents and AnyKnown(def.talents) then
-            if not pct or def.talentPct > pct then
-                pct = def.talentPct
-            end
+            if not pct or def.talentPct > pct then pct = def.talentPct end
         end
         return pct
     end
 
     --- The player's current execute-window fraction, or nil when this spec
     --- and talent build has no execute (feature fully disabled).
-    function mod.GetExecuteThreshold()
-        return threshold
-    end
+    function mod.GetExecuteThreshold() return threshold end
 
     function mod.GetLowHpGlowCurve()
         local t = threshold
-        if not t then
-            return nil
-        end
-        if lowCurve and curveAt == t then
-            return lowCurve
-        end
-        if not (C_CurveUtil and C_CurveUtil.CreateColorCurve and UnitHealthPercent) then
-            return nil
-        end
+        if not t then return nil end
+        if lowCurve and curveAt == t then return lowCurve end
+        if not (C_CurveUtil and C_CurveUtil.CreateColorCurve and UnitHealthPercent) then return nil end
         local curve = C_CurveUtil.CreateColorCurve()
         local EPSILON = 0.0001
         -- At or below the execute threshold -> red; above -> BLACK, which contributes
@@ -239,9 +213,7 @@ do
             watcher:RegisterEvent("PLAYER_TALENT_UPDATE")
             watcher:SetScript("OnEvent", function()
                 local new = Resolve()
-                if new == threshold then
-                    return
-                end
+                if new == threshold then return end
                 threshold = new
                 lowCurve, curveAt = nil, nil
                 -- Re-apply per plate: the gate creates/tears down the whole effect, so
@@ -257,9 +229,7 @@ do
 end
 
 function mod.EnsureLowHpGlow(backing)
-    if backing.lowHpGlowFrame then
-        return
-    end
+    if backing.lowHpGlowFrame then return end
     local frame = CreateFrame("Frame", nil, backing)
     frame:SetFrameStrata("BACKGROUND")
     frame:SetFrameLevel(1)
@@ -345,9 +315,7 @@ function mod.ApplyLowHpGlow(backing)
     mod.EnsureLowHpGlow(backing)
     backing.lowHpGlowFrame:Show()
     backing._lowHpGlowOn = true
-    if not backing.lowHpGlowPulse:IsPlaying() then
-        backing.lowHpGlowPulse:Play()
-    end
+    if not backing.lowHpGlowPulse:IsPlaying() then backing.lowHpGlowPulse:Play() end
 end
 
 -- Near-aggro glow (Non-Tank Threat cog): the execute glow's exact 9-slice
@@ -356,9 +324,7 @@ end
 -- the signal, driven from UpdateHealthColor's own Near Aggro color decision
 -- (clean threat booleans, so it behaves identically in and out of restriction).
 function mod.EnsureNearAggroGlow(backing)
-    if backing.naGlowFrame then
-        return
-    end
+    if backing.naGlowFrame then return end
     local frame = CreateFrame("Frame", nil, backing)
     frame:SetFrameStrata("BACKGROUND")
     frame:SetFrameLevel(1)
@@ -418,9 +384,7 @@ end
 -- Highlight target style: translucent wash across the target's health bar. Lazy (only the
 -- target ever shows it), kept SEPARATE from plate.highlight (mouseover) so the two never fight.
 local function EnsureTargetHighlight(backing)
-    if backing.targetHighlight then
-        return
-    end
+    if backing.targetHighlight then return end
     -- Blizzard Style: under the stock selection ring and deselected overlay
     -- (OVERLAY 4/5), still above the fill; the CUI and classic looks keep it on top.
     local tex = backing.health:CreateTexture(nil, "OVERLAY", nil, mod.NP_Style() == "blizzard" and 0 or 5)
@@ -488,22 +452,16 @@ end
 function mod.GetTargetArrowColor(prof)
     if prof and prof.targetArrowClassColor then
         local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[PLAYER_CLASS]
-        if cc then
-            return cc.r, cc.g, cc.b
-        end
+        if cc then return cc.r, cc.g, cc.b end
         return 1, 1, 1
     end
     local color = prof and prof.targetArrowColor
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 1, 1, 1
 end
 
 local function EnsureArrows(backing)
-    if backing.leftArrow then
-        return
-    end
+    if backing.leftArrow then return end
     local arrowStyle = mod.ResolveTargetArrowStyle(p)
     local sc = (p and p.targetArrowScale) or 1.0
     local aw, ah = math.floor(arrowStyle.w * sc + 0.5), math.floor(16 * sc + 0.5)
@@ -548,9 +506,7 @@ mod.OVERLAY_STRIPE_KEYS = {
     ["striped-tiny"] = true,
 }
 function mod.ResolveOverlayTexPath(key)
-    if not key or key == "none" then
-        return nil
-    end
+    if not key or key == "none" then return nil end
     if mod.OVERLAY_STRIPE_KEYS[key] then
         return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. key .. ".png"
     end
@@ -580,9 +536,7 @@ local function ApplyOverlayGeometry(fillT, bgT, health, isStripe)
     local u = 1
     if isStripe then
         u = GetHealthBarWidth() / STRIPE_NATIVE_W
-        if u > 1 then
-            u = 1
-        end
+        if u > 1 then u = 1 end
     end
     fillT:SetTexCoord(0, u, 0, 1)
     bgT:SetTexCoord(0, u, 0, 1)
@@ -591,16 +545,12 @@ end
 -- Alpha for the empty (background) portion of an overlay. The "Full alpha on empty part of
 -- bar" toggle matches the filled portion's opacity; else dimmed to 30% so fill reads as "more filled".
 local function OverlayBgAlpha(fullFlag, fillAlpha)
-    if fullFlag then
-        return fillAlpha
-    end
+    if fullFlag then return fillAlpha end
     return fillAlpha * 0.3
 end
 
 local function EnsureFocusOverlay(backing)
-    if backing.focusClipFill then
-        return
-    end
+    if backing.focusClipFill then return end
     local overlayAlpha = (p and p.focusOverlayAlpha) or defaultSet.focusOverlayAlpha
     local overlayColor = (p and p.focusOverlayColor) or defaultSet.focusOverlayColor
     local STRIPE_TEX = "Interface\\AddOns\\CludesUINameplates\\Media\\striped-v2.png"
@@ -638,9 +588,7 @@ local function EnsureFocusOverlay(backing)
     ApplyOverlayGeometry(backing.focusOverlayFill, backing.focusOverlayBg, backing.health, true)
     backing.focusClipBg:Hide()
     -- Rounded corners: the new overlay joins the rounded body
-    if backing._npRounded then
-        mod.NP_ApplyRounding(backing, "health")
-    end
+    if backing._npRounded then mod.NP_ApplyRounding(backing, "health") end
 end
 
 mod.FOCUS_LETTER_ANCHORS = {
@@ -661,9 +609,7 @@ function mod.GetFocusLetterAnchor(saved)
 end
 
 function mod.EnsureFocusLetter(backing)
-    if backing.focusLetter then
-        return
-    end
+    if backing.focusLetter then return end
     backing.focusLetter = backing.healthTextFrame:CreateFontString(nil, "OVERLAY")
     backing.focusLetter:SetJustifyH("CENTER")
     backing.focusLetter:SetJustifyV("MIDDLE")
@@ -724,9 +670,7 @@ function mod.NP_RefreshThreatPctFlag()
 end
 
 function mod.EnsureThreatPctText(backing)
-    if backing.threatPctText then
-        return
-    end
+    if backing.threatPctText then return end
     backing.threatPctText = backing.healthTextFrame:CreateFontString(nil, "OVERLAY")
     backing.threatPctText:SetWordWrap(false)
     backing.threatPctText:Hide()
@@ -834,9 +778,7 @@ do
                 self:Hide()
                 local pl = pending
                 pending = nil
-                if pl and pl.unit and pl._isTarget then
-                    mod.NP_UpdateThreatPct(pl, pl.unit, true)
-                end
+                if pl and pl.unit and pl._isTarget then mod.NP_UpdateThreatPct(pl, pl.unit, true) end
             end)
         end
         flush:Show()
@@ -857,9 +799,7 @@ do
         -- The group's own tokens: raidN + raidpetN, or pet + partyN + partypetN.
         local num = GetNumGroupMembers()
         local last = inRaid and 2 * num or 1 + 2 * (num > 0 and num - 1 or 0)
-        if last > #entries then
-            last = #entries
-        end
+        if last > #entries then last = #entries end
         local other
         if isTanking then
             other = 0
@@ -867,29 +807,19 @@ do
                 local u = entries[index]
                 if UnitExists(u) then
                     local me = UnitIsUnit(u, "player")
-                    if issecretvalue(me) then
-                        return false
-                    end
+                    if issecretvalue(me) then return false end
                     if not me then
                         local _, _, _, _, region = UnitDetailedThreatSituation(u, "target")
-                        if issecretvalue(region) then
-                            return false
-                        end
-                        if region and region > other then
-                            other = region
-                        end
+                        if issecretvalue(region) then return false end
+                        if region and region > other then other = region end
                     end
                 end
             end
         else
             if holderTok then
                 local t, _, _, _, region = UnitDetailedThreatSituation(holderTok, "target")
-                if issecretvalue(t) or issecretvalue(region) then
-                    return false
-                end
-                if t then
-                    other = region
-                end
+                if issecretvalue(t) or issecretvalue(region) then return false end
+                if t then other = region end
             end
             if not other then
                 holderTok = nil
@@ -897,9 +827,7 @@ do
                     local u = entries[index]
                     if UnitExists(u) then
                         local t, _, _, _, region = UnitDetailedThreatSituation(u, "target")
-                        if issecretvalue(t) or issecretvalue(region) then
-                            return false
-                        end
+                        if issecretvalue(t) or issecretvalue(region) then return false end
                         if t then
                             holderTok, other = u, region
                             break
@@ -908,17 +836,13 @@ do
                 end
             end
             if not other then
-                if type(rawPct) ~= "number" or rawPct <= 0 then
-                    return false
-                end
+                if type(rawPct) ~= "number" or rawPct <= 0 then return false end
                 other = raw * 100 / rawPct
             end
         end
         local gap = raw - other
         local ahead = gap >= 0
-        if not ahead then
-            gap = -gap
-        end
+        if not ahead then gap = -gap end
         local saved = p or defaultSet
         CludesUI.PaintThreatGap(
             fontStr,
@@ -944,9 +868,7 @@ function mod.RefreshThreatPct()
 end
 
 mod.EnsureHoverOverlay = function(backing)
-    if backing.hoverClipFill then
-        return
-    end
+    if backing.hoverClipFill then return end
     local overlayAlpha = (p and p.hoverAlpha) or defaultSet.hoverAlpha
     local overlayColor = (p and p.hoverColor) or defaultSet.hoverColor
     local STRIPE_TEX = "Interface\\AddOns\\CludesUINameplates\\Media\\striped-v2.png"
@@ -982,15 +904,11 @@ mod.EnsureHoverOverlay = function(backing)
     ApplyOverlayGeometry(backing.hoverOverlayFill, backing.hoverOverlayBg, backing.health, true)
     backing.hoverClipBg:Hide()
     -- Rounded corners: the new overlay joins the rounded body
-    if backing._npRounded then
-        mod.NP_ApplyRounding(backing, "health")
-    end
+    if backing._npRounded then mod.NP_ApplyRounding(backing, "health") end
 end
 
 mod.EnsureTargetOverlay = function(backing)
-    if backing.targetClipFill then
-        return
-    end
+    if backing.targetClipFill then return end
     local overlayAlpha = (p and p.targetOverlayAlpha) or defaultSet.targetOverlayAlpha
     local overlayColor = (p and p.targetOverlayColor) or defaultSet.targetOverlayColor
     local STRIPE_TEX = "Interface\\AddOns\\CludesUINameplates\\Media\\striped-v2.png"
@@ -1028,9 +946,7 @@ mod.EnsureTargetOverlay = function(backing)
     ApplyOverlayGeometry(backing.targetOverlayFill, backing.targetOverlayBg, backing.health, true)
     backing.targetClipBg:Hide()
     -- Rounded corners: the new overlay joins the rounded body
-    if backing._npRounded then
-        mod.NP_ApplyRounding(backing, "health")
-    end
+    if backing._npRounded then mod.NP_ApplyRounding(backing, "health") end
 end
 
 -------------------------------------------------------------------------------
@@ -1071,14 +987,10 @@ end
 -- Bumped on settings changes (RefreshAllSettings, the options' RefreshAllPlates): each plate
 -- repaints its tint colors once when its gen is stale.
 local castTintGen = 0
-function mod.NP_CastTintsDirty()
-    castTintGen = castTintGen + 1
-end
+function mod.NP_CastTintsDirty() castTintGen = castTintGen + 1 end
 
 local function EnsureCastTints(backing)
-    if backing.castTintInt then
-        return
-    end
+    if backing.castTintInt then return end
     local health = backing.health
     backing.castTintUnint = health:CreateTexture(nil, "ARTWORK", nil, 1)
     backing.castTintInt = health:CreateTexture(nil, "ARTWORK", nil, 2)
@@ -1088,19 +1000,13 @@ local function EnsureCastTints(backing)
     backing.castTintInt:Hide()
     backing._castIntOn, backing._castUnintOn = false, false
     mod.NP_LayoutCastTints(backing)
-    if backing._blizzBarMask then
-        mod.NP_ApplyBlizzBarArt(backing)
-    end
-    if backing._npRounded then
-        mod.NP_ApplyRounding(backing, "health")
-    end
+    if backing._blizzBarMask then mod.NP_ApplyBlizzBarArt(backing) end
+    if backing._npRounded then mod.NP_ApplyRounding(backing, "health") end
 end
 
 local function TierOn(keyList, tier)
     local val = p and p[keyList[tier]]
-    if val == nil then
-        val = defaultSet[keyList[tier]]
-    end
+    if val == nil then val = defaultSet[keyList[tier]] end
     return val == true
 end
 
@@ -1136,7 +1042,8 @@ function mod.NP_ApplyCastTints(backing, tier, lit, fold)
                 local color = (p and p.castingIntColor) or defaultSet.castingIntColor
                 local red, green, blue = MaybeDarken(color.r, color.g, color.b, lit)
                 local okI
-                okI, red, green, blue = mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
+                okI, red, green, blue =
+                    mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
                 if okI then
                     ti:SetVertexColor(red, green, blue)
                 else
@@ -1147,7 +1054,8 @@ function mod.NP_ApplyCastTints(backing, tier, lit, fold)
                 local color = (p and p.castingUnintColor) or defaultSet.castingUnintColor
                 local red, green, blue = MaybeDarken(color.r, color.g, color.b, lit)
                 local okU
-                okU, red, green, blue = mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
+                okU, red, green, blue =
+                    mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
                 if okU then
                     tu:SetVertexColor(red, green, blue)
                 else
@@ -1186,9 +1094,7 @@ function mod.NP_NoteCastKind(backing, kickProtected)
     local eval = C_CurveUtil.EvaluateColorValueFromBoolean
     -- _castSeen: nil = not checked yet, false = a player (never tinted), true = noted.
     local seen = backing._castSeen
-    if seen == false then
-        return
-    end
+    if seen == false then return end
     local first = seen == nil
     if first then
         -- Never players (an enemy player's class color stays); checked once per unit.
@@ -1205,9 +1111,7 @@ function mod.NP_NoteCastKind(backing, kickProtected)
         backing.castTintInt:SetAlpha(backing._castIntA)
         backing.castTintUnint:SetAlpha(backing._castUnintA)
     end
-    if first then
-        backing:UpdateHealthColor()
-    end
+    if first then backing:UpdateHealthColor() end
 end
 
 -- The plate's unit left (ClearUnit) or changed (the token swap): forget its casts.

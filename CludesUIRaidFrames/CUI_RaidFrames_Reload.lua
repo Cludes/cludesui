@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Reload.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor = math.floor
@@ -31,13 +27,9 @@ local RebuildUnitMap, UpdateAllButtons = Inner.RebuildUnitMap, Inner.UpdateAllBu
 local LayoutGroups, MOVER_GROUPS = Inner.LayoutGroups, Inner.MOVER_GROUPS
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local containerFrame
-Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
-    containerFrame = val
-end
+Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val) containerFrame = val end
 
 -- Assigned in CUI_RaidFrames_Visibility.lua (see SetRangeUpdate).
 local RangeUpdate
@@ -53,9 +45,7 @@ local function ReloadFrames(skipButtons)
     local cfg = mod._scaledProfile
     -- Keep UNIT_FLAGS registration in lockstep with the combat-icon toggle so a
     -- disabled option listens for nothing (runs no event code).
-    if mod.UpdateCombatEventRegistration then
-        mod.UpdateCombatEventRegistration()
-    end
+    if mod.UpdateCombatEventRegistration then mod.UpdateCombatEventRegistration() end
     -- Hide Groups 5-8 in Mythic Raid hears difficulty switches only while on.
     if saved.profile.mythicRaidHideGroups then
         eventFrame:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
@@ -63,9 +53,7 @@ local function ReloadFrames(skipButtons)
         eventFrame:UnregisterEvent("PLAYER_DIFFICULTY_CHANGED")
     end
     -- Rebuild dispel-color curves so custom-color edits take effect immediately.
-    if mod._RebuildDispelCurves then
-        mod._RebuildDispelCurves()
-    end
+    if mod._RebuildDispelCurves then mod._RebuildDispelCurves() end
     -- Recalculate active tier from current group size + overrides
     local numMembers = mod._GetEffectiveRaidSize()
     local prevW, prevH = mod._activeSizeW, mod._activeSizeH
@@ -96,9 +84,7 @@ local function ReloadFrames(skipButtons)
     -- hardcoded always-on behavior.
     mod._bmScale = (saved.profile.autoResizeTrackedBuffs ~= false) and sizeScale or 1
     mod._indicatorScale = saved.profile.autoResizeIndicators and sizeScale or 1
-    if mod._RefreshProxyModes then
-        mod._RefreshProxyModes()
-    end
+    if mod._RefreshProxyModes then mod._RefreshProxyModes() end
 
     -- Mode flips (Merge Groups toggle, profile swaps) can need a header set
     -- that was not built at login; materialize it before the restyle loop so
@@ -118,20 +104,25 @@ local function ReloadFrames(skipButtons)
 
         -- Window/initialConfigFunction own sizes in combat; skipping here is
         -- safe (out of combat the resize applies normally).
-        if not InCombatLockdown() then
-            button:SetSize(bw, bh)
-        end
+        if not InCombatLockdown() then button:SetSize(bw, bh) end
 
         -- Health bar height/anchor + Top Name Bar. The helper reserves the top
         -- bar's height from the top of the health area and styles the bar.
-        LayoutTopNameBar(cfg, bh, powerH, skinData.health, skinData.topNameBar, skinData.topNameBarBg, skinData.topNameBarText, skinData.power)
+        LayoutTopNameBar(
+            cfg,
+            bh,
+            powerH,
+            skinData.health,
+            skinData.topNameBar,
+            skinData.topNameBarBg,
+            skinData.topNameBarText,
+            skinData.power
+        )
         if skinData.health then
             skinData.health:SetStatusBarTexture(texPath)
             skinData.health:GetStatusBarTexture():SetHorizTile(false)
             -- Re-anchor absorb clips to the new fill texture object
-            if skinData.ReanchorAbsorbToFill then
-                skinData.ReanchorAbsorbToFill()
-            end
+            if skinData.ReanchorAbsorbToFill then skinData.ReanchorAbsorbToFill() end
         end
 
         -- Background: through its stamped owner (dark-mode aware), AFTER the
@@ -141,9 +132,7 @@ local function ReloadFrames(skipButtons)
         if skinData.bg then
             skinData._bgSt, skinData._bgA = nil, nil
             local u = button:GetAttribute("unit")
-            if u and UnitExists(u) then
-                mod._ApplyHealthBg(skinData, skinData.health, cfg, u)
-            end
+            if u and UnitExists(u) then mod._ApplyHealthBg(skinData, skinData.health, cfg, u) end
         end
 
         -- Power bar (always hide here; UpdateButton handles per-role show). This is a
@@ -168,9 +157,7 @@ local function ReloadFrames(skipButtons)
             )
             skinData._pwBgTintType = nil
         end
-        if skinData.UpdatePowerBorder then
-            skinData.UpdatePowerBorder(true)
-        end
+        if skinData.UpdatePowerBorder then skinData.UpdatePowerBorder(true) end
 
         -- The texts: Power Text hidden with the bar above until UpdateAllButtons
         -- below shows it again; every text restyled and re-anchored (the full paint that
@@ -185,18 +172,14 @@ local function ReloadFrames(skipButtons)
             local stc = cfg.statusTextColor or { r = 1, g = 1, b = 1 }
             ApplyFont(skinData.statusText, cfg.statusTextSize or 14)
             skinData.statusText:SetTextColor(stc.r, stc.g, stc.b)
-            if skinData.AnchorStatusText then
-                skinData.AnchorStatusText()
-            end
+            if skinData.AnchorStatusText then skinData.AnchorStatusText() end
         end
 
         -- Role icon size + position
         if skinData.roleIcon then
             local riSz = PixelSnap(cfg.roleIconSize or 14)
             skinData.roleIcon:SetSize(riSz, riSz)
-            if skinData.AnchorRoleIcon then
-                skinData.AnchorRoleIcon()
-            end
+            if skinData.AnchorRoleIcon then skinData.AnchorRoleIcon() end
         end
 
         -- Leader icon size + position
@@ -213,58 +196,42 @@ local function ReloadFrames(skipButtons)
                 cfg.leaderIconOffsetY or 0
             )
             -- Re-assert the host's strata/level above the border
-            if skinData.leaderHost then
-                mod.ApplyLeaderStrata(skinData.leaderHost)
-            end
+            if skinData.leaderHost then mod.ApplyLeaderStrata(skinData.leaderHost) end
         end
 
         -- Raid marker size + position
         if skinData.raidMarker then
             local rmSz = PixelSnap(cfg.raidMarkerSize or 16)
             skinData.raidMarker:SetSize(rmSz, rmSz)
-            if skinData.AnchorRaidMarker then
-                skinData.AnchorRaidMarker()
-            end
+            if skinData.AnchorRaidMarker then skinData.AnchorRaidMarker() end
         end
 
         -- Ready check / summon size + position
         if skinData.readyCheck then
             local rcSz = PixelSnap(cfg.readyCheckSize or 20)
             skinData.readyCheck:SetSize(rcSz, rcSz)
-            if skinData.AnchorReadyCheck then
-                skinData.AnchorReadyCheck()
-            end
+            if skinData.AnchorReadyCheck then skinData.AnchorReadyCheck() end
         end
 
         -- Combat icon size + position
         if skinData.combatIcon then
             local cciSz = PixelSnap(cfg.combatIndicatorSize or 16)
             skinData.combatIcon:SetSize(cciSz, cciSz)
-            if skinData.AnchorCombatIcon then
-                skinData.AnchorCombatIcon()
-            end
+            if skinData.AnchorCombatIcon then skinData.AnchorCombatIcon() end
         end
 
         -- Ping marker size + position (overlay exists only after a first ping)
-        if skinData.pingFrame then
-            mod._RFAnchorPing(skinData)
-        end
-        if mod.RF_FvMissingAnchor then
-            mod.RF_FvMissingAnchor(button, skinData)
-        end
+        if skinData.pingFrame then mod._RFAnchorPing(skinData) end
+        if mod.RF_FvMissingAnchor then mod.RF_FvMissingAnchor(button, skinData) end
 
         -- Border
-        if skinData.UpdateBorder then
-            skinData.UpdateBorder()
-        end
+        if skinData.UpdateBorder then skinData.UpdateBorder() end
     end
 
     -- Re-layout headers (may switch between flat/grouped)
     LayoutGroups()
     -- Apply tier-based position offset
-    if mod._ApplyTierOffset then
-        mod._ApplyTierOffset()
-    end
+    if mod._ApplyTierOffset then mod._ApplyTierOffset() end
     RebuildUnitMap()
     UpdateAllButtons()
     -- Immediate range update so new buttons don't flash full alpha
@@ -273,28 +240,18 @@ local function ReloadFrames(skipButtons)
     -- Friendly Boss Frames and Extra Frames inherit size/growth/spacing/
     -- border/text settings; restyle + re-anchor them with everything else
     -- (growth changes move the anchor points, not just the anchored-to header).
-    if mod.FB_Apply then
-        mod.FB_Apply()
-    end
-    if mod.XF_Apply then
-        mod.XF_Apply()
-    end
+    if mod.FB_Apply then mod.FB_Apply() end
+    if mod.XF_Apply then mod.XF_Apply() end
     -- Player Group Label follows the raid frame style.
-    if mod.PG_Apply then
-        mod.PG_Apply()
-    end
+    if mod.PG_Apply then mod.PG_Apply() end
     -- Pet frames (the ones styled from the raid settings restyle here, the rest in the party
     -- reload): the login window's pass skips them (OnEnable builds them once the party frames
     -- exist, which the Beside Owner pets need).
-    if not skipButtons then
-        mod.PF_Apply(true)
-    end
+    if not skipButtons then mod.PF_Apply(true) end
 
     -- 12.1 aura containers reload with every real pass (direct call inside
     -- the body -- immune to the Options file's setup-time capture of ns.ReloadFrames).
-    if mod.RFC_ReloadAll then
-        mod.RFC_ReloadAll()
-    end
+    if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
 end
 
 mod.ReloadFrames = ReloadFrames
@@ -311,20 +268,19 @@ mod._raidUnitToButton = unitToButton
 -- closures read it lazily.
 CludesUI.RegisterDarkModeToggle({
     id = "raidFrames",
-    isOn = function()
-        return (saved and saved.profile and saved.profile.healthColorMode == "dark") or false
-    end,
+    isOn = function() return (saved and saved.profile and saved.profile.healthColorMode == "dark") or false end,
     setOn = function(enabled)
-        if not (saved and saved.profile) then
-            return
-        end
+        if not (saved and saved.profile) then return end
         local profile = saved.profile
         if enabled then
             if profile.healthColorMode ~= "dark" then
                 profile._darkPrevHealthColorMode = profile.healthColorMode or "class"
                 profile.healthColorMode = "dark"
             end
-            if rawget(profile, "party_healthColorMode") ~= nil and profile.party_healthColorMode ~= "dark" then
+            if
+                rawget(profile, "party_healthColorMode") ~= nil
+                and profile.party_healthColorMode ~= "dark"
+            then
                 profile._darkPrevPartyHealthColorMode = profile.party_healthColorMode
                 profile.party_healthColorMode = "dark"
             end
@@ -347,21 +303,15 @@ CludesUI.RegisterDarkModeToggle({
             end
             profile._darkPrevPartyTargetHealthColorMode = nil
         end
-        if mod.ReloadFrames then
-            mod.ReloadFrames()
-        end
-        if mod.ReloadPartyFrames then
-            mod.ReloadPartyFrames()
-        end
+        if mod.ReloadFrames then mod.ReloadFrames() end
+        if mod.ReloadPartyFrames then mod.ReloadPartyFrames() end
     end,
 })
 
 -- Lightweight resize: only changes button/health/power dimensions + layout.
 -- No texture, border, font, or anchor changes. Safe for slider hot path.
 mod._ResizeButtons = function(wid, hgt)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     local bw = PixelSnap(wid)
     local bh = PixelSnap(hgt)
     local cfg = saved.profile
@@ -386,34 +336,28 @@ mod._ResizeButtons = function(wid, hgt)
             -- d.power always exists). Top Name Bar reserves its height from the
             -- top (health top anchor stays -topBarH; only correct height here).
             if skinData.health then
-                skinData.health:SetHeight(((skinData.power and skinData.power:IsShown()) and xhealthH or xbh) - topBarH)
+                skinData.health:SetHeight(
+                    ((skinData.power and skinData.power:IsShown()) and xhealthH or xbh) - topBarH
+                )
             end
             mod.RF_TextNameWidth(skinData, xbw)
         end
     end
     mod._activeSizeW = wid
     mod._activeSizeH = hgt
-    if mod._RefreshProxyModes then
-        mod._RefreshProxyModes()
-    end
+    if mod._RefreshProxyModes then mod._RefreshProxyModes() end
     LayoutGroups()
     -- Container footprint may have changed: re-derive the growth-corner anchor
     -- so the pinned corner holds during live slider drags and the unlock
     -- framework's OnSizeChanged can never leave a stale centered position.
-    if mod._ApplyTierOffset then
-        mod._ApplyTierOffset()
-    end
+    if mod._ApplyTierOffset then mod._ApplyTierOffset() end
 end
 
 -- Lightweight party resize: only changes button/health/power dimensions + container.
 -- No sort/self-first re-chain. Safe for slider hot path.
 mod._ResizePartyButtons = function(wid, hgt)
-    if InCombatLockdown() then
-        return
-    end
-    if not mod._partyAllButtons then
-        return
-    end
+    if InCombatLockdown() then return end
+    if not mod._partyAllButtons then return end
     local bw = PixelSnap(wid)
     local bh = PixelSnap(hgt)
     local cfg = saved.profile
@@ -422,9 +366,7 @@ mod._ResizePartyButtons = function(wid, hgt)
     local topBarH = (cfg.topNameBarEnabled and PixelSnap(cfg.topNameBarHeight or 20)) or 0
     -- Auto Resize scale depends on frame size; recompute on this lightweight
     -- width/height slider path (which skips the full reload).
-    if mod._UpdatePartyIndicatorScale then
-        mod._UpdatePartyIndicatorScale()
-    end
+    if mod._UpdatePartyIndicatorScale then mod._UpdatePartyIndicatorScale() end
     local autoResize = cfg.partyAutoResizeIndicators
     -- The bars' width: an attached portrait takes its share of the box.
     local _, _, _, pres = mod.RF_PartyDims(cfg)
@@ -446,9 +388,7 @@ mod._ResizePartyButtons = function(wid, hgt)
                 end
                 mod.RF_TextNameWidth(skinData, barW)
                 -- Party portrait: the attached square follows the height.
-                if skinData.pt then
-                    mod.RF_PtApply(button, skinData, mod._scaledPartyProxy, bw, bh, nil)
-                end
+                if skinData.pt then mod.RF_PtApply(button, skinData, mod._scaledPartyProxy, bw, bh, nil) end
             end
             -- Live-rescale indicators/auras. No-op for hidden buttons / no unit
             -- (e.g. options menu while not grouped), so cheap there.
@@ -459,9 +399,7 @@ mod._ResizePartyButtons = function(wid, hgt)
                 if skinData.roleIcon then
                     local riSz = PixelSnap(pp.roleIconSize or 14)
                     skinData.roleIcon:SetSize(riSz, riSz)
-                    if skinData.AnchorRoleIcon then
-                        skinData.AnchorRoleIcon()
-                    end
+                    if skinData.AnchorRoleIcon then skinData.AnchorRoleIcon() end
                 end
                 if skinData.leaderIcon then
                     local liSz = PixelSnap(pp.leaderIconSize or 14)
@@ -474,14 +412,10 @@ mod._ResizePartyButtons = function(wid, hgt)
                 if skinData.combatIcon then
                     local cciSz = PixelSnap(pp.combatIndicatorSize or 16)
                     skinData.combatIcon:SetSize(cciSz, cciSz)
-                    if skinData.AnchorCombatIcon then
-                        skinData.AnchorCombatIcon()
-                    end
+                    if skinData.AnchorCombatIcon then skinData.AnchorCombatIcon() end
                 end
                 mod.RF_TextFonts(skinData, pp)
-                if skinData.statusText then
-                    ApplyFont(skinData.statusText, pp.statusTextSize or 14)
-                end
+                if skinData.statusText then ApplyFont(skinData.statusText, pp.statusTextSize or 14) end
             end
         end
     end
@@ -566,12 +500,8 @@ mod._RFGroupFlow = function(groupGrowth, groupW, groupH, gs, total, result)
     local nc = min(MOVER_GROUPS, num)
     for index = 0, nc - 1 do
         local px, py = slots[index][1], slots[index][2]
-        if px < minX then
-            minX = px
-        end
-        if py > maxY then
-            maxY = py
-        end
+        if px < minX then minX = px end
+        if py > maxY then maxY = py end
     end
     return slots, minX, maxY
 end
@@ -612,12 +542,11 @@ end
 mod._RFBaseTopLeft = function()
     local cfg = saved.profile
     local place = cfg.unlockPos
-    if not place then
-        return nil
-    end
+    if not place then return nil end
     local cs = mod.RF_CellSpacing(cfg)
     local gs = mod.RF_GroupSpacing(cfg)
-    local ug, gg = mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", cfg.mergeGroups)
+    local ug, gg =
+        mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", cfg.mergeGroups)
     local wid, hgt = mod._RFFootprint(cfg.frameWidth or 72, cfg.frameHeight or 46, ug, gg, cs, gs)
     local l, t = mod._RFPosTopLeft(place, wid, hgt)
     return l, t, wid, hgt
@@ -628,9 +557,7 @@ end
 -- and columnAnchorPoint from a growth pair -- both _LayoutGroupsImpl and
 -- _BuildHeaderSet's header-creation bootstrap need the identical derivation,
 -- and previously hand-duplicated it.
-mod._RFGrowthIsVertical = function(g)
-    return g == "DOWN" or g == "UP"
-end
+mod._RFGrowthIsVertical = function(g) return g == "DOWN" or g == "UP" end
 
 -- First-button point/xOffset/yOffset for a header growing along unitGrowth.
 mod._RFHeaderPoint = function(unitGrowth, cs)
@@ -650,14 +577,10 @@ end
 -- mode never actually reaches a same-axis pair here in practice.
 mod._RFColAnchor = function(unitGrowth, groupGrowth)
     if groupGrowth == "DOWN" or groupGrowth == "RIGHT" then
-        if mod._RFGrowthIsVertical(unitGrowth) then
-            return "LEFT"
-        end
+        if mod._RFGrowthIsVertical(unitGrowth) then return "LEFT" end
         return "TOP"
     else -- UP or LEFT
-        if mod._RFGrowthIsVertical(unitGrowth) then
-            return "RIGHT"
-        end
+        if mod._RFGrowthIsVertical(unitGrowth) then return "RIGHT" end
         return "BOTTOM"
     end
 end
@@ -671,15 +594,11 @@ end
 -- grid flow ("Down and then Right") onto the single column axis the flat header
 -- can render; no-op if not merged.
 mod._RFEffectiveGrowth = function(unitGrowth, groupGrowth, merged)
-    if not merged then
-        return unitGrowth, groupGrowth
-    end
+    if not merged then return unitGrowth, groupGrowth end
     -- The grid flow needs two axes; Blizzard's flat header only has one column
     -- axis, so merged mode degrades it to the plain RIGHT run it CAN render --
     -- same shape as the same-axis fallback below.
-    if groupGrowth == "DOWNRIGHT" then
-        groupGrowth = "RIGHT"
-    end
+    if groupGrowth == "DOWNRIGHT" then groupGrowth = "RIGHT" end
     if mod._RFGrowthIsVertical(unitGrowth) == mod._RFGrowthIsVertical(groupGrowth) then
         unitGrowth = mod._RFGrowthIsVertical(unitGrowth) and "RIGHT" or "DOWN"
     end
@@ -703,9 +622,7 @@ end
 mod._RFGrowthCorner = function(unitGrowth, groupGrowth, centered)
     local hgt = (unitGrowth == "LEFT" or groupGrowth == "LEFT") and "RIGHT" or "LEFT"
     local val = (unitGrowth == "UP" or groupGrowth == "UP") and "BOTTOM" or "TOP"
-    if centered then
-        return mod._RFGrowthIsVertical(groupGrowth) and hgt or val
-    end
+    if centered then return mod._RFGrowthIsVertical(groupGrowth) and hgt or val end
     return val .. hgt
 end
 
@@ -713,13 +630,9 @@ end
 -- tier override's own value when it has one, else the base key. The grid flow has
 -- two group axes and never centers.
 mod._RFGroupCentered = function(shade, groupGrowth)
-    if groupGrowth == "DOWNRIGHT" then
-        return false
-    end
+    if groupGrowth == "DOWNRIGHT" then return false end
     local c = saved.profile.groupGrowthCentered
-    if shade and shade.groupGrowthCentered ~= nil then
-        c = shade.groupGrowthCentered
-    end
+    if shade and shade.groupGrowthCentered ~= nil then c = shade.groupGrowthCentered end
     return c == true
 end
 
@@ -754,9 +667,7 @@ end
 -- nil with no saved unlock position.
 mod._RFTierTopLeft = function(tw, th, unitGrowth, groupGrowth, ox, oy, centered)
     local bl, bt, bw, bh = mod._RFBaseTopLeft()
-    if not bl then
-        return nil
-    end
+    if not bl then return nil end
     local kx, ky = mod._RFCornerTerms(tw, th, bw, bh, unitGrowth, groupGrowth, centered)
     return bl + (ox or 0) + kx, bt + (oy or 0) + ky
 end
@@ -768,9 +679,7 @@ end
 -- override is nil for the base 20 tier or when none is defined.
 mod._RFResolveTierOverride = function(numMembers)
     local overrides = saved.profile.raidSizeOverrides
-    if not overrides or not numMembers or numMembers <= 0 then
-        return 20, nil
-    end
+    if not overrides or not numMembers or numMembers <= 0 then return 20, nil end
     -- User-tunable switch boundaries (per-tier cog sliders): the LOWER tiers
     -- store the highest count they COVER (sizeCap), the UPPER tiers the
     -- count they ENGAGE at (sizeMin). Absent keys reproduce the classic
@@ -796,20 +705,14 @@ mod._RFResolveTierOverride = function(numMembers)
     else
         tier = 40
     end
-    if tier == 20 then
-        return 20, nil
-    end
+    if tier == 20 then return 20, nil end
     local shade
     if tier < 20 then
         shade = overrides[tier] or (tier == 10 and overrides[15]) or nil
     else
         shade = overrides[tier]
-        if not shade and tier == 30 then
-            shade = overrides[25]
-        end
-        if not shade and tier == 40 then
-            shade = overrides[30] or overrides[25]
-        end
+        if not shade and tier == 30 then shade = overrides[25] end
+        if not shade and tier == 40 then shade = overrides[30] or overrides[25] end
     end
     return tier, shade or nil
 end
@@ -824,12 +727,11 @@ end
 mod._RFRebaseSavedCenter = function(cx, cy)
     local cfg = saved.profile
     local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
-    if not shade then
-        return cx, cy
-    end
+    if not shade then return cx, cy end
     local cs = mod.RF_CellSpacing(cfg)
     local gs = mod.RF_GroupSpacing(cfg)
-    local bug, bgg = mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", cfg.mergeGroups)
+    local bug, bgg =
+        mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", cfg.mergeGroups)
     local bw, bh = mod._RFFootprint(cfg.frameWidth or 72, cfg.frameHeight or 46, bug, bgg, cs, gs)
     local ug, gg = mod._RFEffectiveGrowth(
         shade.unitGrowth or cfg.unitGrowth or "DOWN",
@@ -875,13 +777,9 @@ end
 --      growth pins RIGHT and/or BOTTOM change; DOWN+RIGHT tiers keep identical offsets.
 mod._NormalizeTierOffsetAnchors = function()
     local cfg = saved and saved.profile
-    if not cfg then
-        return
-    end
+    if not cfg then return end
     local shade = cfg.raidSizeOverrides
-    if not shade then
-        return
-    end
+    if not shade then return end
     -- Heal string-keyed numeric tiers ("25" beside 25): planted by the spec
     -- override system's container fabrication before it learned to use the numeric
     -- form. The module reads tiers numerically, so a phantom never renders yet
@@ -901,15 +799,11 @@ mod._NormalizeTierOffsetAnchors = function()
         for index = 1, #phantoms do
             local key = phantoms[index]
             local num = tonumber(key)
-            if shade[num] == nil then
-                shade[num] = shade[key]
-            end
+            if shade[num] == nil then shade[num] = shade[key] end
             shade[key] = nil
         end
     end
-    if shade._topLeftAnchored and shade._cornerAnchored then
-        return
-    end
+    if shade._topLeftAnchored and shade._cornerAnchored then return end
     local cs = mod.RF_CellSpacing(cfg)
     local gs = mod.RF_GroupSpacing(cfg)
     local place = cfg.unlockPos
@@ -958,12 +852,8 @@ mod._NormalizeTierOffsetAnchors = function()
                         gs
                     )
                     local kx, ky = mod._RFCornerTerms(tw, th, bw, bh, ug, gg)
-                    if kx ~= 0 then
-                        o.offsetX = math.floor((o.offsetX or 0) - kx + 0.5)
-                    end
-                    if ky ~= 0 then
-                        o.offsetY = math.floor((o.offsetY or 0) - ky + 0.5)
-                    end
+                    if kx ~= 0 then o.offsetX = math.floor((o.offsetX or 0) - kx + 0.5) end
+                    if ky ~= 0 then o.offsetY = math.floor((o.offsetY or 0) - ky + 0.5) end
                 end
             end
         end
@@ -989,9 +879,7 @@ CludesUI._anchorExtraOffset["RF_RaidFrames"] = function()
 end
 
 mod._ApplyTierOffset = function()
-    if not containerFrame or InCombatLockdown() then
-        return
-    end
+    if not containerFrame or InCombatLockdown() then return end
     -- Element-anchored container: the unlock anchor system owns the POSITION
     -- (absolute coords recomputed from the anchor target), so repositioning
     -- from unlockPos here would clobber it on every roster/tier pass.
@@ -1004,15 +892,11 @@ mod._ApplyTierOffset = function()
         -- The anchor owns the position and now folds the tier offset into it
         -- (see _anchorExtraOffset above), so a tier change just needs the
         -- anchor re-run; moving the container from here would fight it.
-        if CludesUI.ReapplyUnlockAnchor then
-            CludesUI.ReapplyUnlockAnchor("RF_RaidFrames")
-        end
+        if CludesUI.ReapplyUnlockAnchor then CludesUI.ReapplyUnlockAnchor("RF_RaidFrames") end
         return
     end
     local cfg = saved.profile
-    if not cfg.unlockPos then
-        return
-    end
+    if not cfg.unlockPos then return end
     local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
     local cs = mod.RF_CellSpacing(cfg)
     local gs = mod.RF_GroupSpacing(cfg)
@@ -1033,9 +917,7 @@ mod._ApplyTierOffset = function()
         (shade and shade.offsetY) or 0,
         mod._RFGroupCentered(shade, gg)
     )
-    if not posX then
-        return
-    end
+    if not posX then return end
     containerFrame:ClearAllPoints()
     containerFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", PixelSnap(posX), PixelSnap(posY))
     -- Hidden container (frames not shown -- solo, party, or just left the raid):
@@ -1045,13 +927,9 @@ mod._ApplyTierOffset = function()
     -- stale box, and a drag-save there stores a center measured on the wrong footprint
     -- (off by half the width delta -- the "whole layout drifted left after a raid"
     -- corruption). While shown, LayoutGroups owns the size as before.
-    if not containerFrame:IsShown() then
-        containerFrame:SetSize(tw, th)
-    end
+    if not containerFrame:IsShown() then containerFrame:SetSize(tw, th) end
 end
 
 Inner.ReloadFrames = ReloadFrames
-Inner.SetRangeUpdate = function(frame)
-    RangeUpdate = frame
-end
+Inner.SetRangeUpdate = function(frame) RangeUpdate = frame end
 Inner.broken = false

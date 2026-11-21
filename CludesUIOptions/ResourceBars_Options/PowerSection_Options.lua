@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  ResourceBars_Options\PowerSection_Options.lua
 --  Resource Bars options: POWER BAR section builder. Definitions only; the shared
 --  helpers come from ns._CURB_OptEnv (filled by CUI_ResourceBars_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIResourceBars"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host are reset and dressed again by the next build instead of made anew;
 -- elsewhere this is CreateFrame.
@@ -25,9 +21,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         environ.BuildHashCog, environ.BuildThresholdSettingsButton
     local W = CludesUI.Widgets
     local _, height
-    local function rowConf()
-        return context.cfg()
-    end
+    local function rowConf() return context.cfg() end
     -- A row's getter and setter for one key of this section's settings: the
     -- getter gives its value, or default when unset (no default: the value as
     -- stored); the setter writes it when the settings exist, then runs after
@@ -35,23 +29,17 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     local function ConfGetter(key, default)
         return function()
             local rowCfg = rowConf()
-            if default == nil then
-                return rowCfg and rowCfg[key]
-            end
+            if default == nil then return rowCfg and rowCfg[key] end
             return rowCfg and rowCfg[key] or default
         end
     end
     local function ConfSetter(key, after, alsoPage)
         return function(val)
             local rowCfg = rowConf()
-            if not rowCfg then
-                return
-            end
+            if not rowCfg then return end
             rowCfg[key] = val
             after()
-            if alsoPage then
-                CludesUI:RefreshPage()
-            end
+            if alsoPage then CludesUI:RefreshPage() end
         end
     end
     local function powerBarOff()
@@ -82,9 +70,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             return rowCfg and rowCfg.enabled
         end, function(val)
             local rowCfg = rowConf()
-            if not rowCfg then
-                return
-            end
+            if not rowCfg then return end
             rowCfg.enabled = val
             RebuildPower()
             CludesUI:RefreshPage()
@@ -99,14 +85,14 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         getValue = function()
             local rowCfg = rowConf()
             local profile = DB()
-            return (rowCfg and rowCfg.orientation) or (profile and profile.general.orientation) or "HORIZONTAL"
+            return (rowCfg and rowCfg.orientation)
+                or (profile and profile.general.orientation)
+                or "HORIZONTAL"
         end,
         setValue = ConfSetter("orientation", Refresh),
     })
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
-        AddFormBarBtn(powerEnableRow._leftRegion, rowConf, RebuildPower)
-    end
+    if not CludesUI._prebuilding then AddFormBarBtn(powerEnableRow._leftRegion, rowConf, RebuildPower) end
 
     -- Per-spec power enables live in Spec Overrides: "Show Power Bar" is captured while editing as a group.
 
@@ -157,9 +143,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local val = profile.primary.height or 16
                         profile.secondary.pipHeight = val
                         profile.health.height = val
@@ -168,11 +152,10 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     isSynced = function()
                         local profile = DB()
-                        if not profile then
-                            return false
-                        end
+                        if not profile then return false end
                         local val = profile.primary.height or 16
-                        return (profile.secondary.pipHeight or 20) == val and (profile.health.height or 20) == val
+                        return (profile.secondary.pipHeight or 20) == val
+                            and (profile.health.height or 20) == val
                     end,
                     flashTargets = function()
                         return {
@@ -190,9 +173,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local val = profile.primary.width or 220
                         profile.secondary.pipWidth = val
                         profile.health.width = val
@@ -201,11 +182,10 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     isSynced = function()
                         local profile = DB()
-                        if not profile then
-                            return false
-                        end
+                        if not profile then return false end
                         local val = profile.primary.width or 220
-                        return (profile.secondary.pipWidth or 214) == val and (profile.health.width or 220) == val
+                        return (profile.secondary.pipWidth or 214) == val
+                            and (profile.health.width or 220) == val
                     end,
                     flashTargets = function()
                         return {
@@ -235,9 +215,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     getValue = ConfGetter("borderTexture", "solid"),
                     setValue = function(val)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         rowCfg.borderTexture = val
                         rowCfg.borderTextureOffset = nil
                         rowCfg.borderTextureOffsetY = nil
@@ -250,12 +228,8 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         rowCfg.borderA = 1
                         rowCfg.borderBehind = _bbehind
                         local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
-                        if defSz then
-                            rowCfg.borderSize = defSz
-                        end
-                        if rowCfg.borderSizePx then
-                            rowCfg.borderSizePx = false
-                        end
+                        if defSz then rowCfg.borderSize = defSz end
+                        if rowCfg.borderSizePx then rowCfg.borderSizePx = false end
                         RebuildPower()
                         CludesUI:RefreshPage(true)
                     end,
@@ -280,9 +254,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             end,
                             setStep = function(val)
                                 local rowCfg = rowConf()
-                                if rowCfg then
-                                    rowCfg.borderSize = val
-                                end
+                                if rowCfg then rowCfg.borderSize = val end
                             end,
                             getTex = function()
                                 local rowCfg = rowConf()
@@ -294,9 +266,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             end,
                             setPx = function(val)
                                 local rowCfg = rowConf()
-                                if rowCfg then
-                                    rowCfg.borderSizePx = val
-                                end
+                                if rowCfg then rowCfg.borderSizePx = val end
                             end,
                             apply = function()
                                 RebuildPower()
@@ -335,9 +305,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end,
                         setX = function(val)
                             local rowCfg = rowConf()
-                            if rowCfg then
-                                rowCfg.borderTextureOffset = val
-                            end
+                            if rowCfg then rowCfg.borderTextureOffset = val end
                         end,
                         getY = function()
                             local rowCfg = rowConf()
@@ -345,9 +313,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end,
                         setY = function(val)
                             local rowCfg = rowConf()
-                            if rowCfg then
-                                rowCfg.borderTextureOffsetY = val
-                            end
+                            if rowCfg then rowCfg.borderTextureOffsetY = val end
                         end,
                         apply = function()
                             RebuildPower()
@@ -373,9 +339,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         title = "Corner Radius",
                         tip = "Corner Radius",
                         disabled = function()
-                            if powerBarOff() or CludesUI.BlizzStyle.Get("resourcebars") then
-                                return true
-                            end
+                            if powerBarOff() or CludesUI.BlizzStyle.Get("resourcebars") then return true end
                             local rowCfg = rowConf()
                             return not CludesUI.RoundedStyleOK(rowCfg and rowCfg.borderTexture)
                         end,
@@ -383,9 +347,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             if CludesUI.BlizzStyle.Get("resourcebars") then
                                 return CludesUI.BlizzStyle.Label("resourcebars")
                             end
-                            if powerBarOff() then
-                                return powerDisTip
-                            end
+                            if powerBarOff() then return powerDisTip end
                             return "This option requires the Solid, Glow or Shadow border style."
                         end,
                         requireState = function()
@@ -406,9 +368,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             return rowCfg and rowCfg.cornerMask
                         end, function(val)
                             local rowCfg = rowConf()
-                            if not rowCfg then
-                                return
-                            end
+                            if not rowCfg then return end
                             rowCfg.cornerMask = val
                             RebuildPower()
                         end),
@@ -426,9 +386,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     function(red, green, blue, a)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         rowCfg.borderR, rowCfg.borderG, rowCfg.borderB, rowCfg.borderA = red, green, blue, a
                         SmoothRefresh()
                         CludesUI:RefreshPage()
@@ -438,16 +396,13 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 )
                 Pix.Point(borderSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
                 region._lastInline = borderSwatch -- left of the Corner Radius cog
-                CludesUI.RegisterWidgetRefresh(function()
-                    updateBorderSwatch()
-                end)
+                CludesUI.RegisterWidgetRefresh(function() updateBorderSwatch() end)
                 local swBlock = CludesUI.NewSwatchBlocker(borderSwatch)
-                swBlock:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(borderSwatch, CludesUI.DisabledTooltip(powerDisTip))
-                end)
-                swBlock:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                swBlock:SetScript(
+                    "OnEnter",
+                    function() CludesUI.ShowWidgetTooltip(borderSwatch, CludesUI.DisabledTooltip(powerDisTip)) end
+                )
+                swBlock:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
                 local function UpdateBorderSwDis()
                     if powerBarOff() then
                         borderSwatch:SetAlpha(0.3)
@@ -474,13 +429,9 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             step = 1,
                             get = function()
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return 0
-                                end
+                                if not rowCfg then return 0 end
                                 local val = rowCfg.borderTextureShiftX
-                                if val then
-                                    return val
-                                end
+                                if val then return val end
                                 local _, _, dsx = CludesUI.GetBorderDefaults(
                                     "resourcebars",
                                     rowCfg.borderTexture or "solid",
@@ -490,9 +441,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             end,
                             set = function(val)
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return
-                                end
+                                if not rowCfg then return end
                                 rowCfg.borderTextureShiftX = val == 0 and nil or val
                                 RebuildPower()
                                 CludesUI:RefreshPage()
@@ -506,13 +455,9 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             step = 1,
                             get = function()
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return 0
-                                end
+                                if not rowCfg then return 0 end
                                 local val = rowCfg.borderTextureShiftY
-                                if val then
-                                    return val
-                                end
+                                if val then return val end
                                 local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                     "resourcebars",
                                     rowCfg.borderTexture or "solid",
@@ -522,9 +467,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             end,
                             set = function(val)
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return
-                                end
+                                if not rowCfg then return end
                                 rowCfg.borderTextureShiftY = val == 0 and nil or val
                                 RebuildPower()
                                 CludesUI:RefreshPage()
@@ -536,9 +479,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             get = ConfGetter("borderBehind", false),
                             set = function(val)
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return
-                                end
+                                if not rowCfg then return end
                                 rowCfg.borderBehind = val == false and nil or val
                                 RebuildPower()
                                 CludesUI:RefreshPage()
@@ -553,30 +494,29 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             tooltip = "Draws the power bar's border above the GCD bar where the two overlap.",
                             disabled = function()
                                 local p, c = DB(), rowConf()
-                                return (powerBarOff() or not (p and p.gcdBar.enabled) or (c and c.borderBehind))
+                                return (
+                                    powerBarOff()
+                                    or not (p and p.gcdBar.enabled)
+                                    or (c and c.borderBehind)
+                                )
                                         and true
                                     or false
                             end,
                             disabledTooltip = function()
-                                if powerBarOff() then
-                                    return powerDisTip
-                                end
+                                if powerBarOff() then return powerDisTip end
                                 local profile = DB()
-                                if not (profile and profile.gcdBar.enabled) then
-                                    return "GCD Bar"
-                                end
+                                if not (profile and profile.gcdBar.enabled) then return "GCD Bar" end
                                 return "This option can't be used while Show Behind is enabled."
                             end,
                             rawTooltip = function()
                                 local profile = DB()
-                                return not powerBarOff() and (profile and profile.gcdBar.enabled) and true or false
+                                return not powerBarOff() and (profile and profile.gcdBar.enabled) and true
+                                    or false
                             end,
                             get = ConfGetter("borderAboveGCD", false),
                             set = function(val)
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return
-                                end
+                                if not rowCfg then return end
                                 rowCfg.borderAboveGCD = val and true or false
                                 RebuildPower()
                                 CludesUI:RefreshPage()
@@ -644,16 +584,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             disabledTooltip = powerDisTip,
                             get = function()
                                 local rowCfg = rowConf()
-                                if not (rowCfg and rowCfg.edgeSep) then
-                                    return "none"
-                                end
+                                if not (rowCfg and rowCfg.edgeSep) then return "none" end
                                 return rowCfg.edgeSepArt or "match"
                             end,
                             set = function(val)
                                 local rowCfg = rowConf()
-                                if not rowCfg then
-                                    return
-                                end
+                                if not rowCfg then return end
                                 if val == "none" then
                                     rowCfg.edgeSep = false
                                 else
@@ -701,13 +637,19 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 and mod.ERB_ClassicBorderRow()
             then
                 context.syncRows.powerBorder = pwrBsRow._rightRegion
-                mod.ERB_ClassicBorderSync(pwrBsRow._rightRegion, DB, "primary", SmoothRefresh, function()
-                    return {
-                        context.syncRows.powerBorder,
-                        context.syncRows.classBorder,
-                        context.syncRows.healthBorder,
-                    }
-                end)
+                mod.ERB_ClassicBorderSync(
+                    pwrBsRow._rightRegion,
+                    DB,
+                    "primary",
+                    SmoothRefresh,
+                    function()
+                        return {
+                            context.syncRows.powerBorder,
+                            context.syncRows.classBorder,
+                            context.syncRows.healthBorder,
+                        }
+                    end
+                )
             elseif not context.advanced and context.syncRows and not CludesUI._prebuilding then
                 context.syncRows.powerBorder = pwrBsRow._rightRegion
                 CludesUI.BuildSyncIcon({
@@ -715,9 +657,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local was = mod.ERB_TexturedBars(profile)
                         local cfg = profile.primary
                         local function apply(tbl)
@@ -741,9 +681,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     isSynced = function()
                         local profile = DB()
-                        if not profile then
-                            return false
-                        end
+                        if not profile then return false end
                         local bt = profile.primary.borderTexture or "solid"
                         local bh = profile.primary.borderBehind or false
                         return (profile.secondary.borderTexture or "solid") == bt
@@ -751,21 +689,20 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             and (profile.secondary.borderBehind or false) == bh
                             and (profile.health.borderBehind or false) == bh
                     end,
-                    flashTargets = function()
-                        return { pwrBsRow._leftRegion }
-                    end,
+                    flashTargets = function() return { pwrBsRow._leftRegion } end,
                 })
                 CludesUI.BuildSyncIcon({
                     region = pwrBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
                         local profile = DB()
-                        if not profile then
-                            return
-                        end
+                        if not profile then return end
                         local was = mod.ERB_TexturedBars(profile)
                         local red, green, blue, a =
-                            profile.primary.borderR, profile.primary.borderG, profile.primary.borderB, profile.primary.borderA
+                            profile.primary.borderR,
+                            profile.primary.borderG,
+                            profile.primary.borderB,
+                            profile.primary.borderA
                         local sz = profile.primary.borderSize or 1
                         local bt = profile.primary.borderTexture or "solid"
                         local cr, cm = profile.primary.cornerRadius or 0, profile.primary.cornerMask
@@ -776,7 +713,8 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         profile.secondary.cornerRadius = cr
                         profile.secondary.cornerMask = cm
                         mod.ERB_CopyBorderPx(profile.secondary, profile.primary)
-                        profile.health.borderR, profile.health.borderG, profile.health.borderB, profile.health.borderA = red, green, blue, a
+                        profile.health.borderR, profile.health.borderG, profile.health.borderB, profile.health.borderA =
+                            red, green, blue, a
                         profile.health.borderSize = sz
                         profile.health.borderTexture = bt
                         profile.health.cornerRadius = cr
@@ -787,9 +725,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     isSynced = function()
                         local profile = DB()
-                        if not profile then
-                            return false
-                        end
+                        if not profile then return false end
                         local sr, sg, scrollBar, sa, ssz =
                             profile.primary.borderR,
                             profile.primary.borderG,
@@ -840,9 +776,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             end,
             setValue = function(val)
                 local rowCfg = rowConf()
-                if not rowCfg then
-                    return
-                end
+                if not rowCfg then return end
                 rowCfg.barAlpha = val / 100
                 RefreshPower()
                 CludesUI:RefreshPage()
@@ -896,18 +830,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             -- Spender Colors paint the fill flat once a row names a spell, as the bar does
             -- (unless they recolor the text instead).
             local function SpendersFlatten(cfg, tse)
-                if not (tse and tse.spenderColorEnabled) then
-                    return false
-                end
-                if tse.thresholdTextInstead and cfg.textFormat ~= "none" then
-                    return false
-                end
+                if not (tse and tse.spenderColorEnabled) then return false end
+                if tse.thresholdTextInstead and cfg.textFormat ~= "none" then return false end
                 local entries = tse.spenderColors
                 if entries then
                     for idx = 1, #entries do
-                        if entries[idx].spellID then
-                            return true
-                        end
+                        if entries[idx].spellID then return true end
                     end
                 end
                 return false
@@ -918,27 +846,17 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     hasAlpha = true,
                     disabled = function()
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return true
-                        end
-                        if not rowCfg.enabled then
-                            return true
-                        end
+                        if not rowCfg then return true end
+                        if not rowCfg.enabled then return true end
                         local tse = _G._CURB_ResolveThresholdSpecEntry
                             and _G._CURB_ResolveThresholdSpecEntry(rowCfg)
-                        if tse and (tse.thresholdEnabled ~= false) then
-                            return true
-                        end
-                        if SpendersFlatten(rowCfg, tse) then
-                            return true
-                        end
+                        if tse and (tse.thresholdEnabled ~= false) then return true end
+                        if SpendersFlatten(rowCfg, tse) then return true end
                         return not rowCfg.gradientEnabled
                     end,
                     disabledTooltip = function()
                         local rowCfg = rowConf()
-                        if not rowCfg or not rowCfg.enabled then
-                            return powerDisTip
-                        end
+                        if not rowCfg or not rowCfg.enabled then return powerDisTip end
                         local tse = _G._CURB_ResolveThresholdSpecEntry
                             and _G._CURB_ResolveThresholdSpecEntry(rowCfg)
                         if tse and (tse.thresholdEnabled ~= false) then
@@ -951,17 +869,14 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     getValue = function()
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return 0.20, 0.20, 0.80, 1
-                        end
+                        if not rowCfg then return 0.20, 0.20, 0.80, 1 end
                         return rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA
                     end,
                     setValue = function(red, green, blue, a)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
-                        rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA = red, green, blue, a
+                        if not rowCfg then return end
+                        rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA =
+                            red, green, blue, a
                         SmoothRefresh()
                     end,
                 },
@@ -970,34 +885,26 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     hasAlpha = false,
                     getValue = function()
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return 0x23 / 255, 0x8F / 255, 0xE7 / 255, 1
-                        end
+                        if not rowCfg then return 0x23 / 255, 0x8F / 255, 0xE7 / 255, 1 end
                         return rowCfg.fillR, rowCfg.fillG, rowCfg.fillB, 1
                     end,
                     setValue = function(red, green, blue)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         rowCfg.fillR, rowCfg.fillG, rowCfg.fillB = red, green, blue
                         RebuildPower()
                         SmoothRefresh()
                     end,
                     onClick = function(self)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         if not rowCfg.customColored then
                             rowCfg.customColored = true
                             RebuildPower()
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
                         local rowCfg = rowConf()
@@ -1014,17 +921,13 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         local gpp = _G._CURB_GetPrimaryPowerType
                         local pt = gpp and gpp()
                         local pc = pt and _G._CURB_PowerColors and _G._CURB_PowerColors[pt]
-                        if pc then
-                            return pc[1], pc[2], pc[3], 1
-                        end
+                        if pc then return pc[1], pc[2], pc[3], 1 end
                         return 0x23 / 255, 0x8F / 255, 0xE7 / 255, 1
                     end,
                     setValue = function() end,
                     onClick = function()
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         rowCfg.customColored = false
                         RebuildPower()
                         CludesUI:RefreshPage()
@@ -1045,9 +948,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 tooltip = "Apply Opacity to all Bars",
                 onClick = function()
                     local profile = DB()
-                    if not profile then
-                        return
-                    end
+                    if not profile then return end
                     local val = profile.primary.barAlpha or 1
                     profile.secondary.barAlpha = val
                     profile.health.barAlpha = val
@@ -1056,9 +957,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 end,
                 isSynced = function()
                     local profile = DB()
-                    if not profile then
-                        return false
-                    end
+                    if not profile then return false end
                     local val = profile.primary.barAlpha or 1
                     return (profile.secondary.barAlpha or 1) == val and (profile.health.barAlpha or 1) == val
                 end,
@@ -1101,9 +1000,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         rowCfg.oocAlpha = val / 100
                         RefreshPower()
                     end,
@@ -1174,19 +1071,13 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         -- Text Color disables when the bar is off OR Power Text is None
         local function powerTextDis()
             local rowCfg = rowConf()
-            if not rowCfg then
-                return false
-            end
-            if not rowCfg.enabled then
-                return true
-            end
+            if not rowCfg then return false end
+            if not rowCfg.enabled then return true end
             return rowCfg.textFormat == "none"
         end
         local function powerTextDisTip()
             local rowCfg = rowConf()
-            if rowCfg and not rowCfg.enabled then
-                return powerDisTip
-            end
+            if rowCfg and not rowCfg.enabled then return powerDisTip end
             return "This option requires a Power Text format other than None"
         end
 
@@ -1222,34 +1113,27 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     hasAlpha = true,
                     getValue = function()
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return 1, 1, 1, 1
-                        end
+                        if not rowCfg then return 1, 1, 1, 1 end
                         return rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA
                     end,
                     setValue = function(red, green, blue, a)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
-                        rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA = red, green, blue, a
+                        if not rowCfg then return end
+                        rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA =
+                            red, green, blue, a
                         RebuildPower()
                         SmoothRefresh()
                     end,
                     onClick = function(self)
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         if rowCfg.textCustomColored == false then
                             rowCfg.textCustomColored = true
                             RebuildPower()
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
                         local rowCfg = rowConf()
@@ -1266,17 +1150,13 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         local gpp = _G._CURB_GetPrimaryPowerType
                         local pt = gpp and gpp()
                         local pc = pt and _G._CURB_PowerColors and _G._CURB_PowerColors[pt]
-                        if pc then
-                            return pc[1], pc[2], pc[3], 1
-                        end
+                        if pc then return pc[1], pc[2], pc[3], 1 end
                         return 0x23 / 255, 0x8F / 255, 0xE7 / 255, 1
                     end,
                     setValue = function() end,
                     onClick = function()
                         local rowCfg = rowConf()
-                        if not rowCfg then
-                            return
-                        end
+                        if not rowCfg then return end
                         rowCfg.textCustomColored = false
                         RebuildPower()
                         CludesUI:RefreshPage()
@@ -1359,21 +1239,15 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local powerSettingsBtn = BuildThresholdSettingsButton({
                 parentRgn = powerColorRow._rightRegion,
-                getBarData = function()
-                    return rowConf()
-                end,
+                getBarData = function() return rowConf() end,
                 pageParent = hostFrame,
                 pageTopY = _advTop,
-                pageBotY = function()
-                    return cursorY
-                end,
+                pageBotY = function() return cursorY end,
                 refreshFn = function()
                     RefreshPower()
                     SmoothRefresh()
                 end,
-                rebuildFn = function()
-                    RebuildPower()
-                end,
+                rebuildFn = function() RebuildPower() end,
                 disabledFn = powerBarOff,
                 disabledTip = "Power Bar",
                 roleShortcuts = true,
@@ -1425,12 +1299,8 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             BuildHashCog({
                 parentRgn = powerColorRow._rightRegion,
                 anchorTo = powerSettingsBtn,
-                getBarData = function()
-                    return DB().primary
-                end,
-                refreshFn = function()
-                    RebuildPower()
-                end,
+                getBarData = function() return DB().primary end,
+                refreshFn = function() RebuildPower() end,
                 popupTitle = CludesUI.L("Power Bar Hash Lines"),
             })
         end
@@ -1444,9 +1314,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     end -- close Power Bar hidden-while-disabled gate
 
     -- Simple page: cover these controls when the current spec overrides Power in Advanced, so edits here aren't silently ignored.
-    if not context.advanced then
-        mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, cursorY, "primary")
-    end
+    if not context.advanced then mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, cursorY, "primary") end
 
     return cursorY, heading, powerEnableRow, unlockJump
 end

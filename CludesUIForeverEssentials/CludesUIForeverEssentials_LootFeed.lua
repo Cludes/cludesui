@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_LootFeed.lua  (WoW Forever only)
 --  A stack of short-lived rows for what the player gains: looted items, money,
@@ -85,9 +81,7 @@ local feed = { rows = isActive }
 
 -- v when it is a readable value of type kind (never a secret one).
 local function Plain(val, kind)
-    if not issecretvalue(val) and type(val) == kind then
-        return val
-    end
+    if not issecretvalue(val) and type(val) == kind then return val end
 end
 
 -------------------------------------------------------------------------------
@@ -101,9 +95,7 @@ local function Compile(fmt, anchored)
     while true do
         local s, e, place, kind = fmt:find("%%(%d?)%$?([sd])", index)
         parts[#parts + 1] = (fmt:sub(index, s and s - 1):gsub("[%^%$%(%)%.%[%]%*%+%-%?%%]", "%%%0"))
-        if not s then
-            break
-        end
+        if not s then break end
         first = first or tonumber(place)
         parts[#parts + 1] = kind == "d" and "(%d+)" or "(.-)"
         index = e + 1
@@ -123,33 +115,23 @@ local function Match(key, textValue, loose)
         c = type(fmt) == "string" and fmt ~= "" and Compile(fmt, not loose) or false
         compiled[key] = c
     end
-    if not c then
-        return
-    end
+    if not c then return end
     local a, b = textValue:match(c.pat)
-    if c.swap then
-        return b, a
-    end
+    if c.swap then return b, a end
     return a, b
 end
 
 -------------------------------------------------------------------------------
 --  Rows
 -------------------------------------------------------------------------------
-local function StyleFont(fontStr, size)
-    CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials")
-end
+local function StyleFont(fontStr, size) CludesUI.ApplyModuleFont(fontStr, nil, size, "essentials") end
 
 -- Toast plates draw a frame 1 px outside the row, so they need more space.
-local function Gap()
-    return Get("spacing") + (Get("style") == "TOAST" and 2 or 0)
-end
+local function Gap() return Get("spacing") + (Get("style") == "TOAST" and 2 or 0) end
 
 -- Space the pinned tracker row takes at the anchor end of the feed.
 local function Pin()
-    if not Get("tracker") then
-        return 0
-    end
+    if not Get("tracker") then return 0 end
     return Get("rowHeight") + (Get("style") == "TRAY" and CALLOUT_GAP or Gap())
 end
 
@@ -177,9 +159,7 @@ end
 
 local function Accent()
     local color = CludesUI.CLUDES_GREEN
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 0.30, 0.79, 0.94
 end
 
@@ -193,9 +173,7 @@ local function SetBackgroundTexture(texture)
         texture:SetColorTexture(1, 1, 1, 1)
         return
     end
-    if not backgroundTextures then
-        backgroundTextures = CludesUI.BuildBarTextureTables()
-    end
+    if not backgroundTextures then backgroundTextures = CludesUI.BuildBarTextureTables() end
     texture:SetTexture(CludesUI.ResolveTexturePath(backgroundTextures, key, "Interface\\Buttons\\WHITE8x8"))
     texture:SetVertexColor(1, 1, 1, 1)
 end
@@ -215,9 +193,7 @@ local function RowColor(skinData, accent)
     if skinData.border and Get("qualityBorder") then
         return skinData.border.r, skinData.border.g, skinData.border.b
     end
-    if accent then
-        return Accent()
-    end
+    if accent then return Accent() end
     return Get("borderR"), Get("borderG"), Get("borderB")
 end
 
@@ -229,9 +205,7 @@ local TOAST_BOTTOM = { 0.055, 0.04, 0.024 }
 -- TOAST: a black 1 px frame around the gold one, with a gold stud at each
 -- end. Made the first time a row is drawn as a toast.
 local function ToastChrome(region)
-    if region.outer then
-        return region.outer
-    end
+    if region.outer then return region.outer end
     local o = CreateFrame("Frame", nil, region)
     o:SetPoint("TOPLEFT", -1, 1)
     o:SetPoint("BOTTOMRIGHT", 1, -1)
@@ -310,9 +284,7 @@ local function StyleBorder(region, style)
     if texture == "pixels-textured" and region.data.border and Get("qualityBorder") then
         texture = "pixels"
     end
-    if Get("separator") or region.separator then
-        StyleSeparator(region, style, size, texture, px)
-    end
+    if Get("separator") or region.separator then StyleSeparator(region, style, size, texture, px) end
     if size <= 0 or ((style == "BAR" or style == "CALLOUT") and not texture) then
         Pix.HideBorder(region)
         if owner then
@@ -343,7 +315,9 @@ local function StyleBorder(region, style)
     end
     owner:ClearAllPoints()
     owner:SetAllPoints(style == "BAR" and region.icon or region)
-    owner:SetFrameLevel(Get("borderBehind") and math.max(0, region:GetFrameLevel() - 1) or region:GetFrameLevel() + 1)
+    owner:SetFrameLevel(
+        Get("borderBehind") and math.max(0, region:GetFrameLevel() - 1) or region:GetFrameLevel() + 1
+    )
     CludesUI.ApplyBorderStyle(
         owner,
         size,
@@ -388,9 +362,7 @@ local function StyleRow(region)
     region.iconBg:ClearAllPoints()
     region.iconBg:SetPoint("TOPLEFT", region.icon, "TOPLEFT", -edge, edge)
     region.iconBg:SetPoint("BOTTOMRIGHT", region.icon, "BOTTOMRIGHT", edge, -edge)
-    if barFrame then
-        region.iconBg:SetColorTexture(0, 0, 0, 1)
-    end
+    if barFrame then region.iconBg:SetColorTexture(0, 0, 0, 1) end
     region.iconBg:SetShown((barFrame and not Get("borderTexture")) or toast)
     if toast then
         ToastChrome(region):SetShown(Get("borderSize") > 0)
@@ -400,12 +372,8 @@ local function StyleRow(region)
         gradTo:SetRGBA(TOAST_TOP[1], TOAST_TOP[2], TOAST_TOP[3], a)
         region.bg:SetGradient("VERTICAL", gradFrom, gradTo)
     else
-        if region.outer then
-            region.outer:Hide()
-        end
-        if not tray then
-            PaintBackground(region.bg, barFrame)
-        end
+        if region.outer then region.outer:Hide() end
+        if not tray then PaintBackground(region.bg, barFrame) end
     end
     region.bg:SetShown(not tray)
     region.name:SetShown(not tray)
@@ -529,9 +497,7 @@ end
 
 local function Unlist(region)
     for index = #isActive, 1, -1 do
-        if isActive[index] == region then
-            table.remove(isActive, index)
-        end
+        if isActive[index] == region then table.remove(isActive, index) end
     end
 end
 
@@ -549,14 +515,10 @@ end
 -- end starts it) or hovered (leaving starts it).
 -- Preview rows never fade.
 local function ArmFade(region)
-    if region.preview or region.show:IsPlaying() then
-        return
-    end
+    if region.preview or region.show:IsPlaying() then return end
     region.fade:Stop()
     region:SetAlpha(1)
-    if not region:IsMouseOver() then
-        region.fade:Play()
-    end
+    if not region:IsMouseOver() then region.fade:Play() end
 end
 
 -- Hover shows the item tooltip and holds the fade. Icon Tray tiles show no
@@ -567,9 +529,7 @@ local function RowEnter(region)
         region:SetAlpha(1)
     end
     local skinData = region.data
-    if not skinData then
-        return
-    end
+    if not skinData then return end
     if skinData.link then
         GameTooltip:SetOwner(region, "ANCHOR_LEFT")
         GameTooltip:SetHyperlink(skinData.link)
@@ -579,18 +539,14 @@ local function RowEnter(region)
         if skinData.sub then
             textValue = textValue .. "\n" .. CludesUI.COLOR_CODES.DIM .. skinData.sub .. "|r"
         end
-        if skinData.value then
-            textValue = textValue .. "\n" .. skinData.value
-        end
+        if skinData.value then textValue = textValue .. "\n" .. skinData.value end
         region.tip = true
         CludesUI.ShowWidgetTooltip(region, textValue, { anchor = "left" })
     end
 end
 
 local function RowLeave(region)
-    if GameTooltip:IsOwned(region) then
-        GameTooltip:Hide()
-    end
+    if GameTooltip:IsOwned(region) then GameTooltip:Hide() end
     if region.tip then
         region.tip = nil
         CludesUI.HideWidgetTooltip()
@@ -598,21 +554,15 @@ local function RowLeave(region)
     ArmFade(region)
 end
 
-local function ShowDone(g)
-    ArmFade(g:GetParent())
-end
-local function FadeDone(g)
-    Release(g:GetParent())
-end
+local function ShowDone(g) ArmFade(g:GetParent()) end
+local function FadeDone(g) Release(g:GetParent()) end
 
 -- One animation of group g: step order, seconds, easing.
 local function Anim(g, kind, sequence, secs, smoothing)
     local a = g:CreateAnimation(kind)
     a:SetOrder(sequence)
     a:SetDuration(secs)
-    if smoothing then
-        a:SetSmoothing(smoothing)
-    end
+    if smoothing then a:SetSmoothing(smoothing) end
     return a
 end
 
@@ -683,9 +633,7 @@ local function Fill(region)
     else
         region.name:SetPoint("LEFT", region.icon, "RIGHT", 6, 0)
     end
-    if style == "BAR" then
-        region.bar:SetColorTexture(RowColor(skinData, true))
-    end
+    if style == "BAR" then region.bar:SetColorTexture(RowColor(skinData, true)) end
     if style == "TOAST" then
         if skinData.border and Get("qualityBorder") then
             region.iconBg:SetColorTexture(skinData.border.r, skinData.border.g, skinData.border.b, 1)
@@ -698,9 +646,7 @@ end
 
 local function FindRow(key)
     for _, region in ipairs(isActive) do
-        if region.key == key then
-            return region
-        end
+        if region.key == key then return region end
     end
 end
 
@@ -710,9 +656,7 @@ local collect
 
 -- amount plus what the row showing key already adds up to.
 local function Total(key, amount)
-    if collect then
-        return amount
-    end
+    if collect then return amount end
     local region = FindRow(key)
     return amount + (region and region.data.amount or 0)
 end
@@ -757,9 +701,7 @@ end
 -------------------------------------------------------------------------------
 --  Sources
 -------------------------------------------------------------------------------
-local function Money(copper)
-    return C_CurrencyInfo.GetCoinTextureString(copper, Get("textSize"))
-end
+local function Money(copper) return C_CurrencyInfo.GetCoinTextureString(copper, Get("textSize")) end
 
 -- The largest coin only, for an Icon Tray badge.
 local function ShortMoney(copper)
@@ -779,9 +721,7 @@ local summary, clock
 -- 23m, 1h 5m: started minutes, so a session that has begun never reads 0m
 local function Duration(seconds)
     local minutes = math.ceil(seconds / 60)
-    if minutes < 60 then
-        return string.format(CludesUI.L("%dm"), minutes)
-    end
+    if minutes < 60 then return string.format(CludesUI.L("%dm"), minutes) end
     return string.format(CludesUI.L("%dh %dm"), math.floor(minutes / 60), minutes % 60)
 end
 
@@ -813,9 +753,7 @@ end
 local function Earn(kind, copper)
     session.start = session.start or GetTime()
     session[kind] = session[kind] + copper
-    if summary then
-        FillSummary()
-    end
+    if summary then FillSummary() end
     SyncSessionClock()
 end
 
@@ -825,12 +763,8 @@ local AuctionPrice = module.AuctionPrice
 -- price for one that binds when picked up (it cannot be auctioned) and for
 -- every item with Use Auctionator Prices off.
 local function ItemValue(itemLink, sellPrice, bindType)
-    if bindType == Enum.ItemBind.Quest then
-        return 0
-    end
-    if bindType == Enum.ItemBind.OnAcquire then
-        return sellPrice or 0
-    end
+    if bindType == Enum.ItemBind.Quest then return 0 end
+    if bindType == Enum.ItemBind.OnAcquire then return sellPrice or 0 end
     return Get("auctionPrices") and AuctionPrice(itemLink) or sellPrice or 0
 end
 
@@ -842,9 +776,7 @@ local function ResetEnter(b)
 end
 
 local function ResetLeave(b)
-    if not b.tip then
-        return
-    end
+    if not b.tip then return end
     b.tip = nil
     CludesUI.HideWidgetTooltip()
 end
@@ -854,16 +786,12 @@ end
 -- or Alt) repaints it.
 local function ResetArm(widget)
     local on = IsControlKeyDown()
-    if on == widget.armed then
-        return
-    end
+    if on == widget.armed then return end
     widget.armed = on
     local c = on and 1 or RESET_DIM
     widget:EnableMouse(on)
     widget.text:SetTextColor(c, c, c)
-    if not on then
-        ResetLeave(widget)
-    end
+    if not on then ResetLeave(widget) end
 end
 
 -- The button shows and hides with the row: Ctrl is watched, and the minute
@@ -871,9 +799,7 @@ end
 local function ResetShow(widget)
     widget:RegisterEvent("MODIFIER_STATE_CHANGED")
     ResetArm(widget)
-    if summary and session.start then
-        FillSummary()
-    end
+    if summary and session.start then FillSummary() end
     SyncSessionClock()
 end
 
@@ -884,9 +810,7 @@ local function ResetHide(widget)
 end
 
 local function ResetClick()
-    if not IsControlKeyDown() then
-        return
-    end
+    if not IsControlKeyDown() then return end
     session.coin, session.items, session.start = 0, 0, nil
     FillSummary()
     SyncSessionClock()
@@ -941,9 +865,7 @@ end
 -- Built the first time the tracker is on.
 local function UpdateSummary()
     if not Get("tracker") then
-        if summary then
-            summary:Hide()
-        end
+        if summary then summary:Hide() end
         SyncSessionClock()
         return
     end
@@ -966,42 +888,31 @@ local function ShowItem(itemLink, count, retried, looted, earned)
         -- Not cached yet: try again once the client has it. Only once: the
         -- client also calls back when the item fails to load.
         if not retried then
-            Item:CreateFromItemLink(itemLink):ContinueOnItemLoad(function()
-                ShowItem(itemLink, count, true, looted, earned)
-            end)
+            Item:CreateFromItemLink(itemLink)
+                :ContinueOnItemLoad(function() ShowItem(itemLink, count, true, looted, earned) end)
         end
         return
     end
     local won = looted and wins[name]
-    if won then
-        wins[name] = nil
-    end
+    if won then wins[name] = nil end
     local each -- what one counts for, priced only when the tracker or the row needs it
     if looted then
         if earned and Get("tracker") then
             each = ItemValue(itemLink, sellPrice, bindType)
             Earn("items", each * count)
         end
-        if not Get("items") then
-            return
-        end
+        if not Get("items") then return end
     end
-    if (quality or 0) < Get("minQuality") then
-        return
-    end
+    if (quality or 0) < Get("minQuality") then return end
     local key = "item:" .. itemLink
     count = Total(key, count)
     local color = ITEM_QUALITY_COLORS[quality or 1] or ITEM_QUALITY_COLORS[1]
     local textValue = color.hex .. name .. "|r"
-    if count > 1 then
-        textValue = count .. "x " .. textValue
-    end
+    if count > 1 then textValue = count .. "x " .. textValue end
     local sub, questSub
     if Get("showIlvl") and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor) then
         local ilvl = C_Item.GetDetailedItemLevelInfo(itemLink) or itemLevel
-        if ilvl and ilvl > 0 then
-            sub = CludesUI.Lf("ilvl: %d", ilvl)
-        end
+        if ilvl and ilvl > 0 then sub = CludesUI.Lf("ilvl: %d", ilvl) end
     elseif classID == Enum.ItemClass.Questitem and ITEM_BIND_QUEST then
         questSub = "|cffffd100" .. ITEM_BIND_QUEST .. "|r"
     end
@@ -1015,9 +926,7 @@ local function ShowItem(itemLink, count, retried, looted, earned)
         local price = Get("auctionPrices") and (each or ItemValue(itemLink, sellPrice, bindType))
             or sellPrice
             or 0
-        if price > 0 then
-            value = Money(price * count)
-        end
+        if price > 0 then value = Money(price * count) end
     end
     Emit(key, {
         icon = iconTex,
@@ -1048,9 +957,7 @@ end
 local factionIDs, skillIDs = {}, {}
 local function Lookup(ids, name, byID, count, byIndex, idKey)
     local ident = ids[name]
-    if ident then
-        return byID(ident)
-    end
+    if ident then return byID(ident) end
     for index = 1, count() do
         local skinData = byIndex(index)
         if skinData and skinData.name == name then
@@ -1097,17 +1004,13 @@ end
 -- With the total held, red at the cap.
 local function ShowCurrency(ident, change)
     local details = C_CurrencyInfo.GetCurrencyInfo(ident)
-    if not (details and details.name) then
-        return
-    end
+    if not (details and details.name) then return end
     local key = "currency:" .. ident
     change = Total(key, change)
     local sum = BreakUpLargeNumbers(details.quantity)
     if details.maxQuantity > 0 then
         sum = sum .. " / " .. BreakUpLargeNumbers(details.maxQuantity)
-        if details.quantity >= details.maxQuantity then
-            sum = "|cffff4040" .. sum .. "|r"
-        end
+        if details.quantity >= details.maxQuantity then sum = "|cffff4040" .. sum .. "|r" end
     end
     local textValue = change .. "x " .. details.name
     Emit(key, {
@@ -1156,16 +1059,10 @@ local ITEM_KEYS = {
 
 -- Forever sends some loot lines, like fishing and crafting, with a plain [Name] instead of a link.
 local function ItemString(textValue)
-    if textValue:find("|Hitem:", 1, true) then
-        return textValue
-    end
+    if textValue:find("|Hitem:", 1, true) then return textValue end
     local name = textValue:match("^%[(.-)%]$")
-    if not name then
-        return
-    end
-    if rollLinks[name] then
-        return rollLinks[name]
-    end
+    if not name then return end
+    if rollLinks[name] then return rollLinks[name] end
     local ident = C_Item.GetItemInfoInstant(name)
     return ident and "item:" .. ident
 end
@@ -1175,9 +1072,7 @@ local function OnLoot(textValue)
         local entry, count = Match(k[1], textValue)
         if entry then
             local itemLink = ItemString(entry)
-            if itemLink then
-                ShowItem(itemLink, tonumber(count) or 1, nil, true, k[2])
-            end
+            if itemLink then ShowItem(itemLink, tonumber(count) or 1, nil, true, k[2]) end
             return
         end
     end
@@ -1193,15 +1088,11 @@ local ROLL_LABELS = {
 
 local function RollText(details)
     local roll = details and Plain(details.roll, "number")
-    if not roll then
-        return
-    end
+    if not roll then return end
     local status = Plain(details.state, "number")
     for key, value in pairs(Enum.EncounterLootDropRollState or {}) do
         local labelText = value == status and ROLL_LABELS[key]
-        if labelText then
-            return (_G[labelText[1]] or labelText[2]) .. " " .. roll
-        end
+        if labelText then return (_G[labelText[1]] or labelText[2]) .. " " .. roll end
     end
     return tostring(roll)
 end
@@ -1212,9 +1103,10 @@ local function ShowRoll(key, itemLink, itemName, winner, class, roll, retried)
     if itemLink then
         name, _, quality, _, _, _, _, _, _, iconTex = C_Item.GetItemInfo(itemLink)
         if not name and not retried then
-            Item:CreateFromItemLink(itemLink):ContinueOnItemLoad(function()
-                ShowRoll(key, itemLink, itemName, winner, class, roll, true)
-            end)
+            Item:CreateFromItemLink(itemLink)
+                :ContinueOnItemLoad(
+                    function() ShowRoll(key, itemLink, itemName, winner, class, roll, true) end
+                )
             return
         end
     end
@@ -1224,9 +1116,7 @@ local function ShowRoll(key, itemLink, itemName, winner, class, roll, retried)
     if winner then
         -- The suite's class colour (custom class colours included); an unknown class stays uncoloured.
         local cc = class and RAID_CLASS_COLORS[class] and CludesUI.GetClassColor(class)
-        if cc then
-            winner = CludesUI.HexColor(cc.r, cc.g, cc.b) .. winner .. "|r"
-        end
+        if cc then winner = CludesUI.HexColor(cc.r, cc.g, cc.b) .. winner .. "|r" end
         textValue = CludesUI.Lf("%s won %s", winner, entry)
     else
         textValue = CludesUI.Lf("Everyone passed on %s", entry)
@@ -1246,26 +1136,18 @@ end
 local shownDrops = {}
 local function OnDrop(encounterID, lootListID)
     local key = "roll:" .. encounterID .. ":" .. lootListID
-    if shownDrops[key] then
-        return
-    end
+    if shownDrops[key] then return end
     local drop = C_LootHistory.GetSortedInfoForDrop(encounterID, lootListID)
     local winner = drop and drop.winner
-    if not (winner or (drop and drop.allPassed == true)) then
-        return
-    end
+    if not (winner or (drop and drop.allPassed == true)) then return end
     shownDrops[key] = true
     local raw = Plain(drop.itemHyperlink, "string")
     local name = raw and raw:match("%[(.-)%]")
     local itemLink = raw and raw:find("|Hitem:", 1, true) and raw or nil
-    if itemLink and name then
-        rollLinks[name] = itemLink
-    end
+    if itemLink and name then rollLinks[name] = itemLink end
     local roll = RollText(winner)
     if winner and winner.isSelf == true then
-        if name and roll then
-            wins[name] = roll
-        end
+        if name and roll then wins[name] = roll end
         return
     end
     ShowRoll(
@@ -1284,37 +1166,23 @@ local function OnMoney(textValue)
     local copper = 0
     for key, mult in pairs(COIN_KEYS) do
         local num = Match(key, textValue, true)
-        if num then
-            copper = copper + tonumber(num) * mult
-        end
+        if num then copper = copper + tonumber(num) * mult end
     end
-    if copper <= 0 then
-        return
-    end
-    if Get("tracker") then
-        Earn("coin", copper)
-    end
-    if Get("money") then
-        ShowMoney(copper)
-    end
+    if copper <= 0 then return end
+    if Get("tracker") then Earn("coin", copper) end
+    if Get("money") then ShowMoney(copper) end
 end
 
 local function OnFaction(textValue)
     local faction, amount = Match("FACTION_STANDING_INCREASED", textValue)
-    if faction then
-        return ShowReputation(faction, tonumber(amount))
-    end
+    if faction then return ShowReputation(faction, tonumber(amount)) end
     faction, amount = Match("FACTION_STANDING_DECREASED", textValue)
-    if faction then
-        return ShowReputation(faction, -tonumber(amount))
-    end
+    if faction then return ShowReputation(faction, -tonumber(amount)) end
 end
 
 local function OnSkill(textValue)
     local skill, rank = Match("SKILL_RANK_UP", textValue)
-    if skill then
-        ShowSkill(skill, tonumber(rank))
-    end
+    if skill then ShowSkill(skill, tonumber(rank)) end
 end
 
 -- tracked: the tracker counts these, so it listens while their rows are off.
@@ -1329,21 +1197,15 @@ local function OnEvent(_, evt, ...)
     local chat = CHAT_EVENTS[evt]
     if chat then
         local textValue = Plain((...), "string")
-        if textValue then
-            chat.handler(textValue)
-        end
+        if textValue then chat.handler(textValue) end
     elseif evt == "CURRENCY_DISPLAY_UPDATE" then
         local ident, _, change = ...
         ident, change = Plain(ident, "number"), Plain(change, "number")
-        if ident and change and change > 0 then
-            ShowCurrency(ident, change)
-        end
+        if ident and change and change > 0 then ShowCurrency(ident, change) end
     elseif evt == "LOOT_HISTORY_UPDATE_DROP" then
         local encounterID, lootListID = ...
         encounterID, lootListID = Plain(encounterID, "number"), Plain(lootListID, "number")
-        if encounterID and lootListID then
-            OnDrop(encounterID, lootListID)
-        end
+        if encounterID and lootListID then OnDrop(encounterID, lootListID) end
     end
 end
 
@@ -1354,9 +1216,7 @@ local RefreshPreview
 
 local function ApplyStyle()
     RefreshPreview()
-    if not anchor then
-        return
-    end
+    if not anchor then return end
     anchor:SetSize(Get("width"), AnchorHeight())
     -- Pooled rows are styled when Push takes them.
     for _, region in ipairs(isActive) do
@@ -1371,9 +1231,7 @@ local function ApplyStyle()
 end
 
 local function CreateAnchor()
-    if anchor then
-        return
-    end
+    if anchor then return end
     anchor = CreateFrame("Frame", nil, UIParent)
     anchor:SetFrameStrata("MEDIUM")
     feed.frame = anchor
@@ -1388,14 +1246,10 @@ local function ClearRows()
 end
 
 local function Apply()
-    if events then
-        events:UnregisterAllEvents()
-    end
+    if events then events:UnregisterAllEvents() end
     if not Enabled() then
         ClearRows()
-        if summary then
-            summary:Hide()
-        end
+        if summary then summary:Hide() end
         SyncSessionClock()
         return
     end
@@ -1405,16 +1259,10 @@ local function Apply()
         events:SetScript("OnEvent", OnEvent)
     end
     for evt, chat in pairs(CHAT_EVENTS) do
-        if Get(chat.setting) or (chat.tracked and Get("tracker")) then
-            events:RegisterEvent(evt)
-        end
+        if Get(chat.setting) or (chat.tracked and Get("tracker")) then events:RegisterEvent(evt) end
     end
-    if Get("currency") then
-        events:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
-    end
-    if Get("rolls") and C_LootHistory then
-        events:RegisterEvent("LOOT_HISTORY_UPDATE_DROP")
-    end
+    if Get("currency") then events:RegisterEvent("CURRENCY_DISPLAY_UPDATE") end
+    if Get("rolls") and C_LootHistory then events:RegisterEvent("LOOT_HISTORY_UPDATE_DROP") end
 end
 
 -- A sample of every enabled source: the player's capital for reputation and
@@ -1429,31 +1277,21 @@ local function PreviewRoll()
 end
 
 local function Preview()
-    if not Enabled() then
-        return
-    end
+    if not Enabled() then return end
     CreateAnchor()
     ClearRows()
-    if Get("skills") then
-        ShowSkill(CludesUI.L("Swords"), 42)
-    end
+    if Get("skills") then ShowSkill(CludesUI.L("Swords"), 42) end
     if Get("reputation") then
         local capital = C_Reputation.GetFactionDataByID(UnitFactionGroup("player") == "Horde" and 76 or 72)
-        if capital then
-            ShowReputation(capital.name, 250)
-        end
+        if capital then ShowReputation(capital.name, 250) end
     end
-    if Get("money") then
-        ShowMoney(12345)
-    end
+    if Get("money") then ShowMoney(12345) end
     if Get("items") then
         for index = 1, #PREVIEW_ITEMS, 2 do
             ShowItem("item:" .. PREVIEW_ITEMS[index], PREVIEW_ITEMS[index + 1])
         end
     end
-    if Get("rolls") then
-        PreviewRoll()
-    end
+    if Get("rolls") then PreviewRoll() end
 end
 
 -------------------------------------------------------------------------------
@@ -1474,29 +1312,19 @@ local requested = {} -- preview items asked of the client, once each
 local function PreviewSamples()
     local entries, itemList = {}, Get("items")
     collect = entries
-    if Get("rolls") then
-        PreviewRoll()
-    end
+    if Get("rolls") then PreviewRoll() end
     if itemList then
         for index = 1, #PREVIEW_ITEMS, 2 do
             local itemLink = "item:" .. PREVIEW_ITEMS[index]
-            if C_Item.GetItemInfo(itemLink) then
-                ShowItem(itemLink, PREVIEW_ITEMS[index + 1])
-            end
+            if C_Item.GetItemInfo(itemLink) then ShowItem(itemLink, PREVIEW_ITEMS[index + 1]) end
         end
     end
-    if Get("money") then
-        ShowMoney(12345)
-    end
+    if Get("money") then ShowMoney(12345) end
     if Get("reputation") then
         local capital = C_Reputation.GetFactionDataByID(UnitFactionGroup("player") == "Horde" and 76 or 72)
-        if capital then
-            ShowReputation(capital.name, 250)
-        end
+        if capital then ShowReputation(capital.name, 250) end
     end
-    if Get("skills") then
-        ShowSkill(CludesUI.L("Swords"), 42)
-    end
+    if Get("skills") then ShowSkill(CludesUI.L("Swords"), 42) end
     collect = nil
     -- Asked for once the samples are in: the callback can run right away.
     if itemList or Get("rolls") then
@@ -1504,9 +1332,7 @@ local function PreviewSamples()
             local ident = PREVIEW_ITEMS[index]
             if not requested[ident] and not C_Item.GetItemInfo(ident) then
                 requested[ident] = true
-                Item:CreateFromItemID(ident):ContinueOnItemLoad(function()
-                    RefreshPreview()
-                end)
+                Item:CreateFromItemID(ident):ContinueOnItemLoad(function() RefreshPreview() end)
             end
         end
     end
@@ -1516,9 +1342,7 @@ end
 -- force: draw while the header is still being built (not shown yet).
 RefreshPreview = function(force)
     local val = preview
-    if not (val and (force or val.view:IsVisible())) then
-        return
-    end
+    if not (val and (force or val.view:IsVisible())) then return end
     local samples = PreviewSamples()
     local num = math.min(#samples, Get("maxRows"))
     for index = 1, num do
@@ -1556,9 +1380,7 @@ RefreshPreview = function(force)
     Layout(val)
     val.previewHeight = hgt * scale + 30
     val.view:SetHeight(val.previewHeight)
-    if val.onHeightChanged then
-        val.onHeightChanged(val.previewHeight)
-    end
+    if val.onHeightChanged then val.onHeightChanged(val.previewHeight) end
 end
 
 -- parent -> the dress its size hook was made for: the options page pool
@@ -1573,9 +1395,7 @@ local function CreateSettingsPreview(hostFrame, availableWidth, onHeightChanged)
         val.view = CreateFrame("Frame", nil, hostFrame)
         val.frame = CreateFrame("Frame", nil, val.view)
         val.frame:SetPoint("CENTER")
-        val.view:SetScript("OnShow", function()
-            RefreshPreview()
-        end)
+        val.view:SetScript("OnShow", function() RefreshPreview() end)
         preview = val
     end
     -- Frames outlive a page rebuild, so the view is reused.
@@ -1589,13 +1409,9 @@ local function CreateSettingsPreview(hostFrame, availableWidth, onHeightChanged)
         hookedParents[hostFrame] = dress
         local lastWidth
         hostFrame:HookScript("OnSizeChanged", function(_, width)
-            if width == lastWidth then
-                return
-            end
+            if width == lastWidth then return end
             lastWidth = width
-            if val.view:GetParent() == hostFrame then
-                RefreshPreview()
-            end
+            if val.view:GetParent() == hostFrame then RefreshPreview() end
         end)
     end
     val.view:Show()
@@ -1609,14 +1425,10 @@ CludesUI._LootFeed = {
     Cfg = Cfg,
     Apply = Apply,
     ApplyStyle = ApplyStyle,
-    ApplyPosition = function()
-        F.Place(anchor)
-    end,
+    ApplyPosition = function() F.Place(anchor) end,
     Preview = Preview,
     CreateSettingsPreview = CreateSettingsPreview,
-    RefreshPreview = function()
-        RefreshPreview()
-    end,
+    RefreshPreview = function() RefreshPreview() end,
 }
 
 F.Start(Apply, {
@@ -1625,9 +1437,7 @@ F.Start(Apply, {
     order = 732,
     minWidth = 150,
     frame = function(build)
-        if build then
-            CreateAnchor()
-        end
+        if build then CreateAnchor() end
         return anchor
     end,
     -- Follows Max Rows and Row Height.

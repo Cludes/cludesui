@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Nameplates_Health.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._npInternals
 -- CludesUINameplates.lua or an earlier nameplate file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local UnitHealth, UnitHealthMax = UnitHealth, UnitHealthMax
@@ -28,9 +24,7 @@ local GetReactionColor, _fallbackPlates = Inner.GetReactionColor, Inner._fallbac
 local castFallbackFrame, NameplateFrame = Inner.castFallbackFrame, Inner.NameplateFrame
 
 local p
-Inner.profileSetters[#Inner.profileSetters + 1] = function(val)
-    p = val
-end
+Inner.profileSetters[#Inner.profileSetters + 1] = function(val) p = val end
 
 -- WoW Forever: no health number under 10,000 abbreviates (CludesUI_NumberFormat.lua).
 -- On ns, not a local: this chunk is near its 200-local cap.
@@ -49,9 +43,7 @@ CludesUI.RegisterNumberFormatCallback(function()
 end)
 function NameplateFrame:UpdateHealthValues()
     local unitToken = self.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     if self.nameplate then
         local actualUnit = self.nameplate.namePlateUnitToken
         if actualUnit and actualUnit ~= unitToken then
@@ -73,25 +65,17 @@ function NameplateFrame:UpdateHealthValues()
                 self:HideKickTick()
                 self:ClearImportantCastGlow()
                 self:ClearCastTargetGlow()
-                if not self._interrupted then
-                    self.cast:Hide()
-                end
+                if not self._interrupted then self.cast:Hide() end
                 self.castTimer:SetText("")
                 self._castTex = nil
             end
             self.unit = actualUnit
             unitToken = actualUnit
             -- Color Casting Enemies remembers the mob, not the plate.
-            if self._castSeen ~= nil then
-                mod.NP_ResetCastKind(self)
-            end
+            if self._castSeen ~= nil then mod.NP_ResetCastKind(self) end
             -- Opacity for the new occupant (the cast end above applied it to the old token).
-            if mod._ntAlpha < 1 or mod._oocAlpha < 1 then
-                mod.NT_Apply(self)
-            end
-            if mod._npTgtTexts or self._totEv then
-                self:SyncToT(actualUnit)
-            end
+            if mod._ntAlpha < 1 or mod._oocAlpha < 1 then mod.NT_Apply(self) end
+            if mod._npTgtTexts or self._totEv then self:SyncToT(actualUnit) end
             -- New occupant: its absorb state is unknown. Nil the lean-gate flag
             -- so this pass takes the full absorb path and re-seeds it; the
             -- cached max belongs to the old unit, drop it too.
@@ -101,9 +85,7 @@ function NameplateFrame:UpdateHealthValues()
             -- (zero cost when the Cast Lockout feature is off / no lockout).
             if self._castLockout then
                 self._castLockout = nil
-                if mod.NPC_UpdateLockout then
-                    mod.NPC_UpdateLockout(self)
-                end
+                if mod.NPC_UpdateLockout then mod.NPC_UpdateLockout(self) end
             end
             self:UpdateName()
             self._castDirtyFull = true
@@ -117,9 +99,7 @@ function NameplateFrame:UpdateHealthValues()
             -- ApplyTarget; the direct call covers its no-hover-fx early-out
             -- and re-evaluates target state for the new unit.
             -- The new occupant's type scale (its unit events stay on the old token).
-            if mod._typeScaleOn then
-                self:UpdateTypeScale()
-            end
+            if mod._typeScaleOn then self:UpdateTypeScale() end
             mod.ClearHoverExtras(self)
             self:ApplyTarget()
         end
@@ -271,18 +251,10 @@ function NameplateFrame:UpdateHealthValues()
                 -- the write loop below runs per paint and must not pay a
                 -- classification call per slot per paint.
                 record.combo = IsComboHealthText(el) or false
-                if el == "healthNumber" or record.combo then
-                    anyNum = true
-                end
-                if record.combo then
-                    anyCombo = true
-                end
-                if el == "healthPercentNoSign" then
-                    anyNoSign = true
-                end
-                if el == "healthNumMax" then
-                    anyMax = true
-                end
+                if el == "healthNumber" or record.combo then anyNum = true end
+                if record.combo then anyCombo = true end
+                if el == "healthPercentNoSign" then anyNoSign = true end
+                if el == "healthNumMax" then anyMax = true end
             end
             ca._anyNum = anyNum
             ca._anyNoSign = anyNoSign
@@ -352,15 +324,11 @@ function NameplateFrame:UpdateHealthValues()
                 local numText, maxText, pctText, pctTextDec
                 if anyNum then
                     numText = mod.AbbreviateValue(curHealth, "health")
-                    if ca._anyMax then
-                        maxText = mod.AbbreviateValue(maxHealth, "maxHealth")
-                    end
+                    if ca._anyMax then maxText = mod.AbbreviateValue(maxHealth, "maxHealth") end
                 end
                 if ca._anyCombo then
                     pctText = string.format("%d%%", pctVal)
-                    if anyDec then
-                        pctTextDec = string.format("%.1f%%", pctVal)
-                    end
+                    if anyDec then pctTextDec = string.format("%.1f%%", pctVal) end
                 end
                 for si = 1, ca._count do
                     local record = ca[si]
@@ -387,13 +355,9 @@ function NameplateFrame:UpdateHealthValues()
     end
     -- Custom texts reading health or absorbs: outside the value memo, since an
     -- absorb moves without the health. Off until a slot shows one.
-    if ca and ca._cuTick then
-        self:PaintCustomTexts("tick")
-    end
+    if ca and ca._cuTick then self:PaintCustomTexts("tick") end
     -- Target texts ride the health tick too, throttled in RefreshTargetTexts.
-    if mod._npTgtTexts then
-        self:RefreshTargetTexts(false, "tgtOnly")
-    end
+    if mod._npTgtTexts then self:RefreshTargetTexts(false, "tgtOnly") end
 
     -- Execute Pulse Glow gate: evaluate the execute-window curve C-side and feed the color
     -- straight into the glow textures (alpha 1 below threshold, 0 above -- never branched on in
@@ -426,22 +390,14 @@ end
 -- border wrapped around the cast bar, the color just set landed on the hidden health
 -- border (Basic) or not yet on the lower piece and seam (Custom).
 function NameplateFrame:RepaintThreatBorder(unitToken)
-    if UnitIsUnit(unitToken, "target") and mod.GetTargetGlowBorderColor() then
-        return
-    end
-    if self._hoverFxOn and mod.GetHoverGlowBorderColor() then
-        return
-    end
+    if UnitIsUnit(unitToken, "target") and mod.GetTargetGlowBorderColor() then return end
+    if self._hoverFxOn and mod.GetHoverGlowBorderColor() then return end
     self:ApplyBorderColor()
-    if self._wrapActive or self._cbWrapActive then
-        self:UpdateBorderWrap()
-    end
+    if self._wrapActive or self._cbWrapActive then self:UpdateBorderWrap() end
 end
 function NameplateFrame:UpdateHealthColor()
     local unitToken = self.unit
-    if not unitToken then
-        return
-    end
+    if not unitToken then return end
     -- Skip-if-unchanged: GetReactionColor returns plain profile-sourced numbers (every return
     -- path verified non-secret). Threat events fire constantly with an unchanged result, so
     -- compare against the last applied values and skip the setter. Cache nil'd in ClearUnit.
@@ -515,9 +471,7 @@ function NameplateFrame:UpdateHealthColor()
             self._threatBdKr, self._threatBdKg, self._threatBdKb = tcr, tcg, tcb
             repaint = true
         end
-        if repaint then
-            self:RepaintThreatBorder(unitToken)
-        end
+        if repaint then self:RepaintThreatBorder(unitToken) end
     elseif self._threatBdOn then
         self._threatBdOn = nil
         self._threatBdR, self._threatBdG, self._threatBdB = nil, nil, nil
@@ -537,9 +491,7 @@ function NameplateFrame:UpdateHealthColor()
     local wasNameThreat = self._threatNameOn
     self._threatNameOn = nameThreat or nil
     local slotClassName = false
-    if mod._npSlotClassOn then
-        slotClassName = mod.NP_PaintSlotClassColors(self, unitToken, nameThreat)
-    end
+    if mod._npSlotClassOn then slotClassName = mod.NP_PaintSlotClassColors(self, unitToken, nameThreat) end
     if nameThreat then
         if tcSecret then
             self._nameThR, self._nameThG, self._nameThB = nil, nil, nil
@@ -575,12 +527,8 @@ function NameplateFrame:UpdateHealthColor()
         end
         if tcBorder or tcName then
             local okA = mod._threatOkA
-            if tcBorder then
-                borderA = okA
-            end
-            if tcName then
-                nameA = okA
-            end
+            if tcBorder then borderA = okA end
+            if tcName then nameA = okA end
         end
         mod.DebuffColors_Threat(self, healthA, borderA, nameA)
     end
@@ -604,9 +552,7 @@ function NameplateFrame:UpdateHealthColor()
     end
     -- Threat % text (WoW Forever): one field read while off; a shown text is
     -- still hidden on the pass after the option turns off.
-    if mod._npTptOn or self._tptShown then
-        mod.NP_UpdateThreatPct(self, unitToken)
-    end
+    if mod._npTptOn or self._tptShown then mod.NP_UpdateThreatPct(self, unitToken) end
     -- Focus overlay: stripe textures on the focus target's health bar (fill clip at full alpha,
     -- bg clip at half). Value-keyed: reapplied only when a component differs from the last
     -- applied state. No Tint keeps the whole pipeline and only swaps the tint source to the
@@ -684,9 +630,7 @@ function NameplateFrame:UpdateHealthColor()
     end
     -- Focus letter: zero cost when off -- a disabled plate pays two field reads (no call, no
     -- UnitIsUnit, no allocation). _focusLetterShown lets a live letter hide itself when turned off.
-    if db2.focusLetterEnabled or self._focusLetterShown then
-        mod.ApplyFocusLetter(self, unitToken, db2)
-    end
+    if db2.focusLetterEnabled or self._focusLetterShown then mod.ApplyFocusLetter(self, unitToken, db2) end
     -- Target overlay: identical to focus overlay but for current target,
     -- including the No Tint bar-color tint source.
     local targetTex = db2.targetOverlayTexture or defaultSet.targetOverlayTexture

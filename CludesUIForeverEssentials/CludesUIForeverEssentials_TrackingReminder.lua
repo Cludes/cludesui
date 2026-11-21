@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_TrackingReminder.lua  (WoW Forever only)
 --  Tracking Reminder: a row of icons for the tracking you know but have not
@@ -51,9 +47,7 @@ local buttons = {}
 local dirty = true
 
 local function Known(ident)
-    if C_SpellBook and C_SpellBook.IsSpellKnown then
-        return C_SpellBook.IsSpellKnown(ident)
-    end
+    if C_SpellBook and C_SpellBook.IsSpellKnown then return C_SpellBook.IsSpellKnown(ident) end
     return IsSpellKnown and IsSpellKnown(ident) or false
 end
 
@@ -71,9 +65,7 @@ local function ActiveTracking()
         end
         if spellId then
             listed[spellId] = true
-            if isActive then
-                on[spellId] = true
-            end
+            if isActive then on[spellId] = true end
         end
     end
     return on, listed
@@ -90,15 +82,9 @@ local function Missing()
     local category = GetShapeshiftFormID and GetShapeshiftFormID() == CAT_FORM
     local result = {}
     local function Consider(ident)
-        if not Known(ident) or on[ident] then
-            return
-        end
-        if CAT_ONLY[ident] and not category then
-            return
-        end
-        if not listed[ident] and HasBuff(ident) then
-            return
-        end
+        if not Known(ident) or on[ident] then return end
+        if CAT_ONLY[ident] and not category then return end
+        if not listed[ident] and HasBuff(ident) then return end
         result[#result + 1] = ident
     end
     for _, ident in ipairs(SPELLS) do
@@ -113,9 +99,7 @@ local function Missing()
 end
 
 local function Build()
-    if holderFrame then
-        return holderFrame
-    end
+    if holderFrame then return holderFrame end
     holderFrame = CreateFrame("Frame", "CludesUITrackingReminder", UIParent)
     holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
     RegisterStateDriver(holderFrame, "visibility", "[combat] hide; show")
@@ -124,9 +108,7 @@ end
 
 local function Button(index)
     local widget = buttons[index]
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
     widget:RegisterForClicks("AnyUp", "AnyDown")
     widget:SetAttribute("type", "spell")
@@ -138,26 +120,20 @@ local function Button(index)
     border:SetPoint("BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0, 0, 0, 1)
     widget:SetScript("OnEnter", function(self)
-        if not self.spellID then
-            return
-        end
+        if not self.spellID then return end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetSpellByID(self.spellID)
         GameTooltip:AddLine(CludesUI.L("Click to turn this tracking on."), 0.6, 0.8, 1)
         GameTooltip:Show()
     end)
-    widget:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
     buttons[index] = widget
     return widget
 end
 
 -- Lays the row out again. Out of combat only: the buttons are secure.
 local function Refresh()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     if InCombatLockdown() then
         dirty = true
         return
@@ -192,13 +168,9 @@ local EVENTS = {
 }
 local queued
 eventFrame:SetScript("OnEvent", function(_, evt)
-    if evt == "PLAYER_REGEN_ENABLED" and not dirty then
-        return
-    end
+    if evt == "PLAYER_REGEN_ENABLED" and not dirty then return end
     -- Aura and spell events come in bursts: one layout once they settle.
-    if queued then
-        return
-    end
+    if queued then return end
     queued = true
     C_Timer.After(0.3, function()
         queued = nil
@@ -213,9 +185,7 @@ local function Apply()
             eventFrame:RegisterEvent(event)
         end
         eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
-        if not CludesUI._unlockActive and not InCombatLockdown() then
-            F.Place(holderFrame)
-        end
+        if not CludesUI._unlockActive and not InCombatLockdown() then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
     end
@@ -230,9 +200,7 @@ F.Start(Apply, {
     label = "Tracking Reminder",
     order = 735,
     frame = function(build)
-        if build then
-            Build()
-        end
+        if build then Build() end
         return holderFrame
     end,
     size = function()

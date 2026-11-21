@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI__General_Options.lua -- Global Settings module (CVar-based settings
 --  shared by all CludesUI addons).
@@ -18,9 +16,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- The account-wide settings table, made if it is not there yet, for a write.
 local function Account()
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     return CludesUIDB
 end
 
@@ -96,9 +92,7 @@ function CludesUI.RunCDMSpellExportFlow(activeName, exportFn)
             subtitleAtBottom = true,
             confirmText = CludesUI.L("Export"),
             specs = specs,
-            onConfirm = function(selectedSpecs)
-                exportFn(true, selectedSpecs)
-            end,
+            onConfirm = function(selectedSpecs) exportFn(true, selectedSpecs) end,
             onCancel = function() end, -- cancel / Esc / click-off: just close, NO export
         })
     end
@@ -109,12 +103,8 @@ function CludesUI.RunCDMSpellExportFlow(activeName, exportFn)
         ),
         confirmText = CludesUI.L("Yes"),
         cancelText = CludesUI.L("No"),
-        onConfirm = function()
-            pickThenExport()
-        end,
-        onCancel = function()
-            exportFn(false, nil)
-        end, -- "No": export WITHOUT layout
+        onConfirm = function() pickThenExport() end,
+        onCancel = function() exportFn(false, nil) end, -- "No": export WITHOUT layout
         onDismiss = function() end, -- Esc / click-off: just close, NO export
     })
 end
@@ -145,9 +135,7 @@ CludesUI._WHATSNEW_PATCHES = {
                 title = "New Layout Mode bar",
                 desc = "A toolbar across the top of the screen: square toggle buttons with captions, the element filter, and Exit and Save & Exit on the right. Opening it plays a new animation.",
                 onClick = function()
-                    if CludesUI.OpenUnlockMode then
-                        CludesUI:OpenUnlockMode()
-                    end
+                    if CludesUI.OpenUnlockMode then CludesUI:OpenUnlockMode() end
                 end,
             },
         },
@@ -499,14 +487,10 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  CVar helpers
     ---------------------------------------------------------------------------
-    local function GetCVarNum(cvar)
-        return tonumber(GetCVar(cvar)) or 0
-    end
+    local function GetCVarNum(cvar) return tonumber(GetCVar(cvar)) or 0 end
 
     local function SetCVarSafe(cvar, value)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         CludesUI.SetCVar(cvar, value)
     end
 
@@ -515,9 +499,7 @@ CludesUI.AtOptionsLogin(function()
     -- CludesUI.SetCVar: Optimize keeps its own Restore, and Uninstall CUI
     -- never touches them.
     local function SetGfxCVar(cvar, value)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         SetCVar(cvar, value)
     end
 
@@ -547,17 +529,13 @@ CludesUI.AtOptionsLogin(function()
     local function ApplySmartDefaults()
         for _, record in ipairs(CUI_DEFAULTS) do
             local cvar, preferred = record[1], record[2]
-            if IsAtBlizzardDefault(cvar) then
-                SetCVarSafe(cvar, preferred)
-            end
+            if IsAtBlizzardDefault(cvar) then SetCVarSafe(cvar, preferred) end
         end
     end
     ApplySmartDefaults()
 
     -- Apply suppress lua errors on login (default: ON)
-    if not CludesUIDB or CludesUIDB.suppressErrors ~= false then
-        SetCVarSafe("scriptErrors", "0")
-    end
+    if not CludesUIDB or CludesUIDB.suppressErrors ~= false then SetCVarSafe("scriptErrors", "0") end
 
     -- Optimized graphics settings are NOT re-applied on login: SetCVar already persists, so re-applying would override the user's manual adjustments.
 
@@ -600,12 +578,8 @@ CludesUI.AtOptionsLogin(function()
         local function ApplyOptimizedGfx()
             -- Refused in combat, where SetGfxCVar writes nothing: a backup taken
             -- then would turn the card into Restore with nothing optimized.
-            if InCombatLockdown() then
-                return
-            end
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
+            if InCombatLockdown() then return end
+            if not CludesUIDB then CludesUIDB = {} end
             -- One-time store: only snapshot if no backup exists yet
             if not CludesUIDB.gfxBackup then
                 local backup = {}
@@ -618,18 +592,14 @@ CludesUI.AtOptionsLogin(function()
                 -- Backfill CVars added to the list after the original snapshot so Restore covers them too.
                 local backup = CludesUIDB.gfxBackup
                 for _, record in ipairs(OPTIMIZED_CVARS) do
-                    if backup[record[1]] == nil then
-                        backup[record[1]] = GetCVar(record[1])
-                    end
+                    if backup[record[1]] == nil then backup[record[1]] = GetCVar(record[1]) end
                 end
             end
             for _, record in ipairs(OPTIMIZED_CVARS) do
                 SetGfxCVar(record[1], record[2])
             end
             local curContrast = tonumber(GetCVar("Contrast")) or 50
-            if curContrast <= 55 then
-                SetGfxCVar("Contrast", curContrast + 10)
-            end
+            if curContrast <= 55 then SetGfxCVar("Contrast", curContrast + 10) end
             local refreshList = CludesUI._widgetRefreshList
             if refreshList then
                 for idx = 1, #refreshList do
@@ -639,22 +609,14 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local function RestoreGfxSettings()
-            if not CludesUIDB or not CludesUIDB.gfxBackup then
-                return
-            end
-            if InCombatLockdown() then
-                return
-            end
+            if not CludesUIDB or not CludesUIDB.gfxBackup then return end
+            if InCombatLockdown() then return end
             local backup = CludesUIDB.gfxBackup
             for _, record in ipairs(OPTIMIZED_CVARS) do
                 local saved = backup[record[1]]
-                if saved then
-                    SetGfxCVar(record[1], saved)
-                end
+                if saved then SetGfxCVar(record[1], saved) end
             end
-            if backup["Contrast"] then
-                SetGfxCVar("Contrast", backup["Contrast"])
-            end
+            if backup["Contrast"] then SetGfxCVar("Contrast", backup["Contrast"]) end
             CludesUIDB.gfxBackup = nil
             local rl2 = CludesUI._widgetRefreshList
             if rl2 then
@@ -734,9 +696,7 @@ CludesUI.AtOptionsLogin(function()
             }
             local savedQoL = {}
             for _, keyName in ipairs(qolKeys) do
-                if CludesUIDB[keyName] ~= nil then
-                    savedQoL[keyName] = CludesUIDB[keyName]
-                end
+                if CludesUIDB[keyName] ~= nil then savedQoL[keyName] = CludesUIDB[keyName] end
             end
             -- Game settings, not CUI ones: the record of the settings from
             -- before CUI (Uninstall CUI) and Optimize Graphics' Restore values.
@@ -746,16 +706,10 @@ CludesUI.AtOptionsLogin(function()
             CludesUIDB = _G["CludesUIDB"]
             CludesUIDB.restoreOnUninstall = oldRestore
             CludesUIDB.gfxBackup = oldGfx
-            if oldScale then
-                CludesUIDB.ppUIScale = oldScale
-            end
-            if oldScaleAuto ~= nil then
-                CludesUIDB.ppUIScaleAuto = oldScaleAuto
-            end
+            if oldScale then CludesUIDB.ppUIScale = oldScale end
+            if oldScaleAuto ~= nil then CludesUIDB.ppUIScaleAuto = oldScaleAuto end
             if savedFriends then
-                if not CludesUIDB.global then
-                    CludesUIDB.global = {}
-                end
+                if not CludesUIDB.global then CludesUIDB.global = {} end
                 for keyName, val in pairs(savedFriends) do
                     CludesUIDB.global[keyName] = val
                 end
@@ -798,9 +752,7 @@ CludesUI.AtOptionsLogin(function()
             elseif CludesUI.EditModeOpen() then
                 msg = CludesUI.L("Close Edit Mode first, then try again.")
             end
-            if not msg then
-                return false
-            end
+            if not msg then return false end
             CludesUI:ShowConfirmPopup({
                 title = CludesUI.L("Uninstall CUI"),
                 message = msg,
@@ -815,9 +767,7 @@ CludesUI.AtOptionsLogin(function()
         -- reload is a RequestReload from onConfirm, not reload = true: the refusal is
         -- checked again there, and reload = true would reload even when it is refused.
         local function ConfirmUninstall()
-            if UninstallRefused() then
-                return
-            end
+            if UninstallRefused() then return end
             local message = CludesUI.L(
                 "Puts back the game settings CUI changed, such as nameplate, action bar, chat and tooltip options, and turns CUI off for every character, then reloads the UI."
             ) .. "\n\n" .. CludesUI.L(
@@ -841,9 +791,7 @@ CludesUI.AtOptionsLogin(function()
                 confirmText = CludesUI.L("Uninstall & Reload"),
                 cancelText = CludesUI.L("Cancel"),
                 onConfirm = function()
-                    if UninstallRefused() then
-                        return
-                    end
+                    if UninstallRefused() then return end
                     CludesUI.RequestReload(
                         CludesUI.L("Uninstall CUI"),
                         CludesUI.L("Reload to finish uninstalling CUI."),
@@ -854,9 +802,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- A saved graphics backup means Optimize has run: Maintenance offers Restore.
-        local function HasGfxBackup()
-            return (CludesUIDB and CludesUIDB.gfxBackup) ~= nil
-        end
+        local function HasGfxBackup() return (CludesUIDB and CludesUIDB.gfxBackup) ~= nil end
         -- What Optimize changes, for Maintenance's Details button.
         local function ShowOptimizeInfo()
             local CHANGES = "What we change:\n\n"
@@ -911,9 +857,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "The look of this options window: its frame art and colours.",
             values = themeValues,
             order = CludesUI.THEME_ORDER,
-            getValue = function()
-                return CludesUI.GetActiveTheme()
-            end,
+            getValue = function() return CludesUI.GetActiveTheme() end,
             setValue = function(val)
                 CludesUI.SetActiveTheme(val)
                 -- Re-resolve the accent so the sidebar highlight tracks the theme.
@@ -950,9 +894,7 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = false,
                     getValue = function()
                         local _, ca = CludesUI.GetActiveAccentState()
-                        if ca then
-                            return ca.r, ca.g, ca.b, 1
-                        end
+                        if ca then return ca.r, ca.g, ca.b, 1 end
                         return CludesUI.DEFAULT_ACCENT_R,
                             CludesUI.DEFAULT_ACCENT_G,
                             CludesUI.DEFAULT_ACCENT_B,
@@ -970,9 +912,7 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI:RefreshPage()
                             return
                         end
-                        if self._eabOrigClick then
-                            self._eabOrigClick(self)
-                        end
+                        if self._eabOrigClick then self._eabOrigClick(self) end
                     end,
                     refreshAlpha = function()
                         return (select(1, CludesUI.GetActiveAccentState())) and 0.3 or 1
@@ -985,24 +925,18 @@ CludesUI.AtOptionsLogin(function()
         -- Inline color swatch on CUI Options Theme (left region)
         if not CludesUI._prebuilding then
             local rightRegion = themeRow._leftRegion -- the theme dropdown's slot
-            local function customColorOff()
-                return CludesUI.GetActiveTheme() ~= "Custom Color"
-            end
+            local function customColorOff() return CludesUI.GetActiveTheme() ~= "Custom Color" end
 
             local tcGet = function()
                 local db = CludesUIDB
                 local sa = db and db.accentColor
-                if sa then
-                    return sa.r, sa.g, sa.b, 1
-                end
+                if sa then return sa.r, sa.g, sa.b, 1 end
                 return CludesUI.GetAccentColor()
             end
             local tcSet = function(red, green, blue)
                 Account().accentColor = { r = red, g = green, b = blue }
                 -- Only update the window background, not the accent color
-                if CludesUI._applyBgTint then
-                    CludesUI._applyBgTint(red, green, blue)
-                end
+                if CludesUI._applyBgTint then CludesUI._applyBgTint(red, green, blue) end
             end
             local tcSwatch, tcUpdateSwatch =
                 CludesUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, tcGet, tcSet, nil, 20)
@@ -1024,9 +958,7 @@ CludesUI.AtOptionsLogin(function()
                     )
                 end
             end)
-            tcSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            tcSwatch:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
         end
 
         -- CUI Options Language (Row 2's right slot): options-panel display language (auto-detects the client; untranslated text falls back to English).
@@ -1091,9 +1023,7 @@ CludesUI.AtOptionsLogin(function()
                 if val == "auto" or val == "enUS" or clientLocale == "enUS" or clientLocale == "enGB" then
                     return false
                 end
-                if val == clientLocale or LANG_PAIR[clientLocale] == val then
-                    return false
-                end
+                if val == clientLocale or LANG_PAIR[clientLocale] == val then return false end
                 return "Needs the game client set to English or to this language."
             end
 
@@ -1104,16 +1034,10 @@ CludesUI.AtOptionsLogin(function()
                 values = langValues,
                 order = langOrder,
                 disabledValues = LanguageUnavailable,
-                getValue = function()
-                    return (CludesUIDB and CludesUIDB.displayLocale) or "auto"
-                end,
+                getValue = function() return (CludesUIDB and CludesUIDB.displayLocale) or "auto" end,
                 setValue = function(val)
-                    if val == "auto" then
-                        val = nil
-                    end
-                    if CludesUIDB then
-                        CludesUIDB.displayLocale = val
-                    end
+                    if val == "auto" then val = nil end
+                    if CludesUIDB then CludesUIDB.displayLocale = val end
                     LanguageReload()
                 end,
             }
@@ -1129,36 +1053,24 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Sets the scale of the whole game UI. 0.53 = 0.5333 and 0.71 = 0.7111",
             tooltipOnControl = true,
             getValue = function()
-                if CludesUI._uiScaleDragVal then
-                    return CludesUI._uiScaleDragVal
-                end
+                if CludesUI._uiScaleDragVal then return CludesUI._uiScaleDragVal end
                 return CludesUIDB and CludesUIDB.ppUIScale or CludesUI.PP.PixelBestSize()
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
+                if not CludesUIDB then CludesUIDB = {} end
                 -- Snap 0.53 to exact pixel-perfect 0.5333... (768/1440)
-                if math.abs(val - 0.53) < 0.005 then
-                    val = 0.5333333333
-                end
+                if math.abs(val - 0.53) < 0.005 then val = 0.5333333333 end
                 -- Snap 0.71 to exact pixel-perfect 0.7111... (768/1080)
-                if math.abs(val - 0.71) < 0.005 then
-                    val = 0.7111111111
-                end
+                if math.abs(val - 0.71) < 0.005 then val = 0.7111111111 end
                 CludesUI._uiScaleDragVal = val
                 CludesUIDB.ppUIScaleAuto = false
                 local mf = CludesUI._mainFrame
                 local panelScaleBefore
-                if mf then
-                    panelScaleBefore = mf:GetEffectiveScale()
-                end
+                if mf then panelScaleBefore = mf:GetEffectiveScale() end
                 CludesUI.PP.SetUIScale(val)
                 if mf and panelScaleBefore then
                     local newEff = UIParent:GetEffectiveScale()
-                    if newEff > 0 then
-                        mf:SetScale(panelScaleBefore / newEff)
-                    end
+                    if newEff > 0 then mf:SetScale(panelScaleBefore / newEff) end
                 end
                 if not CludesUI._uiScaleCleanup then
                     CludesUI._uiScaleCleanup = true
@@ -1203,31 +1115,23 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Toggle CludesUI's optional buttons: the Escape menu buttons and the minimap button.",
             values = { ["_placeholder"] = "..." },
             order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
+            getValue = function() return "_placeholder" end,
             setValue = function() end,
         }, {
             type = "toggle",
             text = "Disable Sync Icons",
             tooltip = "Hides the sync icons on the sidebar module list.",
-            getValue = function()
-                return CludesUIDB and CludesUIDB.hideSyncIcons or false
-            end,
+            getValue = function() return CludesUIDB and CludesUIDB.hideSyncIcons or false end,
             setValue = function(val)
                 Account().hideSyncIcons = val
-                if CludesUI._refreshAllSyncIcons then
-                    CludesUI._refreshAllSyncIcons()
-                end
+                if CludesUI._refreshAllSyncIcons then CludesUI._refreshAllSyncIcons() end
             end,
         })
         cursorY = cursorY - height
         -- CUI Buttons checkbox-dropdown (left region)
         if not CludesUI._prebuilding then
             local region = cuiBtnRow._leftRegion
-            if region._control then
-                region._control:Hide()
-            end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
@@ -1244,9 +1148,7 @@ CludesUI.AtOptionsLogin(function()
                     return false
                 end,
                 function(keyName, val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
+                    if not CludesUIDB then CludesUIDB = {} end
                     if keyName == "pause" then
                         CludesUIDB.hideGameMenuButton = val
                     elseif keyName == "unlock" then
@@ -1275,14 +1177,10 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Only Hide Fully Synced",
-                        get = function()
-                            return CludesUIDB and CludesUIDB.hideSyncIconsOnlyFull or false
-                        end,
+                        get = function() return CludesUIDB and CludesUIDB.hideSyncIconsOnlyFull or false end,
                         set = function(val)
                             Account().hideSyncIconsOnlyFull = val
-                            if CludesUI._refreshAllSyncIcons then
-                                CludesUI._refreshAllSyncIcons()
-                            end
+                            if CludesUI._refreshAllSyncIcons then CludesUI._refreshAllSyncIcons() end
                         end,
                     },
                 },
@@ -1299,9 +1197,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Point Anchoring",
             tooltip = "Show nine source points after clicking Anchor in Layout Mode. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
-            getValue = function()
-                return CludesUIDB and CludesUIDB.unlockPointHandles == true
-            end,
+            getValue = function() return CludesUIDB and CludesUIDB.unlockPointHandles == true end,
             setValue = function(val)
                 CludesUI.SetPointAnchorHandles(val)
                 CludesUI:RefreshPage()
@@ -1312,15 +1208,11 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Scroll with the chosen modifier to cycle overlapping frames in Layout Mode.",
             values = CludesUI.UNLOCK_OVERLAP_LABELS,
             order = { "disabled", "scroll", "shiftscroll", "controlscroll", "altscroll" },
-            getValue = function()
-                return CludesUI.GetUnlockOverlapMethod()
-            end,
+            getValue = function() return CludesUI.GetUnlockOverlapMethod() end,
             setValue = function(val)
                 CludesUIDB = CludesUIDB or {}
                 CludesUIDB.unlockOverlapMethod = val
-                if CludesUI.RefreshUnlockOverlapMethod then
-                    CludesUI.RefreshUnlockOverlapMethod()
-                end
+                if CludesUI.RefreshUnlockOverlapMethod then CludesUI.RefreshUnlockOverlapMethod() end
             end,
         })
         cursorY = cursorY - height
@@ -1329,9 +1221,7 @@ CludesUI.AtOptionsLogin(function()
                 {
                     tooltip = "Connector Lines Color",
                     hasAlpha = true,
-                    getValue = function()
-                        return CludesUI.GetPointAnchorColor("line")
-                    end,
+                    getValue = function() return CludesUI.GetPointAnchorColor("line") end,
                     setValue = function(red, green, blue, a)
                         CludesUI.SetPointAnchorColor("line", red, green, blue, a)
                     end,
@@ -1339,9 +1229,7 @@ CludesUI.AtOptionsLogin(function()
                 {
                     tooltip = "Border Color",
                     hasAlpha = true,
-                    getValue = function()
-                        return CludesUI.GetPointAnchorColor("border")
-                    end,
+                    getValue = function() return CludesUI.GetPointAnchorColor("border") end,
                     setValue = function(red, green, blue, a)
                         CludesUI.SetPointAnchorColor("border", red, green, blue, a)
                     end,
@@ -1349,17 +1237,13 @@ CludesUI.AtOptionsLogin(function()
                 {
                     tooltip = "Point Color",
                     hasAlpha = true,
-                    getValue = function()
-                        return CludesUI.GetPointAnchorColor("point")
-                    end,
+                    getValue = function() return CludesUI.GetPointAnchorColor("point") end,
                     setValue = function(red, green, blue, a)
                         CludesUI.SetPointAnchorColor("point", red, green, blue, a)
                     end,
                 },
             }, {
-                disabled = function()
-                    return not (CludesUIDB and CludesUIDB.unlockPointHandles == true)
-                end,
+                disabled = function() return not (CludesUIDB and CludesUIDB.unlockPointHandles == true) end,
                 disabledTooltip = "Point Anchoring",
             })
         end
@@ -1376,9 +1260,7 @@ CludesUI.AtOptionsLogin(function()
             min = 1,
             max = 2.6,
             step = 0.1,
-            getValue = function()
-                return GetCVarNum("cameraDistanceMaxZoomFactor")
-            end,
+            getValue = function() return GetCVarNum("cameraDistanceMaxZoomFactor") end,
             setValue = function(val)
                 val = floor(val * 10 + 0.5) / 10
                 SetCVarSafe("cameraDistanceMaxZoomFactor", val)
@@ -1387,12 +1269,8 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Increase Game Image Quality",
             tooltip = "Enables sharpening to improve image clarity. Especially noticeable at lower render scales.",
-            getValue = function()
-                return GetCVarBool("ResampleAlwaysSharpen")
-            end,
-            setValue = function(val)
-                SetGfxCVar("ResampleAlwaysSharpen", val and "1" or "0")
-            end,
+            getValue = function() return GetCVarBool("ResampleAlwaysSharpen") end,
+            setValue = function(val) SetGfxCVar("ResampleAlwaysSharpen", val and "1" or "0") end,
         })
         cursorY = cursorY - height
 
@@ -1400,14 +1278,10 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Cast Actions on Key Down",
             tooltip = "Keybinds respond on key down instead of key up. This helps make your abilities feel more responsive.",
-            getValue = function()
-                return GetCVarBool("ActionButtonUseKeyDown")
-            end,
+            getValue = function() return GetCVarBool("ActionButtonUseKeyDown") end,
             setValue = function(val)
                 SetCVarSafe("ActionButtonUseKeyDown", val and "1" or "0")
-                if _G._CUAB_ApplyKeyDown then
-                    _G._CUAB_ApplyKeyDown()
-                end
+                if _G._CUAB_ApplyKeyDown then _G._CUAB_ApplyKeyDown() end
             end,
         }, {
             type = "slider",
@@ -1416,12 +1290,8 @@ CludesUI.AtOptionsLogin(function()
             min = 0,
             max = 400,
             step = 1,
-            getValue = function()
-                return GetCVarNum("SpellQueueWindow")
-            end,
-            setValue = function(val)
-                SetCVarSafe("SpellQueueWindow", val)
-            end,
+            getValue = function() return GetCVarNum("SpellQueueWindow") end,
+            setValue = function(val) SetCVarSafe("SpellQueueWindow", val) end,
         })
         cursorY = cursorY - height
 
@@ -1539,9 +1409,7 @@ CludesUI.AtOptionsLogin(function()
                 table.remove(fctFontOrder, idx)
             end
         end
-        if fctFontOrder[#fctFontOrder] == "---" then
-            fctFontOrder[#fctFontOrder] = nil
-        end
+        if fctFontOrder[#fctFontOrder] == "---" then fctFontOrder[#fctFontOrder] = nil end
         CludesUI.AppendSharedMediaFonts(fctFontValues, fctFontOrder)
 
         -- Combat Text (checkbox dropdown + size cog) | Combat Text Font. The
@@ -1549,15 +1417,9 @@ CludesUI.AtOptionsLogin(function()
         -- has; each extra only applies while the item it refines is on (the
         -- damage extras under Damage, Absorb Shields under Healing, Others'
         -- Target Effects under Target Effects).
-        local function DmgOff()
-            return not GetCVarBool("floatingCombatTextCombatDamage_v2")
-        end
-        local function HealOff()
-            return not GetCVarBool("floatingCombatTextCombatHealing_v2")
-        end
-        local function FxOff()
-            return not GetCVarBool("floatingCombatTextSpellMechanics_v2")
-        end
+        local function DmgOff() return not GetCVarBool("floatingCombatTextCombatDamage_v2") end
+        local function HealOff() return not GetCVarBool("floatingCombatTextCombatHealing_v2") end
+        local function FxOff() return not GetCVarBool("floatingCombatTextSpellMechanics_v2") end
         local dmgTip = CludesUI.DisabledTooltip("Damage")
         local healTip = CludesUI.DisabledTooltip("Healing")
         local fxTip = CludesUI.DisabledTooltip("Target Effects")
@@ -1602,9 +1464,7 @@ CludesUI.AtOptionsLogin(function()
                 excludeFromSummaryFn = FxOff,
             },
         }) do
-            if C_CVar.GetCVarInfo(entry.key) then
-                COMBAT_TEXT[#COMBAT_TEXT + 1] = entry
-            end
+            if C_CVar.GetCVarInfo(entry.key) then COMBAT_TEXT[#COMBAT_TEXT + 1] = entry end
         end
         local combatTextRow
         combatTextRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Combat Text" }, {
@@ -1619,9 +1479,7 @@ CludesUI.AtOptionsLogin(function()
                 return val and CludesUI.CombatTextFontCoversLocale(val) and val or "default"
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
+                if not CludesUIDB then CludesUIDB = {} end
                 if val == "default" then
                     CludesUIDB.fctFont = nil
                     CludesUIDB.fctFontPath = nil
@@ -1650,12 +1508,8 @@ CludesUI.AtOptionsLogin(function()
                 210,
                 region:GetFrameLevel() + 2,
                 COMBAT_TEXT,
-                function(key)
-                    return GetCVarBool(key)
-                end,
-                function(key, val)
-                    SetCVarSafe(key, val and "1" or "0")
-                end
+                function(key) return GetCVarBool(key) end,
+                function(key, val) SetCVarSafe(key, val and "1" or "0") end
             )
             Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
             region._control = checkDrop
@@ -1670,9 +1524,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0.5,
                         max = 2.5,
                         step = 0.1,
-                        get = function()
-                            return GetCVarNum("WorldTextScale_v2")
-                        end,
+                        get = function() return GetCVarNum("WorldTextScale_v2") end,
                         set = function(val)
                             val = floor(val * 10 + 0.5) / 10
                             SetCVarSafe("WorldTextScale_v2", val)
@@ -1691,18 +1543,12 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Prevent Swiftmend Icon Dim",
                 tooltip = "Prevents Blizzard from dimming Swiftmend on action bars and CDM based on Efflorescence state.",
-                getValue = function()
-                    return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false
-                end,
+                getValue = function() return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false end,
                 setValue = function(val)
                     Account().brightenSwiftmend = val
                     if val then
-                        if _G._CUAB_ScanSwiftmend then
-                            _G._CUAB_ScanSwiftmend()
-                        end
-                        if _G._CUCDM_ScanSwiftmend then
-                            _G._CUCDM_ScanSwiftmend()
-                        end
+                        if _G._CUAB_ScanSwiftmend then _G._CUAB_ScanSwiftmend() end
+                        if _G._CUCDM_ScanSwiftmend then _G._CUCDM_ScanSwiftmend() end
                     end
                 end,
             }
@@ -1715,9 +1561,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Round Timer Seconds Down",
             tooltip = "Timer seconds round down like Blizzard's buff frame, so a timer reads 0 in its last second. Off, it reads 1 until it ends.",
-            getValue = function()
-                return CludesUIDB and CludesUIDB.timerSecondsDown == true or false
-            end,
+            getValue = function() return CludesUIDB and CludesUIDB.timerSecondsDown == true or false end,
             setValue = function(val)
                 Account().timerSecondsDown = val or nil
                 CludesUI:ShowConfirmPopup({
@@ -1756,9 +1600,7 @@ CludesUI.AtOptionsLogin(function()
                     else
                         ApplyOptimizedGfx()
                     end
-                    if HasGfxBackup() ~= had then
-                        CludesUI:RefreshPage(true)
-                    end
+                    if HasGfxBackup() ~= had then CludesUI:RefreshPage(true) end
                 end,
             }, {
                 type = "labeledButton",
@@ -1811,9 +1653,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Suppress Lua Errors",
                 tooltip = "Turns off the game's own Lua error pop-ups. Error addons such as BugSack still catch them.",
-                getValue = function()
-                    return not (CludesUIDB and CludesUIDB.suppressErrors == false)
-                end,
+                getValue = function() return not (CludesUIDB and CludesUIDB.suppressErrors == false) end,
                 setValue = function(val)
                     Account().suppressErrors = val
                     SetCVarSafe("scriptErrors", val and "0" or "1")
@@ -1822,15 +1662,11 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Spell ID on Tooltip",
                 tooltip = "Adds the spell ID to spell tooltips.",
-                getValue = function()
-                    return CludesUI.SpellIDOn()
-                end,
+                getValue = function() return CludesUI.SpellIDOn() end,
                 setValue = function(val)
                     Account().showSpellID = val
                     -- Engine-side combat aura-ID CVar rides this setting.
-                    if CludesUI.SyncAuraSpellIDCVar then
-                        CludesUI.SyncAuraSpellIDCVar()
-                    end
+                    if CludesUI.SyncAuraSpellIDCVar then CludesUI.SyncAuraSpellIDCVar() end
                 end,
             })
             cursorY = cursorY - height
@@ -1846,9 +1682,7 @@ CludesUI.AtOptionsLogin(function()
     --  Re-read live CVars on panel open: widgets call their getter on each build, so a rebuild picks up external changes (addons, /console).
     ---------------------------------------------------------------------------
     CludesUI:RegisterOnShow(function()
-        if CludesUI:GetActiveModule() == GLOBAL_KEY then
-            CludesUI:RefreshPage()
-        end
+        if CludesUI:GetActiveModule() == GLOBAL_KEY then CludesUI:RefreshPage() end
     end)
 
     ---------------------------------------------------------------------------
@@ -1920,9 +1754,7 @@ CludesUI.AtOptionsLogin(function()
                 return
             end
             -- Clean up profiles root when switching to a non-Profiles tab
-            if page ~= PAGE_PROFILES then
-                HideProfilesRoot()
-            end
+            if page ~= PAGE_PROFILES then HideProfilesRoot() end
             if page == PAGE_GENERAL then
                 return BuildGeneralPage(page, hostFrame, yOffset)
             elseif page == PAGE_FONTS then
@@ -1998,13 +1830,9 @@ CludesUI.AtOptionsLogin(function()
             -- Reset style/theme settings (accent color, custom theme, class-colored)
             CludesUI.ResetTheme()
             -- Reset all custom class, power, and resource colors to defaults
-            if CludesUIDB then
-                CludesUIDB.customColors = nil
-            end
+            if CludesUIDB then CludesUIDB.customColors = nil end
             -- Reset fonts to defaults
-            if CludesUIDB then
-                CludesUIDB.fonts = nil
-            end
+            if CludesUIDB then CludesUIDB.fonts = nil end
             CludesUI.InvalidateFontCache()
             CludesUI.ApplyColorsToOUF()
             -- Reset the active profile's Number Format to defaults
@@ -2027,17 +1855,13 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.ppUIScaleAuto = nil
                 -- Developer settings defaults (Spell ID on Tooltip: unset = on)
                 CludesUIDB.showSpellID = nil
-                if CludesUI.SyncAuraSpellIDCVar then
-                    CludesUI.SyncAuraSpellIDCVar()
-                end
+                if CludesUI.SyncAuraSpellIDCVar then CludesUI.SyncAuraSpellIDCVar() end
                 CludesUIDB.suppressErrors = true
                 CludesUIDB.timerSecondsDown = nil
                 -- Crosshair: the root is the inherited global default, reset here (per-profile overrides clear with the profile's own reset).
                 -- Root off = profiles without an override inherit "None".
                 CludesUIDB.crosshairSize = "None"
-                if CludesUI._applyCrosshair then
-                    CludesUI._applyCrosshair()
-                end
+                if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
                 -- Reset unlock mode layout data
                 CludesUIDB.unlockAnchors = nil
                 CludesUIDB.unlockWidthMatch = nil
@@ -2048,9 +1872,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.unlockPointColors = nil
                 -- QoL Features are NOT reset here; they have their own module reset
             end
-            if CludesUI._applyRightClickTarget then
-                CludesUI._applyRightClickTarget()
-            end
+            if CludesUI._applyRightClickTarget then CludesUI._applyRightClickTarget() end
             CludesUI._applyHideBlizzardPartyFrame()
             -- One call for both: the FPS readout may be drawn by the Secondary
             -- Stats block, so the two owners have to re-evaluate together.
@@ -2059,12 +1881,8 @@ CludesUI.AtOptionsLogin(function()
             elseif CludesUI._applySecondaryStats then
                 CludesUI._applySecondaryStats()
             end
-            if CludesUI._applyCrosshair then
-                CludesUI._applyCrosshair()
-            end
-            if CludesUI._applyGuildChatPrivacy then
-                CludesUI._applyGuildChatPrivacy()
-            end
+            if CludesUI._applyCrosshair then CludesUI._applyCrosshair() end
+            if CludesUI._applyGuildChatPrivacy then CludesUI._applyGuildChatPrivacy() end
             -- Apply suppress errors default (on)
             SetCVarSafe("scriptErrors", "0")
             CludesUI:SelectPage(PAGE_GENERAL)
@@ -2091,13 +1909,9 @@ CludesUI.AtOptionsLogin(function()
             width = BTN_W * 2,
             square = true,
             height = BTN_H,
-            getChecked = function(key)
-                return (CludesUI._overridesTabMode or "spec") == key
-            end,
+            getChecked = function(key) return (CludesUI._overridesTabMode or "spec") == key end,
             onToggle = function(key)
-                if (CludesUI._overridesTabMode or "spec") == key then
-                    return
-                end
+                if (CludesUI._overridesTabMode or "spec") == key then return end
                 CludesUI._overridesTabMode = key
                 -- Forced: the two builders render entirely different rows.
                 CludesUI:RefreshPage(true)
@@ -2156,15 +1970,11 @@ CludesUI.AtOptionsLogin(function()
         blbl:SetText(CludesUI.L("Export All Data with Profile"))
         button:SetScript("OnEnter", function()
             blbl:SetAlpha(1)
-            if bbrd and bbrd.SetColor then
-                bbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9)
-            end
+            if bbrd and bbrd.SetColor then bbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9) end
         end)
         button:SetScript("OnLeave", function()
             blbl:SetAlpha(0.8)
-            if bbrd and bbrd.SetColor then
-                bbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.5)
-            end
+            if bbrd and bbrd.SetColor then bbrd:SetColor(ACC.r, ACC.g, ACC.b, 0.5) end
         end)
         button:SetScript("OnClick", function()
             local str = CludesUI.ExportFullAccountData()
@@ -2247,9 +2057,7 @@ CludesUI.AtOptionsLogin(function()
                 -- import session wins -- re-enter instead of hiding its page.
                 local cfg = CludesUI._apiImportSession
                 if cfg and cfg.state ~= "done" then
-                    if CludesUI._ProfilesConsumeApiImport then
-                        CludesUI._ProfilesConsumeApiImport()
-                    end
+                    if CludesUI._ProfilesConsumeApiImport then CludesUI._ProfilesConsumeApiImport() end
                 elseif CludesUI._ProfilesResetToMain then
                     CludesUI._ProfilesResetToMain()
                 end
@@ -2277,9 +2085,7 @@ CludesUI.AtOptionsLogin(function()
         local scaleCtl, ScaleCtlRefresh
         local function BuildScaleControl()
             local ca = CludesUI._clickArea
-            if scaleCtl or not ca then
-                return
-            end
+            if scaleCtl or not ca then return end
             local MIN = CludesUI.PANEL_SCALE_MIN * 100
             local MAX = CludesUI.PANEL_SCALE_MAX * 100
             local STEP, TRACK_W, PCT_W = 5, 110, 40
@@ -2293,20 +2099,14 @@ CludesUI.AtOptionsLogin(function()
             pctFs:SetWidth(PCT_W)
             pctFs:SetJustifyH("RIGHT")
             pctFs:SetPoint("RIGHT", ctl, "RIGHT", 0, 0)
-            local function ShowPct(val)
-                pctFs:SetText(string.format("%d%%", math.floor(val + 0.5)))
-            end
-            local function SavedPct()
-                return ((CludesUIDB and CludesUIDB.panelScale) or 1) * 100
-            end
+            local function ShowPct(val) pctFs:SetText(string.format("%d%%", math.floor(val + 0.5))) end
+            local function SavedPct() return ((CludesUIDB and CludesUIDB.panelScale) or 1) * 100 end
 
             local pending -- the dragged value, shown until the release applies it
             local track, valBox, refresh
             local function Apply(val)
                 ShowPct(val)
-                if math.abs(val - SavedPct()) < 0.01 then
-                    return
-                end
+                if math.abs(val - SavedPct()) < 0.01 then return end
                 CludesUI:SetPanelScale(val / 100, track)
             end
             -- Panel chrome, not page content: the refresh the slider registers
@@ -2327,9 +2127,7 @@ CludesUI.AtOptionsLogin(function()
                 MIN,
                 MAX,
                 STEP,
-                function()
-                    return pending or SavedPct()
-                end,
+                function() return pending or SavedPct() end,
                 function(val)
                     if CludesUI._sliderDragging then
                         pending = val
@@ -2355,9 +2153,7 @@ CludesUI.AtOptionsLogin(function()
             ctl:SetWidth(PCT_W + 10 + TRACK_W + 16 + labelText:GetStringWidth())
             ctl:EnableMouseWheel(true)
             ctl:SetScript("OnMouseWheel", function(_, delta)
-                if CludesUI._sliderDragging then
-                    return
-                end
+                if CludesUI._sliderDragging then return end
                 if CludesUI:StepPanelScale(delta, track) then
                     ShowPct(SavedPct())
                     refresh()
@@ -2384,18 +2180,12 @@ CludesUI.AtOptionsLogin(function()
             end
             CludesUI.RegAccent({
                 type = "callback",
-                fn = function()
-                    refresh()
-                end,
+                fn = function() refresh() end,
             })
             -- Any scale change (this slider, Reset) lands here once its glide ends.
-            if not CludesUI._onScaleChanged then
-                CludesUI._onScaleChanged = {}
-            end
+            if not CludesUI._onScaleChanged then CludesUI._onScaleChanged = {} end
             CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = function()
-                if not CludesUI._sliderDragging then
-                    ScaleCtlRefresh()
-                end
+                if not CludesUI._sliderDragging then ScaleCtlRefresh() end
             end
         end
         local function ScaleCtlOnShow()
@@ -2406,22 +2196,16 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         CludesUI:RegisterOnShow(ScaleCtlOnShow)
-        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then
-            ScaleCtlOnShow()
-        end
+        if CludesUI._mainFrame and CludesUI._mainFrame:IsShown() then ScaleCtlOnShow() end
     end
 
     -- Clean up profiles root when panel closes
-    CludesUI:RegisterOnHide(function()
-        HideProfilesRoot()
-    end)
+    CludesUI:RegisterOnHide(function() HideProfilesRoot() end)
 
     -- Clean up profiles root when switching to any module other than Profiles
     if CludesUI.SelectModule then
         hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
-            if folderName ~= PROFILES_KEY then
-                HideProfilesRoot()
-            end
+            if folderName ~= PROFILES_KEY then HideProfilesRoot() end
         end)
     end
 

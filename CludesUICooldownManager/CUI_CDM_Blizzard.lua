@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Blizzard.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ECME, FC, _ecmeFC, cdmBarFrames = Inner.ECME, Inner.FC, Inner._ecmeFC, Inner.cdmBarFrames
@@ -22,17 +18,11 @@ local ECME, FC, _ecmeFC, cdmBarFrames = Inner.ECME, Inner.FC, Inner._ecmeFC, Inn
 --  CDM Bars: Our replacement for Blizzard's Cooldown Manager
 --  Captures Blizzard positions on first login, then creates our own bars.
 -------------------------------------------------------------------------------
-local function GetCDMFont()
-    return CludesUI.GetFontPath("cdm")
-end
+local function GetCDMFont() return CludesUI.GetFontPath("cdm") end
 local function SetBlizzCDMFont(fontStr, font, size, red, green, blue)
-    if not (fontStr and fontStr.SetFont) then
-        return
-    end
+    if not (fontStr and fontStr.SetFont) then return end
     CludesUI.ApplyIconTextFont(fontStr, font, size, "cdm")
-    if red then
-        fontStr:SetTextColor(red, green, blue)
-    end
+    if red then fontStr:SetTextColor(red, green, blue) end
 end
 
 -- Blizzard CDM frame names
@@ -77,9 +67,7 @@ CaptureCDMPositions = function()
 
             -- Read the frame's scale (used to adjust icon size capture)
             local frameScale = widget:GetScale()
-            if not frameScale or frameScale < 0.1 then
-                frameScale = 1
-            end
+            if not frameScale or frameScale < 0.1 then frameScale = 1 end
 
             -- Icon size + spacing from child icons. Blizzard CDM icons have a base size plus a
             -- per-icon scale driven by the IconSize percentage slider; spacing is the gap between two adjacent visible icons in parent coordinates.
@@ -101,9 +89,7 @@ CaptureCDMPositions = function()
                         -- Track distinct Y positions for row counting
                         if childFrame:GetPoint(1) then
                             local _, _, _, _, cy = childFrame:GetPoint(1)
-                            if cy then
-                                numDistinctY[math.floor(cy + 0.5)] = true
-                            end
+                            if cy then numDistinctY[math.floor(cy + 0.5)] = true end
                         end
                     end
                 end
@@ -111,9 +97,10 @@ CaptureCDMPositions = function()
 
             if #shownIcons >= 2 and payload.iconSize then
                 -- Sort by left edge so we measure truly adjacent icons
-                table.sort(shownIcons, function(lhs, rhs)
-                    return (lhs:GetLeft() or 0) < (rhs:GetLeft() or 0)
-                end)
+                table.sort(
+                    shownIcons,
+                    function(lhs, rhs) return (lhs:GetLeft() or 0) < (rhs:GetLeft() or 0) end
+                )
                 -- Smallest step between consecutive sorted icons. GetLeft() returns UIParent-coordinate-space values.
                 local bestStep = nil
                 for si = 1, #shownIcons - 1 do
@@ -121,9 +108,7 @@ CaptureCDMPositions = function()
                     local bLeft = shownIcons[si + 1]:GetLeft()
                     if aLeft and bLeft then
                         local dist = bLeft - aLeft
-                        if dist > 0 and (not bestStep or dist < bestStep) then
-                            bestStep = dist
-                        end
+                        if dist > 0 and (not bestStep or dist < bestStep) then bestStep = dist end
                     end
                 end
                 if bestStep then
@@ -136,9 +121,7 @@ CaptureCDMPositions = function()
                     local cs = shownIcons[1]:GetScale() or 1
                     local stepInIconUnits = parentStep * cs
                     local gap = stepInIconUnits - payload.iconSize
-                    if gap < 0 then
-                        gap = 0
-                    end
+                    if gap < 0 then gap = 0 end
                     payload.spacing = math.floor(gap + 0.5)
                 end
             end
@@ -148,13 +131,9 @@ CaptureCDMPositions = function()
             for _ in pairs(numDistinctY) do
                 rowCount = rowCount + 1
             end
-            if rowCount >= 1 then
-                payload.numRows = rowCount
-            end
+            if rowCount >= 1 then payload.numRows = rowCount end
 
-            if widget.isHorizontal ~= nil then
-                payload.isHorizontal = widget.isHorizontal
-            end
+            if widget.isHorizontal ~= nil then payload.isHorizontal = widget.isHorizontal end
 
             -- Position (center-based, in UIParent coordinates)
             if widget:GetPoint(1) then
@@ -194,9 +173,7 @@ local _editModePolicyApplied = false
 -- button does that step. Step 6 lives in the text because once CDM is disabled nothing of ours runs to remind them to re-enable it.
 local function ShowManualEditModeFixPopup()
     C_Timer.After(0, function()
-        if not (CludesUI and CludesUI.ShowConfirmPopup) then
-            return
-        end
+        if not (CludesUI and CludesUI.ShowConfirmPopup) then return end
         CludesUI:ShowConfirmPopup({
             title = "Edit Mode Needs a Manual Fix",
             message = "CludesUI could not save this change to your Edit Mode layout, so it has to be set by hand. The Cooldown Manager has to be off while you do it, because it hides Blizzard's cooldown viewers and a hidden viewer cannot be selected in Edit Mode.\n\n"
@@ -210,17 +187,13 @@ local function ShowManualEditModeFixPopup()
             confirmText = "Disable CDM & Reload",
             cancelText = "Not Now",
             reload = true,
-            onConfirm = function()
-                C_AddOns.DisableAddOn("CludesUICooldownManager")
-            end,
+            onConfirm = function() C_AddOns.DisableAddOn("CludesUICooldownManager") end,
         })
     end)
 end
 
 local function EnforceCooldownViewerEditModeSettings()
-    if _editModePolicyApplied then
-        return
-    end
+    if _editModePolicyApplied then return end
     if
         not (
             C_EditMode
@@ -241,15 +214,11 @@ local function EnforceCooldownViewerEditModeSettings()
     -- activeLayout counts them, so without the merge it picks the WRONG layout below and the
     -- save hands the client a list its own index no longer fits.
     local layoutInfo, numPresets = CludesUI.EditModeLayoutsForSave()
-    if not layoutInfo then
-        return
-    end
+    if not layoutInfo then return end
 
     local activeLayout = type(layoutInfo.activeLayout) == "number"
         and layoutInfo.layouts[layoutInfo.activeLayout]
-    if not activeLayout or type(activeLayout.systems) ~= "table" then
-        return
-    end
+    if not activeLayout or type(activeLayout.systems) ~= "table" then return end
 
     -- Preset layouts are read-only: SaveLayouts won't persist changes to them, which would
     -- loop enforce -> save -> reload forever (the preset resets next login). Skip enforcement for presets.
@@ -289,9 +258,7 @@ local function EnforceCooldownViewerEditModeSettings()
             end
         end
         -- Absent: at the Blizzard default. Nothing to do if that already matches.
-        if desiredValue == defaultValue then
-            return false
-        end
+        if desiredValue == defaultValue then return false end
         CludesUI.NoteEditModeSetting(activeLayout, sysInfo, settingEnum, defaultValue, desiredValue)
         prefs[#prefs + 1] = { setting = settingEnum, value = desiredValue }
         return true
@@ -300,16 +267,12 @@ local function EnforceCooldownViewerEditModeSettings()
     for _, sysInfo in ipairs(activeLayout.systems) do
         if sysInfo.system == cooldownSystem and type(sysInfo.settings) == "table" then
             -- VisibleSetting=Always on ALL viewers. That IS the default, so an absent entry is already correct and is left alone.
-            if UpsertSetting(sysInfo, visSetting, visAlways, visAlways) then
-                changed = true
-            end
+            if UpsertSetting(sysInfo, visSetting, visAlways, visAlways) then changed = true end
             -- Both buff viewers keep Blizzard's default HideWhenInactive=1 (inactive entries
             -- stay hidden): Always Show Buffs is drawn by our own per-bar placeholder icons, NOT
             -- Blizzard's layout, so any stale HideWhenInactive=0 is reset. New installs are already at the default (no change, no reload).
             if sysInfo.systemIndex == buffIconIdx or sysInfo.systemIndex == buffBarIdx then
-                if UpsertSetting(sysInfo, hideEnum, 1, 1) then
-                    changed = true
-                end
+                if UpsertSetting(sysInfo, hideEnum, 1, 1) then changed = true end
             end
         end
     end
@@ -318,9 +281,7 @@ local function EnforceCooldownViewerEditModeSettings()
     if not changed then
         -- Settled: the layout already carries what we want, so a previous save DID stick.
         -- Re-arm the loop breaker so a genuine future change (new layout, manual edit) still prompts.
-        if CludesUIDB then
-            CludesUIDB.cdmEditModeSavePending = nil
-        end
+        if CludesUIDB then CludesUIDB.cdmEditModeSavePending = nil end
         return
     end
 
@@ -334,9 +295,7 @@ local function EnforceCooldownViewerEditModeSettings()
     -- gets manual instructions every login until the layout comes back clean. Flag clears itself
     -- in the not-changed branch above, so a working user pays nothing. Backstop, NOT the cure -- it stops the loop without knowing why the save failed.
     local savedLastSession = CludesUIDB and CludesUIDB.cdmEditModeSavePending
-    if CludesUIDB then
-        CludesUIDB.cdmEditModeSavePending = true
-    end
+    if CludesUIDB then CludesUIDB.cdmEditModeSavePending = true end
     if savedLastSession then
         ShowManualEditModeFixPopup()
         return
@@ -345,9 +304,7 @@ local function EnforceCooldownViewerEditModeSettings()
     -- Forced (non-dismissable) reload popup. On first install the Welcome picker is
     -- pending/open and ALWAYS ends in its own reload, which applies the layout we
     -- just saved -- a second forced popup would stomp the picker, so stay silent and ride that reload.
-    if CludesUI and CludesUI._firstInstallPending then
-        return
-    end
+    if CludesUI and CludesUI._firstInstallPending then return end
     C_Timer.After(0, function()
         CludesUI:ShowConfirmPopup({
             title = "Edit Mode Update",
@@ -366,26 +323,16 @@ end
 -- Runs once per profile (flag on cdmBars); re-runs on swap to a pre-migration profile, which carries no flag.
 function mod.MigrateAlwaysShowBuffsToPerBar()
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars or profile.cdmBars._asbPerBarMigrated then
-        return
-    end
+    if not profile or not profile.cdmBars or profile.cdmBars._asbPerBarMigrated then return end
     profile.cdmBars._asbPerBarMigrated = true
     local oldOn = profile.cdmBars.showInactiveBuffIcons
     local oldDesat = profile.cdmBars.desaturateInactiveBuffs
-    if oldOn == nil and oldDesat == nil then
-        return
-    end
-    if type(profile.cdmBars.bars) ~= "table" then
-        return
-    end
+    if oldOn == nil and oldDesat == nil then return end
+    if type(profile.cdmBars.bars) ~= "table" then return end
     for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.barType == "buffs" then
-            if oldOn ~= nil then
-                edge.showInactiveBuffIcons = oldOn and true or false
-            end
-            if oldDesat ~= nil then
-                edge.desaturateInactiveBuffs = oldDesat
-            end
+            if oldOn ~= nil then edge.showInactiveBuffIcons = oldOn and true or false end
+            if oldDesat ~= nil then edge.desaturateInactiveBuffs = oldDesat end
         end
     end
 end
@@ -398,17 +345,11 @@ end
 -- above. MUST run AFTER MigrateAlwaysShowBuffsToPerBar so the old global Always-Show value only lands on original buff bars, not converted Auras bars.
 function mod.MigrateCustomBuffBarsToBuffBars()
     local profile = ECME.db and ECME.db.profile
-    if not profile or not profile.cdmBars or profile.cdmBars._customBuffMergedV1 then
-        return
-    end
+    if not profile or not profile.cdmBars or profile.cdmBars._customBuffMergedV1 then return end
     profile.cdmBars._customBuffMergedV1 = true
-    if type(profile.cdmBars.bars) ~= "table" then
-        return
-    end
+    if type(profile.cdmBars.bars) ~= "table" then return end
     for _, edge in ipairs(profile.cdmBars.bars) do
-        if edge.barType == "custom_buff" then
-            edge.barType = "buffs"
-        end
+        if edge.barType == "custom_buff" then edge.barType = "buffs" end
     end
 end
 
@@ -426,9 +367,7 @@ end
 -- CollectAndReanchor). So once anything re-anchors the viewer to its Edit Mode position (layout
 -- apply, SaveLayouts, zone-in), the next buff proc in combat draws Blizzard's bars over ours. The SetPoint hook makes the park self-healing, mirroring the unclaimed CD/utility pool frames' hook.
 function mod.ParkSecondaryBuffViewer(widget)
-    if not widget then
-        return
-    end
+    if not widget then return end
     local fc = FC(widget)
     widget:SetAlpha(0)
     if InCombatLockdown() then
@@ -458,28 +397,18 @@ function mod.ParkSecondaryBuffViewer(widget)
         -- our taint into the rest of that pass. The delay also coalesces ClearAllPoints + SetPoint bursts into one park, and a single frame of a stray bar is invisible.
         local function QueueRepark(self, method)
             local c = _ecmeFC[self]
-            if not c or not c.hidden or c.restoring or c.parkQueued then
-                return
-            end
+            if not c or not c.hidden or c.restoring or c.parkQueued then return end
             c.parkQueued = true
             C_Timer.After(0, function()
                 c.parkQueued = nil
-                if c.hidden and not c.restoring then
-                    mod.ParkSecondaryBuffViewer(self)
-                end
+                if c.hidden and not c.restoring then mod.ParkSecondaryBuffViewer(self) end
             end)
         end
-        hooksecurefunc(widget, "SetPoint", function(self)
-            QueueRepark(self, "SetPoint")
-        end)
+        hooksecurefunc(widget, "SetPoint", function(self) QueueRepark(self, "SetPoint") end)
         -- SetPoint is not the only way off the park: SetAllPoints and SetParent strand the
         -- viewer on screen without ever calling it, and nothing heals that until an unrelated SetPoint happens to fire.
-        hooksecurefunc(widget, "SetAllPoints", function(self)
-            QueueRepark(self, "SetAllPoints")
-        end)
-        hooksecurefunc(widget, "SetParent", function(self)
-            QueueRepark(self, "SetParent")
-        end)
+        hooksecurefunc(widget, "SetAllPoints", function(self) QueueRepark(self, "SetAllPoints") end)
+        hooksecurefunc(widget, "SetParent", function(self) QueueRepark(self, "SetParent") end)
     end
 end
 
@@ -492,13 +421,9 @@ end
 -- Blizzard's hide-when-inactive fade animates it back to 1 through a path no hook sees and re-asserting would fight that animation while the frame is offscreen anyway.
 function mod.CheckSecondaryBuffViewerPark()
     local widget = _G[BLIZZ_CDM_FRAMES_SECONDARY.buffs]
-    if not widget then
-        return
-    end
+    if not widget then return end
     local fc = _ecmeFC[widget]
-    if not fc or not fc.hidden or fc.restoring or fc.parkQueued then
-        return
-    end
+    if not fc or not fc.hidden or fc.restoring or fc.parkQueued then return end
     local pt, rel, relPt, posX, posY
     -- Indexing past the last point errors; an unanchored viewer counts as drifted and falls through to the re-park.
     if widget:GetNumPoints() > 0 then
@@ -543,12 +468,8 @@ mod._parkEdges:RegisterEvent("DISPLAY_SIZE_CHANGED")
 mod._parkEdges:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
 mod._parkEdges:RegisterEvent("PLAYER_ENTERING_WORLD")
 mod._parkEdges:SetScript("OnEvent", function()
-    if mod.CheckSecondaryBuffViewerPark then
-        mod.CheckSecondaryBuffViewerPark()
-    end
-    if mod._CheckCursorParks then
-        mod._CheckCursorParks()
-    end
+    if mod.CheckSecondaryBuffViewerPark then mod.CheckSecondaryBuffViewerPark() end
+    if mod._CheckCursorParks then mod._CheckCursorParks() end
 end)
 
 -------------------------------------------------------------------------------
@@ -570,9 +491,7 @@ local lootL, lootB, lootR, lootT = {}, {}, {}, {}
 
 local function AnySecret(...)
     for index = 1, select("#", ...) do
-        if issecretvalue((select(index, ...))) then
-            return true
-        end
+        if issecretvalue((select(index, ...))) then return true end
     end
     return false
 end
@@ -582,9 +501,7 @@ end
 local function AddLootRect(frame, num)
     local l, b, wid, hgt = frame:GetRect()
     local s = frame:GetEffectiveScale()
-    if AnySecret(l, b, wid, hgt, s) or not l or wid <= 0 or hgt <= 0 then
-        return num
-    end
+    if AnySecret(l, b, wid, hgt, s) or not l or wid <= 0 or hgt <= 0 then return num end
     num = num + 1
     lootL[num], lootB[num], lootR[num], lootT[num] = l * s, b * s, (l + wid) * s, (b + hgt) * s
     return num
@@ -593,9 +510,7 @@ end
 -- The same, for a shown frame only.
 local function AddLootObstacle(frame, num)
     local isShown = frame:IsShown()
-    if issecretvalue(isShown) or not isShown then
-        return num
-    end
+    if issecretvalue(isShown) or not isShown then return num end
     return AddLootRect(frame, num)
 end
 
@@ -617,9 +532,7 @@ end
 -- after combat) when a geometry read is secret.
 local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, posX, posY)
     local colour = BottomManagedFrameContainer
-    if not colour then
-        return nil
-    end
+    if not colour then return nil end
     -- Only the column's own anchor: TOP of the rolls to the TOP of the column.
     local hostFrame = widget:GetParent()
     if
@@ -632,14 +545,11 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
         return nil
     end
     local cs, s, us = colour:GetEffectiveScale(), widget:GetEffectiveScale(), UIParent:GetEffectiveScale()
-    local colTop, colBottom, colL, colR = colour:GetTop(), colour:GetBottom(), colour:GetLeft(), colour:GetRight()
+    local colTop, colBottom, colL, colR =
+        colour:GetTop(), colour:GetBottom(), colour:GetLeft(), colour:GetRight()
     local wid, hgt, uiTop = widget:GetWidth(), widget:GetHeight(), UIParent:GetTop()
-    if AnySecret(cs, s, us, colTop, colBottom, colL, colR, wid, hgt, uiTop) then
-        return false
-    end
-    if not (colTop and colBottom and colL and colR and uiTop) then
-        return nil
-    end
+    if AnySecret(cs, s, us, colTop, colBottom, colL, colR, wid, hgt, uiTop) then return false end
+    if not (colTop and colBottom and colL and colR and uiTop) then return nil end
     -- Screen pixels. Anchor offsets are in the rolls' own scale. The roll and
     -- Bonus Roll windows hang centred from the container and are wider than
     -- it: a roll window is 277 wide with 286-wide art, Bonus Roll 286.
@@ -673,17 +583,13 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
                 -- A bar hidden by its visibility rules keeps its spot (it can
                 -- show while the rolls are up); a cursor bar holds none.
                 local frame = cdmBarFrames[edge.key]
-                if frame and not frame._mouseTrack then
-                    num = AddLootObstacle(frame, num)
-                end
+                if frame and not frame._mouseTrack then num = AddLootObstacle(frame, num) end
             end
         end
     end
     if cdmBars and cdmBars.useBlizzardBuffBars then
         local bbv = _G[BLIZZ_CDM_FRAMES_SECONDARY.buffs]
-        if bbv then
-            num = AddLootObstacle(bbv, num)
-        end
+        if bbv then num = AddLootObstacle(bbv, num) end
     else
         -- Each enabled Tracking Bar keeps its spot while hidden too: an
         -- inactive one shows the moment its aura procs.
@@ -695,9 +601,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
                 local conf = cfgs[index]
                 if conf.enabled ~= false and conf.barVisibility ~= "never" then
                     local frame = getTBB(index)
-                    if frame then
-                        num = AddLootRect(frame, num)
-                    end
+                    if frame then num = AddLootRect(frame, num) end
                 end
             end
         end
@@ -727,9 +631,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     local xac = ExtraAbilityContainer
     if xac then
         local xe = elems.ExtraActionButton
-        if not (xe and xe.isHidden and xe.isHidden()) then
-            num = AddLootObstacle(xac, num)
-        end
+        if not (xe and xe.isHidden and xe.isHidden()) then num = AddLootObstacle(xac, num) end
     end
 
     -- Rise above every obstacle the rolls cover, one column spacing clear:
@@ -753,15 +655,11 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
                 hi = lootT[index]
             end
         end
-        if not hi then
-            break
-        end
+        if not hi then break end
         topY = hi + gap + height
         reach = gap
     end
-    if topY > uiTop * us then
-        topY = uiTop * us
-    end
+    if topY > uiTop * us then topY = uiTop * us end
     return anchorPoint, colour, relativePoint, posX, (topY - colTop * cs) / s
 end
 
@@ -770,13 +668,9 @@ end
 -- collapse into one placement.
 function mod.RequestLootPlacement()
     local loot = GroupLootContainer
-    if not loot then
-        return
-    end
+    if not loot then return end
     local isShown = loot:IsShown()
-    if not issecretvalue(isShown) and isShown then
-        CludesUI.RequestFramePlacement(loot)
-    end
+    if not issecretvalue(isShown) and isShown then CludesUI.RequestFramePlacement(loot) end
 end
 
 HideBlizzardCDM = function()
@@ -809,14 +703,10 @@ HideBlizzardCDM = function()
             -- NEVER reposition primary viewers (Essential/Utility/BuffIcon): individual icon
             -- anchoring handles that. The secondary BuffBarCooldownViewer gets alpha + offscreen park, since TBB renders its own bars and we don't hook its Cooldown widgets.
             local isSecondary = (frameName == BLIZZ_CDM_FRAMES_SECONDARY.buffs)
-            if isSecondary then
-                mod.ParkSecondaryBuffViewer(widget)
-            end
+            if isSecondary then mod.ParkSecondaryBuffViewer(widget) end
             if not InCombatLockdown() then
                 widget:EnableMouse(false)
-                if widget.EnableMouseMotion then
-                    widget:EnableMouseMotion(false)
-                end
+                if widget.EnableMouseMotion then widget:EnableMouseMotion(false) end
             end
         end
     end
@@ -829,9 +719,7 @@ HideBlizzardCDM = function()
 end
 
 RestoreBlizzardCDM = function()
-    if GroupLootContainer then
-        CludesUI.SetFramePlacer(GroupLootContainer, "cdm", nil)
-    end
+    if GroupLootContainer then CludesUI.SetFramePlacer(GroupLootContainer, "cdm", nil) end
     local allFrameNames = {}
     for _, func in pairs(BLIZZ_CDM_FRAMES) do
         allFrameNames[#allFrameNames + 1] = func
@@ -856,9 +744,7 @@ RestoreBlizzardCDM = function()
                 widget:SetAlpha(1)
             else
                 widget:EnableMouse(true)
-                if widget.EnableMouseMotion then
-                    widget:EnableMouseMotion(true)
-                end
+                if widget.EnableMouseMotion then widget:EnableMouseMotion(true) end
             end
             fc.hidden = false
             fc.restoring = nil
@@ -870,9 +756,7 @@ end
 -- disabled via "Use Blizzard CDM Bars". Touches ONLY the secondary bar viewer; CDM icon bars are never affected.
 local function RestoreBlizzardBuffFrame()
     local frameName = BLIZZ_CDM_FRAMES_SECONDARY.buffs
-    if not frameName then
-        return
-    end
+    if not frameName then return end
     local widget = _G[frameName]
     local fc = widget and _ecmeFC[widget]
     if fc and fc.hidden then
@@ -888,9 +772,7 @@ local function RestoreBlizzardBuffFrame()
         -- BuffBarCooldownViewer's default is EnableMouse(false); EnableMouse(true) would create an invisible click-catcher. Other viewers need mouse for tooltip hover.
         if frameName ~= "BuffBarCooldownViewer" then
             widget:EnableMouse(true)
-            if widget.EnableMouseMotion then
-                widget:EnableMouseMotion(true)
-            end
+            if widget.EnableMouseMotion then widget:EnableMouseMotion(true) end
         end
         fc.hidden = false
         fc.restoring = nil

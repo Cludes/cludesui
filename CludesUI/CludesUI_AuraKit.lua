@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CludesUI_AuraKit.lua Shared engine for the 12.1 aura container system. Every
 -- CludesUI module consumes aura displays through this file; modules never call
 -- AddAuraGroup / AddAuraSlot / button setters directly. Centralizing this gives us one
@@ -12,9 +10,7 @@ CludesUI.AuraKit = Kit
 
 local InCombatLockdown = InCombatLockdown
 local CreateFrame = CreateFrame
-local issecretvalue = issecretvalue or function()
-    return false
-end
+local issecretvalue = issecretvalue or function() return false end
 
 ------------------------------------------------------------------------------
 -- Filter normalization
@@ -38,9 +34,7 @@ end
 function Kit.Filter(...)
     local styleId = table.concat({ ... }, "|")
     local cached = filterCache[styleId]
-    if cached then
-        return cached
-    end
+    if cached then return cached end
 
     local base, rest = nil, {}
     for idx = 1, select("#", ...) do
@@ -51,9 +45,7 @@ function Kit.Filter(...)
             rest[#rest + 1] = unitToken
         end
     end
-    table.sort(rest, function(lhs, rhs)
-        return TokenSortKey(lhs) < TokenSortKey(rhs)
-    end)
+    table.sort(rest, function(lhs, rhs) return TokenSortKey(lhs) < TokenSortKey(rhs) end)
 
     local result
     if base and #rest > 0 then
@@ -87,9 +79,7 @@ local HOURS_AT, DAYS_AT = 5401, 129601
 -- handed, so a change waits for the reload its row asks for.
 local secondsDown
 local function SecondsRoundDown()
-    if secondsDown == nil then
-        secondsDown = CludesUIDB and CludesUIDB.timerSecondsDown == true or false
-    end
+    if secondsDown == nil then secondsDown = CludesUIDB and CludesUIDB.timerSecondsDown == true or false end
     return secondsDown
 end
 
@@ -157,9 +147,7 @@ local function BuildRuleDurationFormatter(withSecondsUnit, preciseBelow)
         }
     end
     local success = pcall(formatFn.SetBreakpoints, formatFn, points)
-    if not success then
-        return nil
-    end
+    if not success then return nil end
     return formatFn
 end
 
@@ -194,9 +182,7 @@ function Kit.GetDurationFormatter(showSecondsUnit, preciseBelow)
         -- imported values too so a malformed profile cannot put the bands out
         -- of order.
         preciseBelow = math.max(60, math.floor(preciseBelow + 0.5))
-        if preciseBelow > 5400 then
-            preciseBelow = 5400
-        end
+        if preciseBelow > 5400 then preciseBelow = 5400 end
         local styleId = (showSecondsUnit and "s" or "b") .. preciseBelow
         if preciseDurationFormatters[styleId] == nil then
             preciseDurationFormatters[styleId] = BuildRuleDurationFormatter(showSecondsUnit, preciseBelow)
@@ -321,9 +307,7 @@ function Kit.IconTexCoord(look)
         return 0.5 - half, 0.5 + half, 0.5 - half, 0.5 + half
     end
     local tc = look.texCoord
-    if tc then
-        return tc[1], tc[2], tc[3], tc[4]
-    end
+    if tc then return tc[1], tc[2], tc[3], tc[4] end
     if look.iconCrop then
         local z = look.iconZoom or 0.07
         return z, 1 - z, z, 1 - z
@@ -333,9 +317,7 @@ end
 
 local function ApplyStyleToRegions(btnFrame, look)
     local state = bd[btnFrame]
-    if not state then
-        return
-    end
+    if not state then return end
 
     -- The engine's flow layout only ANCHORS group buttons; their physical size
     -- is entirely ours to set (group layout elementWidth/Height feeds the flow
@@ -354,9 +336,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     -- One mask shared by the icon, cooldown swipe, and base/dispel border art.
     local shaped = look.iconShape and look.iconShape ~= "none" and look.shapeMaskPath
     if shaped then
-        if not state.shapeMask then
-            state.shapeMask = btnFrame:CreateMaskTexture()
-        end
+        if not state.shapeMask then state.shapeMask = btnFrame:CreateMaskTexture() end
         state.shapeMask:SetTexture(look.shapeMaskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         state.shapeMask:SetAllPoints(btnFrame)
         state.shapeMask:Show()
@@ -410,9 +390,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         state.cooldown:SetShown(not hideSwipe)
         if state.akHideSwipe ~= hideSwipe then
             state.akHideSwipe = hideSwipe
-            if state.cooldown.SetDrawSwipe then
-                state.cooldown:SetDrawSwipe(not hideSwipe)
-            end
+            if state.cooldown.SetDrawSwipe then state.cooldown:SetDrawSwipe(not hideSwipe) end
         end
 
         -- Clip the swipe to the shape and recolor its silhouette to match, instead
@@ -454,9 +432,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             state.akStackAnchor = sKey
         end
         local color = look.stackColor
-        if color then
-            state.stack:SetTextColor(color.r, color.g, color.b, color.a or 1)
-        end
+        if color then state.stack:SetTextColor(color.r, color.g, color.b, color.a or 1) end
     end
 
     if state.duration then
@@ -569,7 +545,14 @@ local function ApplyStyleToRegions(btnFrame, look)
                     end
                     local solidPx = b.edgePx or b.size or 1
                     if Pix.GetBorders(state.borderHost) then
-                        Pix.UpdateBorder(state.borderHost, solidPx, b[1] or 0, b[2] or 0, b[3] or 0, b[4] or 1)
+                        Pix.UpdateBorder(
+                            state.borderHost,
+                            solidPx,
+                            b[1] or 0,
+                            b[2] or 0,
+                            b[3] or 0,
+                            b[4] or 1
+                        )
                         Pix.ShowBorder(state.borderHost)
                     else
                         Pix.CreateBorder(
@@ -592,9 +575,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 CludesUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
             end
             state.borderHost:Hide()
-            if Pix then
-                Pix:HideMaskedShapeBorder(state.borderHost)
-            end
+            if Pix then Pix:HideMaskedShapeBorder(state.borderHost) end
         end
     end
 
@@ -689,9 +670,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         state.akRingPx = nil
         if state.styleKey and pxRingStyles[state.styleKey] then
             pxRingStyles[state.styleKey] = nil
-            if not next(pxRingStyles) then
-                CludesUI.RegisterPxReapply(Kit, nil)
-            end
+            if not next(pxRingStyles) then CludesUI.RegisterPxReapply(Kit, nil) end
         end
     end
     if
@@ -818,9 +797,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 state.dispelStrips[idx]:Hide()
             end
         end
-        if state.dispelShapeTex then
-            state.dispelShapeTex:Hide()
-        end
+        if state.dispelShapeTex then state.dispelShapeTex:Hide() end
         if state.dispelRing then
             for idx = 1, #RING_SLICES do
                 state.dispelRing[idx]:Hide()
@@ -833,9 +810,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 state.dispelStrips[idx]:Hide()
             end
         end
-        if state.blizzBorderTex then
-            state.blizzBorderTex:Hide()
-        end
+        if state.blizzBorderTex then state.blizzBorderTex:Hide() end
         if state.dispelRing then
             for idx = 1, #RING_SLICES do
                 state.dispelRing[idx]:Hide()
@@ -848,20 +823,12 @@ local function ApplyStyleToRegions(btnFrame, look)
                 state.dispelStrips[idx]:Hide()
             end
         end
-        if state.dispelShapeTex then
-            state.dispelShapeTex:Hide()
-        end
-        if state.blizzBorderTex then
-            state.blizzBorderTex:Hide()
-        end
+        if state.dispelShapeTex then state.dispelShapeTex:Hide() end
+        if state.blizzBorderTex then state.blizzBorderTex:Hide() end
     elseif state.dispelStrips then
         dispelSet = state.dispelStrips
-        if state.dispelShapeTex then
-            state.dispelShapeTex:Hide()
-        end
-        if state.blizzBorderTex then
-            state.blizzBorderTex:Hide()
-        end
+        if state.dispelShapeTex then state.dispelShapeTex:Hide() end
+        if state.blizzBorderTex then state.blizzBorderTex:Hide() end
         if state.dispelRing then
             for idx = 1, #RING_SLICES do
                 state.dispelRing[idx]:Hide()
@@ -871,12 +838,8 @@ local function ApplyStyleToRegions(btnFrame, look)
         -- Ring built, no strips, and the ring no longer wanted (dispel border off):
         -- it is still the set to clear and park below.
         dispelSet = state.dispelRing
-        if state.dispelShapeTex then
-            state.dispelShapeTex:Hide()
-        end
-        if state.blizzBorderTex then
-            state.blizzBorderTex:Hide()
-        end
+        if state.dispelShapeTex then state.dispelShapeTex:Hide() end
+        if state.blizzBorderTex then state.blizzBorderTex:Hide() end
     end
 
     if dispelSet or state.dispelIconTex then
@@ -888,9 +851,7 @@ local function ApplyStyleToRegions(btnFrame, look)
         local bl = state.borderHost and state.borderHost:GetFrameLevel() or 0
         if state.akDispelLvl ~= bl then
             state.dispelHolder:SetFrameLevel(bl + 4)
-            if state.stackCarrier then
-                state.stackCarrier:SetFrameLevel(bl + 5)
-            end
+            if state.stackCarrier then state.stackCarrier:SetFrameLevel(bl + 5) end
             state.akDispelLvl = bl
         end
 
@@ -926,7 +887,14 @@ local function ApplyStyleToRegions(btnFrame, look)
                 local success = pcall(function()
                     state.dispelShapeTex:ClearAllPoints()
                     PPx.Point(state.dispelShapeTex, "TOPLEFT", state.dispelHolder, "TOPLEFT", -bExp, bExp)
-                    PPx.Point(state.dispelShapeTex, "BOTTOMRIGHT", state.dispelHolder, "BOTTOMRIGHT", bExp, -bExp)
+                    PPx.Point(
+                        state.dispelShapeTex,
+                        "BOTTOMRIGHT",
+                        state.dispelHolder,
+                        "BOTTOMRIGHT",
+                        bExp,
+                        -bExp
+                    )
                     if state.shapeMask then
                         pcall(state.dispelShapeTex.RemoveMaskTexture, state.dispelShapeTex, state.shapeMask)
                         pcall(state.dispelShapeTex.AddMaskTexture, state.dispelShapeTex, state.shapeMask)
@@ -978,7 +946,8 @@ local function ApplyStyleToRegions(btnFrame, look)
                         CludesUI.LayoutSecretBorderEdges(ringTex, holderFrame, edge, aL, aT, aR, aB)
                     end)
                     if success then
-                        state.akRingEdge, state.akRingL, state.akRingT, state.akRingR, state.akRingB = edge, aL, aT, aR, aB
+                        state.akRingEdge, state.akRingL, state.akRingT, state.akRingR, state.akRingB =
+                            edge, aL, aT, aR, aB
                         state.akRingKeyPath = ringFile
                         state.akDispelRingKey = "tex:"
                             .. ringFile
@@ -1065,7 +1034,8 @@ local function ApplyStyleToRegions(btnFrame, look)
             look.dispelBorder
             and dispelSet ~= nil
             and (
-                (blizzBorderStyle and state.blizzBorderTex) or (look.border and (look.dispelBorderPx or 2) > 0)
+                (blizzBorderStyle and state.blizzBorderTex)
+                or (look.border and (look.dispelBorderPx or 2) > 0)
             )
         )
                 and true
@@ -1097,11 +1067,10 @@ local function ApplyStyleToRegions(btnFrame, look)
                 setKey = "strip"
             end
         end
-        if iconWant then
-            setKey = setKey .. "|icons:" .. (state.akDispelIconGeom or "")
-        end
+        if iconWant then setKey = setKey .. "|icons:" .. (state.akDispelIconGeom or "") end
         if
-            state.dispelBorderOn ~= wanted or (wanted and (state.akDispelMapFP ~= mapFP or state.akDispelSet ~= setKey))
+            state.dispelBorderOn ~= wanted
+            or (wanted and (state.akDispelMapFP ~= mapFP or state.akDispelSet ~= setKey))
         then
             -- Stamp only on SUCCESS: these are button calls, denied while auras are
             -- secret; a pre-stamped failure would strand the registration in the wrong
@@ -1135,9 +1104,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                             dispelSet[idx]:Hide()
                         end
                     end
-                    if not iconWant and state.dispelIconTex then
-                        state.dispelIconTex:Hide()
-                    end
+                    if not iconWant and state.dispelIconTex then state.dispelIconTex:Hide() end
                     local added = true
                     if borderWant then
                         local options
@@ -1187,9 +1154,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                         -- Rollback. dispelBorderOn goes FALSE rather than keeping its old
                         -- value: the clear above already succeeded, so nothing is
                         -- registered now whatever the flag said before.
-                        if clearFn then
-                            pcall(clearFn, btnFrame)
-                        end
+                        if clearFn then pcall(clearFn, btnFrame) end
                         state.dispelBorderOn = false
                         if state.styleKey and Kit.AurasRestricted() then
                             pendingRestyles[state.styleKey] = true
@@ -1205,9 +1170,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                             dispelSet[idx]:Hide()
                         end
                     end
-                    if state.dispelIconTex then
-                        state.dispelIconTex:Hide()
-                    end
+                    if state.dispelIconTex then state.dispelIconTex:Hide() end
                     state.dispelBorderOn = wanted
                 elseif state.styleKey and Kit.AurasRestricted() then
                     pendingRestyles[state.styleKey] = true
@@ -1340,9 +1303,7 @@ local function ApplyStyleToRegions(btnFrame, look)
 
     -- Weapon-enchant cells (stamped by AK.EnchantCellInit): the stock
     -- temp-enchant ring under Blizzard Style, re-fitted on every restyle.
-    if state.enchantCell then
-        Kit.ApplyBlizzEnchantRing(btnFrame, state, look)
-    end
+    if state.enchantCell then Kit.ApplyBlizzEnchantRing(btnFrame, state, look) end
 
     -- Blizzard Style nameplate cells: the stock rounded mask and ring.
     if look.blizzRoundArt or state.blizzRoundRing then
@@ -1350,9 +1311,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     end
 
     -- Module-specific styling pass; runs at init and on every Restyle.
-    if look.applyExtra then
-        look.applyExtra(btnFrame, state, look)
-    end
+    if look.applyExtra then look.applyExtra(btnFrame, state, look) end
 end
 
 -- SetDurationText options, 68914 schema: formatter -> textFormatter,
@@ -1366,14 +1325,10 @@ end
 -- The curve property the engine recolors against; RemainingDuration is 0, so resolve
 -- with an explicit nil check (never `and/or` an enum that can legitimately be zero).
 function Kit.DurationTextColor(curve)
-    if not curve then
-        return nil
-    end
+    if not curve then return nil end
     local e = Enum and Enum.DurationTextBindingProperty
     local prop = e and e.RemainingDuration
-    if prop == nil then
-        prop = 0
-    end
+    if prop == nil then prop = 0 end
     return { curve = curve, property = prop }
 end
 
@@ -1385,17 +1340,13 @@ function Kit.BuildDurationTextOpts(formatFn, colorCurve, updateInterval)
     local options
     if updateInterval and C_DurationUtil and C_DurationUtil.CreateDurationTextBinding then
         local binding = C_DurationUtil.CreateDurationTextBinding()
-        if formatFn then
-            binding:SetFormatter(formatFn)
-        end
+        if formatFn then binding:SetFormatter(formatFn) end
         binding:SetUpdateInterval(updateInterval)
         options = { binding = binding }
     else
         options = { textFormatter = formatFn }
     end
-    if colorCurve then
-        options.textColor = Kit.DurationTextColor(colorCurve)
-    end
+    if colorCurve then options.textColor = Kit.DurationTextColor(colorCurve) end
     return options
 end
 
@@ -1410,18 +1361,12 @@ end
 -- (BmRebindDurationCurve) key off these -- this function never throws, so
 -- a denied button call under restriction must be visible in the returns.
 function Kit.SetDurationTextSafe(btnFrame, fontString, durationOpts)
-    if pcall(btnFrame.SetDurationText, btnFrame, fontString, durationOpts) then
-        return true, true
-    end
+    if pcall(btnFrame.SetDurationText, btnFrame, fontString, durationOpts) then return true, true end
     if durationOpts.textColor ~= nil then
         durationOpts.textColor = nil
-        if pcall(btnFrame.SetDurationText, btnFrame, fontString, durationOpts) then
-            return true, false
-        end
+        if pcall(btnFrame.SetDurationText, btnFrame, fontString, durationOpts) then return true, false end
     end
-    if pcall(btnFrame.SetDurationText, btnFrame, fontString, {}) then
-        return true, false
-    end
+    if pcall(btnFrame.SetDurationText, btnFrame, fontString, {}) then return true, false end
     return false, false
 end
 
@@ -1450,9 +1395,7 @@ function Kit.MakeInitializer(lookKey, extra, record)
         if look.noRegions then
             ApplyStyleToRegions(btnFrame, look)
             GetStyleSet(lookKey)[btnFrame] = true
-            if extra then
-                extra(btnFrame, state, look)
-            end
+            if extra then extra(btnFrame, state, look) end
             return
         end
 
@@ -1522,9 +1465,7 @@ function Kit.MakeInitializer(lookKey, extra, record)
         -- working where styles want them. Styles that wire a click action
         -- (cancelButtons: player buffs right-click-to-cancel, applied below)
         -- keep their clicks -- those buttons overlay nothing clickable.
-        if not look.cancelButtons then
-            pcall(btnFrame.SetMouseClickEnabled, btnFrame, false)
-        end
+        if not look.cancelButtons then pcall(btnFrame.SetMouseClickEnabled, btnFrame, false) end
 
         ApplyStyleToRegions(btnFrame, look)
 
@@ -1560,9 +1501,7 @@ function Kit.MakeInitializer(lookKey, extra, record)
 
         GetStyleSet(lookKey)[btnFrame] = true
 
-        if extra then
-            extra(btnFrame, state, look)
-        end
+        if extra then extra(btnFrame, state, look) end
     end
     -- Holds the button's creation window open for the whole body and always
     -- closes it, also when the body errors (raised again after, so the
@@ -1571,9 +1510,7 @@ function Kit.MakeInitializer(lookKey, extra, record)
         initButton = btnFrame
         local success, problem = pcall(Init, btnFrame)
         initButton = nil
-        if not success then
-            error(problem, 0)
-        end
+        if not success then error(problem, 0) end
     end
 end
 
@@ -1609,9 +1546,7 @@ function Kit.CreateStyledCell(hostFrame, lookKey, extra)
     state.duration = state.stackCarrier:CreateFontString(nil, "OVERLAY")
     ApplyStyleToRegions(btnFrame, look)
     GetStyleSet(lookKey)[btnFrame] = true
-    if extra then
-        extra(btnFrame, state, look)
-    end
+    if extra then extra(btnFrame, state, look) end
     return btnFrame, state
 end
 
@@ -1621,9 +1556,7 @@ end
 function Kit.Restyle(lookKey)
     local look = Kit.styles[lookKey]
     local set = styleButtons[lookKey]
-    if not look or not set then
-        return
-    end
+    if not look or not set then return end
     for btnFrame in pairs(set) do
         ApplyStyleToRegions(btnFrame, look)
     end
@@ -1685,9 +1618,7 @@ restyler:SetScript("OnUpdate", function(self)
                             -- fresh execution budget. Capped so a pathological button
                             -- still falls through to the normal error handling below.
                             wid.wd = (wid.wd or 0) + 1
-                            if wid.wd > 3 then
-                                wid.wd = false
-                            end
+                            if wid.wd > 3 then wid.wd = false end
                             if wid.wd then
                                 wid.index = wid.index - 1
                                 return
@@ -1704,9 +1635,7 @@ restyler:SetScript("OnUpdate", function(self)
                 end
                 budget = budget - 1
             end
-            if wid.index > num then
-                restyleWork = nil
-            end
+            if wid.index > num then restyleWork = nil end
         end
     end
 end)
@@ -1725,9 +1654,7 @@ end
 ------------------------------------------------------------------------------
 
 local liftCallbacks = {}
-function Kit.OnRestrictionLift(func)
-    liftCallbacks[#liftCallbacks + 1] = func
-end
+function Kit.OnRestrictionLift(func) liftCallbacks[#liftCallbacks + 1] = func end
 
 local liftWatcher = CreateFrame("Frame")
 liftWatcher:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -1739,12 +1666,8 @@ liftWatcher:SetScript("OnEvent", function(_, evt, cvarName)
     if evt == "CVAR_UPDATE" and cvarName and not string.find(cvarName, "RestrictionsForced", 1, true) then
         return
     end
-    if not next(pendingRestyles) and #liftCallbacks == 0 then
-        return
-    end
-    if Kit.AurasRestricted() then
-        return
-    end
+    if not next(pendingRestyles) and #liftCallbacks == 0 then return end
+    if Kit.AurasRestricted() then return end
     for styleId in pairs(pendingRestyles) do
         pendingRestyles[styleId] = nil
         restyleQueue[styleId] = true
@@ -1783,31 +1706,23 @@ local containerData = setmetatable({}, { __mode = "k" })
 -- goes through these instead of calling the container methods directly.
 function Kit.SetContainerAnchor(boxHolder, anchorPoint)
     local f = boxHolder.SetFlowLayoutAnchorPoint or boxHolder.SetAuraLayoutAnchorPoint
-    if f then
-        f(boxHolder, anchorPoint)
-    end
+    if f then f(boxHolder, anchorPoint) end
 end
 
 function Kit.SetContainerGrowth(boxHolder, growthH, growthV)
     local f = boxHolder.SetFlowLayoutGrowthDirection or boxHolder.SetAuraLayoutGrowthDirection
-    if f then
-        f(boxHolder, growthH, growthV)
-    end
+    if f then f(boxHolder, growthH, growthV) end
 end
 
 function Kit.SetContainerPadding(boxHolder, l, r, t, b)
     local f = boxHolder.SetFlowLayoutPadding or boxHolder.SetAuraLayoutPadding
-    if f then
-        f(boxHolder, l, r, t, b)
-    end
+    if f then f(boxHolder, l, r, t, b) end
 end
 
 function Kit.SetContainerRowWidth(boxHolder, rowWidth)
     -- nil resets to unlimited on both API generations
     local f = boxHolder.SetFlowLayoutMaximumLineSize or boxHolder.SetAuraLayoutRowWidth
-    if f then
-        f(boxHolder, rowWidth)
-    end
+    if f then f(boxHolder, rowWidth) end
 end
 
 -- Flow axis (68914+): Horizontal = lines are rows (the classic layout),
@@ -1817,19 +1732,13 @@ end
 function Kit.SetContainerAxis(boxHolder, vertical)
     local axes = AnchorUtil and AnchorUtil.FlowLayoutAxis
     local f = boxHolder.SetFlowLayoutAxis
-    if not (axes and f) then
-        return
-    end
+    if not (axes and f) then return end
     f(boxHolder, vertical and axes.Vertical or axes.Horizontal)
 end
 
 function Kit.ApplyContainerLayout(boxHolder, layout)
-    if not layout then
-        return
-    end
-    if layout.anchorPoint then
-        Kit.SetContainerAnchor(boxHolder, layout.anchorPoint)
-    end
+    if not layout then return end
+    if layout.anchorPoint then Kit.SetContainerAnchor(boxHolder, layout.anchorPoint) end
     if layout.growthH and layout.growthV then
         Kit.SetContainerGrowth(boxHolder, layout.growthH, layout.growthV)
     end
@@ -1860,9 +1769,7 @@ function Kit.CreateContainerShell(hostFrame, specInfo)
     -- layout phases from an OnUpdate armed in run-when-visible mode, so the
     -- container needs a renderable rect from the very first dirty mark. The
     -- engine replaces the size on every layout pass.
-    if specInfo.point then
-        boxHolder:SetPoint(unpack(specInfo.point))
-    end
+    if specInfo.point then boxHolder:SetPoint(unpack(specInfo.point)) end
     boxHolder:SetSize(1, 1)
 
     if specInfo.processAura then
@@ -1915,9 +1822,7 @@ local animErrShown = false
 -- else a real error, reported once a session. Returns false.
 local function AnimCallFailed(state, problem)
     if Kit.AurasRestricted() then
-        if state and state.styleKey then
-            pendingRestyles[state.styleKey] = true
-        end
+        if state and state.styleKey then pendingRestyles[state.styleKey] = true end
     elseif not animErrShown then
         animErrShown = true
         geterrorhandler()(problem)
@@ -1926,9 +1831,7 @@ local function AnimCallFailed(state, problem)
 end
 
 -- True while this button's initializeFrame callback runs.
-function Kit.InCreationWindow(btnFrame)
-    return btnFrame ~= nil and btnFrame == initButton
-end
+function Kit.InCreationWindow(btnFrame) return btnFrame ~= nil and btnFrame == initButton end
 
 -- May our code call into this button's subtree right now: inside its creation
 -- window, or while auras are not restricted.
@@ -1939,9 +1842,7 @@ end
 -- Re-runs a style key once the aura restriction lifts (for module code that
 -- skipped a button call it may not make yet).
 function Kit.DeferRestyle(lookKey)
-    if lookKey then
-        pendingRestyles[lookKey] = true
-    end
+    if lookKey then pendingRestyles[lookKey] = true end
 end
 
 -- Can the live button run animations itself (12.1.5+; not on WoW Forever).
@@ -1959,9 +1860,7 @@ end
 function Kit.SetShownAnimation(btnFrame, state, ag, enabled)
     local region = state.akShown
     if enabled then
-        if region and region[ag] then
-            return true
-        end
+        if region and region[ag] then return true end
     elseif not (region and region[ag]) then
         return true
     end
@@ -1969,7 +1868,8 @@ function Kit.SetShownAnimation(btnFrame, state, ag, enabled)
         local success, problem = pcall(btnFrame.AddAuraShownAnimation, btnFrame, ag)
         -- "already been added": registered under a lost stamp, which is the state wanted.
         if
-            not success and not (type(problem) == "string" and string.find(problem, "already been added", 1, true))
+            not success
+            and not (type(problem) == "string" and string.find(problem, "already been added", 1, true))
         then
             return AnimCallFailed(state, problem)
         end
@@ -1981,9 +1881,7 @@ function Kit.SetShownAnimation(btnFrame, state, ag, enabled)
         return true
     end
     local success, problem = pcall(btnFrame.RemoveAuraShownAnimation, btnFrame, ag)
-    if not success then
-        return AnimCallFailed(state, problem)
-    end
+    if not success then return AnimCallFailed(state, problem) end
     region[ag] = nil
     return true
 end
@@ -1993,25 +1891,17 @@ end
 -- the button's creation window; refused under restriction like the calls
 -- above. true when it landed.
 function Kit.KickShownAnimations(btnFrame, state, groups, num)
-    if btnFrame == initButton then
-        return true
-    end
+    if btnFrame == initButton then return true end
     for idx = 1, num do
         local ag = groups[idx]
         local success, problem = pcall(ag.Play, ag)
-        if not success then
-            return AnimCallFailed(state, problem)
-        end
+        if not success then return AnimCallFailed(state, problem) end
     end
     local icon = state.akKickIcon
     -- A bare button without one: making and registering it is the kick.
-    if not icon then
-        return Kit.EnsureKickIcon(btnFrame, state)
-    end
+    if not icon then return Kit.EnsureKickIcon(btnFrame, state) end
     local success, problem = pcall(btnFrame.SetIcon, btnFrame, icon)
-    if not success then
-        return AnimCallFailed(state, problem)
-    end
+    if not success then return AnimCallFailed(state, problem) end
     return true
 end
 
@@ -2026,9 +1916,7 @@ function Kit.EnsureKickIcon(btnFrame, state, held)
         state.akKickIcon = held
         return true
     end
-    if state.akKickIcon then
-        return true
-    end
+    if state.akKickIcon then return true end
     -- Made once: a refused step keeps it for the next attempt. It draws nothing
     -- before registration (no texture set), and is hidden before it is handed
     -- over, so the aura's art the engine then sets never shows.
@@ -2036,22 +1924,16 @@ function Kit.EnsureKickIcon(btnFrame, state, held)
     if not texture then
         local success
         success, texture = pcall(btnFrame.CreateTexture, btnFrame, nil, "BACKGROUND")
-        if not success then
-            return AnimCallFailed(state, texture)
-        end
+        if not success then return AnimCallFailed(state, texture) end
         state.akKickTex = texture
     end
     if not state.akKickHidden then
         local success, problem = pcall(texture.Hide, texture)
-        if not success then
-            return AnimCallFailed(state, problem)
-        end
+        if not success then return AnimCallFailed(state, problem) end
         state.akKickHidden = true
     end
     local success, problem = pcall(btnFrame.SetIcon, btnFrame, texture)
-    if not success then
-        return AnimCallFailed(state, problem)
-    end
+    if not success then return AnimCallFailed(state, problem) end
     state.akKickIcon = texture
     return true
 end
@@ -2077,7 +1959,12 @@ local GROUP_BATCH = 10
 function Kit.ButtonCanShow(btnFrame)
     local state = bd[btnFrame]
     local record = state and state.akGroup
-    if not record or record.allShow or record.maxCap > GROUP_BATCH or state.akIndex > GROUP_BATCH - record.maxCap then
+    if
+        not record
+        or record.allShow
+        or record.maxCap > GROUP_BATCH
+        or state.akIndex > GROUP_BATCH - record.maxCap
+    then
         return true
     end
     record.gated = true
@@ -2088,9 +1975,7 @@ end
 -- AK.ButtonCanShow held back starts on them. Under aura secrecy their child
 -- writes are denied: the whole style re-runs once the restriction lifts.
 local function RedressGroupButtons(record, first, last)
-    if not record.gated then
-        return
-    end
+    if not record.gated then return end
     for idx = first, last do
         local btnFrame = record.buttons[idx]
         local state = btnFrame and bd[btnFrame]
@@ -2140,26 +2025,18 @@ end
 -- (AK.ButtonCanShow): those are re-dressed.
 function Kit.SetGroupCap(boxHolder, styleId, cap)
     if boxHolder.SetAuraGroupEnabled then
-        if cap > 0 then
-            boxHolder:SetAuraGroupEnabled(styleId, true)
-        end
+        if cap > 0 then boxHolder:SetAuraGroupEnabled(styleId, true) end
         boxHolder:SetAuraGroupMaxFrameCount(styleId, cap)
-        if cap <= 0 then
-            boxHolder:SetAuraGroupEnabled(styleId, false)
-        end
+        if cap <= 0 then boxHolder:SetAuraGroupEnabled(styleId, false) end
     else
         boxHolder:SetAuraGroupMaxFrameCount(styleId, cap)
     end
     local cooldown = containerData[boxHolder]
     local record = cooldown and cooldown.groups and cooldown.groups[styleId]
-    if not record or record.allShow or cap <= record.maxCap then
-        return
-    end
+    if not record or record.allShow or cap <= record.maxCap then return end
     local old = record.maxCap
     record.maxCap = cap
-    if old >= GROUP_BATCH then
-        return
-    end
+    if old >= GROUP_BATCH then return end
     RedressGroupButtons(record, GROUP_BATCH - math.min(cap, GROUP_BATCH) + 1, GROUP_BATCH - old)
 end
 
@@ -2171,9 +2048,7 @@ function Kit.AddSlotToContainer(boxHolder, cfg)
         initializeFrame = Kit.MakeInitializer(cfg.style, cfg.extraInit),
     })
     local cooldown = containerData[boxHolder]
-    if cooldown then
-        cooldown.slotFrames[cfg.key] = f
-    end
+    if cooldown then cooldown.slotFrames[cfg.key] = f end
     return f
 end
 
@@ -2196,9 +2071,7 @@ Kit.ITEM_ENCH_SLOTS = { "MainHand", "OffHand", "Ranged" }
 function Kit.ApplyBlizzEnchantRing(btnFrame, state, look)
     local ringTex = state.blizzEnchantRing
     if not look.blizzEnchant then
-        if ringTex then
-            ringTex:Hide()
-        end
+        if ringTex then ringTex:Hide() end
         return
     end
     local host = state.borderHost or btnFrame
@@ -2259,9 +2132,7 @@ function Kit.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
             or false
     end
     if not (wanted and Kit._blizzRoundOK) then
-        if ringTex then
-            ringTex:Hide()
-        end
+        if ringTex then ringTex:Hide() end
         if state.akBlizzRoundMasked then
             if state.icon and state.blizzRoundMask then
                 pcall(state.icon.RemoveMaskTexture, state.icon, state.blizzRoundMask)
@@ -2319,9 +2190,7 @@ end
 -- `placement`/`layoutIndex` decides whether they lead or trail the aura
 -- groups. Nothing may be anchored to a container (forbidden aspects).
 function Kit.SetContainerItemEnchantmentLayout(boxHolder, layout)
-    if not (boxHolder and layout and boxHolder.SetItemEnchantmentLayout) then
-        return
-    end
+    if not (boxHolder and layout and boxHolder.SetItemEnchantmentLayout) then return end
     boxHolder:SetItemEnchantmentLayout(layout)
 end
 
@@ -2341,17 +2210,11 @@ end
 -- showing them releases the container and builds a fresh one. Re-calling is
 -- idempotent and re-applies layout and sort only.
 function Kit.AddItemEnchantmentsToContainer(boxHolder, e)
-    if not (boxHolder and e and boxHolder.AddItemEnchantment) then
-        return
-    end
+    if not (boxHolder and e and boxHolder.AddItemEnchantment) then return end
     local slotEnum = AuraContainerItemEnchantmentSlot
-    if not slotEnum then
-        return
-    end
+    if not slotEnum then return end
     local cooldown = containerData[boxHolder]
-    if cooldown and not cooldown.itemEnchFrames then
-        cooldown.itemEnchFrames = {}
-    end
+    if cooldown and not cooldown.itemEnchFrames then cooldown.itemEnchFrames = {} end
     local tracked = cooldown and cooldown.itemEnchFrames
     local nameList = Kit.ITEM_ENCH_SLOTS
     local last = math.min(e.maxSlots or #nameList, #nameList)
@@ -2368,9 +2231,7 @@ function Kit.AddItemEnchantmentsToContainer(boxHolder, e)
                 initializeFrame = Kit.MakeInitializer(e.style, e.extraInit),
                 hidePermanent = e.hidePermanent ~= false,
             })
-            if success and tracked then
-                tracked[name] = widget or true
-            end
+            if success and tracked then tracked[name] = widget or true end
         end
     end
     Kit.SetContainerItemEnchantmentLayout(boxHolder, e.layout)
@@ -2457,14 +2318,10 @@ local spentStamp, spentMs = nil, 0
 local WATCHDOG_RETRIES = 3
 local function RunJob(record)
     local success, verdict = pcall(record.fn)
-    if success then
-        return verdict
-    end
+    if success then return verdict end
     if type(verdict) == "string" and string.find(verdict, "script ran too long", 1, true) then
         record.watchdogged = (record.watchdogged or 0) + 1
-        if record.watchdogged <= WATCHDOG_RETRIES then
-            return "watchdog"
-        end
+        if record.watchdogged <= WATCHDOG_RETRIES then return "watchdog" end
     end
     geterrorhandler()(verdict)
 end
@@ -2483,9 +2340,7 @@ local function WorkerOnUpdate(self)
     if spentStamp ~= nowTime then
         spentStamp, spentMs = nowTime, 0
     end
-    if spentMs >= budget then
-        return
-    end
+    if spentMs >= budget then return end
     local t0 = debugprofilestop()
 
     local queue = self._akQueue
@@ -2551,15 +2406,11 @@ local function WakeWorkers()
     return any
 end
 
-function Kit.QueueBuildJob(func, labelText, job)
-    QueueOnWorker(job or buildWorker, func, labelText)
-end
+function Kit.QueueBuildJob(func, labelText, job) QueueOnWorker(job or buildWorker, func, labelText) end
 
 -- Back-compat name: a combat-runnable job (declarations/setters on
 -- EXISTING containers). Back-compat alias; identical to QueueBuildJob.
-function Kit.QueueLiveBuildJob(func, labelText, job)
-    QueueOnWorker(job or buildWorker, func, labelText)
-end
+function Kit.QueueLiveBuildJob(func, labelText, job) QueueOnWorker(job or buildWorker, func, labelText) end
 
 -- NO synchronous loading-screen burst: a long drain inside the PEW handler stacks onto
 -- every other addon's login work in ONE script execution and trips the client watchdog
@@ -2574,9 +2425,7 @@ wakeFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 wakeFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 wakeFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" then
-        if WakeWorkers() then
-            loginStamp = GetTime()
-        end
+        if WakeWorkers() then loginStamp = GetTime() end
         return
     end
     -- A reconnect mid-pull lands here before InCombatLockdown reflects the fight;
@@ -2584,12 +2433,8 @@ wakeFrame:SetScript("OnEvent", function(_, evt)
     -- window opens only out of combat (the regen wake snaps the backlog in at turbo
     -- once the pull ends).
     local fighting = UnitAffectingCombat("player")
-    if issecretvalue and issecretvalue(fighting) then
-        fighting = false
-    end
-    if not fighting then
-        loginStamp = GetTime()
-    end
+    if issecretvalue and issecretvalue(fighting) then fighting = false end
+    if not fighting then loginStamp = GetTime() end
     WakeWorkers() -- in case jobs were queued behind the screen
 end)
 
@@ -2601,9 +2446,7 @@ end)
 -- Kept as a wrapper so callers keep one entry point.
 function Kit.RequestContainer(hostFrame, unitToken, specInfo, callback)
     local boxHolder, slotFrames = Kit.CreateContainer(hostFrame, unitToken, specInfo)
-    if callback then
-        callback(boxHolder, slotFrames)
-    end
+    if callback then callback(boxHolder, slotFrames) end
 end
 
 -- Releases a swapped-out container's tracked slot buttons from the restyle registry.
@@ -2613,9 +2456,7 @@ end
 -- list and are not individually tracked; group-based containers swap rarely
 -- (filter-class changes), so their zombies are accepted for now.
 function Kit.ReleaseContainer(boxHolder)
-    if not boxHolder then
-        return
-    end
+    if not boxHolder then return end
     local payload = containerData[boxHolder]
     local function Untrack(btnFrame)
         local state = type(btnFrame) == "table" and bd[btnFrame]
@@ -2683,12 +2524,8 @@ function Kit.AurasRestricted()
         restrictedStamp = nowTime
         return true
     end
-    if nowTime == restrictedStamp then
-        return true
-    end
-    if pcall(C_UnitAuras.GetAuraDataByIndex, "player", 1, "HELPFUL") then
-        return false
-    end
+    if nowTime == restrictedStamp then return true end
+    if pcall(C_UnitAuras.GetAuraDataByIndex, "player", 1, "HELPFUL") then return false end
     restrictedStamp = nowTime
     return true
 end
@@ -2723,20 +2560,14 @@ do
     -- behind the loadDeprecationFallbacks CVar, so they are never used here.
     local function Knows(spellId, bank)
         local BANK = Enum and Enum.SpellBookSpellBank
-        if not (C_SpellBook and C_SpellBook.IsSpellKnown and BANK) then
-            return false
-        end
+        if not (C_SpellBook and C_SpellBook.IsSpellKnown and BANK) then return false end
         local success, val = pcall(C_SpellBook.IsSpellKnown, spellId, bank or BANK.Player)
         return success and val == true
     end
     local function InBook(spellId, bank)
         local BANK = Enum and Enum.SpellBookSpellBank
-        if not (C_SpellBook and BANK) then
-            return false
-        end
-        if not C_SpellBook.IsSpellKnownOrInSpellBook then
-            return Knows(spellId, bank)
-        end
+        if not (C_SpellBook and BANK) then return false end
+        if not C_SpellBook.IsSpellKnownOrInSpellBook then return Knows(spellId, bank) end
         local success, val = pcall(C_SpellBook.IsSpellKnownOrInSpellBook, spellId, bank or BANK.Player)
         return success and val == true
     end
@@ -2761,12 +2592,8 @@ do
                     known = InBook(spellId)
                 end
                 if known then
-                    if category == "Magic" or category == "Both" then
-                        magic = true
-                    end
-                    if category == "Enrage" or category == "Both" then
-                        enrage = true
-                    end
+                    if category == "Magic" or category == "Both" then magic = true end
+                    if category == "Enrage" or category == "Both" then enrage = true end
                 end
             end
         end
@@ -2781,9 +2608,7 @@ do
     end
 
     local function Ensure()
-        if watcher then
-            return
-        end
+        if watcher then return end
         watcher = CreateFrame("Frame")
         watcher:RegisterEvent("SPELLS_CHANGED")
         watcher:RegisterEvent("UNIT_PET")
@@ -2792,9 +2617,7 @@ do
         watcher:RegisterEvent("TRAIT_CONFIG_UPDATED")
         watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
         watcher:SetScript("OnEvent", function(_, evt, unit)
-            if evt == "UNIT_PET" and unit ~= "player" then
-                return
-            end
+            if evt == "UNIT_PET" and unit ~= "player" then return end
             Rebuild()
         end)
         Rebuild()

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Themed Inspect Sheet
 --  Mirrors the Character Sheet skinning for inspected characters.
@@ -93,9 +91,7 @@ end
 -- labels wait for it: RefreshSlotStyles reads the slot again as it comes).
 local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
     local slotFrame = _G[slotKey]
-    if not slotFrame or not textLayer then
-        return
-    end
+    if not slotFrame or not textLayer then return end
     local waiting = false
 
     -- Blizzard reuses the SAME global slot frames (InspectHeadSlot etc) for
@@ -115,9 +111,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
     local above = slotKey == "InspectSecondaryHandSlot" and InspectRangedSlot ~= nil
 
     local inspectUnit = InspectFrame and InspectFrame.unit
-    if not inspectUnit then
-        return
-    end
+    if not inspectUnit then return end
 
     local fontFile = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT
     local linkText = GetInventoryItemLink(inspectUnit, slotID)
@@ -195,9 +189,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
     if enchantText then
         local iconOnly, tipText, _, hasEnchant =
             mod.ParseEnchantLabel(enchantText, slotID, linkText, inspectUnit)
-        if mod.ForeverEnchantName then
-            tipText = mod.ForeverEnchantName(enchantText)
-        end
+        if mod.ForeverEnchantName then tipText = mod.ForeverEnchantName(enchantText) end
 
         local enchantsShown = (not CludesUIDB) or (CludesUIDB.inspectShowEnchants ~= false)
         local styled = CludesUIDB and CludesUIDB.inspectEnchantNames
@@ -290,9 +282,7 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
                     CludesUI.ShowWidgetTooltip(hoverArea, tipText)
                 end
             end)
-            hoverArea:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            hoverArea:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
             hoverArea:Show()
 
             GetFFD(slotFrame).enchantHoverFrame = hoverArea
@@ -336,9 +326,7 @@ end
 -- Takes a boolean parameter: true = show labels (Tab 1), false = hide labels (Tab 2/3)
 local function ApplyTabVisibility(showLabels)
     local widget = InspectFrame
-    if not widget then
-        return
-    end
+    if not widget then return end
 
     -- Show/hide individual labels based on settings
     local showItemLevel = (not CludesUIDB) or (CludesUIDB.inspectShowItemLevel ~= false)
@@ -368,44 +356,32 @@ local function ApplyTabVisibility(showLabels)
     -- Hide/show avg ilvl + M+ score
     local widget = InspectFrame
     if widget then
-        if GetFFD(widget).avgIlvlText then
-            GetFFD(widget).avgIlvlText:SetShown(showLabels)
-        end
-        if GetFFD(widget).mPlusScoreText then
-            GetFFD(widget).mPlusScoreText:SetShown(showLabels)
-        end
+        if GetFFD(widget).avgIlvlText then GetFFD(widget).avgIlvlText:SetShown(showLabels) end
+        if GetFFD(widget).mPlusScoreText then GetFFD(widget).mPlusScoreText:SetShown(showLabels) end
     end
 end
 
 -- Calculate average item level from inspected player
 local function CalculateAverageItemLevel()
-    if not InspectFrame or not InspectFrame.unit then
-        return 0
-    end
+    if not InspectFrame or not InspectFrame.unit then return 0 end
 
     local unitToken = InspectFrame.unit
 
     -- Use the proper WoW API for getting inspect item level
     if C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
         local itemLevel = C_PaperDollInfo.GetInspectItemLevel(unitToken)
-        if itemLevel and itemLevel > 0 then
-            return itemLevel
-        end
+        if itemLevel and itemLevel > 0 then return itemLevel end
     end
 
     return 0
 end
 
 local function SkinInspectSheet()
-    if skinned then
-        return
-    end
+    if skinned then return end
     skinned = true
 
     local widget = InspectFrame
-    if not widget then
-        return
-    end
+    if not widget then return end
 
     local FRAME_BG_R, FRAME_BG_G, FRAME_BG_B = 0.03, 0.045, 0.05
 
@@ -425,9 +401,7 @@ local function SkinInspectSheet()
 
     -- Standard window-reskin border (the AdventureMap_TopBorder atlas texture),
     -- same as the character sheet and every other skinned Blizzard window.
-    if mod.WSkin and mod.WSkin.AtlasBorder then
-        mod.WSkin.AtlasBorder(widget)
-    end
+    if mod.WSkin and mod.WSkin.AtlasBorder then mod.WSkin.AtlasBorder(widget) end
 
     -- Hide Blizzard backgrounds and borders
     for _, elem in ipairs({
@@ -443,29 +417,19 @@ local function SkinInspectSheet()
         InspectModelFrameBorderBottom,
         InspectModelFrameBorderTop,
     }) do
-        if elem then
-            elem:Hide()
-        end
+        if elem then elem:Hide() end
     end
 
     -- Hide Blizzard Bg textures (our atlas bg covers everything)
-    if InspectFrameBg then
-        InspectFrameBg:SetAlpha(0)
-    end
-    if InspectFrameInset and InspectFrameInset.Bg then
-        InspectFrameInset.Bg:SetAlpha(0)
-    end
+    if InspectFrameBg then InspectFrameBg:SetAlpha(0) end
+    if InspectFrameInset and InspectFrameInset.Bg then InspectFrameInset.Bg:SetAlpha(0) end
 
     -- Create model background (matches character sheet: character-bg.png, no glow/gradient)
     -- Deferred until InspectModelFrame exists (created lazily by Blizzard)
     local function MakeModelBg()
-        if GetFFD(widget).modelBgFrame then
-            return
-        end
+        if GetFFD(widget).modelBgFrame then return end
         local modelFrame = _G.InspectModelFrame
-        if not modelFrame then
-            return
-        end
+        if not modelFrame then return end
         local backdrop = CreateFrame("Frame", nil, modelFrame)
         backdrop:SetFrameLevel(math.max(1, modelFrame:GetFrameLevel() - 1))
         backdrop:ClearAllPoints()
@@ -606,9 +570,7 @@ local function SkinInspectSheet()
             "BottomLeft",
             "BottomRight",
         }) do
-            if widget.PaperDollFrame.InnerBorder[name] then
-                widget.PaperDollFrame.InnerBorder[name]:Hide()
-            end
+            if widget.PaperDollFrame.InnerBorder[name] then widget.PaperDollFrame.InnerBorder[name]:Hide() end
         end
     end
 
@@ -681,9 +643,7 @@ local function SkinInspectSheet()
 
     -- Style close button
     local closeBtn = widget.CloseButton or _G.InspectFrameCloseButton
-    if closeBtn and mod.WSkin and mod.WSkin.CloseButton then
-        mod.WSkin.CloseButton(closeBtn)
-    end
+    if closeBtn and mod.WSkin and mod.WSkin.CloseButton then mod.WSkin.CloseButton(closeBtn) end
 
     -- Restyle Blizzard's Talents + View (dressing room) buttons in place.
     -- User clicks the actual Blizzard button so the secure handler fires
@@ -695,13 +655,9 @@ local function SkinInspectSheet()
         local BTN_Y = 8
 
         local function RestyleButton(button, captionText, anchorFrame, anchorPoint, xOff)
-            if not button then
-                return
-            end
+            if not button then return end
             local ffd = GetFFD(button)
-            if ffd.restyled then
-                return
-            end
+            if ffd.restyled then return end
             ffd.restyled = true
 
             button:ClearAllPoints()
@@ -711,9 +667,7 @@ local function SkinInspectSheet()
 
             -- Standard Blizzard-window-skin button look: dark fill + theme
             -- border + hover highlight. WSkin.Button fades the native textures.
-            if mod.WSkin and mod.WSkin.Button then
-                mod.WSkin.Button(button)
-            end
+            if mod.WSkin and mod.WSkin.Button then mod.WSkin.Button(button) end
 
             -- Hide the native label (the View button is a dressing-room icon,
             -- not "Transmog") and draw our own, white like other skinned buttons.
@@ -766,9 +720,7 @@ local function SkinInspectSheet()
     -- Hide slot wrapper frames
     for _, slotKey in ipairs(CUI_ALL_SLOTS) do
         local frameName = slotKey .. "Frame"
-        if _G[frameName] then
-            _G[frameName]:Hide()
-        end
+        if _G[frameName] then _G[frameName]:Hide() end
     end
 
     -- Show actual slot buttons and style them
@@ -791,15 +743,9 @@ local function SkinInspectSheet()
             end
 
             -- Hide Blizzard border and textures
-            if slotFrame.IconBorder then
-                slotFrame.IconBorder:Hide()
-            end
-            if slotFrame.IconOverlay then
-                slotFrame.IconOverlay:Hide()
-            end
-            if slotFrame.IconOverlay2 then
-                slotFrame.IconOverlay2:Hide()
-            end
+            if slotFrame.IconBorder then slotFrame.IconBorder:Hide() end
+            if slotFrame.IconOverlay then slotFrame.IconOverlay:Hide() end
+            if slotFrame.IconOverlay2 then slotFrame.IconOverlay2:Hide() end
 
             -- Crop icon
             if slotFrame.icon then
@@ -808,9 +754,7 @@ local function SkinInspectSheet()
             end
 
             local normalTexture = _G[slotKey .. "NormalTexture"]
-            if normalTexture then
-                normalTexture:Hide()
-            end
+            if normalTexture then normalTexture:Hide() end
 
             -- Get item rarity for border color
             local linkText = GetInventoryItemLink("inspect", slotFrame:GetID())
@@ -828,9 +772,7 @@ local function SkinInspectSheet()
             end
 
             local hostFrame = slotFrame:GetParent()
-            if hostFrame then
-                hostFrame:Show()
-            end
+            if hostFrame then hostFrame:Show() end
         end
     end
 
@@ -985,9 +927,7 @@ local function SkinInspectSheet()
         local mpScore = 0
         if inspectUnit and C_PlayerInfo and C_PlayerInfo.GetPlayerMythicPlusRatingSummary then
             local summary = C_PlayerInfo.GetPlayerMythicPlusRatingSummary(inspectUnit)
-            if summary and summary.currentSeasonScore then
-                mpScore = summary.currentSeasonScore
-            end
+            if summary and summary.currentSeasonScore then mpScore = summary.currentSeasonScore end
         end
         if mpScore > 0 then
             local hex = mod.GetMPScoreHex(mpScore)
@@ -1014,35 +954,19 @@ local function SkinInspectSheet()
                 local regionFrame = regionList[jdx]
                 if regionFrame and regionFrame:IsObjectType("Texture") then
                     regionFrame:SetTexture("")
-                    if regionFrame.SetAtlas then
-                        regionFrame:SetAtlas("")
-                    end
+                    if regionFrame.SetAtlas then regionFrame:SetAtlas("") end
                 end
             end
 
-            if tabBtn.Left then
-                tabBtn.Left:SetTexture("")
-            end
-            if tabBtn.Middle then
-                tabBtn.Middle:SetTexture("")
-            end
-            if tabBtn.Right then
-                tabBtn.Right:SetTexture("")
-            end
-            if tabBtn.LeftDisabled then
-                tabBtn.LeftDisabled:SetTexture("")
-            end
-            if tabBtn.MiddleDisabled then
-                tabBtn.MiddleDisabled:SetTexture("")
-            end
-            if tabBtn.RightDisabled then
-                tabBtn.RightDisabled:SetTexture("")
-            end
+            if tabBtn.Left then tabBtn.Left:SetTexture("") end
+            if tabBtn.Middle then tabBtn.Middle:SetTexture("") end
+            if tabBtn.Right then tabBtn.Right:SetTexture("") end
+            if tabBtn.LeftDisabled then tabBtn.LeftDisabled:SetTexture("") end
+            if tabBtn.MiddleDisabled then tabBtn.MiddleDisabled:SetTexture("") end
+            if tabBtn.RightDisabled then tabBtn.RightDisabled:SetTexture("") end
 
             local highlight = tabBtn:GetHighlightTexture()
-            if highlight then
-                highlight:SetTexture("")
-            end
+            if highlight then highlight:SetTexture("") end
 
             -- Add custom background (matches character sheet tab color)
             if not GetFFD(tabBtn).bg then
@@ -1075,9 +999,7 @@ local function SkinInspectSheet()
             -- Replace Blizzard label with custom font
             local blizLabel = tabBtn:GetFontString()
             local captionText = blizLabel and blizLabel:GetText() or ("Tab " .. idx)
-            if blizLabel then
-                blizLabel:SetTextColor(0, 0, 0, 0)
-            end
+            if blizLabel then blizLabel:SetTextColor(0, 0, 0, 0) end
             tabBtn:SetPushedTextOffset(0, 0)
 
             if not GetFFD(tabBtn).label then
@@ -1089,9 +1011,7 @@ local function SkinInspectSheet()
                 GetFFD(tabBtn).label = caption
 
                 hooksecurefunc(tabBtn, "SetText", function(_, newText)
-                    if newText and caption then
-                        caption:SetText(newText)
-                    end
+                    if newText and caption then caption:SetText(newText) end
                 end)
             end
 
@@ -1117,33 +1037,21 @@ local function SkinInspectSheet()
             end
         end
     end
-    if mod.WSkin and mod.WSkin.NormalizeTabRow then
-        mod.WSkin.NormalizeTabRow(inspTabs)
-    end
+    if mod.WSkin and mod.WSkin.NormalizeTabRow then mod.WSkin.NormalizeTabRow(inspTabs) end
 
     -- Update tab visuals on show
     local function UpdateTabVisuals()
         local onFirstTab = (widget.selectedTab or 1) == 1
 
         -- Show model background only on Tab 1
-        if GetFFD(widget).modelBg then
-            GetFFD(widget).modelBg:SetShown(onFirstTab)
-        end
-        if GetFFD(widget).modelBgGlow then
-            GetFFD(widget).modelBgGlow:SetShown(onFirstTab)
-        end
+        if GetFFD(widget).modelBg then GetFFD(widget).modelBg:SetShown(onFirstTab) end
+        if GetFFD(widget).modelBgGlow then GetFFD(widget).modelBgGlow:SetShown(onFirstTab) end
 
         -- Show Talents/Transmog buttons only on Tab 1 (Character sheet)
-        if GetFFD(widget).talentsBtn then
-            GetFFD(widget).talentsBtn:SetShown(onFirstTab)
-        end
-        if GetFFD(widget).transmogBtn then
-            GetFFD(widget).transmogBtn:SetShown(onFirstTab)
-        end
+        if GetFFD(widget).talentsBtn then GetFFD(widget).talentsBtn:SetShown(onFirstTab) end
+        if GetFFD(widget).transmogBtn then GetFFD(widget).transmogBtn:SetShown(onFirstTab) end
         -- The item text eyeball only has slots to act on on Tab 1
-        if GetFFD(widget).textEyeBtn then
-            GetFFD(widget).textEyeBtn:SetShown(onFirstTab)
-        end
+        if GetFFD(widget).textEyeBtn then GetFFD(widget).textEyeBtn:SetShown(onFirstTab) end
 
         -- Update label visibility with ApplyTabVisibility - only show on Tab 1
         ApplyTabVisibility(onFirstTab)
@@ -1153,18 +1061,12 @@ local function SkinInspectSheet()
             if tabBtn then
                 local isActive = (widget.selectedTab or 1) == idx
                 -- Ensure background is always visible
-                if GetFFD(tabBtn).bg then
-                    GetFFD(tabBtn).bg:Show()
-                end
+                if GetFFD(tabBtn).bg then GetFFD(tabBtn).bg:Show() end
                 if GetFFD(tabBtn).label then
                     GetFFD(tabBtn).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
                 end
-                if GetFFD(tabBtn).underline then
-                    GetFFD(tabBtn).underline:SetShown(isActive)
-                end
-                if GetFFD(tabBtn).activeHL then
-                    GetFFD(tabBtn).activeHL:SetShown(isActive)
-                end
+                if GetFFD(tabBtn).underline then GetFFD(tabBtn).underline:SetShown(isActive) end
+                if GetFFD(tabBtn).activeHL then GetFFD(tabBtn).activeHL:SetShown(isActive) end
             end
         end
     end
@@ -1174,13 +1076,9 @@ local function SkinInspectSheet()
     -- WoW Forever and Blizzard's own resets to the character tab.
     if widget.HookScript and not GetFFD(widget)._tabHooked then
         GetFFD(widget)._tabHooked = true
-        widget:HookScript("OnShow", function()
-            UpdateTabVisuals()
-        end)
+        widget:HookScript("OnShow", function() UpdateTabVisuals() end)
         if _G.InspectSwitchTabs then
-            hooksecurefunc("InspectSwitchTabs", function()
-                UpdateTabVisuals()
-            end)
+            hooksecurefunc("InspectSwitchTabs", function() UpdateTabVisuals() end)
         end
     end
 
@@ -1226,9 +1124,7 @@ local DOCK_MARGIN = 4
 -- since secure repositioning of a protected frame is blocked in combat.
 local securePositioner = CreateFrame("Frame", nil, UIParent, "SecureHandlerBaseTemplate")
 local function SecureSetPoint(widget, point, relPoint, posX, posY)
-    if InCombatLockdown() then
-        return false
-    end
+    if InCombatLockdown() then return false end
     securePositioner:SetFrameRef("f", widget)
     securePositioner:SetAttribute("p", point)
     securePositioner:SetAttribute("rp", relPoint)
@@ -1254,9 +1150,7 @@ end
 -- a raw SetPoint -> taint); since that only anchors to UIParent, the beside-anchor
 -- target is converted to a UIParent- CENTER offset.
 local function DockBeside(dragHandle, anchorFrame)
-    if not dragHandle or not anchorFrame then
-        return
-    end
+    if not dragHandle or not anchorFrame then return end
     local as = anchorFrame:GetEffectiveScale() or 1
     local modelScene = dragHandle:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
@@ -1266,9 +1160,7 @@ local function DockBeside(dragHandle, anchorFrame)
     local dockLeft = leftRoom >= wAbs + DOCK_MARGIN * modelScene or leftRoom >= rightRoom
 
     if dragHandle:IsProtected() then
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         local hAbs = (dragHandle:GetHeight() or 0) * modelScene
         local absCenterX
         if dockLeft then
@@ -1306,27 +1198,19 @@ local _moved = {}
 local _ignoreSP = false
 
 local function CapturePoint(widget)
-    if not widget or _savedPoint[widget] then
-        return
-    end
+    if not widget or _savedPoint[widget] then return end
     local point, relTo, relPoint, posX, posY = widget:GetPoint(1)
-    if point then
-        _savedPoint[widget] = { point, relTo, relPoint, posX, posY }
-    end
+    if point then _savedPoint[widget] = { point, relTo, relPoint, posX, posY } end
 end
 
 local function RestorePoint(widget)
     local p = _savedPoint[widget]
-    if not p or not widget then
-        return
-    end
+    if not p or not widget then return end
     if widget:IsProtected() then
         -- Secure restore reproduces the native anchor only when it was
         -- UIParent-relative (the usual case for a top-level panel; a nil
         -- relativeTo defaults to the parent, UIParent, inside the snippet).
-        if p[2] == nil or p[2] == UIParent then
-            SecureSetPoint(widget, p[1], p[3], p[4], p[5])
-        end
+        if p[2] == nil or p[2] == UIParent then SecureSetPoint(widget, p[1], p[3], p[4], p[5]) end
     else
         widget:ClearAllPoints()
         widget:SetPoint(p[1], p[2], p[3], p[4], p[5])
@@ -1339,9 +1223,7 @@ end
 -- stays put) and the inspect window yields instead; if both are pinned, neither moves.
 local function SyncDock()
     local insp, castFrame = InspectFrame, _G.CharacterFrame
-    if not insp or not castFrame then
-        return
-    end
+    if not insp or not castFrame then return end
     if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
         return
     end
@@ -1396,9 +1278,7 @@ local function EnsureInspectNineSliceHidden()
     if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
         return
     end
-    if not InspectFrame then
-        return
-    end
+    if not InspectFrame then return end
 
     local widget = InspectFrame
 
@@ -1428,9 +1308,7 @@ if CludesUI then
     local _inspHooked = false
 
     local function HookInspectFrame()
-        if _inspHooked or not InspectFrame then
-            return
-        end
+        if _inspHooked or not InspectFrame then return end
         _inspHooked = true
 
         InspectFrame:HookScript("OnShow", function()
@@ -1438,9 +1316,7 @@ if CludesUI then
             ApplyThemedInspectSheet()
             SyncDock()
             C_Timer.After(0.1, function()
-                if not InspectFrame or not InspectFrame:IsShown() then
-                    return
-                end
+                if not InspectFrame or not InspectFrame:IsShown() then return end
                 if CludesUI._refreshInspectItemLevelVisibility then
                     CludesUI._refreshInspectItemLevelVisibility()
                 end
@@ -1461,9 +1337,7 @@ if CludesUI then
         -- When the inspect window itself moves (Shifter drag, Blizzard relayout),
         -- the docked character sheet follows it, so re-pair on its SetPoint too.
         hooksecurefunc(InspectFrame, "SetPoint", function()
-            if not _ignoreSP then
-                SyncDock()
-            end
+            if not _ignoreSP then SyncDock() end
         end)
 
         -- CharacterFrame is core UI, already loaded here (unlike InspectFrame).
@@ -1473,9 +1347,7 @@ if CludesUI then
             _G.CharacterFrame:HookScript("OnShow", SyncDock)
             _G.CharacterFrame:HookScript("OnHide", SyncDock)
             hooksecurefunc(_G.CharacterFrame, "SetPoint", function()
-                if not _ignoreSP then
-                    SyncDock()
-                end
+                if not _ignoreSP then SyncDock() end
             end)
         end
 
@@ -1483,9 +1355,7 @@ if CludesUI then
         nineSliceHiddenFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         nineSliceHiddenFrame:RegisterEvent("UNIT_INVENTORY_CHANGED")
         nineSliceHiddenFrame:SetScript("OnEvent", function(self, evt, ...)
-            if InspectFrame and InspectFrame:IsShown() then
-                EnsureInspectNineSliceHidden()
-            end
+            if InspectFrame and InspectFrame:IsShown() then EnsureInspectNineSliceHidden() end
         end)
 
         InspectFrame:HookScript("OnShow", EnsureInspectNineSliceHidden)
@@ -1510,29 +1380,19 @@ if CludesUI then
     local waitStart, retryTimer
     local RefreshSlotStyles -- forward
     local dataWatch = CreateFrame("Frame")
-    local function StopWait()
-        dataWatch:UnregisterAllEvents()
-    end
+    local function StopWait() dataWatch:UnregisterAllEvents() end
     local function EquippedByInspected(itemId)
         local unitToken = InspectFrame and InspectFrame.unit
-        if not unitToken or not itemId then
-            return false
-        end
+        if not unitToken or not itemId then return false end
         for slotKey in pairs(slotGrid) do
             local slotFrame = _G[slotKey]
-            if slotFrame and GetInventoryItemID(unitToken, slotFrame:GetID()) == itemId then
-                return true
-            end
+            if slotFrame and GetInventoryItemID(unitToken, slotFrame:GetID()) == itemId then return true end
         end
         return false
     end
     dataWatch:SetScript("OnEvent", function(_, evt, arg1)
-        if retryTimer then
-            return
-        end
-        if evt == "GET_ITEM_INFO_RECEIVED" and not EquippedByInspected(arg1) then
-            return
-        end
+        if retryTimer then return end
+        if evt == "GET_ITEM_INFO_RECEIVED" and not EquippedByInspected(arg1) then return end
         retryTimer = C_Timer.NewTimer(0.12, function()
             retryTimer = nil
             if InspectFrame and InspectFrame:IsShown() then
@@ -1545,16 +1405,10 @@ if CludesUI then
 
     -- Function to refresh all slot styles when inspect data changes
     RefreshSlotStyles = function()
-        if not InspectPaperDollItemsFrame then
-            return
-        end
-        if not InspectFrame then
-            return
-        end
+        if not InspectPaperDollItemsFrame then return end
+        if not InspectFrame then return end
         local textLayer = GetFFD(InspectFrame).textOverlayFrame
-        if not textLayer then
-            return
-        end
+        if not textLayer then return end
 
         local waiting = false
         for slotKey, gridCell in pairs(slotGrid) do
@@ -1588,9 +1442,7 @@ if CludesUI then
     -- Options refresher for the enchant display: restyles every slot of a
     -- shown sheet; a hidden one restyles on its next show.
     function CludesUI._refreshInspectSlotLabels()
-        if not (InspectFrame and InspectFrame:IsShown()) then
-            return
-        end
+        if not (InspectFrame and InspectFrame:IsShown()) then return end
         if CludesUIDB and (CludesUIDB.themedInspectSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
             return
         end
@@ -1601,9 +1453,7 @@ if CludesUI then
     local inspectHook = CreateFrame("Frame")
     inspectHook:RegisterEvent("INSPECT_READY")
     inspectHook:SetScript("OnEvent", function(self, evt, unitGuid)
-        if not InspectFrame or not InspectFrame:IsShown() then
-            return
-        end
+        if not InspectFrame or not InspectFrame:IsShown() then return end
         waitStart = nil -- new inspect data: a fresh wait for what it still lacks
         skinned = false
         ApplyThemedInspectSheet()
@@ -1639,13 +1489,9 @@ do
     local defaultStamp = CreateFrame("Frame")
     defaultStamp:RegisterEvent("ADDON_LOADED")
     defaultStamp:SetScript("OnEvent", function(self, _, addon)
-        if addon ~= "CludesUI" then
-            return
-        end
+        if addon ~= "CludesUI" then return end
         self:UnregisterAllEvents()
-        if not CludesUIDB then
-            CludesUIDB = {}
-        end
+        if not CludesUIDB then CludesUIDB = {} end
         local defaultSet = {
             themedInspectSheet = true,
             inspectShowItemLevel = true,
@@ -1653,18 +1499,14 @@ do
             inspectShowEnchants = true,
         }
         for key, val in pairs(defaultSet) do
-            if CludesUIDB[key] == nil then
-                CludesUIDB[key] = val
-            end
+            if CludesUIDB[key] == nil then CludesUIDB[key] = val end
         end
     end)
 end
 
 -- Function to refresh item level visibility when toggle changes
 function CludesUI._refreshInspectItemLevelVisibility()
-    if not InspectFrame or not InspectPaperDollItemsFrame then
-        return
-    end
+    if not InspectFrame or not InspectPaperDollItemsFrame then return end
 
     local showItemLevel = (not CludesUIDB) or (CludesUIDB.inspectShowItemLevel ~= false)
     local onFirstTab = InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown()
@@ -1680,9 +1522,7 @@ end
 
 -- Function to refresh upgrade track visibility when toggle changes
 function CludesUI._refreshInspectUpgradeTrackVisibility()
-    if not InspectFrame or not InspectPaperDollItemsFrame then
-        return
-    end
+    if not InspectFrame or not InspectPaperDollItemsFrame then return end
 
     local showUpgradeTrack = (not CludesUIDB) or (CludesUIDB.inspectShowUpgradeTrack ~= false)
     local onFirstTab = InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown()
@@ -1698,9 +1538,7 @@ end
 
 -- Function to refresh enchants visibility when toggle changes
 function CludesUI._refreshInspectEnchantsVisibility()
-    if not InspectFrame or not InspectPaperDollItemsFrame then
-        return
-    end
+    if not InspectFrame or not InspectPaperDollItemsFrame then return end
 
     local enchantsShown = (not CludesUIDB) or (CludesUIDB.inspectShowEnchants ~= false)
     local onFirstTab = InspectPaperDollItemsFrame and InspectPaperDollItemsFrame:IsShown()

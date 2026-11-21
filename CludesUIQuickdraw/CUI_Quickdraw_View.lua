@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_View.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor, max = math.floor, math.max
@@ -105,9 +101,7 @@ local ARM_LIFT = 0.55
 -- animation pass. Every call site multiplies by this, so it is the single
 -- switch to bring the zoom back (SIZE-based, never scale -- see the note
 -- above ApplySlotVisual).
-local function SelectedZoom()
-    return 1
-end
+local function SelectedZoom() return 1 end
 
 -- Magnification is applied to the entry's SIZE, never its scale. SetPoint
 -- offsets are read in the widget's own scaled space, so scaling an entry also
@@ -146,9 +140,7 @@ local function ApplySlotVisual(widget, selected, armed)
         end
         widget.bg:SetVertexColor(0.08, 0.08, 0.08, 0.6)
         widget.plus:SetTextColor(ar, ag, ab, selected and 1 or 0.6)
-        if widget.baseSize then
-            widget:SetSize(widget.baseSize, widget.baseSize)
-        end
+        if widget.baseSize then widget:SetSize(widget.baseSize, widget.baseSize) end
         return
     end
 
@@ -204,9 +196,7 @@ local fontStrings = {}
 
 local function ApplyModuleFont(fontStr)
     local size = fontStr.eqdFontSize
-    if not size or not CludesUI.GetFontPath then
-        return
-    end
+    if not size or not CludesUI.GetFontPath then return end
     -- Snapped to whole physical pixels. A font height is given in the string's
     -- own units and drawn at that height TIMES its effective scale, so a
     -- palette scaled to anything but 1 asks for a fractional pixel height --
@@ -272,9 +262,9 @@ local function ApplyIconCrop(texture, iconTex)
         and (
             iconTex:find("RaidTargetingIcon", 1, true)
             or iconTex:find("UI-GroupLoot-Pass-Up", 1, true)
-            -- The interface panel glyphs, which are drawn to the edge of their
-            -- own square the way the marker textures are. The crop is sized
-            -- for the border every spell icon carries and would cut into these.
+            -- The interface panel glyphs, which are drawn to the edge of their
+            -- own square the way the marker textures are. The crop is sized
+            -- for the border every spell icon carries and would cut into these.
             or iconTex:find("micromenu", 1, true)
         )
     then
@@ -348,9 +338,7 @@ local function CreateSlotWidget(view, index)
     wid.count:SetJustifyH("RIGHT")
     -- One line whatever it holds: a count wide enough to need the clamp above
     -- would otherwise wrap onto a second line and climb up the icon.
-    if wid.count.SetWordWrap then
-        wid.count:SetWordWrap(false)
-    end
+    if wid.count.SetWordWrap then wid.count:SetWordWrap(false) end
     wid.count:Hide()
     AdoptFontString(wid.count, true)
 
@@ -419,13 +407,9 @@ local PaletteViewMeta = { __index = PaletteView }
 -- view's own shownCount still describes whatever was laid out last. Same
 -- reason GridDims takes one.
 function PaletteView:Geom(shownOverride)
-    if self.opts.geom then
-        return self.opts.geom()
-    end
+    if self.opts.geom then return self.opts.geom() end
     local profile = self:P()
-    if not profile then
-        return 100, 40, 24
-    end
+    if not profile then return 100, 40, 24 end
     local radius, iconSize = profile.radius or 100, profile.iconSize or 40
     if self:LayoutMode() == "ARC" then
         local isShown = max(1, shownOverride or self.shownCount or 1)
@@ -461,28 +445,14 @@ end
 -- appIndex is a temporary override for a caller measuring a palette this view
 -- is not currently laid out for -- PushPalette does exactly that for every
 -- bound palette in turn while the view still holds whatever was last drawn.
-function PaletteView:P()
-    return PA(self.appIndex or self.paletteIndex)
-end
+function PaletteView:P() return PA(self.appIndex or self.paletteIndex) end
 
-function PaletteView:GetFrame()
-    return self.frame
-end
-function PaletteView:GetPaletteIndex()
-    return self.paletteIndex
-end
-function PaletteView:GetSelection()
-    return self.selection
-end
-function PaletteView:SlotCount()
-    return self.slotCount
-end
-function PaletteView:ShownCount()
-    return self.shownCount
-end
-function PaletteView:GetSlotWidget(index)
-    return self.widgets[index]
-end
+function PaletteView:GetFrame() return self.frame end
+function PaletteView:GetPaletteIndex() return self.paletteIndex end
+function PaletteView:GetSelection() return self.selection end
+function PaletteView:SlotCount() return self.slotCount end
+function PaletteView:ShownCount() return self.shownCount end
+function PaletteView:GetSlotWidget(index) return self.widgets[index] end
 
 -- ARC | FAN | GRID. A view may pin its own mode (the options preview
 -- pins one so the page can show either without changing what the user plays
@@ -501,13 +471,9 @@ function PaletteView:FanHoriz()
     return not profile or profile.fanOrientation ~= "VERTICAL"
 end
 
-function PaletteView:IsFan()
-    return self:LayoutMode() ~= "ARC"
-end
+function PaletteView:IsFan() return self:LayoutMode() ~= "ARC" end
 
-function PaletteView:IsGrid()
-    return self:LayoutMode() == "GRID"
-end
+function PaletteView:IsGrid() return self:LayoutMode() == "GRID" end
 
 -- The lattice spacing entries are placed on: one icon plus the gap between two
 -- of them. The grid, both strips and a nested arc all measure from this.

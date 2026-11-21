@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CooldownManager_TalentConditions.lua
 --  Talent Conditions for the CDM per-icon menu (cooldown/utility bars): the
@@ -14,9 +12,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  what decides the icon.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not mod then
-    return
-end
+if not mod then return end
 
 -- The options page pool (CludesUI_FramePool.lua): the corner mark on a
 -- preview slot (a reused header's slot is a pool host) is handed out again
@@ -58,9 +54,7 @@ end
 -- "off" when they do not. Includes Empty Slot markers; nil when none have conditions.
 function mod.TalentCondPreviewSet(barId, tracked)
     local storage = mod.GetSpellSettingsStore(barId)
-    if not storage or type(tracked) ~= "table" then
-        return nil
-    end
+    if not storage or type(tracked) ~= "table" then return nil end
     local set
     for _, ident in ipairs(tracked) do
         local record = type(ident) == "number"
@@ -82,9 +76,7 @@ end
 function mod.PaintTalentCondMark(slot, status)
     local mark = slot._tcMark
     if not status then
-        if mark then
-            mark:Hide()
-        end
+        if mark then mark:Hide() end
         return
     end
     if not mark then

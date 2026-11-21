@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_PetSummon.lua  (WoW Forever only)
 --  Auto Summon Pet: once the game takes the companion pet away (death,
@@ -38,9 +34,7 @@ local IsEnabled = F.Enabled
 local function CharCfg(create)
     local conf = create and F.Cfg() or F.Read()
     local unitGuid = UnitGUID("player")
-    if not unitGuid then
-        return nil
-    end
+    if not unitGuid then return nil end
     if create then
         conf.chars = conf.chars or {}
         conf.chars[unitGuid] = conf.chars[unitGuid] or {}
@@ -68,13 +62,9 @@ end
 local function OwnFavorites()
     local entries = {}
     local c = CharCfg()
-    if not (c and c.own and c.favorites) then
-        return entries
-    end
+    if not (c and c.own and c.favorites) then return entries end
     for petGUID in pairs(c.favorites) do
-        if C_PetJournal.PetIsSummonable(petGUID) then
-            entries[#entries + 1] = petGUID
-        end
+        if C_PetJournal.PetIsSummonable(petGUID) then entries[#entries + 1] = petGUID end
     end
     return entries
 end
@@ -87,14 +77,10 @@ local current -- the pet we last saw out (nil: none)
 
 -- The dismissal outlives a reload or a relog: written only when it changes.
 local function SetDismissed(on)
-    if userDismissed == on then
-        return
-    end
+    if userDismissed == on then return end
     userDismissed = on
     local c = CharCfg(on)
-    if c then
-        c.dismissed = on or nil
-    end
+    if c then c.dismissed = on or nil end
 end
 
 local function CanSummonNow()
@@ -117,16 +103,12 @@ local Queue
 -- waits for its end on the combat queue.
 local function Summon()
     timer = nil
-    if not IsEnabled() or userDismissed or C_PetJournal.GetSummonedPetGUID() then
-        return
-    end
+    if not IsEnabled() or userDismissed or C_PetJournal.GetSummonedPetGUID() then return end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("PetSummon", Queue)
         return
     end
-    if not CanSummonNow() then
-        return
-    end
+    if not CanSummonNow() then return end
     -- A cast or a channel (a fishing line): again once it stops.
     if UnitCastingInfo("player") or UnitChannelInfo("player") then
         eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
@@ -143,9 +125,7 @@ local function Summon()
 end
 
 Queue = function()
-    if timer then
-        timer:Cancel()
-    end
+    if timer then timer:Cancel() end
     timer = C_Timer.NewTimer(DELAY, Summon)
 end
 
@@ -163,15 +143,11 @@ local EVENTS = {
 
 eventFrame:SetScript("OnEvent", function(_, evt, arg1)
     if evt == "COMPANION_UPDATE" then
-        if arg1 == "MOUNT" then
-            return
-        end
+        if arg1 == "MOUNT" then return end
         -- Also fires for other players' pets: only ours is read.
         local unitGuid = C_PetJournal.GetSummonedPetGUID()
         current = unitGuid
-        if unitGuid then
-            SetDismissed(false)
-        end
+        if unitGuid then SetDismissed(false) end
         return
     elseif evt == "UNIT_SPELLCAST_STOP" or evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
         eventFrame:UnregisterEvent("UNIT_SPELLCAST_STOP")
@@ -179,38 +155,28 @@ eventFrame:SetScript("OnEvent", function(_, evt, arg1)
     elseif evt == "UNIT_EXITED_VEHICLE" and arg1 ~= "player" then
         return
     end
-    if not userDismissed then
-        Queue()
-    end
+    if not userDismissed then Queue() end
 end)
 
 -- The player's own dismissals: DismissSummonedPet, or SummonPetByGUID on the
 -- pet out (the journal's toggle). The pet out is the one we last saw: the
 -- post-hook may run once it is gone.
-local function OnDismiss()
-    SetDismissed(true)
-end
+local function OnDismiss() SetDismissed(true) end
 local function OnSummonByGUID(unitGuid)
-    if unitGuid and unitGuid == current then
-        SetDismissed(true)
-    end
+    if unitGuid and unitGuid == current then SetDismissed(true) end
 end
 
 -------------------------------------------------------------------------------
 --  Pet Journal: this character's favorites
 -------------------------------------------------------------------------------
-local function ShowsOwn()
-    return IsEnabled() and OwnOn()
-end
+local function ShowsOwn() return IsEnabled() and OwnOn() end
 
 -- The blue star on a list button, beside the journal's own; kept in a weak
 -- table, nothing is stored on the journal's buttons.
 local stars = setmetatable({}, { __mode = "k" })
 local function MarkListButton(btnFrame)
     local drag = btnFrame and btnFrame.dragButton
-    if not drag then
-        return
-    end
+    if not drag then return end
     local on = ShowsOwn() and IsOwnFavorite(btnFrame.petID)
     local star = stars[drag]
     if on and not star then
@@ -220,18 +186,14 @@ local function MarkListButton(btnFrame)
         star:SetPoint("TOPRIGHT", 8, 8)
         stars[drag] = star
     end
-    if star then
-        star:SetShown(on)
-    end
+    if star then star:SetShown(on) end
 end
 
 -- The stars of the buttons on screen, read from the list without asking the
 -- journal to rebuild it.
 local function RefreshJournal()
     local scroll = PetJournal and PetJournal:IsShown() and PetJournal.ScrollBox
-    if scroll and scroll.ForEachFrame then
-        scroll:ForEachFrame(MarkListButton)
-    end
+    if scroll and scroll.ForEachFrame then scroll:ForEachFrame(MarkListButton) end
 end
 
 -- A pet's right-click menu. The owner is its list button or the pet card,
@@ -243,31 +205,27 @@ local function AddMenuEntry(ownerFrame, root)
             ownerFrame.petID
             or (ownerFrame.GetParent and ownerFrame:GetParent() and ownerFrame:GetParent().petID)
         )
-    if not (petGUID and ShowsOwn()) then
-        return
-    end
+    if not (petGUID and ShowsOwn()) then return end
     root:CreateDivider()
-    root:CreateCheckbox(CludesUI.L("Favorite for This Character"), function()
-        return IsOwnFavorite(petGUID)
-    end, function()
-        SetOwnFavorite(petGUID, not IsOwnFavorite(petGUID))
-        RefreshJournal()
-    end)
+    root:CreateCheckbox(
+        CludesUI.L("Favorite for This Character"),
+        function() return IsOwnFavorite(petGUID) end,
+        function()
+            SetOwnFavorite(petGUID, not IsOwnFavorite(petGUID))
+            RefreshJournal()
+        end
+    )
 end
 
 local journalHooked = false
 local function HookJournal()
-    if journalHooked or not PetJournal_InitPetButton then
-        return
-    end
+    if journalHooked or not PetJournal_InitPetButton then return end
     journalHooked = true
     hooksecurefunc("PetJournal_InitPetButton", MarkListButton)
 end
 
 local function HookPetJournal()
-    if Menu and Menu.ModifyMenu then
-        Menu.ModifyMenu("MENU_PET_COLLECTION_PET", AddMenuEntry)
-    end
+    if Menu and Menu.ModifyMenu then Menu.ModifyMenu("MENU_PET_COLLECTION_PET", AddMenuEntry) end
     -- The journal loads on demand (Blizzard_Collections).
     if PetJournal_InitPetButton then
         HookJournal()
@@ -275,9 +233,7 @@ local function HookPetJournal()
         local frame = CreateFrame("Frame")
         frame:RegisterEvent("ADDON_LOADED")
         frame:SetScript("OnEvent", function(self, _, name)
-            if name ~= "Blizzard_Collections" then
-                return
-            end
+            if name ~= "Blizzard_Collections" then return end
             self:UnregisterAllEvents()
             HookJournal()
         end)
@@ -290,9 +246,7 @@ end
 -- Login and the options toggles; takes effect immediately in both directions.
 -- fresh: the player just turned it on, which also ends an earlier dismissal.
 local function ApplyPetSummon(fresh)
-    if not C_PetJournal then
-        return
-    end
+    if not C_PetJournal then return end
     RefreshJournal()
     local on = IsEnabled()
     for index = 1, #EVENTS do
@@ -320,9 +274,7 @@ local function ApplyPetSummon(fresh)
     current = C_PetJournal.GetSummonedPetGUID()
     -- A dismissal from an earlier session holds until a pet is out again.
     local c = CharCfg()
-    if c and c.dismissed and (current or fresh) then
-        c.dismissed = nil
-    end
+    if c and c.dismissed and (current or fresh) then c.dismissed = nil end
     userDismissed = (c and c.dismissed) and true or false
     Queue()
 end

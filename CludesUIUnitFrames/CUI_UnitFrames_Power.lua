@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Power.lua
 --
@@ -27,9 +25,7 @@ local CUI_IsSmartPowerPercent = Inner.CUI_IsSmartPowerPercent
 local PLAYER_POWER_DEFAULT, PLAYER_POWER_ALT = Inner.PLAYER_POWER_DEFAULT, Inner.PLAYER_POWER_ALT
 local ClassColorSourceUnit = Inner.ClassColorSourceUnit
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 
 -- Power bar border: detached bars use the selected full border style; attached bars
 -- use a solid divider only along the edge shared with the health bar. Lazy creation
@@ -63,9 +59,7 @@ function mod.UpdatePowerSeam(power, cfg, stock, preview)
             b = mod.UF_BossBorderSettings()
             sizeOverride = cfg.borderSizeOverride
         end
-        if stock == nil then
-            stock = mod.UF_Blizz()
-        end
+        if stock == nil then stock = mod.UF_Blizz() end
         local place = cfg.powerPosition or "below"
         if
             not stock
@@ -116,13 +110,16 @@ function mod.UpdatePowerSeam(power, cfg, stock, preview)
     )
     local key, size = b.borderTexture, sizeOverride or b.borderSize or 1
     local px
-    if not sizeOverride then
-        px = CludesUI.BorderPx(b.borderSizePx, size, key)
-    end
+    if not sizeOverride then px = CludesUI.BorderPx(b.borderSizePx, size, key) end
     seam._key, seam._step, seam._px, seam._path = key, size, px, filePath
     seam._above = (cfg.powerPosition == "above")
     local color = b.borderColor
-    seam._tex:SetVertexColor(color and color.r or 0, color and color.g or 0, color and color.b or 0, b.borderAlpha or 1)
+    seam._tex:SetVertexColor(
+        color and color.r or 0,
+        color and color.g or 0,
+        color and color.b or 0,
+        b.borderAlpha or 1
+    )
     seam:Show()
     mod.UF_LayoutPowerSeam(seam)
     CludesUI.RegisterPxReapply(seam, (px and not preview) and mod.UF_LayoutPowerSeam or nil)
@@ -136,9 +133,7 @@ end
 function mod.UF_LayoutPowerSeam(seam)
     local power, t = seam._power, seam._tex
     local es = power:GetEffectiveScale()
-    if not (es and es > 0.01) then
-        es = UIParent:GetEffectiveScale()
-    end
+    if not (es and es > 0.01) then es = UIParent:GetEffectiveScale() end
     local thick = CludesUI.BorderCompanionThickness(seam._key, seam._step, seam._px, es)
     if not thick or thick <= 0 then
         t:Hide()
@@ -192,9 +187,7 @@ function mod.UpdatePortraitSeparator(widget, portrait, cfg, side, attached, stoc
         if seam then
             seam:Hide()
             CludesUI.RegisterPxReapply(seam, nil)
-            if powerSeam and powerSeam:IsShown() then
-                mod.UF_LayoutPowerSeam(powerSeam)
-            end
+            if powerSeam and powerSeam:IsShown() then mod.UF_LayoutPowerSeam(powerSeam) end
         end
         return
     end
@@ -212,17 +205,18 @@ function mod.UpdatePortraitSeparator(widget, portrait, cfg, side, attached, stoc
     )
     seam._key, seam._step = b.borderTexture, size
     seam._px = nil
-    if not sizeOverride then
-        seam._px = CludesUI.BorderPx(b.borderSizePx, size, seam._key)
-    end
+    if not sizeOverride then seam._px = CludesUI.BorderPx(b.borderSizePx, size, seam._key) end
     seam._right = side == "right"
     local color = b.borderColor
-    seam._tex:SetVertexColor(color and color.r or 0, color and color.g or 0, color and color.b or 0, b.borderAlpha or 1)
+    seam._tex:SetVertexColor(
+        color and color.r or 0,
+        color and color.g or 0,
+        color and color.b or 0,
+        b.borderAlpha or 1
+    )
     mod.UF_LayoutPortraitSeparator(seam)
     seam:Show()
-    if powerSeam and powerSeam:IsShown() then
-        mod.UF_LayoutPowerSeam(powerSeam)
-    end
+    if powerSeam and powerSeam:IsShown() then mod.UF_LayoutPowerSeam(powerSeam) end
     CludesUI.RegisterPxReapply(seam, (seam._px and not preview) and mod.UF_LayoutPortraitSeparator or nil)
 end
 
@@ -243,9 +237,7 @@ function mod.UF_LayoutPortraitSeparator(seam)
 end
 
 function mod.UpdatePowerBorder(power, prefs)
-    if not power or not prefs then
-        return
-    end
+    if not power or not prefs then return end
     -- Before the lazy return below: the seam has its own host.
     local seamOn = mod.UpdatePowerSeam(power, prefs)
     local place = mod.UF_PowerPos(prefs)
@@ -255,9 +247,7 @@ function mod.UpdatePowerBorder(power, prefs)
     local border = power._pbBorder
     if not border then
         -- Nothing to render and nothing to hide: stay lazy.
-        if not ((isDet or isAttached) and size > 0) then
-            return
-        end
+        if not ((isDet or isAttached) and size > 0) then return end
         -- Options frame pool: a real frame for a live bar (see UpdatePowerSeam).
         border = POOL.CreateFrame("Frame", nil, power)
         power._pbBorder = border
@@ -339,9 +329,7 @@ end
 -------------------------------------------------------------------------------
 -- Custom color, else Blizzard's mana prediction color: the engine's rule, read
 -- here by the options row and its preview (both built only with the engine).
-function mod.UF_PowerCostColor(s)
-    return CludesUI.SpellCostPrediction.Color(s)
-end
+function mod.UF_PowerCostColor(s) return CludesUI.SpellCostPrediction.Color(s) end
 
 -- True while the player power bar draws: a position other than None (under a
 -- stock style: Hide Power Bar off), and a height above 0 in the CUI look (a
@@ -359,31 +347,23 @@ end
 -- level above the bar (no inBar); the power border draws at power + 5.
 if CludesUI.SpellCostPrediction then
     mod.UF_POWER_COST_HOST = {
-        PowerType = function(power)
-            return power.displayType or UnitPowerType("player")
-        end,
+        PowerType = function(power) return power.displayType or UnitPowerType("player") end,
         -- Power Bar Opacity, normalized as ApplyPowerBarAlpha does: the fill's
         -- own alpha stays at 1 while a gradient carries the opacity.
         Color = function()
             local cfg = GetSettingsForUnit("player")
             local red, green, b = mod.UF_PowerCostColor(cfg)
             local op = (cfg and cfg.powerBarOpacity) or 100
-            if op <= 1.0 then
-                op = op * 100
-            end
+            if op <= 1.0 then op = op * 100 end
             return red, green, b, op / 100
         end,
-        Mask = function(power)
-            return power._blizzMasked and power._blizzMask or nil
-        end,
+        Mask = function(power) return power._blizzMasked and power._blizzMask or nil end,
     }
 end
 
 function mod.UF_SetupPowerCost(power, prefs)
     local SCP = CludesUI.SpellCostPrediction
-    if not SCP then
-        return
-    end
+    if not SCP then return end
     if power and prefs and prefs.powerCostPrediction == true and mod.UF_PowerBarDraws(prefs) then
         SCP.Attach("uf", power, mod.UF_POWER_COST_HOST)
     else
@@ -398,9 +378,7 @@ end
 -- on the frame's show and hide, on each settings reload, on text zone changes
 -- and on the Power element toggles; other frames return at once.
 function mod.UF_PowerValSync(widget)
-    if widget._cuiBaseUnit ~= "player" then
-        return
-    end
+    if widget._cuiBaseUnit ~= "player" then return end
     local enabled = false
     if widget.Power and widget:IsVisible() and mod.Engine.ElementOn(widget, "Power") then
         local s = GetSettingsForUnit("player")
@@ -428,9 +406,7 @@ end
 -- CludesUI look, keeps the element as it is.
 function mod.UF_PowerElementSync(widget)
     local base = widget._cuiBaseUnit
-    if not widget.Power or not (base == "player" or base == "target" or base == "focus") then
-        return
-    end
+    if not widget.Power or not (base == "player" or base == "target" or base == "focus") then return end
     local wanted = not (mod.UF_Blizz() and mod.UF_PowerPos(GetSettingsForUnit(base)) == "none")
     if not wanted then
         local zones = widget._cuiTextZones
@@ -457,31 +433,19 @@ end
 -- Gray-out classification for the power bar's PostUpdate: true for a generic
 -- melee NPC (no real power). One function, run through pcall with the unit.
 function mod.UF_PowerShouldGray(unit)
-    if unit == "player" or not UnitExists(unit) then
-        return false
-    end
-    if not UnitCanAttack("player", unit) or UnitIsPlayer(unit) then
-        return false
-    end
+    if unit == "player" or not UnitExists(unit) then return false end
+    if not UnitCanAttack("player", unit) or UnitIsPlayer(unit) then return false end
     local cls = UnitClassification(unit)
-    if cls == "worldboss" then
-        return false
-    end
+    if cls == "worldboss" then return false end
     local isElite = (cls == "elite" or cls == "rareelite")
     local lvl = UnitLevel(unit)
     local pLvl = UnitLevel("player")
     local lvlOk = lvl and not (issecretvalue and issecretvalue(lvl))
     local pLvlOk = pLvl and not (issecretvalue and issecretvalue(pLvl))
-    if isElite and lvlOk and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1)) then
-        return false
-    end
+    if isElite and lvlOk and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1)) then return false end
     local uCls = UnitClassBase and UnitClassBase(unit)
-    if issecretvalue(uCls) then
-        uCls = nil
-    end
-    if uCls == "PALADIN" then
-        return false
-    end
+    if issecretvalue(uCls) then uCls = nil end
+    if uCls == "PALADIN" then return false end
     return true
 end
 
@@ -490,9 +454,7 @@ end
 -- Returns ok, r, g, b; r/g/b may be SECRET (see ns.ResolveBgClassColor).
 mod.UF_PowerClassColor = function(unitToken)
     local cu = ClassColorSourceUnit(unitToken, unitToken)
-    if not (UnitIsPlayer(cu) or (UnitInPartyIsAI and UnitInPartyIsAI(cu))) then
-        return false
-    end
+    if not (UnitIsPlayer(cu) or (UnitInPartyIsAI and UnitInPartyIsAI(cu))) then return false end
     return mod.ResolveBgClassColor(cu)
 end
 
@@ -513,9 +475,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
     end
     power:SetFrameLevel(widget:GetFrameLevel() + (isDetached and 12 or 3))
     local pw = prefs.frameWidth
-    if isDetached and (prefs.powerWidth or 0) > 0 then
-        pw = prefs.powerWidth
-    end
+    if isDetached and (prefs.powerWidth or 0) > 0 then pw = prefs.powerWidth end
     Pix.Size(power, pw, prefs.powerHeight)
 
     if powerPos == "none" then
@@ -539,9 +499,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
     power:GetStatusBarTexture():SetHorizTile(false)
     do
         local pFill = power:GetStatusBarTexture()
-        if pFill then
-            UnsnapTex(pFill)
-        end
+        if pFill then UnsnapTex(pFill) end
     end
 
     local backdrop = power:CreateTexture(nil, "BACKGROUND")
@@ -570,9 +528,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
     end
     power.PostUpdateColor = function(self)
         local s2 = GetSettingsForUnit(unitToken)
-        if not s2 then
-            return
-        end
+        if not s2 then return end
         local useP = s2.powerPercentPowerColor ~= false
         local bR, bG, bB
         -- PLAIN stand-ins for bR, which is secret for a restricted unit's class color.
@@ -604,9 +560,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
             -- Bake Bar Opacity into the gradient endpoint alphas (a gradient
             -- overrides region alpha).
             local ga = s2.powerBarOpacity or 100
-            if ga > 1.0 then
-                ga = ga / 100
-            end
+            if ga > 1.0 then ga = ga / 100 end
             ApplyBarGradient(
                 self:GetStatusBarTexture(),
                 s2.powerGradientDir or "HORIZONTAL",
@@ -655,15 +609,11 @@ local function CreatePowerBar(widget, unitToken, prefs)
         -- Same for the Bottom Text Bar's power-colored text (per-slot early-out
         -- keeps it ~free when no slot uses power color).
         local btb = widget.BottomTextBar
-        if btb and btb._applyBTBPowerColors then
-            btb._applyBTBPowerColors(s2)
-        end
+        if btb and btb._applyBTBPowerColors then btb._applyBTBPowerColors(s2) end
     end
 
     local customBg = prefs.customPowerBgColor
-    if customBg then
-        backdrop:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
-    end
+    if customBg then backdrop:SetColorTexture(customBg.r, customBg.g, customBg.b, 1) end
 
     power:SetReverseFill(prefs.powerReverseFill and true or false)
 
@@ -803,20 +753,14 @@ local function CreatePowerBar(widget, unitToken, prefs)
     power._grayedOut = false
     power.PostUpdate = function(self, unit, current, min, max)
         local cfg = GetSettingsForUnit(unit)
-        if not cfg then
-            return
-        end
+        if not cfg then return end
 
         local pp = mod.UF_PowerPos(cfg)
-        if pp == "none" or pp == "detached_top" or pp == "detached_bottom" then
-            return
-        end
+        if pp == "none" or pp == "detached_top" or pp == "detached_bottom" then return end
 
         -- Classification check: generic melee NPCs get the gray bar.
         local success, shouldGray = pcall(mod.UF_PowerShouldGray, unit)
-        if not success then
-            return
-        end
+        if not success then return end
 
         if shouldGray and not self._grayedOut then
             self._grayedOut = true
@@ -839,20 +783,14 @@ local function CreatePowerBar(widget, unitToken, prefs)
             else
                 local customBg = cfg.customPowerBgColor
                 if customBg then
-                    if self.bg then
-                        self.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
-                    end
+                    if self.bg then self.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1) end
                 else
-                    if self.bg then
-                        self.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
-                    end
+                    if self.bg then self.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1) end
                 end
             end
             -- Bg alpha comes from customPowerBgAlpha (matching ApplyPowerBarAlpha),
             -- NOT powerBarOpacity, which is the FILL opacity.
-            if self.bg then
-                self.bg:SetAlpha((cfg and (cfg.customPowerBgAlpha or 100) or 100) / 100)
-            end
+            if self.bg then self.bg:SetAlpha((cfg and (cfg.customPowerBgAlpha or 100) or 100) / 100) end
         end
     end
 
@@ -875,13 +813,9 @@ local function CreatePowerBar(widget, unitToken, prefs)
     -- Power bar border: full when detached, divider when attached; lazy.
     mod.UpdatePowerBorder(power, prefs)
 
-    if unitToken == "player" then
-        mod.UF_SetupPowerCost(power, prefs)
-    end
+    if unitToken == "player" then mod.UF_SetupPowerCost(power, prefs) end
     -- WoW Forever druids: Mana + Form Power (CUI_UnitFrames_ForeverFormBar.lua).
-    if unitToken == "player" and mod.UF_ForeverFormBar then
-        mod.UF_ForeverFormBar(widget, power, prefs)
-    end
+    if unitToken == "player" and mod.UF_ForeverFormBar then mod.UF_ForeverFormBar(widget, power, prefs) end
 
     return power
 end

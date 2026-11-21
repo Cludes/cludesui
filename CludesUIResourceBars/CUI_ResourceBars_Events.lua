@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ResourceBars_Events.lua
 --
@@ -12,9 +10,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIResourceBars.lua or an earlier Resource Bars file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local format = string.format
@@ -46,45 +42,25 @@ local SetEssenceNextTick, SetEssenceLastCount = Inner.SetEssenceNextTick, Inner.
 local SetEssenceTickDur = Inner.SetEssenceTickDur
 
 local mainFrame
-Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val)
-    mainFrame = val
-end
+Inner.mainFrameSetters[#Inner.mainFrameSetters + 1] = function(val) mainFrame = val end
 local health
-Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val)
-    health = val
-end
+Inner.healthBarSetters[#Inner.healthBarSetters + 1] = function(val) health = val end
 local mainBar
-Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val)
-    mainBar = val
-end
+Inner.primaryBarSetters[#Inner.primaryBarSetters + 1] = function(val) mainBar = val end
 local classFrame
-Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val)
-    classFrame = val
-end
+Inner.secondaryFrameSetters[#Inner.secondaryFrameSetters + 1] = function(val) classFrame = val end
 local secondaryBar
-Inner.secondaryBarSetters[#Inner.secondaryBarSetters + 1] = function(val)
-    secondaryBar = val
-end
+Inner.secondaryBarSetters[#Inner.secondaryBarSetters + 1] = function(val) secondaryBar = val end
 local castFrame
-Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val)
-    castFrame = val
-end
+Inner.castBarFrameSetters[#Inner.castBarFrameSetters + 1] = function(val) castFrame = val end
 local gcdBarFrame
-Inner.gcdBarFrameSetters[#Inner.gcdBarFrameSetters + 1] = function(val)
-    gcdBarFrame = val
-end
+Inner.gcdBarFrameSetters[#Inner.gcdBarFrameSetters + 1] = function(val) gcdBarFrame = val end
 local totemBarFrame
-Inner.totemBarFrameSetters[#Inner.totemBarFrameSetters + 1] = function(val)
-    totemBarFrame = val
-end
+Inner.totemBarFrameSetters[#Inner.totemBarFrameSetters + 1] = function(val) totemBarFrame = val end
 local cachedPrimary
-Inner.cachedPrimarySetters[#Inner.cachedPrimarySetters + 1] = function(val)
-    cachedPrimary = val
-end
+Inner.cachedPrimarySetters[#Inner.cachedPrimarySetters + 1] = function(val) cachedPrimary = val end
 local secondaryCache
-Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val)
-    secondaryCache = val
-end
+Inner.cachedSecondarySetters[#Inner.cachedSecondarySetters + 1] = function(val) secondaryCache = val end
 
 -- Master Apply Native StatusBar fill smoothing (opt-in per bar; default off): store the
 -- interpolation mode on the bar and let the CreateStatusBar SetValue wrapper
@@ -96,21 +72,13 @@ end
 function ERB:ApplySmoothing()
     local interp = Enum and Enum.StatusBarInterpolation and Enum.StatusBarInterpolation.ExponentialEaseOut
     local profile = ERB.db and ERB.db.profile
-    if not (interp and profile) then
-        return
-    end
+    if not (interp and profile) then return end
     local _hCfg = _G._CURB_ResolveHealthCfg(profile)
     local _pCfg = _G._CURB_ResolvePowerCfg(profile)
     local _sCfg = _G._CURB_ResolveSecondaryCfg(profile)
-    if health then
-        health._smoothing = (_hCfg and _hCfg.smoothBars) and interp or nil
-    end
-    if mainBar then
-        mainBar._smoothing = (_pCfg and _pCfg.smoothBars) and interp or nil
-    end
-    if secondaryBar then
-        secondaryBar._smoothing = (_sCfg and _sCfg.smoothBars) and interp or nil
-    end
+    if health then health._smoothing = (_hCfg and _hCfg.smoothBars) and interp or nil end
+    if mainBar then mainBar._smoothing = (_pCfg and _pCfg.smoothBars) and interp or nil end
+    if secondaryBar then secondaryBar._smoothing = (_sCfg and _sCfg.smoothBars) and interp or nil end
 end
 
 -- Legacy "Anchor To" retirement. The Bar Position "Anchor To" dropdown for the
@@ -127,9 +95,7 @@ do
     local waiting
     local function LegacyAnchored()
         local profile = ERB.db and ERB.db.profile
-        if not profile then
-            return nil
-        end
+        if not profile then return nil end
         local entries
         local function add(cfg, frame)
             -- "mouse" is the LIVE Anchor to Cursor setting (BuildCursorAnchorRow),
@@ -147,24 +113,16 @@ do
         return entries
     end
     function mod.MigrateLegacyAnchorTo()
-        if waiting or (CludesUI and CludesUI._unlockActive) then
-            return
-        end
-        if not LegacyAnchored() then
-            return
-        end
+        if waiting or (CludesUI and CludesUI._unlockActive) then return end
+        if not LegacyAnchored() then return end
         waiting = true
         -- One frame later so ApplyBarAnchor's SetPoint has flushed and
         -- GetCenter returns the anchored on-screen position.
         C_Timer.After(0, function()
             waiting = nil
-            if CludesUI and CludesUI._unlockActive then
-                return
-            end
+            if CludesUI and CludesUI._unlockActive then return end
             local entries = LegacyAnchored()
-            if not entries then
-                return
-            end
+            if not entries then return end
             local uiS = UIParent:GetEffectiveScale()
             local uiW, uiH = UIParent:GetWidth(), UIParent:GetHeight()
             local cleared = false
@@ -190,9 +148,7 @@ do
                 s.anchorTo = nil
                 cleared = true
             end
-            if cleared then
-                ERB:ApplyAll()
-            end
+            if cleared then ERB:ApplyAll() end
         end)
     end
 end
@@ -229,16 +185,10 @@ local function ApplyPingReceivers()
             -- Always pingable: a receiver that answers false is treated as BLOCKING UI
             -- and kills the ping outright with PING_FAILED_GENERIC, which is strictly
             -- worse than the fall-through this replaces.
-            barFrame.GetIsPingable = function()
-                return true
-            end
+            barFrame.GetIsPingable = function() return true end
             -- Contextual ping only, matching Blizzard over its own player resources.
-            barFrame.GetAllowRadialWheel = function()
-                return false
-            end
-            barFrame.GetTargetInfo = function()
-                return { guid = UnitGUID("player"), isPlayerResource = true }
-            end
+            barFrame.GetAllowRadialWheel = function() return false end
+            barFrame.GetTargetInfo = function() return { guid = UnitGUID("player"), isPlayerResource = true } end
         end
     end
 end
@@ -268,38 +218,22 @@ function ERB:ApplyAll()
     -- Options changes and profile swaps come through here without firing any
     -- game event, and a rebuild can leave a bar mid-animation with nothing
     -- scheduled to finish it. Arm unconditionally; the tick disarms itself.
-    if mod.ArmTick then
-        mod.ArmTick()
-    end
+    if mod.ArmTick then mod.ArmTick() end
 
     -- Apply frame strata to all existing bar frames (covers live changes). Health and
     -- power may take their own from the Frame Strata cog (false matches the main row).
     local g = ERB.db.profile.general or DEFAULTS.profile.general
     local barStrata = g.frameStrata or "MEDIUM"
-    if mainFrame then
-        mainFrame:SetFrameStrata(barStrata)
-    end
-    if health then
-        health:SetFrameStrata(ERB.db.profile.health.frameStrata or barStrata)
-    end
-    if mainBar then
-        mainBar:SetFrameStrata(ERB.db.profile.primary.frameStrata or barStrata)
-    end
-    if classFrame then
-        classFrame:SetFrameStrata(barStrata)
-    end
+    if mainFrame then mainFrame:SetFrameStrata(barStrata) end
+    if health then health:SetFrameStrata(ERB.db.profile.health.frameStrata or barStrata) end
+    if mainBar then mainBar:SetFrameStrata(ERB.db.profile.primary.frameStrata or barStrata) end
+    if classFrame then classFrame:SetFrameStrata(barStrata) end
     local tb = ERB.db.profile.totemBar
-    if totemBarFrame then
-        totemBarFrame:SetFrameStrata(tb and tb.frameStrata or "MEDIUM")
-    end
+    if totemBarFrame then totemBarFrame:SetFrameStrata(tb and tb.frameStrata or "MEDIUM") end
     local callback = ERB.db.profile.castBar
-    if castFrame then
-        castFrame:SetFrameStrata(callback and callback.frameStrata or "MEDIUM")
-    end
+    if castFrame then castFrame:SetFrameStrata(callback and callback.frameStrata or "MEDIUM") end
     local gb = ERB.db.profile.gcdBar
-    if gcdBarFrame then
-        gcdBarFrame:SetFrameStrata(gb and gb.frameStrata or "MEDIUM")
-    end
+    if gcdBarFrame then gcdBarFrame:SetFrameStrata(gb and gb.frameStrata or "MEDIUM") end
     -- Draw Above GCD Bar / Draw Above Other Bars / the power Bottom Separator:
     -- the strata pass above re-strata's every bar's children.
     mod.ERB_ReassertLayers()
@@ -309,26 +243,16 @@ function ERB:ApplyAll()
     UpdateSecondaryResource()
     UpdateVisibility()
     self:ApplySmoothing()
-    if mod.MigrateLegacyAnchorTo then
-        mod.MigrateLegacyAnchorTo()
-    end
-    if mod.AS_Apply then
-        mod.AS_Apply()
-    end
-    if mod.ST_Apply then
-        mod.ST_Apply()
-    end
-    if mod.CT_Apply then
-        mod.CT_Apply()
-    end
+    if mod.MigrateLegacyAnchorTo then mod.MigrateLegacyAnchorTo() end
+    if mod.AS_Apply then mod.AS_Apply() end
+    if mod.ST_Apply then mod.ST_Apply() end
+    if mod.CT_Apply then mod.CT_Apply() end
 
     -- Vehicle proxy: hide resource bars during full vehicle UI ([vehicleui]
     -- condition). Secure frame creation + RegisterStateDriver both need combat OOC.
     if not ERB._vehicleProxy then
         local function InitVehicleProxy()
-            if ERB._vehicleProxy then
-                return
-            end
+            if ERB._vehicleProxy then return end
             ERB._vehicleProxy = CreateFrame("Frame", nil, UIParent, "SecureHandlerStateTemplate")
             ERB._vehicleProxy:SetAttribute(
                 "_onstate-erbvehicle",
@@ -362,9 +286,7 @@ end
 
 local function ScheduleRosterApply()
     CludesUI.InvalidateFrameCache()
-    C_Timer.After(0.2, function()
-        ERB:ApplyAll()
-    end)
+    C_Timer.After(0.2, function() ERB:ApplyAll() end)
 end
 
 -- Talent/loadout changes fire TRAIT_CONFIG_UPDATED/PLAYER_TALENT_UPDATE in a burst (a
@@ -374,15 +296,11 @@ end
 do
     local waiting
     function mod.ScheduleTalentApply()
-        if waiting then
-            return
-        end
+        if waiting then return end
         waiting = true
         C_Timer.After(0.1, function()
             waiting = false
-            if InCombatLockdown() then
-                return
-            end
+            if InCombatLockdown() then return end
             SetIronfurBaseDur(IronfurBaseDuration())
             SetCachedPrimary(GetPrimaryPowerType())
             SetCachedSecondary(GetSecondaryResource())
@@ -412,16 +330,12 @@ local ScheduleSpecResolve
 ScheduleSpecResolve = function()
     -- WoW Forever: the GetSpecialization alias above always reads nil there, so
     -- no retry could ever succeed; nothing is armed.
-    if CludesUI.IS_FOREVER then
-        return
-    end
+    if CludesUI.IS_FOREVER then return end
     if GetSpecialization() then
         _specResolveTries = 0
         return
     end
-    if _specResolveTries >= 40 then
-        return
-    end -- ~20s, then stop rather than spin
+    if _specResolveTries >= 40 then return end -- ~20s, then stop rather than spin
     _specResolveTries = _specResolveTries + 1
     C_Timer.After(0.5, function()
         if not GetSpecialization() then
@@ -443,13 +357,9 @@ end
 local function OnEvent(self, evt, ...)
     if evt == "UNIT_HEALTH" then
         UpdateHealthBar()
-        if health and health._missLive then
-            mod.ERB_MissingPaint(health)
-        end
+        if health and health._missLive then mod.ERB_MissingPaint(health) end
         -- Stagger is based on health, so update secondary resource too
-        if secondaryCache and secondaryCache.power == "BREWMASTER_STAGGER" then
-            UpdateSecondaryResource()
-        end
+        if secondaryCache and secondaryCache.power == "BREWMASTER_STAGGER" then UpdateSecondaryResource() end
     elseif evt == "UNIT_POWER_FREQUENT" then
         -- Fires on every power change, so both bars paint on this event alone,
         -- as Blizzard's own resource display and class resource bars do: the
@@ -460,9 +370,7 @@ local function OnEvent(self, evt, ...)
         local unitToken, powerKey = ...
         if unitToken == "player" then
             local tok = POWER_ENUM_TO_KEY[cachedPrimary]
-            if not tok or issecretvalue(powerKey) or powerKey == tok then
-                UpdatePrimaryBar()
-            end
+            if not tok or issecretvalue(powerKey) or powerKey == tok then UpdatePrimaryBar() end
             if mainBar then
                 if mainBar._missLive then
                     local mtok = POWER_ENUM_TO_KEY[mainBar._missPower]
@@ -479,9 +387,7 @@ local function OnEvent(self, evt, ...)
         end
     elseif evt == "UNIT_MAXHEALTH" or evt == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
         UpdateHealthBar()
-        if health and health._missLive then
-            mod.ERB_MissingPaint(health)
-        end
+        if health and health._missLive then mod.ERB_MissingPaint(health) end
         -- Two-step max-health landing (max first, value after): one next-frame
         -- re-read settles torn numbers (canonical story: UF engine RESETTLE_EVENTS).
         if not self._erbHpResettle then
@@ -498,9 +404,7 @@ local function OnEvent(self, evt, ...)
         then
             local nextMax = UnitHealthMax("player") or 1
             if not issecretvalue or not issecretvalue(nextMax) then
-                if secondaryCache.power == "IGNOREPAIN_BAR" then
-                    nextMax = nextMax * IP.CAP
-                end
+                if secondaryCache.power == "IGNOREPAIN_BAR" then nextMax = nextMax * IP.CAP end
                 if nextMax > 0 and nextMax ~= secondaryCache.max then
                     secondaryCache.max = nextMax
                     BuildBars()
@@ -519,9 +423,7 @@ local function OnEvent(self, evt, ...)
         end
     elseif evt == "UNIT_ABSORB_AMOUNT_CHANGED" then
         -- Drives the Prot Ignore Pain bar; no-op for everyone else.
-        if secondaryCache and secondaryCache.power == "IGNOREPAIN_BAR" then
-            UpdateSecondaryResource()
-        end
+        if secondaryCache and secondaryCache.power == "IGNOREPAIN_BAR" then UpdateSecondaryResource() end
     elseif evt == "UNIT_MAXPOWER" then
         -- Re-check secondary resource in case max changed (e.g. talent-based pip count)
         local nextSecondary = GetSecondaryResource()
@@ -535,13 +437,9 @@ local function OnEvent(self, evt, ...)
         end
         UpdatePrimaryBar()
         if mainBar then
-            if mainBar._missLive then
-                mod.ERB_MissingPaint(mainBar)
-            end
+            if mainBar._missLive then mod.ERB_MissingPaint(mainBar) end
             local maxHealth = mainBar._missHost
-            if maxHealth and maxHealth._missLive then
-                mod.ERB_MissingPaint(maxHealth)
-            end
+            if maxHealth and maxHealth._missLive then mod.ERB_MissingPaint(maxHealth) end
         end
         UpdateSecondaryResource()
     elseif evt == "RUNE_POWER_UPDATE" then
@@ -549,9 +447,7 @@ local function OnEvent(self, evt, ...)
     elseif evt == "UNIT_POWER_POINT_CHARGE" then
         -- The charged set is not in the value early-out's key: drop the memo so
         -- a charge change with the count unchanged still repaints.
-        if mod.SecSt then
-            mod.SecSt.gen = nil
-        end
+        if mod.SecSt then mod.SecSt.gen = nil end
         UpdateSecondaryResource()
     elseif evt == "PLAYER_REGEN_DISABLED" then
         SetInCombat(true)
@@ -560,9 +456,7 @@ local function OnEvent(self, evt, ...)
         SetInCombat(false)
         UpdateVisibility()
     elseif evt == "PLAYER_TARGET_CHANGED" or evt == "COMBO_TARGET_CHANGED" then
-        if evt == "PLAYER_TARGET_CHANGED" then
-            UpdateVisibility()
-        end
+        if evt == "PLAYER_TARGET_CHANGED" then UpdateVisibility() end
         -- WoW Forever: combo points belong to the target, so a target swap, or
         -- the points moving to a new target, changes the count with no power
         -- event behind it. Skipped while the Class Resource is off.
@@ -624,9 +518,7 @@ local function OnEvent(self, evt, ...)
         mod.InvalidateThresholdCaches()
         -- WoW Forever swing timer: its talent conditions read fresh (the file
         -- exists only on that client).
-        if mod.ST_TalentChanged then
-            mod.ST_TalentChanged()
-        end
+        if mod.ST_TalentChanged then mod.ST_TalentChanged() end
         mod.ScheduleTalentApply()
     elseif evt == "UPDATE_SHAPESHIFT_FORM" then
         SetCachedPrimary(GetPrimaryPowerType())
@@ -645,15 +537,11 @@ local function OnEvent(self, evt, ...)
     elseif evt == "UNIT_AURA" then
         local unitToken = ...
         if unitToken == "player" then
-            if cachedPrimary == "EBON_MIGHT" then
-                UpdatePrimaryBar()
-            end
+            if cachedPrimary == "EBON_MIGHT" then UpdatePrimaryBar() end
             if secondaryCache then
                 -- Refresh on aura change for custom resources and for buff coloring
                 -- (any resource type -- a tracked buff gain/loss recolors the bar).
-                if secondaryCache.type == "custom" or mod.SecTracks() then
-                    UpdateSecondaryResource()
-                end
+                if secondaryCache.type == "custom" or mod.SecTracks() then UpdateSecondaryResource() end
             end
         end
     elseif evt == "UNIT_SPELLCAST_SUCCEEDED" then
@@ -678,9 +566,7 @@ local function OnEvent(self, evt, ...)
         C_Timer.After(0.5, function()
             -- WoW Forever swing timer: a talent read the login apply made before
             -- the talent data was in is read again by this apply.
-            if mod.ST_TalentChanged then
-                mod.ST_TalentChanged()
-            end
+            if mod.ST_TalentChanged then mod.ST_TalentChanged() end
             ERB:ApplyAll()
             RegisterUnlockElements()
             -- ApplyAll just cached the power type off a spec that may not have
@@ -689,9 +575,7 @@ local function OnEvent(self, evt, ...)
         end)
     elseif evt == "UNIT_SPELLCAST_START" then
         local unitToken = ...
-        if unitToken == "player" then
-            OnCastStart()
-        end
+        if unitToken == "player" then OnCastStart() end
     elseif evt == "UNIT_SPELLCAST_DELAYED" then
         -- Cast pushback (damage taken mid-cast) or any other mid-cast cast time change:
         -- Blizzard shifts the cast's start/end times. Re-read them or the fill
@@ -715,53 +599,35 @@ local function OnEvent(self, evt, ...)
         end
     elseif evt == "UNIT_SPELLCAST_STOP" then
         local unitToken, _, _, castID = ...
-        if unitToken == "player" then
-            OnCastComplete(castID)
-        end
+        if unitToken == "player" then OnCastComplete(castID) end
     elseif evt == "UNIT_SPELLCAST_FAILED" then
         -- args: unit, castGUID, spellID, castID
         local unitToken, _, _, castID = ...
-        if unitToken == "player" then
-            OnCastFailed(castID)
-        end
+        if unitToken == "player" then OnCastFailed(castID) end
     elseif evt == "UNIT_SPELLCAST_INTERRUPTED" then
         -- args: unit, castGUID, spellID, interruptedBy, castID
         local unitToken, _, _, _, castID = ...
-        if unitToken == "player" then
-            OnCastFailed(castID)
-        end
+        if unitToken == "player" then OnCastFailed(castID) end
     elseif evt == "UNIT_SPELLCAST_CHANNEL_START" then
         local unitToken = ...
-        if unitToken == "player" then
-            OnChannelStart()
-        end
+        if unitToken == "player" then OnChannelStart() end
     elseif evt == "UNIT_SPELLCAST_CHANNEL_UPDATE" then
         local unitToken = ...
-        if unitToken == "player" then
-            OnChannelUpdate()
-        end
+        if unitToken == "player" then OnChannelUpdate() end
     elseif evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
         -- args: unit, castGUID, spellID, interruptedBy, castBarID
         local unitToken = ...
-        if unitToken == "player" then
-            OnChannelStop()
-        end
+        if unitToken == "player" then OnChannelStop() end
     elseif evt == "UNIT_SPELLCAST_EMPOWER_START" then
         local unitToken = ...
-        if unitToken == "player" then
-            OnEmpowerStart()
-        end
+        if unitToken == "player" then OnEmpowerStart() end
     elseif evt == "UNIT_SPELLCAST_EMPOWER_STOP" then
         -- args: unit, castGUID, spellID, empowerComplete, interruptedBy, castID
         local unitToken, _, _, _, _, castID = ...
-        if unitToken == "player" then
-            OnEmpowerStop(castID)
-        end
+        if unitToken == "player" then OnEmpowerStop(castID) end
     elseif evt == "UNIT_SPELLCAST_EMPOWER_UPDATE" then
         local unitToken = ...
-        if unitToken == "player" then
-            OnEmpowerUpdate()
-        end
+        if unitToken == "player" then OnEmpowerUpdate() end
     end
 end
 
@@ -784,12 +650,8 @@ function ERB:OnInitialize()
     end
 
     _G._CURB_AceDB = self.db
-    _G._CURB_Apply = function()
-        ERB:ApplyAll()
-    end
-    _G._CURB_ApplySmoothing = function()
-        ERB:ApplySmoothing()
-    end
+    _G._CURB_Apply = function() ERB:ApplyAll() end
+    _G._CURB_ApplySmoothing = function() ERB:ApplySmoothing() end
     -- Unlock mode / CUI options panel: temporarily render the power bar at its true
     -- stored height (no expand) so movers and getSize see the real size. RUNTIME-ONLY
     -- suppression via CludesUI._erbExpandSuppressed -- NEVER writes the saved
@@ -824,13 +686,9 @@ function ERB:OnInitialize()
     -- apply (ignores unlock state): +1 = Up, -1 = Down, 0 = none.
     local function ResolveShiftDir()
         local secondary = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-        if not secondary then
-            return 0
-        end
+        if not secondary then return 0 end
         local mode = secondary.shiftElementsIfNoResource
-        if mode ~= "Up" and mode ~= "Down" then
-            return 0
-        end
+        if mode ~= "Up" and mode ~= "Down" then return 0 end
         -- Fires whenever the class resource bar leaves an empty slot: hidden via
         -- "Show Class Resource", disabled for the CURRENT spec/DRUID FORM, or the
         -- spec has no class resource. The frame is created unconditionally (zero
@@ -850,13 +708,9 @@ function ERB:OnInitialize()
     end
     local function ResolveShiftDirPower()
         local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
-        if not primary then
-            return 0
-        end
+        if not primary then return 0 end
         local mode = primary.shiftElementsIfNoPower
-        if mode ~= "Up" and mode ~= "Down" then
-            return 0
-        end
+        if mode ~= "Up" and mode ~= "Down" then return 0 end
         -- Fires whenever the power bar leaves an empty slot. IsPowerBarHidden() is the
         -- single source of truth for that -- the same predicate the visibility pass and
         -- "Resource Text" gate consult -- so the shift can never disagree with what's
@@ -864,9 +718,7 @@ function ERB:OnInitialize()
         -- landing in that helper. The power frame is created unconditionally and kept
         -- at full height/zero alpha when not shown, so anchored children and the shift
         -- magnitude (target height) stay correct in every hidden case.
-        if not IsPowerBarHidden() then
-            return 0
-        end
+        if not IsPowerBarHidden() then return 0 end
         return (mode == "Up") and 1 or -1
     end
     -- Seeded into the shared shift-provider list (CUI_UnlockMode.lua dispatches
@@ -885,40 +737,26 @@ function ERB:OnInitialize()
     CludesUI._anchorShiftProviders = CludesUI._anchorShiftProviders or {}
     table.insert(CludesUI._anchorShiftProviders, {
         dir = function(targetKey, childKey)
-            if CludesUI._unlockActive then
-                return 0
-            end
+            if CludesUI._unlockActive then return 0 end
             if targetKey == "ERB_ClassResource" then
                 local direction = ResolveShiftDir()
-                if direction == 0 then
-                    return 0
-                end
+                if direction == 0 then return 0 end
                 local secondary = ERB.db and ERB.db.profile and ERB.db.profile.secondary
                 return direction, (secondary and secondary.shiftElementsIfNoResourceExtraY) or 0
             end
             if targetKey == "ERB_Power" then
                 local direction = ResolveShiftDirPower()
-                if direction == 0 then
-                    return 0
-                end
+                if direction == 0 then return 0 end
                 local primary = ERB.db and ERB.db.profile and ERB.db.profile.primary
                 return direction, (primary and primary.shiftElementsIfNoPowerExtraY) or 0
             end
             return 0
         end,
-        wants = function()
-            return ResolveShiftDir() ~= 0 or ResolveShiftDirPower() ~= 0
-        end,
+        wants = function() return ResolveShiftDir() ~= 0 or ResolveShiftDirPower() ~= 0 end,
         restore = function()
-            if not CludesUI.PropagateAnchorChain then
-                return
-            end
-            if ResolveShiftDir() ~= 0 then
-                CludesUI.PropagateAnchorChain("ERB_ClassResource")
-            end
-            if ResolveShiftDirPower() ~= 0 then
-                CludesUI.PropagateAnchorChain("ERB_Power")
-            end
+            if not CludesUI.PropagateAnchorChain then return end
+            if ResolveShiftDir() ~= 0 then CludesUI.PropagateAnchorChain("ERB_ClassResource") end
+            if ResolveShiftDirPower() ~= 0 then CludesUI.PropagateAnchorChain("ERB_Power") end
         end,
     })
 
@@ -943,9 +781,7 @@ function ERB:OnEnable()
     watcher:RegisterEvent("PLAYER_TARGET_CHANGED")
     -- WoW Forever: combo points moving to a new target fire no power event
     -- (only a rogue or druid ever raises it; the handler acts for onTarget).
-    if CludesUI.IS_FOREVER == true then
-        watcher:RegisterEvent("COMBO_TARGET_CHANGED")
-    end
+    if CludesUI.IS_FOREVER == true then watcher:RegisterEvent("COMBO_TARGET_CHANGED") end
     watcher:RegisterEvent("GROUP_ROSTER_UPDATE")
     watcher:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
     watcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
@@ -963,9 +799,7 @@ function ERB:OnEnable()
     watcher:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
     -- Airborne edge for the dragonriding visibility modes (probed at load
     -- in CludesUI_Visibility.lua; absent = the checklist items lock)
-    if CludesUI._hasGlidingEvent then
-        watcher:RegisterEvent("PLAYER_IS_GLIDING_CHANGED")
-    end
+    if CludesUI._hasGlidingEvent then watcher:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
 
     -- Mouseover hover-reveal: one proxy per bar registered with the shared poll. Plain
     -- tables (Quest Tracker precedent) so the poll never calls EnableMouse/Show on the
@@ -977,9 +811,7 @@ function ERB:OnEnable()
             local proxyFrame = {}
             proxyFrame.GetRect = function()
                 local frame = frameGetter()
-                if frame then
-                    return frame:GetRect()
-                end
+                if frame then return frame:GetRect() end
                 return nil
             end
             proxyFrame.GetEffectiveScale = function()
@@ -990,32 +822,23 @@ function ERB:OnEnable()
             proxyFrame.EnableMouse = function() end
             proxyFrame.Show = function()
                 local frame = frameGetter()
-                if frame then
-                    CludesUI.SetElementVisibility(frame, true)
-                end
+                if frame then CludesUI.SetElementVisibility(frame, true) end
             end
             proxyFrame.Hide = function()
                 local frame = frameGetter()
-                if frame then
-                    CludesUI.SetElementVisibility(frame, false)
-                end
+                if frame then CludesUI.SetElementVisibility(frame, false) end
             end
-            CludesUI.RegisterMouseoverTarget(proxyFrame, function()
-                return ERB._moEligible and ERB._moEligible[barId] or false
-            end)
+            CludesUI.RegisterMouseoverTarget(
+                proxyFrame,
+                function() return ERB._moEligible and ERB._moEligible[barId] or false end
+            )
         end
-        RegisterBarHover("health", function()
-            return health
-        end)
-        RegisterBarHover("primary", function()
-            return mainBar
-        end)
+        RegisterBarHover("health", function() return health end)
+        RegisterBarHover("primary", function() return mainBar end)
         -- Blizzard Class Resource Art: hover reveals the host holding Blizzard's
         -- frame (nil while it waits to be claimed at login).
         RegisterBarHover("secondary", function()
-            if mod._erbArtOn then
-                return mod._erbArtHost
-            end
+            if mod._erbArtOn then return mod._erbArtHost end
             return classFrame
         end)
     end
@@ -1048,15 +871,10 @@ function ERB:OnEnable()
         -- Three independent subscribers. Each is armed only by the state that
         -- needs it, and each disarms itself, so a cast no longer drags the
         -- health/power/secondary blocks along at frame rate.
-        if
-            castFrame
-            and (castFrame._casting or castFrame._channeling or castFrame._empowering)
-        then
+        if castFrame and (castFrame._casting or castFrame._channeling or castFrame._empowering) then
             mod.StartCastTick()
         end
-        if gcdBarFrame and gcdBarFrame._gcdStart then
-            mod.GCDTick.Start()
-        end
+        if gcdBarFrame and gcdBarFrame._gcdStart then mod.GCDTick.Start() end
         mod.ArmTick()
     end)
 
@@ -1094,9 +912,7 @@ function ERB:OnEnable()
     -- bar's dark colours update live (colours are fetched live each render, so a
     -- plain rebuild is enough). ApplyAll touches secure positioning, so guard combat.
     CludesUI.RegisterDarkModeRefresh(function()
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         ERB:ApplyAll()
     end)
 
@@ -1114,26 +930,18 @@ function ERB:OnEnable()
             ) or false
         end,
         setOn = function(on)
-            if not (ERB.db and ERB.db.profile and ERB.db.profile.secondary) then
-                return
-            end
+            if not (ERB.db and ERB.db.profile and ERB.db.profile.secondary) then return end
             ERB.db.profile.secondary.darkTheme = on
-            if not InCombatLockdown() then
-                ERB:ApplyAll()
-            end
+            if not InCombatLockdown() then ERB:ApplyAll() end
         end,
     })
 
     -- Collapse/restore expandIfNoResource when CUI options panel opens/closes
     CludesUI:RegisterOnShow(function()
-        if _G._CURB_SuppressExpand then
-            _G._CURB_SuppressExpand()
-        end
+        if _G._CURB_SuppressExpand then _G._CURB_SuppressExpand() end
     end)
     CludesUI:RegisterOnHide(function()
-        if _G._CURB_RestoreExpand then
-            _G._CURB_RestoreExpand()
-        end
+        if _G._CURB_RestoreExpand then _G._CURB_RestoreExpand() end
     end)
 end
 
@@ -1143,23 +951,15 @@ SLASH_ERB2 = "/cludesresource"
 SlashCmdList.ERB = function(message)
     if message == "lock" or message == "unlock" then
         -- Unlock mode is now handled by the shared CludesUI system
-        if CludesUI and CludesUI.ToggleUnlockMode then
-            CludesUI:ToggleUnlockMode()
-        end
+        if CludesUI and CludesUI.ToggleUnlockMode then CludesUI:ToggleUnlockMode() end
         return
     end
-    if InCombatLockdown and InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown and InCombatLockdown() then return end
     CludesUI:ShowModule("CludesUIResourceBars")
 end ------------------------------------------------------------------------------- --  Party Mode: spinning resource and power bars (CludesUI.PartySpin_Create). --  Resource Bars: pips / runes orbit the class resource bar's centre. --  Power Bars: the health and primary power bars orbit the screen centre. ------------------------------------------------------------------------------- -- Wrapped in a function to keep its locals out of the main chunk.
 (function()
     -- Party Mode visibility axis: no game event; the core fires its own edge.
-    if CludesUI.RegisterVisEdge then
-        CludesUI.RegisterVisEdge(function()
-            UpdateVisibility()
-        end)
-    end
+    if CludesUI.RegisterVisEdge then CludesUI.RegisterVisEdge(function() UpdateVisibility() end) end
     do
         -- The backdrop, gap fills and ticks are drawn on the bar and cannot turn,
         -- and empty pips are transparent, so while spinning those layers fade out
@@ -1196,15 +996,11 @@ end ----------------------------------------------------------------------------
                 if classFrame and not mod._erbArtOn then
                     for index = 1, #pips do
                         local p = pips[index]
-                        if p and p:IsShown() then
-                            resList[#resList + 1] = p
-                        end
+                        if p and p:IsShown() then resList[#resList + 1] = p end
                     end
                     for index = 1, #runeFrames do
                         local region = runeFrames[index]
-                        if region and region:IsShown() then
-                            resList[#resList + 1] = region
-                        end
+                        if region and region:IsShown() then resList[#resList + 1] = region end
                     end
                     resGroup.pivot = classFrame
                     resGroups[1] = resGroup
@@ -1212,9 +1008,7 @@ end ----------------------------------------------------------------------------
                 return resGroups
             end,
             onClaim = function()
-                if not classFrame or #resList == 0 then
-                    return
-                end
+                if not classFrame or #resList == 0 then return end
                 Fade(classFrame._barBg)
                 local gf = classFrame._gapFills
                 if gf then
@@ -1246,12 +1040,8 @@ end ----------------------------------------------------------------------------
             target = "power",
             collect = function()
                 wipe(powList)
-                if health then
-                    powList[#powList + 1] = health
-                end
-                if mainBar then
-                    powList[#powList + 1] = mainBar
-                end
+                if health then powList[#powList + 1] = health end
+                if mainBar then powList[#powList + 1] = mainBar end
                 return powGroups
             end,
         })

@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI and CludesUI.IS_FOREVER then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CludesUI and CludesUI.IS_FOREVER then return end
 -- SEASON UPDATE: this season's raids and boss lairs, by the map ID the game
 -- reports inside them (GetInstanceInfo's eighth return), each with the NPC IDs
 -- of its bosses. Adds are left out on purpose: their rows keep the combat note.

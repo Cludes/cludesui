@@ -1,15 +1,11 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBar_Options.lua
 --  Registers the Action Bars module. All get/set calls go to EAB.db.profile.
 -------------------------------------------------------------------------------
 local ADDON_NAME = "CludesUIActionBars"
 local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 -- Options page pool (CludesUI_FramePool.lua, first in this addon): a frame
 -- made here on a pool host (a kept page or header root and every frame it
 -- hands out) is reset and dressed again by the next build instead of made
@@ -68,9 +64,7 @@ local SECTION_VISIBILITY = "VISIBILITY & FADING"
 -- CludesUI is created by another addon in the suite; wait for it.
 CludesUI.AtOptionsLogin(function()
     local Pix = CludesUI.PanelPP
-    if not ABAR or not ABAR.db then
-        return
-    end
+    if not ABAR or not ABAR.db then return end
 
     ---------------------------------------------------------------------------
     --  Local references from the addon namespace
@@ -84,20 +78,14 @@ CludesUI.AtOptionsLogin(function()
     -- Filtered bar list for multi-edit: action bars only (no MicroBar/BagBar)
     local GROUP_BAR_ORDER = {}
     for _, key in ipairs(BAR_DROPDOWN_ORDER) do
-        if not VISIBILITY_ONLY[key] then
-            GROUP_BAR_ORDER[#GROUP_BAR_ORDER + 1] = key
-        end
+        if not VISIBILITY_ONLY[key] then GROUP_BAR_ORDER[#GROUP_BAR_ORDER + 1] = key end
     end
 
     -- Bar enabled state; we control all bars, so default is true.
     local function IsBarEnabled(barId)
-        if not ABAR or not ABAR.db then
-            return true
-        end
+        if not ABAR or not ABAR.db then return true end
         local cfg = ABAR.db.profile.bars[barId]
-        if cfg and cfg.enabled ~= nil then
-            return cfg.enabled
-        end
+        if cfg and cfg.enabled ~= nil then return cfg.enabled end
         return true
     end
 
@@ -110,34 +98,22 @@ CludesUI.AtOptionsLogin(function()
     --  Helpers
     ---------------------------------------------------------------------------
     local _selectedBarKey = "MainBar"
-    local function PickedBarKey()
-        return _selectedBarKey
-    end
+    local function PickedBarKey() return _selectedBarKey end
 
-    local function PickedBarCfg()
-        return ABAR.db.profile.bars[PickedBarKey()] or {}
-    end
+    local function PickedBarCfg() return ABAR.db.profile.bars[PickedBarKey()] or {} end
 
-    local function IsVisOnly()
-        return VISIBILITY_ONLY[PickedBarKey()]
-    end
+    local function IsVisOnly() return VISIBILITY_ONLY[PickedBarKey()] end
 
-    local function IsDataBar()
-        return DATA_BAR[PickedBarKey()]
-    end
+    local function IsDataBar() return DATA_BAR[PickedBarKey()] end
 
     -- First button of a bar (source of default size): our EABButton, else the
     -- native Blizzard button. nil for custom bars (Bar9/Bar10) which have no
     -- native button -- callers default the size; avoids concatenating a nil prefix.
     local function FirstBarButton(key)
         local eb = mod.barButtons and mod.barButtons[key]
-        if eb and eb[1] then
-            return eb[1]
-        end
+        if eb and eb[1] then return eb[1] end
         local bi = BAR_LOOKUP[key]
-        if bi and bi.buttonPrefix then
-            return _G[bi.buttonPrefix .. "1"]
-        end
+        if bi and bi.buttonPrefix then return _G[bi.buttonPrefix .. "1"] end
         return nil
     end
 
@@ -166,16 +142,12 @@ CludesUI.AtOptionsLogin(function()
     -- value consumed at build time. Both ignore non-dropdown keys (Micro/Bag/XP/Rep)
     -- so the selector never blanks.
     CludesUI._setActionBarKey = function(key)
-        if barLabels[key] then
-            _selectedBarKey = key
-        end
+        if barLabels[key] then _selectedBarKey = key end
     end
     CludesUI._consumePendingActionBarSelect = function()
         local pending = CludesUI._pendingActionBarSelect
         CludesUI._pendingActionBarSelect = nil
-        if pending and barLabels[pending] then
-            _selectedBarKey = pending
-        end
+        if pending and barLabels[pending] then _selectedBarKey = pending end
     end
 
     ---------------------------------------------------------------------------
@@ -190,9 +162,7 @@ CludesUI.AtOptionsLogin(function()
     local function GetEditOverlayTarget(barId)
         -- Data bars: show overlay only if not using Blizzard data bars
         if DATA_BAR[barId] then
-            if ABAR.db.profile.useBlizzardDataBars then
-                return nil
-            end
+            if ABAR.db.profile.useBlizzardDataBars then return nil end
             local df = mod.dataBarFrames and mod.dataBarFrames[barId]
             return df
         end
@@ -201,9 +171,7 @@ CludesUI.AtOptionsLogin(function()
             local cfg = ABAR.db.profile.bars[barId]
             if cfg and (cfg.alwaysHidden or cfg.mouseoverEnabled) then
                 for _, details in ipairs(EXTRA_BARS) do
-                    if details.key == barId and details.frameName then
-                        return _G[details.frameName]
-                    end
+                    if details.key == barId and details.frameName then return _G[details.frameName] end
                 end
             end
         end
@@ -213,9 +181,7 @@ CludesUI.AtOptionsLogin(function()
     local function ShowEditOverlay(barId)
         local target = GetEditOverlayTarget(barId)
         if not target then
-            if editOverlayFrame then
-                editOverlayFrame:Hide()
-            end
+            if editOverlayFrame then editOverlayFrame:Hide() end
             return
         end
 
@@ -270,17 +236,13 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function HideEditOverlay()
-        if editOverlayFrame then
-            editOverlayFrame:Hide()
-        end
+        if editOverlayFrame then editOverlayFrame:Hide() end
     end
 
     CludesUI:RegisterOnHide(HideEditOverlay)
 
     -- Sync Edit Mode icon counts on panel close (numIcons may have changed).
-    CludesUI:RegisterOnHide(function()
-        ABAR:SyncEditModeIcons()
-    end)
+    CludesUI:RegisterOnHide(function() ABAR:SyncEditModeIcons() end)
 
     ---------------------------------------------------------------------------
     --  Live Preview System
@@ -301,9 +263,7 @@ CludesUI.AtOptionsLogin(function()
     local _abDisplayHdr, _abHintHdr
     local barsHeaderBaseH = 0 -- bars header height WITHOUT hint
 
-    local function IsPreviewHintDismissed()
-        return CludesUIDB and CludesUIDB.previewHintDismissed
-    end
+    local function IsPreviewHintDismissed() return CludesUIDB and CludesUIDB.previewHintDismissed end
 
     -- Lightweight refresh: re-read settings, update visuals.
     local function UpdatePreview()
@@ -381,9 +341,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Legacy boolean flags and the visibility-mode dropdown must stay in sync: the runtime reads both shapes.
     local function GetVisibilityKey(cfg)
-        if not VisibilityCompat then
-            return cfg.barVisibility or "always"
-        end
+        if not VisibilityCompat then return cfg.barVisibility or "always" end
         return VisibilityCompat.Normalize(cfg)
     end
 
@@ -399,9 +357,7 @@ CludesUI.AtOptionsLogin(function()
         local wasMouseover = cfg.mouseoverEnabled
         cfg.mouseoverEnabled = (value == "mouseover")
         if value == "mouseover" then
-            if not wasMouseover then
-                cfg._savedBarAlpha = cfg.mouseoverAlpha or 1
-            end
+            if not wasMouseover then cfg._savedBarAlpha = cfg.mouseoverAlpha or 1 end
             cfg.mouseoverAlpha = 0
         elseif wasMouseover and cfg._savedBarAlpha then
             cfg.mouseoverAlpha = cfg._savedBarAlpha
@@ -477,9 +433,7 @@ CludesUI.AtOptionsLogin(function()
                 disabled = C.Vertical,
                 disabledTooltip = "Vertical Orientation",
                 requireState = "disabled",
-                getValue = function()
-                    return "__placeholder"
-                end,
+                getValue = function() return "__placeholder" end,
                 setValue = function() end,
             }
         end
@@ -488,13 +442,9 @@ CludesUI.AtOptionsLogin(function()
         function C.CopyTo(dst)
             local source = o.key()
             local d = ABAR.db.profile.bars[dst]
-            if dst == source or not d then
-                return
-            end
+            if dst == source or not d then return end
             d.endCapLeft, d.endCapRight = mod.AB_CapsSides(source)
-            if not C.stock then
-                d.endCapArt = mod.AB_CapsArt(source)
-            end
+            if not C.stock then d.endCapArt = mod.AB_CapsArt(source) end
             local _, dx, dy, sc = mod.AB_CapsTweak(source)
             d.endCapScale, d.endCapOffsetX, d.endCapOffsetY = sc, dx, dy
             o.copyApply(dst)
@@ -503,15 +453,9 @@ CludesUI.AtOptionsLogin(function()
             local source = o.key()
             local sl, sr = mod.AB_CapsSides(source)
             local kl, kr = mod.AB_CapsSides(key)
-            if sl ~= kl or sr ~= kr then
-                return false
-            end
-            if not (sl or sr) then
-                return true
-            end
-            if not C.stock and mod.AB_CapsArt(source) ~= mod.AB_CapsArt(key) then
-                return false
-            end
+            if sl ~= kl or sr ~= kr then return false end
+            if not (sl or sr) then return true end
+            if not C.stock and mod.AB_CapsArt(source) ~= mod.AB_CapsArt(key) then return false end
             local _, sx, sy, ss = mod.AB_CapsTweak(source)
             local _, kx, ky, ks = mod.AB_CapsTweak(key)
             return ss == ks and sx == kx and sy == ky
@@ -519,12 +463,8 @@ CludesUI.AtOptionsLogin(function()
         -- The checklist in `rgn` (a DualRow half built from C.Cfg), its cog
         -- and its Apply to All link.
         function C.Build(region)
-            if CludesUI._prebuilding then
-                return
-            end
-            if region._control then
-                region._control:Hide()
-            end
+            if CludesUI._prebuilding then return end
+            if region._control then region._control:Hide() end
             local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 170,
@@ -532,9 +472,7 @@ CludesUI.AtOptionsLogin(function()
                 { { key = "L", label = "Left Endcap" }, { key = "R", label = "Right Endcap" } },
                 function(keyName)
                     local l, r = mod.AB_CapsSides(o.key())
-                    if keyName == "L" then
-                        return l
-                    end
+                    if keyName == "L" then return l end
                     return r
                 end,
                 function(keyName, value)
@@ -589,12 +527,8 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = CludesUI.IS_FOREVER
                             and "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons, WoW Forever this client's own."
                         or "Modern shows gryphons or wyverns by faction, Classic the vanilla gryphons.",
-                    get = function()
-                        return mod.AB_CapsArt(o.key())
-                    end,
-                    set = function(value)
-                        o.write("endCapArt", value)
-                    end,
+                    get = function() return mod.AB_CapsArt(o.key()) end,
+                    set = function(value) o.write("endCapArt", value) end,
                 }
             end
             rowList[#rowList + 1] = {
@@ -604,12 +538,8 @@ CludesUI.AtOptionsLogin(function()
                 max = 200,
                 step = 5,
                 tooltip = "Percent of the end caps' normal size.",
-                get = function()
-                    return mod.AB_CapsVal(o.key(), "endCapScale") or 100
-                end,
-                set = function(value)
-                    o.write("endCapScale", value)
-                end,
+                get = function() return mod.AB_CapsVal(o.key(), "endCapScale") or 100 end,
+                set = function(value) o.write("endCapScale", value) end,
             }
             rowList[#rowList + 1] = {
                 type = "slider",
@@ -618,12 +548,8 @@ CludesUI.AtOptionsLogin(function()
                 max = 100,
                 step = 1,
                 tooltip = "Positive values move both end caps away from the bar.",
-                get = function()
-                    return mod.AB_CapsVal(o.key(), "endCapOffsetX") or 0
-                end,
-                set = function(value)
-                    o.write("endCapOffsetX", value)
-                end,
+                get = function() return mod.AB_CapsVal(o.key(), "endCapOffsetX") or 0 end,
+                set = function(value) o.write("endCapOffsetX", value) end,
             }
             rowList[#rowList + 1] = {
                 type = "slider",
@@ -631,18 +557,12 @@ CludesUI.AtOptionsLogin(function()
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return mod.AB_CapsVal(o.key(), "endCapOffsetY") or 5
-                end,
-                set = function(value)
-                    o.write("endCapOffsetY", value)
-                end,
+                get = function() return mod.AB_CapsVal(o.key(), "endCapOffsetY") or 5 end,
+                set = function(value) o.write("endCapOffsetY", value) end,
             }
             CludesUI.BuildInlineCog(region, {
                 title = "End Cap Settings",
-                disabled = function()
-                    return C.Vertical() or C.Off()
-                end,
+                disabled = function() return C.Vertical() or C.Off() end,
                 disabledTooltip = function()
                     if C.Vertical() then
                         return CludesUI.DisabledTooltip("Vertical Orientation", "disabled")
@@ -665,21 +585,15 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     isSynced = function()
                         for _, key in ipairs(o.syncKeys) do
-                            if not C.Same(key) then
-                                return false
-                            end
+                            if not C.Same(key) then return false end
                         end
                         return true
                     end,
-                    flashTargets = function()
-                        return { region }
-                    end,
+                    flashTargets = function() return { region } end,
                     multiApply = {
                         elementKeys = o.syncKeys,
                         elementLabels = o.syncLabels,
-                        getCurrentKey = function()
-                            return o.key()
-                        end,
+                        getCurrentKey = function() return o.key() end,
                         onApply = function(checkedKeys)
                             for _, key in ipairs(checkedKeys) do
                                 C.CopyTo(key)
@@ -699,33 +613,23 @@ CludesUI.AtOptionsLogin(function()
         ---------------------------------------------------------------
         --  Unified Get / Set / DB abstraction
         ---------------------------------------------------------------
-        local function SGet(key)
-            return PickedBarCfg()[key]
-        end
+        local function SGet(key) return PickedBarCfg()[key] end
         local function SSet(key, val, applyFn)
             PickedBarCfg()[key] = val
-            if applyFn then
-                applyFn(PickedBarKey())
-            end
+            if applyFn then applyFn(PickedBarKey()) end
             CludesUI:RefreshPage()
         end
-        local function SDB()
-            return PickedBarCfg()
-        end
+        local function SDB() return PickedBarCfg() end
         local function SVal(key, default)
             local value = PickedBarCfg()[key]
             return value ~= nil and value or default
         end
         local function SSetColor(key, red, green, blue, a, applyFn)
             PickedBarCfg()[key] = { r = red, g = green, b = blue, a = a }
-            if applyFn then
-                applyFn(PickedBarKey())
-            end
+            if applyFn then applyFn(PickedBarKey()) end
             CludesUI:RefreshPage()
         end
-        local function SUpdatePreview()
-            UpdatePreview()
-        end
+        local function SUpdatePreview() UpdatePreview() end
 
         -- The stock spacing lives in the offset boxes, not in the placement. A
         -- position pick swaps the old placement's spacing for the new one's on each
@@ -735,9 +639,7 @@ CludesUI.AtOptionsLogin(function()
         -- whatever the boxes held (a Cropped shape's preset included).
         local function SSeedTextOffsets(kind, anchorKey, oxKey, oyKey, anchor)
             local prev = SVal(anchorKey, nil)
-            if prev == anchor then
-                return
-            end
+            if prev == anchor then return end
             local px, py, nx, ny = 0, 0, 0, 0
             if prev then
                 px, py = ABAR.StockTextOffsets(kind, prev)
@@ -748,9 +650,7 @@ CludesUI.AtOptionsLogin(function()
             PickedBarCfg()[oxKey] = SVal(oxKey, 0) - px + nx
             PickedBarCfg()[oyKey] = SVal(oyKey, 0) - py + ny
         end
-        local function SUpdatePreviewAndResize()
-            UpdatePreviewAndResize()
-        end
+        local function SUpdatePreviewAndResize() UpdatePreviewAndResize() end
         hostFrame._showRowDivider = true
 
         local visOnly = IsVisOnly()
@@ -758,9 +658,7 @@ CludesUI.AtOptionsLogin(function()
         local iconsSectionHeader, textSectionHeader
         local keybindRow, chargesRow
 
-        local function BgDisabled()
-            return not PickedBarCfg().bgEnabled
-        end
+        local function BgDisabled() return not PickedBarCfg().bgEnabled end
 
         -- The sections live in ActionBars_Options\BarVisibilityLayout_Options.lua
         -- (Bar 10 caution, VISIBILITY & FADING, LAYOUT) and BarAppearance_Options.lua
@@ -791,9 +689,7 @@ CludesUI.AtOptionsLogin(function()
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({
                 color = CludesUI.CLUDES_GREEN,
-                thickness = function()
-                    return Pix.Scale(2)
-                end,
+                thickness = function() return Pix.Scale(2) end,
                 noSnap = true,
             })
 
@@ -805,37 +701,27 @@ CludesUI.AtOptionsLogin(function()
 
             local function NavigateToSetting(key)
                 local m = clickMappings[key]
-                if not m or not m.section or not m.target then
-                    return
-                end
+                if not m or not m.section or not m.target then return end
 
                 CludesUI.DismissPreviewHint(_abPreviewHintFS, barsHeaderBaseH, 29, 17)
 
                 local scrollFrame = CludesUI._scrollFrame
-                if not scrollFrame then
-                    return
-                end
+                if not scrollFrame then return end
                 local _, _, _, _, headerY = m.section:GetPoint(1)
-                if not headerY then
-                    return
-                end
+                if not headerY then return end
                 local scrollPos = math.max(0, math.abs(headerY) - 40)
                 CludesUI.SmoothScrollTo(scrollPos)
                 local glowTarget = m.target
                 if m.slotSide and m.target then
                     local regionFrame = (m.slotSide == "left") and m.target._leftRegion
                         or m.target._rightRegion
-                    if regionFrame then
-                        glowTarget = regionFrame
-                    end
+                    if regionFrame then glowTarget = regionFrame end
                 end
                 -- The glow is for the row of the build that was clicked: a row
                 -- the page pool dressed again in the meantime (a rebuild) gets none.
                 local glowGen = PoolGen(glowTarget)
                 C_Timer.After(0.15, function()
-                    if PoolGen(glowTarget) ~= glowGen then
-                        return
-                    end
+                    if PoolGen(glowTarget) ~= glowGen then return end
                     PlaySettingGlow(glowTarget)
                 end)
             end
@@ -893,9 +779,7 @@ CludesUI.AtOptionsLogin(function()
         optionState.activePreview = nil
 
         -- Consume any pending bar selection from Element Options navigation.
-        if CludesUI._consumePendingActionBarSelect then
-            CludesUI._consumePendingActionBarSelect()
-        end
+        if CludesUI._consumePendingActionBarSelect then CludesUI._consumePendingActionBarSelect() end
 
         -- Tag every option registered while building this page with the selected bar, so a global-search
         -- jump to a bar-specific setting restores this exact selection first via _setActionBarKey
@@ -908,9 +792,7 @@ CludesUI.AtOptionsLogin(function()
         --  CONTENT HEADER  (dropdown + preview)
         -------------------------------------------------------------------
         _barsHeaderBuilder = function(heading, hdrW)
-            if CludesUI:GetActivePage() == PAGE_DISPLAY then
-                _abDisplayHdr = heading
-            end
+            if CludesUI:GetActivePage() == PAGE_DISPLAY then _abDisplayHdr = heading end
             local PAD = CludesUI.CONTENT_PAD
             local PV_PAD = 10 -- internal padding inside BuildLivePreview
             local fy = -20
@@ -925,9 +807,7 @@ CludesUI.AtOptionsLogin(function()
                 heading:GetFrameLevel() + 5,
                 barLabels,
                 barOrder,
-                function()
-                    return PickedBarKey()
-                end,
+                function() return PickedBarKey() end,
                 function(value)
                     _selectedBarKey = value
                     -- Always force a full rebuild: visibility-only bars and StanceBar share visOnly/dataBar flags, so a conditional misses transitions.
@@ -937,12 +817,8 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 function(key)
                     -- Bar9/Bar10 default to Hidden visibility but must stay selectable so they can be configured -- never show the disabled effect.
-                    if key == "Bar9" or key == "Bar10" then
-                        return nil
-                    end
-                    if not IsBarEnabled(key) then
-                        return CludesUI.DisabledTooltip("this action bar")
-                    end
+                    if key == "Bar9" or key == "Bar10" then return nil end
+                    if not IsBarEnabled(key) then return CludesUI.DisabledTooltip("this action bar") end
                 end
             )
             -- The Quick Keybind Mode key button sits KB_GAP left of the
@@ -958,9 +834,7 @@ CludesUI.AtOptionsLogin(function()
                 Pix.Point(kbBtn, "RIGHT", dropdownBtn, "LEFT", -KB_GAP, 0)
                 kbBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
                 CludesUI.MakeStyledButton(kbBtn, "", 13, CludesUI.RD_DD_COLOURS, function()
-                    if InCombatLockdown() then
-                        return
-                    end
+                    if InCombatLockdown() then return end
                     if not C_AddOns.IsAddOnLoaded("Blizzard_QuickKeybind") then
                         C_AddOns.LoadAddOn("Blizzard_QuickKeybind")
                     end
@@ -995,9 +869,7 @@ CludesUI.AtOptionsLogin(function()
 
             headerFixedH = 20 + DD_H + PV_PAD + PV_PAD
 
-            if _abPreviewHintFS and not _abPreviewHintFS:GetParent() then
-                _abPreviewHintFS = nil
-            end
+            if _abPreviewHintFS and not _abPreviewHintFS:GetParent() then _abPreviewHintFS = nil end
             local hintH = 0
             if not IsPreviewHintDismissed() then
                 if not _abPreviewHintFS then
@@ -1050,9 +922,7 @@ CludesUI.AtOptionsLogin(function()
     local function BuildUnlockPage(page, hostFrame, yOffset)
         -- Defer to next frame so the page switch completes first
         C_Timer.After(0, function()
-            if mod.OpenUnlockMode then
-                mod.OpenUnlockMode()
-            end
+            if mod.OpenUnlockMode then mod.OpenUnlockMode() end
         end)
         return 0
     end
@@ -1108,9 +978,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return
             end
-            if page ~= PAGE_DISPLAY then
-                HideEditOverlay()
-            end
+            if page ~= PAGE_DISPLAY then HideEditOverlay() end
             if page == PAGE_DISPLAY then
                 return BuildBarDisplayPage(page, hostFrame, yOffset)
             elseif page == PAGE_XPBAR then
@@ -1161,17 +1029,13 @@ CludesUI.AtOptionsLogin(function()
                 end
             else
                 HideEditOverlay()
-                if page == PAGE_XPBAR then
-                    mod.ABO_XPPreviewRefresh()
-                end
+                if page == PAGE_XPBAR then mod.ABO_XPPreviewRefresh() end
             end
         end,
         onReset = function()
             ABAR.db:ResetProfile()
             -- Clear the per-install capture flag: the snapshot re-runs post-reload and re-reads Blizzard's bar layout.
-            if ABAR.db and ABAR.db.sv then
-                ABAR.db.sv._capturedOnce_EAB = nil
-            end
+            if ABAR.db and ABAR.db.sv then ABAR.db.sv._capturedOnce_EAB = nil end
             -- No reload here: Reset CUI Module Settings reloads after this returns.
         end,
     })

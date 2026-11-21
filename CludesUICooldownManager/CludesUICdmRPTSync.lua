@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmRPTSync.lua
 --  Generic CDs/Buffs sync, across chosen specs of the ACTIVE PROFILE.
@@ -24,16 +22,10 @@ local _, mod = ...
 local DeepCopy = CludesUI.Lite.DeepCopy
 
 local function GetSA()
-    if not CludesUIDB then
-        return nil
-    end
-    if not CludesUIDB.spellAssignments then
-        CludesUIDB.spellAssignments = { profiles = {} }
-    end
+    if not CludesUIDB then return nil end
+    if not CludesUIDB.spellAssignments then CludesUIDB.spellAssignments = { profiles = {} } end
     local sa = CludesUIDB.spellAssignments
-    if not sa.profiles then
-        sa.profiles = {}
-    end
+    if not sa.profiles then sa.profiles = {} end
     return sa
 end
 
@@ -41,12 +33,8 @@ end
 -- Ensure it exists (GetActiveSpecProfiles seeds it), then return it.
 local function ActiveBucket()
     local sa = GetSA()
-    if not sa then
-        return nil
-    end
-    if mod.GetActiveSpecProfiles then
-        mod.GetActiveSpecProfiles()
-    end
+    if not sa then return nil end
+    if mod.GetActiveSpecProfiles then mod.GetActiveSpecProfiles() end
     local name = mod.GetActiveProfileName and mod.GetActiveProfileName()
     return name and sa.profiles[name] or nil
 end
@@ -60,9 +48,7 @@ function mod.GetCDMSpecInfo()
     -- Cooldown Manager runs on.
     if CludesUI.IS_FOREVER then
         local key = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-        if not key then
-            return result
-        end
+        if not key then return result end
         local token = select(2, UnitClass("player"))
         local prof = specProfiles and specProfiles[key]
         local hasData = false
@@ -123,12 +109,8 @@ function mod.GetAllCDMSpecInfo()
     local result = {}
 
     local function HasData(prof)
-        if type(prof) ~= "table" then
-            return false
-        end
-        if prof.barSpells and next(prof.barSpells) ~= nil then
-            return true
-        end
+        if type(prof) ~= "table" then return false end
+        if prof.barSpells and next(prof.barSpells) ~= nil then return true end
         if prof.trackedBuffBars and prof.trackedBuffBars.bars and #prof.trackedBuffBars.bars > 0 then
             return true
         end
@@ -144,7 +126,9 @@ function mod.GetAllCDMSpecInfo()
             local isCurrentClass = (token == curClassFile)
             local key = isCurrentClass and mod.GetActiveSpecKey and mod.GetActiveSpecKey() or nil
             if not key then
-                key = tostring(CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, specProfiles, true))
+                key = tostring(
+                    CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, specProfiles, true)
+                )
             end
             local hasData = HasData(specProfiles and specProfiles[key])
             if isCurrentClass or hasData then
@@ -173,9 +157,7 @@ function mod.GetAllCDMSpecInfo()
                     -- Disambiguate other-class specs (e.g. Frost Mage vs Frost DK)
                     -- by appending the class name; the current class needs no suffix.
                     local nm = sName or ("Spec " .. key)
-                    if not isCurrentClass and className then
-                        nm = nm .. " (" .. className .. ")"
-                    end
+                    if not isCurrentClass and className then nm = nm .. " (" .. className .. ")" end
                     result[#result + 1] = {
                         key = key,
                         name = nm,
@@ -190,9 +172,7 @@ function mod.GetAllCDMSpecInfo()
 end
 
 local function IsRPTId(ident)
-    if type(ident) ~= "number" then
-        return false
-    end
+    if type(ident) ~= "number" then return false end
     if ident < 0 then
         -- The negative space is SHARED: trinket slots (-13/-14) and item
         -- presets (-itemID) are sync material, but Empty Slot markers, hosted-buff
@@ -203,9 +183,7 @@ local function IsRPTId(ident)
         -- icons onto every synced spec's bars (cross-class field report,
         -- 2026-08-16), with step 2's additive re-add resurrecting them after
         -- manual removal.
-        if mod.EMPTY_SLOT_MARKER_BASE and ident <= -mod.EMPTY_SLOT_MARKER_BASE then
-            return false
-        end
+        if mod.EMPTY_SLOT_MARKER_BASE and ident <= -mod.EMPTY_SLOT_MARKER_BASE then return false end
         return true
     end
     -- Racial slot: match ANY race's racial, not just the current character's
@@ -214,9 +192,7 @@ local function IsRPTId(ident)
     -- recognize, collect, and strip the racial slot regardless of which race's ID
     -- is stored. NormalizeRacialAssignments remaps it to each character's own
     -- racial when that spec is built.
-    if ident > 0 and mod.ALL_RACIAL_SPELLS and mod.ALL_RACIAL_SPELLS[ident] then
-        return true
-    end -- racial (any race)
+    if ident > 0 and mod.ALL_RACIAL_SPELLS and mod.ALL_RACIAL_SPELLS[ident] then return true end -- racial (any race)
     return false
 end
 mod.IsRPTSyncId = IsRPTId
@@ -261,16 +237,12 @@ end
 -- sync never seeds a buff preset onto a second bar (cross-bar duplication guard).
 local function BuffIdsPresentOnTarget(tgtProf)
     local set = {}
-    if type(tgtProf) ~= "table" or type(tgtProf.barSpells) ~= "table" then
-        return set
-    end
+    if type(tgtProf) ~= "table" or type(tgtProf.barSpells) ~= "table" then return set end
     local presetIds = BuffPresetIds()
     for barId, sd in pairs(tgtProf.barSpells) do
         if barId ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
             for _, ident in ipairs(sd.assignedSpells) do
-                if presetIds[ident] then
-                    set[ident] = true
-                end
+                if presetIds[ident] then set[ident] = true end
             end
         end
     end
@@ -297,9 +269,7 @@ end
 -- spell, not bar, in the tiered model.
 local function CollectRPT(specProf)
     local out = {}
-    if type(specProf) ~= "table" or type(specProf.barSpells) ~= "table" then
-        return out
-    end
+    if type(specProf) ~= "table" or type(specProf.barSpells) ~= "table" then return out end
     local stCD = specProf.spellSettingsCD
     local stBuff = specProf.spellSettingsBuff
     local settingsCD, settingsBuff
@@ -327,9 +297,7 @@ local function CollectRPT(specProf)
                     end
                 end
             end
-            if ids then
-                out[barId] = { ids = ids, durations = durations }
-            end
+            if ids then out[barId] = { ids = ids, durations = durations } end
         end
     end
     return out, { cd = settingsCD, buff = settingsBuff }
@@ -338,9 +306,7 @@ end
 -- Overwrite targetSpec's RPT (all bars) to match sourceSpec's. Regular spells kept.
 local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
     local srcProf = specProfiles[sourceSpecKey]
-    if not srcProf then
-        return
-    end
+    if not srcProf then return end
     local tgtProf = specProfiles[targetSpecKey]
     if not tgtProf then
         -- WoW Forever: a class reads its Forever spec key first, then its
@@ -371,9 +337,7 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
         tgtProf = { barSpells = {}, _barFilterModelV6 = true }
         specProfiles[targetSpecKey] = tgtProf
     end
-    if not tgtProf.barSpells then
-        tgtProf.barSpells = {}
-    end
+    if not tgtProf.barSpells then tgtProf.barSpells = {} end
     local srcRPT, srcSettings = CollectRPT(srcProf)
 
     -- Which bar the source keeps each RPT id on. Bar MEMBERSHIP and per-icon
@@ -429,9 +393,7 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
             sd = { assignedSpells = {} }
             tgtProf.barSpells[barId] = sd
         end
-        if not sd.assignedSpells then
-            sd.assignedSpells = {}
-        end
+        if not sd.assignedSpells then sd.assignedSpells = {} end
         local present = {}
         for _, ident in ipairs(sd.assignedSpells) do
             present[ident] = true
@@ -476,9 +438,7 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
                 tgtProf.spellSettingsBuff = tgt
             end
             for ident, s in pairs(srcSettings.buff) do
-                if tgt[ident] == nil then
-                    tgt[ident] = DeepCopy(s)
-                end
+                if tgt[ident] == nil then tgt[ident] = DeepCopy(s) end
             end
         end
         -- Sync REPLACES entry tables (fresh copies): retire memoized
@@ -490,16 +450,10 @@ end
 
 -- Propagate RPT from sourceSpecKey to all OTHER synced specs in the active profile.
 function mod.PropagateRPTFrom(sourceSpecKey)
-    if not sourceSpecKey then
-        return
-    end
+    if not sourceSpecKey then return end
     local b = ActiveBucket()
-    if not b or type(b.rptSyncSpecs) ~= "table" or not b.rptSyncSpecs[sourceSpecKey] then
-        return
-    end
-    if not b.specProfiles then
-        return
-    end
+    if not b or type(b.rptSyncSpecs) ~= "table" or not b.rptSyncSpecs[sourceSpecKey] then return end
+    if not b.specProfiles then return end
     -- Never propagate from a source spec that carries NO racial/pot/trinket
     -- entries. An empty source is not an authoritative "remove everything" signal
     -- -- it is usually an unconfigured spec the player just happens to be viewing
@@ -509,13 +463,9 @@ function mod.PropagateRPTFrom(sourceSpecKey)
     -- CollectRPT returns (bars, settings): capture the first only -- feeding
     -- both into next() would pass the settings table as the iteration key.
     local srcRPT = CollectRPT(srcProf)
-    if not srcProf or next(srcRPT) == nil then
-        return
-    end
+    if not srcProf or next(srcRPT) == nil then return end
     for specKey in pairs(b.rptSyncSpecs) do
-        if specKey ~= sourceSpecKey then
-            ApplyRPT(b.specProfiles, sourceSpecKey, specKey)
-        end
+        if specKey ~= sourceSpecKey then ApplyRPT(b.specProfiles, sourceSpecKey, specKey) end
     end
 end
 
@@ -523,36 +473,24 @@ end
 -- to the other synced specs. The active spec (the one shown) is the source, so
 -- no rebuild is needed -- only the off-screen synced specs' data changes.
 function mod.MaybePropagateRPT()
-    if not mod.HasRPTSync() then
-        return
-    end
+    if not mod.HasRPTSync() then return end
     local isActive = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-    if not isActive or isActive == "0" then
-        return
-    end
+    if not isActive or isActive == "0" then return end
     mod.PropagateRPTFrom(isActive)
 end
 
 -- First-time setup: set the synced-spec set + align ALL of them to sourceSpecKey.
 function mod.SetupRPTSync(specsSet, sourceSpecKey)
     local b = ActiveBucket()
-    if not b then
-        return false
-    end
-    if not b.specProfiles then
-        b.specProfiles = {}
-    end
+    if not b then return false end
+    if not b.specProfiles then b.specProfiles = {} end
     b.rptSyncSpecs = {}
     for key, val in pairs(specsSet) do
-        if val then
-            b.rptSyncSpecs[key] = true
-        end
+        if val then b.rptSyncSpecs[key] = true end
     end
     if sourceSpecKey then
         for specKey in pairs(b.rptSyncSpecs) do
-            if specKey ~= sourceSpecKey then
-                ApplyRPT(b.specProfiles, sourceSpecKey, specKey)
-            end
+            if specKey ~= sourceSpecKey then ApplyRPT(b.specProfiles, sourceSpecKey, specKey) end
         end
     end
     return true
@@ -562,12 +500,8 @@ end
 -- synced source, preferring the active spec); removed specs simply stop syncing.
 function mod.UpdateRPTSyncSpecs(specsSet)
     local b = ActiveBucket()
-    if not b then
-        return false
-    end
-    if not b.specProfiles then
-        b.specProfiles = {}
-    end
+    if not b then return false end
+    if not b.specProfiles then b.specProfiles = {} end
     local old = b.rptSyncSpecs or {}
     local isActive = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
     local source
@@ -583,16 +517,12 @@ function mod.UpdateRPTSyncSpecs(specsSet)
     end
     local newSet = {}
     for key, val in pairs(specsSet) do
-        if val then
-            newSet[key] = true
-        end
+        if val then newSet[key] = true end
     end
     b.rptSyncSpecs = newSet
     if source then
         for key in pairs(newSet) do
-            if key ~= source and not old[key] then
-                ApplyRPT(b.specProfiles, source, key)
-            end
+            if key ~= source and not old[key] then ApplyRPT(b.specProfiles, source, key) end
         end
     end
     return true
@@ -600,9 +530,7 @@ end
 
 function mod.ClearRPTSync()
     local b = ActiveBucket()
-    if b then
-        b.rptSyncSpecs = nil
-    end
+    if b then b.rptSyncSpecs = nil end
 end
 
 -- Auto-propagate RPT after the centralized spell-mutation functions run (covers add /
@@ -611,9 +539,7 @@ end
 do
     local function Wrap(fnName)
         local orig = mod[fnName]
-        if type(orig) ~= "function" then
-            return
-        end
+        if type(orig) ~= "function" then return end
         mod[fnName] = function(...)
             local a, b = orig(...)
             mod.MaybePropagateRPT()

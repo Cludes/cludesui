@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  Blocks\Profession.lua - Info Bar blocks: professions.
 --
@@ -59,15 +57,11 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
     inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "TRADE_SKILL_DETAILS_UPDATE", "SPELLS_CHANGED", "SKILL_LINES_CHANGED" }
 
-    local function Settings()
-        return blockCfg.settings or {}
-    end
+    local function Settings() return blockCfg.settings or {} end
 
     -- One row per profession the block can show; First Aid's only on Forever.
     local rows = { { data = {} }, { data = {} } }
-    if secondary and CludesUI.IS_FOREVER then
-        rows[3] = { data = {} }
-    end
+    if secondary and CludesUI.IS_FOREVER then rows[3] = { data = {} } end
 
     -- Reads the professions into the rows (idx nil = not learned).
     local function Read(...)
@@ -102,7 +96,17 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         for _, row in ipairs(rows) do
             local skinData = row.data
             parts[#parts + 1] = skinData.idx
-                    and table.concat({ skinData.idx, skinData.name, tostring(skinData.icon), skinData.id or 0, skinData.rank, skinData.maxRank }, ":")
+                    and table.concat(
+                        {
+                            skinData.idx,
+                            skinData.name,
+                            tostring(skinData.icon),
+                            skinData.id or 0,
+                            skinData.rank,
+                            skinData.maxRank,
+                        },
+                        ":"
+                    )
                 or "-"
         end
         return table.concat(parts, "|")
@@ -110,9 +114,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
     local drawn -- the fingerprint last drawn
 
     local function OpenProfession(skinData)
-        if not skinData or not skinData.id or InCombatLockdown() then
-            return
-        end
+        if not skinData or not skinData.id or InCombatLockdown() then return end
         local open = C_TradeSkillUI
             and C_TradeSkillUI.GetBaseProfessionInfo
             and C_TradeSkillUI.GetBaseProfessionInfo()
@@ -148,9 +150,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
     -- The secure buttons, made out of combat only.
     local built = false
     local function Build()
-        if built then
-            return
-        end
+        if built then return end
         built = true
         for i, row in ipairs(rows) do
             local frame = CreateFrame(
@@ -182,9 +182,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
             -- HookScript, not SetScript: replacing OnClick would drop the
             -- secure handler that does the right-click.
             frame:HookScript("OnClick", function(_, mouseButton)
-                if mouseButton == "LeftButton" then
-                    OpenProfession(row.data)
-                end
+                if mouseButton == "LeftButton" then OpenProfession(row.data) end
             end)
             frame:SetScript("OnEnter", function(self)
                 local red, green, blue = mod.GetAccent()
@@ -340,9 +338,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
                     end
                     extent = extent + frame:GetWidth()
                 end
-                if previous then
-                    extent = extent + gap
-                end
+                if previous then extent = extent + gap end
                 previous = frame
             end
         end
@@ -358,16 +354,12 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
 
     -- In combat the secure buttons cannot move: one pass runs when it ends.
     local function AfterCombat()
-        if not inst._dead then
-            inst:Refresh()
-        end
+        if not inst._dead then inst:Refresh() end
     end
 
     -- A full pass (settings, the bar's layout): always draws.
     function inst:Refresh()
-        if not built then
-            return
-        end
+        if not built then return end
         if InCombatLockdown() then
             mod.DeferUntilOOC("prof:" .. inst.key, AfterCombat)
             return
@@ -378,17 +370,13 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
 
     -- A skill event: draws only if a profession changed.
     inst.eventFrame = K.MakeEventFrame(inst, function(self)
-        if not built then
-            return
-        end
+        if not built then return end
         if InCombatLockdown() then
             mod.DeferUntilOOC("prof:" .. inst.key, AfterCombat)
             return
         end
         Read(GetProfessions())
-        if Fingerprint() ~= drawn then
-            Draw()
-        end
+        if Fingerprint() ~= drawn then Draw() end
     end)
 
     if InCombatLockdown() then
@@ -413,15 +401,9 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
     end
 
     function inst:GetAutoLength()
-        if not built then
-            return 40
-        end
-        if not contentFrame:IsShown() then
-            return 0
-        end
-        if barCtx.IsVertical() then
-            return max(contentFrame:GetHeight(), barCtx.GetThickness(), 50)
-        end
+        if not built then return 40 end
+        if not contentFrame:IsShown() then return 0 end
+        if barCtx.IsVertical() then return max(contentFrame:GetHeight(), barCtx.GetThickness(), 50) end
         return max(contentFrame:GetWidth() or 80, 30)
     end
 
@@ -429,9 +411,7 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         self._dead = true
         K.UnregisterInstEvents(self)
         for i, row in ipairs(rows) do
-            if row.frame then
-                K.ParkSecureFrame(row.frame, self.key .. "_prof" .. i)
-            end
+            if row.frame then K.ParkSecureFrame(row.frame, self.key .. "_prof" .. i) end
         end
         contentFrame:Hide()
     end

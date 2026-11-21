@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GroupInspect.lua  (WoW Forever only)
 --  Group Inspect: one window with everyone in your party or raid: class,
@@ -33,12 +29,8 @@ local cache = {} -- guid -> { name, class, level, ilvl, bare = {...}, when }
 local queue, asking = {}, nil
 local window, rowList = nil, {}
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 local function Members()
     local result = {}
@@ -61,9 +53,7 @@ local function BareSlots(unitToken)
         local itemLink = GetInventoryItemLink(unitToken, slot)
         if itemLink and not Secret(itemLink) then
             local enchant = itemLink:match("item:%d+:(%d*)")
-            if enchant == nil or enchant == "" or enchant == "0" then
-                bare[#bare + 1] = name
-            end
+            if enchant == nil or enchant == "" or enchant == "0" then bare[#bare + 1] = name end
         end
     end
     table.sort(bare)
@@ -72,9 +62,7 @@ end
 
 local function Read(unitToken)
     local unitGuid = UnitGUID(unitToken)
-    if not unitGuid or Secret(unitGuid) then
-        return
-    end
+    if not unitGuid or Secret(unitGuid) then return end
     local _, class = UnitClass(unitToken)
     local ilvl
     if UnitIsUnit(unitToken, "player") then
@@ -83,9 +71,7 @@ local function Read(unitToken)
     elseif C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel then
         ilvl = C_PaperDollInfo.GetInspectItemLevel(unitToken)
     end
-    if Secret(ilvl) then
-        ilvl = nil
-    end
+    if Secret(ilvl) then ilvl = nil end
     cache[unitGuid] = {
         name = UnitName(unitToken),
         class = class,
@@ -109,17 +95,13 @@ local function AskNext()
                 asking = { unit = unitToken, guid = UnitGUID(unitToken) }
                 NotifyInspect(unitToken)
                 C_Timer.After(PACE, function()
-                    if asking and asking.unit == unitToken then
-                        AskNext()
-                    end -- no answer: move on
+                    if asking and asking.unit == unitToken then AskNext() end -- no answer: move on
                 end)
                 return
             end
         end
     end
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
 end
 
 local function ScanGroup()
@@ -127,9 +109,7 @@ local function ScanGroup()
     for _, unitToken in ipairs(Members()) do
         queue[#queue + 1] = unitToken
     end
-    if not asking then
-        AskNext()
-    end
+    if not asking then AskNext() end
 end
 
 local eventFrame = CreateFrame("Frame")
@@ -137,27 +117,17 @@ eventFrame:RegisterEvent("INSPECT_READY")
 eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 eventFrame:SetScript("OnEvent", function(_, evt, unitGuid)
     if evt == "GROUP_ROSTER_UPDATE" then
-        if window and window:IsShown() then
-            ScanGroup()
-        end
+        if window and window:IsShown() then ScanGroup() end
         return
     end
-    if not (asking and asking.guid == unitGuid) then
-        return
-    end
+    if not (asking and asking.guid == unitGuid) then return end
     local unitToken = asking.unit
     Read(unitToken)
     -- Leave the game's own inspect window alone if the player opened it.
-    if not (InspectFrame and InspectFrame:IsShown()) then
-        ClearInspectPlayer()
-    end
-    if Refresh then
-        Refresh()
-    end
+    if not (InspectFrame and InspectFrame:IsShown()) then ClearInspectPlayer() end
+    if Refresh then Refresh() end
     C_Timer.After(PACE, function()
-        if asking and asking.guid == unitGuid then
-            AskNext()
-        end
+        if asking and asking.guid == unitGuid then AskNext() end
     end)
 end)
 
@@ -167,9 +137,7 @@ end)
 local ROW_H = 18
 
 local function Build()
-    if window then
-        return
-    end
+    if window then return end
     window = CreateFrame("Frame", "CludesUIGroupInspect", UIParent)
     window:SetSize(460, 60)
     window:SetPoint("CENTER", 0, 120)
@@ -185,9 +153,7 @@ local function Build()
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Group Inspect")
     CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function()
-        window:Hide()
-    end, nil, "essentials")
+    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window:Hide()
     tinsert(UISpecialFrames, "CludesUIGroupInspect")
@@ -221,9 +187,7 @@ local function Row(index)
 end
 
 Refresh = function()
-    if not (window and window:IsShown()) then
-        return
-    end
+    if not (window and window:IsShown()) then return end
     local entries = {}
     for _, unitToken in ipairs(Members()) do
         local unitGuid = UnitGUID(unitToken)
@@ -231,9 +195,7 @@ Refresh = function()
         local _, class = UnitClass(unitToken)
         local colour = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
         local name = UnitName(unitToken) or "?"
-        if colour then
-            name = colour:WrapTextInColorCode(name)
-        end
+        if colour then name = colour:WrapTextInColorCode(name) end
         local textValue
         if c then
             textValue = ("%s  |cff9aa6b2%d|r  %s"):format(
@@ -249,9 +211,7 @@ Refresh = function()
         end
         entries[#entries + 1] = { unit = unitToken, text = textValue, ilvl = c and c.ilvl or -1 }
     end
-    table.sort(entries, function(lhs, rhs)
-        return lhs.ilvl > rhs.ilvl
-    end)
+    table.sort(entries, function(lhs, rhs) return lhs.ilvl > rhs.ilvl end)
     for index, l in ipairs(entries) do
         local region = Row(index)
         region.unit = l.unit

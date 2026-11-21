@@ -1,12 +1,6 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
-if not (C_EquipmentSet and C_EquipmentSet.UseEquipmentSet) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
+if not (C_EquipmentSet and C_EquipmentSet.UseEquipmentSet) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_GearSets.lua  (WoW Forever only)
 --  Gear Sets: a bar of your equipment sets (the game's own equipment
@@ -30,12 +24,8 @@ local buttons = {}
 local queuedSet -- a set to wear once combat ends
 local previous -- the set worn before an automatic swap
 
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Gear Sets:|r " .. textValue)
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Gear Sets:|r " .. textValue) end
 
 --- { {id, name, icon, equipped}, ... } sorted by name.
 function module.GearSetList()
@@ -46,31 +36,23 @@ function module.GearSetList()
             result[#result + 1] = { id = ident, name = name, icon = iconTex, equipped = equipped }
         end
     end
-    table.sort(result, function(lhs, rhs)
-        return lhs.name < rhs.name
-    end)
+    table.sort(result, function(lhs, rhs) return lhs.name < rhs.name end)
     return result
 end
 
 local function Wearing()
     for _, s in ipairs(module.GearSetList()) do
-        if s.equipped then
-            return s.id
-        end
+        if s.equipped then return s.id end
     end
 end
 
 local function SetByName(name)
-    if not name or name == "" then
-        return nil
-    end
+    if not name or name == "" then return nil end
     return C_EquipmentSet.GetEquipmentSetID(name)
 end
 
 local function Wear(ident)
-    if not ident then
-        return
-    end
+    if not ident then return end
     if InCombatLockdown() then
         queuedSet = ident
         return
@@ -91,9 +73,7 @@ end
 
 local function Button(index)
     local widget = buttons[index]
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("Button", nil, holderFrame)
     widget.icon = widget:CreateTexture(nil, "ARTWORK")
     widget.icon:SetAllPoints()
@@ -126,17 +106,13 @@ local function Button(index)
         end
         GameTooltip:Show()
     end)
-    widget:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    widget:SetScript("OnLeave", function() GameTooltip:Hide() end)
     buttons[index] = widget
     return widget
 end
 
 local function Layout()
-    if not holderFrame then
-        return
-    end
+    if not holderFrame then return end
     local size = Get("iconSize")
     local entries = Enabled() and module.GearSetList() or {}
     for index, s in ipairs(entries) do
@@ -161,36 +137,22 @@ end
 -- Automatic swaps: mounted wins over resting; leaving both puts back what
 -- was worn before the first automatic swap.
 local function AutoSwap()
-    if not Enabled() then
-        return
-    end
+    if not Enabled() then return end
     local wanted
-    if IsMounted() then
-        wanted = SetByName(Get("mountedSet"))
-    end
-    if not wanted and IsResting() then
-        wanted = SetByName(Get("restingSet"))
-    end
+    if IsMounted() then wanted = SetByName(Get("mountedSet")) end
+    if not wanted and IsResting() then wanted = SetByName(Get("restingSet")) end
     if wanted then
-        if not previous then
-            previous = Wearing() or false
-        end
-        if Wearing() ~= wanted then
-            Wear(wanted)
-        end
+        if not previous then previous = Wearing() or false end
+        if Wearing() ~= wanted then Wear(wanted) end
     elseif previous ~= nil then
         local back = previous
         previous = nil
-        if back then
-            Wear(back)
-        end
+        if back then Wear(back) end
     end
 end
 
 local function Build()
-    if holderFrame then
-        return holderFrame
-    end
+    if holderFrame then return holderFrame end
     holderFrame = CreateFrame("Frame", "CludesUIGearSets", UIParent)
     holderFrame:SetSize(Get("iconSize"), Get("iconSize"))
     return holderFrame
@@ -199,15 +161,11 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" then
-        if queuedSet then
-            Wear(queuedSet)
-        end
+        if queuedSet then Wear(queuedSet) end
         return AutoSwap()
     elseif evt == "EQUIPMENT_SETS_CHANGED" or evt == "PLAYER_ENTERING_WORLD" then
         Layout()
-        if evt == "PLAYER_ENTERING_WORLD" then
-            AutoSwap()
-        end
+        if evt == "PLAYER_ENTERING_WORLD" then AutoSwap() end
     elseif evt == "PLAYER_MOUNT_DISPLAY_CHANGED" or evt == "PLAYER_UPDATE_RESTING" then
         AutoSwap()
     else
@@ -229,9 +187,7 @@ local function Apply()
         }) do
             eventFrame:RegisterEvent(event)
         end
-        if not CludesUI._unlockActive then
-            F.Place(holderFrame)
-        end
+        if not CludesUI._unlockActive then F.Place(holderFrame) end
     else
         eventFrame:UnregisterAllEvents()
         previous, queuedSet = nil, nil
@@ -242,12 +198,8 @@ end
 --- Saves what you wear as a set (a new one, or over the set of that name).
 function module.SaveGearSet(name)
     name = (name or ""):match("^%s*(.-)%s*$")
-    if name == "" then
-        return Say("give the set a name.")
-    end
-    if InCombatLockdown() then
-        return Say("sets cannot be saved in combat.")
-    end
+    if name == "" then return Say("give the set a name.") end
+    if InCombatLockdown() then return Say("sets cannot be saved in combat.") end
     local ident = C_EquipmentSet.GetEquipmentSetID(name)
     if ident then
         C_EquipmentSet.SaveEquipmentSet(ident)

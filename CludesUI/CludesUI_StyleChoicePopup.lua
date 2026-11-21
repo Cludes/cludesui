@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_StyleChoicePopup.lua
 --
@@ -26,23 +24,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  reversible per module.
 -------------------------------------------------------------------------------
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 local CUI_HOST_ADDON = ...
 local IS_STANDALONE = type(CUI_HOST_ADDON) == "string" and CUI_HOST_ADDON:find("Standalone") ~= nil
-if IS_STANDALONE then
-    return
-end
+if IS_STANDALONE then return end
 
 local Pix = CUI.PanelPP
 local MakeBorder = CUI.MakeBorder
 local CLUDES_GREEN = CUI.CLUDES_GREEN
 
 local function Stamp()
-    if not CludesUIDB then
-        CludesUIDB = {}
-    end
+    if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.styleChoicePending = nil
 end
 
@@ -51,9 +43,7 @@ end
 -- at the parent's ADDON_LOADED below; every close that does not reload runs
 -- it here (a reload's next session runs its own).
 local function ReleasePending()
-    if not CUI._styleChoicePending then
-        return
-    end
+    if not CUI._styleChoicePending then return end
     CUI._styleChoicePending = nil
     if CludesUIDB and CludesUIDB.firstInstallPopupShown and CUI._RunConflictCheck then
         C_Timer.After(0.3, CUI._RunConflictCheck)
@@ -66,13 +56,9 @@ end
 -- too on WoW Forever (CludesUI_FirstInstall.lua), as its reload's
 -- pre-reload work. The caller reloads.
 local function ApplyLook(styleKey)
-    if not CUI.EnsureOptionsLoaded() then
-        return false
-    end
+    if not CUI.EnsureOptionsLoaded() then return false end
     local BS = CUI.BlizzStyle
-    if not (BS and BS.ApplyAll) then
-        return false
-    end
+    if not (BS and BS.ApplyAll) then return false end
     BS.ApplyAll(styleKey)
     return true
 end
@@ -88,18 +74,12 @@ local function ChooseOtherLook(styleKey, labelText, dimmer)
         CUI.RequestReload(
             nil,
             CUI.L("Style changed for this profile. A UI reload is needed to apply it."),
-            function()
-                ApplyLook(styleKey)
-            end
+            function() ApplyLook(styleKey) end
         )
         return
     end
-    CUI.Print(
-        "|cff4cc9f0CludesUI:|r " .. labelText .. " can be switched on under Global Settings > Style."
-    )
-    if dimmer then
-        dimmer:Hide()
-    end
+    CUI.Print("|cff4cc9f0CludesUI:|r " .. labelText .. " can be switched on under Global Settings > Style.")
+    if dimmer then dimmer:Hide() end
     ReleasePending()
 end
 
@@ -108,9 +88,7 @@ local function ShowStyleChoicePopup()
         ReleasePending()
         return
     end
-    local FONT = CUI._font
-        or CUI.EXPRESSWAY
-        or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+    local FONT = CUI._font or CUI.EXPRESSWAY or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local ACC = CLUDES_GREEN
     -- Wide enough for the card row (four cards on the WoW Forever client).
     local POPUP_W, POPUP_H = math.max(700, CUI.STYLE_CARDS_W + 32), 480
@@ -135,9 +113,7 @@ local function ShowStyleChoicePopup()
         h = POPUP_H,
         bump = 1.15,
         dimAlpha = 0.45,
-        onEscape = function()
-            KeepLook()
-        end,
+        onEscape = function() KeepLook() end,
     })
 
     local eyebrow = dialog:CreateFontString(nil, "OVERLAY")
@@ -202,9 +178,7 @@ local function ShowStyleChoicePopup()
     -- (no card while none is loaded or their looks differ). It stays pickable,
     -- hover included: clicking it keeps the look and closes the popup.
     local inUse = cards and type(rendered) == "string" and cards[rendered]
-    if inUse then
-        inUse:SetState(true, true, "In Use")
-    end
+    if inUse then inUse:SetState(true, true, "In Use") end
 
     local footnote = dialog:CreateFontString(nil, "OVERLAY")
     footnote:SetFont(FONT, 12, "")
@@ -252,9 +226,7 @@ loader:RegisterEvent("ADDON_LOADED")
 loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function(self, evt, addonName)
     if evt == "ADDON_LOADED" then
-        if addonName ~= "CludesUI" then
-            return
-        end
+        if addonName ~= "CludesUI" then return end
         self:UnregisterEvent("ADDON_LOADED")
         -- Arm the conflict-check hold on the same conditions the login
         -- branch shows under (the first-install loader, earlier in the TOC,
@@ -265,14 +237,10 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
         return
     end
     self:UnregisterEvent("PLAYER_LOGIN")
-    if not (CludesUIDB and CludesUIDB.styleChoicePending) then
-        return
-    end
+    if not (CludesUIDB and CludesUIDB.styleChoicePending) then return end
     -- The picker itself is still due this session: it reloads, and its
     -- close path re-arms the stamp for the login after.
-    if CUI._firstInstallPending then
-        return
-    end
+    if CUI._firstInstallPending then return end
     -- A registered external installer owns the first-run experience.
     if CUI._externalInstaller then
         Stamp()

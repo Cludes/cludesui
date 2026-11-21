@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Lifecycle.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIMinimap.lua or an earlier CUI_Minimap_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local defaultSet, SKIN, GetFFD = Inner.defaults, Inner.EBS, Inner.GetFFD
@@ -24,9 +20,7 @@ local SetApplyAll = Inner.SetApplyAll
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local _mmKeyHidden
-Inner.mmKeyHiddenSetters[#Inner.mmKeyHiddenSetters + 1] = function(val)
-    _mmKeyHidden = val
-end
+Inner.mmKeyHiddenSetters[#Inner.mmKeyHiddenSetters + 1] = function(val) _mmKeyHidden = val end
 
 -- Assigned below; SetApplyAll hands it to CludesUIMinimap.lua. It runs
 -- once, at load.
@@ -47,13 +41,9 @@ local ApplyAll
 -- An open Farming HUD owns the reparented map, so it stays at full alpha until the
 -- HUD's hide edge hands the Opacity back.
 function SKIN._MapAlpha(profile)
-    if FarmHud and FarmHud:IsShown() then
-        return 1
-    end
+    if FarmHud and FarmHud:IsShown() then return 1 end
     local o = profile and profile.opacity
-    if type(o) ~= "number" then
-        return 1
-    end
+    if type(o) ~= "number" then return 1 end
     return Clamp(o, 10, 100) / 100
 end
 
@@ -62,17 +52,13 @@ end
 function SKIN._WriteMapAlpha(mm, p)
     local a = SKIN._MapAlpha(p)
     local current = mm:GetAlpha()
-    if issecretvalue(current) or math.abs(current - a) > 0.001 then
-        mm:SetAlpha(a)
-    end
+    if issecretvalue(current) or math.abs(current - a) > 0.001 then mm:SetAlpha(a) end
 end
 
 -- Opacity setting change or HUD edge: one alpha write, whatever the visibility state.
 function SKIN._ApplyMapAlpha()
     local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if Minimap and profile and profile.enabled then
-        SKIN._WriteMapAlpha(Minimap, profile)
-    end
+    if Minimap and profile and profile.enabled then SKIN._WriteMapAlpha(Minimap, profile) end
 end
 
 -- Icon Size (the Size row's cog): the scale of the icons on the map, the same
@@ -85,30 +71,22 @@ end
 function SKIN._EditModeIconScale()
     local c = MinimapCluster
     local s = Enum and Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.IconScale
-    if not (c and s ~= nil and c.GetSettingValue) then
-        return nil
-    end
+    if not (c and s ~= nil and c.GetSettingValue) then return nil end
     local success, val = pcall(c.GetSettingValue, c, s)
-    if success and type(val) == "number" and val > 0 then
-        return val
-    end
+    if success and type(val) == "number" and val > 0 then return val end
     return nil
 end
 function SKIN._ApplyMinimapIconScale()
     local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     local val = profile and profile.iconScale
-    if not (Minimap and Minimap.SetIconScale) then
-        return
-    end
+    if not (Minimap and Minimap.SetIconScale) then return end
     local skinData = GetFFD(Minimap)
     if not val then
         -- Unset after a value (a profile swap): hand the map back Edit Mode's.
         if skinData.iconScaleSet then
             skinData.iconScaleSet = nil
             local ev = SKIN._EditModeIconScale()
-            if ev then
-                Minimap:SetIconScale(ev / 100)
-            end
+            if ev then Minimap:SetIconScale(ev / 100) end
         end
         return
     end
@@ -118,9 +96,7 @@ function SKIN._ApplyMinimapIconScale()
         skinData.iconScaleHooked = true
         hooksecurefunc(MinimapCluster, "SetIconScale", function()
             local m = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-            if m and m.iconScale then
-                Minimap:SetIconScale(m.iconScale / 100)
-            end
+            if m and m.iconScale then Minimap:SetIconScale(m.iconScale / 100) end
         end)
     end
 end
@@ -131,13 +107,9 @@ end
 -- either, so one write holds; the minimap stays ours until a reload.
 function SKIN._SuppressMinimapSelection()
     local sel = MinimapCluster and MinimapCluster.Selection
-    if not sel then
-        return
-    end
+    if not sel then return end
     local skinData = GetFFD(sel)
-    if skinData.suppressed then
-        return
-    end
+    if skinData.suppressed then return end
     skinData.suppressed = true
     sel:SetAlpha(0)
     sel:EnableMouse(false)
@@ -151,34 +123,24 @@ local function MinimapDriverString(profile, vm)
     -- An applied Visibility override replaces the whole setting: a constant, and the
     -- shared selection underneath never reaches the driver.
     local visOv = CludesUI.VisOverrideValue(profile)
-    if visOv then
-        return (visOv == "never") and "hide" or "show"
-    end
+    if visOv then return (visOv == "never") and "hide" or "show" end
     -- Any match: Lua-only lanes (instances, housing, skyriding mount) are resolved at
     -- build time (caller runs out of combat only); a later zone/mount edge re-runs the
     -- dispatcher and re-registers the string.
     if profile.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
         return (CludesUI.BuildAnyMatchTail(profile, "visibility", vm))
     end
-    if vm then
-        return CludesUI.BuildVisibilityDriverString("", vm)
-    end
+    if vm then return CludesUI.BuildVisibilityDriverString("", vm) end
     local mode = profile.visibility
-    if mode == "in_combat" then
-        return "[combat] show; hide"
-    end
-    if mode == "out_of_combat" then
-        return "[nocombat] show; hide"
-    end
+    if mode == "in_combat" then return "[combat] show; hide" end
+    if mode == "out_of_combat" then return "[nocombat] show; hide" end
     return nil
 end
 
 local function UpdateMinimapVisibility()
     local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     local minimap = Minimap
-    if not minimap then
-        return
-    end
+    if not minimap then return end
     if not profile or not profile.enabled then
         -- Module off: hand visibility back to Blizzard instead of leaving a driver on.
         if _mmDriverStr and not InCombatLockdown() then
@@ -214,13 +176,9 @@ local function UpdateMinimapVisibility()
         _mmDriverStr = wanted
     end
     -- The driver owns Show()/Hide() from here; the alpha set above is all this pass adds.
-    if _mmDriverStr then
-        return
-    end
+    if _mmDriverStr then return end
 
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     local vis = CludesUI.EvalVisibility(profile)
     if _mmKeyHidden then
         minimap:Hide()
@@ -248,14 +206,10 @@ end
 -- so does this; only the minimap's own visibility is re-applied, and only while the
 -- module runs.
 hooksecurefunc("ToggleMinimap", function()
-    if C_GameRules.IsGameRuleActive(Enum.GameRule.MinimapDisabled) then
-        return
-    end
+    if C_GameRules.IsGameRuleActive(Enum.GameRule.MinimapDisabled) then return end
     SetMMKeyHidden(not Minimap:IsShown())
     local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if profile and profile.enabled then
-        UpdateMinimapVisibility()
-    end
+    if profile and profile.enabled then UpdateMinimapVisibility() end
 end)
 
 -------------------------------------------------------------------------------
@@ -263,9 +217,7 @@ end)
 -------------------------------------------------------------------------------
 ApplyAll = function()
     ApplyMinimap()
-    if CludesUI.RequestVisibilityUpdate then
-        C_Timer.After(0, CludesUI.RequestVisibilityUpdate)
-    end
+    if CludesUI.RequestVisibilityUpdate then C_Timer.After(0, CludesUI.RequestVisibilityUpdate) end
 end
 SetApplyAll(ApplyAll)
 
@@ -300,26 +252,20 @@ do
         {
             text = "Calendar",
             fn = function()
-                if ToggleCalendar then
-                    ToggleCalendar()
-                end
+                if ToggleCalendar then ToggleCalendar() end
             end,
         },
         { divider = true },
         {
             text = "Game Menu",
-            fn = function()
-                ToggleFrame(GameMenuFrame)
-            end,
+            fn = function() ToggleFrame(GameMenuFrame) end,
         },
         { text = "Shop", microButton = "StoreMicroButton" },
         { text = "Support", microButton = "HelpMicroButton" },
     }
 
     local function ShowMenu(visible)
-        if not menuFrame then
-            return
-        end
+        if not menuFrame then return end
         menuOpen = visible
         menuFrame:ClearAllPoints()
         if visible then
@@ -350,9 +296,7 @@ do
         menuFrame:RegisterEvent("GLOBAL_MOUSE_DOWN")
         menuFrame:SetScript("OnEvent", function(self, evt)
             if evt == "GLOBAL_MOUSE_DOWN" and menuOpen then
-                if not self:IsMouseOver() then
-                    ShowMenu(false)
-                end
+                if not self:IsMouseOver() then ShowMenu(false) end
             end
         end)
 
@@ -407,9 +351,7 @@ do
                 -- "/click <name>" macro transport: the 12.1 "click" secure action
                 -- crashes on a Blizzard typo (SecureTemplates:564); MicroButtons are globally named so the macro reaches them directly.
                 local secureType = "macro"
-                if microRef then
-                    button:SetAttribute("*macrotext1", "/click " .. entry.microButton)
-                end
+                if microRef then button:SetAttribute("*macrotext1", "/click " .. entry.microButton) end
                 button:SetAttribute("useOnKeyDown", false)
                 button:SetAttribute("*type1", secureType)
                 button:EnableMouse(true)
@@ -444,9 +386,7 @@ do
                 labelText:SetText(CludesUI.L(entry.text))
 
                 button:HookScript("OnClick", function()
-                    C_Timer.After(0, function()
-                        ShowMenu(false)
-                    end)
+                    C_Timer.After(0, function() ShowMenu(false) end)
                 end)
 
                 posY = posY - BUTTON_H
@@ -463,9 +403,7 @@ do
             UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.3, 0.3, 1.0)
             return
         end
-        if not menuFrame then
-            CreateMenuFrame()
-        end
+        if not menuFrame then CreateMenuFrame() end
         ShowMenu(not menuOpen)
     end
     SKIN._ToggleMicroMenu = ToggleMicroMenu
@@ -482,9 +420,7 @@ end
 --  The map as it shows, for Unlock Mode: the mover's box, and the edges an
 --  element linked to the minimap measures from.
 -------------------------------------------------------------------------------
-local function MapCfg()
-    return SKIN.db and SKIN.db.profile.minimap
-end
+local function MapCfg() return SKIN.db and SKIN.db.profile.minimap end
 
 -- Inset from the square canvas (canvas units): a square frame's outer box,
 -- its title bar and rims included, or a cropped map's visible band.
@@ -517,9 +453,7 @@ CludesUI._GetAnchorTargetExtent = function(targetKey, side)
             return (Minimap:GetBottom() + bottom) * ratio
         end
     end
-    if prevExtent then
-        return prevExtent(targetKey, side)
-    end
+    if prevExtent then return prevExtent(targetKey, side) end
     return nil
 end
 
@@ -530,9 +464,7 @@ end
 local extL, extR, extT, extB
 function SKIN._NotifyMinimapExtent()
     local left, right, top, bottom = MoverInsets()
-    if left == extL and right == extR and top == extT and bottom == extB then
-        return
-    end
+    if left == extL and right == extR and top == extT and bottom == extB then return end
     extL, extR, extT, extB = left, right, top, bottom
     if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
         CludesUI.PropagateAnchorChain("EBS_Minimap")
@@ -546,9 +478,7 @@ function SKIN:OnInitialize()
     local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     if mp then
         if mp.hideGreatVault ~= nil or mp.hidePortals ~= nil then
-            if not mp.hideExtraBtns then
-                mp.hideExtraBtns = {}
-            end
+            if not mp.hideExtraBtns then mp.hideExtraBtns = {} end
             if mp.hideGreatVault ~= nil then
                 mp.hideExtraBtns.greatVault = mp.hideGreatVault
                 mp.hideGreatVault = nil
@@ -584,13 +514,9 @@ function SKIN:OnInitialize()
             -- (every other module registers an addon-owned proxy); the shared poll's
             -- Show()/Hide() is blocked in combat lockdown, so report inactive during
             -- combat -- the poll then only resets bookkeeping, and the dispatcher re-applies state on PLAYER_REGEN_ENABLED.
-            if InCombatLockdown() or _mmKeyHidden then
-                return false
-            end
+            if InCombatLockdown() or _mmKeyHidden then return false end
             local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-            if not (profile and profile.enabled) then
-                return false
-            end
+            if not (profile and profile.enabled) then return false end
             -- Hover-gated sets only reveal while their conditions pass.
             return CludesUI.VisWantsMouseover(profile, "visibility")
         end, function()
@@ -633,9 +559,7 @@ function SKIN:OnEnable()
         tmWatcher:SetScript("OnEvent", function(self, _, addon)
             if addon == "Blizzard_TimeManager" then
                 self:UnregisterAllEvents()
-                if SKIN.db.profile.minimap.enabled then
-                    C_Timer.After(0, ApplyMinimap)
-                end
+                if SKIN.db.profile.minimap.enabled then C_Timer.After(0, ApplyMinimap) end
             end
         end)
     end
@@ -654,9 +578,7 @@ function SKIN:OnEnable()
                 order = 500,
                 noResize = true,
                 noAnchorTo = true,
-                getFrame = function()
-                    return Minimap
-                end,
+                getFrame = function() return Minimap end,
                 getSize = function()
                     local left, right, top, b = MoverInsets()
                     return Minimap:GetWidth() - left - right, Minimap:GetHeight() - top - b
@@ -668,33 +590,23 @@ function SKIN:OnEnable()
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     local m = MapCfg()
-                    if not m then
-                        return
-                    end
+                    if not m then return end
                     m.position = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
-                    if not CludesUI._unlockActive then
-                        ApplyMinimap()
-                    end
+                    if not CludesUI._unlockActive then ApplyMinimap() end
                 end,
                 loadPos = function()
                     local m = MapCfg()
-                    if not m or not m.enabled then
-                        return nil
-                    end
+                    if not m or not m.enabled then return nil end
                     return m.position
                 end,
                 clearPos = function()
                     local m = MapCfg()
-                    if not m then
-                        return
-                    end
+                    if not m then return end
                     m.position = nil
                 end,
                 applyPos = function()
                     local m = MapCfg()
-                    if not m or not m.enabled then
-                        return
-                    end
+                    if not m or not m.enabled then return end
                     ApplyMinimap()
                 end,
             }),
@@ -713,9 +625,7 @@ do
     local fhFix = CreateFrame("Frame")
     fhFix:RegisterEvent("PLAYER_ENTERING_WORLD")
     fhFix:SetScript("OnEvent", function(self)
-        if not FarmHud then
-            return
-        end
+        if not FarmHud then return end
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
         -- Keep the minimap centered in the HUD frame on any reposition / reparent.
@@ -740,25 +650,17 @@ do
         local function ToggleMinimapBorders(show)
             local alpha = show and 1 or 0
 
-            if GetFFD(Minimap).circBorder then
-                GetFFD(Minimap).circBorder:SetAlpha(alpha)
-            end
-            if GetFFD(Minimap).texCircBorder then
-                GetFFD(Minimap).texCircBorder:SetAlpha(alpha)
-            end
+            if GetFFD(Minimap).circBorder then GetFFD(Minimap).circBorder:SetAlpha(alpha) end
+            if GetFFD(Minimap).texCircBorder then GetFFD(Minimap).texCircBorder:SetAlpha(alpha) end
 
             -- Square border host (solid strips or textured backdrop)
             local owner = GetFFD(Minimap).borderHost
-            if owner then
-                owner:SetAlpha(alpha)
-            end
+            if owner then owner:SetAlpha(alpha) end
 
             -- WoW Forever look's Forever Square frame (the apply pass never sets
             -- its alpha, so this one holds while the HUD is up)
             local heavy = GetFFD(Minimap).fvHeavy
-            if heavy then
-                heavy:SetAlpha(alpha)
-            end
+            if heavy then heavy:SetAlpha(alpha) end
         end
 
         -- The HUD owns the map while shown (full alpha, see EBS._MapAlpha); its hide

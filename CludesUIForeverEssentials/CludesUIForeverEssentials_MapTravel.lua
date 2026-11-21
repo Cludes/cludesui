@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_MapTravel.lua  (WoW Forever only)
 --  Map Markers: travel pins by zoom level. The world map shows transports,
@@ -26,9 +22,7 @@ local F = module.Feature(
 )
 
 -- A set of pins shows while Map Markers is on and its cog toggle too.
-local function FeatureOn(key)
-    return F.Get("enabled") and F.Get(key)
-end
+local function FeatureOn(key) return F.Get("enabled") and F.Get(key) end
 
 local PIN_SIZE = 22
 local ARROW_SIZE = 20
@@ -54,9 +48,7 @@ end
 
 -- A pin's tooltip, led by its icon (a transport's lines carry their own).
 local function PinTip(p)
-    if p.tip:find("^|A") or p.atlas:find("\\", 1, true) then
-        return p.tip
-    end
+    if p.tip:find("^|A") or p.atlas:find("\\", 1, true) then return p.tip end
     return ("|A:%s:16:16|a "):format(p.atlas) .. p.tip
 end
 
@@ -87,9 +79,7 @@ local function PinOnEnter(self)
     CludesUI.ShowWidgetTooltip(self, tipText)
 end
 
-local function PinOnLeave()
-    CludesUI.HideWidgetTooltip()
-end
+local function PinOnLeave() CludesUI.HideWidgetTooltip() end
 
 -- A pin's name for its link: the first line of its tooltip, without icons
 -- or colors ("Boat to Menethil Harbor").
@@ -140,14 +130,10 @@ end
 -- the zone it stands in (world and continent maps take no pin). A line
 -- printed in combat taints chat history, so it waits for the end of combat.
 local function PinOnMouseUp(self, btnFrame)
-    if btnFrame ~= "LeftButton" or not C_Map.CanSetUserWaypointOnMap(self.linkMap) then
-        return
-    end
+    if btnFrame ~= "LeftButton" or not C_Map.CanSetUserWaypointOnMap(self.linkMap) then return end
     local mapID, posX, posY, atlas = self.linkMap, self.linkX, self.linkY, self.atlas
     local labelText = self.link or PinLabel(self.tip)
-    local function Print()
-        PrintLink(mapID, posX, posY, labelText, atlas)
-    end
+    local function Print() PrintLink(mapID, posX, posY, labelText, atlas) end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer("MapTravelLink", Print)
     else
@@ -249,36 +235,24 @@ local function TransportTip(tbl)
     -- The place alone ("Orgrimmar"), its zone when the area has no name.
     local area = C_Map.GetAreaInfo(tbl[5])
     local where = area and area ~= "" and area or ZoneName(tbl[4])
-    if tbl[3] == "boat" then
-        return CludesUI.Lf("Boat to %s", where)
-    end
-    if tbl[3] == "zeppelin" then
-        return CludesUI.Lf("Zeppelin to %s", where)
-    end
-    if tbl[3] == "skycutter" then
-        return CludesUI.Lf("Skycutter to %s", where)
-    end
-    if tbl[3] == "portal" then
-        return CludesUI.Lf("Portal to %s", where)
-    end
+    if tbl[3] == "boat" then return CludesUI.Lf("Boat to %s", where) end
+    if tbl[3] == "zeppelin" then return CludesUI.Lf("Zeppelin to %s", where) end
+    if tbl[3] == "skycutter" then return CludesUI.Lf("Skycutter to %s", where) end
+    if tbl[3] == "portal" then return CludesUI.Lf("Portal to %s", where) end
     return CludesUI.Lf("Tram to %s", where)
 end
 
 -- The instance's name, the entrance or wings it opens on, then its kind.
 local function InstanceTip(index)
     local tipText = GetRealZoneText(index[3])
-    if index[5] then
-        tipText = tipText .. "\n|cffffffff" .. CludesUI.L(index[5]) .. "|r"
-    end
+    if index[5] then tipText = tipText .. "\n|cffffffff" .. CludesUI.L(index[5]) .. "|r" end
     return tipText .. "\n" .. (index[4] and CludesUI.L("Raid") or CludesUI.L("Dungeon"))
 end
 
 -- Its chat line: "Dungeon: The Deadmines (Main Entrance)".
 local function InstanceLink(index)
     local name = GetRealZoneText(index[3])
-    if index[5] then
-        name = name .. " (" .. CludesUI.L(index[5]) .. ")"
-    end
+    if index[5] then name = name .. " (" .. CludesUI.L(index[5]) .. ")" end
     return index[4] and CludesUI.Lf("Raid: %s", name) or CludesUI.Lf("Dungeon: %s", name)
 end
 
@@ -286,14 +260,10 @@ end
 local function ExitRotation(zone, posX, posY, dest)
     local details = C_Map.GetMapInfo(zone)
     local continent = details and details.parentMapID
-    if not continent or continent == 0 then
-        return 0
-    end
+    if not continent or continent == 0 then return 0 end
     local zl, zr, zt, zb = C_Map.GetMapRectOnMap(zone, continent)
     local left, right, top, bottom = C_Map.GetMapRectOnMap(dest, continent)
-    if not (zl and left) then
-        return 0
-    end
+    if not (zl and left) then return 0 end
     local px, py = zl + posX * (zr - zl), zt + posY * (zb - zt)
     local dx, dy = (left + right) / 2 - px, (top + bottom) / 2 - py
     return math.atan2(-dx, -dy) -- the atlas points up; screen y grows down
@@ -305,9 +275,7 @@ local GROUP_DIST = 7 -- percent of the zone map
 local transportGroups = {}
 local function TransportGroups(zone)
     local groups = transportGroups[zone]
-    if groups then
-        return groups
-    end
+    if groups then return groups end
     groups = {}
     local entries = payload.transports[zone] or {}
     for index = 1, #entries do
@@ -392,13 +360,9 @@ end
 -- A zone's point (0..1) on a wider map that holds it, or nil.
 local function OnWiderMap(zone, map, posX, posY)
     local left, right, top, bottom = C_Map.GetMapRectOnMap(zone, map)
-    if not left or right <= left or bottom <= top then
-        return nil
-    end
+    if not left or right <= left or bottom <= top then return nil end
     posX, posY = left + posX * (right - left), top + posY * (bottom - top)
-    if posX < 0 or posX > 1 or posY < 0 or posY > 1 then
-        return nil
-    end
+    if posX < 0 or posX > 1 or posY < 0 or posY > 1 then return nil end
     return posX, posY
 end
 
@@ -445,13 +409,9 @@ end
 -- of the continent, off its edges), the other faction's and the retired ones
 -- ("zz" names) left out; none where the map draws its own.
 local function FlightNodes(mapID)
-    if C_TaxiMap.ShouldMapShowTaxiNodes(mapID) then
-        return nil
-    end
+    if C_TaxiMap.ShouldMapShowTaxiNodes(mapID) then return nil end
     local nodes = C_TaxiMap.GetTaxiNodesForMap(mapID)
-    if not nodes then
-        return nil
-    end
+    if not nodes then return nil end
     local Faction = Enum.FlightPathFaction
     local mine = UnitFactionGroup("player") == "Horde" and Faction.Horde or Faction.Alliance
     local entries = {}
@@ -472,9 +432,7 @@ local function FlightNodes(mapID)
                         mine == Faction.Horde and FACTION_HORDE or FACTION_ALLIANCE
                     )
             end
-            if num.atlasName == "" then
-                num.atlasName = "flightmaster"
-            end
+            if num.atlasName == "" then num.atlasName = "flightmaster" end
             entries[#entries + 1] = num
         end
     end
@@ -483,9 +441,7 @@ end
 
 local function DrawFlights(mapID)
     local entries = FlightNodes(mapID)
-    if not entries then
-        return
-    end
+    if not entries then return end
     for index = 1, #entries do
         local num = entries[index]
         local tipText = num.note and (num.name .. "\n|cff808080" .. num.note .. "|r") or num.name
@@ -524,9 +480,7 @@ local function Refresh(force)
     shownKey = key
     shownMap = mapID
     local details = mapID and C_Map.GetMapInfo(mapID)
-    if not details then
-        return
-    end
+    if not details then return end
     -- The world shows the transports; a continent adds the instance entrances;
     -- a zone adds the flight points and its exits.
     if details.mapType == Enum.UIMapType.World then
@@ -534,9 +488,7 @@ local function Refresh(force)
     elseif details.mapType == Enum.UIMapType.Continent then
         DrawWider(mapID, true)
     elseif details.mapType ~= Enum.UIMapType.Cosmic then
-        if FeatureOn("flights") then
-            DrawFlights(mapID)
-        end
+        if FeatureOn("flights") then DrawFlights(mapID) end
         DrawZone(mapID)
     end
 end
@@ -554,17 +506,11 @@ local function Build()
     )
 
     provider = CreateFromMixins(MapCanvasDataProviderMixin)
-    provider.OnMapChanged = function()
-        Refresh()
-    end
-    provider.RefreshAllData = function()
-        Refresh()
-    end
+    provider.OnMapChanged = function() Refresh() end
+    provider.RefreshAllData = function() Refresh() end
     provider.RemoveAllData = Clear
     provider.OnCanvasScaleChanged = Rescale
-    provider.OnGlobalAlphaChanged = function(self)
-        layer:SetAlpha(self:GetMap():GetGlobalAlpha())
-    end
+    provider.OnGlobalAlphaChanged = function(self) layer:SetAlpha(self:GetMap():GetGlobalAlpha()) end
 end
 
 -- Nothing exists until Map Markers is first on; off, the provider is removed.
@@ -575,12 +521,8 @@ local function Apply()
             WorldMapFrame:RemoveDataProvider(provider)
             added = false
         end
-        if waiter then
-            waiter:UnregisterEvent("ADDON_LOADED")
-        end
-        if taxiWatch then
-            taxiWatch:UnregisterEvent("TAXI_NODE_STATUS_CHANGED")
-        end
+        if waiter then waiter:UnregisterEvent("ADDON_LOADED") end
+        if taxiWatch then taxiWatch:UnregisterEvent("TAXI_NODE_STATUS_CHANGED") end
         return
     end
     if not provider then
@@ -588,9 +530,7 @@ local function Apply()
             if not waiter then
                 waiter = CreateFrame("Frame")
                 waiter:SetScript("OnEvent", function(self, _, name)
-                    if name ~= "Blizzard_WorldMap" then
-                        return
-                    end
+                    if name ~= "Blizzard_WorldMap" then return end
                     self:UnregisterEvent("ADDON_LOADED")
                     Apply()
                 end)
@@ -608,17 +548,13 @@ local function Apply()
     if FeatureOn("flights") then
         if not taxiWatch then
             taxiWatch = CreateFrame("Frame")
-            taxiWatch:SetScript("OnEvent", function()
-                shownKey = nil
-            end)
+            taxiWatch:SetScript("OnEvent", function() shownKey = nil end)
         end
         taxiWatch:RegisterEvent("TAXI_NODE_STATUS_CHANGED")
     elseif taxiWatch then
         taxiWatch:UnregisterEvent("TAXI_NODE_STATUS_CHANGED")
     end
-    if WorldMapFrame:IsShown() then
-        Refresh(true)
-    end
+    if WorldMapFrame:IsShown() then Refresh(true) end
 end
 
 -- Options-page entry points.

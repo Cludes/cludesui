@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CooldownManager_BarGlowConditions.lua
 --  Bar Glows page rows for the per-glow conditions (runtime:
@@ -19,9 +17,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Frames are built with the page; nothing exists until it is opened.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not mod then
-    return
-end
+if not mod then return end
 
 -- The options page pool (CludesUI_FramePool.lua): a frame the page's rows
 -- make under a pool host (a reused page) is handed out again reset to fresh;
@@ -29,20 +25,14 @@ end
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 local function Cond(record)
-    if type(record.conditions) ~= "table" then
-        record.conditions = {}
-    end
-    if type(record.conditions[1]) ~= "table" then
-        record.conditions[1] = {}
-    end
+    if type(record.conditions) ~= "table" then record.conditions = {} end
+    if type(record.conditions[1]) ~= "table" then record.conditions[1] = {} end
     return record.conditions[1]
 end
 
 local function SpellLabel(spellRef)
     spellRef = tonumber(spellRef)
-    if not spellRef or spellRef <= 0 then
-        return CludesUI.L("Choose Buff"), nil
-    end
+    if not spellRef or spellRef <= 0 then return CludesUI.L("Choose Buff"), nil end
     local details = C_Spell.GetSpellInfo(spellRef)
     return (details and details.name) or ("Spell " .. spellRef), details and details.iconID
 end
@@ -57,21 +47,15 @@ function mod.BarGlowSpellIcon(hostFrame, size, spellId)
     frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     local spellRef = tonumber(spellId)
     local details = spellRef and spellRef > 0 and C_Spell.GetSpellInfo(spellRef)
-    if details and details.iconID then
-        frame.tex:SetTexture(details.iconID)
-    end
+    if details and details.iconID then frame.tex:SetTexture(details.iconID) end
     frame:EnableMouse(true)
     frame:SetScript("OnEnter", function(self)
-        if not (spellRef and spellRef > 0) then
-            return
-        end
+        if not (spellRef and spellRef > 0) then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetSpellByID(spellRef)
         GameTooltip:Show()
     end)
-    frame:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
     return frame
 end
 
@@ -95,9 +79,7 @@ local rowList, divs = {}, {}
 
 local function RefreshChecks()
     local options = menuOpts
-    if not options then
-        return
-    end
+    if not options then return end
     local ACCENT = CludesUI.CLUDES_GREEN
     for idx = 1, #rowList do
         local r = rowList[idx]
@@ -132,9 +114,7 @@ local function BuildMenu()
     scroll:EnableMouseWheel(true)
     scroll:SetScript("OnMouseWheel", function(self, delta)
         local maxScroll = dropMenu._maxScroll or 0
-        if maxScroll <= 0 then
-            return
-        end
+        if maxScroll <= 0 then return end
         self:SetVerticalScroll(math.max(0, math.min(maxScroll, self:GetVerticalScroll() - delta * 30)))
     end)
     inner = CreateFrame("Frame", nil, scroll)
@@ -157,16 +137,12 @@ local function BuildMenu()
     dropMenu:SetScript("OnHide", function()
         menuOpts, menuAnchor = nil, nil
     end)
-    CludesUI:RegisterOnHide(function()
-        dropMenu:Hide()
-    end)
+    CludesUI:RegisterOnHide(function() dropMenu:Hide() end)
 end
 
 local function Row(idx)
     local r = rowList[idx]
-    if r then
-        return r
-    end
+    if r then return r end
     r = CreateFrame("Button", nil, inner)
     r:SetHeight(ITEM_H)
     r:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
@@ -209,18 +185,14 @@ local function Row(idx)
     end)
     r:SetScript("OnClick", function(self)
         local options = menuOpts
-        if options then
-            options.onClick(self.sp, RefreshChecks)
-        end
+        if options then options.onClick(self.sp, RefreshChecks) end
     end)
     rowList[idx] = r
     return r
 end
 
 function mod.ShowBarGlowBuffMenu(anchor, options)
-    if dropMenu then
-        dropMenu:Hide()
-    end
+    if dropMenu then dropMenu:Hide() end
     local tracked, untracked = {}, {}
     if mod.GetAllCDMBuffSpells then
         tracked, untracked = mod.GetAllCDMBuffSpells()
@@ -236,9 +208,7 @@ function mod.ShowBarGlowBuffMenu(anchor, options)
     then
         return nil
     end
-    if not dropMenu then
-        BuildMenu()
-    end
+    if not dropMenu then BuildMenu() end
     menuOpts, menuAnchor = options, anchor
     dropMenu._btnIdx = nil
 
@@ -248,9 +218,7 @@ function mod.ShowBarGlowBuffMenu(anchor, options)
     local num, nd, menuH = 0, 0, 4
     local function Add(sp)
         local spellRef = tonumber(sp.spellID)
-        if not spellRef or spellRef <= 0 then
-            return
-        end
+        if not spellRef or spellRef <= 0 then return end
         num = num + 1
         local r = Row(num)
         r.sp = sp
@@ -301,23 +269,17 @@ function mod.ShowBarGlowBuffMenu(anchor, options)
 
     if options.usableItem then
         AddUsable(options.usableItem)
-        if #tracked > 0 or #untracked > 0 or #barList > 0 then
-            Divider()
-        end
+        if #tracked > 0 or #untracked > 0 or #barList > 0 then Divider() end
     end
     for _, sp in ipairs(tracked) do
         Add(sp)
     end
-    if #tracked > 0 and #untracked > 0 then
-        Divider()
-    end
+    if #tracked > 0 and #untracked > 0 then Divider() end
     for _, sp in ipairs(untracked) do
         Add(sp)
     end
     if #barList > 0 then
-        if #tracked > 0 or #untracked > 0 then
-            Divider()
-        end
+        if #tracked > 0 or #untracked > 0 then Divider() end
         for _, sp in ipairs(barList) do
             Add(sp)
         end
@@ -360,9 +322,7 @@ local function ShowPicker(anchor, currentSid, onPick)
     local current = tonumber(currentSid)
     mod.ShowBarGlowBuffMenu(anchor, {
         emptyText = "No Cooldown Manager buffs to choose from.",
-        isChecked = function(spellRef)
-            return tonumber(spellRef) == current
-        end,
+        isChecked = function(spellRef) return tonumber(spellRef) == current end,
         onClick = function(sp)
             dropMenu:Hide()
             onPick(tonumber(sp.spellID))
@@ -399,42 +359,28 @@ function mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, onChange, ownSid
         values = usable and USABLE_VALUES or STATE_VALUES,
         order = usable and USABLE_ORDER or STATE_ORDER,
         getValue = function()
-            if usable then
-                return "USABLE"
-            end
+            if usable then return "USABLE" end
             return record.mode == "MISSING" and "MISSING" or "ACTIVE"
         end,
         setValue = function(val)
-            if usable then
-                return
-            end
+            if usable then return end
             record.mode = val
-            if onChange then
-                onChange()
-            end
+            if onChange then onChange() end
             CludesUI:RefreshPage()
         end,
     }, {
         type = "toggle",
         text = "And",
         tooltip = 'Also require a second buff to be active (or missing) for this glow. For an "or", add another glow to the same button.',
-        getValue = function()
-            return record.andMode == "and"
-        end,
+        getValue = function() return record.andMode == "and" end,
         setValue = function(val)
             record.andMode = val and "and" or nil
-            if Paint then
-                Paint()
-            end
-            if onChange then
-                onChange()
-            end
+            if Paint then Paint() end
+            if onChange then onChange() end
         end,
     })
     cursorY = cursorY - height
-    if CludesUI._prebuilding then
-        return cursorY
-    end
+    if CludesUI._prebuilding then return cursorY end
 
     local leftX, right = row._leftRegion, row._rightRegion
     local lRef = leftX and leftX._label
@@ -471,9 +417,7 @@ function mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, onChange, ownSid
         rx:GetFrameLevel() + 3,
         { _ = "", _noLoc = true },
         { "_" },
-        function()
-            return "_"
-        end,
+        function() return "_" end,
         function() end
     )
     buffBtn.icon = buffBtn:CreateTexture(nil, "ARTWORK")
@@ -493,15 +437,11 @@ function mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, onChange, ownSid
         rx:GetFrameLevel() + 3,
         STATE_VALUES,
         STATE_ORDER,
-        function()
-            return c.state == "missing" and "MISSING" or "ACTIVE"
-        end,
+        function() return c.state == "missing" and "MISSING" or "ACTIVE" end,
         function(val)
             c.state = (val == "MISSING") and "missing" or nil
             Paint()
-            if onChange then
-                onChange()
-            end
+            if onChange then onChange() end
         end
     )
     stateDrop:SetPoint("LEFT", isWord, "RIGHT", 8, 0)
@@ -522,23 +462,17 @@ function mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, onChange, ownSid
         local enabled = record.andMode == "and"
         for _, part in ipairs({ buffBtn, isWord, stateDrop }) do
             part:SetAlpha(enabled and 1 or 0.3)
-            if part.EnableMouse then
-                part:EnableMouse(enabled)
-            end
+            if part.EnableMouse then part:EnableMouse(enabled) end
         end
         -- The "And" label greys with them (the switch itself stays live).
-        if rRef then
-            rRef:SetAlpha(enabled and 1 or 0.3)
-        end
+        if rRef then rRef:SetAlpha(enabled and 1 or 0.3) end
     end
 
     buffBtn:SetScript("OnClick", function(self)
         ShowPicker(self, c.spellID, function(spellRef)
             c.spellID = spellRef
             Paint()
-            if onChange then
-                onChange()
-            end
+            if onChange then onChange() end
         end)
     end)
     Paint()
@@ -550,14 +484,10 @@ function mod.BarGlowCombatCfg(record, onChange)
     return {
         type = "toggle",
         text = "Only In Combat",
-        getValue = function()
-            return record.onlyInCombat == true
-        end,
+        getValue = function() return record.onlyInCombat == true end,
         setValue = function(val)
             record.onlyInCombat = val or nil
-            if onChange then
-                onChange()
-            end
+            if onChange then onChange() end
         end,
     }
 end
@@ -590,9 +520,7 @@ function mod.BuildBarGlowCombatRow(W, hostFrame, cursorY, record, onChange)
         end,
         setValue = function(val)
             record.heroTree = (val ~= "any") and tonumber(val) or nil
-            if onChange then
-                onChange()
-            end
+            if onChange then onChange() end
         end,
     })
     return cursorY - height
@@ -603,9 +531,7 @@ end
 -- variants of the same buff (e.g. one per hero tree) start from the original.
 -- Returns the button so the buff icon can sit to its left.
 function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, index, onDone)
-    if CludesUI._prebuilding or not (regionFrame and removeBtn and buffList) then
-        return nil
-    end
+    if CludesUI._prebuilding or not (regionFrame and removeBtn and buffList) then return nil end
     local Pix = CludesUI.PanelPP or CludesUI.PP
     local widget = CreateFrame("Button", nil, regionFrame)
     Pix.Size(widget, 110, removeBtn:GetHeight())
@@ -613,15 +539,11 @@ function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, index, onD
     widget:SetPoint("RIGHT", removeBtn, "LEFT", -8, 0)
     CludesUI.MakeStyledButton(widget, CludesUI.L("Duplicate"), 13, CludesUI.RB_COLOURS, function()
         local source = buffList[index]
-        if type(source) ~= "table" then
-            return
-        end
+        if type(source) ~= "table" then return end
         local copy = CopyTable(source)
         copy.collapsed = nil -- the copy opens expanded
         table.insert(buffList, index + 1, copy)
-        if onDone then
-            onDone()
-        end
+        if onDone then onDone() end
     end)
     return widget
 end
@@ -631,9 +553,7 @@ end
 -- preview panel's scale. nil when no icon is laid out yet (the page then uses
 -- the stored iconSize).
 function mod.BarGlowPreviewIconSize(icons, previewParent)
-    if type(icons) ~= "table" then
-        return nil
-    end
+    if type(icons) ~= "table" then return nil end
     local ps = previewParent and previewParent.GetEffectiveScale and previewParent:GetEffectiveScale()
     for idx = 1, #icons do
         local frame = icons[idx]
@@ -641,9 +561,7 @@ function mod.BarGlowPreviewIconSize(icons, previewParent)
             local wid = frame:GetWidth()
             if wid and not (issecretvalue and issecretvalue(wid)) and wid > 1 then
                 local es = frame:GetEffectiveScale()
-                if es and ps and ps > 0 then
-                    wid = wid * es / ps
-                end
+                if es and ps and ps > 0 then wid = wid * es / ps end
                 return math.floor(wid + 0.5)
             end
         end
@@ -661,16 +579,10 @@ local ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.p
 local ARROW_RIGHT = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-right.png"
 
 function mod.BuildBarGlowHeader(hostFrame, cursorY, record, aIdx, ownSid)
-    if not CludesUI._prebuilding then
-        CludesUI._passReadSearchFlag = true
-    end -- reads the search flag below
-    if CludesUI._prebuilding or CludesUI._lessCommonSearchActive then
-        return cursorY, true
-    end
+    if not CludesUI._prebuilding then CludesUI._passReadSearchFlag = true end -- reads the search flag below
+    if CludesUI._prebuilding or CludesUI._lessCommonSearchActive then return cursorY, true end
     local collapsed = record.collapsed == true
-    if aIdx > 1 then
-        cursorY = cursorY - 8
-    end
+    if aIdx > 1 then cursorY = cursorY - 8 end
     local H = 38
     local pad = CludesUI.CONTENT_PAD or 20
     local bar = CreateFrame("Button", nil, hostFrame)

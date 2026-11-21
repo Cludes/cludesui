@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Kit.lua
 --  The house controls for module windows and on-screen frames, so every
@@ -29,21 +27,15 @@ local BG = { 0.062, 0.070, 0.082 } -- the house popup fill
 local CONTROL_BG = { 0, 0, 0, 0.5 }
 local IDLE = { 0.82, 0.82, 0.82 }
 
-local function Pix()
-    return CludesUI.PP
-end
+local function Pix() return CludesUI.PP end
 
 function Kit.Accent()
     local color = CludesUI.CLUDES_GREEN
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 0.30, 0.79, 0.94
 end
 
-function Kit.AccentHex()
-    return CludesUI.HexColor(Kit.Accent())
-end
+function Kit.AccentHex() return CludesUI.HexColor(Kit.Accent()) end
 
 --- Copies the accent into an { r, g, b } array the caller keeps (for colour
 --- tables a feature passes around); returns it.
@@ -66,9 +58,7 @@ function Kit.AccentText(fontStr, alpha)
     fontStr._kitAccent = true
 end
 
-function Kit.Font(fontStr, size, key, flags)
-    CludesUI.ApplyModuleFont(fontStr, nil, size, key, flags)
-end
+function Kit.Font(fontStr, size, key, flags) CludesUI.ApplyModuleFont(fontStr, nil, size, key, flags) end
 
 local function Border(widget, red, green, blue, a)
     local pp = Pix()
@@ -103,15 +93,11 @@ function Kit.Glyph(hostFrame, textValue, onClick, tipText, key)
     widget:SetScript("OnClick", onClick)
     widget:SetScript("OnEnter", function(self)
         self.t:SetTextColor(Kit.Accent())
-        if tipText then
-            CludesUI.ShowWidgetTooltip(self, tipText)
-        end
+        if tipText then CludesUI.ShowWidgetTooltip(self, tipText) end
     end)
     widget:SetScript("OnLeave", function(self)
         self.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
-        if tipText then
-            CludesUI.HideWidgetTooltip()
-        end
+        if tipText then CludesUI.HideWidgetTooltip() end
     end)
     return widget
 end
@@ -141,9 +127,7 @@ function Kit.Window(name, wid, hgt, title, options)
     window.header:SetPoint("TOPLEFT", 1, -28)
     window.header:SetPoint("TOPRIGHT", -1, -28)
     window.close = Kit.Glyph(window, "x", function()
-        if options.onClose then
-            options.onClose()
-        end
+        if options.onClose then options.onClose() end
         window:Hide()
     end, nil, options.key)
     window.close:SetPoint("TOPRIGHT", -5, -5)
@@ -154,9 +138,7 @@ function Kit.Window(name, wid, hgt, title, options)
     end
     Paint()
     window:HookScript("OnShow", Paint)
-    if name and options.special ~= false then
-        tinsert(UISpecialFrames, name)
-    end
+    if name and options.special ~= false then tinsert(UISpecialFrames, name) end
     return window
 end
 
@@ -182,7 +164,11 @@ function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
             widget.label:SetTextColor(red, green, blue)
             backdrop:SetColorTexture(red, green, blue, 0.15)
         else
-            widget.label:SetTextColor(hovered and 1 or IDLE[1], hovered and 1 or IDLE[2], hovered and 1 or IDLE[3])
+            widget.label:SetTextColor(
+                hovered and 1 or IDLE[1],
+                hovered and 1 or IDLE[2],
+                hovered and 1 or IDLE[3]
+            )
             backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
         end
     end
@@ -190,35 +176,21 @@ function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
     Paint(false)
     widget:HookScript("OnEnter", function(self)
         Paint(true)
-        if options.tip then
-            CludesUI.ShowWidgetTooltip(self, options.tip)
-        end
+        if options.tip then CludesUI.ShowWidgetTooltip(self, options.tip) end
     end)
     widget:HookScript("OnLeave", function()
         Paint(false)
-        if options.tip then
-            CludesUI.HideWidgetTooltip()
-        end
+        if options.tip then CludesUI.HideWidgetTooltip() end
     end)
-    if onClick then
-        widget:SetScript("OnClick", onClick)
-    end
-    function widget:SetText(t)
-        self.label:SetText(t)
-    end
-    function widget:GetText()
-        return self.label:GetText()
-    end
-    function widget:GetTextWidth()
-        return self.label:GetStringWidth()
-    end
+    if onClick then widget:SetScript("OnClick", onClick) end
+    function widget:SetText(t) self.label:SetText(t) end
+    function widget:GetText() return self.label:GetText() end
+    function widget:GetTextWidth() return self.label:GetStringWidth() end
     function widget:SetActive(enabled)
         self._active = enabled and true or nil
         Paint(self:IsMouseOver())
     end
-    widget:HookScript("OnShow", function(self)
-        Paint(self:IsMouseOver())
-    end)
+    widget:HookScript("OnShow", function(self) Paint(self:IsMouseOver()) end)
     return widget
 end
 
@@ -248,19 +220,11 @@ function Kit.Check(hostFrame, labelText, onClick, key)
         self._checked = enabled and true or false
         Paint()
     end
-    function c:GetChecked()
-        return self._checked == true
-    end
-    function c:SetLabel(t)
-        self.text:SetText(t)
-    end
+    function c:GetChecked() return self._checked == true end
+    function c:SetLabel(t) self.text:SetText(t) end
     -- The flip is on PreClick, so a caller's own OnClick (SetScript) keeps it.
-    c:SetScript("PreClick", function(self)
-        self:SetChecked(not self._checked)
-    end)
-    if onClick then
-        c:SetScript("OnClick", onClick)
-    end
+    c:SetScript("PreClick", function(self) self:SetChecked(not self._checked) end)
+    if onClick then c:SetScript("OnClick", onClick) end
     c:SetScript("OnEnter", Paint)
     c:SetScript("OnLeave", Paint)
     c:SetChecked(false)
@@ -323,9 +287,7 @@ function Kit.Scroll(hostFrame)
         local hgt = scroll:GetHeight() or 0
         if range <= 0.5 or hgt <= 0 then
             track:Hide()
-            if scroll:GetVerticalScroll() ~= 0 then
-                scroll:SetVerticalScroll(0)
-            end
+            if scroll:GetVerticalScroll() ~= 0 then scroll:SetVerticalScroll(0) end
             return
         end
         track:Show()
@@ -345,9 +307,10 @@ function Kit.Scroll(hostFrame)
     end
 
     scroll:EnableMouseWheel(true)
-    scroll:SetScript("OnMouseWheel", function(self, delta)
-        ScrollTo(self:GetVerticalScroll() - delta * 40)
-    end)
+    scroll:SetScript(
+        "OnMouseWheel",
+        function(self, delta) ScrollTo(self:GetVerticalScroll() - delta * 40) end
+    )
     scroll:SetScript("OnScrollRangeChanged", Update)
     scroll:SetScript("OnVerticalScroll", Update)
     scroll:SetScript("OnSizeChanged", function(self, wid)
@@ -363,14 +326,10 @@ function Kit.Scroll(hostFrame)
             posY = posY / scale
             local range = scroll:GetVerticalScrollRange() or 0
             local hgt = scroll:GetHeight() - s:GetHeight()
-            if hgt > 0 then
-                ScrollTo(s._startV + (s._startY - posY) / hgt * range)
-            end
+            if hgt > 0 then ScrollTo(s._startV + (s._startY - posY) / hgt * range) end
         end)
     end)
-    thumb:SetScript("OnMouseUp", function(self)
-        self:SetScript("OnUpdate", nil)
-    end)
+    thumb:SetScript("OnMouseUp", function(self) self:SetScript("OnUpdate", nil) end)
     scroll.Refresh = Update
     track:Hide()
     return scroll, contentFrame
@@ -387,23 +346,17 @@ end
 local Node = {}
 Node.__index = Node
 
-local function NewNode()
-    return setmetatable({ items = {} }, Node)
-end
+local function NewNode() return setmetatable({ items = {} }, Node) end
 
 function Node:CreateTitle(textValue)
     table.insert(self.items, {
         text = textValue,
         noLoc = true,
-        isDisabled = function()
-            return true
-        end,
+        isDisabled = function() return true end,
     })
 end
 function Node:CreateDivider()
-    if #self.items > 0 then
-        table.insert(self.items, "---")
-    end
+    if #self.items > 0 then table.insert(self.items, "---") end
 end
 function Node:CreateButton(textValue, func)
     local childFrame = NewNode()
@@ -434,9 +387,7 @@ local function Items(node)
             result[#result + 1] = item
         end
     end
-    if result[#result] == "---" then
-        result[#result] = nil
-    end
+    if result[#result] == "---" then result[#result] = nil end
     return result
 end
 

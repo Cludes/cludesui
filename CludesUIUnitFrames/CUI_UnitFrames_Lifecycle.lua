@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_UnitFrames_Lifecycle.lua
 --
@@ -34,9 +32,7 @@ function CludesUF:OnInitialize()
     -- here, not a default: the logout strip drops a value equal to its default.
     if CludesUI._firstInstallPending then
         local tot = saved.profile.targettarget
-        if tot and tot.lookSource == nil then
-            tot.lookSource = "target"
-        end
+        if tot and tot.lookSource == nil then tot.lookSource = "target" end
     end
 
     ResolveFontPath()
@@ -99,15 +95,11 @@ local function EnableBody()
     -- The options page registers from SetupOptionsPanel: queue it first, so no
     -- error in the shared position pass can leave Unit Frames without one.
     C_Timer.After(0, SetupOptionsPanel)
-    if CludesUI and CludesUI._applySavedPositions then
-        CludesUI._applySavedPositions()
-    end
+    if CludesUI and CludesUI._applySavedPositions then CludesUI._applySavedPositions() end
     C_Timer.After(0, function()
         -- Restore the threat watchers saved enabled (nothing registers when off).
         mod.SyncPlayerThreat()
-        if mod.SyncThreatPct then
-            mod.SyncThreatPct()
-        end
+        if mod.SyncThreatPct then mod.SyncThreatPct() end
     end)
     -- After InitializeFrames, which decided the target frame's source.
     mod.UF_SyncTargetSounds()
@@ -158,9 +150,7 @@ do
     eventFrame:SetScript("OnEvent", function()
         if UnitExists("target") then
             hadTarget = true
-            if C_PlayerInteractionManager.IsReplacingUnit() then
-                return
-            end
+            if C_PlayerInteractionManager.IsReplacingUnit() then return end
             if UnitIsEnemy("target", "player") then
                 PlaySound(SOUNDKIT.IG_CREATURE_AGGRO_SELECT)
             elseif UnitIsFriend("player", "target") then
@@ -171,9 +161,7 @@ do
         elseif hadTarget then
             hadTarget = false
             -- A soft target going away plays nothing, as on Blizzard's frame.
-            if not IsTargetLoose() then
-                PlaySound(SOUNDKIT.INTERFACE_SOUND_LOST_TARGET_UNIT, nil, true)
-            end
+            if not IsTargetLoose() then PlaySound(SOUNDKIT.INTERFACE_SOUND_LOST_TARGET_UNIT, nil, true) end
         end
     end)
 
@@ -202,9 +190,7 @@ function CludesUF:GetGrowDirectionForBar(barId)
 end
 
 function CludesUF:SetGrowDirectionForBar(barId, direction)
-    if mod.PAB_SetGrowDirection then
-        mod.PAB_SetGrowDirection(barId, direction)
-    end
+    if mod.PAB_SetGrowDirection then mod.PAB_SetGrowDirection(barId, direction) end
 end
 
 -------------------------------------------------------------------------------
@@ -262,9 +248,7 @@ do
         end
         local specInfo = GetSpecialization and GetSpecialization()
         local role = specInfo and GetSpecializationRole and GetSpecializationRole(specInfo)
-        if role == "HEALER" then
-            helpSpell = HELP_HEAL[pClass]
-        end
+        if role == "HEALER" then helpSpell = HELP_HEAL[pClass] end
         -- WoW Forever has no spec roles: a healing class counts as its healing
         -- spec and range-checks with its best heal in the spellbook.
         if CludesUI.IS_FOREVER then
@@ -279,9 +263,7 @@ do
     end
 
     local function TickOne(frame, unitToken)
-        if not saved then
-            return
-        end
+        if not saved then return end
         local oor = (saved.profile.boss and saved.profile.boss.oorAlpha) or 0.4
         if oor >= 1 or not UnitExists(unitToken) then
             frame:SetAlpha(1)
@@ -313,9 +295,7 @@ do
     local function Tick()
         for index = 1, 5 do
             local frame = frameList["boss" .. index]
-            if frame and frame:IsVisible() then
-                TickOne(frame, "boss" .. index)
-            end
+            if frame and frame:IsVisible() then TickOne(frame, "boss" .. index) end
         end
     end
 
@@ -331,17 +311,13 @@ do
 
     local hooked = false
     local function InstallHooks()
-        if hooked or not frameList["boss1"] then
-            return
-        end
+        if hooked or not frameList["boss1"] then return end
         hooked = true
         for index = 1, 5 do
             local frame = frameList["boss" .. index]
             if frame then
                 local unitToken = "boss" .. index
-                if frame:IsVisible() then
-                    visCount = visCount + 1
-                end
+                if frame:IsVisible() then visCount = visCount + 1 end
                 frame:HookScript("OnShow", function(self)
                     visCount = visCount + 1
                     TickOne(self, unitToken)
@@ -398,9 +374,7 @@ do
     local poisonTotemKnown = ufPlayerClass == "SHAMAN" and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
     function mod.UF_RefreshPoisonTotem()
         local known = ufPlayerClass == "SHAMAN" and IsPlayerSpell(POISON_CLEANSING_TOTEM) or false
-        if known == poisonTotemKnown then
-            return false
-        end
+        if known == poisonTotemKnown then return false end
         poisonTotemKnown = known
         return true
     end
@@ -412,9 +386,7 @@ do
             local _, raceToken = UnitRace("player")
             return raceToken ~= nil and races[raceToken] == true
         end
-        if typeKey == "poison" then
-            return poisonTotemKnown
-        end
+        if typeKey == "poison" then return poisonTotemKnown end
         return false
     end
 
@@ -422,9 +394,7 @@ do
         -- The container dispel slots own the overlay; poke their fingerprinted
         -- reload so dropdown/cog edits apply live instead of waiting for the
         -- next full container pass.
-        if mod.UF_ReloadPlayerDispelSlots then
-            mod.UF_ReloadPlayerDispelSlots()
-        end
+        if mod.UF_ReloadPlayerDispelSlots then mod.UF_ReloadPlayerDispelSlots() end
     end
 end
 
@@ -444,9 +414,7 @@ do
         collect = function()
             wipe(entries)
             for _, frame in pairs(frameList) do
-                if type(frame) == "table" and frame.GetCenter then
-                    entries[#entries + 1] = frame
-                end
+                if type(frame) == "table" and frame.GetCenter then entries[#entries + 1] = frame end
             end
             return groups
         end,
@@ -457,8 +425,6 @@ end
 -- core fires its own edge (re-fired after combat for the secure frames).
 if CludesUI.RegisterVisEdge then
     CludesUI.RegisterVisEdge(function()
-        if mod.UpdateFrameVisibility then
-            mod.UpdateFrameVisibility()
-        end
+        if mod.UpdateFrameVisibility then mod.UpdateFrameVisibility() end
     end)
 end

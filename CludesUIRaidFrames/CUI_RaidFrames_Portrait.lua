@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Portrait.lua
 --
@@ -38,12 +36,8 @@ local ZOOM3D_STOCK, ZOOM3D_MAX = 300, 500
 mod.RF_PT_ZOOM3D_MAX = ZOOM3D_MAX
 local function Zoom3DOf(z)
     z = z or 100
-    if z <= ZOOM3D_STOCK then
-        return 1, z / 100
-    end
-    if z > ZOOM3D_MAX then
-        z = ZOOM3D_MAX
-    end
+    if z <= ZOOM3D_STOCK then return 1, z / 100 end
+    if z > ZOOM3D_MAX then z = ZOOM3D_MAX end
     local t = (z - ZOOM3D_STOCK) / (ZOOM3D_MAX - ZOOM3D_STOCK)
     local skinData = ZOOM3D_STOCK / 100
     return 1 - t, skinData - (skinData - 1) * t
@@ -60,9 +54,7 @@ end
 -- Class art from the shared sprite sheets.
 function mod.RF_PtClassArt(texture, ct, style)
     local c = CludesUI.CLASS_ICON_SPRITE_COORDS and CludesUI.CLASS_ICON_SPRITE_COORDS[ct]
-    if not (texture and c) then
-        return
-    end
+    if not (texture and c) then return end
     texture:SetTexture(CLASS_ART .. (style or "modern") .. ".tga")
     texture:SetTexCoord(c[1], c[2], c[3], c[4])
 end
@@ -70,9 +62,7 @@ end
 -- The attached portrait's width in the party box (callers snap): a square
 -- the frame's full height. Detached and inside take no room.
 function mod.RF_PtReserve(cfg, hgt)
-    if (cfg.partyPortraitStyle or "none") ~= "attached" then
-        return 0
-    end
+    if (cfg.partyPortraitStyle or "none") ~= "attached" then return 0 end
     return hgt
 end
 
@@ -82,9 +72,7 @@ local function SideOf(cfg, style)
     local side = cfg.partyPortraitSide or "left"
     local inside = side == "insideleft" or side == "insideright" or side == "insidecenter"
     if style == "attached" then
-        if side ~= "right" then
-            side = "left"
-        end
+        if side ~= "right" then side = "left" end
         return side, false
     end
     return side, inside
@@ -94,9 +82,7 @@ end
 -- rect of a shaped portrait): the portrait paint resets its anchors.
 local function SeatArt2D(edge)
     local t = edge._2d
-    if Pix and Pix.DisablePixelSnap then
-        Pix.DisablePixelSnap(t)
-    end
+    if Pix and Pix.DisablePixelSnap then Pix.DisablePixelSnap(t) end
     t:ClearAllPoints()
     Point(t, "TOPLEFT", edge, "TOPLEFT", edge._oL, edge._oT)
     Point(t, "BOTTOMRIGHT", edge, "BOTTOMRIGHT", edge._oR, edge._oB)
@@ -113,20 +99,14 @@ end
 local function ModelOnShow(self)
     local edge = self._bd
     local st = edge and edge._st
-    if not (st and edge._on) then
-        return
-    end
+    if not (st and edge._on) then return end
     local ownerFrame = edge._owner
     local u = edge._pvUnit or (ownerFrame and not edge._preview and ownerFrame:GetAttribute("unit"))
-    if u and UnitExists(u) then
-        mod.RF_PtPaint(st, u, "Show")
-    end
+    if u and UnitExists(u) then mod.RF_PtPaint(st, u, "Show") end
 end
 local function Ensure3D(edge)
     local m = edge._3d
-    if m then
-        return m
-    end
+    if m then return m end
     m = CreateFrame("PlayerModel", nil, edge)
     m:SetAllPoints(edge)
     m:SetCamera(0)
@@ -160,16 +140,12 @@ local function ModelCanvas(edge, scale, wid, hgt)
 end
 -- Installed only while scaled: the canvas follows the box's real size (the
 -- Inside box's height comes from its anchors).
-local function BoxSizeChanged(self, wid, hgt)
-    ModelCanvas(self, self._charK or 1, wid, hgt)
-end
+local function BoxSizeChanged(self, wid, hgt) ModelCanvas(self, self._charK or 1, wid, hgt) end
 -- Scaled only for a 3D model of an available unit (the question mark keeps
 -- the box's size); a change of _charK, _3dOn or _state re-seats. Unscaled
 -- (the default) is the stock re-anchor alone: no script, no size reads.
 local function SeatModel(edge)
-    if not edge._3d then
-        return
-    end
+    if not edge._3d then return end
     local key = edge._charK or 1
     local scaled = key ~= 1 and edge._3dOn and edge._state ~= false or false
     if scaled ~= (edge._charHook or false) then
@@ -234,12 +210,8 @@ local function Ensure(ownerFrame, st, health)
     -- The absorb strips re-lay out on their next settings pass.
     local ab = st.absorbBar or st._absorbBar
     if ab then
-        if ab._topBar then
-            ab._topBar._lpPos = nil
-        end
-        if ab._healTopBar then
-            ab._healTopBar._lpPos = nil
-        end
+        if ab._topBar then ab._topBar._lpPos = nil end
+        if ab._healTopBar then ab._healTopBar._lpPos = nil end
     end
     st.pt = edge
     return edge
@@ -271,9 +243,7 @@ local function Seat(ownerFrame, edge, health, style, side, inside, size, px, py,
         -- Over the health bar, the frame's height, clipped to itself.
         area:SetAllPoints(ownerFrame)
         wid = bh + size
-        if wid < 8 then
-            wid = 8
-        end
+        if wid < 8 then wid = 8 end
         hgt = bh
         edge:SetWidth(wid)
         if side == "insideleft" then
@@ -294,9 +264,7 @@ local function Seat(ownerFrame, edge, health, style, side, inside, size, px, py,
         -- frame, over its neighbours' borders.
         area:SetAllPoints(ownerFrame)
         wid = bh + size + 10
-        if wid < 8 then
-            wid = 8
-        end
+        if wid < 8 then wid = 8 end
         hgt = wid
         edge:SetSize(wid, hgt)
         local posY = py + 5
@@ -315,15 +283,11 @@ end
 
 local function Unmask(edge)
     local mk = edge._mask
-    if not (mk and edge._masked) then
-        return
-    end
+    if not (mk and edge._masked) then return end
     edge._2d:RemoveMaskTexture(mk)
     edge._class:RemoveMaskTexture(mk)
     edge._bg:RemoveMaskTexture(mk)
-    if edge._border then
-        edge._border:RemoveMaskTexture(mk)
-    end
+    if edge._border then edge._border:RemoveMaskTexture(mk) end
     edge._masked = nil
     mk:Hide()
 end
@@ -334,9 +298,7 @@ end
 -- art filling the backdrop. `w`/`h` = the backdrop's size.
 local function Shape(edge, cfg, shaped, wid, hgt)
     local shape = shaped and (cfg.partyPortraitShape or "portrait") or nil
-    if shape and not MASKS[shape] then
-        shape = nil
-    end
+    if shape and not MASKS[shape] then shape = nil end
     local bs = cfg.partyPortraitBorderSize or 7
     local op = cfg.partyPortraitBorderOpacity or 100
     local art = cfg.partyPortraitArtScale or 100
@@ -363,9 +325,7 @@ local function Shape(edge, cfg, shaped, wid, hgt)
     edge._tintClass = nil
     if not shape then
         Unmask(edge)
-        if edge._border then
-            edge._border:Hide()
-        end
+        if edge._border then edge._border:Hide() end
         edge._oL, edge._oT, edge._oR, edge._oB = 0, 0, 0, 0
     else
         local mk = edge._mask
@@ -419,16 +379,12 @@ end
 local function PlayerClassColor()
     local _, classTok = UnitClass("player")
     local color = classTok and CludesUI.GetClassColor(classTok)
-    if color then
-        return color.r, color.g, color.b
-    end
+    if color then return color.r, color.g, color.b end
     return 1, 1, 1
 end
 local function TintBorder(edge, unitToken, ctOverride)
     local bt = edge._border
-    if not (bt and edge._tintClass) then
-        return
-    end
+    if not (bt and edge._tintClass) then return end
     local red, green, blue
     local cfg = mod._scaledPartyProxy
     if ctOverride then
@@ -463,9 +419,7 @@ end
 -- Which art region shows. Leaving 3D drops the model (frees it). True when
 -- the mode changed.
 local function SetMode(edge, mode)
-    if edge._mode == mode then
-        return false
-    end
+    if edge._mode == mode then return false end
     edge._mode = mode
     edge._guid, edge._state, edge._ct = nil, nil, nil
     edge._2d:SetShown(mode == "2d")
@@ -474,9 +428,7 @@ local function SetMode(edge, mode)
         Ensure3D(edge)
         edge._3dOn = true
         edge._3d:Show()
-        if not edge._preview then
-            mod.RF_PtModelAlphaApply(edge)
-        end
+        if not edge._preview then mod.RF_PtModelAlphaApply(edge) end
     elseif edge._3d then
         edge._3dOn = nil
         edge._3d:ClearModel()
@@ -490,13 +442,9 @@ end
 -- event; a secret guid never matches, so it always repaints. An
 -- unavailable 3D paint never stamps its guid, so the next trigger heals it.
 function mod.RF_PtPaint(st, unitToken, evt)
-    if st.kitPortrait then
-        return mod.RF_KitPortrait(st, unitToken)
-    end
+    if st.kitPortrait then return mod.RF_KitPortrait(st, unitToken) end
     local edge = st.pt
-    if not (edge and edge._on and unitToken) then
-        return
-    end
+    if not (edge and edge._on and unitToken) then return end
     local mode = edge._mode
     local unitGuid = UnitGUID(unitToken)
     local changed
@@ -508,9 +456,7 @@ function mod.RF_PtPaint(st, unitToken, evt)
     local repainted = false
     if mode == "class" then
         local _, classTok = UnitClass(unitToken)
-        if issecretvalue(classTok) then
-            classTok = nil
-        end
+        if issecretvalue(classTok) then classTok = nil end
         classTok = classTok or "WARRIOR"
         -- (A change of art set clears _ct at its write in RF_PtApply.)
         if edge._ct ~= classTok or evt == "Force" then
@@ -518,15 +464,11 @@ function mod.RF_PtPaint(st, unitToken, evt)
             mod.RF_PtClassArt(edge._class, classTok, edge._style)
             repainted = true
         end
-        if not issecretvalue(unitGuid) then
-            edge._guid = unitGuid
-        end
+        if not issecretvalue(unitGuid) then edge._guid = unitGuid end
     elseif mode == "3d" then
         local c, val = UnitIsConnected(unitToken), UnitIsVisible(unitToken)
         local avail = true
-        if not (issecretvalue(c) or issecretvalue(val)) then
-            avail = (c and val) and true or false
-        end
+        if not (issecretvalue(c) or issecretvalue(val)) then avail = (c and val) and true or false end
         local m = edge._3d
         if
             m
@@ -562,9 +504,7 @@ function mod.RF_PtPaint(st, unitToken, evt)
             -- when availability flips.
             local reseat = (edge._charK or 1) ~= 1 and (edge._state == false) ~= (avail == false)
             edge._state = avail
-            if reseat then
-                SeatModel(edge)
-            end
+            if reseat then SeatModel(edge) end
             repainted = true
         end
     else
@@ -582,36 +522,26 @@ function mod.RF_PtPaint(st, unitToken, evt)
             SetPortraitTexture(t, unitToken)
             SeatArt2D(edge)
             t:SetDesaturated(edge._desat or false)
-            if not issecretvalue(unitGuid) then
-                edge._guid = unitGuid
-            end
+            if not issecretvalue(unitGuid) then edge._guid = unitGuid end
             repainted = true
         end
     end
     -- The class-coloured border follows the occupant (a real assignment
     -- too: a same-guid return after a no-unit re-shape).
-    if repainted or changed or evt == "UnitChanged" then
-        TintBorder(edge, unitToken)
-    end
+    if repainted or changed or evt == "UnitChanged" then TintBorder(edge, unitToken) end
 end
 
 -- Offline grey (from the health-background pass, which every connection
 -- edge reaches): 2D and class desaturate, 3D swaps to the question mark.
 function mod.RF_PtOffline(st, unitToken, connected)
     local edge = st.pt
-    if not (edge and edge._on) then
-        return
-    end
+    if not (edge and edge._on) then return end
     local off = not connected
-    if edge._desat == off then
-        return
-    end
+    if edge._desat == off then return end
     edge._desat = off
     edge._2d:SetDesaturated(off)
     edge._class:SetDesaturated(off)
-    if edge._mode == "3d" and unitToken then
-        mod.RF_PtPaint(st, unitToken, "Conn")
-    end
+    if edge._mode == "3d" and unitToken then mod.RF_PtPaint(st, unitToken, "Conn") end
 end
 
 -- Clickable Portrait (party, default off): a detached portrait covered by a
@@ -631,9 +561,7 @@ local PORTRAIT_CLICK = {
                 and (cfg.partyPortraitStyle or "none") == "detached"
             or false
     end,
-    backdrop = function(ownerFrame)
-        return mod.GetFFD(ownerFrame).pt
-    end,
+    backdrop = function(ownerFrame) return mod.GetFFD(ownerFrame).pt end,
     -- CUI_RaidFrames_Style.lua loads first.
     onEnter = mod.RF_ButtonOnEnter,
     onLeave = mod.RF_ButtonOnLeave,
@@ -642,9 +570,7 @@ local PORTRAIT_CLICK = {
         if mod.CC_RegisterFrame then
             mod.CC_RegisterFrame(button)
         else
-            if type(ClickCastFrames) ~= "table" then
-                ClickCastFrames = {}
-            end
+            if type(ClickCastFrames) ~= "table" then ClickCastFrames = {} end
             ClickCastFrames[button] = true
         end
     end,
@@ -661,13 +587,9 @@ local PORTRAIT_CLICK = {
 function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
     local style = cfg.partyPortraitStyle or "none"
     local edge = st.pt
-    if style == "none" and not edge then
-        return
-    end
+    if style == "none" and not edge then return end
     local health = st.health or st._health
-    if not health then
-        return
-    end
+    if not health then return end
     local side, inside = SideOf(cfg, style)
     local size = cfg.partyPortraitSize or 0
     local px, py = cfg.partyPortraitX or 0, cfg.partyPortraitY or 0
@@ -716,16 +638,12 @@ function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
                 SeatModel(edge)
             end
         end
-        if not edge._preview then
-            CludesUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK)
-        end
+        if not edge._preview then CludesUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK) end
         return
     end
     -- Levels re-asserted every pass (a strata change rebuilds child levels).
     local lvl = ownerFrame:GetFrameLevel() + (edge._lvl or 1)
-    if edge:GetFrameLevel() ~= lvl then
-        edge:SetFrameLevel(lvl)
-    end
+    if edge:GetFrameLevel() ~= lvl then edge:SetFrameLevel(lvl) end
     local mode = cfg.partyPortraitMode or "2d"
     -- The class art set is a paint input: a change clears the class memo
     -- (a button with no unit repaints on its next occupant).
@@ -755,12 +673,8 @@ function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
     local swapped = SetMode(edge, mode)
     -- A new scale re-seats the model (a re-shape already did); so does a
     -- swap into or out of 3D while scaled (Shape seated before the swap).
-    if (charKChanged and not reshaped) or (swapped and charK ~= 1) then
-        SeatModel(edge)
-    end
-    if not wasOn then
-        edge:Show()
-    end
+    if (charKChanged and not reshaped) or (swapped and charK ~= 1) then SeatModel(edge) end
+    if not wasOn then edge:Show() end
     -- A 3D Zoom change on a loaded model: the camera alone.
     local m = edge._3dOn and edge._3d
     if m and edge._state and edge._camZ and (edge._camZ ~= edge._zoom3d or edge._camP ~= edge._pz3d) then
@@ -784,9 +698,7 @@ function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
         local u = ownerFrame:GetAttribute("unit")
         TintBorder(edge, (u and UnitExists(u)) and u or nil)
     end
-    if not edge._preview then
-        CludesUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK)
-    end
+    if not edge._preview then CludesUI.SyncPortraitClick(ownerFrame, PORTRAIT_CLICK) end
 end
 
 -- Portrait events the current settings need (RF_KitPortraitEvents): "2d",
@@ -795,12 +707,8 @@ end
 function mod.RF_PtEventMode(kit)
     local cfg = mod._scaledPartyProxy
     local m = cfg.partyPortraitMode or "2d"
-    if kit then
-        return (m ~= "class") and "2d" or nil
-    end
-    if (cfg.partyPortraitStyle or "none") == "none" or m == "class" then
-        return nil
-    end
+    if kit then return (m ~= "class") and "2d" or nil end
+    if (cfg.partyPortraitStyle or "none") == "none" or m == "class" then return nil end
     return (m == "3d") and "3d" or "2d"
 end
 
@@ -808,18 +716,14 @@ end
 -- guid; the shown edge re-syncs after a hidden stretch).
 function mod.RF_PtRepaintAll(evt)
     local entries = mod._partyAllButtons
-    if not entries then
-        return
-    end
+    if not entries then return end
     local GetFFD = mod.GetFFD
     for index = 1, #entries do
         local widget = entries[index]
         local skinData = GetFFD(widget)
         if skinData.kitPortrait or (skinData.pt and skinData.pt._on) then
             local u = widget:GetAttribute("unit")
-            if u and UnitExists(u) then
-                mod.RF_PtPaint(skinData, u, evt)
-            end
+            if u and UnitExists(u) then mod.RF_PtPaint(skinData, u, evt) end
         end
     end
 end
@@ -829,9 +733,7 @@ end
 function mod.RF_PtRefreshAll()
     local entries = mod._partyAllButtons
     local saved = mod.db
-    if not (entries and saved and saved.profile) then
-        return
-    end
+    if not (entries and saved and saved.profile) then return end
     local GetFFD = mod.GetFFD
     local s = mod._scaledPartyProxy
     local pw, ph = mod.RF_PartyDims(saved.profile)
@@ -841,25 +743,17 @@ function mod.RF_PtRefreshAll()
         local skinData = GetFFD(widget)
         if skinData.styled then
             local u = widget:GetAttribute("unit")
-            if u and not UnitExists(u) then
-                u = nil
-            end
+            if u and not UnitExists(u) then u = nil end
             if skinData.kitPortrait then
-                if u then
-                    mod.RF_KitPortrait(skinData, u)
-                end
+                if u then mod.RF_KitPortrait(skinData, u) end
                 -- A click button from before the kit stands down.
-                if skinData.pt then
-                    CludesUI.SyncPortraitClick(widget, PORTRAIT_CLICK)
-                end
+                if skinData.pt then CludesUI.SyncPortraitClick(widget, PORTRAIT_CLICK) end
             else
                 mod.RF_PtApply(widget, skinData, s, bw, bh, u)
             end
         end
     end
-    if mod.RF_KitPortraitEvents then
-        mod.RF_KitPortraitEvents(mod._partyFramesVisible)
-    end
+    if mod.RF_KitPortraitEvents then mod.RF_KitPortraitEvents(mod._partyFramesVisible) end
 end
 
 -------------------------------------------------------------------------------
@@ -871,9 +765,7 @@ end
 -------------------------------------------------------------------------------
 function mod.RF_PtModelAlphaApply(edge)
     local m = edge._3dOn and edge._3d
-    if not m then
-        return
-    end
+    if not m then return end
     local pc = mod._partyContainerFrame
     -- A UIParent fade (models ignore it) scales the mirror too.
     local c = CludesUI.UIScaledAlpha(pc and pc:GetAlpha() or 1)
@@ -889,36 +781,26 @@ function mod.RF_PtModelAlphaApply(edge)
 end
 function mod.RF_PtModelAlpha(st, a)
     local edge = st.pt
-    if not (edge and edge._3dOn) then
-        return
-    end
+    if not (edge and edge._3dOn) then return end
     edge._rSecret, edge._rIn, edge._rA1, edge._rA2 = nil, nil, a, nil
     mod.RF_PtModelAlphaApply(edge)
 end
 function mod.RF_PtModelAlphaSecret(st, inRange, a1, a2)
     local edge = st.pt
-    if not (edge and edge._3dOn) then
-        return
-    end
+    if not (edge and edge._3dOn) then return end
     local m = edge._3d
-    if not m.SetAlphaFromBoolean then
-        return mod.RF_PtModelAlpha(st, a1)
-    end
+    if not m.SetAlphaFromBoolean then return mod.RF_PtModelAlpha(st, a1) end
     edge._rSecret, edge._rIn, edge._rA1, edge._rA2 = true, inRange, a1, a2
     mod.RF_PtModelAlphaApply(edge)
 end
 -- The container's alpha moved (callers gate on ns._ptModelOn): re-mirror.
 function mod.RF_PtContainerAlpha()
     local entries = mod._partyAllButtons
-    if not entries then
-        return
-    end
+    if not entries then return end
     local GetFFD = mod.GetFFD
     for index = 1, #entries do
         local edge = GetFFD(entries[index]).pt
-        if edge and edge._3dOn then
-            mod.RF_PtModelAlphaApply(edge)
-        end
+        if edge and edge._3dOn then mod.RF_PtModelAlphaApply(edge) end
     end
 end
 
@@ -930,18 +812,14 @@ end
 --  wrong), class art per slot, the offline slot greyed.
 -------------------------------------------------------------------------------
 function mod.RF_PtPreview(frame, cfg, classToken, isPlayer, offline)
-    if (cfg.partyPortraitStyle or "none") == "none" and not frame.pt then
-        return
-    end
+    if (cfg.partyPortraitStyle or "none") == "none" and not frame.pt then return end
     local saved = mod.db
     local pw, ph = mod.RF_PartyDims(mod._pvOverlayProxy or (saved and saved.profile) or cfg)
     local bw, bh = mod.PixelSnap(pw), mod.PixelSnap(ph)
     frame:SetSize(bw, bh)
     mod.RF_PtApply(frame, frame, cfg, bw, bh, nil)
     local edge = frame.pt
-    if not (edge and edge._on) then
-        return
-    end
+    if not (edge and edge._on) then return end
     local _, playerCT = UnitClass("player")
     local mode = edge._mode
     local tc = (not isPlayer) and classToken and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classToken]
@@ -951,9 +829,7 @@ function mod.RF_PtPreview(frame, cfg, classToken, isPlayer, offline)
     else
         local t2 = edge._2d
         if tc then
-            if edge._3d then
-                edge._3d:Hide()
-            end
+            if edge._3d then edge._3d:Hide() end
             t2:SetTexture(CLASS_SHEET)
             t2:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
             SeatArt2D(edge)

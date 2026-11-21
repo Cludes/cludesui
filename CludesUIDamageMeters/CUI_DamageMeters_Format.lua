@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_DamageMeters_Format.lua
 --
@@ -12,9 +10,7 @@ local _, mod = ...
 local Inner = mod._dmInternals
 -- CludesUIDamageMeters.lua or an earlier CUI_DamageMeters_*.lua file
 -- failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = CludesUI
@@ -26,17 +22,11 @@ local GetCurrentViewDuration = Inner.GetCurrentViewDuration
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._dmInternals, which hands the value to every copy.
 local _inCombat = Inner._inCombat
-Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val)
-    _inCombat = val
-end
+Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) _inCombat = val end
 local StartSharedTicker
-Inner.startSharedTickerSetters[#Inner.startSharedTickerSetters + 1] = function(val)
-    StartSharedTicker = val
-end
+Inner.startSharedTickerSetters[#Inner.startSharedTickerSetters + 1] = function(val) StartSharedTicker = val end
 local _sharedTicker
-Inner.sharedTickerSetters[#Inner.sharedTickerSetters + 1] = function(val)
-    _sharedTicker = val
-end
+Inner.sharedTickerSetters[#Inner.sharedTickerSetters + 1] = function(val) _sharedTicker = val end
 
 -- Every meter text (rows, headers, the breakdown tooltip) can show a player's
 -- name, so each takes a font family: Cyrillic, Korean and Chinese names draw in
@@ -49,9 +39,7 @@ end
 -- Accent color helper
 local function GetAccentRGB()
     local ACC = CUI.CLUDES_GREEN
-    if ACC then
-        return ACC.r, ACC.g, ACC.b
-    end
+    if ACC then return ACC.r, ACC.g, ACC.b end
     return CUI.DEFAULT_ACCENT_R or 76 / 255,
         CUI.DEFAULT_ACCENT_G or 201 / 255,
         CUI.DEFAULT_ACCENT_B or 240 / 255
@@ -79,9 +67,7 @@ _G._CUDM_BarTextureOrder = DM_BAR_TEXTURE_ORDER
 _G._CUDM_BarTextureNames = DM_BAR_TEXTURE_NAMES
 
 local function AppendDMSharedMedia()
-    if not CUI.AppendSharedMediaTextures then
-        return
-    end
+    if not CUI.AppendSharedMediaTextures then return end
     CUI.AppendSharedMediaTextures(DM_BAR_TEXTURE_NAMES, DM_BAR_TEXTURE_ORDER, nil, DM_BAR_TEXTURES)
 end
 
@@ -94,9 +80,7 @@ end
 local function GetBreakdownBarTexturePath()
     local conf = DB()
     local key = conf and conf.breakdownBarTexture
-    if not key or key == "match" then
-        key = conf and conf.barTexture or "none"
-    end
+    if not key or key == "match" then key = conf and conf.barTexture or "none" end
     return CUI.ResolveTexturePath(DM_BAR_TEXTURES, key, BAR_TEX), key
 end
 
@@ -123,16 +107,12 @@ local function SetupThinLine(fillTex, edge)
         local origSMMV = fillTex.SetMinMaxValues
         fillTex.SetMinMaxValues = function(self, lo, hi)
             origSMMV(self, lo, hi)
-            if self._thinLine and self._thinLineActive then
-                self._thinLine:SetMinMaxValues(lo, hi)
-            end
+            if self._thinLine and self._thinLineActive then self._thinLine:SetMinMaxValues(lo, hi) end
         end
         local origSV = fillTex.SetValue
         fillTex.SetValue = function(self, val)
             origSV(self, val)
-            if self._thinLine and self._thinLineActive then
-                self._thinLine:SetValue(val)
-            end
+            if self._thinLine and self._thinLineActive then self._thinLine:SetValue(val) end
         end
     end
     local tl = fillTex._thinLine
@@ -152,13 +132,9 @@ local function SetupThinLine(fillTex, edge)
 end
 
 local function ClearThinLine(fillTex)
-    if not fillTex._thinLineActive then
-        return
-    end
+    if not fillTex._thinLineActive then return end
     fillTex._thinLineActive = false
-    if fillTex._thinLine then
-        fillTex._thinLine:Hide()
-    end
+    if fillTex._thinLine then fillTex._thinLine:Hide() end
     -- Thin-line mode left the fill transparent; reset to opaque so the bar is visible immediately (RefreshUI applies the real color)
     fillTex:SetStatusBarColor(1, 1, 1, 1)
 end
@@ -167,9 +143,7 @@ local function ApplyBarTexture(fillTex, texPath, texKey)
     -- Blizzard Style: the user's texture as below, plus the stock bevel over
     -- it (strips on the fill, independent of the texture path). Classic WoW
     -- UI bars are plain rectangles: no strips.
-    if mod.DMStyle() == "blizzard" then
-        mod.DMApplyBlizzFill(fillTex)
-    end
+    if mod.DMStyle() == "blizzard" then mod.DMApplyBlizzFill(fillTex) end
     local edge = THIN_LINE_KEYS[texKey]
     if edge then
         fillTex:SetStatusBarTexture(BAR_TEX)
@@ -187,9 +161,7 @@ local function PhysicalPixels(userValue)
     local Pix = CUI and CUI.PP
     local mult = (Pix and Pix.mult) or 1
     local value = (userValue or 0) * mult
-    if Pix and Pix.Scale then
-        return Pix.Scale(value)
-    end
+    if Pix and Pix.Scale then return Pix.Scale(value) end
     return value
 end
 
@@ -203,9 +175,7 @@ end
 local function RowMetrics(height, spacingCoord, es)
     local Pix = CUI and CUI.PP
     if Pix and Pix.perfect and Pix.SnapForES then
-        if not es or es <= 0 then
-            es = (UIParent and UIParent:GetEffectiveScale()) or 1
-        end
+        if not es or es <= 0 then es = (UIParent and UIParent:GetEffectiveScale()) or 1 end
         local barH = Pix.SnapForES(height or 18, es)
         local barSp = Pix.SnapForES(spacingCoord or 2, es)
         return barH, barSp, barH + barSp, Pix.perfect / es
@@ -230,9 +200,7 @@ local function RebuildAbbrevCfg()
     _forceEnglishUnits = false
     if mod.EDM and mod.EDM.DB then
         local saved = mod.EDM.DB()
-        if saved and saved.forceEnglishUnits then
-            _forceEnglishUnits = true
-        end
+        if saved and saved.forceEnglishUnits then _forceEnglishUnits = true end
     end
 end
 RebuildAbbrevCfg()
@@ -240,34 +208,22 @@ mod.RebuildNumberFormat = RebuildAbbrevCfg
 -- A Number Format change repaints every window; before the DB exists there is
 -- nothing to repaint.
 CludesUI.RegisterNumberFormatCallback(function()
-    if _G._CUDM_DB and mod.RefreshMeter then
-        mod.RefreshMeter()
-    end
+    if _G._CUDM_DB and mod.RefreshMeter then mod.RefreshMeter() end
 end)
 
 local function ShortNumber(num)
-    if num == nil then
-        return "0"
-    end
+    if num == nil then return "0" end
     return CludesUI.AbbreviateNumber(num, _forceEnglishUnits)
 end
 
 local function FormatBarValue(amt, perSec, numFmt)
     -- Per-second can drop below 1 on long Overall windows (dumps the raw float); clamp to a min of 1, but only for a plain number -- never compare a secret value (secret sessions are short, so perSec is never sub-1 anyway)
     if perSec ~= nil and (not issecretvalue or not issecretvalue(perSec)) then
-        if perSec < 1 then
-            perSec = 1
-        end
+        if perSec < 1 then perSec = 1 end
     end
-    if numFmt == 0 then
-        return ShortNumber(perSec)
-    end
-    if numFmt == 2 and perSec then
-        return format("%s (%s)", ShortNumber(amt), ShortNumber(perSec))
-    end
-    if numFmt == 3 and perSec then
-        return format("%s | %s", ShortNumber(amt), ShortNumber(perSec))
-    end
+    if numFmt == 0 then return ShortNumber(perSec) end
+    if numFmt == 2 and perSec then return format("%s (%s)", ShortNumber(amt), ShortNumber(perSec)) end
+    if numFmt == 3 and perSec then return format("%s | %s", ShortNumber(amt), ShortNumber(perSec)) end
     return ShortNumber(amt)
 end
 
@@ -282,16 +238,10 @@ end
 -- Name Format set, src and attacker are never read.
 local ShortName = CUI.ShortName
 local function StripRealm(name, source, attacker)
-    if not name then
-        return "Unknown"
-    end
-    if Ambiguate then
-        name = Ambiguate(name, "short") or name
-    end
+    if not name then return "Unknown" end
+    if Ambiguate then name = Ambiguate(name, "short") or name end
     local mode = (source or attacker) and DB().nameFormat
-    if not mode then
-        return name
-    end
+    if not mode then return name end
     local player
     if not source then
         local cls = attacker.class
@@ -301,15 +251,11 @@ local function StripRealm(name, source, attacker)
         if own ~= nil and not issecretvalue(own) and own == true then
             return ShortName(CUI.WithSurname(UnitName("player")), mode) or name
         end
-        if issecretvalue(name) then
-            return name
-        end
+        if issecretvalue(name) then return name end
         local cls = source.classFilename
         player = cls ~= nil and cls ~= "" and source.sourceCreatureID == nil and not source.threatPet
     end
-    if not player then
-        return name
-    end
+    if not player then return name end
     return ShortName(name, mode)
 end
 
@@ -320,9 +266,7 @@ local IsSecret = CUI.IsSecret
 -- own" (the row stays blocked, today's behavior), never to a thrown compare.
 local function IsOwnRow(source)
     local own = source and source.isLocalPlayer
-    if own == nil or IsSecret(own) then
-        return false
-    end
+    if own == nil or IsSecret(own) then return false end
     return own == true
 end
 -- On ns as well: CreateDMWindow sits at Lua 5.1's 60-upvalue cap, so it
@@ -355,9 +299,7 @@ local function AllyResolveZone()
     return instType == "party"
 end
 local function SnapshotSourceKeys()
-    if not AllyResolveZone() then
-        return
-    end
+    if not AllyResolveZone() then return end
     -- Declassification LAGS regen (field-confirmed: a post-combat snapshot
     -- banked only the own row): while the Combat addon-restriction is still
     -- active the source list reads partially secret. Skip WITHOUT wiping so
@@ -378,17 +320,13 @@ local function SnapshotSourceKeys()
     -- (empty) session must not empty the map ("worked once then never
     -- again" was exactly that). The roster branch owns the wipe; Overall is
     -- harvested because it stays populated for the entire run.
-    if not (C_DamageMeter and C_DamageMeter.GetCombatSessionFromType) then
-        return
-    end
+    if not (C_DamageMeter and C_DamageMeter.GetCombatSessionFromType) then return end
     local success, s = pcall(
         C_DamageMeter.GetCombatSessionFromType,
         Enum.DamageMeterSessionType.Overall,
         Enum.DamageMeterType.DamageDone
     )
-    if not success or not s or not s.combatSources then
-        return
-    end
+    if not success or not s or not s.combatSources then return end
     for _, source in ipairs(s.combatSources) do
         local g, cls, ic = source.sourceGUID, source.classFilename, source.specIconID
         if
@@ -410,37 +348,23 @@ local function SnapshotSourceKeys()
 end
 mod._SnapshotSourceKeys = SnapshotSourceKeys
 local function ResolveGroupGUID(source)
-    if not source then
-        return nil
-    end
-    if not AllyResolveZone() then
-        return nil
-    end
+    if not source then return nil end
+    if not AllyResolveZone() then return nil end
     -- Out of combat the callers' row guids are plain and the gates never
     -- fire, so a resolve call here is a cheap chance to refresh the
     -- snapshot instead (one session fetch at hover edge cadence).
-    if not InCombatLockdown() then
-        SnapshotSourceKeys()
-    end
+    if not InCombatLockdown() then SnapshotSourceKeys() end
     local cls, ic = source.classFilename, source.specIconID
-    if not cls or not ic or IsSecret(cls) or IsSecret(ic) then
-        return nil
-    end
-    if type(cls) ~= "string" or type(ic) ~= "number" then
-        return nil
-    end
+    if not cls or not ic or IsSecret(cls) or IsSecret(ic) then return nil end
+    if type(cls) ~= "string" or type(ic) ~= "number" then return nil end
     local g = _srcKeyGuid[cls .. ":" .. ic]
-    if g == false then
-        return nil
-    end
+    if g == false then return nil end
     return g
 end
 mod._ResolveGroupGUID = ResolveGroupGUID
 
 local function FormatTimer(seconds)
-    if not seconds or (issecretvalue and issecretvalue(seconds)) then
-        return "0:00"
-    end
+    if not seconds or (issecretvalue and issecretvalue(seconds)) then return "0:00" end
     return format("%d:%02d", math.floor(seconds / 60), math.floor(seconds % 60))
 end
 
@@ -449,26 +373,18 @@ end
 -- on ns: CreateDMWindow sits at the 60-upvalue cap and already holds ns.
 function mod._DeathTimeText(source, live)
     local t = source.deathTimeSeconds
-    if t ~= nil and not (issecretvalue and issecretvalue(t)) then
-        return FormatTimer(t)
-    end
+    if t ~= nil and not (issecretvalue and issecretvalue(t)) then return FormatTimer(t) end
     local rid = source.deathRecapID
-    if not rid or (issecretvalue and issecretvalue(rid)) then
-        return "0:00"
-    end
+    if not rid or (issecretvalue and issecretvalue(rid)) then return "0:00" end
     local st = _deathStamps[rid]
     if not st then
         -- Only the LIVE Current view may stamp: a past segment viewed during
         -- the next pull is secret too, and its deaths must not borrow this
         -- pull's clock.
-        if not (_inCombat and live) then
-            return "0:00"
-        end
+        if not (_inCombat and live) then return "0:00" end
         st = GetCurrentViewDuration()
         -- 0 = no live duration yet; leave unstamped so a later refresh can.
-        if not st or st <= 0 then
-            return "0:00"
-        end
+        if not st or st <= 0 then return "0:00" end
         _deathStamps[rid] = st
     end
     return FormatTimer(st)
@@ -479,18 +395,12 @@ end
 -- keeps both moving without a paint, so it reads right the moment it shows. On ns:
 -- CreateDMWindow sits at the 60-upvalue cap.
 function mod._DMHiddenDeathsPass(wid)
-    if not _inCombat or wid.curDMType ~= Enum.DamageMeterType.Deaths then
-        return
-    end
+    if not _inCombat or wid.curDMType ~= Enum.DamageMeterType.Deaths then return end
     CleanupFeignCache()
     -- Only the live Current view stamps (see ns._DeathTimeText)
-    if wid.curSessionID or wid.curSession ~= Enum.DamageMeterSessionType.Current then
-        return
-    end
+    if wid.curSessionID or wid.curSession ~= Enum.DamageMeterSessionType.Current then return end
     -- A window switched onto this view while the ticks were off (combat-start auto-Current)
-    if not _sharedTicker then
-        StartSharedTicker()
-    end
+    if not _sharedTicker then StartSharedTicker() end
     local cfg = C_DamageMeter
         and C_DamageMeter.GetCombatSessionFromType
         and C_DamageMeter.GetCombatSessionFromType(
@@ -498,9 +408,7 @@ function mod._DMHiddenDeathsPass(wid)
             Enum.DamageMeterType.Deaths
         )
     local srcs = cfg and cfg.combatSources
-    if not srcs then
-        return
-    end
+    if not srcs then return end
     for index = 1, #srcs do
         local source = srcs[index]
         local rid, t = source.deathRecapID, source.deathTimeSeconds
@@ -518,9 +426,7 @@ function mod._DMHiddenDeathsPass(wid)
 end
 
 local function FormatTimerDecimal(seconds)
-    if not seconds or (issecretvalue and issecretvalue(seconds)) then
-        return "0:00.0"
-    end
+    if not seconds or (issecretvalue and issecretvalue(seconds)) then return "0:00.0" end
     return format(
         "%d:%02d.%d",
         math.floor(seconds / 60),
@@ -556,9 +462,7 @@ local function GetBreakdownDuration(session, sessionID)
 end
 
 local function AmountPerSecond(sum, duration)
-    if type(sum) ~= "number" or not duration or duration <= 0 then
-        return nil
-    end
+    if type(sum) ~= "number" or not duration or duration <= 0 then return nil end
     return sum / duration
 end
 
@@ -687,9 +591,7 @@ local _enemyByName = {}
 local function AggregateEnemyPlayers(srcData, duration, rowList)
     local spells = srcData and srcData.combatSpells
     local count = spells and #spells or 0
-    if count == 0 then
-        return nil
-    end
+    if count == 0 then return nil end
     local secret = false
     for index = 1, count do
         local spell = spells[index]
@@ -724,16 +626,12 @@ local function AggregateEnemyPlayers(srcData, duration, rowList)
                 p.isPet, p.isMob = IsSecret(pet) or pet, IsSecret(mob) or mob
                 p.total = spell.totalAmount or 0
                 p.amountPerSecond = spell.amountPerSecond
-                if not secret then
-                    _enemyByName[name] = p
-                end
+                if not secret then _enemyByName[name] = p end
             end
         end
     end
     wipe(_enemyByName)
-    if num == 0 then
-        return nil
-    end
+    if num == 0 then return nil end
     if not secret then
         for index = 1, num do
             local p = rowList[index]
@@ -757,27 +655,19 @@ end
 -- (declared with the event state above) is wiped on DAMAGE_METER_RESET and when combat starts or ends.
 local function BuildAllPlayerTargets(session, sessionID)
     local cacheKey = tostring(session) .. "|" .. tostring(sessionID)
-    if _targetsCache.key == cacheKey then
-        return _targetsCache.map
-    end
+    if _targetsCache.key == cacheKey then return _targetsCache.map end
 
-    if not C_DamageMeter then
-        return nil
-    end
+    if not C_DamageMeter then return nil end
 
     local enemySession
     if sessionID and C_DamageMeter.GetCombatSessionFromID then
         local success, s =
             pcall(C_DamageMeter.GetCombatSessionFromID, sessionID, Enum.DamageMeterType.EnemyDamageTaken)
-        if success then
-            enemySession = s
-        end
+        if success then enemySession = s end
     elseif C_DamageMeter.GetCombatSessionFromType then
         local success, s =
             pcall(C_DamageMeter.GetCombatSessionFromType, session, Enum.DamageMeterType.EnemyDamageTaken)
-        if success then
-            enemySession = s
-        end
+        if success then enemySession = s end
     end
     if not enemySession or not enemySession.combatSources or #enemySession.combatSources == 0 then
         _targetsCache.key = cacheKey
@@ -803,9 +693,7 @@ local function BuildAllPlayerTargets(session, sessionID)
                 enemy.sourceGUID,
                 enemy.sourceCreatureID
             )
-            if success then
-                srcData = sd
-            end
+            if success then srcData = sd end
         elseif C_DamageMeter.GetCombatSessionSourceFromType then
             local success, sd = pcall(
                 C_DamageMeter.GetCombatSessionSourceFromType,
@@ -814,18 +702,14 @@ local function BuildAllPlayerTargets(session, sessionID)
                 enemy.sourceGUID,
                 enemy.sourceCreatureID
             )
-            if success then
-                srcData = sd
-            end
+            if success then srcData = sd end
         end
         if srcData and srcData.combatSpells then
             for _, spell in ipairs(srcData.combatSpells) do
                 local det = spell.combatSpellDetails
                 if det and det.unitName and not (issecretvalue and issecretvalue(det.unitName)) then
                     local pName = det.unitName
-                    local success, amt = pcall(function()
-                        return spell.totalAmount
-                    end)
+                    local success, amt = pcall(function() return spell.totalAmount end)
                     local amount = (success and amt) or 0
                     if amount > 0 then
                         local pt = byPlayer[pName]
@@ -849,9 +733,7 @@ local function BuildAllPlayerTargets(session, sessionID)
             entries[#entries + 1] =
                 { name = enemyNames[eKey], total = sum, amountPerSecond = AmountPerSecond(sum, duration) }
         end
-        table.sort(entries, function(lhs, rhs)
-            return lhs.total > rhs.total
-        end)
+        table.sort(entries, function(lhs, rhs) return lhs.total > rhs.total end)
         map[pName] = entries
     end
 
@@ -862,25 +744,15 @@ local function BuildAllPlayerTargets(session, sessionID)
 end
 
 local function BuildPlayerTargets(playerName, session, sessionID, maxTargets)
-    if not playerName then
-        return nil
-    end
-    if issecretvalue and issecretvalue(playerName) then
-        return nil
-    end
-    if playerName == "" then
-        return nil
-    end
+    if not playerName then return nil end
+    if issecretvalue and issecretvalue(playerName) then return nil end
+    if playerName == "" then return nil end
 
     local map = BuildAllPlayerTargets(session, sessionID)
-    if not map then
-        return nil
-    end
+    if not map then return nil end
 
     local entries = map[playerName]
-    if not entries or #entries == 0 then
-        return nil
-    end
+    if not entries or #entries == 0 then return nil end
 
     if #entries > maxTargets then
         local trimmed = {}

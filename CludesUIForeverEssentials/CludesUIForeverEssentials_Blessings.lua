@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Blessings.lua  (WoW Forever only)
 --  Blessings, for paladins: the Blessing Bar (your aura, Righteous Fury, your
@@ -68,24 +64,12 @@ local QUESTION = 134400
 local B = { others = {} }
 local others = B.others
 
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
-local function IsPaladin()
-    return select(2, UnitClass("player")) == "PALADIN"
-end
-local function MyName()
-    return (UnitFullName("player"))
-end
-local function ClassName(class)
-    return LOCALIZED_CLASS_NAMES_MALE[class] or class
-end
-local function On()
-    return F.Enabled()
-end
-local function Print(message)
-    CludesUI.Print("|cff4cc9f0Blessings:|r " .. message)
-end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
+local function IsPaladin() return select(2, UnitClass("player")) == "PALADIN" end
+local function MyName() return (UnitFullName("player")) end
+local function ClassName(class) return LOCALIZED_CLASS_NAMES_MALE[class] or class end
+local function On() return F.Enabled() end
+local function Print(message) CludesUI.Print("|cff4cc9f0Blessings:|r " .. message) end
 -- Shared between the sections below (each keeps its own helpers in a do block).
 local HiddenAuras, Remembered, ForgetIfDead, CastSent, NoteCast, CastDone, ForgetCasts
 local OnPallyPower, PP_PREFIX, asked
@@ -134,14 +118,10 @@ local FREE_FLAG = "X"
 local BY_KEY, BY_CODE, FAMILY, IDS, GREATER = {}, {}, {}, {}, {}
 local function Index(record, untracked)
     BY_KEY[record.key] = record
-    if record.code then
-        BY_CODE[record.code] = record
-    end
+    if record.code then BY_CODE[record.code] = record end
     IDS[record.key] = {}
     for _, ident in ipairs(record.ranks) do
-        if not untracked then
-            FAMILY[ident] = record.key
-        end
+        if not untracked then FAMILY[ident] = record.key end
         IDS[record.key][ident] = true
     end
     for _, ident in ipairs(record.greater or {}) do
@@ -164,9 +144,7 @@ Index(FURY)
 
 local function HighestKnown(ids)
     for index = #(ids or {}), 1, -1 do
-        if C_SpellBook.IsSpellKnown(ids[index]) then
-            return ids[index]
-        end
+        if C_SpellBook.IsSpellKnown(ids[index]) then return ids[index] end
     end
 end
 local function Learned(record)
@@ -202,9 +180,7 @@ do
     --  Group
     -------------------------------------------------------------------------------
     local NAME_SLOTS = 4
-    function Readable(val)
-        return not Secret(val) and val ~= nil and val ~= ""
-    end
+    function Readable(val) return not Secret(val) and val ~= nil and val ~= "" end
 
     local function HeaderNames(member, realm, firstNames, raid)
         local seen, result = {}, {}
@@ -215,13 +191,9 @@ do
             end
         end
         for _, name in ipairs(member.candidates) do
-            if firstNames[name] == 1 then
-                Add(name)
-            end
+            if firstNames[name] == 1 then Add(name) end
         end
-        if not member.who:find("-", 1, true) then
-            Add(member.who .. "-" .. realm)
-        end
+        if not member.who:find("-", 1, true) then Add(member.who .. "-" .. realm) end
         local seenBy
         if raid then
             seenBy = member.rosterName
@@ -272,9 +244,7 @@ do
                 local subgroup = raid and select(3, GetRaidRosterInfo(index))
                 member.subgroup = not Secret(subgroup) and subgroup or nil
                 local nameList = { who, short, member.rosterName }
-                if Readable(short) and Readable(server) then
-                    nameList[4] = short .. "-" .. server
-                end
+                if Readable(short) and Readable(server) then nameList[4] = short .. "-" .. server end
                 member.candidates = {}
                 local counted = {}
                 for k = 1, NAME_SLOTS do
@@ -296,28 +266,20 @@ do
 
     -- In a raid dungeon with Hide the Bench on, the groups past its usual size are left out.
     function Visible(roster)
-        if not (Get("bench") and IsInRaid()) then
-            return roster
-        end
+        if not (Get("bench") and IsInRaid()) then return roster end
         local _, kind, _, _, maxPlayers = GetInstanceInfo()
-        if kind ~= "raid" or not maxPlayers or maxPlayers <= 0 then
-            return roster
-        end
+        if kind ~= "raid" or not maxPlayers or maxPlayers <= 0 then return roster end
         local last = math.ceil(maxPlayers / 5)
         local isShown = {}
         for _, member in ipairs(roster) do
-            if not member.subgroup or member.subgroup <= last then
-                isShown[#isShown + 1] = member
-            end
+            if not member.subgroup or member.subgroup <= last then isShown[#isShown + 1] = member end
         end
         return isShown
     end
 
     function InGroup(who)
         for _, member in ipairs(Roster()) do
-            if member.who == who then
-                return member
-            end
+            if member.who == who then return member end
         end
     end
 
@@ -338,21 +300,15 @@ do
 
     local function IsTank(unitToken)
         local role = UnitGroupRolesAssigned(unitToken)
-        if not Secret(role) and role == "TANK" then
-            return true
-        end
+        if not Secret(role) and role == "TANK" then return true end
         return GetPartyAssignment("MAINTANK", unitToken) and true or false
     end
 
-    local function IsAssist(unitToken)
-        return GetPartyAssignment("MAINASSIST", unitToken) and true or false
-    end
+    local function IsAssist(unitToken) return GetPartyAssignment("MAINASSIST", unitToken) and true or false end
 
     local function RoleBlessing(member)
         local tank, assist = Get("tank"), Get("assist")
-        if not TANKING[member.class] or (tank == NO_BLESSING and assist == NO_BLESSING) then
-            return
-        end
+        if not TANKING[member.class] or (tank == NO_BLESSING and assist == NO_BLESSING) then return end
         local key = tank ~= NO_BLESSING and IsTank(member.unit) and tank
             or assist ~= NO_BLESSING and IsAssist(member.unit) and assist
         return key and BY_KEY[key] and Learned(BY_KEY[key]) and key or nil
@@ -370,17 +326,11 @@ do
 
     -- Whether an addon message's sender is this unit.
     function SenderIsUnit(sender, unitToken, unitGuid)
-        if not (Readable(sender) and Readable(unitToken) and Readable(unitGuid)) then
-            return false
-        end
+        if not (Readable(sender) and Readable(unitToken) and Readable(unitGuid)) then return false end
         local g = UnitGUID(unitToken)
-        if not Readable(g) or g ~= unitGuid then
-            return false
-        end
+        if not Readable(g) or g ~= unitGuid then return false end
         local first, second = UnitFullName(unitToken)
-        if not first or Secret(first) or Secret(second) then
-            return false
-        end
+        if not first or Secret(first) or Secret(second) then return false end
         local own = GetNormalizedRealmName()
         local name, realm = strsplit("-", sender, 2)
         return name == first and (realm or own) == ((second and second ~= "") and second or own)
@@ -406,9 +356,7 @@ do
         local unitGuid = UnitGUID(unitToken)
         local mine = unitGuid and not Secret(unitGuid) and seen[unitGuid]
         local ends = mine and mine[key]
-        if not ends then
-            return false
-        end
+        if not ends then return false end
         local dead = UnitIsDeadOrGhost(unitToken)
         if not Secret(dead) and dead then
             seen[unitGuid] = nil
@@ -423,22 +371,14 @@ do
     end
 
     function ForgetIfDead(unitToken)
-        if not next(seen) then
-            return
-        end
+        if not next(seen) then return end
         local unitGuid = UnitGUID(unitToken)
-        if not unitGuid or Secret(unitGuid) or not seen[unitGuid] then
-            return
-        end
+        if not unitGuid or Secret(unitGuid) or not seen[unitGuid] then return end
         local dead = UnitIsDeadOrGhost(unitToken)
-        if not Secret(dead) and dead then
-            seen[unitGuid] = nil
-        end
+        if not Secret(dead) and dead then seen[unitGuid] = nil end
     end
 
-    function CastSent(castGUID, spell)
-        sent = { guid = castGUID, spell = spell, at = GetTime() }
-    end
+    function CastSent(castGUID, spell) sent = { guid = castGUID, spell = spell, at = GetTime() } end
 
     function NoteCast(unitToken, spell)
         local cast = sent
@@ -456,9 +396,7 @@ do
             return
         end
         local key = FAMILY[spell]
-        if not key then
-            return
-        end
+        if not key then return end
         local roster = Roster()
         local target
         for _, member in ipairs(roster) do
@@ -468,9 +406,7 @@ do
                 break
             end
         end
-        if not target then
-            return
-        end
+        if not target then return end
         local guids = {}
         for _, member in ipairs(roster) do
             if member.guid == target.guid or (GREATER[spell] and member.class == target.class) then
@@ -478,22 +414,16 @@ do
             end
         end
         for ident, old in pairs(casts) do
-            if GetTime() - old.at >= CAST_WINDOW then
-                casts[ident] = nil
-            end
+            if GetTime() - old.at >= CAST_WINDOW then casts[ident] = nil end
         end
         casts[cast.guid] = { key = key, guids = guids, at = GetTime() }
     end
 
     function CastDone(castGUID)
         local cast = casts[castGUID]
-        if not cast then
-            return
-        end
+        if not cast then return end
         casts[castGUID] = nil
-        if GetTime() - cast.at >= CAST_WINDOW then
-            return
-        end
+        if GetTime() - cast.at >= CAST_WINDOW then return end
         local ends = GetTime() + (BY_KEY[cast.key].blessing and BLESSING_TIME or math.huge)
         for _, unitGuid in ipairs(cast.guids) do
             seen[unitGuid] = seen[unitGuid] or {}
@@ -537,22 +467,16 @@ do
             s.stale = true
         end
     end
-    function EndAuraMemo()
-        memoAt = nil
-    end
+    function EndAuraMemo() memoAt = nil end
 
     local function Found(val)
-        if val == true then
-            return true
-        end
+        if val == true then return true end
         return true, val - GetTime()
     end
 
     function BuffState(unitToken, key)
         if C_Secrets and C_Secrets.ShouldAurasBeSecret and C_Secrets.ShouldAurasBeSecret() then
-            if HiddenAuras() then
-                return Remembered(unitToken, key)
-            end
+            if HiddenAuras() then return Remembered(unitToken, key) end
             return nil
         end
         local s
@@ -562,23 +486,15 @@ do
                 s = {}
                 memo[unitToken] = s
             end
-            if s.stale then
-                wipe(s)
-            end
+            if s.stale then wipe(s) end
         else
             wipe(scratch)
             s = scratch
         end
         local val = s[key]
-        if val then
-            return Found(val)
-        end
-        if s.ended == "none" then
-            return false
-        end
-        if s.ended then
-            return nil
-        end
+        if val then return Found(val) end
+        if s.ended == "none" then return false end
+        if s.ended then return nil end
         for index = s.next or 1, MAX_AURAS do
             local aura = C_UnitAuras.GetAuraDataByIndex(unitToken, index, "HELPFUL")
             if not aura then
@@ -605,20 +521,14 @@ do
     end
 
     local function InRange(member, spell)
-        if member.guid == UnitGUID("player") then
-            return true
-        end
+        if member.guid == UnitGUID("player") then return true end
         local inRange = C_Spell.IsSpellInRange(spell, member.unit)
-        if Secret(inRange) then
-            return nil
-        end
+        if Secret(inRange) then return nil end
         return inRange
     end
 
     function WaitedFor(members, spell)
-        if not Get("wait") then
-            return true
-        end
+        if not Get("wait") then return true end
         for _, member in ipairs(members) do
             if
                 UnitIsConnected(member.unit)
@@ -632,9 +542,7 @@ do
     end
 
     function ByUrgency(a, b)
-        if a.rank ~= b.rank then
-            return a.rank < b.rank
-        end
+        if a.rank ~= b.rank then return a.rank < b.rank end
         return a.left < b.left
     end
 
@@ -682,9 +590,7 @@ do
                         end
                         if not players[member.guid] then
                             cfg.classDue = cfg.classDue + 1
-                            if region == 0 then
-                                cfg.classMissing = cfg.classMissing + 1
-                            end
+                            if region == 0 then cfg.classMissing = cfg.classMissing + 1 end
                         end
                     end
                     local l = remaining or math.huge
@@ -700,20 +606,14 @@ do
         table.sort(queue, ByUrgency)
         local due = 0
         for _, record in ipairs(queue) do
-            if record.rank < 2 then
-                due = due + 1
-            end
+            if record.rank < 2 then due = due + 1 end
         end
-        if GREATER[queue[1] and queue[1].spell] then
-            due = math.min(due, 1)
-        end
+        if GREATER[queue[1] and queue[1].spell] then due = math.min(due, 1) end
         local keep = Get("respect") and 0 or 1
         for index = #queue, math.max(due, keep) + 1, -1 do
             queue[index] = nil
         end
-        if due == 0 and keep == 0 then
-            cfg.target = nil
-        end
+        if due == 0 and keep == 0 then cfg.target = nil end
         cfg.rank, cfg.left = rank, leftX
         return cfg
     end
@@ -731,12 +631,8 @@ do
             return
         end
         local has, remaining = BuffState(member.unit, key)
-        if has == false then
-            return 0, 0
-        end
-        if has and remaining and remaining < EXPIRING then
-            return 1, remaining
-        end
+        if has == false then return 0, 0 end
+        if has and remaining and remaining < EXPIRING then return 1, remaining end
     end
 end
 
@@ -756,14 +652,10 @@ do
 
     local function CooldownLeft(ranks)
         local spell = HighestKnown(ranks)
-        if not spell then
-            return -1
-        end
+        if not spell then return -1 end
         local details = C_Spell.GetSpellCooldown(spell)
         local start, duration = details and details.startTime, details and details.duration
-        if not start or Secret(start) or Secret(duration) or duration <= 1.5 then
-            return 0
-        end
+        if not start or Secret(start) or Secret(duration) or duration <= 1.5 then return 0 end
         return math.max(0, math.floor(start + duration - GetTime()))
     end
 
@@ -796,58 +688,38 @@ do
     end
 
     local function DecodePlan(textValue)
-        if #textValue ~= #CLASSES + 1 then
-            return
-        end
+        if #textValue ~= #CLASSES + 1 then return end
         local classes = {}
         for index, class in ipairs(CLASSES) do
             local c = textValue:sub(index, index)
             if c ~= NONE_CODE then
                 local record = BY_CODE[c]
-                if not (record and record.blessing) then
-                    return
-                end
+                if not (record and record.blessing) then return end
                 classes[class] = record.key
             end
         end
         local c = textValue:sub(-1)
-        if c == NONE_CODE then
-            return classes, nil
-        end
+        if c == NONE_CODE then return classes, nil end
         local record = BY_CODE[c]
-        if record and not record.blessing then
-            return classes, record.key
-        end
+        if record and not record.blessing then return classes, record.key end
     end
 
     local function KnownCodes()
         local codes = {}
         for _, record in ipairs(BLESSINGS) do
-            if Learned(record) then
-                codes[#codes + 1] = record.code
-            end
+            if Learned(record) then codes[#codes + 1] = record.code end
         end
         for _, record in ipairs(AURAS) do
-            if Learned(record) then
-                codes[#codes + 1] = record.code
-            end
+            if Learned(record) then codes[#codes + 1] = record.code end
         end
-        if Store().free then
-            codes[#codes + 1] = FREE_FLAG
-        end
+        if Store().free then codes[#codes + 1] = FREE_FLAG end
         return table.concat(codes)
     end
 
     function Channel()
-        if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
-            return "INSTANCE_CHAT"
-        end
-        if IsInRaid() then
-            return "RAID"
-        end
-        if IsInGroup() then
-            return "PARTY"
-        end
+        if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then return "INSTANCE_CHAT" end
+        if IsInRaid() then return "RAID" end
+        if IsInGroup() then return "PARTY" end
     end
 
     function Send(message, key)
@@ -856,9 +728,7 @@ do
             return
         end
         local channel = Channel()
-        if channel then
-            C_ChatInfo.SendAddonMessage(PREFIX, message, channel)
-        end
+        if channel then C_ChatInfo.SendAddonMessage(PREFIX, message, channel) end
     end
 
     local function SendPlayers()
@@ -876,9 +746,7 @@ do
             end
         end
         parts[#parts + 1] = chunk
-        if chunk == "" and #parts == 1 and not sentPlayers then
-            return
-        end
+        if chunk == "" and #parts == 1 and not sentPlayers then return end
         sentPlayers = chunk ~= "" or #parts > 1
         for _, body in ipairs(parts) do
             Send("P|" .. num .. "|" .. body, "P|" .. num)
@@ -892,9 +760,7 @@ do
     end
 
     local function Broadcast()
-        if not IsPaladin() then
-            return
-        end
+        if not IsPaladin() then return end
         if InCombatLockdown() then
             broadcastAfterCombat = true
             return
@@ -906,9 +772,7 @@ do
     end
 
     function BroadcastSoon()
-        if broadcastQueued then
-            return
-        end
+        if broadcastQueued then return end
         broadcastQueued = true
         C_Timer.After(BATCH_DELAY, function()
             broadcastQueued = false
@@ -922,15 +786,11 @@ do
 
     local function OnAssigned(from, name, target, plan)
         local classes, aura = DecodePlan(plan)
-        if not (IsPaladin() and classes and MayPlan(from) and target == UnitGUID("player")) then
-            return
-        end
+        if not (IsPaladin() and classes and MayPlan(from) and target == UnitGUID("player")) then return end
         local storage = Store()
         storage.classes = {}
         for class, key in pairs(classes) do
-            if Learned(BY_KEY[key]) then
-                storage.classes[class] = key
-            end
+            if Learned(BY_KEY[key]) then storage.classes[class] = key end
         end
         storage.aura = aura and Learned(BY_KEY[aura]) and aura or nil
         Print(name .. " updated your blessings.")
@@ -940,9 +800,7 @@ do
 
     local function OnStatus(who, symbols, loh, di)
         local from = others[who]
-        if not from then
-            return
-        end
+        if not from then return end
         local nowTime = GetTime()
         local function Ends(leftX)
             leftX = tonumber(leftX)
@@ -954,9 +812,7 @@ do
 
     local function OnPlayers(who, part, entries)
         local from = others[who]
-        if not from then
-            return
-        end
+        if not from then return end
         if part == "1" then
             from.players, from.choices = {}, 0
         end
@@ -964,9 +820,7 @@ do
             local record = BY_CODE[code]
             local choices = from.choices or 0
             if record and record.blessing and (from.players[unitGuid] or choices < MAX_PLAYER_CHOICES) then
-                if not from.players[unitGuid] then
-                    from.choices = choices + 1
-                end
+                if not from.players[unitGuid] then from.choices = choices + 1 end
                 from.players[unitGuid] = record.key
             end
         end
@@ -974,21 +828,13 @@ do
     end
 
     local function OnPlan(from, body, known)
-        if not (body and from.class == "PALADIN") then
-            return
-        end
+        if not (body and from.class == "PALADIN") then return end
         local classes, aura = DecodePlan(body)
-        if not classes then
-            return
-        end
+        if not classes then return end
         local set, free = {}, nil
         for code in known:gmatch(".") do
-            if BY_CODE[code] then
-                set[BY_CODE[code].key] = true
-            end
-            if code == FREE_FLAG then
-                free = true
-            end
+            if BY_CODE[code] then set[BY_CODE[code].key] = true end
+            if code == FREE_FLAG then free = true end
         end
         local was = others[from.who]
         others[from.who] = {
@@ -1005,60 +851,42 @@ do
 
     function Sender(sender)
         for _, member in ipairs(Roster()) do
-            if SenderIsUnit(sender, member.unit, member.guid) then
-                return member
-            end
+            if SenderIsUnit(sender, member.unit, member.guid) then return member end
         end
     end
 
     function OnMessage(message, sender)
         if message == "R" then
-            if not SenderIsUnit(sender, "player", UnitGUID("player")) then
-                BroadcastSoon()
-            end
+            if not SenderIsUnit(sender, "player", UnitGUID("player")) then BroadcastSoon() end
             return
         end
         local from = Sender(sender)
-        if not from or from.guid == UnitGUID("player") then
-            return
-        end
+        if not from or from.guid == UnitGUID("player") then return end
         local who = from.who
         local target, plan = message:match("^S|([^|]+)|(%S+)$")
-        if target then
-            return OnAssigned(from, Ambiguate(sender, "none"), target, plan)
-        end
+        if target then return OnAssigned(from, Ambiguate(sender, "none"), target, plan) end
         local symbols, loh, di = message:match("^I|(%d+)|(%-?%d+)|(%-?%d+)$")
-        if symbols then
-            return OnStatus(who, symbols, loh, di)
-        end
+        if symbols then return OnStatus(who, symbols, loh, di) end
         local part, entries = message:match("^P|(%d+)|(.*)$")
-        if part then
-            return OnPlayers(who, part, entries)
-        end
+        if part then return OnPlayers(who, part, entries) end
         local body, known = message:match("^F|(%S+)|(%a*)$")
         OnPlan(from, body, known)
     end
 
     function SendPlan(who, classes, aura)
         local member = InGroup(who)
-        if not member then
-            return
-        end
+        if not member then return end
         others[who].classes, others[who].aura = classes, aura
         Send("S|" .. member.guid .. "|" .. EncodePlan(classes, aura), "S|" .. member.guid)
     end
 
     function SyncSoon()
-        if syncQueued then
-            return
-        end
+        if syncQueued then return end
         syncQueued = true
         C_Timer.After(BATCH_DELAY, function()
             syncQueued = false
             for who in pairs(others) do
-                if not InGroup(who) then
-                    others[who] = nil
-                end
+                if not InGroup(who) then others[who] = nil end
             end
             if IsPaladin() or CanAssign("player") then
                 Send("R")
@@ -1078,9 +906,7 @@ do
             pending[key] = nil
             Send(message)
         end
-        if IsPaladin() or CanAssign("player") then
-            AskPallyPower()
-        end
+        if IsPaladin() or CanAssign("player") then AskPallyPower() end
     end
 
     do
@@ -1100,9 +926,7 @@ do
 
     local function PPPlan(who)
         local plan = others[who]
-        if plan then
-            return plan.pallyPower and plan or nil
-        end
+        if plan then return plan.pallyPower and plan or nil end
         plan = { classes = {}, known = {}, players = {}, choices = 0, pallyPower = true }
         others[who] = plan
         return plan
@@ -1146,9 +970,7 @@ do
             for _, plan in pairs(others) do
                 if plan.pallyPower and (lead or plan.free) then
                     plan.classes = {}
-                    if message == "CLEAR" then
-                        plan.aura = nil
-                    end
+                    if message == "CLEAR" then plan.aura = nil end
                 end
             end
             return
@@ -1156,26 +978,20 @@ do
         local name, class, index = message:match("^ASSIGN (.+) (%d+) (%d+)$")
         if name then
             local plan, colour = PPTarget(name, from), PP_CLASSES[tonumber(class)]
-            if plan and colour then
-                plan.classes[colour] = PPPick(plan, PP_BLESSINGS, index)
-            end
+            if plan and colour then plan.classes[colour] = PPPick(plan, PP_BLESSINGS, index) end
             return
         end
         local given
         name, given = message:match("^PASSIGN (.+)@([%dn]*)$")
         if name then
             local plan = PPTarget(name, from)
-            if plan then
-                PPClasses(plan, given)
-            end
+            if plan then PPClasses(plan, given) end
             return
         end
         name, index = message:match("^MASSIGN (.+) (%d+)$")
         if name then
             local plan = PPTarget(name, from)
-            if not plan then
-                return
-            end
+            if not plan then return end
             local key = PPPick(plan, PP_BLESSINGS, index)
             for _, colour in ipairs(PP_CLASSES) do
                 plan.classes[colour] = key
@@ -1184,9 +1000,7 @@ do
         end
         name, index = message:match("^AASSIGN (.+) (%d+)$")
         local plan = name and PPTarget(name, from)
-        if plan then
-            plan.aura = PPPick(plan, PP_AURAS, index)
-        end
+        if plan then plan.aura = PPPick(plan, PP_AURAS, index) end
     end
 
     function OnPallyPower(message, sender)
@@ -1194,24 +1008,16 @@ do
         local auraRanks, aura = message:match("^ASELF ([%xn]*)@([%dn]*)$")
         local symbols = message:match("SYMCOUNT (%d+)")
         local change = PP_CHANGES[message:match("^%u+")]
-        if not (ranks or auraRanks or symbols or change) then
-            return
-        end
+        if not (ranks or auraRanks or symbols or change) then return end
         local from = Sender(sender)
-        if not from or from.guid == UnitGUID("player") then
-            return
-        end
+        if not from or from.guid == UnitGUID("player") then return end
         if change then
             PPChange(message, from)
             return RefreshPage()
         end
-        if from.class ~= "PALADIN" then
-            return
-        end
+        if from.class ~= "PALADIN" then return end
         local plan = ranks and PPPlan(from.who) or others[from.who]
-        if not (plan and plan.pallyPower) then
-            return
-        end
+        if not (plan and plan.pallyPower) then return end
         if ranks then
             PPKnown(plan, PP_BLESSINGS, ranks)
             PPClasses(plan, given)
@@ -1229,9 +1035,7 @@ do
 
     function AskPallyPower()
         local channel = Channel()
-        if not channel or InCombatLockdown() then
-            return
-        end
+        if not channel or InCombatLockdown() then return end
         local me, ask = UnitGUID("player"), false
         for _, member in ipairs(Roster()) do
             if
@@ -1244,9 +1048,7 @@ do
                 ask = true
             end
         end
-        if ask then
-            C_ChatInfo.SendAddonMessage(PP_PREFIX, "REQ", channel)
-        end
+        if ask then C_ChatInfo.SendAddonMessage(PP_PREFIX, "REQ", channel) end
     end
 end
 
@@ -1260,44 +1062,32 @@ do
         {
             key = "SELF",
             label = "Yourself",
-            can = function()
-                return true
-            end,
+            can = function() return true end,
         },
         {
             key = "SAY",
             label = "Say",
-            can = function()
-                return true
-            end,
+            can = function() return true end,
         },
         {
             key = "PARTY",
             label = "Party",
-            can = function()
-                return IsInGroup()
-            end,
+            can = function() return IsInGroup() end,
         },
         {
             key = "RAID",
             label = "Raid",
-            can = function()
-                return IsInRaid()
-            end,
+            can = function() return IsInRaid() end,
         },
         {
             key = "INSTANCE_CHAT",
             label = "Instance",
-            can = function()
-                return IsInGroup(LE_PARTY_CATEGORY_INSTANCE)
-            end,
+            can = function() return IsInGroup(LE_PARTY_CATEGORY_INSTANCE) end,
         },
         {
             key = "GUILD",
             label = "Guild",
-            can = function()
-                return IsInGuild()
-            end,
+            can = function() return IsInGuild() end,
         },
     }
 
@@ -1317,9 +1107,7 @@ do
         for _, key in ipairs(sequence) do
             parts[#parts + 1] = SpellName(key) .. " (" .. table.concat(byBlessing[key], ", ") .. ")"
         end
-        if plan.aura then
-            parts[#parts + 1] = SpellName(plan.aura)
-        end
+        if plan.aura then parts[#parts + 1] = SpellName(plan.aura) end
         return #parts > 0 and table.concat(parts, ", ") or "Nothing"
     end
 
@@ -1334,9 +1122,7 @@ do
 
     local function ReportLines()
         local plans = {}
-        if IsPaladin() then
-            plans[1] = { who = MyName(), plan = Store() }
-        end
+        if IsPaladin() then plans[1] = { who = MyName(), plan = Store() } end
         local nameList = {}
         for who in pairs(others) do
             nameList[#nameList + 1] = who
@@ -1345,9 +1131,7 @@ do
         for _, who in ipairs(nameList) do
             plans[#plans + 1] = { who = who, plan = others[who] }
         end
-        if #plans == 0 then
-            return
-        end
+        if #plans == 0 then return end
         local lines = { "--- Paladin blessings ---" }
         for _, record in ipairs(plans) do
             Split(Ambiguate(record.who, "short") .. ": " .. Given(record.plan), lines)
@@ -1357,13 +1141,9 @@ do
     end
 
     function Report(channel)
-        if InCombatLockdown() then
-            return Print("Reports are sent outside combat.")
-        end
+        if InCombatLockdown() then return Print("Reports are sent outside combat.") end
         local lines = ReportLines()
-        if not lines then
-            return Print("There are no paladins to report.")
-        end
+        if not lines then return Print("There are no paladins to report.") end
         local send = (C_ChatInfo and C_ChatInfo.SendChatMessage) or SendChatMessage
         for _, line in ipairs(lines) do
             if channel == "SELF" then
@@ -1398,14 +1178,10 @@ do
         if IsPaladin() then
             local known = {}
             for _, record in ipairs(BLESSINGS) do
-                if Learned(record) then
-                    known[record.key] = true
-                end
+                if Learned(record) then known[record.key] = true end
             end
             for _, record in ipairs(AURAS) do
-                if Learned(record) then
-                    known[record.key] = true
-                end
+                if Learned(record) then known[record.key] = true end
             end
             entries[1] = { who = MyName(), known = known, you = true }
         end
@@ -1419,9 +1195,7 @@ do
             end
         end
         table.sort(entries, function(lhs, rhs)
-            if lhs.count ~= rhs.count then
-                return lhs.count < rhs.count
-            end
+            if lhs.count ~= rhs.count then return lhs.count < rhs.count end
             return lhs.who < rhs.who
         end)
         return entries
@@ -1448,13 +1222,9 @@ do
         for _, key in ipairs(wanted) do
             local taken = false
             for _, plan in ipairs(fixed) do
-                if given(plan) == key then
-                    taken = true
-                end
+                if given(plan) == key then taken = true end
             end
-            if not taken then
-                result[#result + 1] = key
-            end
+            if not taken then result[#result + 1] = key end
         end
         return result
     end
@@ -1473,19 +1243,11 @@ do
             plans[p.who] = { classes = {} }
         end
         for _, class in ipairs(CLASSES) do
-            local wanted = Untaken(WANTED[class], fixed, function(plan)
-                return plan.classes[class]
-            end)
-            Pick(paladins, wanted, function(profile, key)
-                plans[profile.who].classes[class] = key
-            end)
+            local wanted = Untaken(WANTED[class], fixed, function(plan) return plan.classes[class] end)
+            Pick(paladins, wanted, function(profile, key) plans[profile.who].classes[class] = key end)
         end
-        local auras = Untaken(AURA_ORDER, fixed, function(plan)
-            return plan.aura
-        end)
-        Pick(paladins, auras, function(profile, key)
-            plans[profile.who].aura = key
-        end)
+        local auras = Untaken(AURA_ORDER, fixed, function(plan) return plan.aura end)
+        Pick(paladins, auras, function(profile, key) plans[profile.who].aura = key end)
         return plans
     end
 
@@ -1514,18 +1276,14 @@ do
 
     function CanPlanAll()
         for _, plan in pairs(others) do
-            if not plan.pallyPower then
-                return CanAssign("player")
-            end
+            if not plan.pallyPower then return CanAssign("player") end
         end
         return true
     end
 
     function SavePreset()
         local paladins = Paladins()
-        if #paladins == 0 then
-            return false
-        end
+        if #paladins == 0 then return false end
         local preset = {}
         for _, p in ipairs(paladins) do
             local plan = p.you and Store() or others[p.who]
@@ -1546,9 +1304,7 @@ do
             if saved and not p.fixed then
                 local plan = { classes = {} }
                 for class, key in pairs(saved.classes or {}) do
-                    if p.known[key] then
-                        plan.classes[class] = key
-                    end
+                    if p.known[key] then plan.classes[class] = key end
                 end
                 plan.aura = saved.aura and p.known[saved.aura] and saved.aura or nil
                 plans[p.who] = plan
@@ -1563,17 +1319,13 @@ do
         for _, p in ipairs(Paladins()) do
             plans[p.who] = { classes = {} }
         end
-        if IsPaladin() then
-            Store().players = {}
-        end
+        if IsPaladin() then Store().players = {} end
         ApplyPlans(plans)
     end
 
     function SetFor(who, colour, key)
         local plan = others[who]
-        if not plan then
-            return
-        end
+        if not plan then return end
         if colour == AURA_COLUMN then
             plan.aura = key
         else
@@ -1591,9 +1343,7 @@ local YELLOW = { r = 1, g = 0.85, b = 0.3 }
 local BLUE = { r = 0.35, g = 0.6, b = 1 }
 local ICON_CROP = 0.08
 local LABEL_SIZE, LABEL_DROP, LABEL_SIDE, LABEL_COLUMN = 10, 2, 3, 46
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local Look = { rows = 1 }
 
@@ -1622,18 +1372,12 @@ local function LookRead()
 end
 
 local function LabelRoom()
-    if not Look.labels then
-        return 0
-    end
-    if Look.vertical then
-        return LABEL_SIDE + LABEL_COLUMN
-    end
+    if not Look.labels then return 0 end
+    if Look.vertical then return LABEL_SIDE + LABEL_COLUMN end
     return LABEL_DROP + LABEL_SIZE
 end
 
-local function RowStep()
-    return Look.size + Look.gap + LabelRoom()
-end
+local function RowStep() return Look.size + Look.gap + LabelRoom() end
 
 local function LookPin(widget, barFrame, posX, posY)
     widget:ClearAllPoints()
@@ -1648,9 +1392,7 @@ local function LookPlace(widget, barFrame, posX, posY)
     local size = Look.size
     widget:SetSize(size, size)
     CludesUI.Kit.Font(widget.timer, Look.timerSize, "essentials")
-    if widget.watchText then
-        CludesUI.Kit.Font(widget.watchText, Look.timerSize, "essentials")
-    end
+    if widget.watchText then CludesUI.Kit.Font(widget.watchText, Look.timerSize, "essentials") end
     widget.edge:SetShown(Look.border ~= "none")
     if widget.label then
         widget.label:SetShown(Look.labels)
@@ -1669,9 +1411,7 @@ local function LookPlace(widget, barFrame, posX, posY)
 end
 
 local function Minutes(seconds)
-    if not (seconds and seconds > 0 and Get("timers")) then
-        return ""
-    end
+    if not (seconds and seconds > 0 and Get("timers")) then return "" end
     return math.ceil(seconds / 60) .. "m"
 end
 
@@ -1718,9 +1458,7 @@ end
 local watchUnavailable
 
 local function Watch(widget)
-    if watchUnavailable then
-        return
-    end
+    if watchUnavailable then return end
     local success, boxHolder = pcall(function()
         C_AddOns.LoadAddOn("Blizzard_AuraContainer")
         local c = CreateFrame("AuraContainer", nil, widget, "CustomAuraContainerTemplate")
@@ -1755,9 +1493,7 @@ end
 
 local function SetWatch(widget, unitToken, key)
     local c = widget.watch
-    if not c or (widget.watchUnit == unitToken and widget.watchKey == key) then
-        return
-    end
+    if not c or (widget.watchUnit == unitToken and widget.watchKey == key) then return end
     widget.watchUnit, widget.watchKey = unitToken, key
     c:SetUnit(unitToken or "none")
     c:SetAuraSlotCandidateFilters("buff", { includeSpellIDs = key and IDS[key] or {} })
@@ -1789,9 +1525,7 @@ local function Recipient(hostFrame, name)
 end
 
 local function SetNames(header, nameList)
-    if header:GetAttribute("nameList") ~= nameList then
-        header:SetAttribute("nameList", nameList)
-    end
+    if header:GetAttribute("nameList") ~= nameList then header:SetAttribute("nameList", nameList) end
 end
 
 local function SizeRecipient(header, btnFrame, size)
@@ -1822,18 +1556,14 @@ local function OpenMenu(ownerFrame, title, entries, current, choose, noneText, c
         root:CreateTitle(title)
         for _, record in ipairs(entries) do
             if can(record) then
-                root:CreateRadio(SpellName(record.key), function()
-                    return current() == record.key
-                end, function()
-                    choose(record.key)
-                end)
+                root:CreateRadio(
+                    SpellName(record.key),
+                    function() return current() == record.key end,
+                    function() choose(record.key) end
+                )
             end
         end
-        root:CreateRadio(noneText, function()
-            return current() == nil
-        end, function()
-            choose(nil)
-        end)
+        root:CreateRadio(noneText, function() return current() == nil end, function() choose(nil) end)
     end)
 end
 
@@ -1843,25 +1573,24 @@ local function SetSeal(key)
 end
 
 local function SealMenu(ownerFrame)
-    OpenMenu(ownerFrame, "Seal", SEALS, function()
-        return Store().seal
-    end, SetSeal, "Default")
+    OpenMenu(ownerFrame, "Seal", SEALS, function() return Store().seal end, SetSeal, "Default")
 end
 
 local function AuraMenu(ownerFrame)
-    OpenMenu(ownerFrame, "Aura", AURAS, function()
-        return Store().aura
-    end, function(key)
-        SetOwn(AURA_COLUMN, key)
-    end, "Default")
+    OpenMenu(
+        ownerFrame,
+        "Aura",
+        AURAS,
+        function() return Store().aura end,
+        function(key) SetOwn(AURA_COLUMN, key) end,
+        "Default"
+    )
 end
 
 local function OwnBlessings(class)
     local players, guids = Store().players, {}
     for _, member in ipairs(Roster()) do
-        if member.class == class and players[member.guid] then
-            guids[#guids + 1] = member.guid
-        end
+        if member.class == class and players[member.guid] then guids[#guids + 1] = member.guid end
     end
     return guids
 end
@@ -1871,18 +1600,18 @@ local function ClassMenu(ownerFrame, class)
         root:CreateTitle(ClassName(class))
         for _, record in ipairs(BLESSINGS) do
             if Learned(record) and (Store().classes[class] == record.key or Allowed(class, record.key)) then
-                root:CreateRadio(SpellName(record.key), function()
-                    return Store().classes[class] == record.key
-                end, function()
-                    SetOwn(class, record.key)
-                end)
+                root:CreateRadio(
+                    SpellName(record.key),
+                    function() return Store().classes[class] == record.key end,
+                    function() SetOwn(class, record.key) end
+                )
             end
         end
-        root:CreateRadio("None", function()
-            return Store().classes[class] == nil
-        end, function()
-            SetOwn(class, nil)
-        end)
+        root:CreateRadio(
+            "None",
+            function() return Store().classes[class] == nil end,
+            function() SetOwn(class, nil) end
+        )
         local own = OwnBlessings(class)
         if #own > 0 then
             root:CreateDivider()
@@ -1901,35 +1630,27 @@ local function ClassMenu(ownerFrame, class)
         end
         root:CreateDivider()
         if Get("playerList") then
-            root:CreateCheckbox("Players", function()
-                return PlayerList.Showing() == class
-            end, function()
-                PlayerList.Toggle(class)
-            end)
+            root:CreateCheckbox(
+                "Players",
+                function() return PlayerList.Showing() == class end,
+                function() PlayerList.Toggle(class) end
+            )
         end
-        root:CreateButton("Assignments", function()
-            OpenWindow()
-        end)
+        root:CreateButton("Assignments", function() OpenWindow() end)
     end)
 end
 
 local function Tip(widget, title, body)
     widget:HookScript("OnEnter", function(self)
-        if not Get("tooltips") then
-            return
-        end
+        if not Get("tooltips") then return end
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(title, 1, 1, 1)
         local textValue = type(body) == "function" and body() or body
         local ar, ag, ab = CludesUI.Kit.Accent()
-        if textValue and textValue ~= "" then
-            GameTooltip:AddLine(textValue, ar, ag, ab, true)
-        end
+        if textValue and textValue ~= "" then GameTooltip:AddLine(textValue, ar, ag, ab, true) end
         GameTooltip:Show()
     end)
-    widget:HookScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
+    widget:HookScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
 local Refresh
@@ -1948,13 +1669,19 @@ do
             return Learned(record)
                 and (storage.players[member.guid] == record.key or Allowed(member.class, record.key))
         end
-        OpenMenu(ownerFrame, Ambiguate(member.who, "short"), BLESSINGS, function()
-            return storage.players[member.guid]
-        end, function(key)
-            storage.players[member.guid] = key
-            BroadcastSoon()
-            Changed()
-        end, "Class default", Can)
+        OpenMenu(
+            ownerFrame,
+            Ambiguate(member.who, "short"),
+            BLESSINGS,
+            function() return storage.players[member.guid] end,
+            function(key)
+                storage.players[member.guid] = key
+                BroadcastSoon()
+                Changed()
+            end,
+            "Class default",
+            Can
+        )
     end
 
     local function NewRow(index)
@@ -1976,9 +1703,7 @@ do
         row.cast:SetAttribute("ctrl-type1", "maintank")
         row.cast:SetAttribute("ctrl-action1", "toggle")
         row.cast:SetScript("PostClick", function(self, btnFrame, down)
-            if btnFrame == "RightButton" and not down and row.member then
-                PlayerMenu(self, row.member)
-            end
+            if btnFrame == "RightButton" and not down and row.member then PlayerMenu(self, row.member) end
             if btnFrame == "LeftButton" then
                 NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell1"))
             end
@@ -1990,9 +1715,7 @@ do
         )
         Watch(row.slot)
         row.cast:HookScript("OnAttributeChanged", function(_, name, value)
-            if name == "unit" then
-                SetWatch(row.slot, value, row.slot.watchKey)
-            end
+            if name == "unit" then SetWatch(row.slot, value, row.slot.watchKey) end
         end)
         return row
     end
@@ -2016,9 +1739,7 @@ do
         LookState(row.slot, key, has, remaining)
     end
 
-    function PlayerList.Showing()
-        return flyoutClass
-    end
+    function PlayerList.Showing() return flyoutClass end
 
     function PlayerList.Build(barFrame)
         flyout = CreateFrame("Frame", nil, barFrame)
@@ -2028,14 +1749,10 @@ do
         CludesUI.Kit.Font(flyout.title, 12, "essentials")
         CludesUI.Kit.AccentText(flyout.title)
         flyout.title:SetPoint("TOPLEFT", 8, -6)
-        local close = CludesUI.Kit.Glyph(flyout, "x", function()
-            flyout:Hide()
-        end, nil, "essentials")
+        local close = CludesUI.Kit.Glyph(flyout, "x", function() flyout:Hide() end, nil, "essentials")
         close:SetSize(22, 22)
         close:SetPoint("TOPRIGHT", -4, -4)
-        close:SetScript("OnClick", function()
-            PlayerList.Toggle(flyoutClass)
-        end)
+        close:SetScript("OnClick", function() PlayerList.Toggle(flyoutClass) end)
         rowList = {}
         flyout:Hide()
     end
@@ -2043,13 +1760,9 @@ do
     function PlayerList.Arrange(roster)
         wipe(listMembers)
         for _, member in ipairs(roster) do
-            if member.class == flyoutClass then
-                listMembers[#listMembers + 1] = member
-            end
+            if member.class == flyoutClass then listMembers[#listMembers + 1] = member end
         end
-        if #listMembers == 0 or not Get("playerList") then
-            flyoutClass = nil
-        end
+        if #listMembers == 0 or not Get("playerList") then flyoutClass = nil end
         if not flyoutClass then
             flyout:Hide()
             return
@@ -2107,9 +1820,10 @@ do
         button:SetAttribute("type", "spell")
         button:SetAttribute("count", 0)
         SecureHandlerWrapScript(button, "OnClick", handler, KEY_STEP)
-        button:SetScript("PostClick", function(self)
-            NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell"))
-        end)
+        button:SetScript(
+            "PostClick",
+            function(self) NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell")) end
+        )
         return button
     end
 
@@ -2127,9 +1841,7 @@ do
     local function Singles(members, single, shared)
         for _, member in ipairs(members) do
             local key = Assigned(member)
-            if key ~= shared then
-                shared = nil
-            end
+            if key ~= shared then shared = nil end
             local spell = key and HighestKnown(BY_KEY[key].ranks)
             local rank, leftX = Due(member, key, spell)
             if rank then
@@ -2141,9 +1853,7 @@ do
 
     local function GreaterNext(members, shared, symbols)
         local spell = shared and symbols and HighestKnown(BY_KEY[shared].greater)
-        if spell and not WaitedFor(members, spell) then
-            spell = nil
-        end
+        if spell and not WaitedFor(members, spell) then spell = nil end
         local best
         for _, member in ipairs(spell and members or {}) do
             local rank, leftX = Due(member, shared, spell)
@@ -2160,20 +1870,14 @@ do
     end
 
     function K.Peek()
-        if not keyNext then
-            return
-        end
+        if not keyNext then return end
         return keyNext:GetAttribute("spell1") or keyGreater:GetAttribute("spell1"),
             keyNext:GetAttribute("count") or 0
     end
 
     function K.Clear()
-        if keyNext then
-            keyNext:SetAttribute("count", 0)
-        end
-        if keyGreater then
-            keyGreater:SetAttribute("count", 0)
-        end
+        if keyNext then keyNext:SetAttribute("count", 0) end
+        if keyGreater then keyGreater:SetAttribute("count", 0) end
         if keyAuto then
             keyAuto:SetAttribute("countN", 0)
             keyAuto:SetAttribute("countG", 0)
@@ -2245,9 +1949,7 @@ local function SurveyQueue(cell, queue)
         parts[index] = record.names .. "=" .. record.spell
     end
     local signature = table.concat(parts, ";")
-    if signature == cell.signature then
-        return
-    end
+    if signature == cell.signature then return end
     cell.signature = signature
     for index, record in ipairs(queue) do
         cell.cast:SetAttribute("queueNames" .. index, record.names)
@@ -2271,9 +1973,7 @@ local function PaintCell(cell, cfg, key)
     LookClass(cell, color, cfg.reachable, cfg.missing, cfg.shortest)
 end
 
-local function PrepareCell(cell)
-    PaintCell(cell, Survey(cell.members), Store().classes[cell.class])
-end
+local function PrepareCell(cell) PaintCell(cell, Survey(cell.members), Store().classes[cell.class]) end
 
 local function CellTip(cell)
     local target = cell.target and Ambiguate(cell.target.who, "short")
@@ -2295,9 +1995,7 @@ local function NewCell(class)
     cell.label:SetWordWrap(false)
     cell.label:SetText(ClassName(class))
     local color = RAID_CLASS_COLORS[class]
-    if color then
-        cell.label:SetTextColor(color.r, color.g, color.b)
-    end
+    if color then cell.label:SetTextColor(color.r, color.g, color.b) end
     cell.header, cell.cast = Recipient(cell, "CludesUIBless" .. class)
     cell.cast:RegisterForClicks("AnyUp")
     cell.cast:SetAttribute("useOnKeyDown", false)
@@ -2313,61 +2011,39 @@ local function NewCell(class)
     end)
     SecureHandlerWrapScript(cell.cast, "OnClick", secureHandler, CLASS_STEP)
     cell.cast:SetScript("PostClick", function(self, btnFrame, down)
-        if btnFrame == "RightButton" and not down then
-            ClassMenu(self, class)
-        end
-        if btnFrame == "LeftButton" then
-            NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell1"))
-        end
+        if btnFrame == "RightButton" and not down then ClassMenu(self, class) end
+        if btnFrame == "LeftButton" then NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell1")) end
     end)
-    Tip(cell.cast, ClassName(class), function()
-        return CellTip(cell)
-    end)
+    Tip(cell.cast, ClassName(class), function() return CellTip(cell) end)
     return cell
 end
 
 local function CurrentAura()
     local key = Store().aura
-    if key and Learned(BY_KEY[key]) then
-        return key
-    end
+    if key and Learned(BY_KEY[key]) then return key end
     for _, record in ipairs(AURAS) do
-        if Learned(record) then
-            return record.key
-        end
+        if Learned(record) then return record.key end
     end
 end
 
 local function CurrentSeal()
     local key = Store().seal
-    if key and Learned(BY_KEY[key]) then
-        return key
-    end
+    if key and Learned(BY_KEY[key]) then return key end
     for _, record in ipairs(SEALS) do
-        if Learned(record) then
-            return record.key
-        end
+        if Learned(record) then return record.key end
     end
 end
 
 local function Cycle(entries, current, choose, delta)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     local known = {}
     for _, record in ipairs(entries) do
-        if Learned(record) then
-            known[#known + 1] = record.key
-        end
+        if Learned(record) then known[#known + 1] = record.key end
     end
-    if #known < 2 then
-        return
-    end
+    if #known < 2 then return end
     local at = 1
     for index, key in ipairs(known) do
-        if key == current() then
-            at = index
-        end
+        if key == current() then at = index end
     end
     choose(known[(at - 1 + (delta > 0 and 1 or -1)) % #known + 1])
 end
@@ -2396,9 +2072,10 @@ local function NewAutoButton(name)
     button:SetAttribute("countN", 0)
     button:SetAttribute("countG", 0)
     SecureHandlerWrapScript(button, "OnClick", secureHandler, AUTO_STEP)
-    button:SetScript("PostClick", function(self)
-        NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell"))
-    end)
+    button:SetScript(
+        "PostClick",
+        function(self) NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell")) end
+    )
     keyAuto = button
     return button
 end
@@ -2412,9 +2089,7 @@ local function PrepareSeal(button, key)
 end
 
 local function PaintAuto()
-    if not autoButton:IsShown() then
-        return
-    end
+    if not autoButton:IsShown() then return end
     local spell, due = K.Peek()
     autoButton.icon:SetTexture(spell and C_Spell.GetSpellTexture(spell) or QUESTION)
     autoButton.icon:SetDesaturated(due == 0)
@@ -2456,9 +2131,7 @@ local function PlaceSelf(posX)
     else
         autoButton:Hide()
     end
-    if posX > 0 then
-        return posX + Look.groupGap
-    end
+    if posX > 0 then return posX + Look.groupGap end
     return posX
 end
 
@@ -2479,9 +2152,7 @@ end
 local function PlaceCells(byClass, posX)
     local total = 0
     for _, class in ipairs(CLASSES) do
-        if byClass[class] then
-            total = total + 1
-        end
+        if byClass[class] then total = total + 1 end
     end
     Look.rows = math.max(1, math.ceil(total / Look.perRow))
     local done = posX + math.min(total, Look.perRow) * (Look.size + Look.gap)
@@ -2510,19 +2181,13 @@ local function PlaceCells(byClass, posX)
 end
 
 local function Wanted()
-    if IsInRaid() then
-        return true
-    end
-    if IsInGroup() then
-        return Get("inParty")
-    end
+    if IsInRaid() then return true end
+    if IsInGroup() then return Get("inParty") end
     return Get("solo")
 end
 
 function Refresh()
-    if not barFrame then
-        return
-    end
+    if not barFrame then return end
     if InCombatLockdown() or (SecretAuras() and not HiddenAuras()) then
         dirty = true
         return
@@ -2555,16 +2220,12 @@ function Refresh()
 end
 
 function Changed()
-    if Refresh then
-        Refresh()
-    end
+    if Refresh then Refresh() end
     RefreshPage()
 end
 
 local function OnSelfClick(self, btnFrame)
-    if btnFrame == "LeftButton" then
-        NoteCast(self:GetAttribute("unit1"), self:GetAttribute("spell1"))
-    end
+    if btnFrame == "LeftButton" then NoteCast(self:GetAttribute("unit1"), self:GetAttribute("spell1")) end
 end
 
 local function BuildBar()
@@ -2576,9 +2237,7 @@ local function BuildBar()
     auraButton = NewSelfButton("CludesUIBlessAura")
     auraButton:SetScript("PostClick", function(self, btnFrame, down)
         OnSelfClick(self, btnFrame)
-        if btnFrame == "RightButton" and not down then
-            AuraMenu(self)
-        end
+        if btnFrame == "RightButton" and not down then AuraMenu(self) end
     end)
     Tip(
         auraButton,
@@ -2587,9 +2246,7 @@ local function BuildBar()
     )
     auraButton:EnableMouseWheel(true)
     auraButton:SetScript("OnMouseWheel", function(_, delta)
-        Cycle(AURAS, CurrentAura, function(key)
-            SetOwn(AURA_COLUMN, key)
-        end, delta)
+        Cycle(AURAS, CurrentAura, function(key) SetOwn(AURA_COLUMN, key) end, delta)
     end)
     furyButton = NewSelfButton("CludesUIBlessFury")
     furyButton:SetScript("PostClick", OnSelfClick)
@@ -2600,9 +2257,7 @@ local function BuildBar()
     )
     sealButton = NewSelfButton("CludesUIBlessSeal")
     sealButton:SetScript("PostClick", function(self, btnFrame, down)
-        if btnFrame == "RightButton" and not down then
-            SealMenu(self)
-        end
+        if btnFrame == "RightButton" and not down then SealMenu(self) end
     end)
     Tip(
         sealButton,
@@ -2610,9 +2265,7 @@ local function BuildBar()
         "Left-click: cast your seal.\nRight-click: choose it. Wheel: cycle through your seals."
     )
     sealButton:EnableMouseWheel(true)
-    sealButton:SetScript("OnMouseWheel", function(_, delta)
-        Cycle(SEALS, CurrentSeal, SetSeal, delta)
-    end)
+    sealButton:SetScript("OnMouseWheel", function(_, delta) Cycle(SEALS, CurrentSeal, SetSeal, delta) end)
     K.Build(secureHandler)
     autoButton = NewAutoButton("CludesUIBlessAuto")
     Tip(
@@ -2621,15 +2274,11 @@ local function BuildBar()
         "Left-click: the next blessing. Right-click: the next Greater Blessing. Each goes to whoever needs it most."
     )
     PlayerList.Build(barFrame)
-    if not CludesUI._unlockActive then
-        F.Place(barFrame)
-    end
+    if not CludesUI._unlockActive then F.Place(barFrame) end
 end
 
 local function RefreshSoon()
-    if refreshQueued then
-        return
-    end
+    if refreshQueued then return end
     refreshQueued = true
     C_Timer.After(RESCAN_DELAY, function()
         refreshQueued = false
@@ -2638,9 +2287,7 @@ local function RefreshSoon()
 end
 
 local function RefreshLanded()
-    if landingQueued then
-        return
-    end
+    if landingQueued then return end
     landingQueued = true
     C_Timer.After(0, function()
         landingQueued = false
@@ -2650,9 +2297,7 @@ end
 
 local function OnUnitAura(unitToken)
     local fresh = landing and GetTime() - landing < LANDING_WINDOW
-    if refreshQueued and not fresh then
-        return
-    end
+    if refreshQueued and not fresh then return end
     if InCombatLockdown() then
         dirty = true
         return
@@ -2673,9 +2318,7 @@ end
 events:SetScript("OnEvent", function(_, evt, ...)
     if evt == "CHAT_MSG_ADDON" then
         local prefixText, message, channel, sender = ...
-        if Secret(prefixText) or Secret(message) or Secret(channel) or Secret(sender) then
-            return
-        end
+        if Secret(prefixText) or Secret(message) or Secret(channel) or Secret(sender) then return end
         if prefixText == PREFIX and GROUP_CHANNELS[channel] then
             OnMessage(message, sender)
         elseif prefixText == PP_PREFIX and (GROUP_CHANNELS[channel] or channel == "WHISPER") then
@@ -2709,25 +2352,15 @@ events:SetScript("OnEvent", function(_, evt, ...)
         RefreshSoon()
     elseif evt == "UNIT_SPELLCAST_SENT" then
         local _, _, castGUID, spellID = ...
-        if Secret(castGUID) or Secret(spellID) or not FAMILY[spellID] then
-            return
-        end
+        if Secret(castGUID) or Secret(spellID) or not FAMILY[spellID] then return end
         CastSent(castGUID, spellID)
     elseif evt == "UNIT_SPELLCAST_SUCCEEDED" then
         local _, castGUID, spellID = ...
-        if Secret(spellID) then
-            return
-        end
-        if STATUS_SPELL[spellID] then
-            BroadcastSoon()
-        end
-        if Secret(castGUID) or not FAMILY[spellID] then
-            return
-        end
+        if Secret(spellID) then return end
+        if STATUS_SPELL[spellID] then BroadcastSoon() end
+        if Secret(castGUID) or not FAMILY[spellID] then return end
         CastDone(castGUID)
-        if not InCombatLockdown() then
-            landing = GetTime()
-        end
+        if not InCombatLockdown() then landing = GetTime() end
     elseif evt == "UNIT_HEALTH" then
         ForgetIfDead(...)
     elseif evt == "UNIT_AURA" then
@@ -2736,9 +2369,7 @@ events:SetScript("OnEvent", function(_, evt, ...)
 end)
 
 local function OnTick()
-    if not (barFrame and barFrame:IsShown() and not InCombatLockdown()) then
-        return
-    end
+    if not (barFrame and barFrame:IsShown() and not InCombatLockdown()) then return end
     local symbols = C_Item.GetItemCount(SYMBOL_OF_KINGS)
     if symbols ~= sentSymbols then
         sentSymbols = symbols
@@ -2774,9 +2405,7 @@ function Apply()
     }) do
         events:RegisterEvent(event)
     end
-    if not IsPaladin() then
-        return
-    end
+    if not IsPaladin() then return end
     for _, event in ipairs({ "UNIT_AURA", "PLAYER_ROLES_ASSIGNED", "SPELLS_CHANGED" }) do
         events:RegisterEvent(event)
     end
@@ -2786,9 +2415,7 @@ function Apply()
         buildAfterCombat = true
         return
     end
-    if not barFrame then
-        BuildBar()
-    end
+    if not barFrame then BuildBar() end
     ticker = C_Timer.NewTicker(TICK, OnTick)
     Refresh()
 end
@@ -2811,22 +2438,16 @@ do
         whileDead = true,
         hideOnEscape = true,
         OnAccept = function(_, payload)
-            if payload then
-                payload()
-            end
+            if payload then payload() end
         end,
     }
     local function Confirm(textValue, func)
         local dialog = StaticPopup_Show("CUI_BLESS_CONFIRM", textValue)
-        if dialog then
-            dialog.data = func
-        end
+        if dialog then dialog.data = func end
     end
 
     local function Allowed2()
-        if CanPlanAll() then
-            return true
-        end
+        if CanPlanAll() then return true end
         Print("Only the group leader or an assistant can plan every paladin's blessings.")
     end
 
@@ -2846,14 +2467,10 @@ do
                     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                     GameTooltip:SetText(self.title or "", 1, 1, 1)
                     local ar, ag, ab = CludesUI.Kit.Accent()
-                    if self.body then
-                        GameTooltip:AddLine(self.body, ar, ag, ab, true)
-                    end
+                    if self.body then GameTooltip:AddLine(self.body, ar, ag, ab, true) end
                     GameTooltip:Show()
                 end)
-                entry:SetScript("OnLeave", function()
-                    GameTooltip:Hide()
-                end)
+                entry:SetScript("OnLeave", function() GameTooltip:Hide() end)
             else
                 entry = CreateFrame("Frame", nil, winContent)
                 entry:SetSize(1, 1)
@@ -2863,9 +2480,7 @@ do
             end
             entry.kind = kind
             local old = winPool[winUsed]
-            if old then
-                old:Hide()
-            end
+            if old then old:Hide() end
             winPool[winUsed] = entry
         end
         entry:ClearAllPoints()
@@ -2898,9 +2513,7 @@ do
     end
 
     local function Remaining(leftX)
-        if not leftX then
-            return
-        end
+        if not leftX then return end
         return leftX > 0 and (math.ceil(leftX / 60) .. "m") or "ready"
     end
 
@@ -2908,12 +2521,8 @@ do
         local symbols, loh, di
         if row.you then
             symbols, loh, di = OwnStatus()
-            if loh < 0 then
-                loh = nil
-            end
-            if di < 0 then
-                di = nil
-            end
+            if loh < 0 then loh = nil end
+            if di < 0 then di = nil end
         elseif row.plan.status then
             local status, nowTime = row.plan.status, GetTime()
             symbols = status.symbols
@@ -2923,12 +2532,8 @@ do
             return ""
         end
         local parts = { ("%d Symbols"):format(symbols) }
-        if loh then
-            parts[#parts + 1] = "LoH " .. Remaining(loh)
-        end
-        if di then
-            parts[#parts + 1] = "DI " .. Remaining(di)
-        end
+        if loh then parts[#parts + 1] = "LoH " .. Remaining(loh) end
+        if di then parts[#parts + 1] = "DI " .. Remaining(di) end
         return table.concat(parts, "  ")
     end
 
@@ -2958,9 +2563,7 @@ do
                 who = who,
                 plan = plan,
                 players = plan.players,
-                can = function(record)
-                    return plan.known[record.key]
-                end,
+                can = function(record) return plan.known[record.key] end,
                 set = not plan.pallyPower and (lead or (mayFree and plan.free)) and function(colour, key)
                     SetFor(who, colour, key)
                     RefreshPage()
@@ -2979,18 +2582,14 @@ do
         local result = {}
         for _, member in ipairs(roster) do
             local key = member.class == class and players and players[member.guid]
-            if key then
-                result[#result + 1] = Ambiguate(member.who, "short") .. ": " .. SpellName(key)
-            end
+            if key then result[#result + 1] = Ambiguate(member.who, "short") .. ": " .. SpellName(key) end
         end
         return #result > 0 and ("\n" .. table.concat(result, "\n")) or ""
     end
 
     local function Redraw()
         redrawQueued = false
-        if not (window and window:IsShown()) then
-            return
-        end
+        if not (window and window:IsShown()) then return end
         for index = 1, winUsed do
             winPool[index]:Hide()
         end
@@ -3040,11 +2639,15 @@ do
                                 return row.can(record)
                                     and (aura or key == record.key or Allowed(colour, record.key))
                             end
-                            OpenMenu(button, title, aura and AURAS or BLESSINGS, function()
-                                return aura and row.plan.aura or row.plan.classes[colour]
-                            end, function(choice)
-                                row.set(colour, choice)
-                            end, "None", Can)
+                            OpenMenu(
+                                button,
+                                title,
+                                aura and AURAS or BLESSINGS,
+                                function() return aura and row.plan.aura or row.plan.classes[colour] end,
+                                function(choice) row.set(colour, choice) end,
+                                "None",
+                                Can
+                            )
                         end
                     WinCell(
                         NAME_W + (index - 1) * (CELL + GAP),
@@ -3076,9 +2679,7 @@ do
         winContent:SetHeight(math.abs(posY) + 10)
         local num = 0
         for _, member in ipairs(roster) do
-            if member.class == "PALADIN" then
-                num = num + 1
-            end
+            if member.class == "PALADIN" then num = num + 1 end
         end
         window.foot:SetText(
             not IsInGroup() and (IsPaladin() and "Just you for now" or "Not in a group")
@@ -3091,9 +2692,7 @@ do
     end
 
     function RefreshPage()
-        if redrawQueued or not (window and window:IsShown()) then
-            return
-        end
+        if redrawQueued or not (window and window:IsShown()) then return end
         redrawQueued = true
         C_Timer.After(0, Redraw)
     end
@@ -3122,37 +2721,28 @@ do
         title:SetPoint("TOPLEFT", 10, -8)
         title:SetText("Blessings")
         CludesUI.Kit.AccentText(title)
-        local close = CludesUI.Kit.Glyph(window, "x", function()
-            window:Hide()
-        end, nil, "essentials")
+        local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
         close:SetPoint("TOPRIGHT", -5, -5)
         WinButton(window, "Auto-Assign", 10, function()
             if Allowed2() then
-                Confirm("Replace every paladin's blessings and auras with an automatic plan?", function()
-                    ApplyPlans(AutoPlans())
-                end)
+                Confirm(
+                    "Replace every paladin's blessings and auras with an automatic plan?",
+                    function() ApplyPlans(AutoPlans()) end
+                )
             end
         end, "A plan for every paladin in the group, by what each has learned.")
         WinButton(window, "Load Preset", 110, function()
-            if not next(Presets()) then
-                return Print("No preset saved yet.")
-            end
+            if not next(Presets()) then return Print("No preset saved yet.") end
             if Allowed2() then
                 Confirm("Load the saved preset for the paladins here now?", function()
-                    if not LoadPreset() then
-                        Print("Nobody in the preset is in your group.")
-                    end
+                    if not LoadPreset() then Print("Nobody in the preset is in your group.") end
                 end)
             end
         end)
         WinButton(window, "Save Preset", 210, function()
-            if #Paladins() == 0 then
-                return Print("No paladins to save a plan for.")
-            end
+            if #Paladins() == 0 then return Print("No paladins to save a plan for.") end
             local function Save()
-                if SavePreset() then
-                    Print("Blessings preset saved.")
-                end
+                if SavePreset() then Print("Blessings preset saved.") end
             end
             if next(Presets()) then
                 Confirm("Replace the saved preset?", Save)
@@ -3165,9 +2755,7 @@ do
                 root:CreateTitle("Report the blessings to")
                 for _, channel in ipairs(REPORT_CHANNELS) do
                     if channel.can() then
-                        root:CreateButton(channel.label, function()
-                            Report(channel.key)
-                        end)
+                        root:CreateButton(channel.label, function() Report(channel.key) end)
                     end
                 end
             end)
@@ -3212,9 +2800,7 @@ do
     end
 
     function OpenWindow()
-        if not window then
-            BuildWindow()
-        end
+        if not window then BuildWindow() end
         window:Show()
         Redraw()
     end
@@ -3242,12 +2828,8 @@ CludesUI._Blessings = {
     Cfg = F.Cfg,
     Apply = Apply,
     Open = OpenWindow,
-    ClassBlessing = function(class)
-        return Store().classes[class]
-    end,
-    SetClassBlessing = function(class, key)
-        SetOwn(class, key)
-    end,
+    ClassBlessing = function(class) return Store().classes[class] end,
+    SetClassBlessing = function(class, key) SetOwn(class, key) end,
     Blessings = BLESSINGS,
     SpellName = SpellName,
     Learned = Learned,
@@ -3259,9 +2841,7 @@ F.Start(Apply, {
     key = "CUI_BlessingBar",
     label = "Blessing Bar",
     order = 755,
-    shown = function()
-        return F.Enabled() and IsPaladin()
-    end,
+    shown = function() return F.Enabled() and IsPaladin() end,
     frame = function(build)
         if build and not barFrame and not InCombatLockdown() then
             BuildBar()
@@ -3270,7 +2850,8 @@ F.Start(Apply, {
         return barFrame
     end,
     size = function()
-        return barFrame and barFrame:GetWidth() or Get("size"), barFrame and barFrame:GetHeight() or Get("size")
+        return barFrame and barFrame:GetWidth() or Get("size"),
+            barFrame and barFrame:GetHeight() or Get("size")
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

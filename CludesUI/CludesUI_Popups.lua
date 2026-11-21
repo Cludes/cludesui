@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_Popups.lua
 --  Popup scale helper, announcement shell and buttons, reload helpers, and
@@ -47,9 +45,7 @@ CUI.POPUP_REF_DENSITY = 768 / (1440 * 0.64)
 
 -- Scale a dialog sets on ITSELF, atop the dimmer that already carries GetPopupScale(). mult =
 -- the dialog's own relative bump (1, or 1.15 for intro popups); ALWAYS route through this so the reference density lives in exactly one place.
-function CUI.PopupBump(mult)
-    return (mult or 1) * CUI.POPUP_REF_DENSITY
-end
+function CUI.PopupBump(mult) return (mult or 1) * CUI.POPUP_REF_DENSITY end
 
 -- Dialog popups sit on a dimmer GetPopupScale has ALREADY scaled, so a dialog that also
 -- SetScale(ppScale)s itself renders at ppScale SQUARED (baseScale = 768/(physH*uiScale) means
@@ -70,21 +66,13 @@ end
 -- game menu. Measured, not derived: GetEffectiveScale reports what the frame really renders at,
 -- including every stacked parent scale, so this holds whatever the upstream scale math does (only ever shrinks).
 function CUI.ClampPopupToScreen(dialog, w, h)
-    if not dialog or not w or not h or w <= 0 or h <= 0 then
-        return
-    end
+    if not dialog or not w or not h or w <= 0 or h <= 0 then return end
     local es = dialog:GetEffectiveScale()
-    if type(es) ~= "number" or es <= 0 then
-        return
-    end
+    if type(es) ~= "number" or es <= 0 then return end
     local pw, ph = GetPhysicalScreenSize()
-    if type(pw) ~= "number" or type(ph) ~= "number" or pw <= 0 or ph <= 0 then
-        return
-    end
+    if type(pw) ~= "number" or type(ph) ~= "number" or pw <= 0 or ph <= 0 then return end
     local fit = math.min((pw * 0.92) / (w * es), (ph * 0.92) / (h * es))
-    if fit >= 1 then
-        return
-    end
+    if fit >= 1 then return end
     dialog:SetScale(dialog:GetScale() * fit)
 end
 
@@ -101,26 +89,18 @@ function CUI.BuildPopupShell(name, options)
     shade:EnableMouse(true)
     shade:EnableMouseWheel(true)
     shade:SetScript("OnMouseWheel", function() end)
-    if options.onDimmerDown then
-        shade:SetScript("OnMouseDown", options.onDimmerDown)
-    end
-    if options.bump then
-        shade:SetScale(GetPopupScale())
-    end
+    if options.onDimmerDown then shade:SetScript("OnMouseDown", options.onDimmerDown) end
+    if options.bump then shade:SetScale(GetPopupScale()) end
     local dimTex = shade:CreateTexture(nil, "BACKGROUND")
     dimTex:SetAllPoints()
     dimTex:SetColorTexture(0, 0, 0, options.dimAlpha or 0.35)
 
     local dialog = CreateFrame("Frame", name .. "Popup", shade)
-    if options.bump then
-        dialog:SetScale(CUI.PopupBump(options.bump))
-    end
+    if options.bump then dialog:SetScale(CUI.PopupBump(options.bump)) end
     dialog:SetFrameStrata(strata)
     dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
     PanelPP.Size(dialog, options.w, options.h)
-    if options.clamp then
-        CUI.ClampPopupToScreen(dialog, options.w, options.h)
-    end
+    if options.clamp then CUI.ClampPopupToScreen(dialog, options.w, options.h) end
     dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     dialog:EnableMouse(true)
 
@@ -142,28 +122,20 @@ function CUI.BuildPopupShell(name, options)
         dialog:SetPropagateKeyboardInput(true)
     end
     dialog:SetScript("OnKeyDown", function(self, key)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         self:SetPropagateKeyboardInput(key ~= "ESCAPE")
-        if key == "ESCAPE" and onEscape then
-            onEscape()
-        end
+        if key == "ESCAPE" and onEscape then onEscape() end
     end)
     -- Controller Back takes the Escape route (swallowed when there is none). It
     -- counts only when a controller is in use at the show, so the keyboard path
     -- never changes. The dimmer is born shown: with a controller it is hidden
     -- first so the caller's Show() is a real show edge.
     if CUI.RegisterEscapeClose then
-        if CUI.PadInUse() then
-            shade:Hide()
-        end
+        if CUI.PadInUse() then shade:Hide() end
         CUI.RegisterEscapeClose(shade, {
             padOnly = true,
             modal = not onEscape,
-            onEscape = onEscape and function()
-                onEscape()
-            end or nil,
+            onEscape = onEscape and function() onEscape() end or nil,
         })
     end
     -- Controller cursor: the panel is a blocker, not a stop.
@@ -247,9 +219,7 @@ function CUI.MakePopupButton(parent, point, relTo, relPoint, x, y, ...)
     -- t: 0 resting, 1 hovered.
     local t, goal = 0, 0
     local function Paint()
-        local function Mix(i)
-            return lerp(col[i], col[i + 4], t)
-        end
+        local function Mix(i) return lerp(col[i], col[i + 4], t) end
         label:SetTextColor(Mix(1), Mix(2), Mix(3), Mix(4))
         outline:SetColor(
             lerp(col[9], col[13], t),
@@ -268,9 +238,7 @@ function CUI.MakePopupButton(parent, point, relTo, relPoint, x, y, ...)
     local function Step(self, elapsed)
         t = goal == 1 and math.min(1, t + elapsed / POPUP_BTN_FADE)
             or math.max(0, t - elapsed / POPUP_BTN_FADE)
-        if t == goal then
-            self:SetScript("OnUpdate", nil)
-        end
+        if t == goal then self:SetScript("OnUpdate", nil) end
         Paint()
     end
     button:SetScript("OnEnter", function(self)
@@ -311,9 +279,7 @@ local function RefreshPopupScales()
 end
 
 -- Register so popups rescale when the user adjusts the panel scale slider
-if not CUI._onScaleChanged then
-    CUI._onScaleChanged = {}
-end
+if not CUI._onScaleChanged then CUI._onScaleChanged = {} end
 CUI._onScaleChanged[#CUI._onScaleChanged + 1] = RefreshPopupScales
 
 -------------------------------------------------------------------------------
@@ -333,18 +299,14 @@ local confirmPopup
 -- (an Escape that closed it left propagation off).
 function CUI.PopupTakeKeys(frame, host)
     local function Take()
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         frame:EnableKeyboard(true)
         frame:SetPropagateKeyboardInput(true)
     end
     if host then
         host:HookScript("OnShow", Take)
         host:HookScript("OnHide", function()
-            if not InCombatLockdown() then
-                frame:EnableKeyboard(false)
-            end
+            if not InCombatLockdown() then frame:EnableKeyboard(false) end
         end)
     end
     Take()
@@ -356,18 +318,12 @@ local function WirePopupEscape(dialog, shade)
     -- keys on by default, and in combat it stands aside (keys reach the
     -- game, Escape does not close it, its buttons still answer).
     local function TakeKeys(on)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         dialog:EnableKeyboard(on)
-        if on then
-            dialog:SetPropagateKeyboardInput(true)
-        end
+        if on then dialog:SetPropagateKeyboardInput(true) end
     end
     dialog:SetScript("OnKeyDown", function(self, key)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         if key == "ESCAPE" then
             if dialog._modal then
                 -- Modal popups swallow Escape: the user must click a button.
@@ -376,37 +332,25 @@ local function WirePopupEscape(dialog, shade)
             end
             self:SetPropagateKeyboardInput(false)
             shade:Hide()
-            if dialog._onCancel then
-                dialog._onCancel()
-            end
+            if dialog._onCancel then dialog._onCancel() end
         else
             self:SetPropagateKeyboardInput(true)
         end
     end)
     -- Release keyboard capture when the popup is dismissed
-    shade:HookScript("OnHide", function()
-        TakeKeys(false)
-    end)
-    shade:HookScript("OnShow", function()
-        TakeKeys(true)
-    end)
-    if shade:IsShown() then
-        TakeKeys(true)
-    end
+    shade:HookScript("OnHide", function() TakeKeys(false) end)
+    shade:HookScript("OnShow", function() TakeKeys(true) end)
+    if shade:IsShown() then TakeKeys(true) end
     -- Controller Back takes the same route as Escape (modal popups swallow it).
     -- It counts only when a controller is in use at the show, so the keyboard
     -- path never changes.
     if CUI.RegisterEscapeClose then
         CUI.RegisterEscapeClose(shade, {
             padOnly = true,
-            modal = function()
-                return dialog._modal
-            end,
+            modal = function() return dialog._modal end,
             onEscape = function()
                 shade:Hide()
-                if dialog._onCancel then
-                    dialog._onCancel()
-                end
+                if dialog._onCancel then dialog._onCancel() end
             end,
         })
     end
@@ -518,9 +462,7 @@ local function PlaceDialogTitle(dialog, title, w)
 end
 
 local function CreateConfirmPopup()
-    if confirmPopup then
-        return confirmPopup
-    end
+    if confirmPopup then return confirmPopup end
 
     local POPUP_W, POPUP_H = 400, CONFIRM_MIN_H
 
@@ -670,14 +612,10 @@ local function CreateConfirmPopup()
     -- Close on dimmer click outside the popup; modal popups ignore dimmer clicks.
     dialog:EnableMouse(true)
     shade:SetScript("OnMouseDown", function()
-        if dialog._modal then
-            return
-        end
+        if dialog._modal then return end
         if not dialog:IsMouseOver() then
             shade:Hide()
-            if dialog._onCancel then
-                dialog._onCancel()
-            end
+            if dialog._onCancel then dialog._onCancel() end
         end
     end)
 
@@ -693,9 +631,7 @@ end
 -- tick) with the current accent; the popup itself is built once and reused.
 local function InvalidateConfirmPopup()
     local dialog = confirmPopup
-    if not dialog then
-        return
-    end
+    if not dialog then return end
     local EG = CLUDES_GREEN
     dialog._confirmBtn._setColors(
         EG.r,
@@ -732,9 +668,7 @@ CUI._InvalidateConfirmPopup = InvalidateConfirmPopup
 -- for its callers; nothing shows them.
 function CUI.RequestReload(title, message, work)
     ReloadUI()
-    if work then
-        work()
-    end
+    if work then work() end
 end
 
 function CUI:ShowConfirmPopup(options)
@@ -749,16 +683,12 @@ function CUI:ShowConfirmPopup(options)
         swatchOpts.reload = nil
         local work = options.onConfirm
         swatchOpts.onConfirm = function(checked)
-            CUI.RequestReload(nil, nil, work and function()
-                work(checked)
-            end)
+            CUI.RequestReload(nil, nil, work and function() work(checked) end)
         end
         options = swatchOpts
     end
     -- Force-close any widget tooltip so it doesn't linger behind the popup
-    if CUI.HideWidgetTooltip then
-        CUI.HideWidgetTooltip()
-    end
+    if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
     local dialog = CreateConfirmPopup()
     dialog._dimmer:SetFrameLevel(options.frameLevel or 100)
 
@@ -816,13 +746,9 @@ function CUI:ShowConfirmPopup(options)
             inputBox:SetMaxLetters(24)
             SolidTex(inputBox, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
             CUI.MakeRoundedBorder(inputBox, 1, 1, 1, 0.12)
-            inputBox:SetScript("OnEscapePressed", function(self)
-                self:ClearFocus()
-            end)
+            inputBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
             inputBox:SetScript("OnTextChanged", function(self)
-                if not dialog._typeGateOn then
-                    return
-                end
+                if not dialog._typeGateOn then return end
                 local ok = strlower(strtrim(self:GetText() or "")) == dialog._typeWant
                 dialog._typeGateOk = ok
                 dialog._confirmBtn:SetAlpha(ok and 1 or 0.3)
@@ -832,9 +758,7 @@ function CUI:ShowConfirmPopup(options)
                 -- would (a reload it asks for comes first), then the focus clears.
                 if dialog._typeGateOk then
                     local click = dialog._confirmBtn:GetScript("OnClick")
-                    if click then
-                        click(dialog._confirmBtn)
-                    end
+                    if click then click(dialog._confirmBtn) end
                 end
                 self:ClearFocus()
             end)
@@ -879,9 +803,7 @@ function CUI:ShowConfirmPopup(options)
     do
         local function Measure(fs, fallback)
             local h = fs:GetStringHeight() or fallback
-            if issecretvalue and issecretvalue(h) then
-                h = fallback
-            end
+            if issecretvalue and issecretvalue(h) then h = fallback end
             return math.ceil(h)
         end
         local y = DIALOG_HEAD + 14
@@ -891,21 +813,15 @@ function CUI:ShowConfirmPopup(options)
             y = y + gap + h
         end
         Stack(dialog._msg, Measure(dialog._msg, 48), 0)
-        if dialog._disclaimer:IsShown() then
-            Stack(dialog._disclaimer, Measure(dialog._disclaimer, 28), 8)
-        end
+        if dialog._disclaimer:IsShown() then Stack(dialog._disclaimer, Measure(dialog._disclaimer, 28), 8) end
         if dialog._scaleWarnLabel:IsShown() then
             Stack(dialog._scaleWarnLabel, Measure(dialog._scaleWarnLabel, 24), 10)
         end
-        if dialog._typeRow and dialog._typeRow:IsShown() then
-            Stack(dialog._typeRow, 26, 14)
-        end
+        if dialog._typeRow and dialog._typeRow:IsShown() then Stack(dialog._typeRow, 26, 14) end
         if dialog._padGateLbl and dialog._padGateLbl:IsShown() then
             Stack(dialog._padGateLbl, Measure(dialog._padGateLbl, 14), 14)
         end
-        if dialog._cbRow:IsShown() then
-            Stack(dialog._cbRow, 18, 12)
-        end
+        if dialog._cbRow:IsShown() then Stack(dialog._cbRow, 18, 12) end
         dialog:SetHeight(math.max(CONFIRM_MIN_H, y + 16 + DIALOG_FOOT))
     end
     -- A popup shown again keeps its layer seat: refit for the new height.
@@ -949,9 +865,7 @@ function CUI:ShowConfirmPopup(options)
 
     dialog._cancelBtn:SetScript("OnClick", function()
         dialog._dimmer:Hide()
-        if options.onCancel then
-            options.onCancel()
-        end
+        if options.onCancel then options.onCancel() end
     end)
 
     -- Macro overlay: a protected action (/logout) needs a hardware event routed
@@ -972,18 +886,18 @@ function CUI:ShowConfirmPopup(options)
             ov:RegisterForClicks("AnyUp")
             ov:SetAttribute("useOnKeyDown", false)
             -- Forward hover visuals to the real button underneath
-            ov:SetScript("OnEnter", function()
-                dialog._confirmBtn:GetScript("OnEnter")(dialog._confirmBtn)
-            end)
-            ov:SetScript("OnLeave", function()
-                dialog._confirmBtn:GetScript("OnLeave")(dialog._confirmBtn)
-            end)
+            ov:SetScript(
+                "OnEnter",
+                function() dialog._confirmBtn:GetScript("OnEnter")(dialog._confirmBtn) end
+            )
+            ov:SetScript(
+                "OnLeave",
+                function() dialog._confirmBtn:GetScript("OnLeave")(dialog._confirmBtn) end
+            )
             -- Stored callback, not a new hook per ShowConfirmPopup call (they accumulate).
             ov:HookScript("OnClick", function()
                 dialog._dimmer:Hide()
-                if ov._postAction then
-                    ov._postAction()
-                end
+                if ov._postAction then ov._postAction() end
             end)
             dialog._macroOverlay = ov
         end
@@ -995,13 +909,9 @@ function CUI:ShowConfirmPopup(options)
         -- Hide the normal confirm click so it doesn't double-fire
         dialog._confirmBtn:SetScript("OnClick", nil)
     else
-        if dialog._macroOverlay then
-            dialog._macroOverlay:Hide()
-        end
+        if dialog._macroOverlay then dialog._macroOverlay:Hide() end
         dialog._confirmBtn:SetScript("OnClick", function()
-            if options.confirmDisabled then
-                return
-            end
+            if options.confirmDisabled then return end
             if dialog._typeGateOn and not dialog._typeGateOk then
                 -- Controller gate: the first press arms, the second confirms.
                 if dialog._padGate then
@@ -1013,19 +923,13 @@ function CUI:ShowConfirmPopup(options)
                 return
             end
             -- Controller gate: a double tap or a bounced press is not a second press.
-            if dialog._padGate and GetTime() - (dialog._padArmT or 0) < 0.5 then
-                return
-            end
+            if dialog._padGate and GetTime() - (dialog._padArmT or 0) < 0.5 then return end
             -- The callback runs before the popup closes, as Blizzard's own
             -- popups do, so a reload it asks for comes first in the click
             -- (RequestReload). The popup then closes only while it still
             -- shows this request: the callback may have opened the next one.
-            if options.onConfirm then
-                options.onConfirm(dialog._cbChecked)
-            end
-            if dialog._handle == handle then
-                dialog._dimmer:Hide()
-            end
+            if options.onConfirm then options.onConfirm(dialog._cbChecked) end
+            if dialog._handle == handle then dialog._dimmer:Hide() end
         end)
     end
 
@@ -1043,9 +947,7 @@ end
 -- dialog), without running any of its callbacks.
 function CUI:CloseConfirmPopup(handle)
     local dialog = confirmPopup
-    if handle and dialog and dialog._handle == handle then
-        dialog._dimmer:Hide()
-    end
+    if handle and dialog and dialog._handle == handle then dialog._dimmer:Hide() end
 end
 
 -- There is no beta-reset welcome popup or wipe gate (CludesUI:ShowWelcomePopup does not exist); manual reset lives in Global Settings > Reset.
@@ -1105,17 +1007,13 @@ local function BuildInfoDialog()
     close:SetSize(100, 26)
     close:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -14, 10)
     close:SetFrameLevel(frame:GetFrameLevel() + 2)
-    CUI.MakeStyledButton(close, "Close", 11, CUI.RB_COLOURS, function()
-        shade:Hide()
-    end)
+    CUI.MakeStyledButton(close, "Close", 11, CUI.RB_COLOURS, function() shade:Hide() end)
     if CUI.PadCP() then
         frame.CloseButton = close -- a controller's back press closes through it
     end
 
     shade:SetScript("OnMouseDown", function()
-        if not frame:IsMouseOver() then
-            shade:Hide()
-        end
+        if not frame:IsMouseOver() then shade:Hide() end
     end)
     WirePopupEscape(frame, shade)
     shade:HookScript("OnHide", function()
@@ -1159,9 +1057,7 @@ end
 
 function CUI:ShowInfoPopup(options)
     options = options or {}
-    if CUI.HideWidgetTooltip then
-        CUI.HideWidgetTooltip()
-    end
+    if CUI.HideWidgetTooltip then CUI.HideWidgetTooltip() end
     local infoDialog = info or BuildInfoDialog()
     infoDialog.title:SetText(CUI.L(options.title or "Information"))
     infoDialog.text:SetText(options.content and CUI.L(options.content) or "")
@@ -1199,9 +1095,7 @@ local MONEY_ICONS = {
 -- opts.money: three number boxes with coin icons in the input frame (built on
 -- first use). tab / shift-tab jumps between them.
 local function BuildMoneyRow(dialog)
-    if dialog._moneyRow then
-        return
-    end
+    if dialog._moneyRow then return end
     local line = CreateFrame("Frame", nil, dialog._inputFrame)
     line:SetAllPoints()
     line:SetFrameLevel(dialog._inputFrame:GetFrameLevel() + 1)
@@ -1223,21 +1117,16 @@ local function BuildMoneyRow(dialog)
         zero:SetTextColor(DIM_TEXT.r, DIM_TEXT.g, DIM_TEXT.b, DIM_TEXT.a * 0.5)
         zero:SetPoint("RIGHT")
         zero:SetText("0")
-        entry:SetScript("OnTextChanged", function(self)
-            zero:SetShown((self:GetText() or "") == "")
-        end)
-        entry:SetScript("OnEnterPressed", function()
-            dialog._tryConfirm()
-        end)
+        entry:SetScript("OnTextChanged", function(self) zero:SetShown((self:GetText() or "") == "") end)
+        entry:SetScript("OnEnterPressed", function() dialog._tryConfirm() end)
         entry:SetScript("OnEscapePressed", function()
             dialog._dimmer:Hide()
-            if dialog._onCancel then
-                dialog._onCancel()
-            end
+            if dialog._onCancel then dialog._onCancel() end
         end)
-        entry:SetScript("OnTabPressed", function()
-            boxes[(i - 1 + (IsShiftKeyDown() and 2 or 1)) % 3 + 1]:SetFocus()
-        end)
+        entry:SetScript(
+            "OnTabPressed",
+            function() boxes[(i - 1 + (IsShiftKeyDown() and 2 or 1)) % 3 + 1]:SetFocus() end
+        )
         local coin = line:CreateTexture(nil, "ARTWORK")
         coin:SetSize(13, 13)
         coin:SetPoint("LEFT", entry, "RIGHT", 4, 0)
@@ -1248,9 +1137,7 @@ local function BuildMoneyRow(dialog)
     dialog._moneyRow, dialog._moneyBoxes = line, boxes
     -- silver and copper past 99 count as 99
     dialog._moneyValue = function()
-        local function N(entry)
-            return tonumber(entry:GetText()) or 0
-        end
+        local function N(entry) return tonumber(entry:GetText()) or 0 end
         return N(boxes[1]) * 10000 + math.min(N(boxes[2]), 99) * 100 + math.min(N(boxes[3]), 99)
     end
 end
@@ -1407,24 +1294,16 @@ function CUI:ShowInputPopup(options)
                 local count = strlenutf8 and strlenutf8(text) or #text
                 dialog._countLabel:SetText(count .. "/" .. dialog._maxCount)
             end
-            if dialog._preview then
-                dialog._updatePreview(text)
-            end
-            if dialog._complete then
-                dialog._updateSuggest(text)
-            end
+            if dialog._preview then dialog._updatePreview(text) end
+            if dialog._complete then dialog._updateSuggest(text) end
         end)
         -- Suggestion list keys (opts.complete): Up/Down move the selection, Tab
         -- inserts it. Same arrow handling as the panel's global search box.
         textInput:SetScript("OnTabPressed", function()
-            if dialog._suggest then
-                dialog._acceptSuggest()
-            end
+            if dialog._suggest then dialog._acceptSuggest() end
         end)
         textInput:SetScript("OnArrowPressed", function(_, key)
-            if not dialog._suggest then
-                return
-            end
+            if not dialog._suggest then return end
             if key == "UP" then
                 dialog._stepSuggest(-1)
             elseif key == "DOWN" then
@@ -1480,9 +1359,7 @@ function CUI:ShowInputPopup(options)
         do
             local FADE_DUR = 0.1
             local progress, target = 0, 0
-            local function Apply(t)
-                extraLbl:SetTextColor(1, 1, 1, lerp(0.6, 0.9, t))
-            end
+            local function Apply(t) extraLbl:SetTextColor(1, 1, 1, lerp(0.6, 0.9, t)) end
             local function OnUpdate(self, elapsed)
                 local dir = (target == 1) and 1 or -1
                 progress = progress + dir * (elapsed / FADE_DUR)
@@ -1572,9 +1449,7 @@ function CUI:ShowInputPopup(options)
         shade:SetScript("OnMouseDown", function()
             if not dialog:IsMouseOver() then
                 shade:Hide()
-                if dialog._onCancel then
-                    dialog._onCancel()
-                end
+                if dialog._onCancel then dialog._onCancel() end
             end
         end)
 
@@ -1594,12 +1469,8 @@ function CUI:ShowInputPopup(options)
                     return
                 end
                 local shown, cb = dialog._handle, dialog._onConfirmCb
-                if cb then
-                    cb(copper)
-                end
-                if dialog._handle == shown then
-                    shade:Hide()
-                end
+                if cb then cb(copper) end
+                if dialog._handle == shown then shade:Hide() end
                 return
             end
             local txt = textInput:GetText()
@@ -1614,9 +1485,7 @@ function CUI:ShowInputPopup(options)
                 dialog._flashEmpty()
                 return
             end
-            if dialog._closePicker then
-                dialog._closePicker()
-            end
+            if dialog._closePicker then dialog._closePicker() end
             local shown, cb = dialog._handle, dialog._onConfirmCb
             if cb then
                 if dialog._cbRow:IsShown() then
@@ -1625,16 +1494,12 @@ function CUI:ShowInputPopup(options)
                     cb(txt)
                 end
             end
-            if dialog._handle == shown then
-                shade:Hide()
-            end
+            if dialog._handle == shown then shade:Hide() end
         end
         confirmBtn:SetScript("OnClick", dialog._tryConfirm)
 
         textInput:SetScript("OnEnterPressed", function()
-            if dialog._multiline then
-                return
-            end
+            if dialog._multiline then return end
             -- An open suggestion list takes Enter like Tab.
             if dialog._suggest then
                 dialog._acceptSuggest()
@@ -1649,9 +1514,7 @@ function CUI:ShowInputPopup(options)
                 return
             end
             shade:Hide()
-            if dialog._onCancel then
-                dialog._onCancel()
-            end
+            if dialog._onCancel then dialog._onCancel() end
         end)
 
         dialog._focusInput = function()
@@ -1698,23 +1561,17 @@ function CUI:ShowInputPopup(options)
         CUI.MakeRoundedBorder(swatch, 1, 1, 1, 0.9, fill)
         dialog._paintSwatch = function()
             local swatchOpts = dialog._swatchOpts
-            if not swatchOpts then
-                return
-            end
+            if not swatchOpts then return end
             local red, green, blue = swatchOpts.get()
             fill:SetColorTexture(red or 1, green or 1, blue or 1, 1)
         end
         dialog._closePicker = function()
             local picker = dialog._swatchOpts and CUI._colorPickerPopup
-            if picker and picker:IsShown() then
-                picker:Hide()
-            end
+            if picker and picker:IsShown() then picker:Hide() end
         end
         swatch:SetScript("OnClick", function(self)
             local swatchOpts = dialog._swatchOpts
-            if swatchOpts and swatchOpts.onClick then
-                swatchOpts.onClick(self, dialog._paintSwatch)
-            end
+            if swatchOpts and swatchOpts.onClick then swatchOpts.onClick(self, dialog._paintSwatch) end
         end)
         swatch:SetScript("OnEnter", function(self)
             local swatchOpts = dialog._swatchOpts
@@ -1737,9 +1594,7 @@ function CUI:ShowInputPopup(options)
     dialog._swatchOpts = sw
     if dialog._swatch then
         dialog._swatch:SetShown(sw ~= nil)
-        if sw then
-            dialog._paintSwatch()
-        end
+        if sw then dialog._paintSwatch() end
         -- The info badge steps left of a shown swatch
         dialog._info:ClearAllPoints()
         PanelPP.Point(dialog._info, "RIGHT", sw and dialog._swatch or dialog._inputFrame, "LEFT", -8, 0)
@@ -1771,9 +1626,7 @@ function CUI:ShowInputPopup(options)
             entry:SetText("")
         end
     end
-    if dialog._moneyRow then
-        dialog._moneyRow:SetShown(dialog._money)
-    end
+    if dialog._moneyRow then dialog._moneyRow:SetShown(dialog._money) end
     dialog._editBox:SetShown(not dialog._money)
     dialog._statusShown = nil
     dialog._statusLabel:SetText("")
@@ -1965,20 +1818,14 @@ function CUI:ShowInputPopup(options)
                 dialog._closeSuggest()
             end
         end)
-        dropList:SetScript("OnShow", function()
-            clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN")
-        end)
-        dropList:SetScript("OnHide", function()
-            clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN")
-        end)
+        dropList:SetScript("OnShow", function() clickOff:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
+        dropList:SetScript("OnHide", function() clickOff:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
         -- The wheel moves the window only; the selection stays and the arrow
         -- keys bring it back into view.
         dropList:EnableMouseWheel(true)
         dropList:SetScript("OnMouseWheel", function(_, delta)
             local suggest = dialog._suggest
-            if not suggest then
-                return
-            end
+            if not suggest then return end
             local off = math.max(0, math.min(#suggest.items - ROWS, suggest.offset - delta))
             if off ~= suggest.offset then
                 suggest.offset = off
@@ -2032,15 +1879,18 @@ function CUI:ShowInputPopup(options)
         if pv then
             dialog._previewLabelFS:SetText(options.previewLabel or "")
             local color = options.previewColor
-            dialog._previewValue:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, 1)
+            dialog._previewValue:SetTextColor(
+                color and color.r or 1,
+                color and color.g or 1,
+                color and color.b or 1,
+                1
+            )
             belowH = 32
         end
     end
     local initText = options.initialText or ""
     dialog._editBox:SetText(initText)
-    if options.preview then
-        dialog._updatePreview(initText)
-    end
+    if options.preview then dialog._updatePreview(initText) end
     if dialog._maxCount then
         local count = strlenutf8 and strlenutf8(initText) or #initText
         dialog._countLabel:SetText(count .. "/" .. dialog._maxCount)
@@ -2067,9 +1917,7 @@ function CUI:ShowInputPopup(options)
         dialog._extraLbl:SetText(options.extraButton.text or "Extra")
         dialog._extraBtn._resetAnim()
         dialog._extraBtn:SetScript("OnClick", function()
-            if options.extraButton.onClick then
-                options.extraButton.onClick(dialog._editBox)
-            end
+            if options.extraButton.onClick then options.extraButton.onClick(dialog._editBox) end
         end)
         -- Below the preview block when there is one.
         dialog._extraBtn:ClearAllPoints()
@@ -2093,9 +1941,7 @@ function CUI:ShowInputPopup(options)
     -- A label's height as shown (a secret height in a restricted moment counts as one line).
     local function TextH(fs)
         local h = fs:GetStringHeight() or 12
-        if issecretvalue and issecretvalue(h) then
-            h = 12
-        end
+        if issecretvalue and issecretvalue(h) then h = 12 end
         return math.ceil(h)
     end
 
@@ -2148,9 +1994,7 @@ function CUI:ShowInputPopup(options)
 
     dialog._cancelBtn:SetScript("OnClick", function()
         dialog._dimmer:Hide()
-        if options.onCancel then
-            options.onCancel()
-        end
+        if options.onCancel then options.onCancel() end
     end)
     -- Controller cursor: its cancel press backs out through Cancel only when
     -- Cancel shows and is what Escape does (onDismiss differs from it).
@@ -2161,9 +2005,7 @@ function CUI:ShowInputPopup(options)
     dialog._dimmer:Show()
     C_Timer.After(0.05, function()
         local inputBox = dialog._focusInput()
-        if dialog._selectText then
-            inputBox:HighlightText()
-        end
+        if dialog._selectText then inputBox:HighlightText() end
     end)
 end
 
@@ -2203,45 +2045,35 @@ function CUI.CreateQuantityDialog(options)
 
     local close = CreateFrame("Button", nil, infoDialog)
     skin.close(close)
-    close:SetScript("OnClick", function()
-        infoDialog:Hide()
-    end)
+    close:SetScript("OnClick", function() infoDialog:Hide() end)
     -- Controller cursor: Cancel finds the window's close button.
-    if CUI.PadCP() then
-        infoDialog.CloseButton = close
-    end
+    if CUI.PadCP() then infoDialog.CloseButton = close end
 
     local entry = CreateFrame("EditBox", nil, infoDialog)
     local function Clamped(n)
-        if infoDialog._max < infoDialog._step then
-            return 0
-        end
+        if infoDialog._max < infoDialog._step then return 0 end
         return Clamp(math.floor(n / infoDialog._step) * infoDialog._step, infoDialog._step, infoDialog._max)
     end
-    function infoDialog:Current()
-        return Clamped(entry:GetNumber() or 0)
-    end
+    function infoDialog:Current() return Clamped(entry:GetNumber() or 0) end
     function infoDialog:SetValue(n)
         n = Clamped(n)
         entry:SetText(tostring(n))
         entry:SetCursorPosition(#entry:GetText())
-        if options.onChange then
-            options.onChange(n)
-        end
+        if options.onChange then options.onChange(n) end
     end
     function infoDialog:SetRange(step, top, shiftStep)
         infoDialog._step, infoDialog._max, infoDialog._shiftStep = math.max(step or 1, 1), top, shiftStep
         infoDialog._maxLbl:SetText("/ " .. top)
     end
     local function Nudge(dir)
-        infoDialog:SetValue(infoDialog:Current() + dir * ((IsShiftKeyDown() and infoDialog._shiftStep) or infoDialog._step))
+        infoDialog:SetValue(
+            infoDialog:Current() + dir * ((IsShiftKeyDown() and infoDialog._shiftStep) or infoDialog._step)
+        )
     end
 
     local minus = skin.button(infoDialog, 22, 22, "-")
     minus:SetPoint("TOPLEFT", infoDialog, "TOPLEFT", 10, -30)
-    minus:SetScript("OnClick", function()
-        Nudge(-1)
-    end)
+    minus:SetScript("OnClick", function() Nudge(-1) end)
 
     entry:SetSize(options.editWidth or 56, 22)
     entry:SetPoint("LEFT", minus, "RIGHT", 4, 0)
@@ -2253,9 +2085,7 @@ function CUI.CreateQuantityDialog(options)
     entry:SetTextInsets(4, 4, 0, 0)
     skin.editBox(entry)
     entry:SetScript("OnTextChanged", function(self, userInput)
-        if not userInput then
-            return
-        end
+        if not userInput then return end
         if self:GetNumber() > infoDialog._max then
             infoDialog:SetValue(infoDialog._max)
         elseif options.onChange then
@@ -2263,18 +2093,12 @@ function CUI.CreateQuantityDialog(options)
         end
     end)
     entry:SetScript("OnEditFocusLost", function()
-        if infoDialog:IsShown() then
-            infoDialog:SetValue(infoDialog:Current())
-        end
+        if infoDialog:IsShown() then infoDialog:SetValue(infoDialog:Current()) end
     end)
     entry:SetScript("OnEnterPressed", function()
-        if options.onEnter then
-            options.onEnter()
-        end
+        if options.onEnter then options.onEnter() end
     end)
-    entry:SetScript("OnEscapePressed", function()
-        infoDialog:Hide()
-    end)
+    entry:SetScript("OnEscapePressed", function() infoDialog:Hide() end)
     -- Controller cursor: the -/+ buttons cover the amount, so no on-screen
     -- keyboard for this box.
     CUI.PadHint(entry, "hidekeyboard")
@@ -2282,9 +2106,7 @@ function CUI.CreateQuantityDialog(options)
 
     local plus = skin.button(infoDialog, 22, 22, "+")
     plus:SetPoint("LEFT", entry, "RIGHT", 4, 0)
-    plus:SetScript("OnClick", function()
-        Nudge(1)
-    end)
+    plus:SetScript("OnClick", function() Nudge(1) end)
 
     local maxLbl = infoDialog:CreateFontString(nil, "OVERLAY")
     skin.font(maxLbl, 12)
@@ -2310,32 +2132,23 @@ function CUI.CreateQuantityDialog(options)
         widget:SetPoint(p, infoDialog, p, (p == "BOTTOMLEFT" and 10) or (p == "BOTTOMRIGHT" and -10) or 0, 10)
         widget:SetScript("OnClick", spec.onClick)
         if spec.tooltip then
-            widget:HookScript("OnEnter", function()
-                CUI.ShowWidgetTooltip(widget, spec.tooltip, spec.tooltipOpts)
-            end)
-            widget:HookScript("OnLeave", function()
-                CUI.HideWidgetTooltip()
-            end)
+            widget:HookScript(
+                "OnEnter",
+                function() CUI.ShowWidgetTooltip(widget, spec.tooltip, spec.tooltipOpts) end
+            )
+            widget:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         end
         infoDialog._buttons[spec.key] = widget
-        if spec.primary then
-            infoDialog._primary = widget
-        end
+        if spec.primary then infoDialog._primary = widget end
     end
 
-    infoDialog:SetScript("OnMouseWheel", function(_, delta)
-        Nudge(delta > 0 and 1 or -1)
-    end)
+    infoDialog:SetScript("OnMouseWheel", function(_, delta) Nudge(delta > 0 and 1 or -1) end)
     infoDialog:SetScript("OnShow", function()
-        if options.onShow then
-            options.onShow()
-        end
+        if options.onShow then options.onShow() end
     end)
     infoDialog:SetScript("OnHide", function()
         entry:ClearFocus()
-        if options.onHide then
-            options.onHide()
-        end
+        if options.onHide then options.onHide() end
     end)
     CUI.RegisterEscapeClose(infoDialog)
 
@@ -2364,21 +2177,13 @@ end
 -- navigation).
 function CUI.StackSplitFor(owner)
     local ssf = StackSplitFrame
-    if not ssf or not ssf:IsShown() or ssf.owner ~= owner then
-        return nil
-    end
-    if ssf.down and next(ssf.down) then
-        return nil
-    end
-    if CUI.PadGamepadUI() then
-        return nil
-    end
+    if not ssf or not ssf:IsShown() or ssf.owner ~= owner then return nil end
+    if ssf.down and next(ssf.down) then return nil end
+    if CUI.PadGamepadUI() then return nil end
     return ssf.maxStack or 0
 end
 
 -- Takes Blizzard's StackSplitFrame away once StackSplitFor said yes: Hide
 -- only, no field writes on Blizzard's popup. Its OnHide runs under this call
 -- and writes owner.hasStackSplit = 0 onto the button it was open on.
-function CUI.TakeStackSplit()
-    StackSplitFrame:Hide()
-end
+function CUI.TakeStackSplit() StackSplitFrame:Hide() end

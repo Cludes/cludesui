@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIMythicTimer.lua  --  M+ Timer overlay for CludesUI
 -------------------------------------------------------------------------------
@@ -51,9 +49,7 @@ end
 mod.AppendSharedMediaBarTextures = AppendSharedMediaBarTextures
 
 local function ApplyBarTexture(texture, texKey, red, green, blue, a)
-    if not texture then
-        return
-    end
+    if not texture then return end
     local filePath = CludesUI.ResolveTexturePath(barTextures, texKey or "none", nil)
     if filePath then
         texture:SetTexture(filePath)
@@ -71,15 +67,9 @@ end
 -- per-segment borders). Solid ColorTexture bars don't need this; same inset is
 -- harmless and keeps timer/forces paths identical.
 local function GetBarBleedInset(profile, forForces)
-    if not profile or profile.customBorderStyle ~= true then
-        return 0
-    end
-    if (profile.borderSize or 0) <= 0 then
-        return 0
-    end
-    if forForces and profile.borderApplyToForces == false then
-        return 0
-    end
+    if not profile or profile.customBorderStyle ~= true then return 0 end
+    if (profile.borderSize or 0) <= 0 then return 0 end
+    if forForces and profile.borderApplyToForces == false then return 0 end
     local Pix = CludesUI and CludesUI.PP
     return (Pix and Pix.mult or 1) * 1
 end
@@ -124,9 +114,7 @@ local function EnsureShellTextures(clip, ownerFrame, bgKey, fillKey)
         ownerFrame[bgKey] = clip:CreateTexture(nil, "BACKGROUND", nil, 1)
         ownerFrame[bgKey]:SetAllPoints(clip)
     end
-    if not ownerFrame[fillKey] then
-        ownerFrame[fillKey] = clip:CreateTexture(nil, "ARTWORK")
-    end
+    if not ownerFrame[fillKey] then ownerFrame[fillKey] = clip:CreateTexture(nil, "ARTWORK") end
     return ownerFrame[bgKey], ownerFrame[fillKey]
 end
 
@@ -136,9 +124,7 @@ local function CalculateBonusTimers(timeLimit, affixes)
     local plusTwoT = (timeLimit or 0) * PLUS_TWO_RATIO
     local plusThreeT = (timeLimit or 0) * PLUS_THREE_RATIO
 
-    if not timeLimit or timeLimit <= 0 then
-        return plusTwoT, plusThreeT
-    end
+    if not timeLimit or timeLimit <= 0 then return plusTwoT, plusThreeT end
 
     if affixes then
         for _, affixID in ipairs(affixes) do
@@ -490,15 +476,11 @@ local function ScanPartyAlive()
     for i = 1, count do
         local unitToken = (prefixText == "party" and i == count) and "player" or (prefixText .. i)
         local label = UnitName(unitToken)
-        if label and not UnitIsDeadOrGhost(unitToken) then
-            _partyAlive[label] = true
-        end
+        if label and not UnitIsDeadOrGhost(unitToken) then _partyAlive[label] = true end
     end
     if prefixText == "party" then
         local label = UnitName("player")
-        if label and not UnitIsDeadOrGhost("player") then
-            _partyAlive[label] = true
-        end
+        if label and not UnitIsDeadOrGhost("player") then _partyAlive[label] = true end
     end
 end
 
@@ -530,9 +512,7 @@ end
 
 -- Helpers
 local function TimeText(seconds, withMilliseconds)
-    if not seconds or seconds < 0 then
-        seconds = 0
-    end
+    if not seconds or seconds < 0 then seconds = 0 end
     local whole = floor(seconds)
     local m = floor(whole / 60)
     local s = floor(whole % 60)
@@ -553,23 +533,17 @@ end
 -- counting into the negative (e.g. "-01:04") instead of sitting frozen at
 -- "00:00", so it's obvious by how much you're over.
 local function FormatRemaining(remaining)
-    if remaining and remaining < 0 then
-        return "-" .. TimeText(-remaining)
-    end
+    if remaining and remaining < 0 then return "-" .. TimeText(-remaining) end
     return TimeText(remaining)
 end
 
 local function RoundInt(amount)
-    if not amount then
-        return 0
-    end
+    if not amount then return 0 end
     return floor(amount + 0.5)
 end
 
 local function ColorOr(list, fallbackR, fallbackG, fallbackB)
-    if list then
-        return list.r or fallbackR, list.g or fallbackG, list.b or fallbackB
-    end
+    if list then return list.r or fallbackR, list.g or fallbackG, list.b or fallbackB end
     return fallbackR, fallbackG, fallbackB
 end
 
@@ -599,19 +573,13 @@ end
 
 local function GetTimerSegmentTextColor(profileTbl, index)
     if index == 3 then
-        if profileTbl and profileTbl.thresholdPlusOneTextWhite == true then
-            return 1, 1, 1
-        end
+        if profileTbl and profileTbl.thresholdPlusOneTextWhite == true then return 1, 1, 1 end
         return ColorOr(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
     elseif index == 2 then
-        if profileTbl and profileTbl.thresholdPlusTwoTextWhite == true then
-            return 1, 1, 1
-        end
+        if profileTbl and profileTbl.thresholdPlusTwoTextWhite == true then return 1, 1, 1 end
         return ColorOr(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
     end
-    if profileTbl and profileTbl.thresholdPlusThreeTextWhite == true then
-        return 1, 1, 1
-    end
+    if profileTbl and profileTbl.thresholdPlusThreeTextWhite == true then return 1, 1, 1 end
     return ColorOr(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
 end
 
@@ -625,9 +593,7 @@ local function NormalizeAffixKey(affixes)
 end
 
 local function GetScopeKey(runRec, modeName)
-    if not runRec or not runRec.mapID then
-        return nil
-    end
+    if not runRec or not runRec.mapID then return nil end
 
     if modeName == COMPARE_DUNGEON then
         return tostring(runRec.mapID)
@@ -641,25 +607,17 @@ local function GetScopeKey(runRec, modeName)
 end
 
 local function EnsureProfileStore(key)
-    if not store or not store.profile then
-        return nil
-    end
-    if not store.profile[key] then
-        store.profile[key] = {}
-    end
+    if not store or not store.profile then return nil end
+    if not store.profile[key] then store.profile[key] = {} end
     return store.profile[key]
 end
 
 local function GetReferenceObjectiveTime(runRec, objectiveIndex, modeName)
-    if modeName == COMPARE_NONE then
-        return nil
-    end
+    if modeName == COMPARE_NONE then return nil end
 
     local storage = (store.profile.showFastestRunSplits and EnsureProfileStore("fastestRunSplits"))
         or EnsureProfileStore("bestObjectiveSplits")
-    if not storage then
-        return nil
-    end
+    if not storage then return nil end
 
     -- Try exact scope first, then fall back to broader scopes
     -- (LEVEL_AFFIX -> LEVEL -> DUNGEON); strict mode = exact scope only, so a
@@ -678,29 +636,21 @@ local function GetReferenceObjectiveTime(runRec, objectiveIndex, modeName)
     for _, tryMode in ipairs(tryOrder) do
         local scopeKey = GetScopeKey(runRec, tryMode)
         local scope = scopeKey and storage[scopeKey]
-        if scope and scope[objectiveIndex] then
-            return scope[objectiveIndex]
-        end
+        if scope and scope[objectiveIndex] then return scope[objectiveIndex] end
     end
     return nil
 end
 
 local function UpdateBestObjectiveSplits(runRec, objectiveIndex, timePassed)
     local storage = EnsureProfileStore("bestObjectiveSplits")
-    if not storage then
-        return
-    end
+    if not storage then return end
 
     for _, modeName in ipairs({ COMPARE_DUNGEON, COMPARE_LEVEL, COMPARE_LEVEL_AFFIX }) do
         local scopeKey = GetScopeKey(runRec, modeName)
         if scopeKey then
-            if not storage[scopeKey] then
-                storage[scopeKey] = {}
-            end
+            if not storage[scopeKey] then storage[scopeKey] = {} end
             local previous = storage[scopeKey][objectiveIndex]
-            if not previous or timePassed < previous then
-                storage[scopeKey][objectiveIndex] = timePassed
-            end
+            if not previous or timePassed < previous then storage[scopeKey][objectiveIndex] = timePassed end
         end
     end
 end
@@ -726,9 +676,7 @@ end
 local FASTEST_RUN_SCOPES = { COMPARE_DUNGEON, COMPARE_LEVEL, COMPARE_LEVEL_AFFIX }
 local function SaveFastestRunSplits()
     local storage = EnsureProfileStore("fastestRunSplits")
-    if not storage then
-        return
-    end
+    if not storage then return end
     local runRec = activeRun
     local timePassed = runRec.elapsed
     -- The completion time can come from GetWorldElapsedTime after a
@@ -740,9 +688,7 @@ local function SaveFastestRunSplits()
     for _, modeName in ipairs(FASTEST_RUN_SCOPES) do
         local scopeKey = GetScopeKey(runRec, modeName)
         if scopeKey then
-            if not storage[scopeKey] then
-                storage[scopeKey] = {}
-            end
+            if not storage[scopeKey] then storage[scopeKey] = {} end
             local previousRunTime = storage[scopeKey].overallRunTime
             if not previousRunTime or timePassed < previousRunTime then
                 storage[scopeKey].overallRunTime = timePassed
@@ -756,15 +702,11 @@ local function SaveFastestRunSplits()
 end
 
 local function BuildSplitCompareText(referenceTime, currentTime, deltaOnly, fasterColor, slowerColor)
-    if not referenceTime then
-        return ""
-    end
+    if not referenceTime then return "" end
 
     -- No time to compare yet (boss still alive): the reference on its own, in the
     -- same gray parentheses a completed objective uses, just without the +/-.
-    if not currentTime then
-        return format("  |cff888888(%s)|r", TimeText(referenceTime))
-    end
+    if not currentTime then return format("  |cff888888(%s)|r", TimeText(referenceTime)) end
 
     local diff = currentTime - referenceTime
     local color = diff <= 0 and fasterColor or slowerColor
@@ -773,9 +715,7 @@ local function BuildSplitCompareText(referenceTime, currentTime, deltaOnly, fast
     local diffText = diff == 0 and "0:00" or TimeText(abs(diff))
     local colorHex = CludesUI.HexColor(cR, cG, cB)
 
-    if deltaOnly then
-        return format("  %s(%s%s)|r", colorHex, diffPrefix, diffText)
-    end
+    if deltaOnly then return format("  %s(%s%s)|r", colorHex, diffPrefix, diffText) end
 
     return format("  |cff888888(%s, %s%s%s)|r", TimeText(referenceTime), colorHex, diffPrefix, diffText)
 end
@@ -800,9 +740,7 @@ local function FormatEnemyForcesText(enemyLine, formatId, compact)
             suffix
         )
     elseif formatId == "REMAINING" then
-        if compact then
-            return format("%d left", RoundInt(remaining))
-        end
+        if compact then return format("%d left", RoundInt(remaining)) end
         return format("%d remaining%s", RoundInt(remaining), suffix)
     end
 
@@ -914,9 +852,7 @@ local function UpdateObjectives()
                             normalized = normalized:gsub(",", ".")
                         end
                         local parsed = tonumber(normalized)
-                        if parsed then
-                            rawQuantity = parsed
-                        end
+                        if parsed then rawQuantity = parsed end
                         object._lastQS, object._lastQSParsed = quantityString, parsed
                     end
                 end
@@ -948,9 +884,7 @@ local function UpdateObjectives()
         end
     end
 
-    if activeRun.completed then
-        SaveFastestRunSplits()
-    end
+    if activeRun.completed then SaveFastestRunSplits() end
 
     for i = numCriteria + 1, #activeRun.objectives do
         activeRun.objectives[i] = nil
@@ -961,14 +895,10 @@ end
 local _refreshPending = false
 local function FlushRefresh()
     _refreshPending = false
-    if _G._CUMT_StandaloneRefresh then
-        _G._CUMT_StandaloneRefresh()
-    end
+    if _G._CUMT_StandaloneRefresh then _G._CUMT_StandaloneRefresh() end
 end
 local function QueueRefresh()
-    if _refreshPending then
-        return
-    end
+    if _refreshPending then return end
     _refreshPending = true
     C_Timer.After(0.05, FlushRefresh)
 end
@@ -992,9 +922,7 @@ local function CheckSavedSplits(timePassed)
     activeRun._checkSplits = nil
     activeRun._checkedSplits = nil
     local splitList = store and store.profile._activeRunSplits
-    if not splitList then
-        return
-    end
+    if not splitList then return end
     local stale = splitList.mapID ~= activeRun.mapID or splitList.level ~= activeRun.level
     if not stale and splitList.start then
         stale = GetServerTime() - timePassed > splitList.start + 30
@@ -1016,34 +944,24 @@ end
 -- A saved table this run has not checked arms the check again
 local function NoteSavedSplits()
     local splitList = store and store.profile._activeRunSplits
-    if splitList and splitList ~= activeRun._checkedSplits then
-        activeRun._checkSplits = true
-    end
+    if splitList and splitList ~= activeRun._checkedSplits then activeRun._checkSplits = true end
 end
 
 local function OnTimerTick()
-    if not activeRun.active then
-        return
-    end
+    if not activeRun.active then return end
 
     local timePassed = select(2, GetWorldElapsedTime(1))
-    if not (timePassed and timePassed >= 0) then
-        return
-    end
+    if not (timePassed and timePassed >= 0) then return end
 
     -- Deduplicate: only refresh the display once per whole second.
     local sec = floor(timePassed)
-    if sec == _lastTickedSec then
-        return
-    end
+    if sec == _lastTickedSec then return end
     _lastTickedSec = sec
 
     activeRun.elapsed = timePassed
 
     NoteSavedSplits()
-    if activeRun._checkSplits and timePassed > 0 then
-        CheckSavedSplits(timePassed)
-    end
+    if activeRun._checkSplits and timePassed > 0 then CheckSavedSplits(timePassed) end
 
     local deathCount, timeLost = C_ChallengeMode.GetDeathCount()
     activeRun.deaths = deathCount or 0
@@ -1066,9 +984,7 @@ do
     local block = (ScenarioObjectiveTracker and ScenarioObjectiveTracker.ChallengeModeBlock)
         or (ScenarioBlocksFrame and ScenarioBlocksFrame.ChallengeModeBlock)
     if block and block.UpdateTime then
-        hooksecurefunc(block, "UpdateTime", function()
-            OnTimerTick()
-        end)
+        hooksecurefunc(block, "UpdateTime", function() OnTimerTick() end)
         _tickHooked = true
     end
 end
@@ -1079,9 +995,7 @@ end
 local _onUpdateAccum = 0
 local function OnUpdateFallback(_, dt)
     _onUpdateAccum = _onUpdateAccum + dt
-    if _onUpdateAccum < 1 then
-        return
-    end
+    if _onUpdateAccum < 1 then return end
     _onUpdateAccum = 0
     OnTimerTick()
 end
@@ -1090,9 +1004,7 @@ local soloFrame
 local standaloneCreated = false
 local _timerLoopWanted = false
 local function StartTimerLoop()
-    if _tickHooked then
-        return
-    end
+    if _tickHooked then return end
     _timerLoopWanted = true
     if soloFrame then
         _onUpdateAccum = 0
@@ -1101,9 +1013,7 @@ local function StartTimerLoop()
 end
 local function StopTimerLoop()
     _timerLoopWanted = false
-    if soloFrame then
-        soloFrame:SetScript("OnUpdate", nil)
-    end
+    if soloFrame then soloFrame:SetScript("OnUpdate", nil) end
 end
 
 -- Hide Blizzard's ObjectiveTrackerFrame whenever our M+ timer is enabled
@@ -1112,9 +1022,7 @@ end
 -- SetParent (avoids tainting the secure scenario tree), no recursion into
 -- children (avoids the invisible-click-catcher pattern).
 local function TrackerShouldBeHidden()
-    if not (store and store.profile and store.profile.enabled) then
-        return false
-    end
+    if not (store and store.profile and store.profile.enabled) then return false end
     -- Hide during active challenge AND after it completes but before the
     -- player has left the dungeon instance. Blizzard's end-of-run fanfare
     -- flips IsChallengeModeActive() back to false while the user is still
@@ -1141,13 +1049,9 @@ end
 -- combat drops. Each new in-combat request re-queues the one-shot finish.
 local function FinishTrackerHide()
     local frame = _G.ObjectiveTrackerFrame
-    if not frame then
-        return
-    end
+    if not frame then return end
     frame:SetAlpha(1)
-    if TrackerShouldBeHidden() then
-        frame:Hide()
-    end
+    if TrackerShouldBeHidden() then frame:Hide() end
 end
 local function HideTracker(otf)
     if InCombatLockdown() then
@@ -1161,18 +1065,12 @@ end
 
 local _trackerHookInstalled = false
 local function InstallTrackerHook()
-    if _trackerHookInstalled then
-        return
-    end
+    if _trackerHookInstalled then return end
     local otf = _G.ObjectiveTrackerFrame
-    if not otf then
-        return
-    end
+    if not otf then return end
     _trackerHookInstalled = true
     hooksecurefunc(otf, "Show", function()
-        if TrackerShouldBeHidden() then
-            HideTracker(otf)
-        end
+        if TrackerShouldBeHidden() then HideTracker(otf) end
     end)
 end
 
@@ -1181,32 +1079,22 @@ end
 local function ApplyTrackerVisibility()
     InstallTrackerHook()
     local otf = _G.ObjectiveTrackerFrame
-    if not otf then
-        return
-    end
-    if TrackerShouldBeHidden() then
-        HideTracker(otf)
-    end
+    if not otf then return end
+    if TrackerShouldBeHidden() then HideTracker(otf) end
 end
 
 local function SuppressBlizzardMPlus()
     ApplyTrackerVisibility()
-    if _G._CUQT_SetSuppressed then
-        _G._CUQT_SetSuppressed("MythicPlus", true)
-    end
+    if _G._CUQT_SetSuppressed then _G._CUQT_SetSuppressed("MythicPlus", true) end
 end
 local function UnsuppressBlizzardMPlus()
-    if _G._CUQT_SetSuppressed then
-        _G._CUQT_SetSuppressed("MythicPlus", false)
-    end
+    if _G._CUQT_SetSuppressed then _G._CUQT_SetSuppressed("MythicPlus", false) end
 end
 
 -- Run lifecycle
 local function StartRun()
     local mapID = C_ChallengeMode.GetActiveChallengeMapID()
-    if not mapID then
-        return
-    end
+    if not mapID then return end
     _lastTickedSec = -1 -- reset dedup so the first tick always fires
 
     local mapName, _, timeLimit = C_ChallengeMode.GetMapUIInfo(mapID)
@@ -1286,9 +1174,7 @@ local function CompleteRun()
         CheckSavedSplits(e)
     end
     UpdateObjectives()
-    if store and store.profile then
-        store.profile._activeRunSplits = nil
-    end
+    if store and store.profile then store.profile._activeRunSplits = nil end
     QueueRefresh()
 end
 
@@ -1419,33 +1305,19 @@ end
 -- its rows on the Fonts and Textures pages) call this on every write.
 _G._CUMT_ApplyTimer = function()
     -- Render before CENTER re-apply so height is known (placeholder is 200px).
-    if _G._CUMT_StandaloneRefresh then
-        _G._CUMT_StandaloneRefresh()
-    end
-    if _G._CUMT_ApplyStandalonePosition then
-        _G._CUMT_ApplyStandalonePosition()
-    end
+    if _G._CUMT_StandaloneRefresh then _G._CUMT_StandaloneRefresh() end
+    if _G._CUMT_ApplyStandalonePosition then _G._CUMT_ApplyStandalonePosition() end
 end
 
 -- The whole module: a profile switch or a Spec Override flip lands here, and
 -- every Mythic+ Tools feature re-reads its settings from the current profile.
 _G._CUMT_Apply = function()
     _G._CUMT_ApplyTimer()
-    if mod.TSB_Refresh then
-        mod.TSB_Refresh()
-    end
-    if mod.TFB_Refresh then
-        mod.TFB_Refresh()
-    end
-    if mod.RS_Apply then
-        mod.RS_Apply()
-    end
-    if mod.RS_Refresh then
-        mod.RS_Refresh()
-    end
-    if mod.KT_Refresh then
-        mod.KT_Refresh()
-    end
+    if mod.TSB_Refresh then mod.TSB_Refresh() end
+    if mod.TFB_Refresh then mod.TFB_Refresh() end
+    if mod.RS_Apply then mod.RS_Apply() end
+    if mod.RS_Refresh then mod.RS_Refresh() end
+    if mod.KT_Refresh then mod.KT_Refresh() end
 end
 
 -- Whether the Mythic+ timer window itself is on. The parent's incompatible
@@ -1460,9 +1332,7 @@ end
 -- Reset the current profile back to defaults.
 -- Used by the module's "Reset" button in the CludesUI options panel.
 _G._CUMT_ResetProfile = function()
-    if not store or not store.profile then
-        return false
-    end
+    if not store or not store.profile then return false end
 
     -- Clear every key in the current profile
     for key in pairs(store.profile) do
@@ -1474,9 +1344,7 @@ _G._CUMT_ResetProfile = function()
         store.profile[key] = type(amount) == "table" and CopyTable(amount) or amount
     end
 
-    if _G._CUMT_StandaloneRefresh then
-        _G._CUMT_StandaloneRefresh()
-    end
+    if _G._CUMT_StandaloneRefresh then _G._CUMT_StandaloneRefresh() end
     return true
 end
 
@@ -1505,17 +1373,13 @@ local unlockLayoutActive = false -- force preview layout while Unlock Mode is op
 -- above the host's tick layer every apply so the continuous TICKS fill cannot
 -- paint over the border strips.
 local function ApplyBorderTo(hostFrame, anchor, key, profile, size, texKey, red, green, blue, a, px)
-    if not hostFrame or not anchor then
-        return
-    end
+    if not hostFrame or not anchor then return end
 
     local bf = hostFrame[key]
     -- Zero cost unless enabled: when the border is off (size 0 or the anchor is
     -- hidden) and no carrier frame was ever built, do nothing. No frame is
     -- created and no restyle runs for users who never turn a border on.
-    if not bf and (size <= 0 or not anchor:IsShown()) then
-        return
-    end
+    if not bf and (size <= 0 or not anchor:IsShown()) then return end
     if not bf then
         bf = CreateFrame("Frame", nil, hostFrame)
         bf:EnableMouse(false)
@@ -1566,29 +1430,21 @@ local function ApplyBorderTo(hostFrame, anchor, key, profile, size, texKey, red,
     -- empty carrier frame alone is "above".
     local Pix = CludesUI and CludesUI.PP
     local edges = Pix and Pix.GetBorders and Pix.GetBorders(bf)
-    if edges then
-        edges:SetFrameLevel(bf:GetFrameLevel() + 1)
-    end
+    if edges then edges:SetFrameLevel(bf:GetFrameLevel() + 1) end
 end
 
 mod.ApplyBorder = function()
-    if not soloFrame or not store or not store.profile then
-        return
-    end
+    if not soloFrame or not store or not store.profile then return end
 
     local frame = soloFrame
     local p = store.profile
     local size = p.borderSize or 0
     -- "Custom Border Style" is the master gate: when off, no border renders
     -- regardless of the saved borderSize.
-    if not p.customBorderStyle then
-        size = 0
-    end
+    if not p.customBorderStyle then size = 0 end
     -- Zero cost unless enabled: if the border is off and none were ever built,
     -- skip the whole pass (no per-segment loop, no restyle calls).
-    if size <= 0 and not frame._emtBordersBuilt then
-        return
-    end
+    if size <= 0 and not frame._emtBordersBuilt then return end
     local texKey = p.borderTexture or "solid"
     local red, green, blue, a = p.borderR or 0, p.borderG or 0, p.borderB or 0, p.borderA or 1
     -- Exact pixel size (nil = the legacy path), resolved once against the bar's
@@ -1635,13 +1491,37 @@ mod.ApplyBorder = function()
     end
     if frame._timerSegHosts then
         for i, owner in ipairs(frame._timerSegHosts) do
-            ApplyBorderTo(frame, owner, "_emtSegBorderFrame" .. i, p, segSize, texKey, red, green, blue, a, segPx)
+            ApplyBorderTo(
+                frame,
+                owner,
+                "_emtSegBorderFrame" .. i,
+                p,
+                segSize,
+                texKey,
+                red,
+                green,
+                blue,
+                a,
+                segPx
+            )
         end
     elseif frame._timerSegBgs then
         -- Legacy texture-only segments (pre-shell); keep border working if hosts
         -- were never built this session.
         for i, segment in ipairs(frame._timerSegBgs) do
-            ApplyBorderTo(frame, segment, "_emtSegBorderFrame" .. i, p, segSize, texKey, red, green, blue, a, segPx)
+            ApplyBorderTo(
+                frame,
+                segment,
+                "_emtSegBorderFrame" .. i,
+                p,
+                segSize,
+                texKey,
+                red,
+                green,
+                blue,
+                a,
+                segPx
+            )
         end
     end
 end
@@ -1660,29 +1540,21 @@ local FONT_OPTIONS = {
 local function SFont()
     if CludesUI and CludesUI.GetFontPath then
         local p = CludesUI.GetFontPath("mythicTimer")
-        if p and p ~= "" then
-            return p
-        end
+        if p and p ~= "" then return p end
     end
     return FALLBACK_FONT
 end
 -- _CUMT_GetFontOptions removed: font dropdown deleted from options page.
 local function SOutline()
-    if CludesUI.GetFontOutlineFlag then
-        return CludesUI.GetFontOutlineFlag("mythicTimer")
-    end
+    if CludesUI.GetFontOutlineFlag then return CludesUI.GetFontOutlineFlag("mythicTimer") end
     return ""
 end
 local function SetFS(fontStr, size, flags)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local p = SFont()
     flags = flags or SOutline()
     fontStr:SetFont(p, size, flags)
-    if not fontStr:GetFont() then
-        fontStr:SetFont(FALLBACK_FONT, size, flags)
-    end
+    if not fontStr:GetFont() then fontStr:SetFont(FALLBACK_FONT, size, flags) end
 end
 -- Per-user font override for the TIMER clock text only (profile.timerFont, a
 -- dropdown key: "__global"/nil = follow the module font). SharedMedia keys
@@ -1692,55 +1564,39 @@ local function TimerFont()
     local key = store and store.profile and store.profile.timerFont
     if key and key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(key)
-        if filePath and filePath ~= "" then
-            return filePath
-        end
+        if filePath and filePath ~= "" then return filePath end
     end
     return SFont()
 end
 local function SetTimerFS(fontStr, size, flags)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local p = TimerFont()
     flags = flags or SOutline()
     fontStr:SetFont(p, size, flags)
-    if not fontStr:GetFont() then
-        fontStr:SetFont(FALLBACK_FONT, size, flags)
-    end
+    if not fontStr:GetFont() then fontStr:SetFont(FALLBACK_FONT, size, flags) end
 end
 local function ApplyShadow(fontStr)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     local useShadow = CludesUI.GetFontUseShadow("mythicTimer")
     -- Font is set elsewhere (SetFS) and ApplyShadow runs after it, so capture
     -- and restore the current font around PrimeFontShadow's SetFontObject.
     local _pf, _ps, _pfl = fontStr:GetFont()
     CludesUI.PrimeFontShadow(fontStr, useShadow)
-    if _pf then
-        fontStr:SetFont(_pf, _ps, _pfl)
-    end
+    if _pf then fontStr:SetFont(_pf, _ps, _pfl) end
 end
 
 -- SetText with skip-if-unchanged. Avoids the per-tick SetText call (and
 -- the implicit re-measure / re-layout) when the string hasn't changed.
 local function SetTextDiff(fontStr, textValue)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     textValue = textValue or ""
-    if fontStr._lastText == textValue then
-        return
-    end
+    if fontStr._lastText == textValue then return end
     fontStr:SetText(textValue)
     fontStr._lastText = textValue
 end
 
 local function SetFittedText(fontStr, textValue, maxWidth, preferredSize, minSize)
-    if not fontStr then
-        return
-    end
+    if not fontStr then return end
     textValue = textValue or ""
     preferredSize = preferredSize or 10
     minSize = minSize or 8
@@ -1753,9 +1609,7 @@ local function SetFittedText(fontStr, textValue, maxWidth, preferredSize, minSiz
         SetFS(fontStr, size, outline)
         ApplyShadow(fontStr)
         fontStr:SetText(textValue)
-        if not maxWidth or fontStr:GetStringWidth() <= maxWidth then
-            return
-        end
+        if not maxWidth or fontStr:GetStringWidth() <= maxWidth then return end
     end
 end
 
@@ -1801,9 +1655,7 @@ local function SetThreshText(fontStr, textValue)
 end
 
 local function GetAccentColor()
-    if CludesUI.ResolveActiveAccent then
-        return CludesUI.ResolveActiveAccent()
-    end
+    if CludesUI.ResolveActiveAccent then return CludesUI.ResolveActiveAccent() end
     return 0.05, 0.83, 0.62
 end
 
@@ -1825,9 +1677,7 @@ do
 
     -- A secret never counts as true.
     local function IsPlainTrue(val)
-        if val == nil or (issecretvalue and issecretvalue(val)) then
-            return false
-        end
+        if val == nil or (issecretvalue and issecretvalue(val)) then return false end
         return val == true
     end
 
@@ -1835,9 +1685,7 @@ do
     -- is skipped between pulls. Party members keep it alive after a death.
     local function GroupInCombat()
         for i = 1, #GROUP_UNITS do
-            if IsPlainTrue(UnitAffectingCombat(GROUP_UNITS[i])) then
-                return true
-            end
+            if IsPlainTrue(UnitAffectingCombat(GROUP_UNITS[i])) then return true end
         end
         return false
     end
@@ -1845,13 +1693,9 @@ do
     -- Without `from` this is a full hide: it also stops event-driven updates
     -- from re-showing segments until the next full render turns them back on.
     HidePullSegments = function(frame, from)
-        if not from then
-            frame._pullOn = false
-        end
+        if not from then frame._pullOn = false end
         local segs = frame._pullSegs
-        if not segs then
-            return
-        end
+        if not segs then return end
         for i = from or 1, #segs do
             segs[i]:Hide()
         end
@@ -1882,9 +1726,7 @@ do
     end
 
     local function UpdatePullSegments(frame)
-        if not (frame and frame._pullOn) then
-            return
-        end
+        if not (frame and frame._pullOn) then return end
         local anchor, num = frame._enemyBarFill, 0
         local previewValues = frame._pullPreview
         if previewValues then
@@ -1922,9 +1764,7 @@ do
             HidePullSegments(frame)
             return
         end
-        if not frame._pullSegs then
-            frame._pullSegs = {}
-        end
+        if not frame._pullSegs then frame._pullSegs = {} end
 
         local red, green, blue = barR, barG, barB
         if profile.pullBarUseBarColor == false then
@@ -1945,7 +1785,8 @@ do
             or frame._pullH ~= hgt
             or frame._pullClip ~= clip
         then
-            frame._pullTex, frame._pullR, frame._pullG, frame._pullB, frame._pullA = texPath, red, green, blue, a
+            frame._pullTex, frame._pullR, frame._pullG, frame._pullB, frame._pullA =
+                texPath, red, green, blue, a
             frame._pullTotal, frame._pullW, frame._pullH, frame._pullClip = sum, wid, hgt, clip
             frame._pullStyleVer = (frame._pullStyleVer or 0) + 1
         end
@@ -1974,9 +1815,7 @@ do
         local p = store and store.profile
         local on = (activeRun.active and p and p.showPullBar == true and p.showEnemyBar ~= false) and true
             or false
-        if inCombat == nil then
-            inCombat = InCombatLockdown()
-        end
+        if inCombat == nil then inCombat = InCombatLockdown() end
         local plates = on and inCombat and true or false
         if on ~= regenOn then
             regenOn = on
@@ -2015,18 +1854,14 @@ do
 end
 
 local function StripDefeated(label)
-    if not label then
-        return label
-    end
+    if not label then return label end
     label = label:gsub("[Dd]efeated", "")
     return label:match("^%s*(.-)%s*$") or label
 end
 
 local objRows = {}
 local function GetObjRow(hostFrame, position)
-    if objRows[position] then
-        return objRows[position]
-    end
+    if objRows[position] then return objRows[position] end
     local nameText = hostFrame:CreateFontString(nil, "OVERLAY")
     nameText:SetWordWrap(false)
     nameText:SetNonSpaceWrap(false)
@@ -2039,9 +1874,7 @@ local function GetObjRow(hostFrame, position)
 end
 
 local function CreateStandaloneFrame()
-    if standaloneCreated then
-        return soloFrame
-    end
+    if standaloneCreated then return soloFrame end
     standaloneCreated = true
 
     local frame = CreateFrame("Frame", "CludesUIMythicTimerStandalone", UIParent, "BackdropTemplate")
@@ -2163,18 +1996,14 @@ local function CreateStandaloneFrame()
         if not next(deaths) and activeRun.deaths and activeRun.deaths > 0 then
             deaths = { [UnitName("player") or "You"] = activeRun.deaths }
         end
-        if not next(deaths) then
-            return
-        end
+        if not next(deaths) then return end
 
         local list = {}
         for label, count in pairs(deaths) do
             list[#list + 1] = { name = label, count = count }
         end
         table.sort(list, function(lhs, rhs)
-            if lhs.count ~= rhs.count then
-                return lhs.count > rhs.count
-            end
+            if lhs.count ~= rhs.count then return lhs.count > rhs.count end
             return lhs.name < rhs.name
         end)
 
@@ -2201,12 +2030,8 @@ local function CreateStandaloneFrame()
             line.count:SetTextColor(1, 1, 1, 0.80)
             local nw = line.name:GetStringWidth() or 0
             local cw = line.count:GetStringWidth() or 0
-            if nw > maxNameW then
-                maxNameW = nw
-            end
-            if cw > maxCountW then
-                maxCountW = cw
-            end
+            if nw > maxNameW then maxNameW = nw end
+            if cw > maxCountW then maxCountW = cw end
         end
 
         local ttW = TT_PAD + maxNameW + 12 + maxCountW + TT_PAD
@@ -2236,14 +2061,13 @@ local function CreateStandaloneFrame()
         end
         deathTip:Show()
     end)
-    frame._deathHit:SetScript("OnLeave", function()
-        deathTip:Hide()
-    end)
+    frame._deathHit:SetScript("OnLeave", function() deathTip:Hide() end)
     frame._enemyFS = frame:CreateFontString(nil, "OVERLAY")
     frame._enemyFS:SetParent(frame._emtTextLayer)
     frame._enemyFS:SetWordWrap(false)
     local enemyHost, enemyClip = EnsureBarShell(frame, "_enemyBarHost")
-    frame._enemyBarBg, frame._enemyBarFill = EnsureShellTextures(enemyClip, frame, "_enemyBarBg", "_enemyBarFill")
+    frame._enemyBarBg, frame._enemyBarFill =
+        EnsureShellTextures(enemyClip, frame, "_enemyBarBg", "_enemyBarFill")
     frame._previewFS = frame:CreateFontString(nil, "OVERLAY")
     frame._previewFS:SetWordWrap(false)
 
@@ -2253,9 +2077,7 @@ local function CreateStandaloneFrame()
     -- Apply saved scale and position immediately so the frame never flashes at default
     if store and store.profile then
         local scale = store.profile.scale or 1.0
-        if scale == 0 then
-            scale = 1.0
-        end
+        if scale == 0 then scale = 1.0 end
         frame:SetScale(scale)
         if store.profile.standalonePos then
             local place = store.profile.standalonePos
@@ -2290,9 +2112,7 @@ end
 
 local function RenderStandalone()
     if not store or not store.profile.enabled then
-        if soloFrame then
-            soloFrame:Hide()
-        end
+        if soloFrame then soloFrame:Hide() end
         return
     end
 
@@ -2305,9 +2125,7 @@ local function RenderStandalone()
             LocalizePreview()
             isPreview = true
         else
-            if soloFrame then
-                soloFrame:Hide()
-            end
+            if soloFrame then soloFrame:Hide() end
             return
         end
     end
@@ -2354,16 +2172,12 @@ local function RenderStandalone()
     local keyLevelOnTimer = (p.showKeyLevelOnTimer == true) and (p.showDungeonName == false)
 
     local function ContentPad(align)
-        if align == "LEFT" or align == "RIGHT" then
-            return PAD + ALIGN_PAD
-        end
+        if align == "LEFT" or align == "RIGHT" then return PAD + ALIGN_PAD end
         return PAD
     end
 
     local _gAlign = (p.alignAllText == "LEFT") and "LEFT" or "RIGHT"
-    local function _ra()
-        return _gAlign
-    end
+    local function _ra() return _gAlign end
 
     local function RenderTitleAffixes()
         local titleAlign = _ra(p.titleAlign or "CENTER")
@@ -2385,8 +2199,12 @@ local function RenderStandalone()
                 -- Show only the key level number, not the dungeon name.
                 title = format("%s+%d|r", CludesUI.HexColor(tR, tG, tB), runRec.level)
             else
-                title =
-                    format("%s+%d  %s|r", CludesUI.HexColor(tR, tG, tB), runRec.level, runRec.mapName or "Mythic+")
+                title = format(
+                    "%s+%d  %s|r",
+                    CludesUI.HexColor(tR, tG, tB),
+                    runRec.level,
+                    runRec.mapName or "Mythic+"
+                )
             end
             frame._titleFS:SetJustifyH(titleAlign)
             frame._titleFS:SetTextColor(1, 1, 1)
@@ -2414,10 +2232,9 @@ local function RenderStandalone()
                 -- to GetAffixInfo only if cache is missing (run started before
                 -- this code path was added, or preview mode).
                 for i, ident in ipairs(runRec.affixes) do
-                    local label = (runRec.affixNames and runRec.affixNames[i]) or C_ChallengeMode.GetAffixInfo(ident)
-                    if label then
-                        nameList[#nameList + 1] = label
-                    end
+                    local label = (runRec.affixNames and runRec.affixNames[i])
+                        or C_ChallengeMode.GetAffixInfo(ident)
+                    if label then nameList[#nameList + 1] = label end
                 end
             end
             if #nameList > 0 then
@@ -2425,7 +2242,13 @@ local function RenderStandalone()
                 frame._affixFS:SetJustifyH(titleAlign)
                 local affixMax = p.affixSize or 10
                 local affixMin = max(6, affixMax - 2)
-                SetFittedText(frame._affixFS, table.concat(nameList, "  \194\183  "), innerW, affixMax, affixMin)
+                SetFittedText(
+                    frame._affixFS,
+                    table.concat(nameList, "  \194\183  "),
+                    innerW,
+                    affixMax,
+                    affixMin
+                )
                 frame._affixFS:ClearAllPoints()
                 frame._affixFS:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, posY + 5)
                 frame._affixFS:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PAD, posY + 5)
@@ -2456,7 +2279,8 @@ local function RenderStandalone()
         local dR, dG, dB = ColorOr(p.deathTextColor, 0.93, 0.33, 0.33)
         frame._deathFS:SetTextColor(dR, dG, dB)
         frame._deathFS:SetText(
-            runRec.deaths == 1 and CludesUI.Lf("%1$d Death  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
+            runRec.deaths == 1
+                    and CludesUI.Lf("%1$d Death  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
                 or CludesUI.Lf("%1$d Deaths  -%2$s", runRec.deaths, TimeText(runRec.deathTimeLost))
         )
         frame._deathFS:ClearAllPoints()
@@ -2480,9 +2304,7 @@ local function RenderStandalone()
     else
         frame._deathFS:Hide()
         frame._deathHit:Hide()
-        if titleAffixBelowTimer and not p.deathsInTitle then
-            posY = posY - 12 - ROW_GAP - 5
-        end
+        if titleAffixBelowTimer and not p.deathsInTitle then posY = posY - 12 - ROW_GAP - 5 end
     end
 
     -- Timer colours
@@ -2547,9 +2369,7 @@ local function RenderStandalone()
 
     -- Threshold text
     local _barW_for_thresh = math.min(p.barWidth or 210, innerW - TBAR_PAD * 2)
-    if _barW_for_thresh < 60 then
-        _barW_for_thresh = 60
-    end
+    if _barW_for_thresh < 60 then _barW_for_thresh = 60 end
 
     local function RenderThresholdText()
         if p.showTimerBar == false and p.showEnemyBar == false then
@@ -2596,12 +2416,8 @@ local function RenderStandalone()
             local function placeAt(fontStr, cx, rightJustified, offsetX, offsetY)
                 local offX = offsetX
                 local offY = offsetY
-                if offX == nil then
-                    offX = p.thresholdTextOffsetX or 0
-                end
-                if offY == nil then
-                    offY = p.thresholdTextOffsetY or 0
-                end
+                if offX == nil then offX = p.thresholdTextOffsetX or 0 end
+                if offY == nil then offY = p.thresholdTextOffsetY or 0 end
                 local aboveBar = underBarMode or segmentedThresholds
                 local anchorPoint
                 if rightJustified then
@@ -2636,14 +2452,16 @@ local function RenderStandalone()
                 ApplyShadow(frame._threshFS)
                 frame._threshFS:SetTextColor(1, 1, 1)
                 local c1r, c1g, c1b = GetTimerSegmentTextColor(p, 1)
-                threshW3 = SetThreshText(frame._threshFS, buildLabel(plusThreeT, { r = c1r, g = c1g, b = c1b }))
+                threshW3 =
+                    SetThreshText(frame._threshFS, buildLabel(plusThreeT, { r = c1r, g = c1g, b = c1b }))
             end
             if p.showPlusTwoTimer then
                 SetFS(frame._threshFS2, plusTwoSize)
                 ApplyShadow(frame._threshFS2)
                 frame._threshFS2:SetTextColor(1, 1, 1)
                 local c2r, c2g, c2b = GetTimerSegmentTextColor(p, 2)
-                threshW2 = SetThreshText(frame._threshFS2, buildLabel(plusTwoT, { r = c2r, g = c2g, b = c2b }))
+                threshW2 =
+                    SetThreshText(frame._threshFS2, buildLabel(plusTwoT, { r = c2r, g = c2g, b = c2b }))
             end
             if showRem then
                 SetFS(frame._threshRemFS, plusOneSize)
@@ -2668,7 +2486,8 @@ local function RenderStandalone()
                 if p.showPlusThreeTimer then
                     placeAt(
                         frame._threshFS,
-                        segmentedThresholds and plusThreeLabelX or (_barW_for_thresh * (plusThreeT / timeLimit)),
+                        segmentedThresholds and plusThreeLabelX
+                            or (_barW_for_thresh * (plusThreeT / timeLimit)),
                         segmentedThresholds,
                         p.thresholdPlusThreeTextOffsetX,
                         p.thresholdPlusThreeTextOffsetY
@@ -2773,13 +2592,9 @@ local function RenderStandalone()
                     local half = entry.w / 2
                     if (not entry.pinRight) and limit then
                         local right = entry.center + half
-                        if right > limit then
-                            entry.center = limit - half
-                        end
+                        if right > limit then entry.center = limit - half end
                     end
-                    if entry.center - half < 0 then
-                        entry.center = half
-                    end -- clamp to left edge
+                    if entry.center - half < 0 then entry.center = half end -- clamp to left edge
                     limit = (entry.center - half) - GAP
                 end
 
@@ -2812,14 +2627,10 @@ local function RenderStandalone()
     local function RenderEnemyForces()
         if p.showEnemyBar == false then
             frame._enemyFS:Hide()
-            if frame._enemyBarHost then
-                frame._enemyBarHost:Hide()
-            end
+            if frame._enemyBarHost then frame._enemyBarHost:Hide() end
             frame._enemyBarBg:Hide()
             frame._enemyBarFill:Hide()
-            if frame._enemyBarText then
-                frame._enemyBarText:Hide()
-            end
+            if frame._enemyBarText then frame._enemyBarText:Hide() end
             HidePullSegments(frame)
             return
         end
@@ -2837,14 +2648,10 @@ local function RenderStandalone()
         end
         if not enemyLine then
             frame._enemyFS:Hide()
-            if frame._enemyBarHost then
-                frame._enemyBarHost:Hide()
-            end
+            if frame._enemyBarHost then frame._enemyBarHost:Hide() end
             frame._enemyBarBg:Hide()
             frame._enemyBarFill:Hide()
-            if frame._enemyBarText then
-                frame._enemyBarText:Hide()
-            end
+            if frame._enemyBarText then frame._enemyBarText:Hide() end
             HidePullSegments(frame)
             return
         end
@@ -2886,9 +2693,7 @@ local function RenderStandalone()
         local function RenderEnemyBar()
             local besideRoom = (not enemyLine.completed and pctPos == "BESIDE") and 62 or 0
             local barW = math.min(p.barWidth or 210, innerW - TBAR_PAD * 2) - besideRoom
-            if barW < 60 then
-                barW = 60
-            end
+            if barW < 60 then barW = 60 end
             local enemyHost, enemyClip = EnsureBarShell(frame, "_enemyBarHost")
             EnsureShellTextures(enemyClip, frame, "_enemyBarBg", "_enemyBarFill")
             local eInset = GetBarBleedInset(p, true)
@@ -3164,9 +2969,7 @@ local function RenderStandalone()
 
         frame._timerFS:Show()
         local timerH = frame._timerFS:GetStringHeight() or 20
-        if timerH < 20 then
-            timerH = 20
-        end
+        if timerH < 20 then timerH = 20 end
         posY = posY - timerH - ROW_GAP
     else
         frame._timerFS:Hide()
@@ -3189,16 +2992,12 @@ local function RenderStandalone()
     end
 
     -- Gaps style renders threshold labels above the bar too; reserve space early like under-bar mode.
-    if underBarMode or p.timerBarStyle == "SEGMENTS" then
-        RenderThresholdText()
-    end
+    if underBarMode or p.timerBarStyle == "SEGMENTS" then RenderThresholdText() end
 
     -- Timer bar
     if timeLimit > 0 and p.showTimerBar ~= false then
         local barW = math.min(p.barWidth or 210, innerW - TBAR_PAD * 2)
-        if barW < 60 then
-            barW = 60
-        end
+        if barW < 60 then barW = 60 end
 
         local barHost, barClip = EnsureBarShell(frame, "_barHost")
         EnsureShellTextures(barClip, frame, "_barBg", "_barFill")
@@ -3236,9 +3035,7 @@ local function RenderStandalone()
         local _PP = CludesUI and CludesUI.PP
         local _es = frame:GetEffectiveScale()
         local _tickW = _PP and _PP.SnapForES(2, _es) or 2
-        local function _snap(val)
-            return _PP and _PP.SnapForES(val, _es) or val
-        end
+        local function _snap(val) return _PP and _PP.SnapForES(val, _es) or val end
 
         local function HideTimerSegments()
             if frame._timerSegHosts then
@@ -3312,9 +3109,7 @@ local function RenderStandalone()
                 local x1 = max(0, min(barW, segment.x1))
                 local x2v = max(0, min(barW, segment.x2))
                 local wid = x2v - x1
-                if wid < 1 then
-                    wid = 1
-                end
+                if wid < 1 then wid = 1 end
 
                 local owner = frame._timerSegHosts[i]
                 local clip = owner._clip
@@ -3358,9 +3153,7 @@ local function RenderStandalone()
         else
             -- Ticks sit in the inset clip band so they cannot stick past the
             -- border the way a full-height mark on the outer host edge would.
-            if frame._barTickLayer then
-                frame._barTickLayer:SetFrameLevel(barClip:GetFrameLevel() + 2)
-            end
+            if frame._barTickLayer then frame._barTickLayer:SetFrameLevel(barClip:GetFrameLevel() + 2) end
             frame._seg3:ClearAllPoints()
             frame._seg3:SetSize(_tickW, clipH)
             frame._seg3:SetPoint(
@@ -3409,14 +3202,10 @@ local function RenderStandalone()
                 frame._barTimerFS:SetTextColor(tR, tG, tB)
             end
             local barTimerText = timerText
-            if timerDetailText then
-                barTimerText = timerText .. timerDetailText
-            end
+            if timerDetailText then barTimerText = timerText .. timerDetailText end
             -- In-bar mode folds the "+key  |" prefix inline (the pixel Spacing
             -- slider only applies to the standalone, non-in-bar clock).
-            if keyLevelOnTimer then
-                barTimerText = format("+%d  ||  ", runRec.level) .. barTimerText
-            end
+            if keyLevelOnTimer then barTimerText = format("+%d  ||  ", runRec.level) .. barTimerText end
             SetTextDiff(frame._barTimerFS, barTimerText)
             frame._barTimerFS:ClearAllPoints()
             if p.timerInBarLeftText then
@@ -3431,9 +3220,7 @@ local function RenderStandalone()
 
         posY = posY - TBAR_H - ROW_GAP - 2
     else
-        if frame._barHost then
-            frame._barHost:Hide()
-        end
+        if frame._barHost then frame._barHost:Hide() end
         frame._barBg:Hide()
         frame._barFill:Hide()
         frame._seg3:Hide()
@@ -3453,18 +3240,12 @@ local function RenderStandalone()
                 texture:Hide()
             end
         end
-        if frame._barTimerFS then
-            frame._barTimerFS:Hide()
-        end
+        if frame._barTimerFS then frame._barTimerFS:Hide() end
     end
 
-    if underBarMode then
-        RenderEnemyForces()
-    end
+    if underBarMode then RenderEnemyForces() end
 
-    if not (underBarMode or p.timerBarStyle == "SEGMENTS") then
-        RenderThresholdText()
-    end
+    if not (underBarMode or p.timerBarStyle == "SEGMENTS") then RenderThresholdText() end
 
     -- Objectives
     local objIdx = 0
@@ -3484,9 +3265,7 @@ local function RenderStandalone()
 
                 local displayName = StripDefeated(object.name) or ("Objective " .. i)
                 -- Preview only: a real run gets its objective names from the game.
-                if isPreview then
-                    displayName = CludesUI.L(displayName)
-                end
+                if isPreview then displayName = CludesUI.L(displayName) end
                 if object.totalQuantity and object.totalQuantity > 1 then
                     displayName = format("%d/%d %s", object.quantity or 0, object.totalQuantity, displayName)
                 end
@@ -3556,17 +3335,11 @@ local function RenderStandalone()
                     timeText:SetWidth(0)
                     local timeW = timeText:GetStringWidth() or 0
                     local nameMaxW = oInnerW - timeW - splitGap
-                    if nameMaxW < 20 then
-                        nameMaxW = 20
-                    end
+                    if nameMaxW < 20 then nameMaxW = 20 end
                     nameText:SetWidth(0)
                     local nameW = nameText:GetStringWidth() or 0
-                    if nameW > nameMaxW then
-                        nameW = nameMaxW
-                    end
-                    if nameW < 20 then
-                        nameW = 20
-                    end
+                    if nameW > nameMaxW then nameW = nameMaxW end
+                    if nameW < 20 then nameW = 20 end
                     nameText:SetWidth(nameW)
                     if timeOnLeft then
                         if lineAlign == "RIGHT" then
@@ -3621,9 +3394,7 @@ local function RenderStandalone()
     end
 
     if not underBarMode then
-        if objIdx > 0 then
-            posY = posY - 5
-        end
+        if objIdx > 0 then posY = posY - 5 end
         RenderEnemyForces()
     end
 
@@ -3646,9 +3417,7 @@ local function RenderStandalone()
 end
 
 _G._CUMT_StandaloneRefresh = RenderStandalone
-_G._CUMT_GetStandaloneFrame = function()
-    return CreateStandaloneFrame()
-end
+_G._CUMT_GetStandaloneFrame = function() return CreateStandaloneFrame() end
 
 -- Forces a full rebuild by discarding the cached frame + its FontStrings
 -- so the next RenderStandalone() re-creates them from scratch. Use when a
@@ -3670,16 +3439,10 @@ end
 -- center each time and the frame would drift.
 local function _ensureCenterPos()
     local place = store and store.profile and store.profile.standalonePos
-    if not place then
-        return
-    end
-    if place.centerX and place.centerY then
-        return
-    end
+    if not place then return end
+    if place.centerX and place.centerY then return end
     local frame = soloFrame
-    if not (frame and frame:GetCenter()) then
-        return
-    end
+    if not (frame and frame:GetCenter()) then return end
     -- Force scale 1.0 momentarily so GetCenter returns un-scaled coords.
     local prevScale = frame:GetScale()
     frame:SetScale(1.0)
@@ -3693,29 +3456,19 @@ local function _ensureCenterPos()
 end
 
 local function _centerPosFromSaved(place)
-    if not place or place.centerX == nil or place.centerY == nil then
-        return
-    end
+    if not place or place.centerX == nil or place.centerY == nil then return end
     local scale = (store and store.profile and store.profile.scale) or 1.0
-    if scale == 0 then
-        scale = 1.0
-    end
+    if scale == 0 then scale = 1.0 end
     return place.centerX / scale, place.centerY / scale
 end
 
 local function PlaceStandalone()
-    if not store then
-        return
-    end
-    if not soloFrame then
-        return
-    end
+    if not store then return end
+    if not soloFrame then return end
     _ensureCenterPos()
     local place = store.profile.standalonePos
     local scale = store.profile.scale or 1.0
-    if scale == 0 then
-        scale = 1.0
-    end
+    if scale == 0 then scale = 1.0 end
 
     -- SetPoint offsets are in the frame's OWN scaled coord space, so the
     -- effective on-screen offset = stored * scale. To keep the visual
@@ -3732,18 +3485,14 @@ _G._CUMT_ApplyStandalonePosition = PlaceStandalone
 -- True only when every scenario objective is complete: Avoids false times being saved/missed runs due to completion on same tick
 local function IsDungeonComplete()
     local numCriteria = select(3, C_Scenario.GetStepInfo()) or 0
-    if numCriteria == 0 then
-        return false
-    end
+    if numCriteria == 0 then return false end
 
     local seenAny = false
     for i = 1, numCriteria do
         local details = C_ScenarioInfo.GetCriteriaInfo(i)
         if details then
             seenAny = true
-            if not details.completed then
-                return false
-            end
+            if not details.completed then return false end
         end
     end
 
@@ -3774,23 +3523,17 @@ end
 
 local function HandleRuntimeEvent(evt)
     if not store or not store.profile.enabled then
-        if activeRun.active or activeRun.completed then
-            ResetRun()
-        end
+        if activeRun.active or activeRun.completed then ResetRun() end
         return
     end
 
     local activeMapID = C_ChallengeMode.GetActiveChallengeMapID()
     if activeMapID then
-        if not activeRun.active and not activeRun.completed then
-            StartRun()
-        end
+        if not activeRun.active and not activeRun.completed then StartRun() end
         -- Pure event-driven completion check: criteria updates fire when
         -- bosses die and when the weighted enemy-forces tally crosses 100.
         if activeRun.active and evt == "SCENARIO_CRITERIA_UPDATE" then
-            if IsDungeonComplete() then
-                CompleteRun()
-            end
+            if IsDungeonComplete() then CompleteRun() end
         end
     elseif (activeRun.active or activeRun.completed) and not _isInChallengeMode() then
         -- M+ cleared and we're no longer in a M+ instance. Salvage as
@@ -3866,9 +3609,7 @@ function EMT:OnInitialize()
     if store and store.profile then
         local pp = store.profile
         for key, amount in pairs(DB_DEFAULTS.profile) do
-            if pp[key] == nil then
-                pp[key] = type(amount) == "table" and CopyTable(amount) or amount
-            end
+            if pp[key] == nil then pp[key] = type(amount) == "table" and CopyTable(amount) or amount end
         end
         -- showPreview is a transient options-panel state. /reload doesn't fire
         -- the CUI window's OnHide auto-off, so the saved value can persist
@@ -3878,13 +3619,9 @@ function EMT:OnInitialize()
 
     -- Season-based data purge: clear split records from previous seasons.
     C_Timer.After(2, function()
-        if not store or not store.profile then
-            return
-        end
+        if not store or not store.profile then return end
         local currentMaps = C_ChallengeMode.GetMapTable()
-        if not currentMaps or #currentMaps == 0 then
-            return
-        end
+        if not currentMaps or #currentMaps == 0 then return end
 
         local validMapIDs = {}
         for _, mapID in ipairs(currentMaps) do
@@ -3898,18 +3635,14 @@ function EMT:OnInitialize()
                 -- calling :match on a number (crashes in Lua 5.1).
                 local mapIDStr = tostring(scopeKey):match("^(%d+)")
                 local mapID = tonumber(mapIDStr)
-                if mapID and not validMapIDs[mapID] then
-                    store.profile.bestObjectiveSplits[scopeKey] = nil
-                end
+                if mapID and not validMapIDs[mapID] then store.profile.bestObjectiveSplits[scopeKey] = nil end
             end
         end
         if store.profile.fastestRunSplits then
             for scopeKey in pairs(store.profile.fastestRunSplits) do
                 local mapIDStr = tostring(scopeKey):match("^(%d+)")
                 local mapID = tonumber(mapIDStr)
-                if mapID and not validMapIDs[mapID] then
-                    store.profile.fastestRunSplits[scopeKey] = nil
-                end
+                if mapID and not validMapIDs[mapID] then store.profile.fastestRunSplits[scopeKey] = nil end
             end
         end
     end)
@@ -3921,21 +3654,11 @@ function EMT:OnEnable()
     -- Mythic+ Tools features initialize BEFORE the timer's own enable guard:
     -- they carry their own per-feature enable flags and must work with the
     -- timer feature turned off. Both are no-ops while their flags are off.
-    if mod.TSB_OnEnable then
-        mod.TSB_OnEnable(store)
-    end
-    if mod.TFB_OnEnable then
-        mod.TFB_OnEnable(store)
-    end
-    if mod.RS_OnEnable then
-        mod.RS_OnEnable(store)
-    end
-    if mod.KT_OnEnable then
-        mod.KT_OnEnable(store)
-    end
-    if not store or not store.profile.enabled then
-        return
-    end
+    if mod.TSB_OnEnable then mod.TSB_OnEnable(store) end
+    if mod.TFB_OnEnable then mod.TFB_OnEnable(store) end
+    if mod.RS_OnEnable then mod.RS_OnEnable(store) end
+    if mod.KT_OnEnable then mod.KT_OnEnable(store) end
+    if not store or not store.profile.enabled then return end
 
     if CludesUI and CludesUI.RegisterUnlockModeListener then
         CludesUI:RegisterUnlockModeListener("EMT_MythicTimer", function(isActive)
@@ -3947,20 +3670,14 @@ function EMT:OnEnable()
             local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EMT_MythicTimer")
             if unlockLayoutActive then
                 RenderStandalone()
-                if not anchored then
-                    PlaceStandalone()
-                end
+                if not anchored then PlaceStandalone() end
             else
                 if not store.profile.showPreview and not activeRun.active and not activeRun.completed then
-                    if soloFrame then
-                        soloFrame:Hide()
-                    end
+                    if soloFrame then soloFrame:Hide() end
                 else
                     RenderStandalone()
                 end
-                if not anchored then
-                    PlaceStandalone()
-                end
+                if not anchored then PlaceStandalone() end
             end
         end)
     end
@@ -3974,19 +3691,13 @@ function EMT:OnEnable()
                 group = "Mythic+",
                 order = 520,
                 noResize = true,
-                getFrame = function()
-                    return _G._CUMT_GetStandaloneFrame and _G._CUMT_GetStandaloneFrame()
-                end,
+                getFrame = function() return _G._CUMT_GetStandaloneFrame and _G._CUMT_GetStandaloneFrame() end,
                 getSize = function()
                     local frame = soloFrame
-                    if frame then
-                        return frame:GetWidth(), frame:GetHeight()
-                    end
+                    if frame then return frame:GetWidth(), frame:GetHeight() end
                     return 260, 200
                 end,
-                isHidden = function()
-                    return false
-                end,
+                isHidden = function() return false end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     -- Stored as delta in UIParent-logical units (matches the
                     -- migration in _ensureCenterPos). ApplyStandalonePosition
@@ -4047,9 +3758,7 @@ function EMT:OnEnable()
                     -- the module's own SetPoint (ApplyStandalonePosition /
                     -- _centerPosFromSaved), never in the interchange format.
                     local place = store.profile.standalonePos
-                    if not (place and place.centerX and place.centerY) then
-                        return nil
-                    end
+                    if not (place and place.centerX and place.centerY) then return nil end
                     return {
                         point = "CENTER",
                         relPoint = "CENTER",
@@ -4057,13 +3766,9 @@ function EMT:OnEnable()
                         y = place.centerY,
                     }
                 end,
-                clearPos = function()
-                    store.profile.standalonePos = nil
-                end,
+                clearPos = function() store.profile.standalonePos = nil end,
                 applyPos = function()
-                    if soloFrame then
-                        PlaceStandalone()
-                    end
+                    if soloFrame then PlaceStandalone() end
                 end,
             }),
         })

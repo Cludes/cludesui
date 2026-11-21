@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_WarriorCharges.lua
 -- ERB adapter for the engine-fed Warrior charge fills. The generic multi-host
 -- core lives in the PARENT addon (CludesUI_WarriorCharges.lua, exported as
@@ -36,22 +34,16 @@ local function FillColor(sp, powerKey)
     if sp.resourceColored then
         if ERB and ERB.ResolveSecondaryResourceColor then
             local red, green, blue = ERB.ResolveSecondaryResourceColor(powerKey)
-            if red then
-                return red, green, blue, 1
-            end
+            if red then return red, green, blue, 1 end
         end
     elseif sp.classColored == false then
         return sp.fillR or 1, sp.fillG or 1, sp.fillB or 1, 1
     else
         local pc = CUI.GetPowerColor(powerKey)
-        if pc then
-            return pc.r, pc.g, pc.b, 1
-        end
+        if pc then return pc.r, pc.g, pc.b, 1 end
     end
     local classColor = CUI.GetClassColor(PLAYER_CLASS)
-    if classColor then
-        return classColor.r, classColor.g, classColor.b, 1
-    end
+    if classColor then return classColor.r, classColor.g, classColor.b, 1 end
     return 1, 1, 1, 1
 end
 
@@ -62,9 +54,7 @@ end
 
 function mod.WC_Recolor(powerKey, red, green, blue, a)
     local ewc = _G._EWC
-    if ewc then
-        ewc.Recolor("erb", powerKey, red, green, blue, a)
-    end
+    if ewc then ewc.Recolor("erb", powerKey, red, green, blue, a) end
 end
 
 -- Threshold/band inputs, handed raw each paint pass; the core change-gates
@@ -81,9 +71,7 @@ end
 -- type other than the two warrior charge buffs parks the overlay.
 function mod.WC_Sync(widget, sp, powerKey, gen)
     local ewc = _G._EWC
-    if not ewc or PLAYER_CLASS ~= "WARRIOR" then
-        return
-    end
+    if not ewc or PLAYER_CLASS ~= "WARRIOR" then return end
     if not ((powerKey == "WHIRLWIND_STACKS" or powerKey == "SWEEPING_STRIKES") and widget and sp) then
         ewc.Gate("erb")
         return

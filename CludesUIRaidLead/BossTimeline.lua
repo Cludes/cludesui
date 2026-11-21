@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  BossTimeline.lua -- Raid Lead: boss timelines and encounter alerts.
 --
@@ -65,27 +63,13 @@ local function Settings()
     local profile = mod.RaidLeadDB()
     profile.timeline = profile.timeline or {}
     local cfg = profile.timeline
-    if cfg.bars == nil then
-        cfg.bars = true
-    end
-    if cfg.alerts == nil then
-        cfg.alerts = true
-    end
-    if cfg.mine == nil then
-        cfg.mine = false
-    end
-    if cfg.count == nil then
-        cfg.count = 6
-    end
-    if cfg.ahead == nil then
-        cfg.ahead = 30
-    end
-    if cfg.tts == nil then
-        cfg.tts = true
-    end
-    if cfg.phaseChat == nil then
-        cfg.phaseChat = false
-    end
+    if cfg.bars == nil then cfg.bars = true end
+    if cfg.alerts == nil then cfg.alerts = true end
+    if cfg.mine == nil then cfg.mine = false end
+    if cfg.count == nil then cfg.count = 6 end
+    if cfg.ahead == nil then cfg.ahead = 30 end
+    if cfg.tts == nil then cfg.tts = true end
+    if cfg.phaseChat == nil then cfg.phaseChat = false end
     return cfg
 end
 mod.TimelineSettings = Settings
@@ -99,15 +83,9 @@ local function Data()
     return payload
 end
 
-local function Font()
-    return CludesUI.GetFontPath(nil)
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
-local function Say(textValue)
-    CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue)
-end
+local function Font() return CludesUI.GetFontPath(nil) end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
+local function Say(textValue) CludesUI.Print("|cff4cc9f0Raid Lead:|r " .. textValue) end
 
 local function Keywords(category)
     local entries = {}
@@ -119,9 +97,7 @@ end
 
 local function Colour(category)
     for _, word in ipairs(Keywords(category)) do
-        if COLORS[word] then
-            return COLORS[word]
-        end
+        if COLORS[word] then return COLORS[word] end
     end
     return { 0.7, 0.7, 0.7 }
 end
@@ -133,26 +109,18 @@ local function MyRole()
 end
 
 local function ForRole(ability, role)
-    if ability.important ~= nil then
-        return ability.important
-    end
+    if ability.important ~= nil then return ability.important end
     local entries = role == "HEALER" and HEALER or role == "TANK" and TANK or nil
-    if not entries then
-        return true
-    end
+    if not entries then return true end
     for _, word in ipairs(Keywords(ability.category)) do
-        if entries[word] then
-            return true
-        end
+        if entries[word] then return true end
     end
     return false
 end
 
 local function Timeline(encID, difficulty)
     local boss = Data().timelines[encID]
-    if not boss then
-        return
-    end
+    if not boss then return end
     local name = difficulty and DIFFICULTY[difficulty]
     return boss[name or "Mythic"] or boss.Mythic or boss.Heroic,
         boss[name or "Mythic"] and name or (boss.Mythic and "Mythic" or "Heroic")
@@ -175,9 +143,7 @@ local function Casts(f)
         -- A phase the timeline has no row for (1.5, 2.5): its abilities follow the
         -- last listed phase before it.
         for _, num in ipairs(keyList) do
-            if num <= current then
-                curDefault = defaultSet[num]
-            end
+            if num <= current then curDefault = defaultSet[num] end
         end
         curDefault = curDefault or 0
     end
@@ -208,9 +174,7 @@ local function Casts(f)
             end
         end
     end
-    table.sort(out, function(lhs, rhs)
-        return lhs.due < rhs.due
-    end)
+    table.sort(out, function(lhs, rhs) return lhs.due < rhs.due end)
     return out
 end
 
@@ -221,9 +185,7 @@ local holderFrame, barList = nil, {}
 local fight
 
 local function BuildBars()
-    if holderFrame then
-        return
-    end
+    if holderFrame then return end
     holderFrame = CreateFrame("Frame", "CludesUIRaidLeadTimeline", UIParent)
     holderFrame:SetSize(260, 20)
     holderFrame:SetFrameStrata("MEDIUM")
@@ -237,9 +199,7 @@ end
 
 local function Bar(idx)
     local widget = barList[idx]
-    if widget then
-        return widget
-    end
+    if widget then return widget end
     widget = CreateFrame("StatusBar", nil, holderFrame)
     widget:SetSize(230, 18)
     widget:SetPoint("TOPRIGHT", holderFrame, "TOPRIGHT", 0, -(idx - 1) * 21)
@@ -271,9 +231,7 @@ local function HideBars()
 end
 
 local function Tick()
-    if not fight then
-        return HideBars()
-    end
+    if not fight then return HideBars() end
     local cfg = Settings()
     local nowTime = GetTime()
     local num = 0
@@ -281,9 +239,7 @@ local function Tick()
         local leftX = cast.due - nowTime
         if leftX > -1 and leftX <= cfg.ahead and (not cfg.mine or ForRole(cast.ability, fight.role)) then
             num = num + 1
-            if num > cfg.count then
-                break
-            end
+            if num > cfg.count then break end
             local widget = Bar(num)
             local c = Colour(cast.ability.category)
             widget:SetStatusBarColor(c[1], c[2], c[3], cast.guess and 0.5 or 0.9)
@@ -311,41 +267,25 @@ local run = 0
 
 local function Loads(alert, role, specID)
     local lc = alert.loadConditions
-    if not lc then
-        return true
-    end
-    local function Any(t)
-        return t and next(t) ~= nil
-    end
+    if not lc then return true end
+    local function Any(t) return t and next(t) ~= nil end
     if Any(lc.Roles) and not lc.Roles[role] then
         local melee, ranged = lc.Roles.MELEE, lc.Roles.RANGED
-        if not (melee or ranged) then
-            return false
-        end
+        if not (melee or ranged) then return false end
     end
     local _, class = UnitClass("player")
-    if Any(lc.Classes) and not lc.Classes[class] then
-        return false
-    end
-    if Any(lc.SpecIDs) and not (specID and lc.SpecIDs[specID]) then
-        return false
-    end
-    if Any(lc.Names) and not lc.Names[(UnitName("player") or ""):lower()] then
-        return false
-    end
+    if Any(lc.Classes) and not lc.Classes[class] then return false end
+    if Any(lc.SpecIDs) and not (specID and lc.SpecIDs[specID]) then return false end
+    if Any(lc.Names) and not lc.Names[(UnitName("player") or ""):lower()] then return false end
     return true
 end
 
 local function Condition(alert)
     local cond = alert.isConditional
-    if type(cond) ~= "table" or type(cond.func) ~= "string" then
-        return true
-    end
+    if type(cond) ~= "table" or type(cond.func) ~= "string" then return true end
     local fn = loadstring(cond.func)
     local success, inner = pcall(fn or function() end)
-    if not (success and type(inner) == "function") then
-        return true
-    end
+    if not (success and type(inner) == "function") then return true end
     local ok2, result = pcall(inner)
     return not ok2 or result == true
 end
@@ -355,13 +295,9 @@ local function StartAlerts(f, phase, start)
     run = run + 1
     local mine = run
     local cfg = Settings()
-    if not (cfg.alerts and mod.ShowReminder) then
-        return 0
-    end
+    if not (cfg.alerts and mod.ShowReminder) then return 0 end
     local diff = ALERT_DIFF[f.difficulty]
-    if not diff then
-        return 0
-    end
+    if not diff then return 0 end
     local role, specID = MyRole()
     local num = 0
     local nowTime = GetTime()
@@ -375,9 +311,7 @@ local function StartAlerts(f, phase, start)
                 if type(t) == "number" and due > nowTime then
                     num = num + 1
                     C_Timer.After(math.max(0, due - lead - nowTime), function()
-                        if run ~= mine or fight ~= f or not Condition(alert) then
-                            return
-                        end
+                        if run ~= mine or fight ~= f or not Condition(alert) then return end
                         local speak = cfg.tts
                                 and (alert.TTS ~= false)
                                 and (type(alert.TTS) == "string" and alert.TTS or true)
@@ -399,9 +333,7 @@ Fight.__index = Fight
 
 function Fight:DifficultyCheck(entries)
     local diff = self.testDifficulty or select(3, GetInstanceInfo()) or 0
-    if diff == 233 then
-        diff = 16
-    end
+    if diff == 233 then diff = 16 end
     return tContains(entries, diff) and diff or nil
 end
 
@@ -409,9 +341,7 @@ function Fight:StartReminders(phase)
     self.phaseAt[phase] = GetTime()
     self.casts = Casts(self)
     StartAlerts(self, phase, self.phaseAt[phase])
-    if Settings().phaseChat then
-        Say(("phase %s."):format(phase))
-    end
+    if Settings().phaseChat then Say(("phase %s."):format(phase)) end
 end
 
 -- The phase began late by `delay` seconds: everything still to come moves.
@@ -447,16 +377,12 @@ end
 function Fight:EncounterFunction(name, fn)
     self.frames[name] = self.frames[name] or CreateFrame("Frame")
     self.frames[name]:SetScript("OnEvent", function(...)
-        if fight == self then
-            fn(...)
-        end
+        if fight == self then fn(...) end
     end)
 end
 
 function Fight:GetActiveEncounterTimelineEventCount()
-    if not (C_EncounterTimeline and C_EncounterTimeline.GetEventList) then
-        return 0
-    end
+    if not (C_EncounterTimeline and C_EncounterTimeline.GetEventList) then return 0 end
     local total = 0
     for _, eventID in ipairs(C_EncounterTimeline.GetEventList()) do
         local details = C_EncounterTimeline.GetEventInfo(eventID)
@@ -483,9 +409,7 @@ local function Stop()
         for _, widget in pairs(fight.frames) do
             widget:UnregisterAllEvents()
         end
-        if fight.VaelgorPhaseTimer then
-            fight.VaelgorPhaseTimer:Cancel()
-        end
+        if fight.VaelgorPhaseTimer then fight.VaelgorPhaseTimer:Cancel() end
     end
     fight = nil
     run = run + 1
@@ -502,9 +426,7 @@ end
 function mod.StartTimeline(encID, difficulty, testDifficulty)
     Stop()
     local timeline = Timeline(encID, difficulty)
-    if not timeline then
-        return false
-    end
+    if not timeline then return false end
     local nowTime = GetTime()
     local f = setmetatable({
         encID = encID,
@@ -530,9 +452,7 @@ function mod.StartTimeline(encID, difficulty, testDifficulty)
     StartAlerts(f, 1, nowTime)
     local rules = mod.BossPhases and mod.BossPhases[encID]
     if rules and not testDifficulty then
-        if rules.start then
-            rules.start(f)
-        end
+        if rules.start then rules.start(f) end
         if rules.detect then
             for _, event in ipairs({
                 "ENCOUNTER_TIMELINE_EVENT_ADDED",
@@ -541,9 +461,7 @@ function mod.StartTimeline(encID, difficulty, testDifficulty)
             }) do
                 pcall(timelineEvents.RegisterEvent, timelineEvents, event)
             end
-            if rules.engage then
-                timelineEvents:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
-            end
+            if rules.engage then timelineEvents:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT") end
         end
     end
     return true
@@ -552,9 +470,7 @@ mod.StopTimeline = Stop
 
 --- For testing a phase rule: change phase now, as if the rule had seen it.
 function mod.TimelinePhase(phase)
-    if not fight then
-        return false
-    end
+    if not fight then return false end
     fight.Phase = phase
     fight:StartReminders(phase)
     fight.PhaseSwapTime = GetTime()
@@ -564,28 +480,20 @@ end
 timelineEvents:SetScript("OnEvent", function(_, evt, arg)
     local f = fight
     local rules = f and mod.BossPhases and mod.BossPhases[f.encID]
-    if not (rules and rules.detect) then
-        return
-    end
+    if not (rules and rules.detect) then return end
     if evt == "ENCOUNTER_TIMELINE_EVENT_ADDED" then
         local details = arg
-        if type(details) ~= "table" then
-            return
-        end
+        if type(details) ~= "table" then return end
         if details.source ~= Enum.EncounterTimelineEventSource.Encounter then
             custom[details.id] = true
             return
         end
         rules.detect(f, evt, details)
     elseif evt == "ENCOUNTER_TIMELINE_EVENT_REMOVED" then
-        if custom[arg] then
-            return
-        end
+        if custom[arg] then return end
         rules.detect(f, evt, nil)
     elseif evt == "ENCOUNTER_TIMELINE_EVENT_STATE_CHANGED" then
-        if custom[arg] then
-            return
-        end
+        if custom[arg] then return end
         if C_EncounterTimeline.GetEventState(arg) == Enum.EncounterTimelineEventState.Canceled then
             rules.detect(f, "ENCOUNTER_TIMELINE_EVENT_REMOVED", nil)
         end
@@ -599,19 +507,11 @@ events:RegisterEvent("ENCOUNTER_START")
 events:RegisterEvent("ENCOUNTER_END")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:SetScript("OnEvent", function(_, evt, encID, _, difficulty)
-    if evt == "ENCOUNTER_END" or evt == "PLAYER_ENTERING_WORLD" then
-        return Stop()
-    end
-    if evt ~= "ENCOUNTER_START" then
-        return
-    end
-    if Secret(encID) or Secret(difficulty) then
-        return
-    end
+    if evt == "ENCOUNTER_END" or evt == "PLAYER_ENTERING_WORLD" then return Stop() end
+    if evt ~= "ENCOUNTER_START" then return end
+    if Secret(encID) or Secret(difficulty) then return end
     local cfg = Settings()
-    if cfg.bars or cfg.alerts then
-        mod.StartTimeline(encID, difficulty)
-    end
+    if cfg.bars or cfg.alerts then mod.StartTimeline(encID, difficulty) end
 end)
 
 -------------------------------------------------------------------------------
@@ -620,15 +520,11 @@ end)
 local window, contentFrame, rowList = nil, nil, {}
 local shownBoss, shownDiff
 
-local function Time(sec)
-    return ("%d:%02d"):format(math.floor(sec / 60), math.floor(sec % 60))
-end
+local function Time(sec) return ("%d:%02d"):format(math.floor(sec / 60), math.floor(sec % 60)) end
 
 local function Row(idx)
     local r = rowList[idx]
-    if r then
-        return r
-    end
+    if r then return r end
     r = CreateFrame("Frame", nil, contentFrame)
     r:SetSize(560, 20)
     r.swatch = r:CreateTexture(nil, "ARTWORK")
@@ -649,9 +545,7 @@ local function Row(idx)
 end
 
 local function Draw()
-    if not (window and window:IsShown()) then
-        return
-    end
+    if not (window and window:IsShown()) then return end
     for _, r in ipairs(rowList) do
         r:Hide()
     end
@@ -668,14 +562,10 @@ local function Draw()
     local role = MyRole()
     local entries = {}
     for _, a in ipairs(timeline.abilities) do
-        if not mine or ForRole(a, role) then
-            entries[#entries + 1] = a
-        end
+        if not mine or ForRole(a, role) then entries[#entries + 1] = a end
     end
     table.sort(entries, function(lhs, rhs)
-        if lhs.phase ~= rhs.phase then
-            return lhs.phase < rhs.phase
-        end
+        if lhs.phase ~= rhs.phase then return lhs.phase < rhs.phase end
         return (lhs.times[1] or 0) < (rhs.times[1] or 0)
     end)
     local lastPhase
@@ -752,9 +642,7 @@ local function BuildWindow()
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Boss Timeline")
     CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function()
-        window:Hide()
-    end, nil, nil)
+    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, nil)
     close:SetPoint("TOPRIGHT", -5, -5)
     local pick = CludesUI.Kit.Button(window, "", 90, 22, nil, { key = nil })
     pick:SetSize(220, 22)
@@ -770,9 +658,7 @@ local function BuildWindow()
             end
             local rest = {}
             for ident in pairs(Data().timelines) do
-                if not seen[ident] then
-                    rest[#rest + 1] = ident
-                end
+                if not seen[ident] then rest[#rest + 1] = ident end
             end
             table.sort(rest)
             root:CreateTitle("Current raid")
@@ -826,9 +712,7 @@ local function BuildWindow()
 end
 
 function mod.OpenTimeline()
-    if not window then
-        BuildWindow()
-    end
+    if not window then BuildWindow() end
     shownBoss = shownBoss or (Data().order and Data().order[1]) or next(Data().timelines)
     shownDiff = shownDiff or "Mythic"
     window:Show()
@@ -839,16 +723,12 @@ SLASH_CUIBOSSTIMELINE1 = "/cbt"
 SlashCmdList.CUIBOSSTIMELINE = function(msg)
     if (msg or ""):lower():find("stop") then
         Stop()
-        if mod.StopReminders then
-            mod.StopReminders()
-        end
+        if mod.StopReminders then mod.StopReminders() end
         return
     end
     local phase = tonumber((msg or ""):match("^%s*phase%s+([%d.]+)"))
     if phase then
-        if not mod.TimelinePhase(phase) then
-            Say("no boss timeline is running.")
-        end
+        if not mod.TimelinePhase(phase) then Say("no boss timeline is running.") end
         return
     end
     if window and window:IsShown() then
@@ -865,9 +745,7 @@ local registered = false
 local reg = CreateFrame("Frame")
 reg:RegisterEvent("PLAYER_ENTERING_WORLD")
 reg:SetScript("OnEvent", function()
-    if registered or not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then
-        return
-    end
+    if registered or not (CludesUI.RegisterUnlockElements and CludesUI.MakeUnlockElement) then return end
     registered = true
     BuildBars()
     CludesUI:RegisterUnlockElements({
@@ -878,29 +756,19 @@ reg:SetScript("OnEvent", function()
             order = 661,
             noAnchorTarget = true,
             noResize = true,
-            isHidden = function()
-                return not Settings().bars
-            end,
+            isHidden = function() return not Settings().bars end,
             getFrame = function()
                 BuildBars()
                 return holderFrame
             end,
-            getSize = function()
-                return 260, 21 * Settings().count
-            end,
+            getSize = function() return 260, 21 * Settings().count end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 Settings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             end,
-            loadPos = function()
-                return Settings().pos
-            end,
-            clearPos = function()
-                Settings().pos = nil
-            end,
+            loadPos = function() return Settings().pos end,
+            clearPos = function() Settings().pos = nil end,
             applyPos = function()
-                if not holderFrame or InCombatLockdown() then
-                    return
-                end
+                if not holderFrame or InCombatLockdown() then return end
                 holderFrame:ClearAllPoints()
                 local p = Settings().pos
                 if p then

@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Style_Options.lua
 --
@@ -48,9 +46,7 @@ local PAGE_STYLE = "Style"
 -- other modules' pages through it too.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local function ModuleNS(folder)
-    return CludesUI._ModuleNS and CludesUI._ModuleNS[folder]
-end
+local function ModuleNS(folder) return CludesUI._ModuleNS and CludesUI._ModuleNS[folder] end
 
 -------------------------------------------------------------------------------
 --  Module registry: one entry per styleable surface. get/set read and write
@@ -125,9 +121,7 @@ local IS_FOREVER = CludesUI.IS_FOREVER == true
 -- asked for (module seeds, the whole-UI font slots, Active()); the window
 -- slots are the exception, where it is a look of its own.
 local function BaseKey(styleKey)
-    if styleKey == "forever" then
-        return "blizzard"
-    end
+    if styleKey == "forever" then return "blizzard" end
     return styleKey
 end
 
@@ -135,24 +129,16 @@ end
 -- are set; a write sets exactly one of them (or neither, for cui). The Forever
 -- flag (nil off the Forever client) only ever rides a set Blizzard flag.
 local function StyleKeyOf(profile, flag, classicFlag, foreverFlag)
-    if not profile then
-        return "cui"
-    end
-    if profile[classicFlag] then
-        return "classic"
-    end
+    if not profile then return "cui" end
+    if profile[classicFlag] then return "classic" end
     if profile[flag] then
-        if foreverFlag and profile[foreverFlag] then
-            return "forever"
-        end
+        if foreverFlag and profile[foreverFlag] then return "forever" end
         return "blizzard"
     end
     return "cui"
 end
 local function FlagAccessors(profileFn, flag, classicFlag, foreverFlag)
-    return function()
-        return StyleKeyOf(profileFn(), flag, classicFlag, foreverFlag)
-    end, function(styleKey)
+    return function() return StyleKeyOf(profileFn(), flag, classicFlag, foreverFlag) end, function(styleKey)
         local p = profileFn()
         if p then
             p[flag] = (styleKey == "blizzard" or styleKey == "forever") or false
@@ -178,9 +164,7 @@ local function ActiveFn(folder, fnName)
         local num = ModuleNS(folder)
         local func = num and num[fnName]
         local val = func and func()
-        if val == "blizzard" or val == "classic" then
-            return val
-        end
+        if val == "blizzard" or val == "classic" then return val end
         return "cui"
     end
 end
@@ -219,9 +203,7 @@ local function Register(key, folder, display, profileFn, flag, classicFlag, acti
         display = display,
         get = get,
         set = set,
-        active = activeFnName and ActiveFn(folder, activeFnName) or function()
-            return BaseKey(get())
-        end,
+        active = activeFnName and ActiveFn(folder, activeFnName) or function() return BaseKey(get()) end,
         profile = profileFn,
         onEnable = onEnable,
         foreverFlag = foreverFlag,
@@ -248,9 +230,7 @@ Register(
     -- switched). WoW Forever's own seed rides its Forever-only slots below.
     function(p, styleKey)
         local uf = ModuleNS("CludesUIUnitFrames")
-        if uf and uf.UF_SeedStock then
-            uf.UF_SeedStock(p, styleKey)
-        end
+        if uf and uf.UF_SeedStock then uf.UF_SeedStock(p, styleKey) end
     end
 )
 Register(
@@ -277,12 +257,8 @@ Register(
     -- switched). WoW Forever's own seed rides its Forever-only slots below.
     function(p, styleKey)
         local np = ModuleNS("CludesUINameplates")
-        if np and np.NP_SeedStock then
-            np.NP_SeedStock(p)
-        end
-        if styleKey == "classic" and np and np.NP_SeedClassic then
-            np.NP_SeedClassic(p)
-        end
+        if np and np.NP_SeedStock then np.NP_SeedStock(p) end
+        if styleKey == "classic" and np and np.NP_SeedClassic then np.NP_SeedClassic(p) end
     end
 )
 Register(
@@ -316,9 +292,7 @@ Register(
     -- profile that arrives already switched).
     function(p)
         local erb = ModuleNS("CludesUIResourceBars")
-        if erb and erb.ERB_SeedStockCast then
-            erb.ERB_SeedStockCast(p)
-        end
+        if erb and erb.ERB_SeedStockCast then erb.ERB_SeedStockCast(p) end
     end
 )
 Register(
@@ -335,9 +309,7 @@ Register(
     -- profile that arrives already switched).
     function(p, styleKey)
         local erb = ModuleNS("CludesUIResourceBars")
-        if erb and erb.ERB_SeedStockBars then
-            erb.ERB_SeedStockBars(p, styleKey)
-        end
+        if erb and erb.ERB_SeedStockBars then erb.ERB_SeedStockBars(p, styleKey) end
     end
 )
 Register(
@@ -358,9 +330,7 @@ Register(
     -- same way when a pick changes. Classic WoW UI also centres the zone text
     -- in the banner's text slot (its X/Y offsets back to 0).
     function(profile, styleKey, isForever)
-        if not CludesUI.IS_FOREVER then
-            profile.omniumFolioCorner = "BOTTOMRIGHT"
-        end
+        if not CludesUI.IS_FOREVER then profile.omniumFolioCorner = "BOTTOMRIGHT" end
         local square
         if isForever then
             if profile.foreverBorder == "slim" then
@@ -402,9 +372,7 @@ Register(
             profile.bgAlpha = isForever and 0.65 or 0.4
         elseif styleKey == "classic" then
             local dm = CludesUI._ModuleNS and CludesUI._ModuleNS.CludesUIDamageMeters
-            if dm and dm.DMSeedClassic then
-                dm.DMSeedClassic(profile)
-            end
+            if dm and dm.DMSeedClassic then dm.DMSeedClassic(profile) end
         end
     end
 )
@@ -417,14 +385,10 @@ Register(
 -- Forever Essentials is disabled.
 if CludesUI.IS_FOREVER then
     local function TMStore(create)
-        if not ModuleNS("CludesUIForeverEssentials") or not CludesUIDB then
-            return nil
-        end
+        if not ModuleNS("CludesUIForeverEssentials") or not CludesUIDB then return nil end
         local t = CludesUIDB.threatMeter
         if type(t) ~= "table" then
-            if not create then
-                return nil
-            end
+            if not create then return nil end
             t = {}
             CludesUIDB.threatMeter = t
         end
@@ -434,9 +398,7 @@ if CludesUI.IS_FOREVER then
         "threatmeter",
         "CludesUIForeverEssentials",
         "Threat Meter",
-        function()
-            return TMStore(true)
-        end,
+        function() return TMStore(true) end,
         "useBlizzardStyle",
         "useClassicStyle",
         "TM_Style",
@@ -446,14 +408,15 @@ if CludesUI.IS_FOREVER then
         -- Classic's at login for a table that arrives already switched).
         function(p, styleKey, isForever)
             local fe = ModuleNS("CludesUIForeverEssentials")
-            if fe and fe.TM_SeedStock then
-                fe.TM_SeedStock(p, styleKey, isForever)
-            end
+            if fe and fe.TM_SeedStock then fe.TM_SeedStock(p, styleKey, isForever) end
         end
     )
-    BY_KEY.threatmeter.get = FlagAccessors(function()
-        return TMStore(false)
-    end, "useBlizzardStyle", "useClassicStyle", BY_KEY.threatmeter.foreverFlag)
+    BY_KEY.threatmeter.get = FlagAccessors(
+        function() return TMStore(false) end,
+        "useBlizzardStyle",
+        "useClassicStyle",
+        BY_KEY.threatmeter.foreverFlag
+    )
     BY_KEY.threatmeter.enableName = "Forever Tools"
 end
 Register(
@@ -492,9 +455,7 @@ if IS_FOREVER then
         end,
         set = function(styleKey)
             local p = BagsProfile()
-            if p then
-                p.useForeverStyle = (styleKey == "forever")
-            end
+            if p then p.useForeverStyle = (styleKey == "forever") end
         end,
         active = function()
             local num = ModuleNS("CludesUIBags")
@@ -520,9 +481,7 @@ Register(
     "RF_Style",
     function(p, styleKey)
         local rf = ModuleNS("CludesUIRaidFrames")
-        if rf and rf.RF_SeedStock then
-            rf.RF_SeedStock(p, styleKey)
-        end
+        if rf and rf.RF_SeedStock then rf.RF_SeedStock(p, styleKey) end
     end
 )
 if not CludesUI.IS_FOREVER then
@@ -586,12 +545,8 @@ local SLOT_KEYS = {
             return keyName
         end,
         seededBy = function(key)
-            if key == "castBarTexture" then
-                return "stockCastTextureSeeded"
-            end
-            if key:find("combatIndicator", 1, true) then
-                return "stockCombatSeededStyle"
-            end
+            if key == "castBarTexture" then return "stockCastTextureSeeded" end
+            if key:find("combatIndicator", 1, true) then return "stockCombatSeededStyle" end
             return "classicTextureSeeded"
         end,
     },
@@ -605,9 +560,7 @@ local SLOT_KEYS = {
             "castBarUninterruptible",
         },
         seededBy = function(key)
-            if key == "healthBarTexture" or key == "castBarTexture" then
-                return "stockBarTextureSeeded"
-            end
+            if key == "healthBarTexture" or key == "castBarTexture" then return "stockBarTextureSeeded" end
             return "classicCastSeeded"
         end,
     },
@@ -615,9 +568,7 @@ local SLOT_KEYS = {
         stamps = { "stockTextureSeeded" },
         keys = { "texture" },
         prefix = "castBar",
-        seededBy = function()
-            return "stockTextureSeeded"
-        end,
+        seededBy = function() return "stockTextureSeeded" end,
     },
     -- Border Around All (one key set shared by both stock styles) rides the
     -- slots too, so each style keeps its own choice. So do the health and power
@@ -639,9 +590,7 @@ local SLOT_KEYS = {
             "general.classicBorderAllSepB",
         },
         seededBy = function(key)
-            if key == "swingTimer.texture" then
-                return "swingTimer.classicTextureSeeded"
-            end
+            if key == "swingTimer.texture" then return "swingTimer.classicTextureSeeded" end
             if key == "splitTex" or key:find("barTexture", 1, true) then
                 return "general.classicTextureSeeded"
             end
@@ -663,9 +612,7 @@ local SLOT_KEYS = {
             "barBgUseClassColor",
         },
         seededBy = function(key)
-            if key == "bgAlpha" then
-                return "blizzBgAlphaSeeded"
-            end
+            if key == "bgAlpha" then return "blizzBgAlphaSeeded" end
             return "classicSeeded"
         end,
     },
@@ -712,9 +659,7 @@ local SLOT_KEYS = {
             "partyKitBuffAnchor",
         },
         seededBy = function(key)
-            if key == "partyFrameStyle" or key:find("^partyKit") then
-                return true
-            end
+            if key == "partyFrameStyle" or key:find("^partyKit") then return true end
             return "stockRaidSeeded"
         end,
     },
@@ -737,9 +682,7 @@ if CludesUI.IS_FOREVER then
             "appearance.colors.barBgUseClassColor",
         },
         seededBy = function(key)
-            if key == "appearance.colors.bgAlpha" then
-                return "blizzBgAlphaSeeded"
-            end
+            if key == "appearance.colors.bgAlpha" then return "blizzBgAlphaSeeded" end
             return "classicSeeded"
         end,
     }
@@ -764,29 +707,21 @@ if IS_FOREVER then
             keys = { "textSlotLeft", "classificationHideRare" },
             stamps = { "foreverLevelSlotSeeded", "foreverRareSeeded" },
             seededBy = function(key)
-                if key == "classificationHideRare" then
-                    return "foreverRareSeeded"
-                end
+                if key == "classificationHideRare" then return "foreverRareSeeded" end
                 return "foreverLevelSlotSeeded"
             end,
             seed = function(p)
                 local num = ModuleNS("CludesUINameplates")
-                if num and num.NP_SeedForever then
-                    num.NP_SeedForever(p)
-                end
+                if num and num.NP_SeedForever then num.NP_SeedForever(p) end
             end,
         },
         unitframes = {
             keys = { "player.classPowerStyle", "player.showClassPowerBar" },
             stamps = { "foreverClassPowerSeeded" },
-            seededBy = function()
-                return "foreverClassPowerSeeded"
-            end,
+            seededBy = function() return "foreverClassPowerSeeded" end,
             seed = function(p)
                 local num = ModuleNS("CludesUIUnitFrames")
-                if num and num.UF_SeedForever then
-                    num.UF_SeedForever(p)
-                end
+                if num and num.UF_SeedForever then num.UF_SeedForever(p) end
             end,
         },
     }
@@ -801,27 +736,19 @@ if IS_FOREVER then
     -- drag there wins until the look changes).
     SLOT_KEYS.actionbars = { keys = { "barPositions.QueueStatus" }, foreverOnly = true }
     BY_KEY.actionbars.onEnable = function(profile, _, isForever)
-        if isForever and type(profile.barPositions) == "table" then
-            profile.barPositions.QueueStatus = nil
-        end
+        if isForever and type(profile.barPositions) == "table" then profile.barPositions.QueueStatus = nil end
     end
 end
 for key, specInfo in pairs(SLOT_KEYS) do
-    if BY_KEY[key] then
-        BY_KEY[key].slots = specInfo
-    end
+    if BY_KEY[key] then BY_KEY[key].slots = specInfo end
 end
 
 -- A missing table on the way reads nil and makes a write a no-op.
 local function PathGet(tbl, filePath)
     local a, b = filePath:match("^([^.]+)%.(.+)$")
-    if not a then
-        return tbl[filePath]
-    end
+    if not a then return tbl[filePath] end
     local s = tbl[a]
-    if type(s) ~= "table" then
-        return nil
-    end
+    if type(s) ~= "table" then return nil end
     return PathGet(s, b)
 end
 local function PathSet(tbl, filePath, val)
@@ -831,18 +758,14 @@ local function PathSet(tbl, filePath, val)
         return
     end
     local s = tbl[a]
-    if type(s) == "table" then
-        PathSet(s, b, val)
-    end
+    if type(s) == "table" then PathSet(s, b, val) end
 end
 
 -- The slot keys a spec or conditional override holds (spec.prefix = the
 -- module profile's subtable path, e.g. the cast bar's): nil when none.
 local function OverriddenKeys(m, specInfo, keyList)
     local isCap = CludesUI.SpecOverrides_IsCaptured
-    if not isCap then
-        return nil
-    end
+    if not isCap then return nil end
     local pre, entries = specInfo.prefix, nil
     for idx = 1, #keyList do
         local filePath = keyList[idx]
@@ -875,22 +798,14 @@ local function SwapSlots(m, profile, specInfo, from, to)
     -- a foreverOnly spec, whose non-Forever looks share the "cui" slot.
     local fromK, toK = from, to
     if specInfo.foreverOnly then
-        if from ~= "forever" then
-            fromK = "cui"
-        end
-        if to ~= "forever" then
-            toK = "cui"
-        end
+        if from ~= "forever" then fromK = "cui" end
+        if to ~= "forever" then toK = "cui" end
     end
-    if fromK == toK then
-        return false
-    end
+    if fromK == toK then return false end
     local loaded = false
     local keep, keepVals
     local keyList = specInfo.keys
-    if type(keyList) == "function" then
-        keyList = keyList()
-    end
+    if type(keyList) == "function" then keyList = keyList() end
     keep = OverriddenKeys(m, specInfo, keyList)
     if keep then
         keepVals = {}
@@ -914,9 +829,7 @@ local function SwapSlots(m, profile, specInfo, from, to)
             result[stamps[idx]] = PathGet(profile, stamps[idx])
         end
     end
-    if not (specInfo.foreverOnly and fromK == "forever") then
-        slots[fromK] = result
-    end
+    if not (specInfo.foreverOnly and fromK == "forever") then slots[fromK] = result end
     local saved = slots[toK]
     if type(saved) == "table" then
         loaded = true
@@ -984,9 +897,7 @@ end
 local function SwitchModuleStyle(m, to)
     local p = m.profile and m.profile()
     local from = m.get()
-    if from == to then
-        return
-    end
+    if from == to then return end
     local loaded, keep, keepVals = false, nil, nil
     if p and m.slots then
         loaded, keep, keepVals = SwapSlots(m, p, m.slots, from, to)
@@ -1003,12 +914,8 @@ local function SwitchModuleStyle(m, to)
     -- holds what the user had there. WoW Forever keeps its own slot and runs
     -- Blizzard Style's defaults (told it is the variant), and its own seed
     -- on every visit (its Forever-only slot is never banked).
-    if p and to ~= "cui" and m.onEnable and not loaded then
-        m.onEnable(p, BaseKey(to), to == "forever")
-    end
-    if p and fv and to == "forever" and not fvLoaded then
-        fv.seed(p)
-    end
+    if p and to ~= "cui" and m.onEnable and not loaded then m.onEnable(p, BaseKey(to), to == "forever") end
+    if p and fv and to == "forever" and not fvLoaded then fv.seed(p) end
     if keep then
         for idx = 1, #keep do
             PathSet(p, keep[idx], keepVals[idx])
@@ -1050,13 +957,9 @@ CludesUI.BlizzStyle = BlizzStyle
 
 local STYLE_VALUES = { cui = "CludesUI Style", blizzard = "Blizzard Style", classic = "Classic WoW UI" }
 -- The WoW Forever variant exists on the Forever client only.
-if IS_FOREVER then
-    STYLE_VALUES.forever = "WoW Forever"
-end
+if IS_FOREVER then STYLE_VALUES.forever = "WoW Forever" end
 
-local function SupportsStyle(m, styleKey)
-    return not m.styles or m.styles[styleKey]
-end
+local function SupportsStyle(m, styleKey) return not m.styles or m.styles[styleKey] end
 
 -- The style the module currently RENDERS (its session latch, not the profile
 -- flags): "cui", "blizzard" or "classic" -- "blizzard" under the WoW Forever
@@ -1073,9 +976,7 @@ end
 -- that was picked.
 function BlizzStyle.Forever(key)
     local m = BY_KEY[key]
-    if not (m and m.foreverFlag) or m.active() ~= "blizzard" then
-        return false
-    end
+    if not (m and m.foreverFlag) or m.active() ~= "blizzard" then return false end
     local latch = m.foreverLatch
     if latch then
         local num = ModuleNS(m.folder)
@@ -1086,17 +987,13 @@ function BlizzStyle.Forever(key)
 end
 -- The display name of the rendering style (the requirement text on gated rows).
 function BlizzStyle.Label(key)
-    if BlizzStyle.Forever(key) then
-        return STYLE_VALUES.forever
-    end
+    if BlizzStyle.Forever(key) then return STYLE_VALUES.forever end
     return STYLE_VALUES[BlizzStyle.Active(key)] or STYLE_VALUES.cui
 end
 -- True when a stock look (Blizzard Style or Classic WoW UI) dictates the
 -- module's geometry this session: the question every gate asks. False for
 -- unknown keys and for disabled modules.
-function BlizzStyle.Get(key)
-    return BlizzStyle.Active(key) ~= "cui"
-end
+function BlizzStyle.Get(key) return BlizzStyle.Active(key) ~= "cui" end
 -- A style chosen for the whole UI at once (the first-install picker, Apply to
 -- All) also swaps the global font through per-style slots in the per-profile
 -- fonts DB (fonts._styleSlots: `active` = the look whose font is live, plus
@@ -1109,9 +1006,7 @@ end
 -- legacy: the stock look a record from before the slots belongs to, taken
 -- before any module flag changes (nil = infer it now).
 local function FontSlots(legacy)
-    if CludesUI.LOCALE_FONT_FALLBACK or not CludesUI.GetFontsDB then
-        return nil
-    end
+    if CludesUI.LOCALE_FONT_FALLBACK or not CludesUI.GetFontsDB then return nil end
     local db = CludesUI.GetFontsDB()
     local s = db._styleSlots
     if type(s) ~= "table" then
@@ -1132,13 +1027,9 @@ end
 local function ApplyWholeUIFont(styleKey, legacy)
     styleKey = BaseKey(styleKey)
     local db, s = FontSlots(legacy)
-    if not db then
-        return
-    end
+    if not db then return end
     local from = s.active or "cui"
-    if from == styleKey then
-        return
-    end
+    if from == styleKey then return end
     s[from] = { global = db.global }
     local saved = s[styleKey]
     if type(saved) == "table" and saved.global then
@@ -1147,9 +1038,7 @@ local function ApplyWholeUIFont(styleKey, legacy)
         local blizz = CludesUI.BLIZZARD_FONT_KEY or "__blizzard"
         local current = db.global or CludesUI.DEFAULT_FONT_NAME
         if styleKey ~= "cui" then
-            if current == CludesUI.DEFAULT_FONT_NAME then
-                db.global = blizz
-            end
+            if current == CludesUI.DEFAULT_FONT_NAME then db.global = blizz end
         elseif current == blizz then
             db.global = CludesUI.DEFAULT_FONT_NAME
         end
@@ -1177,14 +1066,10 @@ local function WholeUIWindowsPending(styleKey)
 end
 local function ApplyWholeUIWindows(styleKey, legacy)
     local swap = CludesUI.SwapWindowSkinStyle
-    if not swap then
-        return
-    end
+    if not swap then return end
     swap(styleKey, false, legacy or GuessStockStyle())
     local prof = CludesUI.GetActiveProfileData()
-    if prof then
-        prof.windowSkinLook = styleKey
-    end
+    if prof then prof.windowSkinLook = styleKey end
 end
 
 -- Every loaded module taking part in first-install, no prompt: the first-install
@@ -1215,12 +1100,8 @@ end
 -- build-time decision: when a stock style is active the row is disabled
 -- with the standard requirement tooltip naming it. Returns cfg for inline use.
 function BlizzStyle.Gate(key, rowConf, keepRow)
-    if not rowConf or not BlizzStyle.Get(key) then
-        return rowConf
-    end
-    rowConf.disabled = function()
-        return true
-    end
+    if not rowConf or not BlizzStyle.Get(key) then return rowConf end
+    rowConf.disabled = function() return true end
     rowConf.disabledTooltip = BlizzStyle.Label(key)
     rowConf.requireState = "disabled"
     rowConf.rawTooltip = nil
@@ -1248,12 +1129,8 @@ function BlizzStyle.ClassicBorderSizeCfg(get, set, options)
         tooltip = "Size of the Classic frame around the bar.",
         disabled = options and options.disabled,
         disabledTooltip = options and options.disabledTooltip,
-        getValue = function()
-            return get() or def
-        end,
-        setValue = function(val)
-            set((val ~= def) and val or nil)
-        end,
+        getValue = function() return get() or def end,
+        setValue = function(val) set((val ~= def) and val or nil) end,
     }
 end
 
@@ -1261,22 +1138,14 @@ end
 -- true = gated for the active style (a multiSwatch counts when every swatch
 -- is), false = a live control.
 local function SlotGated(rowConf)
-    if not rowConf then
-        return nil
-    end
+    if not rowConf then return nil end
     local t = rowConf.type
-    if t == "spacer" or (t == "label" and (rowConf.text == nil or rowConf.text == "")) then
-        return nil
-    end
-    if rowConf._blizzGated then
-        return true
-    end
+    if t == "spacer" or (t == "label" and (rowConf.text == nil or rowConf.text == "")) then return nil end
+    if rowConf._blizzGated then return true end
     if t == "multiSwatch" and rowConf.swatches then
         local num = #rowConf.swatches
         for idx = 1, num do
-            if not rowConf.swatches[idx]._blizzGated then
-                return false
-            end
+            if not rowConf.swatches[idx]._blizzGated then return false end
         end
         return num > 0
     end
@@ -1288,13 +1157,9 @@ end
 -- on its regions) but hides it and gives it no height. Blank slots do not
 -- count; one live control keeps the row, its gated neighbour disabled.
 function BlizzStyle.RowHidden(a, b, cfg)
-    if (a and a._blizzKeepRow) or (b and b._blizzKeepRow) or (cfg and cfg._blizzKeepRow) then
-        return false
-    end
+    if (a and a._blizzKeepRow) or (b and b._blizzKeepRow) or (cfg and cfg._blizzKeepRow) then return false end
     local ga, gb, gc = SlotGated(a), SlotGated(b), SlotGated(cfg)
-    if ga == false or gb == false or gc == false then
-        return false
-    end
+    if ga == false or gb == false or gc == false then return false end
     return (ga or gb or gc) and true or false
 end
 
@@ -1303,21 +1168,16 @@ end
 -- active for the module. No-op otherwise, so existing pages are untouched.
 function BlizzStyle.BlockInline(key, widget, dimAlpha)
     -- The search prebuild only indexes rows: no blocker (the widget is a stand-in there).
-    if CludesUI._prebuilding then
-        return false
-    end
-    if not widget or not BlizzStyle.Get(key) then
-        return false
-    end
+    if CludesUI._prebuilding then return false end
+    if not widget or not BlizzStyle.Get(key) then return false end
     widget:SetAlpha(dimAlpha or 0.3)
     local block = CludesUI.NewSwatchBlocker(widget)
     local labelText = BlizzStyle.Label(key)
-    block:SetScript("OnEnter", function()
-        CludesUI.ShowWidgetTooltip(widget, CludesUI.DisabledTooltip(labelText, "disabled"))
-    end)
-    block:SetScript("OnLeave", function()
-        CludesUI.HideWidgetTooltip()
-    end)
+    block:SetScript(
+        "OnEnter",
+        function() CludesUI.ShowWidgetTooltip(widget, CludesUI.DisabledTooltip(labelText, "disabled")) end
+    )
+    block:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
     return true
 end
 
@@ -1328,14 +1188,10 @@ function BlizzStyle.Note(hostFrame, cursorY, key)
     local m = BY_KEY[key]
     -- The latched rendering state, like Gate: a profile whose flags differ
     -- from the running look (reload declined) must not banner live rows.
-    if not m or m.active() == "cui" then
-        return cursorY
-    end
+    if not m or m.active() == "cui" then return cursorY end
     local ROW_H = 40
     -- The search prebuild only indexes rows: same y advance, no frames.
-    if CludesUI._prebuilding then
-        return cursorY - ROW_H
-    end
+    if CludesUI._prebuilding then return cursorY - ROW_H end
     local Pix = CludesUI.PanelPP
     local row = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
@@ -1360,9 +1216,13 @@ function BlizzStyle.Note(hostFrame, cursorY, key)
     Pix.Size(button, 122, 26)
     button:SetPoint("RIGHT", row, "RIGHT", -20, 0)
     button:SetFrameLevel(row:GetFrameLevel() + 2)
-    CludesUI.MakeStyledButton(button, "Open Style", 11, CludesUI.WB_COLOURS, function()
-        CludesUI:NavigateToElementSettings(GLOBAL_KEY, PAGE_STYLE)
-    end)
+    CludesUI.MakeStyledButton(
+        button,
+        "Open Style",
+        11,
+        CludesUI.WB_COLOURS,
+        function() CludesUI:NavigateToElementSettings(GLOBAL_KEY, PAGE_STYLE) end
+    )
     return cursorY - ROW_H
 end
 
@@ -1393,9 +1253,7 @@ local function PromptStyleChanges(changes, wholeUIStyle)
             CludesUI.SpecOverrides_CloseEditSessions()
             -- WoW Forever: a look committed here settles the first-install
             -- picker, so it never asks again over a choice already made.
-            if CludesUI.IS_FOREVER and CludesUIDB then
-                CludesUIDB.styleChoicePending = nil
-            end
+            if CludesUI.IS_FOREVER and CludesUIDB then CludesUIDB.styleChoicePending = nil end
             local legacy = wholeUIStyle and GuessStockStyle()
             for idx = 1, #changes do
                 SwitchModuleStyle(changes[idx].m, changes[idx].key)
@@ -1413,7 +1271,11 @@ local function StyleChangesFor(styleKey)
     local changes = {}
     for idx = 1, #MODULES do
         local module = MODULES[idx]
-        if SupportsStyle(module, styleKey) and ModuleNS(module.folder) ~= nil and module.get() ~= styleKey then
+        if
+            SupportsStyle(module, styleKey)
+            and ModuleNS(module.folder) ~= nil
+            and module.get() ~= styleKey
+        then
             changes[#changes + 1] = { m = module, key = styleKey }
         end
     end
@@ -1480,9 +1342,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             -- The card in use fades to half; its larger badge stays whole.
             inUseAlpha = 0.5,
             badgeSize = 13,
-            onPick = function(styleKey)
-                PromptStyleChanges(StyleChangesFor(styleKey), styleKey)
-            end,
+            onPick = function(styleKey) PromptStyleChanges(StyleChangesFor(styleKey), styleKey) end,
         })
         if cards then
             local function RefreshCards()
@@ -1492,9 +1352,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                         local module = MODULES[idx]
                         if SupportsStyle(module, key) and ModuleNS(module.folder) ~= nil then
                             loaded = loaded + 1
-                            if module.get() ~= key then
-                                differ = differ + 1
-                            end
+                            if module.get() ~= key then differ = differ + 1 end
                         end
                     end
                     local inUse = loaded > 0 and differ == 0
@@ -1516,23 +1374,15 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             -- until Apply Styles, whose reload prompt writes every move at
             -- once; leaving the page drops the picks.
             local pending = {} -- module key -> picked style, only where it differs
-            local function Loaded(m)
-                return ModuleNS(m.folder) ~= nil
-            end
-            local function PickOf(m)
-                return pending[m.key] or m.get()
-            end
-            local function Pick(m, styleKey)
-                pending[m.key] = (styleKey ~= m.get()) and styleKey or nil
-            end
+            local function Loaded(m) return ModuleNS(m.folder) ~= nil end
+            local function PickOf(m) return pending[m.key] or m.get() end
+            local function Pick(m, styleKey) pending[m.key] = (styleKey ~= m.get()) and styleKey or nil end
             local refreshers, applyBtn = {}, nil
             local function RefreshPicks()
                 -- A profile switch can make a pick match its module again.
                 for keyName, s in pairs(pending) do
                     local m = BY_KEY[keyName]
-                    if not m or s == m.get() then
-                        pending[keyName] = nil
-                    end
+                    if not m or s == m.get() then pending[keyName] = nil end
                 end
                 for idx = 1, #refreshers do
                     refreshers[idx]()
@@ -1548,22 +1398,16 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                 for idx = 1, #MODULES do
                     local module = MODULES[idx]
                     if SupportsStyle(module, styleKey) then
-                        local function Off()
-                            return not Loaded(module)
-                        end
+                        local function Off() return not Loaded(module) end
                         itemList[#itemList + 1] = {
                             key = module.key,
                             label = module.display,
                             excludeFromSummaryFn = Off,
-                            lockedFn = function()
-                                return Off() or PickOf(module) == styleKey
-                            end,
+                            lockedFn = function() return Off() or PickOf(module) == styleKey end,
                             -- Only a disabled module explains itself; a checked one
                             -- just reads as fixed here.
                             lockedTooltip = function()
-                                if not Off() then
-                                    return nil
-                                end
+                                if not Off() then return nil end
                                 return CludesUI.Lf(
                                     "Enable %1$s to change its style.",
                                     CludesUI.L(module.enableName or module.display)
@@ -1577,13 +1421,9 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                     handle.card:GetWidth(),
                     host:GetFrameLevel() + 3,
                     itemList,
-                    function(key)
-                        return PickOf(BY_KEY[key]) == styleKey
-                    end,
+                    function(key) return PickOf(BY_KEY[key]) == styleKey end,
                     function(key, checked)
-                        if checked then
-                            Pick(BY_KEY[key], styleKey)
-                        end
+                        if checked then Pick(BY_KEY[key], styleKey) end
                     end,
                     RefreshPicks,
                     10,

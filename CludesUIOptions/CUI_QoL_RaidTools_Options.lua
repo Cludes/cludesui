@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_QoL_RaidTools_Options.lua -- Raid Tools page of the QoL module
 --
@@ -9,9 +7,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Same arrangement as the Cursor and Upgrade Calculator pages.
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUIQoL"] -- module namespace (published by the module at its load)
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- Page reuse: frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
@@ -19,16 +15,13 @@ end -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 CludesUI.AtLogin(function()
-
     -- NOT gated on CludesUI.Widgets: on this LoadOnDemand addon the
     -- IsLoggedIn() re-fire below runs this handler at FILE SCOPE, before
     -- EnsureLoaded drains _deferredInits -- and the whole Widgets factory
     -- lives in a deferred body, so Widgets is always nil here. BuildPage
     -- reads it at panel-open time, after the drain, which is the only
     -- moment it is needed.
-    if not CludesUI then
-        return
-    end
+    if not CludesUI then return end
 
     -- Settings live in one slice of the shared QoL profile, so every read here
     -- goes through the same handle the runtime publishes.
@@ -51,50 +44,32 @@ CludesUI.AtLogin(function()
 
     local function Set(key, val)
         local profile = DB()
-        if profile then
-            profile[key] = val
-        end
+        if profile then profile[key] = val end
     end
 
     local function ApplyRaidTools()
-        if _G._CUI_RaidTools_Apply then
-            _G._CUI_RaidTools_Apply()
-        end
+        if _G._CUI_RaidTools_Apply then _G._CUI_RaidTools_Apply() end
     end
 
-    local function ModeNever()
-        return (Cfg("mode") or "never") == "never"
-    end
+    local function ModeNever() return (Cfg("mode") or "never") == "never" end
 
-    local function QuickFireDisabled()
-        return ModeNever() or Cfg("quickFire") ~= true
-    end
+    local function QuickFireDisabled() return ModeNever() or Cfg("quickFire") ~= true end
 
     -- The runtime owns the normalize (unknown values retain One Window).
     local function ShowAsVal()
-        if mod.ShowAs then
-            return mod.ShowAs()
-        end
+        if mod.ShowAs then return mod.ShowAs() end
         return Cfg("showAs") or "one"
     end
 
-    local function LegacyDisabled()
-        return ModeNever() or ShowAsVal() == "compact"
-    end
-    local function RoleCheckDisabled()
-        return ModeNever() or ShowAsVal() == "markers"
-    end
+    local function LegacyDisabled() return ModeNever() or ShowAsVal() == "compact" end
+    local function RoleCheckDisabled() return ModeNever() or ShowAsVal() == "markers" end
     local function FullPanelButtonDisabled()
         local mode = ShowAsVal()
         return ModeNever() or mode == "compact" or mode == "markers"
     end
     -- Raid Buff Check is retail only: its rows are not built on WoW Forever.
-    local function BuffCheckOff()
-        return Cfg("buffCheck") ~= true
-    end
-    local function PullDisabled()
-        return ModeNever() or ShowAsVal() == "markers"
-    end
+    local function BuffCheckOff() return Cfg("buffCheck") ~= true end
+    local function PullDisabled() return ModeNever() or ShowAsVal() == "markers" end
 
     -- Pull durations live in a fixed 3-slot array; each slider owns one slot.
     local function PullGet(idx)
@@ -104,9 +79,7 @@ CludesUI.AtLogin(function()
 
     local function PullSet(idx, value)
         local tbl = Cfg("pullTimes")
-        if not tbl then
-            return
-        end
+        if not tbl then return end
         tbl[idx] = value
         ApplyRaidTools()
     end
@@ -122,9 +95,7 @@ CludesUI.AtLogin(function()
         -- expanded, so every change lands visibly instead of the collapse/visibility
         -- rules eating it (the TBB placeholder-mode arrangement). NEVER during Global
         -- Search's hidden pre-build, which builds every page once at startup.
-        if not CludesUI._prebuilding and _G._CUI_RaidTools_Preview then
-            _G._CUI_RaidTools_Preview(true)
-        end
+        if not CludesUI._prebuilding and _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(true) end
 
         -- GENERAL
         heading, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
@@ -135,12 +106,8 @@ CludesUI.AtLogin(function()
         CludesUI.BuildSectionUnlockJump(heading, {
             key = function()
                 local showAs = ShowAsVal()
-                if showAs == "compact" then
-                    return "CUI_RaidTools_Compact"
-                end
-                if showAs == "markers" then
-                    return "CUI_RaidTools_Markers"
-                end
+                if showAs == "compact" then return "CUI_RaidTools_Compact" end
+                if showAs == "markers" then return "CUI_RaidTools_Markers" end
                 return "CUI_RaidTools_Group"
             end,
             disabled = ModeNever,
@@ -163,9 +130,7 @@ CludesUI.AtLogin(function()
                 always = "Always",
             },
             order = { "never", "raid", "group", "always" },
-            getValue = function()
-                return Cfg("mode") or "never"
-            end,
+            getValue = function() return Cfg("mode") or "never" end,
             setValue = function(value)
                 Set("mode", value)
                 ApplyRaidTools()
@@ -185,9 +150,7 @@ CludesUI.AtLogin(function()
                 w = 126,
                 h = 29,
                 level = 4,
-                get = function()
-                    return Cfg("toggleKey")
-                end,
+                get = function() return Cfg("toggleKey") end,
                 -- Spec Overrides: the slot is read before the write (a write
                 -- that rebuilds the page dresses this region again).
                 set = function(value)
@@ -208,9 +171,7 @@ CludesUI.AtLogin(function()
             CludesUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Raid Tools",
-                getValue = function()
-                    return Cfg("toggleKey")
-                end,
+                getValue = function() return Cfg("toggleKey") end,
                 setValue = function(value)
                     Set("toggleKey", value)
                     ApplyRaidTools()
@@ -225,9 +186,7 @@ CludesUI.AtLogin(function()
             text = "Default to Collapsed When Shown",
             tooltip = "Full-window modes only. Shows start as a small icon, and the keybind switches between the icon and the full windows.",
             disabled = LegacyDisabled,
-            getValue = function()
-                return Cfg("collapsedIcon") ~= false
-            end,
+            getValue = function() return Cfg("collapsedIcon") ~= false end,
             setValue = function(value)
                 Set("collapsedIcon", value)
                 ApplyRaidTools()
@@ -245,9 +204,7 @@ CludesUI.AtLogin(function()
                 markers = "Only Markers",
             },
             order = { "compact", "one", "two", "group", "markers" },
-            getValue = function()
-                return ShowAsVal()
-            end,
+            getValue = function() return ShowAsVal() end,
             setValue = function(value)
                 Set("showAs", value)
                 ApplyRaidTools()
@@ -264,9 +221,7 @@ CludesUI.AtLogin(function()
             max = 2.0,
             step = 0.05,
             disabled = ModeNever,
-            getValue = function()
-                return Cfg("scale") or 1
-            end,
+            getValue = function() return Cfg("scale") or 1 end,
             setValue = function(value)
                 Set("scale", value)
                 ApplyRaidTools()
@@ -283,9 +238,7 @@ CludesUI.AtLogin(function()
                 upleft = "Up Left",
             },
             order = { "downright", "upright", "downleft", "upleft" },
-            getValue = function()
-                return Cfg("growDir") or "downright"
-            end,
+            getValue = function() return Cfg("growDir") or "downright" end,
             setValue = function(value)
                 Set("growDir", value)
                 ApplyRaidTools()
@@ -304,9 +257,7 @@ CludesUI.AtLogin(function()
             text = "Enable Quick Fire",
             tooltip = "Adds three optional world-marker keybinds that remain usable in combat. Place drops the first free marker at the cursor in Star to Skull order; Undo removes the last marker placed through Quick Fire; Clear removes all world markers. Every binding starts empty. Marker changes made elsewhere during combat are picked up afterward.",
             disabled = ModeNever,
-            getValue = function()
-                return Cfg("quickFire") == true
-            end,
+            getValue = function() return Cfg("quickFire") == true end,
             setValue = function(value)
                 Set("quickFire", value)
                 ApplyRaidTools()
@@ -333,9 +284,7 @@ CludesUI.AtLogin(function()
                     h = 29,
                     level = 4,
                     mouse = true,
-                    get = function()
-                        return Cfg(key)
-                    end,
+                    get = function() return Cfg(key) end,
                     set = function(value)
                         local snap = CludesUI._SOAttribution(regionFrame)
                         Set(key, value or false)
@@ -343,18 +292,14 @@ CludesUI.AtLogin(function()
                         CludesUI._NotifySettingWrite(regionFrame, snap)
                     end,
                     disabled = QuickFireDisabled,
-                    disabledTip = function()
-                        return ModeNever() and "Show Raid Tools" or "Enable Quick Fire"
-                    end,
+                    disabledTip = function() return ModeNever() and "Show Raid Tools" or "Enable Quick Fire" end,
                 })
                 Pix.Point(btnFrame, "RIGHT", regionFrame, "RIGHT", -20, 0)
                 CludesUI.RegisterWidgetRefresh(refresh)
                 CludesUI.AddCaptureAccessor(regionFrame, {
                     type = "keybind",
                     text = regionFrame._label and regionFrame._label:GetText() or key,
-                    getValue = function()
-                        return Cfg(key)
-                    end,
+                    getValue = function() return Cfg(key) end,
                     setValue = function(value)
                         Set(key, value)
                         ApplyRaidTools()
@@ -382,9 +327,7 @@ CludesUI.AtLogin(function()
                 text = textValue,
                 tooltip = tooltip,
                 disabled = disabled or ModeNever,
-                getValue = function()
-                    return Cfg(key) ~= false
-                end,
+                getValue = function() return Cfg(key) ~= false end,
                 setValue = function(value)
                     Set(key, value)
                     ApplyRaidTools()
@@ -423,21 +366,13 @@ CludesUI.AtLogin(function()
                     type = "toggle",
                     text = "Show Buff Check",
                     tooltip = "Shows the Buff Check button. On Compact Band it is Shift + Left Click on the ready check button.",
-                    disabled = function()
-                        return RoleCheckDisabled() or BuffCheckOff()
-                    end,
+                    disabled = function() return RoleCheckDisabled() or BuffCheckOff() end,
                     disabledTooltip = function()
-                        if BuffCheckOff() then
-                            return "Raid Buff Check"
-                        end
-                        if ModeNever() then
-                            return "Show Raid Tools"
-                        end
+                        if BuffCheckOff() then return "Raid Buff Check" end
+                        if ModeNever() then return "Show Raid Tools" end
                         return "This option requires a Show as layout with the group buttons."
                     end,
-                    getValue = function()
-                        return Cfg("showBuffCheck") == true
-                    end,
+                    getValue = function() return Cfg("showBuffCheck") == true end,
                     setValue = function(value)
                         Set("showBuffCheck", value)
                         ApplyRaidTools()
@@ -455,9 +390,7 @@ CludesUI.AtLogin(function()
                 type = "toggle",
                 text = "Raid Buff Check",
                 tooltip = "A window of each group member's flask, food, augment and vantus runes and missing raid buffs.",
-                getValue = function()
-                    return Cfg("buffCheck") == true
-                end,
+                getValue = function() return Cfg("buffCheck") == true end,
                 setValue = function(value)
                     Set("buffCheck", value)
                     ApplyRaidTools()
@@ -469,9 +402,7 @@ CludesUI.AtLogin(function()
                 tooltip = "Opens the window on ready checks while you lead the group or assist.",
                 disabled = BuffCheckOff,
                 disabledTooltip = "Raid Buff Check",
-                getValue = function()
-                    return Cfg("buffCheckOnReady") ~= false
-                end,
+                getValue = function() return Cfg("buffCheckOnReady") ~= false end,
                 setValue = function(value)
                     Set("buffCheckOnReady", value)
                     ApplyRaidTools()
@@ -496,12 +427,8 @@ CludesUI.AtLogin(function()
                 step = 1,
                 tooltip = PULL_TIP,
                 disabled = PullDisabled,
-                getValue = function()
-                    return PullGet(idx)
-                end,
-                setValue = function(value)
-                    PullSet(idx, value)
-                end,
+                getValue = function() return PullGet(idx) end,
+                setValue = function(value) PullSet(idx, value) end,
             }
         end
 
@@ -520,9 +447,7 @@ CludesUI.AtLogin(function()
     -- handled by the dispatcher in CUI_QoL_Options.lua). Both are idempotent
     -- no-ops when the preview is already off.
     local function StopPreview()
-        if _G._CUI_RaidTools_Preview then
-            _G._CUI_RaidTools_Preview(false)
-        end
+        if _G._CUI_RaidTools_Preview then _G._CUI_RaidTools_Preview(false) end
     end
     CludesUI:RegisterOnHide(StopPreview)
     -- REOPENING the window fires neither buildPage nor onPageCacheRestore --
@@ -540,9 +465,7 @@ CludesUI.AtLogin(function()
     end)
     if CludesUI.SelectModule then
         hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
-            if folderName ~= "CludesUIQoL" then
-                StopPreview()
-            end
+            if folderName ~= "CludesUIQoL" then StopPreview() end
         end)
     end
 end)

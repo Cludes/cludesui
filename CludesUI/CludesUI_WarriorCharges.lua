@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CludesUI_WarriorCharges.lua
 -- 12.1 ONLY: engine-fed charge fills for the two Warrior class-resource buffs
 -- the aura read surface refuses outright (not whitelisted: GetPlayerAuraBySpellID
@@ -101,13 +99,9 @@ local HostRecolor -- forward (lift re-applies through it)
 local HostSyncByKey -- forward
 
 local function HookLift()
-    if S.liftHooked then
-        return
-    end
+    if S.liftHooked then return end
     local AK = CUI.AuraKit
-    if not (AK and AK.OnRestrictionLift) then
-        return
-    end
+    if not (AK and AK.OnRestrictionLift) then return end
     S.liftHooked = true
     AK.OnRestrictionLift(function()
         for _, HostRec in pairs(S.hosts) do
@@ -131,15 +125,11 @@ end
 -- always stashed as pend: the creation-window bake reads it (the only write
 -- that always lands) and the lift re-applies it.
 HostRecolor = function(HostRec, powerKey, red, green, blue, a)
-    if HostRec.armed ~= powerKey then
-        return
-    end
+    if HostRec.armed ~= powerKey then return end
     HostRec.pendR, HostRec.pendG, HostRec.pendB, HostRec.pendA = red, green, blue, a
     local st = HostRec.ph[powerKey]
     local bft = st and st.bft
-    if not bft then
-        return
-    end -- not built yet: stash only, no write to try
+    if not bft then return end -- not built yet: stash only, no write to try
     if HostRec.lastR == red and HostRec.lastG == green and HostRec.lastB == blue and HostRec.lastA == a then
         return
     end
@@ -159,9 +149,7 @@ local function BuildHostPhase(HostRec, powerKey, options)
     local AK = CUI.AuraKit
     local conf = PHASES[powerKey]
     local st = HostRec.ph[powerKey]
-    if st.container then
-        return
-    end
+    if st.container then return end
 
     local styleKey = "war:" .. HostRec.key .. ":" .. powerKey
     AK.styles[styleKey] = AK.styles[styleKey] or { noRegions = true, width = 1, height = 1 }
@@ -198,12 +186,8 @@ local function BuildHostPhase(HostRec, powerKey, options)
             -- Display-only overlay: an engine aura button comes mouse-enabled,
             -- and clicks alone would make it an invisible blocker over the
             -- host's row for as long as the buff is up.
-            if btnFrame.SetMouseClickEnabled then
-                btnFrame:SetMouseClickEnabled(false)
-            end
-            if btnFrame.SetMouseMotionEnabled then
-                btnFrame:SetMouseMotionEnabled(false)
-            end
+            if btnFrame.SetMouseClickEnabled then btnFrame:SetMouseClickEnabled(false) end
+            if btnFrame.SetMouseMotionEnabled then btnFrame:SetMouseMotionEnabled(false) end
             st.btn = btnFrame
 
             local bar = CreateFrame("StatusBar", nil, btnFrame)
@@ -219,9 +203,7 @@ local function BuildHostPhase(HostRec, powerKey, options)
             local bft = bar:GetStatusBarTexture()
             if bft then
                 bft:SetVertexColor(r, g, b, a)
-                if fillAlpha < 1 then
-                    bft:SetAlpha(fillAlpha)
-                end
+                if fillAlpha < 1 then bft:SetAlpha(fillAlpha) end
             end
             -- ARMORED: an uncaught error here aborts the engine's
             -- CreateFrameBatch and kills the slot; failures land in st.err and
@@ -313,17 +295,13 @@ local function BuildHostPhase(HostRec, powerKey, options)
                                 rounding = Enum.NumericRuleFormatRounding.Down,
                             },
                         })
-                        if okB then
-                            fmt = nf
-                        end
+                        if okB then fmt = nf end
                     end
                     btnFrame:SetApplicationCount(fontStr, fmt and { formatter = fmt } or nil)
                     st.tc, st.fs = tc, fontStr
                     tc:SetShown(options.text.shown and true or false)
                 end)
-                if not okT then
-                    st.textErr = errT
-                end
+                if not okT then st.textErr = errT end
             end
         end,
     })
@@ -338,13 +316,9 @@ local function EnsureHostBuilt(HostRec, powerKey, options)
         st = {}
         HostRec.ph[powerKey] = st
     end
-    if st.built or st.queued or st.err then
-        return
-    end
+    if st.built or st.queued or st.err then return end
     local AK = CUI.AuraKit
-    if not (AK and AK.QueueBuildJob) then
-        return
-    end
+    if not (AK and AK.QueueBuildJob) then return end
     st.queued = true
     AK.QueueBuildJob(function()
         st.queued = nil
@@ -392,21 +366,15 @@ local function StyleSeparators(HostRec, widget, sp, num)
     local Pix = CUI.PP
     local es = (widget.GetEffectiveScale and widget:GetEffectiveScale()) or 1
     local sepW = sep.w or sp.pipSpacing or 1
-    if Pix and Pix.SnapForES then
-        sepW = Pix.SnapForES(sepW, es)
-    end
-    if sepW <= 0 then
-        sepW = 1
-    end
+    if Pix and Pix.SnapForES then sepW = Pix.SnapForES(sepW, es) end
+    if sepW <= 0 then sepW = 1 end
     local len = (vertical and widget:GetHeight() or widget:GetWidth()) or 0
 
     -- Optional empty-cell strip UNDER the engine fill (hosts whose legacy
     -- pips carry an "empty" color rather than relying on the row backdrop).
     -- Proxy-level texture: children (the engine container) render above it.
     if sep.empty then
-        if not HostRec.emptyTex then
-            HostRec.emptyTex = HostRec.proxy:CreateTexture(nil, "BACKGROUND")
-        end
+        if not HostRec.emptyTex then HostRec.emptyTex = HostRec.proxy:CreateTexture(nil, "BACKGROUND") end
         local inset = sep.emptyInset or 0
         HostRec.emptyTex:ClearAllPoints()
         if vertical then
@@ -454,9 +422,7 @@ local function StyleSeparators(HostRec, widget, sp, num)
         -- Snap the tick's EDGE offset, not just the boundary center: a
         -- half-pixel-offset 1px line can disappear into the pixel grid.
         local off = BoundaryPos(idx) - sepW / 2
-        if Pix and Pix.SnapForES then
-            off = Pix.SnapForES(off, es)
-        end
+        if Pix and Pix.SnapForES then off = Pix.SnapForES(off, es) end
         if vertical then
             -- Fill runs top-down (or bottom-up for VERTICAL_UP); either way
             -- the boundaries sit at the same fractions from the fill edge.
@@ -498,9 +464,7 @@ end
 local function StyleThresholds(HostRec, widget, sp, num)
     local st = HostRec.armed and HostRec.ph[HostRec.armed]
     local strips = st and st.thStrips
-    if not strips then
-        return
-    end
+    if not strips then return end
     local specInfo = HostRec.thSpec
     -- Every write below touches the slot subtree post-window (the strips and
     -- mask were BAKED in the creation window; an outside mask anchored to
@@ -562,19 +526,26 @@ end
 -- Threshold inputs, handed raw from the consumer's paint pass and
 -- change-gated here with ALLOC-FREE field compares (the pass cadence is the
 -- class bar tick; a rebuild only runs on a real settings/spec/cap change).
-local function HostThresholds(HostRec, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
-    if HostRec.armed ~= powerKey then
-        return
-    end
+local function HostThresholds(
+    HostRec,
+    powerKey,
+    mode,
+    total,
+    red,
+    green,
+    blue,
+    a,
+    bandOn,
+    bands,
+    bandReverse,
+    reverse
+)
+    if HostRec.armed ~= powerKey then return end
     local st = HostRec.ph[powerKey]
     local num = (st and st.regMax) or 0
     -- v1: "Up to" modes render nothing (no engine expression).
-    if reverse then
-        total = nil
-    end
-    if bandReverse then
-        bandOn = false
-    end
+    if reverse then total = nil end
+    if bandReverse then bandOn = false end
     local inp = HostRec.thIn
     if not inp then
         inp = { bands = {} }
@@ -605,9 +576,7 @@ local function HostThresholds(HostRec, powerKey, mode, total, red, green, blue, 
             end
         end
     end
-    if not changed then
-        return
-    end
+    if not changed then return end
     inp.mode, inp.count, inp.n = mode, total, num
     inp.r, inp.g, inp.b, inp.a, inp.bn = red, green, blue, a, bn
     local specInfo = HostRec.thSpecStore
@@ -666,38 +635,28 @@ end
 
 local function HostGate(HostRec)
     HostRec.armed = nil
-    if HostRec.proxy then
-        HostRec.proxy:Hide()
-    end
+    if HostRec.proxy then HostRec.proxy:Hide() end
 end
 
 HostSyncByKey = function(HostRec, widget, powerKey, options)
-    if S.class ~= "WARRIOR" then
-        return
-    end
+    if S.class ~= "WARRIOR" then return end
     local conf = powerKey and PHASES[powerKey]
     if not (conf and widget and options) then
         HostGate(HostRec)
         return
     end
-    if HostRec.armed ~= powerKey then
-        HostRec.lastR = nil
-    end -- phase swap: re-apply color
+    if HostRec.armed ~= powerKey then HostRec.lastR = nil end -- phase swap: re-apply color
     HostRec.armed = powerKey
     HostRec.syncFrame, HostRec.syncOpts = widget, options
     local st = HostRec.ph[powerKey]
     if not (st and st.built) then
         EnsureHostBuilt(HostRec, powerKey, options)
         -- Nothing to show yet (sub-second build window): row stays empty.
-        if HostRec.proxy then
-            HostRec.proxy:Hide()
-        end
+        if HostRec.proxy then HostRec.proxy:Hide() end
         return
     end
     if st.err or not st.bar then
-        if HostRec.proxy then
-            HostRec.proxy:Hide()
-        end
+        if HostRec.proxy then HostRec.proxy:Hide() end
         return
     end
     -- Attach: the proxy rides the host's row frame (the Ebon Might shape);
@@ -756,16 +715,12 @@ HostSyncByKey = function(HostRec, widget, powerKey, options)
     -- Only one phase is ever armed per host; park the others so a spec swap
     -- never leaves two overlays stacked on the same rect.
     for key, other in pairs(HostRec.ph) do
-        if key ~= powerKey and other.container then
-            other.container:Hide()
-        end
+        if key ~= powerKey and other.container then other.container:Hide() end
     end
 end
 
 local function HostEngineOn(HostRec, powerKey)
-    if not HostRec or HostRec.armed ~= powerKey then
-        return false
-    end
+    if not HostRec or HostRec.armed ~= powerKey then return false end
     local st = HostRec.ph[powerKey]
     return (st and st.built and st.bar and not st.err) and true or false
 end
@@ -784,26 +739,46 @@ _G._EWC = {
     Sync = function(hostKey, widget, powerKey, options)
         HostSyncByKey(Host(hostKey), widget, powerKey, options)
     end,
-    Thresholds = function(hostKey, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
+    Thresholds = function(
+        hostKey,
+        powerKey,
+        mode,
+        total,
+        red,
+        green,
+        blue,
+        a,
+        bandOn,
+        bands,
+        bandReverse,
+        reverse
+    )
         local HostRec = S.hosts[hostKey]
         if HostRec then
-            HostThresholds(HostRec, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
+            HostThresholds(
+                HostRec,
+                powerKey,
+                mode,
+                total,
+                red,
+                green,
+                blue,
+                a,
+                bandOn,
+                bands,
+                bandReverse,
+                reverse
+            )
         end
     end,
     Gate = function(hostKey)
         local HostRec = S.hosts[hostKey]
-        if HostRec then
-            HostGate(HostRec)
-        end
+        if HostRec then HostGate(HostRec) end
     end,
-    EngineOn = function(hostKey, powerKey)
-        return HostEngineOn(S.hosts[hostKey], powerKey)
-    end,
+    EngineOn = function(hostKey, powerKey) return HostEngineOn(S.hosts[hostKey], powerKey) end,
     Recolor = function(hostKey, powerKey, red, green, blue, a)
         local HostRec = S.hosts[hostKey]
-        if HostRec then
-            HostRecolor(HostRec, powerKey, red, green, blue, a)
-        end
+        if HostRec then HostRecolor(HostRec, powerKey, red, green, blue, a) end
     end,
     -- Talent-aware registration cap for a power key (0 for unknown keys) --
     -- consumers size their layouts from this so geometry and fill scale agree.

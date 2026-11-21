@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_ActionBars_Init.lua
 --
@@ -63,9 +61,7 @@ function ABAR:OnInitialize()
     _G._CUAB_UnlockModeOpen = function() end
     _G._CUAB_UnlockModeClose = function() end
 
-    _G._CUAB_ApplyKeyDown = function()
-        ApplyKeyDownCVar()
-    end
+    _G._CUAB_ApplyKeyDown = function() ApplyKeyDownCVar() end
     _G._CUAB_Apply = function()
         ABAR:RefreshCustomFadeGate()
         -- Re-point the exposed barPositions view at the active profile's table.
@@ -85,9 +81,7 @@ function ABAR:OnInitialize()
         -- Border here (our own plain frames: safe in combat). Not in ApplyAll,
         -- which also runs at login, where creation already laid them out.
         for _, details in ipairs(mod.EXTRA_BARS) do
-            if details.isDataBar then
-                mod.ApplyDataBarLayout(details.key)
-            end
+            if details.isDataBar then mod.ApplyDataBarLayout(details.key) end
         end
         if not InCombatLockdown() then
             RestoreBarPositions()
@@ -124,9 +118,7 @@ function ABAR:OnInitialize()
 
         local function RankAtlasFor(q)
             local hit = _rankAtlas[q]
-            if hit ~= nil then
-                return hit or nil
-            end
+            if hit ~= nil then return hit or nil end
             local probe = C_Texture and C_Texture.GetAtlasInfo
             local nameList = {
                 "Professions-Icon-Quality-Tier" .. q .. "-Inv-Small",
@@ -146,9 +138,7 @@ function ABAR:OnInitialize()
         local function SetRankShown(button, atlas)
             local fd = EFD(button)
             if not atlas then
-                if fd.rankIconTex then
-                    fd.rankIconTex:Hide()
-                end
+                if fd.rankIconTex then fd.rankIconTex:Hide() end
                 return
             end
             local texture = fd.rankIconTex
@@ -156,9 +146,7 @@ function ABAR:OnInitialize()
                 -- First paint creates the holder. A new cosmetic child frame
                 -- writes nothing onto the secure button's table; skip only
                 -- in combat lockdown (next out-of-combat scan paints it).
-                if InCombatLockdown() then
-                    return
-                end
+                if InCombatLockdown() then return end
                 local holderFrame = CreateFrame("Frame", nil, button)
                 holderFrame:SetAllPoints(button)
                 holderFrame:SetFrameLevel((button:GetFrameLevel() or 1) + 18)
@@ -221,9 +209,7 @@ function ABAR:OnInitialize()
                             local q = ts
                                 and ts.GetItemCraftedQualityByItemInfo
                                 and ts.GetItemCraftedQualityByItemInfo(aID)
-                            if type(q) == "number" and q >= 1 and q <= 5 then
-                                rankAtlas = RankAtlasFor(q)
-                            end
+                            if type(q) == "number" and q >= 1 and q <= 5 then rankAtlas = RankAtlasFor(q) end
                         end
                     end
                 end
@@ -235,13 +221,9 @@ function ABAR:OnInitialize()
             -- hide for overlays born after the apply pass ran.
             local shade = button.ProfessionQualityOverlayFrame
             if shade then
-                if shade:IsShown() then
-                    shade:SetShown(false)
-                end
+                if shade:IsShown() then shade:SetShown(false) end
                 if not EFD(button).qualityHooked then
-                    shade:HookScript("OnShow", function(self2)
-                        self2:SetShown(false)
-                    end)
+                    shade:HookScript("OnShow", function(self2) self2:SetShown(false) end)
                     EFD(button).qualityHooked = true
                 end
             end
@@ -318,30 +300,22 @@ function ABAR:OnInitialize()
         -- pattern as tooltip suppression). Also converges anything the hover's
         -- item-data load just made resolvable.
         if GameTooltip then
-            hooksecurefunc(GameTooltip, "SetAction", function(_, slot)
-                QueueSlotQualityScan(slot)
-            end)
+            hooksecurefunc(GameTooltip, "SetAction", function(_, slot) QueueSlotQualityScan(slot) end)
         end
         -- Initial paint (login / reload): bars applied before this block ran.
         QueueQualityScan()
     end
 
     SLASH_CLUDESACTIONBARS1 = "/cab"
-    SlashCmdList["CLUDESACTIONBARS"] = function(message)
-        CludesUI:ShowModule("CludesUIActionBars")
-    end
+    SlashCmdList["CLUDESACTIONBARS"] = function(message) CludesUI:ShowModule("CludesUIActionBars") end
 
     SLASH_EABQUICKKEYBIND1 = "/kb"
     SlashCmdList["EABQUICKKEYBIND"] = function(message)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         if not C_AddOns.IsAddOnLoaded("Blizzard_QuickKeybind") then
             C_AddOns.LoadAddOn("Blizzard_QuickKeybind")
         end
-        if QuickKeybindFrame then
-            QuickKeybindFrame:Show()
-        end
+        if QuickKeybindFrame then QuickKeybindFrame:Show() end
     end
 end
 
@@ -365,9 +339,7 @@ function ABAR:OnEnable()
         self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnFirstLogin")
         if IsLoggedIn() then
             C_Timer_After(0, function()
-                if self._needsCapture then
-                    self:OnFirstLogin()
-                end
+                if self._needsCapture then self:OnFirstLogin() end
             end)
         end
     else
@@ -394,15 +366,9 @@ function ABAR:OnFirstLogin()
     for barId, payload in pairs(captured) do
         local barCfg = self.db.profile.bars[barId]
         if barCfg and payload then
-            if payload.numIcons then
-                barCfg.overrideNumIcons = payload.numIcons
-            end
-            if payload.numRows then
-                barCfg.overrideNumRows = payload.numRows
-            end
-            if payload.orientation then
-                barCfg.orientation = payload.orientation
-            end
+            if payload.numIcons then barCfg.overrideNumIcons = payload.numIcons end
+            if payload.numRows then barCfg.overrideNumRows = payload.numRows end
+            if payload.orientation then barCfg.orientation = payload.orientation end
             if payload.blizzIconScale then
                 -- Convert Blizzard's icon scale to explicit button dimensions.
                 -- barBaseSize isn't populated yet (SetupBar runs later), so
@@ -419,9 +385,7 @@ function ABAR:OnFirstLogin()
                 barCfg.buttonWidth = math.floor(baseW * payload.blizzIconScale + 0.5)
                 barCfg.buttonHeight = math.floor(baseH * payload.blizzIconScale + 0.5)
             end
-            if payload.alwaysShowButtons ~= nil then
-                barCfg.alwaysShowButtons = payload.alwaysShowButtons
-            end
+            if payload.alwaysShowButtons ~= nil then barCfg.alwaysShowButtons = payload.alwaysShowButtons end
             -- Visibility: 3=Hidden, 1=InCombat, 2=OutOfCombat, 0=Always
             -- Keep barVisibility and boolean flags in sync so the
             -- options dropdown reflects the actual state.
@@ -466,20 +430,14 @@ function ABAR:OnFirstLogin()
     if CludesUI.IS_FOREVER and self.db.profile.useBlizzardDataBars then
         local mainC, secC = _G.MainStatusTrackingBarContainer, _G.SecondaryStatusTrackingBarContainer
         local function AtDefault(frame)
-            if not frame.IsInDefaultPosition then
-                return true
-            end
+            if not frame.IsInDefaultPosition then return true end
             local success, val = pcall(frame.IsInDefaultPosition, frame)
             return not success or val ~= false
         end
         if mainC and secC and AtDefault(mainC) and AtDefault(secC) then
             local lift = 0
-            if not secC:IsShown() then
-                lift = lift + (secC:GetHeight() or 0) - 1
-            end
-            if not mainC:IsShown() then
-                lift = lift + (mainC:GetHeight() or 0) + 4
-            end
+            if not secC:IsShown() then lift = lift + (secC:GetHeight() or 0) - 1 end
+            if not mainC:IsShown() then lift = lift + (mainC:GetHeight() or 0) + 4 end
             if lift > 0 then
                 local STACKED = {
                     MultiBarBottomLeft = true,
@@ -516,9 +474,7 @@ function ABAR:OnFirstLogin()
     -- barVisibility wins over the legacy booleans.
     for _, key in ipairs({ "StanceBar", "PetBar" }) do
         local barCfg = self.db.profile.bars[key]
-        if barCfg then
-            ABAR.VisibilityCompat.ApplyMode(barCfg, "always")
-        end
+        if barCfg then ABAR.VisibilityCompat.ApplyMode(barCfg, "always") end
     end
 
     -- Now proceed with normal setup

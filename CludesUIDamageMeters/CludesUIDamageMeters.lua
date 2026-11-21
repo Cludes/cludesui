@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIDamageMeters.lua
 --  Custom damage meter frame using C_DamageMeter API.
@@ -208,12 +206,8 @@ CludesUI.RegisterBorderDefaults("damagemeters_icon", CludesUI.BORDER_DEFAULTS_BA
 
 local _dmDB
 local function EnsureDB()
-    if _dmDB then
-        return _dmDB
-    end
-    if not CUI or not CUI.Lite then
-        return nil
-    end
+    if _dmDB then return _dmDB end
+    if not CUI or not CUI.Lite then return nil end
     _dmDB = CUI.Lite.NewDB("CludesUIDamageMetersDB", DM_DEFAULTS)
     _G._CUDM_DB = _dmDB
     -- Refresh Rate floor raised to 0.5s: each tick fetches a full session
@@ -229,9 +223,7 @@ local function EnsureDB()
             local dm = type(p) == "table" and p.dm
             if type(dm) == "table" and type(dm.refreshRate) == "number" then
                 local floor = dm.unsafeRefreshRate and REFRESH_RATE_HARD_FLOOR or REFRESH_RATE_FLOOR
-                if dm.refreshRate < floor then
-                    dm.refreshRate = floor
-                end
+                if dm.refreshRate < floor then dm.refreshRate = floor end
             end
         end
     end
@@ -241,15 +233,11 @@ end
 mod.EDM = {}
 mod.EDM.DB = function()
     local skinData = _G._CUDM_DB
-    if skinData and skinData.profile and skinData.profile.dm then
-        return skinData.profile.dm
-    end
+    if skinData and skinData.profile and skinData.profile.dm then return skinData.profile.dm end
     return {}
 end
 
-local function DB()
-    return mod.EDM.DB()
-end
+local function DB() return mod.EDM.DB() end
 -- The header's height: the Header Height setting, plus the Forever header
 -- band's rail under it (ns.DMFvRail; 0 on every other look).
 local function GetHeaderH()

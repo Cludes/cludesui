@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Advance.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor, min, max, abs = math.floor, math.min, math.max, math.abs
@@ -30,9 +26,7 @@ local FAN_CANCEL_REACH, GRID_REACH = Inner.FAN_CANCEL_REACH, Inner.GRID_REACH
 local NEST_DIM_ALPHA, NEST_DIM_SCALE = Inner.NEST_DIM_ALPHA, Inner.NEST_DIM_SCALE
 
 local scrollCatcher
-Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val)
-    scrollCatcher = val
-end
+Inner.scrollCatcherSetters[#Inner.scrollCatcherSetters + 1] = function(val) scrollCatcher = val end
 
 -- Lay the grid out and select the entry nearest the pointer. noPointer draws it
 -- evenly with nothing selected, which is what Layout and the editor want.
@@ -88,9 +82,7 @@ function PaletteView:AdvanceGrid(noPointer)
     -- without one springing open behind the other's back.
     local best, bestK
     local armed = self:ArmedClaim()
-    if dx then
-        best = self:NestHit(dx, dy, armed)
-    end
+    if dx then best = self:NestHit(dx, dy, armed) end
 
     -- Nearest of the palette's own, once the nests have declined. Past
     -- GRID_REACH cells from every one of them nothing is selected -- this
@@ -109,9 +101,7 @@ function PaletteView:AdvanceGrid(noPointer)
                 best, bestK = index, key
             end
         end
-        if bestK and bestK > GRID_REACH then
-            best = nil
-        end
+        if bestK and bestK > GRID_REACH then best = nil end
     end
 
     -- Which nest is open, settled before anything is drawn: a style that fades
@@ -194,9 +184,7 @@ end
 -- Centre the strip on a slot with no animation. The options preview uses this
 -- to follow the entry the user has clicked.
 function PaletteView:SetFanCenter(index)
-    if not index or self.shownCount < 1 then
-        return
-    end
+    if not index or self.shownCount < 1 then return end
     self.fanTarget = index
     self.fanVisual = index
     self:ApplyFanGeometry()
@@ -225,9 +213,7 @@ end
 -- Pointer offset from the point the palette was opened at, which is what the
 -- strip's cancel and its nests are both measured from.
 function PaletteView:StripOffset()
-    if not self._gateX then
-        return nil
-    end
+    if not self._gateX then return nil end
     local es = self.frame:GetEffectiveScale()
     local curX, curY = GetCursorPosition()
     return curX / es - self._gateX, curY / es - self._gateY
@@ -237,18 +223,14 @@ end
 function PaletteView:ClaimFor(index)
     local claims = self.claims
     for key = 1, (index and claims and #claims or 0) do
-        if claims[key].parent == index then
-            return claims[key]
-        end
+        if claims[key].parent == index then return claims[key] end
     end
 end
 
 -- Which entry the wheel has landed on, folded into range.
 function PaletteView:StripTarget()
     local isShown = self.shownCount
-    if not self.fanTarget or isShown < 1 then
-        return nil
-    end
+    if not self.fanTarget or isShown < 1 then return nil end
     return ((self.fanTarget - 1) % isShown) + 1
 end
 
@@ -260,17 +242,11 @@ end
 function PaletteView:FanSlotOffset(slot)
     local isShown = self.shownCount
     local target = self:StripTarget()
-    if not slot or not target or isShown < 1 then
-        return nil
-    end
+    if not slot or not target or isShown < 1 then return nil end
     local skinData = (slot - target) % isShown
-    if skinData * 2 > isShown then
-        skinData = skinData - isShown
-    end
+    if skinData * 2 > isShown then skinData = skinData - isShown end
     local profile = self:P()
-    if abs(skinData) > ((profile and profile.fanVisible) or 2) + 0.5 then
-        return nil
-    end
+    if abs(skinData) > ((profile and profile.fanVisible) or 2) + 0.5 then return nil end
     return skinData
 end
 
@@ -279,9 +255,7 @@ end
 -- view with no gate origin -- the options preview, which has no pointer gesture
 -- at all -- so only the live palette can be cancelled this way.
 function PaletteView:FanCancelProgress()
-    if not self._gateX then
-        return 0
-    end
+    if not self._gateX then return 0 end
     local profile = self:P()
     local _, iconSize = self:Geom()
     local along, across = self:StripOffset()
@@ -304,9 +278,7 @@ function PaletteView:FanCancelProgress()
 end
 
 -- Has the pointer been thrown clear of the strip?
-function PaletteView:FanCancelled()
-    return self:FanCancelProgress() > 1
-end
+function PaletteView:FanCancelled() return self:FanCancelProgress() > 1 end
 
 -- Advance the settle animation and publish the centred entry as the selection.
 -- The LOGICAL index moves the instant the tick arrives; only the geometry is
@@ -444,15 +416,11 @@ function PaletteView:AdvanceFan(elapsed)
     if not sel and mouseSel then
         local ak = self:ArmedClaim()
         local c = ak and self.claims and self.claims[ak]
-        if c and self:FanSlotOffset(c.parent) then
-            sel = c.parent
-        end
+        if c and self:FanSlotOffset(c.parent) then sel = c.parent end
     end
     -- The wheel's entry stands on its own only while the hover channel is
     -- OFF: exclusive hover means an empty pointer selects nothing at all.
-    if not sel and target and not mouseSel and not self:FanCancelled() then
-        sel = target
-    end
+    if not sel and target and not mouseSel and not self:FanCancelled() then sel = target end
     self:SetSelection(sel)
 
     -- Nested cells. Under the hover channel each claim's children hang off
@@ -505,9 +473,7 @@ function PaletteView:AdvanceFan(elapsed)
         -- a fanAnimTime key left in stored profiles is never read).
         current = current + (target - current) * min(1, (elapsed or 0) / 0.1)
         -- Snap the tail: an asymptote would keep this view dirty forever.
-        if abs(target - current) < 0.001 then
-            current = target
-        end
+        if abs(target - current) < 0.001 then current = target end
         self.fanVisual = current
         self:ApplyFanGeometry()
     end
@@ -519,13 +485,9 @@ end
 function PaletteView:ScreenOffset()
     local widget = self.frame
     local cx, cy = widget:GetCenter()
-    if not cx then
-        return 0, 0
-    end
+    if not cx then return 0, 0 end
     local ux, uy = UIParent:GetCenter()
-    if not ux then
-        return 0, 0
-    end
+    if not ux then return 0, 0 end
 
     local scale = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
     return cx * scale - ux, cy * scale - uy

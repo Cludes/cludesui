@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Conditional.lua
 --
@@ -14,9 +12,7 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table
 local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local BlacklistedFKey, CurrentSpecID, DBFor = Inner.BlacklistedFKey, Inner.CurrentSpecID, Inner.DBFor
@@ -36,21 +32,13 @@ local GetDmStore, LiteProfile = Inner.GetDmStore, Inner.LiteProfile
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val)
-    _editGroup = val
-end
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(val) _editGroup = val end
 local _defaultView = false
-Inner.defaultViewSetters[#Inner.defaultViewSetters + 1] = function(val)
-    _defaultView = val
-end
+Inner.defaultViewSetters[#Inner.defaultViewSetters + 1] = function(val) _defaultView = val end
 local _inTransition = false
-Inner.inTransitionSetters[#Inner.inTransitionSetters + 1] = function(val)
-    _inTransition = val
-end
+Inner.inTransitionSetters[#Inner.inTransitionSetters + 1] = function(val) _inTransition = val end
 local RequestGoldWalk
-Inner.goldWalkSetters[#Inner.goldWalkSetters + 1] = function(val)
-    RequestGoldWalk = val
-end
+Inner.goldWalkSetters[#Inner.goldWalkSetters + 1] = function(val) RequestGoldWalk = val end
 
 -------------------------------------------------------------------------------
 --  CONDITIONAL OVERRIDES integration (engine in CludesUI_Conditions.lua). Same
@@ -124,9 +112,7 @@ CondKit.ICONS = {
 }
 
 --- True while EITHER override editing session (spec or conditional) is live.
-function CludesUI.SpecOverrides_EditSessionActive()
-    return (_editGroup ~= nil) or (CondKit._edit ~= nil)
-end
+function CludesUI.SpecOverrides_EditSessionActive() return (_editGroup ~= nil) or (CondKit._edit ~= nil) end
 
 --- Overlay policy for the Raid Frames Buff Manager page, evaluated at page build.
 --- nil = no overlay (Default view / no session, or the edited group's fork is live
@@ -185,7 +171,8 @@ function CludesUI.SpecOverrides_BmOverlayState()
         -- PURE query: report a stale live pointer (fresh login ordering) via the second
         -- return; BmPagePrelude performs the heal/session engage. A session-applied
         -- fork IS the live layer even though the runtime pointer does not say so.
-        local liveNow = CludesUI._bmSessionGid and ("cond:" .. CludesUI._bmSessionGid) or (bmStore and bmStore.active)
+        local liveNow = CludesUI._bmSessionGid and ("cond:" .. CludesUI._bmSessionGid)
+            or (bmStore and bmStore.active)
         return nil, liveNow ~= liveKey
     end
     if not allowed then
@@ -250,16 +237,12 @@ function CludesUI.SpecOverrides_ManagerForkOwners(kindName)
     local specInfo, cond = {}, {}
     if bmStore and bmStore.layouts then
         for _, group in ipairs(GetGroups() or {}) do
-            if bmStore.layouts[group.id] ~= nil then
-                specInfo[#specInfo + 1] = group.id
-            end
+            if bmStore.layouts[group.id] ~= nil then specInfo[#specInfo + 1] = group.id end
         end
     end
     if condStore and condStore.layouts then
         for _, group in ipairs(CludesUI.Conditions_GetGroups() or {}) do
-            if condStore.layouts[group.id] ~= nil then
-                cond[#cond + 1] = group.id
-            end
+            if condStore.layouts[group.id] ~= nil then cond[#cond + 1] = group.id end
         end
     end
     return specInfo, cond
@@ -296,14 +279,10 @@ function CludesUI.SpecOverrides_BmPagePrelude()
         end
     end
     local status, needHeal = CludesUI.SpecOverrides_BmOverlayState()
-    if needHeal then
-        CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), true, true)
-    end
+    if needHeal then CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), true, true) end
     -- Re-evaluate passive chrome on EVERY BM page build: fork deletion,
     -- activation, and heals all rebuild this page without a SelectPage.
-    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then
-        CludesUI.SpecOverrides_UpdateBmPassiveChrome()
-    end
+    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then CludesUI.SpecOverrides_UpdateBmPassiveChrome() end
     return status
 end
 
@@ -322,9 +301,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
     end
     -- Source key -> fresh layer table; nil = "main" (seeded below as before).
     local function SeedLayerFor(src)
-        if not src or src == "main" then
-            return nil
-        end
+        if not src or src == "main" then return nil end
         if src == "default" or src == "empty" then
             local rf = LiteProfile("CludesUIRaidFrames")
             return {
@@ -364,9 +341,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
     end
     if kindName == "spec" then
         local bmStore = GetBmStore(true)
-        if not bmStore or bmStore.layouts[groupId] ~= nil then
-            return
-        end
+        if not bmStore or bmStore.layouts[groupId] ~= nil then return end
         local fromCond = type(bmStore.active) == "string"
         -- Live differs from the new layer when it was seeded from anything but
         -- the main copy of what is on screen -> paint on activation.
@@ -377,9 +352,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
             bmStore.layouts[groupId] = DeepCopy(bmStore.baselineLayout)
         else
             local snapshot = BmHarvestLayer()
-            if not snapshot then
-                return
-            end
+            if not snapshot then return end
             bmStore.layouts[groupId] = snapshot
         end
         if BmOwnerGid(current) == groupId then
@@ -397,15 +370,11 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
             -- conditional ceased to exist for this spec), or a preset/other-
             -- override seed: swap the screen to the new layer. RefreshPage
             -- below is the repaint.
-            if needPaint then
-                BmApplyLayer(bmStore.layouts[groupId], true)
-            end
+            if needPaint then BmApplyLayer(bmStore.layouts[groupId], true) end
         end
     else
         local condStore = GetCondBmStore(true)
-        if not condStore or condStore.layouts[groupId] ~= nil then
-            return
-        end
+        if not condStore or condStore.layouts[groupId] ~= nil then return end
         local bmStore = GetBmStore(true)
         -- Seed from the BASELINE when any layer is live (another conditional
         -- applied right now); live IS the baseline only when nothing is.
@@ -415,9 +384,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
                 snapshot = DeepCopy(bmStore.baselineLayout)
             else
                 snapshot = BmHarvestLayer()
-                if not snapshot then
-                    return
-                end
+                if not snapshot then return end
             end
         end
         condStore.layouts[groupId] = snapshot
@@ -425,12 +392,8 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
         if ag and ag.id == groupId then
             -- In-context creation: the fork is the runtime layer from here. A
             -- non-main seed differs from what is on screen -> paint it.
-            if bmStore then
-                bmStore.active = "cond:" .. groupId
-            end
-            if seeded then
-                BmApplyLayer(snapshot, true)
-            end
+            if bmStore then bmStore.active = "cond:" .. groupId end
+            if seeded then BmApplyLayer(snapshot, true) end
         else
             -- Out-of-context creation: session-scoped apply only. The runtime
             -- pointer must never point at a layer whose condition is not met.
@@ -487,7 +450,8 @@ function CludesUI.SpecOverrides_DmOverlayState()
         end
     end
     if forked and allowed then
-        local liveNow = CludesUI._dmSessionGid and ("cond:" .. CludesUI._dmSessionGid) or (bmStore and bmStore.active)
+        local liveNow = CludesUI._dmSessionGid and ("cond:" .. CludesUI._dmSessionGid)
+            or (bmStore and bmStore.active)
         return nil, liveNow ~= liveKey
     end
     if not allowed then
@@ -528,12 +492,8 @@ function CludesUI.SpecOverrides_DmPagePrelude()
         end
     end
     local status, needHeal = CludesUI.SpecOverrides_DmOverlayState()
-    if needHeal then
-        CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), true, true)
-    end
-    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then
-        CludesUI.SpecOverrides_UpdateBmPassiveChrome()
-    end
+    if needHeal then CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), true, true) end
+    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then CludesUI.SpecOverrides_UpdateBmPassiveChrome() end
     return status
 end
 
@@ -554,17 +514,13 @@ function CludesUI.SpecOverrides_ActivateDm(kindName, groupId)
     end
     if kindName == "spec" then
         local bmStore = GetDmStore(true)
-        if not bmStore or bmStore.layouts[groupId] ~= nil then
-            return
-        end
+        if not bmStore or bmStore.layouts[groupId] ~= nil then return end
         local fromCond = type(bmStore.active) == "string"
         if fromCond and bmStore.baselineLayout then
             bmStore.layouts[groupId] = DeepCopy(bmStore.baselineLayout)
         else
             local snapshot = DmHarvestLayer()
-            if not snapshot then
-                return
-            end
+            if not snapshot then return end
             bmStore.layouts[groupId] = snapshot
         end
         if DmOwnerGid(current) == groupId then
@@ -577,31 +533,23 @@ function CludesUI.SpecOverrides_ActivateDm(kindName, groupId)
                     CludesUI._SO_ForkReDrive(true, true)
                 end
             end
-            if fromCond then
-                DmApplyLayer(bmStore.layouts[groupId], true)
-            end
+            if fromCond then DmApplyLayer(bmStore.layouts[groupId], true) end
         end
     else
         local condStore = GetCondDmStore(true)
-        if not condStore or condStore.layouts[groupId] ~= nil then
-            return
-        end
+        if not condStore or condStore.layouts[groupId] ~= nil then return end
         local bmStore = GetDmStore(true)
         local snapshot
         if bmStore and bmStore.active and bmStore.baselineLayout then
             snapshot = DeepCopy(bmStore.baselineLayout)
         else
             snapshot = DmHarvestLayer()
-            if not snapshot then
-                return
-            end
+            if not snapshot then return end
         end
         condStore.layouts[groupId] = snapshot
         local ag = CludesUI.Conditions_ActiveGroup and CludesUI.Conditions_ActiveGroup()
         if ag and ag.id == groupId then
-            if bmStore then
-                bmStore.active = "cond:" .. groupId
-            end
+            if bmStore then bmStore.active = "cond:" .. groupId end
         else
             DmSessionEngage(groupId)
         end
@@ -620,35 +568,26 @@ do
     mod = mod.__cuiCoreNS or mod -- standalone builds: the core's own table (CludesUI.lua)
 
     function CludesUI.SpecOverrides_ModuleExcluded(moduleFolder)
-        return (type(moduleFolder) == "string" and EXCLUDED_CONTEXTS[moduleFolder] == true) or mod.IsPluginKey(moduleFolder)
+        return (type(moduleFolder) == "string" and EXCLUDED_CONTEXTS[moduleFolder] == true)
+            or mod.IsPluginKey(moduleFolder)
     end
 
     --- True when a module page is excluded (page-scoped entry, or the whole
     --- module). Drives the page-tab lock while a session is active.
     function CludesUI.SpecOverrides_PageExcluded(module, page)
-        if mod.IsPluginKey(module) then
-            return true
-        end
+        if mod.IsPluginKey(module) then return true end
         local ex = module and EXCLUDED_CONTEXTS[module]
-        if ex == true then
-            return true
-        end
-        if type(ex) == "table" and page then
-            return ex[page] == true
-        end
+        if ex == true then return true end
+        if type(ex) == "table" and page then return ex[page] == true end
         return false
     end
 end
 
 function CondKit.GetStore(create)
     local profileTbl = GetProfileRoot()
-    if not profileTbl then
-        return nil
-    end
+    if not profileTbl then return nil end
     if not profileTbl.condOverrides then
-        if not create then
-            return nil
-        end
+        if not create then return nil end
         profileTbl.condOverrides = {}
     end
     return profileTbl.condOverrides
@@ -656,14 +595,10 @@ end
 
 function CondKit.GetUnlockStore(create)
     local profileTbl = GetProfileRoot()
-    if not profileTbl then
-        return nil
-    end
+    if not profileTbl then return nil end
     local bmStore = profileTbl.condUnlockOverrides
     if not bmStore then
-        if not create then
-            return nil
-        end
+        if not create then return nil end
         bmStore = {}
         profileTbl.condUnlockOverrides = bmStore
     end
@@ -685,9 +620,7 @@ function CondKit.RebuildIndex()
     end
 end
 function CondKit.EntryOwning(fieldKey)
-    if not CondKit._fkeyIndex then
-        CondKit.RebuildIndex()
-    end
+    if not CondKit._fkeyIndex then CondKit.RebuildIndex() end
     return CondKit._fkeyIndex[fieldKey]
 end
 
@@ -699,9 +632,7 @@ end
 --- spec overrides always win at apply time.
 function CondKit.WriteValues(groupId, forSession)
     local storage = CondKit.GetStore()
-    if not storage or #storage == 0 then
-        return nil
-    end
+    if not storage or #storage == 0 then return nil end
     PxCo.Pair(storage, true)
     local touched = nil
     for _, record in ipairs(storage) do
@@ -713,12 +644,8 @@ function CondKit.WriteValues(groupId, forSession)
                 and (forSession or not EntryOwning(fieldKey))
             then
                 local val = groupDef
-                if map and map[fieldKey] ~= nil then
-                    val = map[fieldKey]
-                end
-                if val == NIL_SENT then
-                    val = nil
-                end
+                if map and map[fieldKey] ~= nil then val = map[fieldKey] end
+                if val == NIL_SENT then val = nil end
                 -- Same defaults-backed nil-poison skip as WriteSpecValues.
                 local nilPoison = (val == nil) and HasRegisteredDefault(fieldKey)
                 local current = ReadLive(fieldKey)
@@ -754,9 +681,7 @@ end
 --- touched: folder-set accumulator; the caller refreshes once.
 function CondKit.RestoreEntryDefaults(record, touched)
     local groupDef = record.values and record.values.default
-    if not groupDef then
-        return
-    end
+    if not groupDef then return end
     for fieldKey, dv in pairs(groupDef) do
         if
             not BlacklistedFKey(fieldKey)
@@ -765,17 +690,13 @@ function CondKit.RestoreEntryDefaults(record, touched)
             and FKeyLoaded(fieldKey)
         then
             local val = dv
-            if val == NIL_SENT then
-                val = nil
-            end
+            if val == NIL_SENT then val = nil end
             local nilPoison = (val == nil) and HasRegisteredDefault(fieldKey)
             local current = ReadLive(fieldKey)
             if not nilPoison and type(val) ~= "table" and type(current) ~= "table" and current ~= val then
                 if WriteLive(fieldKey, val) then
                     local moduleFolder = SplitFKey(fieldKey)
-                    if moduleFolder then
-                        touched[moduleFolder] = true
-                    end
+                    if moduleFolder then touched[moduleFolder] = true end
                 end
             end
         end
@@ -789,9 +710,7 @@ end
 --- intentional override values.
 function CondKit.PruneRedundant()
     local storage = CondKit.GetStore()
-    if not storage then
-        return
-    end
+    if not storage then return end
     local changed = false
     for idx = #storage, 1, -1 do
         local record = storage[idx]
@@ -808,9 +727,7 @@ function CondKit.PruneRedundant()
                 if not held then
                     -- An exact-size companion stays while its size key does (PxCo).
                     local base = fieldKey:sub(-2) == "Px" and fieldKey:sub(1, -3) or nil
-                    if base and groupDef[base] ~= nil and PxCo.Partner(base) == fieldKey then
-                        held = true
-                    end
+                    if base and groupDef[base] ~= nil and PxCo.Partner(base) == fieldKey then held = true end
                 end
                 if not held then
                     groupDef[fieldKey] = nil
@@ -837,9 +754,7 @@ end
 --- themselves always track live verbatim.
 function CondKit.Harvest(groupId)
     local storage = CondKit.GetStore()
-    if not storage or #storage == 0 then
-        return
-    end
+    if not storage or #storage == 0 then return end
     -- Defaults may only rebank over CANONICAL live data: while any editing session or
     -- the Default view holds swapped values, banking poisons the recorded defaults.
     -- (HarvestCurrent orders its call after the canonical restore; this is the belt
@@ -863,9 +778,7 @@ function CondKit.Harvest(groupId)
                     local liveValue = ReadLive(fieldKey)
                     if type(liveValue) ~= "table" then
                         local defVal = dv
-                        if defVal == NIL_SENT then
-                            defVal = nil
-                        end
+                        if defVal == NIL_SENT then defVal = nil end
                         if liveValue == defVal then
                             -- Equality is NOT proof of a revert outside an edit session
                             -- (the default may have been edited onto the group's
@@ -881,9 +794,7 @@ function CondKit.Harvest(groupId)
                     end
                 end
             end
-            if map and not next(map) then
-                record.values[groupId] = nil
-            end
+            if map and not next(map) then record.values[groupId] = nil end
         elseif not sessionLive then
             local map = record.values.default
             for fieldKey in pairs(map) do
@@ -953,9 +864,7 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     local function maxNumericId(groups)
         local m = 0
         for _, group in ipairs(groups or {}) do
-            if type(group.id) == "number" and group.id > m then
-                m = group.id
-            end
+            if type(group.id) == "number" and group.id > m then m = group.id end
         end
         return m
     end
@@ -964,41 +873,27 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     -- group onto the recipient's original instead of appending a re-numbered twin
     -- (else the original survives as a dead card while the twin holds the values).
     local function sameSpecGroup(a, b)
-        if (a.name or "") ~= (b.name or "") then
-            return false
-        end
+        if (a.name or "") ~= (b.name or "") then return false end
         local as, bs = a.specs or {}, b.specs or {}
-        if #as ~= #bs then
-            return false
-        end
+        if #as ~= #bs then return false end
         local set = {}
         for _, ident in ipairs(as) do
             set[ident] = true
         end
         for _, ident in ipairs(bs) do
-            if not set[ident] then
-                return false
-            end
+            if not set[ident] then return false end
         end
         return true
     end
     local function sameCondGroup(a, b)
-        if (a.name or "") ~= (b.name or "") then
-            return false
-        end
-        if (a.key or "") ~= (b.key or "") then
-            return false
-        end
+        if (a.name or "") ~= (b.name or "") then return false end
+        if (a.key or "") ~= (b.key or "") then return false end
         local ac, bc = a.conds or {}, b.conds or {}
         for key in pairs(ac) do
-            if not bc[key] then
-                return false
-            end
+            if not bc[key] then return false end
         end
         for key in pairs(bc) do
-            if not ac[key] then
-                return false
-            end
+            if not ac[key] then return false end
         end
         return true
     end
@@ -1009,21 +904,15 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     -- only genuinely new groups append, re-numbered on id collision.
     local function unionGroups(existing, incomingGroups, same)
         local keyMap = {}
-        if type(incomingGroups) ~= "table" then
-            return existing, keyMap
-        end
+        if type(incomingGroups) ~= "table" then return existing, keyMap end
         local result, used = {}, {}
         for _, group in ipairs(existing or {}) do
             result[#result + 1] = group
-            if type(group.id) == "number" then
-                used[group.id] = true
-            end
+            if type(group.id) == "number" then used[group.id] = true end
         end
         local nextId = maxNumericId(existing)
         local incMax = maxNumericId(incomingGroups)
-        if incMax > nextId then
-            nextId = incMax
-        end
+        if incMax > nextId then nextId = incMax end
         -- Each existing group may be matched by ONE incoming group per union: users can
         -- hold two groups with identical name+specs/conds, and both twins matching the
         -- same target would collide their remapped gid references (pairs-order data
@@ -1042,14 +931,10 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
             end
             if match then
                 claimed[match] = true
-                if group.id ~= match.id then
-                    keyMap[group.id] = match.id
-                end
+                if group.id ~= match.id then keyMap[group.id] = match.id end
                 -- Type guard: a corrupt/hand-edited string with a non-table
                 -- icon must not abort the whole import inside DeepCopy.
-                if type(group.icon) == "table" then
-                    match.icon = DeepCopy(group.icon)
-                end
+                if type(group.icon) == "table" then match.icon = DeepCopy(group.icon) end
             else
                 local ng = DeepCopy(group)
                 if type(ng.id) == "number" and used[ng.id] then
@@ -1057,9 +942,7 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
                     keyMap[group.id] = nextId
                     ng.id = nextId
                 end
-                if type(ng.id) == "number" then
-                    used[ng.id] = true
-                end
+                if type(ng.id) == "number" then used[ng.id] = true end
                 result[#result + 1] = ng
             end
         end
@@ -1094,15 +977,11 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
                     if isImported ~= keepImported then
                         groupDef[fieldKey] = nil
                         for key, m in pairs(ne.values) do
-                            if key ~= "default" and type(m) == "table" then
-                                m[fieldKey] = nil
-                            end
+                            if key ~= "default" and type(m) == "table" then m[fieldKey] = nil end
                         end
                     end
                 end
-                if next(groupDef) ~= nil then
-                    result[#result + 1] = ne
-                end
+                if next(groupDef) ~= nil then result[#result + 1] = ne end
             end
         end
         return result
@@ -1110,9 +989,7 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
 
     -- Re-keys a cond entry's per-gid value maps after the group union.
     local function remapEntryValues(record, keyMap)
-        if not next(keyMap) or type(record.values) ~= "table" then
-            return
-        end
+        if not next(keyMap) or type(record.values) ~= "table" then return end
         local nv = {}
         for key, m in pairs(record.values) do
             if key ~= "default" and keyMap[key] then
@@ -1125,9 +1002,7 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     end
 
     local function remapKeys(map, keyMap)
-        if type(map) ~= "table" or not next(keyMap) then
-            return map
-        end
+        if type(map) ~= "table" or not next(keyMap) then return map end
         local result = {}
         for key, val in pairs(map) do
             result[keyMap[key] or key] = val
@@ -1136,14 +1011,10 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     end
 
     local function remapActive(isActive, sRemap, cRemap)
-        if type(isActive) == "number" then
-            return sRemap[isActive] or isActive
-        end
+        if type(isActive) == "number" then return sRemap[isActive] or isActive end
         if type(isActive) == "string" then
             local cg = tonumber(isActive:match("^cond:(%d+)$"))
-            if cg and cRemap[cg] then
-                return "cond:" .. cRemap[cg]
-            end
+            if cg and cRemap[cg] then return "cond:" .. cRemap[cg] end
         end
         return isActive
     end
@@ -1169,28 +1040,20 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     local takeUnlockForks = not partial and pulled.layoutExcluded ~= true
     local specNeeded, needsCond = {}, {}
     for _, record in ipairs(incSpec) do
-        if record.group ~= nil then
-            specNeeded[record.group] = true
-        end
+        if record.group ~= nil then specNeeded[record.group] = true end
     end
     for _, record in ipairs(incCond) do
-        if record.group ~= nil then
-            needsCond[record.group] = true
-        end
+        if record.group ~= nil then needsCond[record.group] = true end
         if type(record.values) == "table" then
             for key in pairs(record.values) do
-                if key ~= "default" then
-                    needsCond[key] = true
-                end
+                if key ~= "default" then needsCond[key] = true end
             end
         end
     end
     -- Forks reference groups via layout keys and active pointers (a spec
     -- store's active can point at a COND group via "cond:N").
     local function noteForkGids(storage, needed, condNeededToo)
-        if type(storage) ~= "table" then
-            return
-        end
+        if type(storage) ~= "table" then return end
         for groupId in pairs(storage.layouts or {}) do
             needed[groupId] = true
         end
@@ -1198,14 +1061,10 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
             needed[groupId] = true
         end -- legacy shape
         local a = storage.active
-        if type(a) == "number" then
-            needed[a] = true
-        end
+        if type(a) == "number" then needed[a] = true end
         if condNeededToo and type(a) == "string" then
             local cg = tonumber(a:match("^cond:(%d+)$"))
-            if cg then
-                condNeededToo[cg] = true
-            end
+            if cg then condNeededToo[cg] = true end
         end
     end
     if takeUnlockForks then
@@ -1222,9 +1081,7 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     local function filterGroups(groups, needed)
         local result = {}
         for _, group in ipairs(groups or {}) do
-            if group.id ~= nil and needed[group.id] then
-                result[#result + 1] = group
-            end
+            if group.id ~= nil and needed[group.id] then result[#result + 1] = group end
         end
         return result
     end
@@ -1253,15 +1110,11 @@ function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
     -- Apply the remaps to the surviving incoming entries, then concatenate
     -- with the recipient's kept entries.
     for _, record in ipairs(incSpec) do
-        if record.group and specMap[record.group] then
-            record.group = specMap[record.group]
-        end
+        if record.group and specMap[record.group] then record.group = specMap[record.group] end
         keptSpec[#keptSpec + 1] = record
     end
     for _, record in ipairs(incCond) do
-        if record.group and condMap[record.group] then
-            record.group = condMap[record.group]
-        end
+        if record.group and condMap[record.group] then record.group = condMap[record.group] end
         remapEntryValues(record, condMap)
         keptCond[#keptCond + 1] = record
     end
@@ -1352,9 +1205,7 @@ end
 function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
     -- Never re-bank while an editing view holds swapped values live (the import
     -- flow closes sessions first; this guards any other caller).
-    if _editGroup or _defaultView or CondKit._edit then
-        return
-    end
+    if _editGroup or _defaultView or CondKit._edit then return end
     local function Rebank(storage)
         for _, record in ipairs(storage or {}) do
             local groupDef = record.values and record.values.default
@@ -1364,7 +1215,11 @@ function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
                     -- Folder filter + loaded-module guard: an unloaded child
                     -- addon has no Lite DB, so ReadLive returns nil for EVERY
                     -- fkey and nil-poisons the whole default map.
-                    if moduleFolder and (not folderSet or folderSet[moduleFolder]) and DBFor(moduleFolder) then
+                    if
+                        moduleFolder
+                        and (not folderSet or folderSet[moduleFolder])
+                        and DBFor(moduleFolder)
+                    then
                         local liveValue = ReadLive(fieldKey)
                         -- Table values are never banked (aliasing/reference-
                         -- compare policy); keep the stored default.
@@ -1386,9 +1241,7 @@ end
 --- excluded-context entries, and maps for deleted groups; drop empty entries.
 function CondKit.PruneEntries()
     local storage = CondKit.GetStore()
-    if not storage then
-        return
-    end
+    if not storage then return end
     local removed = false
     for idx = #storage, 1, -1 do
         local record = storage[idx]
@@ -1421,25 +1274,19 @@ function CondKit.PruneEntries()
             for fieldKey in pairs(record.values.default) do
                 if BlacklistedFKey(fieldKey) then
                     for _, m in pairs(record.values) do
-                        if type(m) == "table" then
-                            m[fieldKey] = nil
-                        end
+                        if type(m) == "table" then m[fieldKey] = nil end
                     end
                     removed = true
                 end
             end
-            if not next(record.values.default) then
-                dropKey = true
-            end
+            if not next(record.values.default) then dropKey = true end
         end
         if dropKey then
             table.remove(storage, idx)
             removed = true
         end
     end
-    if removed then
-        CondKit.RebuildIndex()
-    end
+    if removed then CondKit.RebuildIndex() end
 end
 
 local _condBusy = false -- re-entrancy latch (see SpecOverrides_CondTransition)
@@ -1449,9 +1296,7 @@ local function CondTransitionBody(oldGid, newGid, setUp)
     -- (post profile-apply) has no outgoing owner: live is the incoming store's raw data
     -- (possibly the EXPORTER's overlaid state), so banking it corrupts the new
     -- profile's default maps and baseline layer. Apply only; never harvest.
-    if not setUp then
-        CondKit.Harvest(oldGid)
-    end
+    if not setUp then CondKit.Harvest(oldGid) end
     -- Unlock/BM layout: bank live into whichever layer is live now, BEFORE the
     -- incoming conditional's values are written -- value writes mutate module
     -- settings (sizes) that a later harvest would bank into the OUTGOING layer's
@@ -1460,12 +1305,8 @@ local function CondTransitionBody(oldGid, newGid, setUp)
     if not setUp and CludesUI.SpecOverrides_HarvestUnlockLayout then
         CludesUI.SpecOverrides_HarvestUnlockLayout()
     end
-    if not setUp and CludesUI.SpecOverrides_HarvestBmLayout then
-        CludesUI.SpecOverrides_HarvestBmLayout()
-    end
-    if not setUp and CludesUI.SpecOverrides_HarvestDmLayout then
-        CludesUI.SpecOverrides_HarvestDmLayout()
-    end
+    if not setUp and CludesUI.SpecOverrides_HarvestBmLayout then CludesUI.SpecOverrides_HarvestBmLayout() end
+    if not setUp and CludesUI.SpecOverrides_HarvestDmLayout then CludesUI.SpecOverrides_HarvestDmLayout() end
     local touched = CondKit.WriteValues(newGid)
     if CludesUI.SpecOverrides_ApplyUnlock then
         CondKit._resolveOverride = newGid or false -- false = explicit none
@@ -1477,9 +1318,7 @@ local function CondTransitionBody(oldGid, newGid, setUp)
         CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), setUp)
         CondKit._resolveOverride = nil
     end
-    if touched then
-        RunRefreshers(touched)
-    end
+    if touched then RunRefreshers(touched) end
     -- Condition applied/removed with the panel open: the labeled "Override
     -- Active" slot overlays must follow immediately.
     RequestGoldWalk()
@@ -1497,18 +1336,14 @@ end
 -- would strand the flip whenever the panel is open -- for the Dark Mode condition
 -- that is ALWAYS (its only inputs are options widgets).
 function CludesUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
-    if _inTransition or _editGroup or CondKit._edit then
-        return false
-    end
+    if _inTransition or _editGroup or CondKit._edit then return false end
     -- NON-RE-ENTRANT: the refresh fan-out in CondTransitionBody can reach RefreshAllAddons
     -- (unmapped-folder fallback, module internals), whose tail calls
     -- Conditions_MarkStale + Recheck; re-entering mid-flight rewrites values
     -- against a stale applied pointer and recurses until the client watchdog kills
     -- the frame. Refuse; the engine flags the flip pending and the next signal (or
     -- the establish flag) converges it.
-    if _condBusy then
-        return false
-    end
+    if _condBusy then return false end
     _condBusy = true
     -- An error must not leave the latch set (every later flip refused until a
     -- reload): report it, release, and leave the flip pending for a retry. Live
@@ -1517,9 +1352,7 @@ function CludesUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
     local success = xpcall(CondTransitionBody, geterrorhandler(), oldGid, newGid, setUp)
     CondKit._resolveOverride = nil
     _condBusy = false
-    if not success and CludesUI.Conditions_MarkStale then
-        CludesUI.Conditions_MarkStale()
-    end
+    if not success and CludesUI.Conditions_MarkStale then CludesUI.Conditions_MarkStale() end
     return success, not success
 end
 
@@ -1528,9 +1361,7 @@ end
 --- passes the target explicitly via _resolveOverride.
 function CondKit.ResolveGid()
     local shade = CondKit._resolveOverride
-    if shade ~= nil then
-        return shade or nil
-    end
+    if shade ~= nil then return shade or nil end
     return CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
 end
 

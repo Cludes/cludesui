@@ -1,9 +1,5 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if not (CludesUI and CludesUI.IS_FOREVER) then
-    return
-end
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if not (CludesUI and CludesUI.IS_FOREVER) then return end
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_Professions.lua  (WoW Forever only)
 --  Professions (/cprof): a page for each of your professions with
@@ -33,15 +29,9 @@ local GATHERING = { [182] = "Herbalism Trainer", [393] = "Skinning Trainer" }
 local MINING = 186
 local ACCENT, MUTED, GOLD = CludesUI.Kit.SyncAccent({}), { 0.6, 0.65, 0.7 }, { 1, 0.82, 0 }
 local ORANGE, YELLOW, GREEN, GREY = { 1, 0.5, 0.25 }, { 1, 1, 0 }, { 0.25, 0.75, 0.25 }, { 0.5, 0.5, 0.5 }
-local function Muted(textValue)
-    return "|cff9aa6b2" .. textValue .. "|r"
-end
-local function Print(message)
-    CludesUI.Print("|cff4cc9f0Professions:|r " .. message)
-end
-local function Font()
-    return CludesUI.GetFontPath("essentials")
-end
+local function Muted(textValue) return "|cff9aa6b2" .. textValue .. "|r" end
+local function Print(message) CludesUI.Print("|cff4cc9f0Professions:|r " .. message) end
+local function Font() return CludesUI.GetFontPath("essentials") end
 
 local RD
 local function RecipeData()
@@ -52,33 +42,21 @@ local function RecipeData()
     return RD
 end
 
-local function Faction()
-    return UnitFactionGroup("player") == "Horde" and "H" or "A"
-end
-local function ForMe(fac)
-    return fac == "-" or (fac or ""):find(Faction(), 1, true) ~= nil
-end
+local function Faction() return UnitFactionGroup("player") == "Horde" and "H" or "A" end
+local function ForMe(fac) return fac == "-" or (fac or ""):find(Faction(), 1, true) ~= nil end
 local function Money(copper)
-    if not copper or copper <= 0 then
-        return "free"
-    end
+    if not copper or copper <= 0 then return "free" end
     return C_CurrencyInfo.GetCoinTextureString(copper, 12)
 end
 local function ZoneName(map)
     local details = map and map > 0 and C_Map.GetMapInfo(map)
     return details and details.name or "?"
 end
-local function AreaName(ident)
-    return ident and C_Map.GetAreaInfo(ident) or "?"
-end
+local function AreaName(ident) return ident and C_Map.GetAreaInfo(ident) or "?" end
 local function ItemName(ident, fallback)
     local name = ident and C_Item.GetItemNameByID(ident)
-    if name then
-        return name
-    end
-    if ident then
-        C_Item.RequestLoadItemDataByID(ident)
-    end
+    if name then return name end
+    if ident then C_Item.RequestLoadItemDataByID(ident) end
     return fallback or "its recipe"
 end
 
@@ -94,39 +72,25 @@ end
 --  What you know: read from the profession window, kept per character
 -------------------------------------------------------------------------------
 local function Learned(spell)
-    if CharStore("known")[spell] then
-        return true
-    end
+    if CharStore("known")[spell] then return true end
     return C_SpellBook.IsSpellKnown(spell)
 end
 
 local function ReadTradeSkill()
-    if not (C_TradeSkillUI and C_TradeSkillUI.GetAllRecipeIDs) then
-        return
-    end
-    if C_TradeSkillUI.IsTradeSkillLinked and C_TradeSkillUI.IsTradeSkillLinked() then
-        return
-    end
-    if C_TradeSkillUI.IsTradeSkillGuild and C_TradeSkillUI.IsTradeSkillGuild() then
-        return
-    end
-    if C_TradeSkillUI.IsNPCCrafting and C_TradeSkillUI.IsNPCCrafting() then
-        return
-    end
+    if not (C_TradeSkillUI and C_TradeSkillUI.GetAllRecipeIDs) then return end
+    if C_TradeSkillUI.IsTradeSkillLinked and C_TradeSkillUI.IsTradeSkillLinked() then return end
+    if C_TradeSkillUI.IsTradeSkillGuild and C_TradeSkillUI.IsTradeSkillGuild() then return end
+    if C_TradeSkillUI.IsNPCCrafting and C_TradeSkillUI.IsNPCCrafting() then return end
     local known = CharStore("known")
     for _, ident in ipairs(C_TradeSkillUI.GetAllRecipeIDs() or {}) do
         local details = C_TradeSkillUI.GetRecipeInfo(ident)
-        if details and details.learned then
-            known[ident] = true
-        end
+        if details and details.learned then known[ident] = true end
     end
 end
 
 -- A trainer's own skill and cost for a recipe beat the data's (Forever moved some).
 local function ScanTrainer()
-    if not (IsTradeskillTrainer and IsTradeskillTrainer()) then
-        return
-    end
+    if not (IsTradeskillTrainer and IsTradeskillTrainer()) then return end
     local byName, lineOf = {}, {}
     for line, payload in pairs(RecipeData()) do
         lineOf[C_Spell.GetSpellName(payload.skillSpell) or ""] = line
@@ -168,9 +132,7 @@ end
 -------------------------------------------------------------------------------
 local function WorldPos(map, posX, posY)
     local success, cont, place = pcall(C_Map.GetWorldPosFromMapPos, map, CreateVector2D(posX, posY))
-    if success and cont and place then
-        return cont, place
-    end
+    if success and cont and place then return cont, place end
 end
 
 local function Nearest(npcs, num)
@@ -196,9 +158,7 @@ local function Nearest(npcs, num)
         end
     end
     table.sort(result, function(lhs, rhs)
-        if lhs.dist ~= rhs.dist then
-            return lhs.dist < rhs.dist
-        end
+        if lhs.dist ~= rhs.dist then return lhs.dist < rhs.dist end
         return lhs.npc[NPC_NAME] < rhs.npc[NPC_NAME]
     end)
     local picked = {}
@@ -227,9 +187,7 @@ local function NpcText(npc, extra)
 end
 
 local function Rows(indices, payload)
-    if not indices or type(indices[1]) ~= "number" then
-        return indices or {}
-    end
+    if not indices or type(indices[1]) ~= "number" then return indices or {} end
     local rowList = {}
     for idx, index in ipairs(indices) do
         rowList[idx] = payload.trainers[index]
@@ -243,13 +201,9 @@ end
 local gathered = {}
 local function ProfData(line)
     local all = RecipeData()
-    if all[line] then
-        return all[line]
-    end
+    if all[line] then return all[line] end
     local title, mining = GATHERING[line], all[MINING]
-    if not (title and mining and module.TownNPCList) then
-        return
-    end
+    if not (title and mining and module.TownNPCList) then return end
     if not gathered[line] then
         local trainers = {}
         for map, npcs in pairs(module.TownNPCList()) do
@@ -270,19 +224,13 @@ end
 
 local function NextRank(payload, max)
     for _, rank in ipairs(payload.ranks or {}) do
-        if rank.cap > max then
-            return rank
-        end
+        if rank.cap > max then return rank end
     end
 end
 
 local function RankName(rank, prof)
-    if rank.name then
-        return rank.name
-    end
-    if RANK_TITLE[rank.cap] then
-        return RANK_TITLE[rank.cap] .. " " .. prof
-    end
+    if rank.name then return rank.name end
+    if RANK_TITLE[rank.cap] then return RANK_TITLE[rank.cap] .. " " .. prof end
     return ("the next rank of %s (cap %d)"):format(prof, rank.cap)
 end
 
@@ -304,12 +252,8 @@ end
 local function RankReady(line, skill, max, prof)
     local payload = ProfData(line)
     local rank = payload and (max or 0) > 0 and NextRank(payload, max)
-    if not rank or (skill or 0) < rank.skill then
-        return
-    end
-    if UnitLevel("player") < (rank.level or RANK_LEVEL[rank.cap] or 0) then
-        return
-    end
+    if not rank or (skill or 0) < rank.skill then return end
+    if UnitLevel("player") < (rank.level or RANK_LEVEL[rank.cap] or 0) then return end
     local npc, how = RankWhere(payload, rank)
     return { rankName = RankName(rank, prof or ""), how = how, npc = npc, cap = rank.cap }
 end
@@ -325,9 +269,7 @@ local function Professions()
             end
         end
     end
-    table.sort(entries, function(lhs, rhs)
-        return lhs.name < rhs.name
-    end)
+    table.sort(entries, function(lhs, rhs) return lhs.name < rhs.name end)
     return entries
 end
 
@@ -401,13 +343,12 @@ local function Describe(region, payload, tipText)
         local sellers = Nearest(region.vendors)
         local unplaced = {}
         for _, s in ipairs(region.sellers or {}) do
-            if ForMe(s[2]) then
-                unplaced[#unplaced + 1] = s
-            end
+            if ForMe(s[2]) then unplaced[#unplaced + 1] = s end
         end
         if #sellers == 0 and #unplaced == 0 then
             Line(
-                ItemName(region.recipe, "Recipe") .. ": only the other faction sells it; try the Auction House.",
+                ItemName(region.recipe, "Recipe")
+                    .. ": only the other faction sells it; try the Auction House.",
                 { 1, 1, 1 }
             )
         else
@@ -443,15 +384,9 @@ local function Describe(region, payload, tipText)
         )
     elseif region.source == "drop" then
         local extra = {}
-        if region.chests then
-            extra[#extra + 1] = "chests and lockboxes"
-        end
-        if region.fished then
-            extra[#extra + 1] = "fishing"
-        end
-        if region.pickpocket then
-            extra[#extra + 1] = "pickpocketing"
-        end
+        if region.chests then extra[#extra + 1] = "chests and lockboxes" end
+        if region.fished then extra[#extra + 1] = "fishing" end
+        if region.pickpocket then extra[#extra + 1] = "pickpocketing" end
         local kinds = #extra > 0 and table.concat(extra, ", ") or nil
         local from = (region.mobs or 0) > 0
                 and (("a world drop from %d kinds of mob"):format(region.mobs) .. (kinds and (", " .. kinds) or ""))
@@ -465,15 +400,14 @@ local function Describe(region, payload, tipText)
             { 1, 1, 1 }
         )
         for _, skinData in ipairs(region.drops or {}) do
-            local level = skinData[3] == skinData[4] and tostring(skinData[3]) or (skinData[3] .. "-" .. skinData[4])
+            local level = skinData[3] == skinData[4] and tostring(skinData[3])
+                or (skinData[3] .. "-" .. skinData[4])
             Line(("%s (%s) - %s, %.1f%%"):format(skinData[1], level, AreaName(skinData[2]), skinData[5]))
         end
     elseif region.source == "quest" then
         local mine = {}
         for _, q in ipairs(region.quests or {}) do
-            if ForMe(q.side or "AH") then
-                mine[#mine + 1] = q
-            end
+            if ForMe(q.side or "AH") then mine[#mine + 1] = q end
         end
         if #mine == 0 then
             Line(
@@ -529,15 +463,9 @@ local currentLine
 local function Colour(region, skill)
     local yellow, grey = region.yellow or region.skill, region.grey or (region.skill + 40)
     local green = math.floor((yellow + grey) / 2)
-    if skill < yellow then
-        return ORANGE, "orange"
-    end
-    if skill < green then
-        return YELLOW, "yellow"
-    end
-    if skill < grey then
-        return GREEN, "green"
-    end
+    if skill < yellow then return ORANGE, "orange" end
+    if skill < green then return YELLOW, "yellow" end
+    if skill < grey then return GREEN, "green" end
     return GREY, "grey"
 end
 
@@ -546,13 +474,13 @@ local function RecipeName(region)
 end
 
 local function RecipeIcon(region)
-    return (region.item and C_Item.GetItemIconByID(region.item)) or C_Spell.GetSpellTexture(region.spell) or 134400
+    return (region.item and C_Item.GetItemIconByID(region.item))
+        or C_Spell.GetSpellTexture(region.spell)
+        or 134400
 end
 
 local function Draw()
-    if not (window and window:IsShown()) then
-        return
-    end
+    if not (window and window:IsShown()) then return end
     CludesUI.Kit.SyncAccent(ACCENT)
     rowList:Reset()
     local profs = Professions()
@@ -580,9 +508,7 @@ local function Draw()
     end
     local prof
     for _, p in ipairs(profs) do
-        if p.line == currentLine then
-            prof = p
-        end
+        if p.line == currentLine then prof = p end
     end
     prof = prof or profs[1]
     for idx, p in ipairs(profs) do
@@ -623,9 +549,7 @@ local function Draw()
         })
         rowList:Line(how .. (npc and (Muted("\n" .. NpcText(npc))) or ""), {
             indent = 14,
-            onClick = npc and function()
-                LinkNpc(npc)
-            end,
+            onClick = npc and function() LinkNpc(npc) end,
             tip = npc and function(tipText)
                 tipText:SetText(npc[NPC_NAME], 1, 1, 1)
                 tipText:AddLine("Click to link its map pin in chat.", unpack(MUTED))
@@ -639,9 +563,7 @@ local function Draw()
             ups[#ups + 1] = region
         end
     end
-    table.sort(ups, function(lhs, rhs)
-        return (lhs.grey or 0) < (rhs.grey or 0)
-    end)
+    table.sort(ups, function(lhs, rhs) return (lhs.grey or 0) < (rhs.grey or 0) end)
     if #ups > 0 then
         rowList:Gap(6)
         rowList:Line("Skill-ups", { size = 13, colour = GOLD })
@@ -685,9 +607,7 @@ local function Draw()
         end
     end
     local function BySkill(a, b)
-        if Skill(a) ~= Skill(b) then
-            return Skill(a) < Skill(b)
-        end
+        if Skill(a) ~= Skill(b) then return Skill(a) < Skill(b) end
         return a.spell < b.spell
     end
     table.sort(nowTime, BySkill)
@@ -695,7 +615,9 @@ local function Draw()
     local function FinderRow(region, ready)
         local tag = SOURCE_TAG[region.source] or "?"
         rowList:Line(
-            RecipeName(region) .. "\n" .. Muted(tag .. (region.source == "trainer" and (" " .. Money(Cost(region))) or "")),
+            RecipeName(region)
+                .. "\n"
+                .. Muted(tag .. (region.source == "trainer" and (" " .. Money(Cost(region))) or "")),
             {
                 icon = RecipeIcon(region),
                 colour = ready and { 0.38, 0.85, 0.5 }
@@ -722,9 +644,7 @@ local function Draw()
                 end,
                 onClick = function()
                     local npc = NearestFor(region, payload)
-                    if npc then
-                        LinkNpc(npc)
-                    end
+                    if npc then LinkNpc(npc) end
                 end,
             }
         )
@@ -767,9 +687,7 @@ local function BuildWindow()
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText("Professions")
     CludesUI.Kit.AccentText(title)
-    local close = CludesUI.Kit.Glyph(window, "x", function()
-        window:Hide()
-    end, nil, "essentials")
+    local close = CludesUI.Kit.Glyph(window, "x", function() window:Hide() end, nil, "essentials")
     close:SetPoint("TOPRIGHT", -5, -5)
     window.tabBar = CreateFrame("Frame", nil, window)
     window.tabBar:SetPoint("TOPLEFT", 10, -32)
@@ -786,12 +704,8 @@ local function BuildWindow()
 end
 
 local function Open(line)
-    if not window then
-        BuildWindow()
-    end
-    if line then
-        currentLine = line
-    end
+    if not window then BuildWindow() end
+    if line then currentLine = line end
     window:Show()
     Draw()
 end
@@ -807,15 +721,11 @@ eventFrame:SetScript("OnEvent", function(_, evt)
     elseif evt == "TRAINER_SHOW" or evt == "TRAINER_UPDATE" then
         C_Timer.After(0.2, ScanTrainer)
     end
-    if queued then
-        return
-    end
+    if queued then return end
     queued = true
     C_Timer.After(1, function()
         queued = false
-        if Get("rankAlert") and On() then
-            CheckRanks(false)
-        end
+        if Get("rankAlert") and On() then CheckRanks(false) end
         Draw()
     end)
 end)
@@ -823,9 +733,7 @@ end)
 local function Apply()
     eventFrame:UnregisterAllEvents()
     if not On() then
-        if window then
-            window:Hide()
-        end
+        if window then window:Hide() end
         return
     end
     for _, event in ipairs({
@@ -842,9 +750,7 @@ local function Apply()
     end
     if Get("rankAlert") then
         C_Timer.After(5, function()
-            if On() then
-                CheckRanks(false)
-            end
+            if On() then CheckRanks(false) end
         end)
     end
 end
@@ -855,9 +761,7 @@ SlashCmdList.CUIPROF = function(message)
         Print("turn on Professions in CludesUI Forever Tools first.")
         return
     end
-    if (message or ""):lower():find("rank") then
-        return CheckRanks(true)
-    end
+    if (message or ""):lower():find("rank") then return CheckRanks(true) end
     if window and window:IsShown() then
         window:Hide()
     else
@@ -869,12 +773,8 @@ CludesUI._Professions = {
     Get = Get,
     Cfg = F.Cfg,
     Apply = Apply,
-    Open = function()
-        Open()
-    end,
-    CheckRanks = function()
-        CheckRanks(true)
-    end,
+    Open = function() Open() end,
+    CheckRanks = function() CheckRanks(true) end,
 }
 
 F.Start(Apply)

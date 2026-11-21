@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Chat_Sidebar.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIChat.lua or an earlier CUI_Chat_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local CUI = _G.CludesUI
@@ -28,26 +24,18 @@ local ShowSidebarIconTooltip = Inner.ShowSidebarIconTooltip
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
 local BG_R = Inner.BG_R
-Inner.bgRSetters[#Inner.bgRSetters + 1] = function(val)
-    BG_R = val
-end
+Inner.bgRSetters[#Inner.bgRSetters + 1] = function(val) BG_R = val end
 local BG_G = Inner.BG_G
-Inner.bgGSetters[#Inner.bgGSetters + 1] = function(val)
-    BG_G = val
-end
+Inner.bgGSetters[#Inner.bgGSetters + 1] = function(val) BG_G = val end
 local BG_B = Inner.BG_B
-Inner.bgBSetters[#Inner.bgBSetters + 1] = function(val)
-    BG_B = val
-end
+Inner.bgBSetters[#Inner.bgBSetters + 1] = function(val) BG_B = val end
 
 -- Flip sidebar to left or right side of chat bg
 function CHAT.ApplySidebarPosition()
     local conf = CHAT.DB()
     local cf1 = _G.ChatFrame1
     local scrollBar = cf1 and CFD(cf1).sidebar
-    if not scrollBar or not CFD(cf1).bg then
-        return
-    end
+    if not scrollBar or not CFD(cf1).bg then return end
     local Pix = CludesUI and CludesUI.PP
     local onePx = (Pix and Pix.mult) or 1
     -- Separate Sidebar: detach from the panel by the configured gap; it keeps
@@ -93,14 +81,10 @@ function CHAT.ApplyIconColor()
     local conf = CHAT.DB()
     local cf1 = _G.ChatFrame1
     local scrollBar = cf1 and CFD(cf1).sidebar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
     -- Stock kits keep their own art and states; the tooltips ride the hooks
     -- the buttons got at creation.
-    if CHAT.SB_KIT then
-        return
-    end
+    if CHAT.SB_KIT then return end
     local red, green, blue
     if conf.iconUseAccent and CludesUI.GetAccentColor then
         red, green, blue = CludesUI.GetAccentColor()
@@ -144,9 +128,7 @@ function CHAT.ApplyIconColor()
                 button:SetScript("OnEnter", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
                     fc:SetTextColor(red, green, blue, 0.9)
-                    if not self._freeMoveJustDragged then
-                        ShowSidebarIconTooltip(self, labelText)
-                    end
+                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, labelText) end
                 end)
                 button:SetScript("OnLeave", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
@@ -158,9 +140,7 @@ function CHAT.ApplyIconColor()
                 button:SetScript("OnEnter", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
                     gc:SetTextColor(red, green, blue, 0.9)
-                    if not self._freeMoveJustDragged then
-                        ShowSidebarIconTooltip(self, labelText)
-                    end
+                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, labelText) end
                 end)
                 button:SetScript("OnLeave", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
@@ -172,9 +152,7 @@ function CHAT.ApplyIconColor()
                 button:SetScript("OnEnter", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
                     dp:SetTextColor(red, green, blue, 0.9)
-                    if not self._freeMoveJustDragged then
-                        ShowSidebarIconTooltip(self, labelText)
-                    end
+                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, labelText) end
                 end)
                 button:SetScript("OnLeave", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
@@ -184,9 +162,7 @@ function CHAT.ApplyIconColor()
             else
                 button:SetScript("OnEnter", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
-                    if not self._freeMoveJustDragged then
-                        ShowSidebarIconTooltip(self, labelText)
-                    end
+                    if not self._freeMoveJustDragged then ShowSidebarIconTooltip(self, labelText) end
                 end)
                 button:SetScript("OnLeave", function(self)
                     button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
@@ -202,30 +178,20 @@ function CHAT.ApplySidebarBackground()
     local conf = CHAT.DB()
     local cf1 = _G.ChatFrame1
     local scrollBar = cf1 and CFD(cf1).sidebar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
     -- Stock styles: no sidebar backdrop (icons over Blizzard's own art).
     local show = not conf.hideSidebarBg and not mod.ChatStock()
     local sbBg = scrollBar:GetRegions()
-    if sbBg and sbBg.SetShown then
-        sbBg:SetShown(show)
-    end
-    if Pix.GetBorders(scrollBar) then
-        Pix.GetBorders(scrollBar):SetShown(show)
-    end
+    if sbBg and sbBg.SetShown then sbBg:SetShown(show) end
+    if Pix.GetBorders(scrollBar) then Pix.GetBorders(scrollBar):SetShown(show) end
     -- Blizzard Style: the stock column backdrop follows Hide Sidebar Background.
     local bd = CFD(cf1).sbBackdrop
     if bd then
         bd:SetShown(not conf.hideSidebarBg)
-        if not conf.hideSidebarBg and CHAT.SB_SyncBackdrop then
-            CHAT.SB_SyncBackdrop(true)
-        end
+        if not conf.hideSidebarBg and CHAT.SB_SyncBackdrop then CHAT.SB_SyncBackdrop(true) end
     end
     -- Hide the sidebar extension too when the sidebar background is hidden.
-    if CHAT.ApplyExtendedBackground then
-        CHAT.ApplyExtendedBackground()
-    end
+    if CHAT.ApplyExtendedBackground then CHAT.ApplyExtendedBackground() end
 end
 
 -- Scale sidebar icon buttons and friends count text
@@ -234,9 +200,7 @@ function CHAT.ApplySidebarIconScale()
     local scale = conf.sidebarIconScale or 1.0
     local cf1 = _G.ChatFrame1
     local scrollBar = cf1 and CFD(cf1).sidebar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
     -- Stock kits size from their own art (a memo no-op at login and refresh).
     if CHAT.SB_KIT then
         CHAT.SB_ApplyScale(CFD(cf1), scale)
@@ -294,21 +258,15 @@ local _freeMoveIconHooked = {}
 
 local function GetIconOffset(key)
     local conf = CHAT.DB()
-    if not conf.freeMoveIcons or not conf.iconPositions then
-        return 0, 0
-    end
+    if not conf.freeMoveIcons or not conf.iconPositions then return 0, 0 end
     local place = conf.iconPositions[key]
-    if not place then
-        return 0, 0
-    end
+    if not place then return 0, 0 end
     return place.x or 0, place.y or 0
 end
 
 local function SaveIconOffset(key, posX, posY)
     local conf = CHAT.DB()
-    if not conf.iconPositions then
-        conf.iconPositions = {}
-    end
+    if not conf.iconPositions then conf.iconPositions = {} end
     conf.iconPositions[key] = { x = posX, y = posY }
 end
 
@@ -321,13 +279,9 @@ end
 -- HistoryKeeper/FCFManager whisper errors, only when geometry was still unresolved at
 -- walk time, e.g. login timing). The pre-stored _freeMoveH avoids the resolve entirely.
 local function TopYFromSidebarTop(widget, scrollBar, depth)
-    if widget == scrollBar or (depth or 0) > 12 then
-        return 0
-    end
+    if widget == scrollBar or (depth or 0) > 12 then return 0 end
     local anchorPoint, relTo, relPoint, _, dy = widget:GetPoint(1)
-    if not anchorPoint or not relTo then
-        return 0
-    end
+    if not anchorPoint or not relTo then return 0 end
     local relTopY = TopYFromSidebarTop(relTo, scrollBar, (depth or 0) + 1)
     local relH = (relTo ~= scrollBar) and (relTo._freeMoveH or 0) or 0
     local relEdgeY = relTopY
@@ -337,12 +291,8 @@ local function TopYFromSidebarTop(widget, scrollBar, depth)
         relEdgeY = relTopY - relH / 2
     end
     local edgeY = relEdgeY + (dy or 0)
-    if anchorPoint:find("TOP") then
-        return edgeY
-    end
-    if anchorPoint:find("BOTTOM") then
-        return edgeY + (widget._freeMoveH or 0)
-    end
+    if anchorPoint:find("TOP") then return edgeY end
+    if anchorPoint:find("BOTTOM") then return edgeY + (widget._freeMoveH or 0) end
     return edgeY + (widget._freeMoveH or 0) / 2
 end
 
@@ -354,13 +304,9 @@ local function CaptureNatural(button, scrollBar)
     -- the build-time ones; the pass that first shows it captures from the
     -- real layout. The CludesUI look captures as it always has (saved
     -- offsets are relative to that baseline).
-    if button._freeMoveNat or (CHAT.SB_KIT and not button:IsShown()) then
-        return
-    end
+    if button._freeMoveNat or (CHAT.SB_KIT and not button:IsShown()) then return end
     local anchorPoint = button:GetPoint(1)
-    if not anchorPoint then
-        return
-    end
+    if not anchorPoint then return end
     if anchorPoint:find("BOTTOM") then
         local _, _, _, _, dy = button:GetPoint(1)
         button._freeMoveNat = { edge = "BOTTOM", y = dy or 0 }
@@ -372,28 +318,20 @@ end
 -- Re-anchor an icon DIRECTLY to its sidebar edge at natural + saved offset, so
 -- each icon moves independently (no chain, no compounding).
 local function ApplyIconOffset(button, scrollBar)
-    if not button or not scrollBar or not button:IsShown() then
-        return
-    end
+    if not button or not scrollBar or not button:IsShown() then return end
     local nat = button._freeMoveNat
-    if not nat then
-        return
-    end
+    if not nat then return end
     local ox, oy = GetIconOffset(button._freeMoveKey)
     button:ClearAllPoints()
     button:SetPoint(nat.edge, scrollBar, nat.edge, ox, nat.y + oy)
 end
 
 local function EnableIconFreeMove(button)
-    if not button or _freeMoveIconHooked[button] then
-        return
-    end
+    if not button or _freeMoveIconHooked[button] then return end
     _freeMoveIconHooked[button] = true
 
     local key = button._freeMoveKey
-    if not key then
-        return
-    end
+    if not key then return end
 
     button:SetMovable(true)
     button:SetClampedToScreen(true)
@@ -401,9 +339,7 @@ local function EnableIconFreeMove(button)
     local origClick = button:GetScript("OnClick")
     if origClick then
         button:SetScript("OnClick", function(self, ...)
-            if self._freeMoveJustDragged then
-                return
-            end
+            if self._freeMoveJustDragged then return end
             origClick(self, ...)
         end)
     end
@@ -416,15 +352,11 @@ local function EnableIconFreeMove(button)
     local function FreeMoveOnUpdate(self)
         if not IsMouseButtonDown("LeftButton") then
             self:SetScript("OnUpdate", nil)
-            C_Timer.After(0, function()
-                self._freeMoveJustDragged = nil
-            end)
+            C_Timer.After(0, function() self._freeMoveJustDragged = nil end)
             return
         end
         local nat = self._freeMoveNat
-        if not nat then
-            return
-        end
+        if not nat then return end
         local effScale = self:GetEffectiveScale()
         local curX, curY = GetCursorPosition()
         local nx = baseOX + (curX / effScale - startX)
@@ -435,13 +367,9 @@ local function EnableIconFreeMove(button)
     end
 
     button:HookScript("OnMouseDown", function(self, btnFrame)
-        if btnFrame ~= "LeftButton" or not IsShiftKeyDown() then
-            return
-        end
+        if btnFrame ~= "LeftButton" or not IsShiftKeyDown() then return end
         local conf = CHAT.DB()
-        if not conf.freeMoveIcons or not self._freeMoveNat then
-            return
-        end
+        if not conf.freeMoveIcons or not self._freeMoveNat then return end
         self._freeMoveJustDragged = true
         local effScale = self:GetEffectiveScale()
         startX, startY = GetCursorPosition()
@@ -452,9 +380,7 @@ local function EnableIconFreeMove(button)
 
     button:HookScript("OnMouseUp", function(self)
         self:SetScript("OnUpdate", nil)
-        C_Timer.After(0, function()
-            self._freeMoveJustDragged = nil
-        end)
+        C_Timer.After(0, function() self._freeMoveJustDragged = nil end)
     end)
 end
 
@@ -462,9 +388,7 @@ function CHAT.ApplyIconFreeMove()
     local conf = CHAT.DB()
     local cf1 = _G.ChatFrame1
     local scrollBar = cf1 and CFD(cf1).sidebar
-    if not scrollBar then
-        return
-    end
+    if not scrollBar then return end
 
     -- Free move is opt-in: OFF does NOTHING here -- no anchor-chain capture, no
     -- drag-hook install, no offsets. This gate is required: CaptureNatural walks the
@@ -472,9 +396,7 @@ function CHAT.ApplyIconFreeMove()
     -- login, that walk resolves up through and TAINTS the Edit-Mode ChatFrame1. Turning
     -- the toggle on re-runs ApplySidebarIcons -> ApplyIconFreeMove, installing hooks
     -- immediately; untouched icons keep their natural chain layout.
-    if not conf.freeMoveIcons then
-        return
-    end
+    if not conf.freeMoveIcons then return end
 
     local btns = {
         { ref = "friendsBtn", key = "friends" },
@@ -497,9 +419,7 @@ function CHAT.ApplyIconFreeMove()
         local button = CFD(cf1)[details.ref]
         -- The chat-anchored scroll button is outside the sidebar chain; free
         -- move must not capture or re-anchor it.
-        if details.ref == "scrollBtn" and conf.scrollButtonOnChat then
-            button = nil
-        end
+        if details.ref == "scrollBtn" and conf.scrollButtonOnChat then button = nil end
         if button then
             button._freeMoveKey = details.key
             CaptureNatural(button, scrollBar)
@@ -511,12 +431,8 @@ function CHAT.ApplyIconFreeMove()
     -- offset, so icons move independently.
     for _, details in ipairs(btns) do
         local button = CFD(cf1)[details.ref]
-        if details.ref == "scrollBtn" and conf.scrollButtonOnChat then
-            button = nil
-        end
-        if button then
-            ApplyIconOffset(button, scrollBar)
-        end
+        if details.ref == "scrollBtn" and conf.scrollButtonOnChat then button = nil end
+        if button then ApplyIconOffset(button, scrollBar) end
     end
 end
 
@@ -524,9 +440,7 @@ end
 local _portalFlyout
 
 function CHAT.TogglePortalFlyout(anchorBtn)
-    if InCombatLockdown() then
-        return
-    end
+    if InCombatLockdown() then return end
     if not _portalFlyout then
         _portalFlyout = CUI.CreatePortalFlyout({
             -- unitEvents: the cast events it watches only ever matter for the player.
@@ -599,15 +513,9 @@ local INPUT_TOP_DROP = 5
 -- callback: clicking away from an emptied box fires it before Blizzard
 -- deactivates the box, and the rule already says it closes.
 local function BoxUp(box)
-    if not box:IsShown() then
-        return false
-    end
-    if GetCVar("chatStyle") ~= "im" then
-        return true
-    end
-    if box:HasFocus() then
-        return true
-    end
+    if not box:IsShown() then return false end
+    if GetCVar("chatStyle") ~= "im" then return true end
+    if box:HasFocus() then return true end
     return box == ChatFrameUtil.GetActiveWindow() and not box:ShouldDeactivateChatOnEditFocusLost()
 end
 
@@ -615,30 +523,20 @@ local function DockedEditBoxShown()
     for i = 1, 10 do
         local ownerFrame = _G["ChatFrame" .. i]
         local box = ownerFrame and _G["ChatFrame" .. i .. "EditBox"]
-        if box and ownerFrame.isDocked and BoxUp(box) then
-            return true
-        end
+        if box and ownerFrame.isDocked and BoxUp(box) then return true end
     end
     return false
 end
 
 function CHAT.InputTopStripActive(castFrame)
-    if not CHAT.InputOnTop(CHAT.DB()) then
-        return false
-    end
+    if not CHAT.InputOnTop(CHAT.DB()) then return false end
     local name = castFrame:GetName()
     local eb = name and _G[name .. "EditBox"]
-    if not eb then
-        return false
-    end
+    if not eb then return false end
     local position = tonumber(name:match("ChatFrame(%d+)"))
-    if not (position and position <= 10) then
-        return true
-    end
+    if not (position and position <= 10) then return true end
     -- Own box up ("im" style, and any undocked window).
-    if BoxUp(eb) then
-        return true
-    end
+    if BoxUp(eb) then return true end
     return (castFrame.isDocked and castFrame:IsShown() and DockedEditBoxShown()) and true or false
 end
 
@@ -648,9 +546,7 @@ end
 function CHAT.RefreshInputTopStrips()
     for i = 1, 20 do
         local castFrame = _G["ChatFrame" .. i]
-        if castFrame and CFD(castFrame).bg then
-            CHAT.ApplyInputTopStrip(castFrame)
-        end
+        if castFrame and CFD(castFrame).bg then CHAT.ApplyInputTopStrip(castFrame) end
     end
 end
 
@@ -660,9 +556,7 @@ end
 -- across a message once the strip is released, so it follows the same state.
 function CHAT.ApplyInputTopStrip(castFrame)
     local skinData = CFD(castFrame)
-    if not skinData.bg then
-        return
-    end
+    if not skinData.bg then return end
     local conf = CHAT.DB()
     local isActive = CHAT.InputTopStripActive(castFrame)
     -- The strip reaches INPUT_TOP_DROP further than the box is tall, since the
@@ -694,9 +588,7 @@ function CHAT.ApplyInputTopStrip(castFrame)
             ed.mouseOff = nil
         end
     end
-    if changed and CHAT.EngineLayoutWindow then
-        CHAT.EngineLayoutWindow(castFrame)
-    end
+    if changed and CHAT.EngineLayoutWindow then CHAT.EngineLayoutWindow(castFrame) end
 end
 
 -- Flip edit box between bottom (default) and top of chat panel
@@ -721,9 +613,7 @@ function CHAT.ApplyInputPosition()
         local castFrame = _G["ChatFrame" .. i]
         if castFrame and CFD(castFrame).bg then
             local name = castFrame:GetName()
-            if not name then
-                break
-            end
+            if not name then break end
             local eb = _G[name .. "EditBox"]
             local backdrop = CFD(castFrame).bg
             local div = CFD(castFrame).inputDiv
@@ -731,15 +621,11 @@ function CHAT.ApplyInputPosition()
             if fv then
                 CHAT.FV_SeatInput(castFrame, eb, inputHeight)
                 CHAT.ApplyInputTopStrip(castFrame)
-                if CHAT.PositionChatPanel then
-                    CHAT.PositionChatPanel(castFrame)
-                end
+                if CHAT.PositionChatPanel then CHAT.PositionChatPanel(castFrame) end
             elseif stock then
                 CFD(castFrame)._bgIns = { l = -stockX, r = stockX, t = 7, b = -10 }
                 CHAT.ApplyInputTopStrip(castFrame)
-                if CHAT.PositionChatPanel then
-                    CHAT.PositionChatPanel(castFrame)
-                end
+                if CHAT.PositionChatPanel then CHAT.PositionChatPanel(castFrame) end
             else
                 if eb then
                     eb:ClearAllPoints()
@@ -756,9 +642,7 @@ function CHAT.ApplyInputPosition()
                         eb:SetPoint("TOPLEFT", castFrame, "TOPLEFT", -10, -INPUT_TOP_DROP)
                         eb:SetPoint("TOPRIGHT", castFrame, "TOPRIGHT", 5, -INPUT_TOP_DROP)
                         local bgLvl = CFD(castFrame).bg:GetFrameLevel() or 1
-                        if eb:GetFrameLevel() < bgLvl + 5 then
-                            eb:SetFrameLevel(bgLvl + 5)
-                        end
+                        if eb:GetFrameLevel() < bgLvl + 5 then eb:SetFrameLevel(bgLvl + 5) end
                     else
                         eb:SetPoint("TOPLEFT", castFrame, "BOTTOMLEFT", -10, -8)
                         eb:SetPoint("TOPRIGHT", castFrame, "BOTTOMRIGHT", 5, -8)
@@ -801,25 +685,19 @@ function CHAT.ApplyInputPosition()
                     -- ECHAT.ApplyInputTopStrip). EngineLayoutWindows at the tail
                     -- of this function relayouts every window either way.
                     CHAT.ApplyInputTopStrip(castFrame)
-                    if CHAT.PositionChatPanel then
-                        CHAT.PositionChatPanel(castFrame)
-                    end
+                    if CHAT.PositionChatPanel then CHAT.PositionChatPanel(castFrame) end
                 end
             end -- not stock
         end
     end
     -- Our message frames derive their text area from the recorded insets.
-    if CHAT.EngineLayoutWindows then
-        CHAT.EngineLayoutWindows()
-    end
+    if CHAT.EngineLayoutWindows then CHAT.EngineLayoutWindows() end
 end
 
 function CHAT.ApplySidebarWidth()
     local cf1 = _G.ChatFrame1
     local sidebar = cf1 and CFD(cf1).sidebar
-    if not sidebar then
-        return
-    end
+    if not sidebar then return end
     sidebar:SetWidth(
         min(
             100,
@@ -829,9 +707,7 @@ function CHAT.ApplySidebarWidth()
             )
         )
     )
-    if CHAT.ApplySidebarPosition then
-        CHAT.ApplySidebarPosition()
-    end
+    if CHAT.ApplySidebarPosition then CHAT.ApplySidebarPosition() end
 end
 
 Inner.broken = false

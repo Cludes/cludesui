@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIQoL_AutoLogging.lua - combat logging that follows the content.
 --
@@ -60,68 +58,48 @@ local DEFAULTS = {
 local STOP_AFTER = 30 -- seconds
 
 local function Settings()
-    if not CludesUIDB then
-        return {}
-    end
+    if not CludesUIDB then return {} end
     CludesUIDB.autoLogging = CludesUIDB.autoLogging or {}
     return CludesUIDB.autoLogging
 end
 
 local function On(cfg, key)
     local value = cfg[key]
-    if value == nil then
-        return DEFAULTS[key]
-    end
+    if value == nil then return DEFAULTS[key] end
     return value
 end
 
 -- Whether the current place should be logged.
 local function WantLog()
     local cfg = Settings()
-    if not cfg.enabled then
-        return false
-    end
+    if not cfg.enabled then return false end
     local _, kind, rawDifficulty, _, maxPlayers, _, _, rawMap = GetInstanceInfo()
 
     -- WoW Forever: raids on the Raids trigger (the Normal raid key), dungeons
     -- on its own Dungeons trigger (off until ticked); nothing else applies.
     if CludesUI.IS_FOREVER then
-        if kind == "raid" then
-            return On(cfg, "logNormal")
-        end
+        if kind == "raid" then return On(cfg, "logNormal") end
         return kind == "party" and cfg.logDungeon == true
     end
 
     -- Battlegrounds: Blitz first (it is also rated); unrated ones never log.
     if kind == "pvp" and C_PvP then
-        if C_PvP.IsRatedSoloRBG and C_PvP.IsRatedSoloRBG() then
-            return On(cfg, "logBlitz")
-        end
-        if C_PvP.IsRatedBattleground and C_PvP.IsRatedBattleground() then
-            return On(cfg, "logRBG")
-        end
+        if C_PvP.IsRatedSoloRBG and C_PvP.IsRatedSoloRBG() then return On(cfg, "logBlitz") end
+        if C_PvP.IsRatedBattleground and C_PvP.IsRatedBattleground() then return On(cfg, "logRBG") end
         return false
     end
 
     local difficulty, map = tonumber(rawDifficulty), tonumber(rawMap)
-    if not difficulty or not map then
-        return false
-    end
-    if LFR[difficulty] then
-        return On(cfg, "logLFR")
-    end
+    if not difficulty or not map then return false end
+    if LFR[difficulty] then return On(cfg, "logLFR") end
     if kind == "raid" and (map >= NEW_RAID_FROM or NEW_RAIDS_WITH_OLD_IDS[map]) then
         local trigger = RAID_TRIGGER[difficulty]
-        if trigger then
-            return On(cfg, trigger)
-        end
+        if trigger then return On(cfg, trigger) end
         return true -- Timewalking and other difficulties
     end
     if On(cfg, "log5pp") then
         local mythic = difficulty == KEYSTONE or difficulty == MYTHIC_DUNGEON
-        if mythic and (map >= NEW_DUNGEON_FROM or OLD_DUNGEONS_IN_SEASON[map]) then
-            return true
-        end
+        if mythic and (map >= NEW_DUNGEON_FROM or OLD_DUNGEONS_IN_SEASON[map]) then return true end
     end
     if
         On(cfg, "logScenario")
@@ -131,17 +109,13 @@ local function WantLog()
     then
         return true
     end
-    if On(cfg, "logArena") and (kind == "arena" or kind == "ratedarena") then
-        return true
-    end
+    if On(cfg, "logArena") and (kind == "arena" or kind == "ratedarena") then return true end
     return false
 end
 
 -- A chat line when logging starts or stops (off by default).
 local function Say(started)
-    if Settings().notify ~= true then
-        return
-    end
+    if Settings().notify ~= true then return end
     local text = CludesUI.L(started and "AutoLog Started" or "AutoLog Stopped")
     CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text)
 end
@@ -172,9 +146,7 @@ local function Apply()
         end
         local already = LoggingCombat()
         LoggingCombat(true)
-        if not already then
-            Say(true)
-        end
+        if not already then Say(true) end
     elseif ours and LoggingCombat() then
         if not On(Settings(), "delaystop") then
             Stop()
@@ -191,25 +163,17 @@ end
 -- The zone has settled a moment after these; a battleground going live can
 -- set its rated flags after the zone-in check.
 local EVENTS = {
-    ZONE_CHANGED_NEW_AREA = function()
-        C_Timer.After(2, Apply)
-    end,
-    CHALLENGE_MODE_START = function()
-        C_Timer.After(1, Apply)
-    end,
+    ZONE_CHANGED_NEW_AREA = function() C_Timer.After(2, Apply) end,
+    CHALLENGE_MODE_START = function() C_Timer.After(1, Apply) end,
 }
-if not CludesUI.IS_FOREVER then
-    EVENTS.PVP_MATCH_ACTIVE = Apply
-end
+if not CludesUI.IS_FOREVER then EVENTS.PVP_MATCH_ACTIVE = Apply end
 
 -- The zone events are registered only while the feature is on.
 local listener = CreateFrame("Frame")
 local listening = false
 local function Listen()
     local want = Settings().enabled and true or false
-    if want == listening then
-        return
-    end
+    if want == listening then return end
     listening = want
     for event in pairs(EVENTS) do
         if want then

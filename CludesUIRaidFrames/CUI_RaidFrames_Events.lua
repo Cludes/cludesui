@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_RaidFrames_Events.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- CludesUIRaidFrames.lua or an earlier Raid Frames file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ipairs = ipairs
@@ -32,21 +28,13 @@ local UpdateVisibility, SetInCombat = Inner.UpdateVisibility, Inner.SetInCombat
 local SetReadyCheckActive = Inner.SetReadyCheckActive
 
 local saved
-Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    saved = val
-end
+Inner.dbSetters[#Inner.dbSetters + 1] = function(val) saved = val end
 local inCombat = false
-Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val)
-    inCombat = val
-end
+Inner.inCombatSetters[#Inner.inCombatSetters + 1] = function(val) inCombat = val end
 local readyCheckActive = false
-Inner.readyCheckActiveSetters[#Inner.readyCheckActiveSetters + 1] = function(val)
-    readyCheckActive = val
-end
+Inner.readyCheckActiveSetters[#Inner.readyCheckActiveSetters + 1] = function(val) readyCheckActive = val end
 local framesVisible = false
-Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val)
-    framesVisible = val
-end
+Inner.framesVisibleSetters[#Inner.framesVisibleSetters + 1] = function(val) framesVisible = val end
 
 -- Healer Mana Display: its rebuild normally rides the raid/party frame paths
 -- (UpdatePowerEventRegistration tails). A roster change that lands with BOTH
@@ -54,9 +42,7 @@ end
 -- frames are disabled -- skips every rebuild, so the display would keep its
 -- last group's content (raid-mode names included) indefinitely.
 local function RebuildHealerManaIfFramesHidden()
-    if not framesVisible and not mod._partyFramesVisible and mod.HM_Rebuild then
-        mod.HM_Rebuild()
-    end
+    if not framesVisible and not mod._partyFramesVisible and mod.HM_Rebuild then mod.HM_Rebuild() end
 end
 
 -------------------------------------------------------------------------------
@@ -81,9 +67,7 @@ local function OnEvent(self, evt, arg1, ...)
                 mod._rezPend[arg1] = nil
             end
             mod._UpdateButtonHealth(button, arg1)
-            if hadRez then
-                UpdateReadyCheck(button, arg1)
-            end
+            if hadRez then UpdateReadyCheck(button, arg1) end
         end
     elseif evt == "UNIT_MAXHEALTH" then
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
@@ -99,12 +83,8 @@ local function OnEvent(self, evt, arg1, ...)
             -- Max moves the absorb bars' range (see the header dispatcher's
             -- UNIT_MAXHEALTH branch for the full rationale).
             local dmx = GetFFD(button)
-            if dmx._absActive then
-                mod._MarkAbsorbDirty(button, arg1)
-            end
-            if hadRez then
-                UpdateReadyCheck(button, arg1)
-            end
+            if dmx._absActive then mod._MarkAbsorbDirty(button, arg1) end
+            if hadRez then UpdateReadyCheck(button, arg1) end
         end
     elseif
         evt == "UNIT_ABSORB_AMOUNT_CHANGED"
@@ -128,13 +108,9 @@ local function OnEvent(self, evt, arg1, ...)
                     mod._MarkAbsorbDirty(button, arg1)
                 end
             else
-                if evt ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
-                    mod._AbArm(button, arg1, dropdown)
-                end
+                if evt ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then mod._AbArm(button, arg1, dropdown) end
                 mod._MarkAbsorbDirty(button, arg1)
-                if evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then
-                    mod.UpdateHealAbsorbTextFor(button, arg1)
-                end
+                if evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then mod.UpdateHealAbsorbTextFor(button, arg1) end
                 -- Custom texts showing the amount this event moved (two field reads while
                 -- none does); the max-health-modifier edge moves health only.
                 local tp = dropdown._txP
@@ -162,57 +138,35 @@ local function OnEvent(self, evt, arg1, ...)
         -- or size preview was still active, independent of the panel auto-close.
         if mod._sizePreviewTier then
             mod._sizePreviewTier = nil
-            if mod._HideSizePreview then
-                mod._HideSizePreview()
-            end
+            if mod._HideSizePreview then mod._HideSizePreview() end
         end
-        if mod.EnsureRealFramesRestored then
-            mod.EnsureRealFramesRestored()
-        end
+        if mod.EnsureRealFramesRestored then mod.EnsureRealFramesRestored() end
         -- Combat starting: hide role/leader icons on frames using the in-combat cogs.
-        if mod._UpdateRoleIcons then
-            mod._UpdateRoleIcons()
-        end
-        if mod._UpdateLeaderIcons then
-            mod._UpdateLeaderIcons()
-        end
-        if mod._CombatIconEnabled() and mod._UpdateCombatIcons then
-            mod._UpdateCombatIcons()
-        end
+        if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
+        if mod._UpdateLeaderIcons then mod._UpdateLeaderIcons() end
+        if mod._CombatIconEnabled() and mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
     elseif evt == "PLAYER_REGEN_ENABLED" then
         SetInCombat(false)
         local frameStrataDirty = mod._frameStrataDirty
-        if frameStrataDirty and mod.ApplyFrameStrata then
-            mod.ApplyFrameStrata()
-        end
+        if frameStrataDirty and mod.ApplyFrameStrata then mod.ApplyFrameStrata() end
         -- Combat ended: restore any role/leader icons suppressed during combat.
-        if mod._UpdateRoleIcons then
-            mod._UpdateRoleIcons()
-        end
-        if mod._UpdateLeaderIcons then
-            mod._UpdateLeaderIcons()
-        end
-        if mod._CombatIconEnabled() and mod._UpdateCombatIcons then
-            mod._UpdateCombatIcons()
-        end
+        if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
+        if mod._UpdateLeaderIcons then mod._UpdateLeaderIcons() end
+        if mod._CombatIconEnabled() and mod._UpdateCombatIcons then mod._UpdateCombatIcons() end
         -- Complete any container reparent that was blocked during combat (e.g.
         -- the options panel was closed mid-combat while a preview was active).
         -- Without this, a combat auto-close can leave the real frames orphaned
         -- under the hidden preview parent until the next options open+close.
         if mod._restorePending then
             mod._restorePending = nil
-            if mod.EnsureRealFramesRestored then
-                mod.EnsureRealFramesRestored()
-            end
+            if mod.EnsureRealFramesRestored then mod.EnsureRealFramesRestored() end
         end
         local rosterDirty = mod._rosterDirtyInCombat
         local sizeTierDirty = mod._sizeTierDirtyInCombat
         -- Force the heavy refresh ONLY if the roster/size changed during combat.
         -- Otherwise the live per-unit events kept buttons current and the
         -- transition gate in UpdateVisibility skips the rebuild.
-        if rosterDirty or sizeTierDirty then
-            mod._visForceRebuild = true
-        end
+        if rosterDirty or sizeTierDirty then mod._visForceRebuild = true end
         mod._rosterDirtyInCombat = nil
         mod._sizeTierDirtyInCombat = nil
         UpdateVisibility()
@@ -230,22 +184,14 @@ local function OnEvent(self, evt, arg1, ...)
             -- so the container lands at the correct tier. Outside the framesVisible
             -- gate for the same reason as the roster path: a raid left mid-combat must
             -- still re-base the now-hidden container once combat ends.
-            if mod._ApplyTierOffset then
-                mod._ApplyTierOffset()
-            end
-            if mod._partyFramesVisible then
-                mod._LayoutPartyFrames()
-            end
-            if rosterDirty then
-                RebuildHealerManaIfFramesHidden()
-            end
+            if mod._ApplyTierOffset then mod._ApplyTierOffset() end
+            if mod._partyFramesVisible then mod._LayoutPartyFrames() end
+            if rosterDirty then RebuildHealerManaIfFramesHidden() end
         end
         -- Party container geometry deferred by a combat-time _CURF_RefreshAll.
         if mod._partyGeomDirtyInCombat then
             mod._partyGeomDirtyInCombat = nil
-            if mod._ApplyPartyContainerGeometry then
-                mod._ApplyPartyContainerGeometry()
-            end
+            if mod._ApplyPartyContainerGeometry then mod._ApplyPartyContainerGeometry() end
         end
         -- Flush any power show/hide transitions deferred during combat (see UpdateButton);
         -- only the buttons actually marked dirty get a repaint.
@@ -276,12 +222,8 @@ local function OnEvent(self, evt, arg1, ...)
         local kitDirty = mod._partyKitDirtyInCombat
         mod._partyKitDirtyInCombat = nil
         if frameStrataDirty then
-            if not (sizeTierDirty and framesVisible) then
-                ReloadFrames()
-            end
-            if mod.ReloadPartyFrames then
-                mod.ReloadPartyFrames()
-            end
+            if not (sizeTierDirty and framesVisible) then ReloadFrames() end
+            if mod.ReloadPartyFrames then mod.ReloadPartyFrames() end
             -- The re-stack reset the child levels the Color Custom Borders copies took at
             -- their last restyle, which ran in combat before the strata applied; the
             -- fingerprint-gated reload above will not restyle them again.
@@ -306,9 +248,7 @@ local function OnEvent(self, evt, arg1, ...)
         -- Roles changed: refresh raid sort so the player's-group nameList
         -- (Show Self First) re-orders the rest by the new roles. The other
         -- groups re-sort natively. Out of combat only; no-op if order unchanged.
-        if not inCombat and framesVisible and mod._ApplySortToHeaders then
-            mod._ApplySortToHeaders()
-        end
+        if not inCombat and framesVisible and mod._ApplySortToHeaders then mod._ApplySortToHeaders() end
         -- Party Prioritize Class and the arena self-order nameList are both
         -- role-aware, so a role change must rebuild them (native role sort
         -- updates itself; these do not). FrameSort's list is role-aware too.
@@ -342,9 +282,7 @@ local function OnEvent(self, evt, arg1, ...)
                     mod._sizeTierDirtyInCombat = true
                 end
                 local _, newOv = mod._RFResolveTierOverride(numMembers)
-                if newOv ~= mod._activeTierOverride then
-                    mod._sizeTierDirtyInCombat = true
-                end
+                if newOv ~= mod._activeTierOverride then mod._sizeTierDirtyInCombat = true end
             end
             -- Rebuild unit maps during combat so new/moved members get events.
             if framesVisible then
@@ -355,9 +293,7 @@ local function OnEvent(self, evt, arg1, ...)
                         if u then
                             local skinData = GetFFD(button)
                             -- Extra Frames duplicates never own a map slot
-                            if not skinData._isExtra then
-                                unitToButton[u] = button
-                            end
+                            if not skinData._isExtra then unitToButton[u] = button end
                             local _, classToken = UnitClass(u)
                             skinData.classToken = classToken
                         end
@@ -382,9 +318,7 @@ local function OnEvent(self, evt, arg1, ...)
                 -- when the driver shows the container a tick after this pass; its
                 -- own shown flag (set out of combat) says whether it owns the player.
                 local scrollBar = mod._partySelfButton
-                if scrollBar and scrollBar:IsShown() then
-                    mod._partyUnitToButton.player = scrollBar
-                end
+                if scrollBar and scrollBar:IsShown() then mod._partyUnitToButton.player = scrollBar end
             end
             -- Combat zone-ins deliver GROUP_ROSTER_UPDATE in storms; unit maps stay
             -- per-fire (routing must be correct immediately) but the paint coalesces to
@@ -451,23 +385,17 @@ local function OnEvent(self, evt, arg1, ...)
                 if tierChanged then
                     -- Tier changed: full reload (recalculates _activeSizeW/H, restyles).
                     ReloadFrames()
-                    if mod.UpdatePowerEventRegistration then
-                        mod.UpdatePowerEventRegistration()
-                    end
+                    if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
                 elseif wasVis then
                     -- Already visible, same tier: light refresh only. Aura
                     -- full-rescans are intentionally skipped (hook + UNIT_AURA
                     -- keep them current); the per-button pass repaints only what
                     -- the roster can change (see ns._RosterPassPaint).
                     RebuildUnitMap()
-                    if mod.UpdatePowerEventRegistration then
-                        mod.UpdatePowerEventRegistration()
-                    end
+                    if mod.UpdatePowerEventRegistration then mod.UpdatePowerEventRegistration() end
                     for _, button in ipairs(allButtons) do
                         local u = button:GetAttribute("unit")
-                        if u and button:IsVisible() then
-                            mod._RosterPassPaint(button, u)
-                        end
+                        if u and button:IsVisible() then mod._RosterPassPaint(button, u) end
                     end
                     LayoutGroups()
                 end
@@ -481,12 +409,8 @@ local function OnEvent(self, evt, arg1, ...)
             -- self-gates on combat. Deliberately OUTSIDE framesVisible: a raid left mid-
             -- combat still needs the dormant container re-based (it re-derives its own
             -- size while hidden) or unlock mode saves against stale raid-tier geometry.
-            if mod._ApplyTierOffset then
-                mod._ApplyTierOffset()
-            end
-            if mod._partyFramesVisible then
-                mod._LayoutPartyFrames()
-            end
+            if mod._ApplyTierOffset then mod._ApplyTierOffset() end
+            if mod._partyFramesVisible then mod._LayoutPartyFrames() end
             RebuildHealerManaIfFramesHidden()
             -- Pet frames: once per roster pass, after the groups they attach to are laid out.
             mod.PF_Flush()
@@ -503,9 +427,7 @@ local function OnEvent(self, evt, arg1, ...)
             local u = widget:GetAttribute("unit")
             if u and (arg1 == nil or u == arg1) then
                 local edge = GetFFD(widget)
-                if (edge.kitPortrait or edge.pt) and UnitExists(u) then
-                    mod.RF_PtPaint(edge, u, evt)
-                end
+                if (edge.kitPortrait or edge.pt) and UnitExists(u) then mod.RF_PtPaint(edge, u, evt) end
             end
         end
     elseif not framesVisible and not mod._partyFramesVisible then
@@ -521,23 +443,17 @@ local function OnEvent(self, evt, arg1, ...)
             if mod._ptModelEv then
                 local edge = GetFFD(button)
                 local pt = edge.pt
-                if pt and pt._state == false then
-                    mod.RF_PtPaint(edge, arg1, "Probe")
-                end
+                if pt and pt._state == false then mod.RF_PtPaint(edge, arg1, "Probe") end
             end
         end
     elseif evt == "UNIT_PHASE" then
         -- Phasing doesn't fire UNIT_IN_RANGE_UPDATE; re-evaluate all (rare).
-        if mod._RangeSeedAll then
-            mod._RangeSeedAll()
-        end
+        if mod._RangeSeedAll then mod._RangeSeedAll() end
     elseif evt == "UNIT_POWER_UPDATE" then
         -- Healer Mana Display rides the same per-unit registration: one hash
         -- lookup when off/empty, one text repaint when this unit has a row.
         local hmRows = mod._hmUnitRows
-        if hmRows and hmRows[arg1] then
-            mod._HMUpdateValue(arg1)
-        end
+        if hmRows and hmRows[arg1] then mod._HMUpdateValue(arg1) end
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
         local skinData = button and GetFFD(button)
         if skinData and skinData.power then
@@ -555,9 +471,7 @@ local function OnEvent(self, evt, arg1, ...)
             -- Power Texts and the Custom texts reading power ride the same value
             -- (two field reads while the button has neither).
             local tp = skinData._txP
-            if tp and (skinData._pwtOn or tp.reads) then
-                mod.RF_TextPower(skinData, arg1, ppct, pType)
-            end
+            if tp and (skinData._pwtOn or tp.reads) then mod.RF_TextPower(skinData, arg1, ppct, pType) end
         end
     elseif evt == "UNIT_DISPLAYPOWER" then
         -- The displayed power type changed (forms, spec swaps, vehicles):
@@ -591,9 +505,7 @@ local function OnEvent(self, evt, arg1, ...)
         if inCombat then
             mod._rosterDirtyInCombat = true
         else
-            if mod._nameUpdateTimer then
-                mod._nameUpdateTimer:Cancel()
-            end
+            if mod._nameUpdateTimer then mod._nameUpdateTimer:Cancel() end
             mod._nameUpdateTimer = C_Timer.NewTimer(0.1, function()
                 mod._nameUpdateTimer = nil
                 if InCombatLockdown() then
@@ -607,31 +519,21 @@ local function OnEvent(self, evt, arg1, ...)
                 then
                     mod._LayoutPartyFrames()
                 end
-                if framesVisible and mod._ApplySortToHeaders then
-                    mod._ApplySortToHeaders()
-                end
+                if framesVisible and mod._ApplySortToHeaders then mod._ApplySortToHeaders() end
             end)
         end
     elseif evt == "UNIT_LEVEL" then
         -- Level only (registered while a view shows it): the name and level texts repaint.
         local button = unitToButton[arg1]
-        if button then
-            mod._RFRepaintLevel(button)
-        end
+        if button then mod._RFRepaintLevel(button) end
         button = mod._partyUnitToButton[arg1]
-        if button then
-            mod._RFRepaintLevel(button)
-        end
+        if button then mod._RFRepaintLevel(button) end
     elseif evt == "UNIT_TARGET" then
         -- Custom texts showing [target] only (registered while a view's Custom text does).
         local button = unitToButton[arg1]
-        if button then
-            mod.RF_TextRepaintCustom(GetFFD(button), arg1, "tgt")
-        end
+        if button then mod.RF_TextRepaintCustom(GetFFD(button), arg1, "tgt") end
         button = mod._partyUnitToButton[arg1]
-        if button then
-            mod.RF_TextRepaintCustom(GetFFD(button), arg1, "tgt")
-        end
+        if button then mod.RF_TextRepaintCustom(GetFFD(button), arg1, "tgt") end
     elseif evt == "UNIT_THREAT_LIST_UPDATE" or evt == "UNIT_THREAT_SITUATION_UPDATE" then
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
         if button then
@@ -646,27 +548,19 @@ local function OnEvent(self, evt, arg1, ...)
         end
     elseif evt == "UNIT_FLAGS" then
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
-        if button then
-            mod._UpdateCombatIconFor(arg1, button)
-        end
+        if button then mod._UpdateCombatIconFor(arg1, button) end
     elseif evt == "PLAYER_FLAGS_CHANGED" or evt == "UNIT_CONNECTION" then
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
         if button then
-            if evt == "UNIT_CONNECTION" then
-                GetFFD(button)._clsTok = nil
-            end
+            if evt == "UNIT_CONNECTION" then GetFFD(button)._clsTok = nil end
             UpdateButton(button)
             -- Connection changes don't fire UNIT_IN_RANGE_UPDATE; re-evaluate
             -- range so offline units take their fixed alpha and reconnecting
             -- units return to the normal out-of-range fade.
-            if evt == "UNIT_CONNECTION" then
-                mod._UpdateButtonRange(arg1, button)
-            end
+            if evt == "UNIT_CONNECTION" then mod._UpdateButtonRange(arg1, button) end
         end
         -- The member's pet frame, when one shows.
-        if evt == "UNIT_CONNECTION" then
-            mod._PF_OwnerRange(arg1)
-        end
+        if evt == "UNIT_CONNECTION" then mod._PF_OwnerRange(arg1) end
     elseif evt == "PARTY_MEMBER_ENABLE" or evt == "PARTY_MEMBER_DISABLE" then
         -- Only status text / health color changes (online/offline). The payload
         -- names the unit: repaint its button(s) alone. The full sweeps remain the
@@ -674,26 +568,18 @@ local function OnEvent(self, evt, arg1, ...)
         local button = arg1 and (unitToButton[arg1] or mod._partyUnitToButton[arg1])
         if button then
             local pv = GetFFD(button)._isParty and mod._partyPvActive
-            if not pv and button:IsVisible() then
-                UpdateButton(button)
-            end
+            if not pv and button:IsVisible() then UpdateButton(button) end
             local xf = mod._xfUnitToButton[arg1]
-            if xf and xf:IsVisible() then
-                UpdateButton(xf)
-            end
+            if xf and xf:IsVisible() then UpdateButton(xf) end
         else
             for _, btn in ipairs(allButtons) do
                 local u = btn:GetAttribute("unit")
-                if u and btn:IsVisible() then
-                    UpdateButton(btn)
-                end
+                if u and btn:IsVisible() then UpdateButton(btn) end
             end
             if not mod._partyPvActive then
                 for _, btn in ipairs(mod._partyAllButtons) do
                     local u = btn:GetAttribute("unit")
-                    if u and btn:IsVisible() then
-                        UpdateButton(btn)
-                    end
+                    if u and btn:IsVisible() then UpdateButton(btn) end
                 end
             end
         end
@@ -705,21 +591,15 @@ local function OnEvent(self, evt, arg1, ...)
         SetReadyCheckActive(true)
         for _, button in ipairs(allButtons) do
             local u = button:GetAttribute("unit")
-            if u and button:IsVisible() then
-                UpdateReadyCheck(button, u)
-            end
+            if u and button:IsVisible() then UpdateReadyCheck(button, u) end
         end
         for _, button in ipairs(mod._partyAllButtons) do
             local u = button:GetAttribute("unit")
-            if u and button:IsVisible() then
-                UpdateReadyCheck(button, u)
-            end
+            if u and button:IsVisible() then UpdateReadyCheck(button, u) end
         end
     elseif evt == "READY_CHECK_CONFIRM" then
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
-        if button then
-            UpdateReadyCheck(button, arg1)
-        end
+        if button then UpdateReadyCheck(button, arg1) end
     elseif evt == "READY_CHECK_FINISHED" then
         SetReadyCheckActive(false)
         C_Timer.After(5, function()
@@ -728,15 +608,11 @@ local function OnEvent(self, evt, arg1, ...)
                 -- summon active that shares the same texture.
                 for _, button in ipairs(allButtons) do
                     local u = button:GetAttribute("unit")
-                    if u and button:IsVisible() then
-                        UpdateReadyCheck(button, u)
-                    end
+                    if u and button:IsVisible() then UpdateReadyCheck(button, u) end
                 end
                 for _, button in ipairs(mod._partyAllButtons) do
                     local u = button:GetAttribute("unit")
-                    if u and button:IsVisible() then
-                        UpdateReadyCheck(button, u)
-                    end
+                    if u and button:IsVisible() then UpdateReadyCheck(button, u) end
                 end
             end
         end)
@@ -744,15 +620,11 @@ local function OnEvent(self, evt, arg1, ...)
         -- Broadcast event (no unit payload); re-evaluate every visible button.
         for _, button in ipairs(allButtons) do
             local u = button:GetAttribute("unit")
-            if u and button:IsVisible() then
-                UpdateReadyCheck(button, u)
-            end
+            if u and button:IsVisible() then UpdateReadyCheck(button, u) end
         end
         for _, button in ipairs(mod._partyAllButtons) do
             local u = button:GetAttribute("unit")
-            if u and button:IsVisible() then
-                UpdateReadyCheck(button, u)
-            end
+            if u and button:IsVisible() then UpdateReadyCheck(button, u) end
         end
     elseif evt == "INCOMING_RESURRECT_CHANGED" then
         -- Fires with a unit payload when a rez starts/stops on that unit. The stop
@@ -768,15 +640,11 @@ local function OnEvent(self, evt, arg1, ...)
                     mod._rezPend[arg1] = exp
                     local unitToken = arg1
                     C_Timer.After(60.1, function()
-                        if mod._rezPend[unitToken] ~= exp then
-                            return
-                        end
+                        if mod._rezPend[unitToken] ~= exp then return end
                         mod._rezPend[unitToken] = nil
                         local widget = unitToButton[unitToken] or mod._partyUnitToButton[unitToken]
                         if widget and widget:IsVisible() then
-                            if mod._UpdateButtonHealth then
-                                mod._UpdateButtonHealth(widget)
-                            end
+                            if mod._UpdateButtonHealth then mod._UpdateButtonHealth(widget) end
                             UpdateReadyCheck(widget, unitToken)
                         end
                     end)
@@ -789,24 +657,18 @@ local function OnEvent(self, evt, arg1, ...)
         -- as well as the shared rez icon.
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
         if button and button:IsVisible() then
-            if mod._UpdateButtonHealth then
-                mod._UpdateButtonHealth(button)
-            end
+            if mod._UpdateButtonHealth then mod._UpdateButtonHealth(button) end
             UpdateReadyCheck(button, arg1)
         end
     elseif evt == "PLAYER_SPECIALIZATION_CHANGED" then
-        if mod.BM_RebuildLookup then
-            mod.BM_RebuildLookup(saved)
-        end
+        if mod.BM_RebuildLookup then mod.BM_RebuildLookup(saved) end
         -- The player's effective role is spec-derived (CludesUI.UnitEffectiveRole),
         -- so the player's own spec swap is a role change for every role consumer:
         -- mirror the PLAYER_ROLES_ASSIGNED refresh and repaint role icons. The
         -- event also fires for other units' spec updates; only the player's
         -- changes our answers.
         if arg1 == "player" and not inCombat then
-            if framesVisible and mod._ApplySortToHeaders then
-                mod._ApplySortToHeaders()
-            end
+            if framesVisible and mod._ApplySortToHeaders then mod._ApplySortToHeaders() end
             if
                 mod._partyFramesVisible
                 and (saved.profile.partyPrioritizeClass or mod._PartyInRaid() or mod._FsPartyMode())
@@ -814,9 +676,7 @@ local function OnEvent(self, evt, arg1, ...)
             then
                 mod._LayoutPartyFrames()
             end
-            if mod._UpdateRoleIcons then
-                mod._UpdateRoleIcons()
-            end
+            if mod._UpdateRoleIcons then mod._UpdateRoleIcons() end
         end
     elseif evt == "PLAYER_DIFFICULTY_CHANGED" then
         -- Hide Groups 5-8 in Mythic Raid (heard only while on): a switch inside
@@ -837,9 +697,7 @@ local function OnEvent(self, evt, arg1, ...)
         mod._inBossCombat = (IsEncounterInProgress and IsEncounterInProgress()) or false
         -- 3D party portraits: a world transition can reset a model at the
         -- same guid.
-        if mod._ptModelEv and mod.RF_PtRepaintAll then
-            mod.RF_PtRepaintAll("PLAYER_ENTERING_WORLD")
-        end
+        if mod._ptModelEv and mod.RF_PtRepaintAll then mod.RF_PtRepaintAll("PLAYER_ENTERING_WORLD") end
         C_Timer.After(0.5, function()
             -- Pet frames: flushed at the end of this settle, or at combat end.
             mod.PF_MarkDirty()
@@ -875,20 +733,14 @@ local function OnEvent(self, evt, arg1, ...)
                 local tierChanged = (newW ~= mod._activeSizeW or newH ~= mod._activeSizeH)
                 if not tierChanged and numMembers > 0 then
                     local _, newOv = mod._RFResolveTierOverride(numMembers)
-                    if newOv ~= mod._activeTierOverride then
-                        tierChanged = true
-                    end
+                    if newOv ~= mod._activeTierOverride then tierChanged = true end
                 end
                 if tierChanged or mythicChanged then
                     ReloadFrames()
                 else
                     RangeUpdate()
-                    if mod.FB_Apply then
-                        mod.FB_Apply()
-                    end
-                    if mod.XF_Apply then
-                        mod.XF_Apply()
-                    end
+                    if mod.FB_Apply then mod.FB_Apply() end
+                    if mod.XF_Apply then mod.XF_Apply() end
                 end
             end
             if mod._partyFramesVisible then

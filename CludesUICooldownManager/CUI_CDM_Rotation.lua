@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_CDM_Rotation.lua
 --
@@ -10,9 +8,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._internals
 -- The main file or an earlier CDM file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local ECME, FC, SnapForScale, _ecmeFC = Inner.ECME, Inner.FC, Inner.SnapForScale, Inner._ecmeFC
@@ -47,9 +43,7 @@ local function CDMIconsForSpell(spellId, result)
                         match = sidBase == spellBase
                     end
                 end
-                if match then
-                    result[#result + 1] = iconTex
-                end
+                if match then result[#result + 1] = iconTex end
             end
         end
     end
@@ -98,18 +92,14 @@ do
     local function _rotCVarOn()
         -- User can force-hide via our own toggle, overriding Blizzard's CVar
         local conf = _rotConfig()
-        if conf and conf.hideRotationHelper then
-            return false
-        end
+        if conf and conf.hideRotationHelper then return false end
         return GetCVarBool and GetCVarBool("assistedCombatHighlight")
     end
 
     local function _rotCreateHighlight(iconTex)
         local success, hf =
             pcall(CreateFrame, "Frame", nil, iconTex, "ActionBarButtonAssistedCombatHighlightTemplate")
-        if not success or not hf then
-            return nil
-        end
+        if not success or not hf then return nil end
         hf:SetAllPoints()
         -- Sit above everything on the icon: Blizzard's cooldown swipe, our border frame, our glowOverlay (+6), and any proc alert frames. +15 clears them all with margin.
         hf:SetFrameLevel(iconTex:GetFrameLevel() + 15)
@@ -158,9 +148,7 @@ do
 
     local function _rotHideSolid(overlayFrame)
         local tbl = overlayFrame and overlayFrame._rotSolid
-        if not tbl then
-            return
-        end
+        if not tbl then return end
         for index = 1, 4 do
             tbl[index]:Hide()
         end
@@ -170,9 +158,7 @@ do
         local mode = conf and conf.rotationAssistColorMode or "default"
         if mode == "class" then
             local color = CludesUI.GetClassColor(CludesUI._playerClass)
-            if color then
-                return color.r, color.g, color.b
-            end
+            if color then return color.r, color.g, color.b end
         elseif mode == "custom" then
             return conf.rotationAssistColorR or 1,
                 conf.rotationAssistColorG or 0,
@@ -187,9 +173,7 @@ do
         local rfc = iconTex and _ecmeFC[iconTex]
         local hf = rfc and rfc.rotationHighlight
         if hf then
-            if hf.Flipbook and hf.Flipbook.Anim then
-                hf.Flipbook.Anim:Stop()
-            end
+            if hf.Flipbook and hf.Flipbook.Anim then hf.Flipbook.Anim:Stop() end
             hf:Hide()
         end
         local custom = rfc and rfc.rotationCustomHighlight
@@ -201,22 +185,16 @@ do
     end
 
     local function _rotShow(iconTex)
-        if not iconTex then
-            return
-        end
+        if not iconTex then return end
         local rfc = FC(iconTex)
         local conf = _rotConfig()
         local style = conf and conf.rotationAssistStyle or "blizzard"
-        if style ~= "solid" and not ROT_STYLE_TO_GLOW[style] then
-            style = "blizzard"
-        end
+        if style ~= "solid" and not ROT_STYLE_TO_GLOW[style] then style = "blizzard" end
 
         if style ~= "blizzard" then
             local hf0 = rfc.rotationHighlight
             if hf0 then
-                if hf0.Flipbook and hf0.Flipbook.Anim then
-                    hf0.Flipbook.Anim:Stop()
-                end
+                if hf0.Flipbook and hf0.Flipbook.Anim then hf0.Flipbook.Anim:Stop() end
                 hf0:Hide()
             end
             local overlayFrame = rfc.rotationCustomHighlight
@@ -293,9 +271,7 @@ do
         local hf = rfc.rotationHighlight
         if not hf then
             hf = _rotCreateHighlight(iconTex)
-            if not hf then
-                return
-            end
+            if not hf then return end
             rfc.rotationHighlight = hf
         end
         if hf.Flipbook then
@@ -310,9 +286,7 @@ do
         hf:Show()
         if hf.Flipbook and hf.Flipbook.Anim then
             hf.Flipbook.Anim:Play()
-            if not mod._rotationInCombat then
-                hf.Flipbook.Anim:Stop()
-            end
+            if not mod._rotationInCombat then hf.Flipbook.Anim:Stop() end
         end
     end
 
@@ -343,9 +317,7 @@ do
 
         local oldSet = mod._rotationGlowedIcons
         for iconTex in pairs(oldSet) do
-            if not newSet[iconTex] then
-                _rotHide(iconTex)
-            end
+            if not newSet[iconTex] then _rotHide(iconTex) end
         end
         _rotSpareSet = oldSet
         mod._rotationGlowedIcons = newSet
@@ -362,9 +334,7 @@ do
         UpdateRotationHighlightsNow()
     end)
 
-    local function QueueRotationHighlight()
-        _rotDirty:Show()
-    end
+    local function QueueRotationHighlight() _rotDirty:Show() end
     mod.UpdateRotationHighlights = QueueRotationHighlight
 
     local function _rotSyncCombat()
@@ -375,13 +345,9 @@ do
             local hf = rfc2 and rfc2.rotationHighlight
             if hf and hf:IsShown() and hf.Flipbook and hf.Flipbook.Anim then
                 if mod._rotationInCombat then
-                    if not hf.Flipbook.Anim:IsPlaying() then
-                        hf.Flipbook.Anim:Play()
-                    end
+                    if not hf.Flipbook.Anim:IsPlaying() then hf.Flipbook.Anim:Play() end
                 else
-                    if hf.Flipbook.Anim:IsPlaying() then
-                        hf.Flipbook.Anim:Stop()
-                    end
+                    if hf.Flipbook.Anim:IsPlaying() then hf.Flipbook.Anim:Stop() end
                 end
             end
         end
@@ -389,33 +355,35 @@ do
     mod._syncRotationCombatState = _rotSyncCombat
 
     function mod.InstallRotationHook()
-        if mod._rotationHookInstalled then
-            return
-        end
+        if mod._rotationHookInstalled then return end
         mod._rotationHookInstalled = true
 
         _rotSyncCombat()
 
         if EventRegistry and EventRegistry.RegisterCallback then
-            EventRegistry:RegisterCallback("AssistedCombatManager.OnAssistedHighlightSpellChange", function()
-                QueueRotationHighlight()
-            end, "ECME_CDM_RotationHelper")
+            EventRegistry:RegisterCallback(
+                "AssistedCombatManager.OnAssistedHighlightSpellChange",
+                function() QueueRotationHighlight() end,
+                "ECME_CDM_RotationHelper"
+            )
             -- Clear highlights if the user flips Blizzard's CVar off at runtime.
-            EventRegistry:RegisterCallback("AssistedCombatManager.OnSetUseAssistedHighlight", function()
-                QueueRotationHighlight()
-            end, "ECME_CDM_RotationHelper_CVar")
+            EventRegistry:RegisterCallback(
+                "AssistedCombatManager.OnSetUseAssistedHighlight",
+                function() QueueRotationHighlight() end,
+                "ECME_CDM_RotationHelper_CVar"
+            )
         end
 
         if AssistedCombatManager and AssistedCombatManager.UpdateAllAssistedHighlightFramesForSpell then
-            hooksecurefunc(AssistedCombatManager, "UpdateAllAssistedHighlightFramesForSpell", function()
-                QueueRotationHighlight()
-            end)
+            hooksecurefunc(
+                AssistedCombatManager,
+                "UpdateAllAssistedHighlightFramesForSpell",
+                function() QueueRotationHighlight() end
+            )
         end
 
         -- Re-run after bar rebuilds so the shine follows icon recycling.
-        if mod.CollectAndReanchor then
-            hooksecurefunc(mod, "CollectAndReanchor", QueueRotationHighlight)
-        end
+        if mod.CollectAndReanchor then hooksecurefunc(mod, "CollectAndReanchor", QueueRotationHighlight) end
 
         QueueRotationHighlight()
     end
@@ -425,9 +393,7 @@ end
 function mod.RefreshItemCountOOCBars()
     local profile = ECME.db and ECME.db.profile
     local barList = profile and profile.cdmBars and profile.cdmBars.bars
-    if not barList or not mod.RefreshCDMIconAppearance then
-        return
-    end
+    if not barList or not mod.RefreshCDMIconAppearance then return end
     local any
     for _, edge in ipairs(barList) do
         if edge.itemCountOOC and edge.key then
@@ -435,9 +401,7 @@ function mod.RefreshItemCountOOCBars()
             any = true
         end
     end
-    if any then
-        mod._RefreshNativeHealthstoneCounts()
-    end
+    if any then mod._RefreshNativeHealthstoneCounts() end
 end
 
 -- TAINT LAW (field-proven 2026-08-31, 24x error burst in the field): NEVER
@@ -464,9 +428,7 @@ function mod.ApplyOverrideRangeTint(iconTex, overrideSpellID)
     local fd = _getFD(iconTex)
     local texture = fd and fd.tex
     local C = CooldownViewerConstants
-    if not (texture and C) then
-        return
-    end
+    if not (texture and C) then return end
     -- Live-override count, kept on the nil<->value transitions of the ONLY
     -- writer of _oorSpellID: RepaintOverrideRange gates its whole icon walk on
     -- it, so the event dispatches Blizzard's own base-spell registrations
@@ -481,16 +443,10 @@ function mod.ApplyOverrideRangeTint(iconTex, overrideSpellID)
         local guard = false
         hooksecurefunc(texture, "SetVertexColor", function()
             local spellRef = fd._oorSpellID
-            if guard or not spellRef then
-                return
-            end
+            if guard or not spellRef then return end
             local region = C_Spell.IsSpellInRange(spellRef)
-            if issecretvalue and issecretvalue(region) then
-                return
-            end
-            if region ~= false then
-                return
-            end
+            if issecretvalue and issecretvalue(region) then return end
+            if region ~= false then return end
             guard = true
             texture:SetVertexColor(C.ITEM_NOT_IN_RANGE_COLOR:GetRGBA())
             guard = false
@@ -499,21 +455,15 @@ function mod.ApplyOverrideRangeTint(iconTex, overrideSpellID)
     -- Repaint once now: the hook only rides Blizzard's own writes, and the swap
     -- that brought us here does not produce one.
     local inRange = overrideSpellID and C_Spell.IsSpellInRange(overrideSpellID)
-    if issecretvalue and issecretvalue(inRange) then
-        return
-    end
+    if issecretvalue and issecretvalue(inRange) then return end
     if inRange == false then
         texture:SetVertexColor(C.ITEM_NOT_IN_RANGE_COLOR:GetRGBA())
         return
     end
     local spellRef = overrideSpellID or iconTex.rangeCheckSpellID
-    if not spellRef then
-        return
-    end
+    if not spellRef then return end
     local usable, notEnoughMana = C_Spell.IsSpellUsable(spellRef)
-    if issecretvalue and (issecretvalue(usable) or issecretvalue(notEnoughMana)) then
-        return
-    end
+    if issecretvalue and (issecretvalue(usable) or issecretvalue(notEnoughMana)) then return end
     if usable then
         texture:SetVertexColor(C.ITEM_USABLE_COLOR:GetRGBA())
     elseif notEnoughMana then
@@ -533,9 +483,7 @@ end
 function mod.BlizzardArmsRange(spellId)
     for _, icons in pairs(cdmBarIcons) do
         for _, iconTex in ipairs(icons) do
-            if iconTex.rangeCheckSpellID == spellId then
-                return true
-            end
+            if iconTex.rangeCheckSpellID == spellId then return true end
         end
     end
     return false
@@ -548,9 +496,7 @@ function mod.ArmOverrideRange(baseSpellID, overrideSpellID)
         mod._oorArmed = armed
     end
     local previous = armed[baseSpellID]
-    if previous == overrideSpellID then
-        return
-    end
+    if previous == overrideSpellID then return end
     if previous then
         -- Also left armed while a custom spell icon holds it (CdmHooks, Out of Range Coloring).
         if not mod.BlizzardArmsRange(previous) and not mod.CustomSpellRangeHolds(previous) then
@@ -568,9 +514,7 @@ end
 -- dispatch we ignore, but they would accumulate across a session of swaps.
 function mod.DisarmOverrideRanges()
     local armed = mod._oorArmed
-    if not armed then
-        return
-    end
+    if not armed then return end
     for base, shade in pairs(armed) do
         if not mod.BlizzardArmsRange(shade) and not mod.CustomSpellRangeHolds(shade) then
             C_Spell.EnableSpellRangeCheck(shade, false)
@@ -584,9 +528,7 @@ function mod.DisarmOverrideRanges()
     for _, icons in pairs(cdmBarIcons) do
         for _, iconTex in ipairs(icons) do
             local fd = _getFD(iconTex)
-            if fd and fd._oorSpellID ~= nil then
-                fd._oorSpellID = nil
-            end
+            if fd and fd._oorSpellID ~= nil then fd._oorSpellID = nil end
         end
     end
     mod._oorLiveCount = 0
@@ -600,21 +542,13 @@ end
 function mod.RepaintOverrideRange(spellId)
     -- No icon holds a live override: nothing here could match. Reads only our
     -- own counter, so it runs before any payload value is touched.
-    if (mod._oorLiveCount or 0) <= 0 then
-        return
-    end
-    if type(spellId) ~= "number" then
-        return
-    end
-    if issecretvalue and issecretvalue(spellId) then
-        return
-    end
+    if (mod._oorLiveCount or 0) <= 0 then return end
+    if type(spellId) ~= "number" then return end
+    if issecretvalue and issecretvalue(spellId) then return end
     for _, icons in pairs(cdmBarIcons) do
         for _, iconTex in ipairs(icons) do
             local fd = _getFD(iconTex)
-            if fd and fd._oorSpellID == spellId then
-                mod.ApplyOverrideRangeTint(iconTex, spellId)
-            end
+            if fd and fd._oorSpellID == spellId then mod.ApplyOverrideRangeTint(iconTex, spellId) end
         end
     end
 end
@@ -623,12 +557,8 @@ end
 function mod.ResyncCdmRange(baseSpellID, overrideSpellID)
     -- Secret payload fails open, before any truthiness test or comparison
     -- touches it: same guard the action bar dispatcher puts on this event.
-    if issecretvalue and (issecretvalue(baseSpellID) or issecretvalue(overrideSpellID)) then
-        return
-    end
-    if not (baseSpellID and C_Spell and C_Spell.IsSpellInRange) then
-        return
-    end
+    if issecretvalue and (issecretvalue(baseSpellID) or issecretvalue(overrideSpellID)) then return end
+    if not (baseSpellID and C_Spell and C_Spell.IsSpellInRange) then return end
     -- nil once the override lapses, which hands the icon back to Blizzard: their
     -- own check is armed on the base spell and is right again from that moment.
     local liveOverride = (overrideSpellID and overrideSpellID ~= baseSpellID) and overrideSpellID or nil

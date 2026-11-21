@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- CUI_ResourceBars_ForeverDruidMana.lua
 -- WoW FOREVER ONLY, DRUID ONLY: Mana Bar while Shapeshifted.
 --
@@ -30,13 +28,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local CUI = _G.CludesUI
 
-if not CUI.IS_FOREVER then
-    return
-end
+if not CUI.IS_FOREVER then return end
 local _, playerClass = UnitClass("player")
-if playerClass ~= "DRUID" then
-    return
-end
+if playerClass ~= "DRUID" then return end
 
 local MANA = (Enum and Enum.PowerType and Enum.PowerType.Mana) or 0
 local WHITE = "Interface\\Buttons\\WHITE8x8"
@@ -64,9 +58,7 @@ local DruidMana = { enabled = false, shown = false, live = false, pbVis = true, 
 -- footprint tracks the form (not transient paint state) and is nil on every other
 -- client/class and in the carve/inside modes that add no height below the frame.
 mod._FDMStackBottomFrame = function()
-    if DruidMana.shown and not DruidMana.parked and DruidMana.host then
-        return DruidMana.host
-    end
+    if DruidMana.shown and not DruidMana.parked and DruidMana.host then return DruidMana.host end
 end
 
 -------------------------------------------------------------------------------
@@ -75,18 +67,14 @@ end
 
 -- Secret values throw on comparison and on truth tests: every API read passes
 -- here before it is looked at.
-local function Plain(val)
-    return not (issecretvalue and issecretvalue(val))
-end
+local function Plain(val) return not (issecretvalue and issecretvalue(val)) end
 
 -- The form's power is not mana. Asks the Power Bar's own resolver, so Power
 -- Type "Mana" (the bar itself stays on mana) reads as mana here too. A
 -- restricted answer keeps the last verdict.
 local function FormWantsBar()
     local pt = _G._CURB_GetPrimaryPowerType()
-    if not Plain(pt) then
-        return DruidMana.shown
-    end
+    if not Plain(pt) then return DruidMana.shown end
     return type(pt) == "number" and pt ~= MANA
 end
 
@@ -94,9 +82,7 @@ end
 -- fallbacks included). Read per apply: the palette memo is wiped on edits.
 local function ManaColor()
     local pc = _G._CURB_PowerColors[MANA]
-    if pc then
-        return pc[1], pc[2], pc[3]
-    end
+    if pc then return pc[1], pc[2], pc[3] end
     return 1, 1, 1
 end
 
@@ -123,9 +109,7 @@ end
 
 -- One side ("l" / "r" / "t" / "b") of a reach, 0 when drawn inside.
 local function Side(side, left, right, top, bottom)
-    if not left then
-        return 0
-    end
+    if not left then return 0 end
     local val
     if side == "l" then
         val = left
@@ -146,9 +130,7 @@ local function PowerBarReach(pp, place, pbSide, vertical, es)
         -- The panel's opaque rim (ns.ERB_BlizzMatchPad): 2 above, 1 below,
         -- turned with a vertical bar to 2 left, 1 right. The panel's shadow
         -- draws under this bar.
-        if not mod.ERB_BlizzMatchPad(vertical) then
-            return 0
-        end
+        if not mod.ERB_BlizzMatchPad(vertical) then return 0 end
         return (place == "above") and 2 or 1
     elseif style == "classic" then
         -- The vanilla frame's whole reach, so its art never covers this bar;
@@ -163,9 +145,7 @@ end
 -- Inside: the Power Bar's hash-line inset (an exact solid border size, else
 -- the step). The stock styles draw their frame outside the fill: none.
 local function InsideInset(pp)
-    if mod.ERB_BarsBlizz() then
-        return 0
-    end
+    if mod.ERB_BarsBlizz() then return 0 end
     local bs = pp.borderSize or 0
     local texture = pp.borderTexture
     if not texture or texture == "" or texture == "solid" then
@@ -186,24 +166,14 @@ local function DrawMana(force)
     local current = UnitPower("player", MANA)
     local mx = UnitPowerMax("player", MANA)
     local curPlain, mxPlain = Plain(current), Plain(mx)
-    if mxPlain and (type(mx) ~= "number" or mx <= 0) then
-        return
-    end
+    if mxPlain and (type(mx) ~= "number" or mx <= 0) then return end
     if curPlain then
-        if type(current) ~= "number" then
-            return
-        end
-        if current < 0 then
-            current = 0
-        end
+        if type(current) ~= "number" then return end
+        if current < 0 then current = 0 end
     end
     if curPlain and mxPlain then
-        if not force and current == DruidMana.cur and mx == DruidMana.mx then
-            return
-        end
-        if force or mx ~= DruidMana.mx then
-            scrollBar:SetMinMaxValues(0, mx)
-        end
+        if not force and current == DruidMana.cur and mx == DruidMana.mx then return end
+        if force or mx ~= DruidMana.mx then scrollBar:SetMinMaxValues(0, mx) end
         DruidMana.cur, DruidMana.mx = current, mx
     else
         DruidMana.cur, DruidMana.mx = nil, nil
@@ -217,9 +187,7 @@ local function DrawMana(force)
         scrollBar:SetValue(current)
     end
 
-    if not DruidMana.textOn then
-        return
-    end
+    if not DruidMana.textOn then return end
     local fmt = DruidMana.fmt
     -- A "smart" here reads as the value: WoW Forever has no Smart Text.
     local wantPct = fmt == "perpp" or fmt == "both"
@@ -243,9 +211,7 @@ end
 -- edge into live repaints at once (mana moved while unregistered).
 local function UpdateLive()
     local live = (DruidMana.shown and DruidMana.pbVis) and true or false
-    if live == DruidMana.live then
-        return
-    end
+    if live == DruidMana.live then return end
     DruidMana.live = live
     if live then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
@@ -264,15 +230,11 @@ end
 local cascadeQueued = false
 local function CascadeSettled()
     cascadeQueued = false
-    if not CUI._unlockActive then
-        CUI.PropagateAnchorChain("ERB_Power")
-    end
+    if not CUI._unlockActive then CUI.PropagateAnchorChain("ERB_Power") end
 end
 local function ReportExtent()
     local sig = (DruidMana.shown and not DruidMana.parked and DruidMana.extSide) and DruidMana.extSig or nil
-    if sig == DruidMana.extLast then
-        return
-    end
+    if sig == DruidMana.extLast then return end
     DruidMana.extLast = sig
     if not CUI._unlockActive and CUI.PropagateAnchorChain then
         CUI.PropagateAnchorChain("ERB_Power")
@@ -300,9 +262,7 @@ evf:SetScript("OnEvent", function(_, evt, _, powerType)
         Refresh()
     elseif DruidMana.live then
         -- Energy and rage ticks share these events: mana only.
-        if Plain(powerType) and powerType and powerType ~= "MANA" then
-            return
-        end
+        if Plain(powerType) and powerType and powerType ~= "MANA" then return end
         DrawMana(false)
     end
 end)
@@ -317,9 +277,7 @@ end)
 local function EnsureBuilt(pb)
     local owner = DruidMana.host
     if owner then
-        if owner:GetParent() ~= pb then
-            owner:SetParent(pb)
-        end
+        if owner:GetParent() ~= pb then owner:SetParent(pb) end
         return
     end
     owner = CreateFrame("Frame", nil, pb)
@@ -364,9 +322,7 @@ local function Layout(pb, pp, g, cfg)
     local ori = pp.orientation or g.orientation or "HORIZONTAL"
     local vertical = mod.IsVerticalOrientation(ori)
     local place = cfg.position
-    if place ~= "above" and place ~= "inside" then
-        place = "below"
-    end
+    if place ~= "above" and place ~= "inside" then place = "below" end
     local thick = Pix.SnapForES(max(cfg.height or 6, 1), es)
     local ox = Pix.SnapForES(cfg.offsetX or 0, es)
     local oy = Pix.SnapForES(cfg.offsetY or 0, es)
@@ -376,9 +332,7 @@ local function Layout(pb, pp, g, cfg)
         local index = Pix.SnapForES(InsideInset(pp), es)
         -- Never thicker than the Power Bar's fill.
         local room = (vertical and pb:GetWidth() or pb:GetHeight()) - 2 * index
-        if room > 0 and thick > room then
-            thick = room
-        end
+        if room > 0 and thick > room then thick = room end
         if vertical then
             owner:SetPoint("TOPRIGHT", pb, "TOPRIGHT", ox - index, oy - index)
             owner:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - index, oy + index)
@@ -441,9 +395,7 @@ end
 local function ApplyBorder(pp, inside)
     local bdr = DruidMana.border
     -- Lost-rect recovery, see the cast bar border in the main file.
-    if not bdr:GetLeft() then
-        bdr:SetAllPoints(DruidMana.host)
-    end
+    if not bdr:GetLeft() then bdr:SetAllPoints(DruidMana.host) end
     if inside then
         CUI.ApplyBorderStyle(bdr, 0, 0, 0, 0, 0, "solid")
         return
@@ -469,9 +421,7 @@ local function ApplyBorder(pp, inside)
     )
     -- The strip container was levelled off the border frame when it was made.
     local edges = CUI.PP.GetBorders(bdr)
-    if edges then
-        edges:SetFrameLevel(bdr:GetFrameLevel() + 1)
-    end
+    if edges then edges:SetFrameLevel(bdr:GetFrameLevel() + 1) end
 end
 
 -- Orientation, the Power Bar's fill texture (the plain user texture under
@@ -543,9 +493,7 @@ end
 
 -- Off: every event dropped, the bar hidden and its anchor extent handed back.
 local function Teardown()
-    if not DruidMana.enabled then
-        return
-    end
+    if not DruidMana.enabled then return end
     DruidMana.enabled, DruidMana.shown, DruidMana.live = false, false, false
     DruidMana.cur, DruidMana.mx = nil, nil
     evf:UnregisterAllEvents()
@@ -563,9 +511,7 @@ end
 function mod.FDM_Apply(pb, pp, g)
     local ERB = mod.ERB
     local profile = ERB.db and ERB.db.profile
-    if not profile then
-        return
-    end
+    if not profile then return end
     pb = pb or DruidMana.pb or _G.ERB_PrimaryBar
     pp = pp or _G._CURB_ResolvePowerCfg(profile)
     local c = pp and pp.foreverDruidMana
@@ -590,9 +536,7 @@ function mod.FDM_Apply(pb, pp, g)
     Refresh()
     -- Already live: the new look and text settings paint now (an edge into
     -- live painted in UpdateLive).
-    if wasLive and DruidMana.live then
-        DrawMana(true)
-    end
+    if wasLive and DruidMana.live then DrawMana(true) end
 end
 
 -- The Power Bar's visibility pass (vis = true / "mouseover" / false / nil).
@@ -600,28 +544,20 @@ end
 -- fades need nothing here: this bar is the Power Bar's child.
 function mod.FDM_Visibility(vis)
     local on = (vis == true or vis == "mouseover")
-    if on == DruidMana.pbVis then
-        return
-    end
+    if on == DruidMana.pbVis then return end
     DruidMana.pbVis = on
-    if DruidMana.enabled then
-        UpdateLive()
-    end
+    if DruidMana.enabled then UpdateLive() end
 end
 
 -- The bar frame while it is shown for the current form (Show When Missing).
-function mod.FDM_Host()
-    return DruidMana.shown and DruidMana.host or nil
-end
+function mod.FDM_Host() return DruidMana.shown and DruidMana.host or nil end
 
 -- Show When Energy Missing parks this bar out of sight while the Power Bar is
 -- revealed (main file, ns.ERB_MissingHost): its edge goes back to the elements
 -- below for that time.
 function mod.FDM_Parked(parked)
     parked = parked and true or false
-    if parked == DruidMana.parked then
-        return
-    end
+    if parked == DruidMana.parked then return end
     DruidMana.parked = parked
     ReportExtent()
 end
@@ -636,7 +572,12 @@ end
 -- any provider installed before this file loaded.
 local prevExtent = CUI._GetAnchorTargetExtent
 CUI._GetAnchorTargetExtent = function(targetKey, side)
-    if targetKey == "ERB_Power" and DruidMana.shown and not DruidMana.parked and side == DruidMana.extSide then
+    if
+        targetKey == "ERB_Power"
+        and DruidMana.shown
+        and not DruidMana.parked
+        and side == DruidMana.extSide
+    then
         local owner, pb = DruidMana.host, DruidMana.pb
         local val, pv
         if side == "BOTTOM" then
@@ -652,18 +593,14 @@ CUI._GetAnchorTargetExtent = function(targetKey, side)
             -- Only ever outward: an offset that tucks it back toward the
             -- Power Bar leaves the Power Bar's edge in charge.
             if side == "BOTTOM" or side == "LEFT" then
-                if pv < val then
-                    val = pv
-                end
+                if pv < val then val = pv end
             elseif pv > val then
                 val = pv
             end
             return val * owner:GetEffectiveScale() / UIParent:GetEffectiveScale()
         end
     end
-    if prevExtent then
-        return prevExtent(targetKey, side)
-    end
+    if prevExtent then return prevExtent(targetKey, side) end
     return nil
 end
 
@@ -672,12 +609,8 @@ end
 -- the same edge linked elements measure from; 0 otherwise. Power Bar units
 -- (this bar is its child: one scale).
 function mod.FDM_BottomExtra()
-    if not (DruidMana.shown and not DruidMana.parked and DruidMana.extSide == "BOTTOM") then
-        return 0
-    end
+    if not (DruidMana.shown and not DruidMana.parked and DruidMana.extSide == "BOTTOM") then return 0 end
     local hb, pb = DruidMana.host:GetBottom(), DruidMana.pb:GetBottom()
-    if not (hb and pb) or hb >= pb then
-        return 0
-    end
+    if not (hb and pb) or hb >= pb then return 0 end
     return pb - hb
 end

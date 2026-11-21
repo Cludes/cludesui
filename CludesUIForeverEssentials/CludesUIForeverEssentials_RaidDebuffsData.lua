@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIForeverEssentials_RaidDebuffsData.lua -- GENERATED, do not edit.
 --  Every WoW Forever spell ID carrying each raid debuff's name (all ranks and

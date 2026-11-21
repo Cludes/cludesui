@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Quickdraw_Nests.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Inner = mod._qdInternals
 -- CludesUIQuickdraw.lua or an earlier Quickdraw file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local floor, ceil, min, max, abs = math.floor, math.ceil, math.min, math.max, math.abs
@@ -92,9 +88,7 @@ local FAN_CANCEL_REACH = 2.25
 -- column always absorbs it -- 3 becomes one row of three, 7 becomes 4 + 3.
 local function AutoGridColumns(isShown)
     local cols = ceil(sqrt(isShown))
-    if cols < isShown and isShown % cols == 1 then
-        cols = cols + 1
-    end
+    if cols < isShown and isShown % cols == 1 then cols = cols + 1 end
     return min(MAX_SLOTS, max(1, cols))
 end
 
@@ -112,9 +106,7 @@ function PaletteView:GridDims(shownOverride)
 
     local mode = self:LayoutMode()
     if mode == "FAN" then
-        if self:FanHoriz() then
-            return isShown, 1
-        end
+        if self:FanHoriz() then return isShown, 1 end
         return 1, isShown
     end
 
@@ -129,9 +121,7 @@ function PaletteView:GridDims(shownOverride)
     else
         cols = min(MAX_SLOTS, max(1, floor(profile.gridColumns or 4)))
     end
-    if cols > isShown then
-        cols = isShown
-    end
+    if cols > isShown then cols = isShown end
     return cols, ceil(isShown / cols)
 end
 
@@ -198,9 +188,7 @@ end
 local function PerimeterPoint(t, HX, HY, Radius)
     local sx, sy, arc, L = PerimeterSpan(HX, HY, Radius)
     t = t % L
-    if t < sx then
-        return -HX + Radius + t, HY, "X", 1, 0, 1
-    end
+    if t < sx then return -HX + Radius + t, HY, "X", 1, 0, 1 end
     t = t - sx
     if t < arc then
         local a = t / Radius
@@ -211,9 +199,7 @@ local function PerimeterPoint(t, HX, HY, Radius)
         return HX - Radius + Radius * sin(a), HY - Radius + Radius * cos(a), ax, 1, sin(a), cos(a)
     end
     t = t - arc
-    if t < sy then
-        return HX, HY - Radius - t, "Y", 1, 1, 0
-    end
+    if t < sy then return HX, HY - Radius - t, "Y", 1, 1, 0 end
     t = t - sy
     if t < arc then
         local a = t / Radius
@@ -224,9 +210,7 @@ local function PerimeterPoint(t, HX, HY, Radius)
         return HX - Radius + Radius * cos(a), -HY + Radius - Radius * sin(a), ax, sg, cos(a), -sin(a)
     end
     t = t - arc
-    if t < sx then
-        return HX - Radius - t, -HY, "X", -1, 0, -1
-    end
+    if t < sx then return HX - Radius - t, -HY, "X", -1, 0, -1 end
     t = t - sx
     if t < arc then
         local a = t / Radius
@@ -234,9 +218,7 @@ local function PerimeterPoint(t, HX, HY, Radius)
         return -HX + Radius - Radius * sin(a), -HY + Radius - Radius * cos(a), ax, -1, -sin(a), -cos(a)
     end
     t = t - arc
-    if t < sy then
-        return -HX, -HY + Radius + t, "Y", -1, -1, 0
-    end
+    if t < sy then return -HX, -HY + Radius + t, "Y", -1, -1, 0 end
     t = t - sy
     local a = t / Radius
     local ax, sg = "Y", -1
@@ -265,9 +247,7 @@ local function PerimeterStep(ta, HX, HY, Radius, pitch)
     for _ = 1, 8 do
         local bx, by = PerimeterPoint(ta + dt, HX, HY, Radius)
         local sep = max(abs(bx - ax), abs(by - ay))
-        if sep >= pitch - 0.5 then
-            break
-        end
+        if sep >= pitch - 0.5 then break end
         dt = dt + (pitch - sep)
     end
     return dt
@@ -311,15 +291,9 @@ local function PerimeterNearest(px, py, HX, HY, Radius, positive, axisOnly)
         local dy = py - ((py > 0) and cy or -cy)
         -- Each arc measured from its own start, the way PerimeterPoint runs it,
         -- and the argument order per arc is that arc's own sin/cos pair there.
-        if px > 0 and py > 0 then
-            return sx + atan2(dx, dy) * Radius
-        end
-        if px > 0 then
-            return sx + sy + arc + atan2(-dy, dx) * Radius
-        end
-        if py < 0 then
-            return 2 * sx + sy + 2 * arc + atan2(-dx, -dy) * Radius
-        end
+        if px > 0 and py > 0 then return sx + atan2(dx, dy) * Radius end
+        if px > 0 then return sx + sy + arc + atan2(-dy, dx) * Radius end
+        if py < 0 then return 2 * sx + sy + 2 * arc + atan2(-dx, -dy) * Radius end
         return 2 * sx + 2 * sy + 3 * arc + atan2(dy, -dx) * Radius
     end
 
@@ -361,28 +335,18 @@ local function PerimeterNearest(px, py, HX, HY, Radius, positive, axisOnly)
     if tie[1] and tie[2] and tie[3] and tie[4] then
         -- No lean in any direction: the positive tie-break picks the edge
         -- and the run sits on the middle of it.
-        if positive then
-            return sx * 0.5
-        end
+        if positive then return sx * 0.5 end
         return sx * 1.5 + sy + 2 * arc
     end
     -- An opposite pair is the tie-break's other question, and answering it here
     -- leaves at most two sides standing, which can then only be adjacent.
-    if tie[1] and tie[3] then
-        tie[positive and 3 or 1] = false
-    end
-    if tie[2] and tie[4] then
-        tie[positive and 4 or 2] = false
+    if tie[1] and tie[3] then tie[positive and 3 or 1] = false end
+    if tie[2] and tie[4] then tie[positive and 4 or 2] = false end
+    for si = 1, 4 do
+        if tie[si] and tie[(si % 4) + 1] then return mid[si] end
     end
     for si = 1, 4 do
-        if tie[si] and tie[(si % 4) + 1] then
-            return mid[si]
-        end
-    end
-    for si = 1, 4 do
-        if tie[si] then
-            return tbl[si]
-        end
+        if tie[si] then return tbl[si] end
     end
 end
 
@@ -437,17 +401,13 @@ function PaletteView:NestMetrics(isShown)
     -- that rearrange a block have nothing to rearrange: it is always a small
     -- block of its own, centred on the parent and broken out perpendicular to
     -- the strip, whatever gridNestStyle asks for.
-    if cols <= 1 or rowList <= 1 then
-        m.style = "STRIP"
-    end
+    if cols <= 1 or rowList <= 1 then m.style = "STRIP" end
     return m
 end
 
 -- Box for one cell of a run travelling on `axis`.
 local function RunBox(posX, posY, axis, along, across)
-    if axis == "X" then
-        return { x = posX, y = posY, hw = along * 0.5, hh = across * 0.5 }
-    end
+    if axis == "X" then return { x = posX, y = posY, hw = along * 0.5, hh = across * 0.5 } end
     return { x = posX, y = posY, hw = across * 0.5, hh = along * 0.5 }
 end
 
@@ -551,9 +511,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
         local room, walked = 1, 0
         while room < claim.n do
             local step = PerimeterStep(claim.t0 + walked, HX, HY, Radius, childPitch)
-            if walked + step > L - childPitch then
-                break
-            end
+            if walked + step > L - childPitch then break end
             walked, room = walked + step, room + 1
         end
         local cols = room
@@ -621,9 +579,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
                 -- Square icons drawn on the cell centres, so a pair clears as
                 -- soon as ONE axis separates them by a whole icon.
                 local sep = max(abs(pa.x - pb.x), abs(pa.y - pb.y))
-                if sep < tight then
-                    tight = sep
-                end
+                if sep < tight then tight = sep end
             end
         end
         claim.icon = tight
@@ -642,9 +598,7 @@ function PaletteView:PerimeterNest(claims, isShown, m)
             groups[gi].near = near
         end
         tsort(groups, function(g1, g2)
-            if g1.near ~= g2.near then
-                return g1.near < g2.near
-            end
+            if g1.near ~= g2.near then return g1.near < g2.near end
             return g1.order < g2.order
         end)
         claim.groups = groups
@@ -685,7 +639,8 @@ function PaletteView:HaloNest(claims, isShown, m)
         claim.cells = {}
         for jdx = 1, min(claim.n, #HALO_DIRS) do
             local skinData = HALO_DIRS[jdx]
-            claim.cells[jdx] = { x = bx + skinData[1] * hp, y = by + skinData[2] * hp, hw = hp * 0.5, hh = hp * 0.5 }
+            claim.cells[jdx] =
+                { x = bx + skinData[1] * hp, y = by + skinData[2] * hp, hw = hp * 0.5, hh = hp * 0.5 }
         end
         -- The centre is left to the parent, which fires nothing: a pointer that
         -- comes to rest back on the entry it opened does nothing, rather than
@@ -736,14 +691,10 @@ function PaletteView:StripCellNest(claims, isShown, m)
         -- neighbour.
         local room = math.huge
         for jdx = 1, #claims do
-            if jdx ~= index then
-                room = min(room, abs(claims[jdx].t0 - claim.t0) * 0.5)
-            end
+            if jdx ~= index then room = min(room, abs(claims[jdx].t0 - claim.t0) * 0.5) end
         end
         local ccols = min(MAX_SLOTS, max(1, ceil(sqrt(claim.n))))
-        if room < math.huge then
-            ccols = min(ccols, max(1, floor(room * 2 / m.childPitch)))
-        end
+        if room < math.huge then ccols = min(ccols, max(1, floor(room * 2 / m.childPitch))) end
 
         claim.cells = {}
         for jdx = 1, claim.n do
@@ -890,7 +841,12 @@ function PaletteView:CellChildGeom(claims, isShown)
                 -- drops the far ones rather than the one the reach crosses.
                 for gi = 1, #sides do
                     local run = RunReach(claim.parentBox, NestBBox(sides[gi].cells))
-                    AddRegion(claim, GraceBox(run, grace, sides[gi].axis, sides[gi].sign), sides[gi].axis, holes)
+                    AddRegion(
+                        claim,
+                        GraceBox(run, grace, sides[gi].axis, sides[gi].sign),
+                        sides[gi].axis,
+                        holes
+                    )
                 end
             else
                 local nest = NestBBox(claim.cells)
@@ -926,14 +882,10 @@ end
 -- passed through the entry that opens it.
 function PaletteView:NestHit(dx, dy, armed)
     local c = armed and self.claims and self.claims[armed]
-    if not c or not c.cells then
-        return
-    end
+    if not c or not c.cells then return end
     for jdx = 1, c.n do
         local b = c.cells[jdx]
-        if abs(dx - b.x) <= b.hw and abs(dy - b.y) <= b.hh then
-            return c.base + jdx, c
-        end
+        if abs(dx - b.x) <= b.hw and abs(dy - b.y) <= b.hh then return c.base + jdx, c end
     end
 end
 

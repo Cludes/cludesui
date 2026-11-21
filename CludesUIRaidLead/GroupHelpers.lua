@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  GroupHelpers.lua -- Raid Lead: feast alerts, Gateway Usable, Stats panel.
 --
@@ -44,29 +42,17 @@ local DROP_TEXT = {
 }
 local GATEWAY_SHARD = 188152
 
-local function Font()
-    return CludesUI.GetFontPath(nil)
-end
-local function Secret(val)
-    return issecretvalue and issecretvalue(val)
-end
+local function Font() return CludesUI.GetFontPath(nil) end
+local function Secret(val) return issecretvalue and issecretvalue(val) end
 
 function mod.HelperSettings()
     local profile = mod.RaidLeadDB()
     profile.helpers = profile.helpers or {}
     local cfg = profile.helpers
-    if cfg.drops == nil then
-        cfg.drops = true
-    end
-    if cfg.dropSound == nil then
-        cfg.dropSound = true
-    end
-    if cfg.gateway == nil then
-        cfg.gateway = true
-    end
-    if cfg.stats == nil then
-        cfg.stats = false
-    end
+    if cfg.drops == nil then cfg.drops = true end
+    if cfg.dropSound == nil then cfg.dropSound = true end
+    if cfg.gateway == nil then cfg.gateway = true end
+    if cfg.stats == nil then cfg.stats = false end
     return cfg
 end
 
@@ -76,30 +62,20 @@ end
 --- Called by Comms.lua (and for our own drops) with who dropped what.
 function mod.ReceiveDrop(who, kind)
     local cfg = mod.HelperSettings()
-    if not cfg.drops or not DROP_TEXT[kind] then
-        return
-    end
+    if not cfg.drops or not DROP_TEXT[kind] then return end
     local name = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
     CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kind]))
-    if cfg.dropSound then
-        PlaySound(SOUNDKIT.READY_CHECK, "Master")
-    end
+    if cfg.dropSound then PlaySound(SOUNDKIT.READY_CHECK, "Master") end
 end
 
 local dropEv = CreateFrame("Frame")
 dropEv:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 dropEv:SetScript("OnEvent", function(_, _, _, _, spellId)
-    if Secret(spellId) then
-        return
-    end
+    if Secret(spellId) then return end
     local kind = DROPS[spellId]
-    if not kind or not IsInGroup() then
-        return
-    end
+    if not kind or not IsInGroup() then return end
     -- Our message comes back to us as well, which prints our own drop.
-    if not (mod.SendDrop and mod.SendDrop(kind)) then
-        mod.ReceiveDrop(UnitName("player"), kind)
-    end
+    if not (mod.SendDrop and mod.SendDrop(kind)) then mod.ReceiveDrop(UnitName("player"), kind) end
 end)
 
 -------------------------------------------------------------------------------
@@ -109,9 +85,7 @@ local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidd
     local frame = CreateFrame("Frame", name, UIParent)
     frame:SetSize(wid, hgt)
     local function Place()
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         local p = mod.HelperSettings()[key]
         frame:ClearAllPoints()
         if p then
@@ -131,22 +105,14 @@ local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidd
                 noAnchorTarget = true,
                 noResize = true,
                 isHidden = isHidden,
-                getFrame = function()
-                    return frame
-                end,
-                getSize = function()
-                    return frame:GetWidth(), frame:GetHeight()
-                end,
+                getFrame = function() return frame end,
+                getSize = function() return frame:GetWidth(), frame:GetHeight() end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     mod.HelperSettings()[key] =
                         { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 end,
-                loadPos = function()
-                    return mod.HelperSettings()[key]
-                end,
-                clearPos = function()
-                    mod.HelperSettings()[key] = nil
-                end,
+                loadPos = function() return mod.HelperSettings()[key] end,
+                clearPos = function() mod.HelperSettings()[key] = nil end,
                 applyPos = Place,
             }),
         }, "CludesUIRaidLead")
@@ -159,9 +125,7 @@ end
 -------------------------------------------------------------------------------
 local gate, gateText
 local function GateUpdate()
-    if not gate then
-        return
-    end
+    if not gate then return end
     local enabled = mod.HelperSettings().gateway and IsInGroup()
     if enabled then
         local usable = C_Item.IsUsableItem(GATEWAY_SHARD)
@@ -176,15 +140,11 @@ end
 local stats, statsText
 local function Pct(func, ...)
     local success, val = pcall(func, ...)
-    if success and type(val) == "number" and not Secret(val) then
-        return val
-    end
+    if success and type(val) == "number" and not Secret(val) then return val end
 end
 
 local function StatsUpdate()
-    if not stats then
-        return
-    end
+    if not stats then return end
     if not mod.HelperSettings().stats then
         stats:Hide()
         return
@@ -198,9 +158,7 @@ local function StatsUpdate()
         local b = Pct(GetVersatilityBonus, CR_VERSATILITY_DAMAGE_DONE) or 0
         vers = a and (a + b)
     end
-    local function F(val)
-        return val and ("%.1f%%"):format(val) or "?"
-    end
+    local function F(val) return val and ("%.1f%%"):format(val) or "?" end
     statsText:SetText(
         ("|cff9aa6b2Crit|r %s\n|cff9aa6b2Haste|r %s\n|cff9aa6b2Mastery|r %s\n|cff9aa6b2Vers|r %s"):format(
             F(crit),
@@ -214,9 +172,7 @@ end
 
 local statsQueued
 local function QueueStats()
-    if statsQueued then
-        return
-    end
+    if statsQueued then return end
     statsQueued = true
     C_Timer.After(0.5, function()
         statsQueued = nil
@@ -252,9 +208,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             160,
             24,
             { "CENTER", UIParent, "CENTER", 0, -60 },
-            function()
-                return not mod.HelperSettings().gateway
-            end
+            function() return not mod.HelperSettings().gateway end
         )
         gateText = gate:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(gateText, 18, nil)
@@ -269,9 +223,7 @@ eventFrame:SetScript("OnEvent", function(_, evt)
             110,
             60,
             { "RIGHT", UIParent, "RIGHT", -260, 0 },
-            function()
-                return not mod.HelperSettings().stats
-            end
+            function() return not mod.HelperSettings().stats end
         )
         statsText = stats:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(statsText, 12, nil)
@@ -292,7 +244,5 @@ eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "ACTIONBAR_UPDATE_USABLE" or evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ENTERING_WORLD" then
         GateUpdate()
     end
-    if evt ~= "ACTIONBAR_UPDATE_USABLE" and evt ~= "GROUP_ROSTER_UPDATE" then
-        QueueStats()
-    end
+    if evt ~= "ACTIONBAR_UPDATE_USABLE" and evt ~= "GROUP_ROSTER_UPDATE" then QueueStats() end
 end)

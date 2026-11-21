@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CooldownManager_Options\Pickers_Options.lua
 --  Cooldown Manager options: buff pickers, spell/item/slot ID popups, value
@@ -8,9 +6,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  from ns._CDMO_OptEnv (filled by CUI_CooldownManager_Options.lua).
 -------------------------------------------------------------------------------
 local mod = CludesUI._ModuleNS["CludesUICooldownManager"]
-if not mod then
-    return
-end -- module disabled: no options page
+if not mod then return end -- module disabled: no options page
 
 -- The options page pool (CludesUI_FramePool.lua): a frame made under a pool
 -- host (a kept picker menu) is handed out again reset to fresh; anywhere else
@@ -26,9 +22,7 @@ local function EnsureAssignedSpells(barKeyE)
     local environ = mod._CDMO_OptEnv
     local NormalizeToBase, ResolveToLive = environ.NormalizeToBase, environ.ResolveToLive
     local sd = mod.GetBarSpellData(barKeyE)
-    if not sd then
-        return sd
-    end
+    if not sd then return sd end
     if sd.assignedSpells then
         -- Normalize overrides to base IDs and dedupe in one pass. EXCEPTION: user-typed
         -- custom spell IDs (sd.customSpellIDs) are EXACT identities (tag, Phase 3 injection,
@@ -63,9 +57,7 @@ local function EnsureAssignedSpells(barKeyE)
                 spellRef = raw
             else
                 spellRef = NormalizeToBase(raw)
-                if customByBase and customByBase[spellRef] then
-                    spellRef = customByBase[spellRef]
-                end
+                if customByBase and customByBase[spellRef] then spellRef = customByBase[spellRef] end
             end
             if not seen[spellRef] then
                 local name = seenRank and not (customN and customN[spellRef]) and RankName(spellRef)
@@ -73,9 +65,7 @@ local function EnsureAssignedSpells(barKeyE)
                     rankCut = true
                 else
                     seen[spellRef] = true
-                    if name then
-                        seenRank[name] = true
-                    end
+                    if name then seenRank[name] = true end
                     sd.assignedSpells[writeIdx] = spellRef
                     writeIdx = writeIdx + 1
                 end
@@ -84,9 +74,7 @@ local function EnsureAssignedSpells(barKeyE)
         for idx = writeIdx, #sd.assignedSpells do
             sd.assignedSpells[idx] = nil
         end
-        if rankCut then
-            mod._spellOrderDirty = true
-        end
+        if rankCut then mod._spellOrderDirty = true end
     end
     -- Append any live-bar spells missing from assignedSpells so the preview always
     -- matches the player's CDM bars (e.g. after re-talenting). EXCEPTION: skip while an
@@ -99,9 +87,7 @@ local function EnsureAssignedSpells(barKeyE)
         local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
         local sk = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
         local aprof = specProfiles and sk and specProfiles[sk]
-        if aprof and aprof._importGhostMode then
-            importPending = true
-        end
+        if aprof and aprof._importGhostMode then importPending = true end
     end
     -- Buff-family bars get buffs ONLY through the picker (ShowBuffBarPicker ->
     -- AddTrackedSpell); assignedSpells is already authoritative, nothing legitimately
@@ -113,9 +99,7 @@ local function EnsureAssignedSpells(barKeyE)
     local isBuffFamilyE = mod.IsBarBuffFamily and mod.IsBarBuffFamily(bdForFamily or barKeyE)
     local liveIcons = not importPending and not isBuffFamilyE and mod.cdmBarIcons and mod.cdmBarIcons[barKeyE]
     if liveIcons then
-        if not sd.assignedSpells then
-            sd.assignedSpells = {}
-        end
+        if not sd.assignedSpells then sd.assignedSpells = {} end
         local removed = sd.removedSpells
         -- Never materialize a spell currently HIDDEN (in the ghost bar) onto a visible
         -- bar -- that recreates a both-state and the spell would reappear. Variant-aware
@@ -182,9 +166,7 @@ local function EnsureAssignedSpells(barKeyE)
                     for idx = 1, #sd.assignedSpells do
                         local dec = mod.HostedBuffMarkerToSpell(sd.assignedSpells[idx])
                         if dec and (dec == _sid or (mod.IsVariantOf and mod.IsVariantOf(dec, _sid))) then
-                            if not insertPos or idx > insertPos then
-                                insertPos = idx
-                            end
+                            if not insertPos or idx > insertPos then insertPos = idx end
                             break
                         end
                     end
@@ -193,13 +175,9 @@ local function EnsureAssignedSpells(barKeyE)
             end
             -- Skip overflow-diverted icons: session-only here but BELONG to their
             -- source bar's assignedSpells -- materializing them (or advancing the cursor) would write the diversion into this bar's saved list.
-            if _sid and mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(icon) then
-                _sid = nil
-            end
+            if _sid and mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(icon) then _sid = nil end
             if _sid and _sid ~= 0 then
-                if _sid > 0 then
-                    _sid = NormalizeToBase(_sid)
-                end
+                if _sid > 0 then _sid = NormalizeToBase(_sid) end
                 -- FindVar handles negatives by exact scan internally; variant matching is a superset of exact for positives.
                 local at = FindVar and FindVar(sd.assignedSpells, _sid)
                 if at then
@@ -275,9 +253,7 @@ local function EnsureAssignedSpells(barKeyE)
             end
             local FindVar = mod.FindVariantIndexInList
             if wantSet and FindVar then
-                if not sd.assignedSpells then
-                    sd.assignedSpells = {}
-                end
+                if not sd.assignedSpells then sd.assignedSpells = {} end
                 local entries = sd.assignedSpells
                 local removed = sd.removedSpells
                 local ghostSdM = mod.GetBarSpellData and mod.GetBarSpellData("__ghost_cd")
@@ -310,9 +286,7 @@ local function EnsureAssignedSpells(barKeyE)
                 -- retrack) a preview slot and its conditions stay reachable. The set is
                 -- shared and empty for non-users, so the check is skipped for them.
                 local tcHidden = mod.TalentCondHiddenSet(barKeyE)
-                if not next(tcHidden) then
-                    tcHidden = nil
-                end
+                if not next(tcHidden) then tcHidden = nil end
                 for ci = 1, #catalog do
                     local ce = catalog[ci]
                     if wantSet[ce.category] then
@@ -416,9 +390,7 @@ local function EnsureAssignedSpells(barKeyE)
     -- implementation shared with the automatic reseed/settings-close
     -- triggers -- see ns.ReconcileAssignedSpellDrops in
     -- CUI_CDM_Reconcile.lua for the full decision ladder).
-    if mod.ReconcileAssignedSpellDrops then
-        sd = mod.ReconcileAssignedSpellDrops(barKeyE) or sd
-    end
+    if mod.ReconcileAssignedSpellDrops then sd = mod.ReconcileAssignedSpellDrops(barKeyE) or sd end
     -- Self-heal HOSTED buffs: a hosted buff must live in assignedSpells (Phase 3 sort
     -- keys off its MARKER entry), but a drop pass can strand one in hostedBuffSpellIDs
     -- alone (never in the Essential/Utility viewer). Re-append the MARKER when neither it nor a legacy plain entry represents the buff -- never the plain id, which would resurrect the spell's COOLDOWN form.
@@ -455,9 +427,7 @@ local function NewEntryDialog(popupName, width, height)
     local shade = dimmer:CreateTexture(nil, "BACKGROUND")
     shade:SetAllPoints()
     shade:SetColorTexture(0, 0, 0, 0.25)
-    dimmer:SetScript("OnMouseDown", function(self)
-        self:Hide()
-    end)
+    dimmer:SetScript("OnMouseDown", function(self) self:Hide() end)
     local panel = CreateFrame("Frame", popupName, dimmer)
     panel:SetSize(width, height)
     panel:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
@@ -479,9 +449,7 @@ local function NewDialogTitle(dialog, text)
     heading:SetFont(env.FONT_PATH, 14, env.GetCDMOptOutline())
     heading:SetPoint("TOP", dialog, "TOP", 0, -18)
     heading:SetTextColor(1, 1, 1, 1)
-    if text then
-        heading:SetText(text)
-    end
+    if text then heading:SetText(text) end
     return heading
 end
 
@@ -531,12 +499,8 @@ local function NewDialogButton(dialog, caption, primary)
     text:SetPoint("CENTER")
     text:SetText(CludesUI.L(caption))
     text:SetTextColor(restR, restG, restB, restA)
-    button:SetScript("OnEnter", function()
-        text:SetTextColor(1, 1, 1, 1)
-    end)
-    button:SetScript("OnLeave", function()
-        text:SetTextColor(restR, restG, restB, restA)
-    end)
+    button:SetScript("OnEnter", function() text:SetTextColor(1, 1, 1, 1) end)
+    button:SetScript("OnLeave", function() text:SetTextColor(restR, restG, restB, restA) end)
     return button
 end
 
@@ -572,12 +536,8 @@ local function ShowCustomSpellIDPopup(barId, onAdded, withCharges)
         checkbox = withCharges and CludesUI.L("Show Charges") or nil,
         validate = function(textValue)
             local spellRef = SpellOf(textValue)
-            if not spellRef then
-                return CludesUI.L("Enter a valid spell ID")
-            end
-            if not C_Spell.GetSpellName(spellRef) then
-                return CludesUI.L("Unknown spell ID")
-            end
+            if not spellRef then return CludesUI.L("Enter a valid spell ID") end
+            if not C_Spell.GetSpellName(spellRef) then return CludesUI.L("Unknown spell ID") end
             -- Variant-aware, mirroring AddTrackedSpell's own dedup. An exact-only
             -- check lets a variant-duplicate through, which AddTrackedSpell then
             -- silently refuses AFTER the custom tag below is written (orphaned
@@ -596,17 +556,13 @@ local function ShowCustomSpellIDPopup(barId, onAdded, withCharges)
             local spellRef = SpellOf(textValue)
             local sd = barId and mod.GetBarSpellData(barId)
             if sd then
-                if not sd.customSpellIDs then
-                    sd.customSpellIDs = {}
-                end
+                if not sd.customSpellIDs then sd.customSpellIDs = {} end
                 sd.customSpellIDs[spellRef] = true
                 -- Set/clear explicitly so a re-add with the box unchecked can't leave a
                 -- stale flag behind, and flip the runtime gate live.
                 if withCharges then
                     if showCharges then
-                        if not sd.customSpellForceCount then
-                            sd.customSpellForceCount = {}
-                        end
+                        if not sd.customSpellForceCount then sd.customSpellForceCount = {} end
                         sd.customSpellForceCount[spellRef] = true
                         mod._cdmAnyCustomForceCount = true
                     elseif sd.customSpellForceCount then
@@ -614,9 +570,7 @@ local function ShowCustomSpellIDPopup(barId, onAdded, withCharges)
                     end
                 end
             end
-            if onAdded then
-                onAdded(spellRef)
-            end
+            if onAdded then onAdded(spellRef) end
         end,
     })
 end
@@ -667,9 +621,7 @@ local function ShowMarkerPopup(spec, barId, onAdded)
         editBox:SetScript("OnTextChanged", function(self)
             local text = self:GetText()
             placeholder:SetShown(text == "")
-            if echoLine then
-                spec.echo(echoLine, tonumber(text))
-            end
+            if echoLine then spec.echo(echoLine, tonumber(text)) end
         end)
 
         local status = dialog:CreateFontString(nil, "OVERLAY")
@@ -686,9 +638,7 @@ local function ShowMarkerPopup(spec, barId, onAdded)
 
         dialog._addBtn = NewDialogButton(dialog, "Add", true)
         local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        local function Close()
-            dimmer:Hide()
-        end
+        local function Close() dimmer:Hide() end
         cancelBtn:SetScript("OnClick", Close)
         dialog._cancelBtn = cancelBtn
         editBox:SetScript("OnEscapePressed", Close)
@@ -700,21 +650,15 @@ local function ShowMarkerPopup(spec, barId, onAdded)
     local function SetStatus(textValue, red, green, blue)
         dialog._status:SetText(CludesUI.L(textValue))
         dialog._status:SetTextColor(red or 1, green or 0.3, blue or 0.3, 1)
-        if dialog._statusTimer then
-            dialog._statusTimer:Cancel()
-        end
+        if dialog._statusTimer then dialog._statusTimer:Cancel() end
         if textValue ~= "" then
-            dialog._statusTimer = C_Timer.NewTimer(2.5, function()
-                dialog._status:SetText("")
-            end)
+            dialog._statusTimer = C_Timer.NewTimer(2.5, function() dialog._status:SetText("") end)
         end
     end
 
     local function DoAdd()
         local marker = spec.toMarker(tonumber(dialog._editBox:GetText()), SetStatus)
-        if not marker then
-            return
-        end
+        if not marker then return end
         local sd = mod.GetBarSpellData(barId)
         for _, existing in ipairs(sd and sd.assignedSpells or {}) do
             if existing == marker then
@@ -723,18 +667,14 @@ local function ShowMarkerPopup(spec, barId, onAdded)
             end
         end
         dialog._dimmer:Hide()
-        if onAdded then
-            onAdded(marker)
-        end
+        if onAdded then onAdded(marker) end
     end
 
     dialog._addBtn:SetScript("OnClick", DoAdd)
     dialog._editBox:SetScript("OnEnterPressed", DoAdd)
     dialog._editBox:SetText("")
     dialog._status:SetText("")
-    if dialog._nameLine then
-        dialog._nameLine:SetText("")
-    end
+    if dialog._nameLine then dialog._nameLine:SetText("") end
     mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
     dialog._dimmer:Show()
     dialog._editBox:SetFocus()
@@ -763,9 +703,7 @@ local ITEM_POPUP = {
         return -itemId
     end,
 }
-local function ShowCustomItemIDPopup(barId, onAdded)
-    ShowMarkerPopup(ITEM_POPUP, barId, onAdded)
-end
+local function ShowCustomItemIDPopup(barId, onAdded) ShowMarkerPopup(ITEM_POPUP, barId, onAdded) end
 
 ---------------------------------------------------------------------------
 --  Equipment Slot popup. Adds a slot-tracked entry (-slotID, the trinket -13/-14
@@ -802,9 +740,7 @@ local SLOT_POPUP = {
         return -slot
     end,
 }
-local function ShowEquipmentSlotPopup(barId, onAdded)
-    ShowMarkerPopup(SLOT_POPUP, barId, onAdded)
-end
+local function ShowEquipmentSlotPopup(barId, onAdded) ShowMarkerPopup(SLOT_POPUP, barId, onAdded) end
 
 ---------------------------------------------------------------------------
 --  Shared by the buff pickers below: their menu frame, its dividers and
@@ -815,9 +751,7 @@ end
 -- anchor, so the click only toggled it shut.
 local function ClosePickerMenu(optionState, anchor)
     local open = optionState._spellPickerMenu
-    if not (open and open:IsShown()) then
-        return false
-    end
+    if not (open and open:IsShown()) then return false end
     open:Hide()
     return open._anchorFrame == anchor and open._anchorGen == PoolGen(anchor)
 end
@@ -874,18 +808,14 @@ local function AddBlizzardCDMFooter(menu, rows, y, question)
     local accR, accG, accB = CludesUI.GetAccentColor()
     text:SetTextColor(accR, accG, accB, 1)
     text:SetText(CludesUI.L(question) .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
-    footer:SetScript("OnEnter", function()
-        text:SetTextColor(1, 1, 1, 1)
-    end)
+    footer:SetScript("OnEnter", function() text:SetTextColor(1, 1, 1, 1) end)
     footer:SetScript("OnLeave", function()
         local red, green, blue = CludesUI.GetAccentColor()
         text:SetTextColor(red, green, blue, 1)
     end)
     footer:SetScript("OnClick", function()
         menu:Hide()
-        if mod.OpenBlizzardCDMTab then
-            mod.OpenBlizzardCDMTab(true)
-        end
+        if mod.OpenBlizzardCDMTab then mod.OpenBlizzardCDMTab(true) end
     end)
     return y + FOOTER_H
 end
@@ -916,9 +846,7 @@ local function OpenPickerMenu(optionState, menu, rows, y, width, maxH, anchor)
             frame:Hide()
         end
     end)
-    menu:SetScript("OnHide", function(frame)
-        frame:SetScript("OnUpdate", nil)
-    end)
+    menu:SetScript("OnHide", function(frame) frame:SetScript("OnUpdate", nil) end)
     menu:Show()
 end
 
@@ -931,9 +859,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline, RefreshCDPreview, optionState =
         environ.FONT_PATH, environ.GetCDMOptOutline, environ.RefreshCDPreview, environ.optState
-    if ClosePickerMenu(optionState, anchor) then
-        return
-    end
+    if ClosePickerMenu(optionState, anchor) then return end
 
     local hlA = CludesUI.DD_ITEM_HL_A or 0.08
     local tDimR = CludesUI.DD_ITEM_R or 0.75
@@ -953,9 +879,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     -- target. Same model as CD/utility bars: one click, one move.
     local knownSpells = {}
     for _, sp in ipairs(allSpells) do
-        if sp.cdmCatGroup == "buff" then
-            knownSpells[#knownSpells + 1] = sp
-        end
+        if sp.cdmCatGroup == "buff" then knownSpells[#knownSpells + 1] = sp end
     end
 
     -- No early-out on an empty Blizzard buff list: preset buffs (and, later,
@@ -1004,16 +928,12 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
         entry:SetScript("OnEnter", function()
             labelFS:SetTextColor(1, 1, 1, 1)
             highlight:SetColorTexture(1, 1, 1, hlA)
-            if notLearned then
-                CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented"))
-            end
+            if notLearned then CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented")) end
         end)
         entry:SetScript("OnLeave", function()
             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             highlight:SetColorTexture(1, 1, 1, 0)
-            if notLearned then
-                CludesUI.HideWidgetTooltip()
-            end
+            if notLearned then CludesUI.HideWidgetTooltip() end
         end)
 
         -- Gray the row in place and make it inert. Called after the user
@@ -1024,9 +944,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
             iconTex:SetDesaturated(true)
             iconTex:SetAlpha(0.4)
             highlight:SetColorTexture(1, 1, 1, 0)
-            if notLearned then
-                CludesUI.HideWidgetTooltip()
-            end
+            if notLearned then CludesUI.HideWidgetTooltip() end
             entry:SetScript("OnEnter", nil)
             entry:SetScript("OnLeave", nil)
             entry:SetScript("OnClick", nil)
@@ -1070,18 +988,10 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
             dropMenu:Hide()
             ShowCustomSpellIDPopup(targetBarKey, function(spellRef)
                 mod.AddTrackedSpell(targetBarKey, spellRef)
-                if mod.RebuildSpellRouteMap then
-                    mod.RebuildSpellRouteMap()
-                end
-                if mod.UpdateLustListener then
-                    mod.UpdateLustListener()
-                end
-                if mod.UpdateCustomBuffAuraTracking then
-                    mod.UpdateCustomBuffAuraTracking()
-                end
-                if mod.QueueReanchor then
-                    mod.QueueReanchor()
-                end
+                if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+                if mod.UpdateLustListener then mod.UpdateLustListener() end
+                if mod.UpdateCustomBuffAuraTracking then mod.UpdateCustomBuffAuraTracking() end
+                if mod.QueueReanchor then mod.QueueReanchor() end
                 RefreshCDPreview()
             end)
         end)
@@ -1150,15 +1060,9 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
                     si:SetScript("OnClick", function()
                         EnsureAssignedSpells(targetBarKey)
                         mod.AddPresetToBar(targetBarKey, preset)
-                        if mod.RebuildSpellRouteMap then
-                            mod.RebuildSpellRouteMap()
-                        end
-                        if mod.UpdateLustListener then
-                            mod.UpdateLustListener()
-                        end
-                        if mod.QueueReanchor then
-                            mod.QueueReanchor()
-                        end
+                        if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+                        if mod.UpdateLustListener then mod.UpdateLustListener() end
+                        if mod.QueueReanchor then mod.QueueReanchor() end
                         RefreshCDPreview()
                         -- Keep the picker open so several buffs can be added
                         -- in a row; gray this preset in place once added.
@@ -1178,9 +1082,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
 
         -- Divider between presets and the Blizzard-tracked buff list (none when
         -- no preset row was built: the Custom Spell ID divider already sits there).
-        if #knownSpells > 0 and nPresetRows > 0 then
-            menuH = AddPickerDivider(inner, menuH)
-        end
+        if #knownSpells > 0 and nPresetRows > 0 then menuH = AddPickerDivider(inner, menuH) end
     end
 
     do
@@ -1192,21 +1094,15 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
         for _, sp in ipairs(knownSpells) do
             local entry = MakeSpellRow(sp)
             if cdTracked and sp.cdID and cdTracked[sp.cdID] then
-                if entry._grayOut then
-                    entry._grayOut()
-                end
+                if entry._grayOut then entry._grayOut() end
             else
                 entry:SetScript("OnClick", function()
                     -- cdID rides along so collided buffs can be claimed per
                     -- viewer slot rather than per (shared) spellID.
-                    if onChanged then
-                        onChanged(sp.spellID, sp.cdID)
-                    end
+                    if onChanged then onChanged(sp.spellID, sp.cdID) end
                     -- Keep the picker open so several buffs can be added in a
                     -- row; gray this row in place to reflect that it was added.
-                    if entry._grayOut then
-                        entry._grayOut()
-                    end
+                    if entry._grayOut then entry._grayOut() end
                 end)
             end
         end
@@ -1217,9 +1113,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     -- Its divider is skipped when no row sits above it: the Custom Spell ID
     -- divider already separates the footer then.
     do
-        if nPresetRows > 0 or #knownSpells > 0 then
-            menuH = AddPickerDivider(inner, menuH)
-        end
+        if nPresetRows > 0 or #knownSpells > 0 then menuH = AddPickerDivider(inner, menuH) end
 
         menuH = AddBlizzardCDMFooter(dropMenu, inner, menuH, "Missing Spells?")
     end
@@ -1241,9 +1135,7 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline, optionState =
         environ.FONT_PATH, environ.GetCDMOptOutline, environ.optState
-    if ClosePickerMenu(optionState, anchor) then
-        return
-    end
+    if ClosePickerMenu(optionState, anchor) then return end
 
     local hlA = CludesUI.DD_ITEM_HL_A or 0.08
     local tDimR = CludesUI.DD_ITEM_R or 0.75
@@ -1296,15 +1188,9 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
     -- reanchors live bars and refreshes the preview in place. No RefreshCDPreview here --
     -- its full page rebuild orphans this still-open picker's anchor, so the next click falls onto the rebuilt preview slots and pops the per-icon settings dropdown uninvited.
     local function AfterAdd()
-        if mod.RebuildSpellRouteMap then
-            mod.RebuildSpellRouteMap()
-        end
-        if mod.QueueReanchor then
-            mod.QueueReanchor()
-        end
-        if onChanged then
-            onChanged()
-        end
+        if mod.RebuildSpellRouteMap then mod.RebuildSpellRouteMap() end
+        if mod.QueueReanchor then mod.QueueReanchor() end
+        if onChanged then onChanged() end
     end
 
     -- Custom Spell ID (no duration -- aura-driven). Selection mode gets a
@@ -1386,21 +1272,15 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
         entry:SetScript("OnEnter", function()
             labelFS:SetTextColor(1, 1, 1, 1)
             highlight:SetColorTexture(1, 1, 1, hlA)
-            if notLearned then
-                CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented"))
-            end
+            if notLearned then CludesUI.ShowWidgetTooltip(entry, CludesUI.L("Not currently talented")) end
         end)
         entry:SetScript("OnLeave", function()
             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
             highlight:SetColorTexture(1, 1, 1, 0)
-            if notLearned then
-                CludesUI.HideWidgetTooltip()
-            end
+            if notLearned then CludesUI.HideWidgetTooltip() end
         end)
         entry:SetScript("OnClick", function()
-            if notLearned then
-                CludesUI.HideWidgetTooltip()
-            end
+            if notLearned then CludesUI.HideWidgetTooltip() end
             if onPicked then
                 -- Selection mode: hand back the identity the runtime routes by
                 -- (cooldownID for a collided pair or tracked trinket row, else the spellID) and close.
@@ -1471,27 +1351,19 @@ local function ShowValuePopup(spec, current, onConfirm, title, hint)
         local boxFrame = NewEntryBox(dialog, spec.maxLetters)
         boxFrame:SetPoint("TOP", hintFS, "BOTTOM", 0, -12)
         dialog._box = boxFrame
-        if spec.decorate then
-            spec.decorate(dialog, boxFrame)
-        end
+        if spec.decorate then spec.decorate(dialog, boxFrame) end
 
         local saveBtn = NewDialogButton(dialog, "Save", true)
         local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        local function Close()
-            dimmer:Hide()
-        end
+        local function Close() dimmer:Hide() end
         cancelBtn:SetScript("OnClick", Close)
         dialog._cancelBtn = cancelBtn
 
         local function Save()
             local accepted, value = spec.accept(tonumber(boxFrame:GetText()))
-            if not accepted then
-                return
-            end
+            if not accepted then return end
             dimmer:Hide()
-            if dialog._onConfirm then
-                dialog._onConfirm(value)
-            end
+            if dialog._onConfirm then dialog._onConfirm(value) end
         end
         saveBtn:SetScript("OnClick", Save)
         boxFrame:SetScript("OnEnterPressed", Save)
@@ -1513,13 +1385,9 @@ local DURATION_POPUP = {
     maxLetters = 5,
     title = "Active State Duration",
     hint = "Seconds the active state shows after use",
-    accept = function(n)
-        return n ~= nil and n > 0, n
-    end,
+    accept = function(n) return n ~= nil and n > 0, n end,
 }
-local function ShowDurationPopup(currentVal, onConfirm)
-    ShowValuePopup(DURATION_POPUP, currentVal, onConfirm)
-end
+local function ShowDurationPopup(currentVal, onConfirm) ShowValuePopup(DURATION_POPUP, currentVal, onConfirm) end
 
 -- An opacity percent, 1 to 100, whole: the "Lower Alpha (On CD)" effect's
 -- by default, or the caller's (the Blackout glow opacity, for one).
@@ -1528,9 +1396,7 @@ local ALPHA_POPUP = {
     maxLetters = 3,
     title = "Lower Alpha",
     hint = "Icon opacity while on cooldown (1-100%)",
-    accept = function(n)
-        return n ~= nil and n >= 1 and n <= 100, n and math.floor(n)
-    end,
+    accept = function(n) return n ~= nil and n >= 1 and n <= 100, n and math.floor(n) end,
 }
 local function ShowAlphaPopup(currentPct, onConfirm, title, hint)
     ShowValuePopup(ALPHA_POPUP, currentPct, onConfirm, title, hint)
@@ -1544,9 +1410,7 @@ local THRESHOLD_POPUP = {
     maxLetters = 2,
     title = "Threshold Seconds",
     hint = "Seconds left when threshold text starts (0 = off)",
-    accept = function(n)
-        return n ~= nil and n >= 0 and n <= 59, n and math.floor(n)
-    end,
+    accept = function(n) return n ~= nil and n >= 0 and n <= 59, n and math.floor(n) end,
 }
 local function ShowThresholdSecondsPopup(currentVal, onConfirm, title, hint)
     ShowValuePopup(THRESHOLD_POPUP, currentVal, onConfirm, title, hint)
@@ -1577,9 +1441,7 @@ local CUSTOM_ICON_POPUP = {
         end)
     end,
     accept = function(n)
-        if n and n > 0 then
-            return true, math.floor(n)
-        end
+        if n and n > 0 then return true, math.floor(n) end
         return true, nil
     end,
 }

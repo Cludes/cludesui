@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUI_RetailAtlas.lua
 --
@@ -41,9 +39,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  (CludesUI.ForeverBorderKind).
 -------------------------------------------------------------------------------
 local CUI = _G.CludesUI
-if not CUI then
-    return
-end
+if not CUI then return end
 
 -------------------------------------------------------------------------------
 --  Forever border: the bronze line of the micro menu's box on the Forever
@@ -167,9 +163,7 @@ local function LiveInfo()
 end
 
 -- The shipped art makes the ring drawable on every Forever client.
-function CUI.ForeverBorderOK()
-    return CUI.IS_FOREVER == true
-end
+function CUI.ForeverBorderOK() return CUI.IS_FOREVER == true end
 
 -- The corners cw x ch units: each the art's own corner, all of it (RC) or,
 -- in a box too small for two, the part up to the box's middle (its mask
@@ -208,13 +202,9 @@ end
 local function RingLayout(box, wid, hgt)
     local ring = box._fvRing
     local cw, ch = min(RC, wid / 2), min(RC, hgt / 2)
-    if cw ~= ring.cw or ch ~= ring.ch then
-        CutCorners(ring, cw, ch)
-    end
+    if cw ~= ring.cw or ch ~= ring.ch then CutCorners(ring, cw, ch) end
     local roomX, roomY = wid - 2 * RC > EPS, hgt - 2 * RC > EPS
-    if ring.sized and roomX == ring.roomX and roomY == ring.roomY then
-        return
-    end
+    if ring.sized and roomX == ring.roomX and roomY == ring.roomY then return end
     ring.roomX, ring.roomY, ring.sized = roomX, roomY, true
     RingShow(ring)
 end
@@ -226,9 +216,7 @@ end
 -- unless additive, and the edges. Every piece stays hidden until the box
 -- first takes a size. Nil off the Forever client.
 function CUI.ForeverBorder(widget, layer, sub, add, source)
-    if CUI.IS_FOREVER ~= true then
-        return nil
-    end
+    if CUI.IS_FOREVER ~= true then return nil end
     local file, L, T, R, B = RING_FILE, RING_LO, RING_LO, RING_HI, RING_HI
     local cuts = RING_CUT
     local details = source == "textured" and LiveInfo()
@@ -244,9 +232,7 @@ function CUI.ForeverBorder(widget, layer, sub, add, source)
     for idx = 1, 8 do
         local tex = widget:CreateTexture(nil, layer, nil, sub)
         tex:SetTexture(file)
-        if add then
-            tex:SetBlendMode("ADD")
-        end
+        if add then tex:SetBlendMode("ADD") end
         local at = RING_AT[idx]
         tex:SetPoint(at[1], box, at[1], at[2], at[3])
         if at[4] then
@@ -308,9 +294,7 @@ end
 -- piece's bottom. The caller anchors both ends and the bottom. Nil off the
 -- Forever client.
 function CUI.ForeverBorderDivider(widget, layer, sub)
-    if CUI.IS_FOREVER ~= true then
-        return nil
-    end
+    if CUI.IS_FOREVER ~= true then return nil end
     local tex = widget:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
     tex:SetTexture(RING_FILE)
     local cut, W = RING_CUT[5], RING_HI - RING_LO
@@ -398,9 +382,7 @@ local function HeavyInfo()
             local details = {}
             for key, name in pairs(HEAVY_ART) do
                 details[key] = C_Texture.GetAtlasInfo(name)
-                if not details[key] then
-                    return false
-                end
+                if not details[key] then return false end
             end
             heavyInfo = details
         end
@@ -408,9 +390,7 @@ local function HeavyInfo()
     return heavyInfo
 end
 
-function CUI.ForeverHeavyOK()
-    return HeavyInfo() and true or false
-end
+function CUI.ForeverHeavyOK() return HeavyInfo() and true or false end
 
 -- A piece's texcoords: fractions u1..u2, v1..v2 of its atlas box.
 local function HeavyCut(t, details, u1, u2, v1, v2)
@@ -495,9 +475,7 @@ end
 -- Nil without the art.
 function CUI.ForeverHeavy(widget, layer, sub, add)
     local Inner = HeavyInfo()
-    if not Inner then
-        return nil
-    end
+    if not Inner then return nil end
     local box = CreateFrame("Frame", nil, widget)
     local ring = { box = box, k = widget:GetScale(), p = {}, on = true, fit = true, top = HTOP }
     local p = ring.p
@@ -580,9 +558,7 @@ end
 -- rim (off); a box already sized is laid out again at once.
 function CUI.ForeverHeavyTitle(ring, enabled)
     local topY = enabled and HTITLE or HTOP
-    if ring.top == topY then
-        return
-    end
+    if ring.top == topY then return end
     ring.top = topY
     if ring.sized then
         local box = ring.box
@@ -600,26 +576,16 @@ end
 --  Forever client.
 -------------------------------------------------------------------------------
 function CUI.ForeverBorderKind(val)
-    if CUI.IS_FOREVER ~= true then
-        return nil
-    end
-    if val == "heavy" and HeavyInfo() then
-        return "heavy"
-    end
-    if (val == nil or val == "textured") and LiveInfo() then
-        return "textured"
-    end
+    if CUI.IS_FOREVER ~= true then return nil end
+    if val == "heavy" and HeavyInfo() then return "heavy" end
+    if (val == nil or val == "textured") and LiveInfo() then return "textured" end
     return "slim"
 end
 
 if not CUI.IS_FOREVER then
-    function CUI.StockAtlas(texture, name, ...)
-        return texture:SetAtlas(name, ...)
-    end
+    function CUI.StockAtlas(texture, name, ...) return texture:SetAtlas(name, ...) end
     CUI.StockAtlasInfo = C_Texture.GetAtlasInfo
-    function CUI.StockMask(mask, name, useSize)
-        return mask:SetAtlas(name, useSize)
-    end
+    function CUI.StockMask(mask, name, useSize) return mask:SetAtlas(name, useSize) end
     return
 end
 
@@ -715,23 +681,17 @@ end
 -- logged in (the screen scale is settled by then).
 local hiRes
 local function HiRes()
-    if hiRes ~= nil then
-        return hiRes
-    end
+    if hiRes ~= nil then return hiRes end
     local idx = C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Down")
     local val = (idx and idx.file == AB2[1]) and true or false
-    if IsLoggedIn() then
-        hiRes = val
-    end
+    if IsLoggedIn() then hiRes = val end
     return val
 end
 
 -- name -> { 1x info or false, 2x info or false } | false (native atlas).
 local resolved = {}
 local function Resolve(name)
-    if type(name) ~= "string" then
-        return false
-    end
+    if type(name) ~= "string" then return false end
     local e = false
     local row = ROWS[strlower(name)]
     if row then
@@ -743,9 +703,7 @@ local function Resolve(name)
             local hgt = row[12] or (row[5] - row[4])
             local x1 = Present(s1) and Info(s1, row[2], row[3], row[4], row[5], wid, hgt) or false
             local x2 = s2 and Present(s2) and Info(s2, row[7], row[8], row[9], row[10], wid, hgt) or false
-            if x1 or x2 then
-                e = { x1, x2 }
-            end
+            if x1 or x2 then e = { x1, x2 } end
         end
     end
     resolved[name] = e
@@ -753,9 +711,7 @@ local function Resolve(name)
 end
 
 local function Pick(e)
-    if HiRes() then
-        return e[2] or e[1]
-    end
+    if HiRes() then return e[2] or e[1] end
     return e[1] or e[2]
 end
 
@@ -764,17 +720,13 @@ local drawn = setmetatable({}, { __mode = "k" })
 
 function CUI.StockAtlas(texture, name, ...)
     local e = resolved[name]
-    if e == nil then
-        e = Resolve(name)
-    end
+    if e == nil then e = Resolve(name) end
     if e then
         local idx = Pick(e)
         local useSize, filterMode, _, wrapH, wrapV = ...
         texture:SetTexture(idx.file, wrapH, wrapV, filterMode)
         texture:SetTexCoord(idx.leftTexCoord, idx.rightTexCoord, idx.topTexCoord, idx.bottomTexCoord)
-        if useSize then
-            texture:SetSize(idx.width, idx.height)
-        end
+        if useSize then texture:SetSize(idx.width, idx.height) end
         drawn[texture] = true
         return
     end
@@ -789,12 +741,8 @@ end
 
 function CUI.StockAtlasInfo(name)
     local e = resolved[name]
-    if e == nil then
-        e = Resolve(name)
-    end
-    if e then
-        return Pick(e)
-    end
+    if e == nil then e = Resolve(name) end
+    if e then return Pick(e) end
     return C_Texture.GetAtlasInfo(name)
 end
 
@@ -867,9 +815,7 @@ local MASK_FILES = {
 local maskResolved = {}
 local function MaskFile(name)
     local e = maskResolved[name]
-    if e ~= nil then
-        return e
-    end
+    if e ~= nil then return e end
     e = false
     local row = type(name) == "string" and MASK_FILES[strlower(name)]
     if row then
@@ -878,9 +824,7 @@ local function MaskFile(name)
         if nf ~= row[2] and not (row[4] and nf == row[4]) then
             local f1 = GetFileIDFromPath(row[1]) == row[2] and row[2] or false
             local f2 = row[3] and GetFileIDFromPath(row[3]) == row[4] and row[4] or false
-            if f1 or f2 then
-                e = { f1, f2, row[5], row[6] }
-            end
+            if f1 or f2 then e = { f1, f2, row[5], row[6] } end
         end
     end
     maskResolved[name] = e
@@ -897,9 +841,7 @@ function CUI.StockMask(mask, name, useSize)
             file = e[1] or e[2]
         end
         mask:SetTexture(file, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        if useSize then
-            mask:SetSize(e[3], e[4])
-        end
+        if useSize then mask:SetSize(e[3], e[4]) end
         return
     end
     return mask:SetAtlas(name, useSize)

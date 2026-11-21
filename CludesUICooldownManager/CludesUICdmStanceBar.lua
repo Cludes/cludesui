@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUICdmStanceBar.lua
 --  Per-spell Stance Bar hide for cooldown/utility icons: hidden in, or outside,
@@ -37,9 +35,7 @@ local _parsed = {}
 
 local function Parse(value)
     local p = _parsed[value]
-    if p ~= nil then
-        return p
-    end
+    if p ~= nil then return p end
     p = false
     local mode, ident = value:match("^(%a+):([%w_]+)$")
     local m = mode and MODES[mode]
@@ -61,29 +57,19 @@ end
 -- Fake-Active engine runs it (as ns.CdStateOf), so a bar-tier value never shows
 -- behind that menu's back.
 function mod.CdmStanceBarOf(prefs, widget)
-    if not mod._cdmAnyStanceBar or not prefs then
-        return nil
-    end
-    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then
-        return nil
-    end
+    if not mod._cdmAnyStanceBar or not prefs then return nil end
+    if widget and mod.CdmIsInjectedFrame and mod.CdmIsInjectedFrame(widget) then return nil end
     local val = prefs.stanceBarHide
-    if type(val) ~= "string" or not Parse(val) then
-        return nil
-    end
+    if type(val) ~= "string" or not Parse(val) then return nil end
     return val
 end
 
 -- hidden, shift for a stored value right now.
 function mod.CdmStanceBarHidden(value)
     local p = value and Parse(value)
-    if not p then
-        return false, false
-    end
+    if not p then return false, false end
     local inState = SecureCmdOptionParse(p.macro) == "1"
-    if inState == p.inside then
-        return true, p.shift
-    end
+    if inState == p.inside then return true, p.shift end
     return false, false
 end
 
@@ -91,12 +77,8 @@ end
 -- bar tier or custom spell / preset has the setting. Same monotonic,
 -- scanned-once contract as the Talent Conditions gate.
 function mod.RescanStanceBarFlag()
-    if mod._cdmAnyStanceBar or mod._stanceBarFlagScanned then
-        return
-    end
-    if not CludesUIDB then
-        return
-    end
+    if mod._cdmAnyStanceBar or mod._stanceBarFlagScanned then return end
+    if not CludesUIDB then return end
     mod._stanceBarFlagScanned = true
     local function Has(ss)
         if type(rawget(ss, "stanceBarHide")) == "string" then
@@ -104,15 +86,11 @@ function mod.RescanStanceBarFlag()
             return true
         end
     end
-    if mod.ForEachSavedSettingsBlock(Has) then
-        return
-    end
+    if mod.ForEachSavedSettingsBlock(Has) then return end
     local cas = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
     if cas then
         for _, entry in pairs(cas) do
-            if type(entry) == "table" and Has(entry) then
-                return
-            end
+            if type(entry) == "table" and Has(entry) then return end
         end
     end
 end

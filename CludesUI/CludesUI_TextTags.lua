@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
 --  CludesUI_TextTags.lua
 --  Custom text templates ("[hp:abr] | [hp:pct]%"): shared tag schema, parser,
@@ -127,9 +125,7 @@ function TextTags.Bind(schema, map)
     local category =
         { schema = schema, map = {}, keys = {}, tags = {}, names = {}, mods = {}, cache = {}, count = 0 }
     for key, val in pairs(map) do
-        if not schema.keys[key] then
-            error("TextTags.Bind: unknown key " .. tostring(key), 2)
-        end
+        if not schema.keys[key] then error("TextTags.Bind: unknown key " .. tostring(key), 2) end
         category.map[key] = val
     end
     for idx = 1, #schema.tags do
@@ -165,9 +161,7 @@ end
 -------------------------------------------------------------------------------
 --  Parse
 -------------------------------------------------------------------------------
-local function Escape(s)
-    return (sgsub(sgsub(s, "%%", "%%%%"), "|", "||"))
-end
+local function Escape(s) return (sgsub(sgsub(s, "%%", "%%%%"), "|", "||")) end
 
 -- "hp:ABR:max" -> "hp:max:abr" when the catalog binds it, else nil. Modifier
 -- order is free; an empty part, an unknown or a repeated modifier is no key.
@@ -176,12 +170,8 @@ local function ResolveKey(category, inner)
     inner = slower(inner)
     local s, e = sfind(inner, ":", 1, true)
     local tag = category.names[s and ssub(inner, 1, s - 1) or inner]
-    if not tag then
-        return nil
-    end
-    if not s then
-        return category.map[tag] ~= nil and tag or nil
-    end
+    if not tag then return nil end
+    if not s then return category.map[tag] ~= nil and tag or nil end
     for key in pairs(modSeen) do
         modSeen[key] = nil
     end
@@ -189,20 +179,14 @@ local function ResolveKey(category, inner)
     while true do
         local ns = sfind(inner, ":", place, true)
         local mod = category.mods[ssub(inner, place, (ns or 0) - 1)]
-        if not mod or modSeen[mod] then
-            return nil
-        end
+        if not mod or modSeen[mod] then return nil end
         modSeen[mod] = true
-        if not ns then
-            break
-        end
+        if not ns then break end
         place = ns + 1
     end
     local sequence, key = category.schema.mods, tag
     for idx = 1, #sequence do
-        if modSeen[sequence[idx]] then
-            key = key .. ":" .. sequence[idx]
-        end
+        if modSeen[sequence[idx]] then key = key .. ":" .. sequence[idx] end
     end
     return category.map[key] ~= nil and key or nil
 end
@@ -218,13 +202,9 @@ local strlen = strlenutf8 or string.len
 --- Cached and shared by every reader (read-only); transient (the popup's
 --- per-keystroke preview) reads the cache but never fills it.
 function TextTags.Parse(category, template, transient)
-    if type(template) ~= "string" or template == "" then
-        return nil
-    end
+    if type(template) ~= "string" or template == "" then return nil end
     local hit = category.cache[template]
-    if hit then
-        return hit
-    end
+    if hit then return hit end
     local fmt, literal, keyList, has, reads, unknown, seen = {}, {}, {}, {}, {}, {}, {}
     local place = 1
     while true do
@@ -248,9 +228,7 @@ function TextTags.Parse(category, template, transient)
             has[key] = true
             reads[category.schema.keys[key].reads] = true
         end
-        if not s then
-            break
-        end
+        if not s then break end
         place = e + 1
     end
     hit = {
@@ -261,9 +239,7 @@ function TextTags.Parse(category, template, transient)
         literalChars = strlen(tconcat(literal)),
         unknown = unknown,
     }
-    if transient then
-        return hit
-    end
+    if transient then return hit end
     if category.count >= 64 then
         category.cache, category.count = {}, 0
     end
@@ -360,9 +336,7 @@ function TextTags.HelpText(category, options)
             end
         end
         local desc = tagDescs[t.tag]
-        if desc and tagNotes[t.tag] then
-            desc = desc .. " (" .. tagNotes[t.tag] .. ")"
-        end
+        if desc and tagNotes[t.tag] then desc = desc .. " (" .. tagNotes[t.tag] .. ")" end
         lines[#lines + 1] = tconcat(nameList, orWord)
             .. (desc and ("  " .. DIM .. desc .. "|r") or "")
             .. (#entries > 0 and ("  " .. MOD .. tconcat(entries, " ") .. "|r") or "")
@@ -379,9 +353,7 @@ function TextTags.HelpText(category, options)
             end
             local line = MOD .. mod .. "|r"
             for alias, target in pairs(modAliases) do
-                if target == mod then
-                    line = line .. orWord .. MOD .. alias .. "|r"
-                end
+                if target == mod then line = line .. orWord .. MOD .. alias .. "|r" end
             end
             lines[#lines + 1] = line .. (modDescs[mod] and ("  " .. DIM .. modDescs[mod] .. "|r") or "")
         end
@@ -419,18 +391,12 @@ end
 --- variants inserts without "]" (its variants are listed next), unless it is
 --- already typed in full.
 function TextTags.Complete(category, textValue, cursor)
-    if type(textValue) ~= "string" then
-        return nil
-    end
+    if type(textValue) ~= "string" then return nil end
     local before = ssub(textValue, 1, cursor)
     local open = before:match(".*()%[")
-    if not open then
-        return nil
-    end
+    if not open then return nil end
     local partial = slower(ssub(before, open + 1))
-    if not partial:match("^[%w:]*$") then
-        return nil
-    end
+    if not partial:match("^[%w:]*$") then return nil end
     local colon = sfind(partial, ":", 1, true)
     -- The partial as a key (aliases resolved, any modifier order), to tell
     -- "already typed in full".
@@ -448,9 +414,7 @@ function TextTags.Complete(category, textValue, cursor)
                 break
             end
             local m = category.mods[ssub(partial, place, nx - 1)]
-            if not m or done[m] then
-                return nil
-            end
+            if not m or done[m] then return nil end
             done[m] = true
             place = nx + 1
         end
@@ -463,16 +427,12 @@ function TextTags.Complete(category, textValue, cursor)
             mods[m] = true
         end
         for m in pairs(done) do
-            if not mods[m] then
-                return false
-            end
+            if not mods[m] then return false end
         end
         for m in pairs(mods) do
             if not done[m] then
                 for name, canon in pairs(category.mods) do
-                    if canon == m and ssub(name, 1, #last) == last then
-                        return true
-                    end
+                    if canon == m and ssub(name, 1, #last) == last then return true end
                 end
             end
         end
@@ -481,9 +441,7 @@ function TextTags.Complete(category, textValue, cursor)
     local descs = Descs(category).keys or {}
     local itemList, seen, defs = {}, {}, category.schema.keys
     local function Add(key)
-        if seen[key] then
-            return
-        end
+        if seen[key] then return end
         seen[key] = true
         local open = false
         if key ~= typed then
@@ -515,9 +473,7 @@ function TextTags.Complete(category, textValue, cursor)
             if colon then
                 if ssub(partial, 1, colon - 1) == name then
                     for k = 1, #t.keys do
-                        if Fits(t.keys[k]) then
-                            Add(t.keys[k])
-                        end
+                        if Fits(t.keys[k]) then Add(t.keys[k]) end
                     end
                 end
             elseif partial == name then
@@ -529,13 +485,9 @@ function TextTags.Complete(category, textValue, cursor)
             end
         end
     end
-    if #itemList == 0 then
-        return nil
-    end
+    if #itemList == 0 then return nil end
     local to = cursor
-    if ssub(textValue, cursor + 1, cursor + 1) == "]" then
-        to = cursor + 1
-    end
+    if ssub(textValue, cursor + 1, cursor + 1) == "]" then to = cursor + 1 end
     return itemList, open + 1, to
 end
 
@@ -552,9 +504,7 @@ function TextTags.PopupOpts(category, options, helpOpts)
             type(textValue) == "string" and sgsub(textValue, "||", "|") or textValue,
             true
         )
-        if not parsed then
-            return nil, nil
-        end
+        if not parsed then return nil, nil end
         local hint
         if #parsed.unknown > 0 then
             hint = CludesUI.Lf(
@@ -565,12 +515,8 @@ function TextTags.PopupOpts(category, options, helpOpts)
         return TextTags.Preview(category, parsed, UNKNOWN), hint
     end
     options.previewLabel = CludesUI.L("Preview")
-    options.complete = function(textValue, cursor)
-        return TextTags.Complete(category, textValue, cursor)
-    end
-    options.infoTooltip = function()
-        return TextTags.HelpText(category, helpOpts)
-    end
+    options.complete = function(textValue, cursor) return TextTags.Complete(category, textValue, cursor) end
+    options.infoTooltip = function() return TextTags.HelpText(category, helpOpts) end
     options.infoTooltipOpts =
         { width = 360, justify = "LEFT", anchorPoint = "TOPRIGHT", anchorTo = "TOPLEFT", anchorX = -8 }
     return options
@@ -618,9 +564,7 @@ function TextTags.EditPopup(o, warning)
                 return
             end
             o.set(txt)
-            if o.onSave then
-                o.onSave()
-            end
+            if o.onSave then o.onSave() end
         end,
     }
     TextTags.PopupOpts(o.cat, popupOpts, o.tagNotes and { tagNotes = o.tagNotes } or nil)
@@ -635,46 +579,26 @@ end
 --- is built.
 function TextTags.MenuValues(values, edit, o)
     local val = CopyTable(values)
-    if edit then
-        val.custom = { text = (o and o.text) or "Custom", action = edit }
-    end
+    if edit then val.custom = { text = (o and o.text) or "Custom", action = edit } end
     local mo = val._menuOpts or {}
     val._menuOpts = mo
     local icon, iconColor, labelColor = mo.icon, mo.iconColor, mo.labelColor
     local selected, removeKey = o and o.selected, o and o.removeKey
     mo.icon = function(key)
-        if key == "custom" then
-            return EDIT_ICON
-        end
-        if key == removeKey then
-            return CLOSE_ICON
-        end
-        if icon then
-            return icon(key)
-        end
+        if key == "custom" then return EDIT_ICON end
+        if key == removeKey then return CLOSE_ICON end
+        if icon then return icon(key) end
     end
-    mo.iconSize = mo.iconSize or function()
-        return 12
-    end
+    mo.iconSize = mo.iconSize or function() return 12 end
     mo.iconClearScroll = true
     mo.iconColor = function(key)
-        if key == "custom" then
-            return 1, 1, 1, (not selected or selected()) and 1 or 0.75
-        end
-        if key == removeKey then
-            return 1, 0.35, 0.35, 0.75
-        end
-        if iconColor then
-            return iconColor(key)
-        end
+        if key == "custom" then return 1, 1, 1, (not selected or selected()) and 1 or 0.75 end
+        if key == removeKey then return 1, 0.35, 0.35, 0.75 end
+        if iconColor then return iconColor(key) end
     end
     mo.labelColor = function(key)
-        if key == removeKey then
-            return 1, 0.35, 0.35, 0.8
-        end
-        if labelColor then
-            return labelColor(key)
-        end
+        if key == removeKey then return 1, 0.35, 0.35, 0.8 end
+        if labelColor then return labelColor(key) end
     end
     return val
 end
@@ -685,11 +609,7 @@ function TextTags.AddFormatAccessor(region, labelText, get, set)
     CludesUI.AddCaptureAccessor(region, {
         type = "input",
         text = labelText .. " Custom Format",
-        getValue = function()
-            return get() or ""
-        end,
-        setValue = function(val)
-            set((val ~= "" and val) or nil)
-        end,
+        getValue = function() return get() or "" end,
+        setValue = function(val) set((val ~= "" and val) or nil) end,
     })
 end

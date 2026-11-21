@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CUI_Bags_Slots.lua
 --
@@ -11,9 +9,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local mod = select(2, ...)
 local Inner = mod._bagsInternals
 -- CludesUIBags.lua or an earlier CUI_Bags_*.lua file failed to load.
-if not Inner or Inner.broken then
-    return
-end
+if not Inner or Inner.broken then return end
 Inner.broken = true
 
 local GetItemInfo = C_Item.GetItemInfo
@@ -30,15 +26,11 @@ local CreateInsetBorder, SetInsetBorderColor = Inner.CreateInsetBorder, Inner.Se
 local _itemDragFrame = CreateFrame("Frame")
 _itemDragFrame:Hide()
 _itemDragFrame:SetScript("OnUpdate", function(self)
-    if IsMouseButtonDown("LeftButton") then
-        return
-    end
+    if IsMouseButtonDown("LeftButton") then return end
     self:Hide()
     -- Blizzard's OnReceiveDrag (bars/equipment) fires BEFORE OnUpdate in the same
     -- frame; if it consumed the item, GetCursorInfo returns nil.
-    if GetCursorInfo() ~= "item" then
-        return
-    end
+    if GetCursorInfo() ~= "item" then return end
     -- Cursor into each button's OWN coordinate space: GetRect() is in effective-scale
     -- units, so divide by btn:GetEffectiveScale() (not UIParent's -- matches only at scale 1.0).
     local rawCx, rawCy = GetCursorPosition()
@@ -50,9 +42,7 @@ _itemDragFrame:SetScript("OnUpdate", function(self)
             if l and b and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
                 local destBag = button:GetParent():GetID()
                 local destSlot = button:GetID()
-                if destSlot > 0 then
-                    C_Container.PickupContainerItem(destBag, destSlot)
-                end
+                if destSlot > 0 then C_Container.PickupContainerItem(destBag, destSlot) end
                 return
             end
         end
@@ -68,9 +58,7 @@ _itemDragFrame:SetScript("OnUpdate", function(self)
                 if l and b and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
                     local destBag = button:GetParent():GetID()
                     local destSlot = button:GetID()
-                    if destSlot > 0 then
-                        C_Container.PickupContainerItem(destBag, destSlot)
-                    end
+                    if destSlot > 0 then C_Container.PickupContainerItem(destBag, destSlot) end
                     return
                 end
             end
@@ -85,31 +73,21 @@ end)
 -- Middle-click: unassign an assigned item, else toggle its pin. Shared by the
 -- grid slots and the list rows (ns.SlotMiddleClick).
 local function SlotMiddleClick(self, btnFrame)
-    if btnFrame ~= "MiddleButton" then
-        return
-    end
+    if btnFrame ~= "MiddleButton" then return end
     local bagID = self:GetParent():GetID()
     local slotID = self:GetID()
-    if not bagID or not slotID or slotID == 0 then
-        return
-    end
+    if not bagID or not slotID or slotID == 0 then return end
     local details = C_Container.GetContainerItemInfo(bagID, slotID)
-    if not details or not details.itemID then
-        return
-    end
+    if not details or not details.itemID then return end
     -- If this item has a custom category assignment, middle-click unassigns it
     local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
     if assignments and assignments[details.itemID] then
         CUI_CategoryManager:UnassignItem(details.itemID)
-        if CUI_Bags.RefreshInventory then
-            CUI_Bags:RefreshInventory()
-        end
+        if CUI_Bags.RefreshInventory then CUI_Bags:RefreshInventory() end
         return
     end
     local pinned = PinnedItems(true)
-    if not pinned then
-        return
-    end
+    if not pinned then return end
     local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
     local isGear = IsGearItem(itemLink)
     -- Pin key is the normalized itemID+bonusIDs identity (distinguishes
@@ -124,9 +102,7 @@ local function SlotMiddleClick(self, btnFrame)
     local pinKey = NormalizePinKey(itemLink, details.itemID)
     local legacyCur = pinned[details.itemID] or 0
     local current = pinned[pinKey] or 0
-    if legacyCur > 0 and current == 0 then
-        current = legacyCur
-    end
+    if legacyCur > 0 and current == 0 then current = legacyCur end
     pinned[details.itemID] = nil
     if isGear then
         -- Gear: per-stack count toggle
@@ -144,9 +120,7 @@ local function SlotMiddleClick(self, btnFrame)
             pinned[pinKey] = 999
         end
     end
-    if CUI_Bags.RefreshInventory then
-        CUI_Bags:RefreshInventory()
-    end
+    if CUI_Bags.RefreshInventory then CUI_Bags:RefreshInventory() end
 end
 mod.SlotMiddleClick = SlotMiddleClick
 
@@ -155,26 +129,16 @@ mod.SlotMiddleClick = SlotMiddleClick
 -- clicks don't collide). State lives in an EXTERNAL weak table, never on the frame: PreClick
 -- custom keys taint the secure chain -> ADDON_ACTION_FORBIDDEN. Shared by grid slots and list rows.
 function mod.BankRoutePreClick(self, btnFrame)
-    if btnFrame ~= "RightButton" then
-        return
-    end
+    if btnFrame ~= "RightButton" then return end
     local bank = _G.CUI_BankFrame
-    if not bank or not bank:IsVisible() then
-        return
-    end
+    if not bank or not bank:IsVisible() then return end
     local targetBag = bank:GetSelectedTabBagID()
-    if not targetBag then
-        return
-    end
+    if not targetBag then return end
     local srcBag = self:GetParent():GetID()
     local srcSlot = self:GetID()
-    if not srcBag or not srcSlot or srcSlot == 0 then
-        return
-    end
+    if not srcBag or not srcSlot or srcSlot == 0 then return end
     local details = C_Container.GetContainerItemInfo(srcBag, srcSlot)
-    if not details then
-        return
-    end
+    if not details then return end
     bank:QueueTransfer(srcBag, srcSlot)
     _bankRouted[self] = true
 end
@@ -186,9 +150,7 @@ function mod.BankRouteOnClick(self, btnFrame)
 end
 
 local function GetOrCreateReagentSlot(position)
-    if reagentSlots[position] then
-        return reagentSlots[position]
-    end
+    if reagentSlots[position] then return reagentSlots[position] end
     -- Never create a secure button during combat (taint). See GetOrCreateSlot.
     if InCombatLockdown() then
         CUI_Bags._poolShort = true
@@ -216,9 +178,7 @@ local function GetOrCreateReagentSlot(position)
         button.flash:Hide()
         button.flash:SetAlpha(0)
     end
-    if button.newitemglowAnim then
-        button.newitemglowAnim:Stop()
-    end
+    if button.newitemglowAnim then button.newitemglowAnim:Stop() end
 
     mod.SizeSlot(button)
     if button.icon then
@@ -243,12 +203,8 @@ local function GetOrCreateReagentSlot(position)
         pt:SetVertexColor(0.973, 0.839, 0.604, 1)
     end
 
-    if button.NormalTexture then
-        button.NormalTexture:SetAlpha(0)
-    end
-    if button.IconBorder then
-        button.IconBorder:SetAlpha(0)
-    end
+    if button.NormalTexture then button.NormalTexture:SetAlpha(0) end
+    if button.IconBorder then button.IconBorder:SetAlpha(0) end
 
     if button.icon and button.IconMask then
         button.icon:RemoveMaskTexture(button.IconMask)
@@ -261,9 +217,7 @@ local function GetOrCreateReagentSlot(position)
 
     if button.Cooldown then
         local cdText = button.Cooldown:GetRegions()
-        if cdText and cdText.SetFont then
-            CludesUI.ApplyIconTextFont(cdText, GetFont(), 11, "bags")
-        end
+        if cdText and cdText.SetFont then CludesUI.ApplyIconTextFont(cdText, GetFont(), 11, "bags") end
     end
 
     CreateInsetBorder(button, true)
@@ -296,9 +250,10 @@ local function GetOrCreateReagentSlot(position)
     )
     button.ItemLevelText:SetText("")
 
-    button:HookScript("PostClick", function(self)
-        CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(5), CUI_BagsReagent)
-    end)
+    button:HookScript(
+        "PostClick",
+        function(self) CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(5), CUI_BagsReagent) end
+    )
 
     reagentSlots[position] = button
     return button
@@ -334,9 +289,7 @@ function CUI_Bags:WarmSlotPool(msBudget)
                 sum = sum + 1
             end
         end
-        if not mod.WarmListRows(sum, t0, msBudget) then
-            return false
-        end
+        if not mod.WarmListRows(sum, t0, msBudget) then return false end
     else
         for i = 1, sum do
             if not itemSlots[i] then
@@ -371,9 +324,7 @@ function CUI_Bags:WarmSlotPool(msBudget)
 end
 
 local function GetOrCreateBagSlot(position)
-    if bagSlots[position] then
-        return bagSlots[position]
-    end
+    if bagSlots[position] then return bagSlots[position] end
     local slotParent = CreateFrame("Frame", nil, CUI_BagsWindow)
     mod.SizeSlot(slotParent)
     local button = CreateFrame("Button", nil, slotParent)
@@ -394,29 +345,19 @@ local function GetOrCreateBagSlot(position)
     -- Drag-and-drop: equip a bag into this slot, or swap it with the
     -- equipped bag on the cursor
     local function TrySwapBag(self)
-        if InCombatLockdown() then
-            return
-        end
-        if not CursorHasItem() then
-            return
-        end
+        if InCombatLockdown() then return end
+        if not CursorHasItem() then return end
         local bagID = self:GetID()
-        if bagID == 0 then
-            return
-        end -- can't replace backpack
+        if bagID == 0 then return end -- can't replace backpack
         PutItemInBag(C_Container.ContainerIDToInventoryID(bagID))
     end
     button:SetScript("OnReceiveDrag", TrySwapBag)
     button:HookScript("OnClick", TrySwapBag)
     -- Drag an equipped bag out of its slot (drop it on another slot to swap)
     button:SetScript("OnDragStart", function(self)
-        if InCombatLockdown() then
-            return
-        end
+        if InCombatLockdown() then return end
         local bagID = self:GetID()
-        if bagID == 0 then
-            return
-        end -- the backpack can't be moved
+        if bagID == 0 then return end -- the backpack can't be moved
         PickupBagFromSlot(C_Container.ContainerIDToInventoryID(bagID))
     end)
 
@@ -434,9 +375,7 @@ local function GetOrCreateBagSlot(position)
         local bTotal = C_Container.GetContainerNumSlots(bagIdx)
         local bFree = C_Container.GetContainerNumFreeSlots(bagIdx)
         local tipText = bName
-        if bTotal > 0 then
-            tipText = tipText .. "  (" .. (bTotal - bFree) .. "/" .. bTotal .. ")"
-        end
+        if bTotal > 0 then tipText = tipText .. "  (" .. (bTotal - bFree) .. "/" .. bTotal .. ")" end
         CUI.ShowWidgetTooltip(self, tipText)
     end)
     button:SetScript("OnLeave", function(self)
@@ -457,9 +396,7 @@ local function RefreshTextSizes()
     local ilvlSize = BP().itemlevelFontSize or 12
     local bindTypeSize = BP().bagBindTypeFontSize or 11
     for _, button in pairs(itemSlots) do
-        if button.Count then
-            CludesUI.ApplyIconTextFont(button.Count, fontFile, countSize, "bags")
-        end
+        if button.Count then CludesUI.ApplyIconTextFont(button.Count, fontFile, countSize, "bags") end
         if button.ItemLevelText then
             button.ItemLevelText:SetFont(
                 fontFile,
@@ -497,9 +434,7 @@ local function RefreshTextSizes()
         end
     end
     for _, button in pairs(reagentSlots) do
-        if button.Count then
-            CludesUI.ApplyIconTextFont(button.Count, fontFile, countSize, "bags")
-        end
+        if button.Count then CludesUI.ApplyIconTextFont(button.Count, fontFile, countSize, "bags") end
         if button.ItemLevelText then
             button.ItemLevelText:SetFont(
                 STANDARD_TEXT_FONT,
@@ -517,19 +452,13 @@ CUI_Bags.RefreshTextSizes = RefreshTextSizes
 local function RefreshIconZoom()
     local zoom = BP().bagItemIconZoom or 0.08
     for _, button in pairs(itemSlots) do
-        if button.icon then
-            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-        end
+        if button.icon then button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom) end
     end
     for _, button in pairs(reagentSlots) do
-        if button.icon then
-            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-        end
+        if button.icon then button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom) end
     end
     for _, button in pairs(bagSlots) do
-        if button.icon then
-            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-        end
+        if button.icon then button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom) end
     end
 end
 CUI_Bags.RefreshIconZoom = RefreshIconZoom
@@ -607,9 +536,7 @@ do
                 i = i + #text:match("^||?", i)
             elseif c:find("^[<>=]") then
                 local op = text:match("^[<>=]=?", i)
-                if not OPS[op] then
-                    return nil
-                end
+                if not OPS[op] then return nil end
                 toks[#toks + 1] = { k = "op", v = OPS[op] }
                 i = i + #op
             elseif c:find("^%d") then
@@ -641,40 +568,28 @@ do
 
     local function ParseBindQuery(textValue)
         local toks = Tokenize(strtrim(textValue or ""):lower())
-        if not toks or #toks == 0 then
-            return nil
-        end
+        if not toks or #toks == 0 then return nil end
         local p = 1
         local ParseOr
 
         local function ParsePrimary(depth)
             local tbl = toks[p]
-            if not tbl then
-                return nil
-            end
+            if not tbl then return nil end
             if tbl.k == "lp" then
-                if depth >= MAX_DEPTH then
-                    return nil
-                end
+                if depth >= MAX_DEPTH then return nil end
                 p = p + 1
                 local e = ParseOr(depth + 1)
-                if not e or not toks[p] or toks[p].k ~= "rp" then
-                    return nil
-                end
+                if not e or not toks[p] or toks[p].k ~= "rp" then return nil end
                 p = p + 1
                 return e
             end
-            if tbl.k ~= "kw" then
-                return nil
-            end
+            if tbl.k ~= "kw" then return nil end
             p = p + 1
             local node = { t = "term", kw = tbl.v }
             local nx = toks[p]
             if nx and nx.k == "op" then
                 local num = toks[p + 1]
-                if not num or num.k ~= "num" then
-                    return nil
-                end
+                if not num or num.k ~= "num" then return nil end
                 node.op, node.lo = nx.v, num.v
                 p = p + 2
             elseif nx and nx.k == "range" then
@@ -690,9 +605,7 @@ do
         local function ParseNot(depth)
             local tbl = toks[p]
             if tbl and tbl.k == "not" then
-                if depth >= MAX_DEPTH then
-                    return nil
-                end
+                if depth >= MAX_DEPTH then return nil end
                 p = p + 1
                 local a = ParseNot(depth + 1)
                 return a and { t = "not", a = a }
@@ -708,9 +621,7 @@ do
                 and toks[p]
                 and (toks[p].k == "and" or toks[p].k == "kw" or toks[p].k == "not" or toks[p].k == "lp")
             do
-                if toks[p].k == "and" then
-                    p = p + 1
-                end
+                if toks[p].k == "and" then p = p + 1 end
                 local region = ParseNot(depth)
                 l = region and { t = "and", a = l, b = region }
             end
@@ -728,9 +639,7 @@ do
         end
 
         local root = ParseOr(0)
-        if root and p == #toks + 1 then
-            return root
-        end
+        if root and p == #toks + 1 then return root end
         return nil
     end
 
@@ -744,29 +653,15 @@ do
 
     -- The level the slot shows: the item's current level at its location.
     local function ItemLevelMatches(q)
-        if curIlvl == nil then
-            curIlvl = GetItemLevelAtLocation(loc, curLink) or false
-        end
+        if curIlvl == nil then curIlvl = GetItemLevelAtLocation(loc, curLink) or false end
         local ilvl = curIlvl
-        if not ilvl then
-            return false
-        end
+        if not ilvl then return false end
         local op, lo = q.op, q.lo
-        if op == "=" then
-            return ilvl == lo
-        end
-        if op == ">" then
-            return ilvl > lo
-        end
-        if op == ">=" then
-            return ilvl >= lo
-        end
-        if op == "<" then
-            return ilvl < lo
-        end
-        if op == "<=" then
-            return ilvl <= lo
-        end
+        if op == "=" then return ilvl == lo end
+        if op == ">" then return ilvl > lo end
+        if op == ">=" then return ilvl >= lo end
+        if op == "<" then return ilvl < lo end
+        if op == "<=" then return ilvl <= lo end
         return ilvl >= lo and ilvl <= q.hi
     end
 
@@ -787,32 +682,22 @@ do
         elseif not curBound then
             -- BoE and WuE both mean "not bound yet". WuE reads as OnEquip from
             -- GetItemInfo, so the account check tells the two apart.
-            if curWue == nil then
-                curWue = C_Item.IsBoundToAccountUntilEquip(loc) and true or false
-            end
+            if curWue == nil then curWue = C_Item.IsBoundToAccountUntilEquip(loc) and true or false end
             if key == "wue" then
                 match = curWue
             else
                 match = not curWue and curBindType == Enum.ItemBind.OnEquip
             end
         end
-        if match and q.op then
-            match = ItemLevelMatches(q)
-        end
+        if match and q.op then match = ItemLevelMatches(q) end
         return match and true or false
     end
 
     local function Eval(n)
         local t = n.t
-        if t == "term" then
-            return TermMatches(n)
-        end
-        if t == "not" then
-            return not Eval(n.a)
-        end
-        if t == "and" then
-            return Eval(n.a) and Eval(n.b)
-        end
+        if t == "term" then return TermMatches(n) end
+        if t == "not" then return not Eval(n.a) end
+        if t == "and" then return Eval(n.a) and Eval(n.b) end
         return Eval(n.a) or Eval(n.b)
     end
 
@@ -828,12 +713,8 @@ do
         if CUI_Bags._appliedSearch == "" or not (CUI_Bags:IsVisible() or (bank and bank:IsVisible())) then
             self:UnregisterEvent("INVENTORY_SEARCH_UPDATE")
         end
-        if CUI_Bags:IsVisible() then
-            CUI_Bags:RefreshInventory()
-        end
-        if BP().detachReagentBag and CUI_BagsReagent:IsVisible() then
-            CUI_BagsReagent:RefreshInventory()
-        end
+        if CUI_Bags:IsVisible() then CUI_Bags:RefreshInventory() end
+        if BP().detachReagentBag and CUI_BagsReagent:IsVisible() then CUI_BagsReagent:RefreshInventory() end
         mod.RefreshOpenBank()
     end
 
@@ -869,9 +750,7 @@ do
             end
             armed = false
             local textValue = box:GetText()
-            if textValue ~= CUI_Bags._appliedSearch then
-                apply(textValue)
-            end
+            if textValue ~= CUI_Bags._appliedSearch then apply(textValue) end
         end
         return function(userInput)
             if userInput then
@@ -883,26 +762,20 @@ do
                 return
             end
             local textValue = box:GetText()
-            if textValue ~= CUI_Bags._appliedSearch then
-                apply(textValue)
-            end
+            if textValue ~= CUI_Bags._appliedSearch then apply(textValue) end
         end
     end
 
     -- Clears the game's search unless it is already clear (the clear buttons,
     -- Escape and the bank's open and close, after emptying their box).
     function CUI_Bags.ClearSearch()
-        if CUI_Bags._appliedSearch ~= "" then
-            CUI_Bags.SetSearchText("")
-        end
+        if CUI_Bags._appliedSearch ~= "" then CUI_Bags.SetSearchText("") end
     end
 
     -- Overrides info.isFiltered for the active expression; no-op when none is active.
     function CUI_Bags.ApplyBindKeyword(details, bag, slot)
         local q = CUI_Bags._bindKeyword
-        if not q or not details then
-            return
-        end
+        if not q or not details then return end
         local match = false
         loc:SetBagAndSlot(bag, slot)
         if C_Item.DoesItemExist(loc) then
@@ -931,9 +804,7 @@ function mod.QualityBorderColor(quality)
             c = ITEM_QUALITY_COLORS[quality]
         end
     end
-    if c then
-        return c.r, c.g, c.b
-    end
+    if c then return c.r, c.g, c.b end
     return 0.25, 0.25, 0.25
 end
 
@@ -950,19 +821,13 @@ end
 -- painter error is reported and never stops our render.
 CUI_Bags.itemOverlayIcons = CUI_Bags.itemOverlayIcons or {}
 
-function CUI_Bags.RegisterItemOverlayIcon(name, updateFn)
-    CUI_Bags.itemOverlayIcons[name] = updateFn
-end
+function CUI_Bags.RegisterItemOverlayIcon(name, updateFn) CUI_Bags.itemOverlayIcons[name] = updateFn end
 
-function CUI_Bags.UnregisterItemOverlayIcon(name)
-    CUI_Bags.itemOverlayIcons[name] = nil
-end
+function CUI_Bags.UnregisterItemOverlayIcon(name) CUI_Bags.itemOverlayIcons[name] = nil end
 
 function CUI_Bags.RunItemOverlays(button, payload)
     local fns = CUI_Bags.itemOverlayIcons
-    if next(fns) == nil then
-        return
-    end
+    if next(fns) == nil then return end
     for _, func in pairs(fns) do
         securecallfunction(func, button, payload)
     end

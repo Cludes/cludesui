@@ -1,6 +1,4 @@
-if CUI_CLIENT_BLOCKED then
-    return
-end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 --  CludesUIBags_Compact.lua
 --  Compact display (bagDisplayMode = "compact"; bank: bankCompactView): every
@@ -19,15 +17,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and List displays never build anything here.
 -------------------------------------------------------------------------------
 local mod = select(2, ...)
-if not (mod and mod.GetSelection) then
-    return
-end
+if not (mod and mod.GetSelection) then return end
 
 local CUI = CludesUI
 local _emptyP = {}
-local function BP()
-    return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
-end
+local function BP() return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP end
 local ceil, floor, max, min = math.ceil, math.floor, math.max, math.min
 
 local SLOT_SIZE, SPACING = mod.SLOT_SIZE, mod.SPACING
@@ -64,19 +58,13 @@ local BuildSlotBuckets = mod.BuildSlotBuckets
 local BuildExpansionBuckets = mod.BuildExpansionBuckets
 
 -- Height of a label band for a label font size (default: the bags' Category Title Size)
-function mod.CompactBandHeight(size)
-    return (size or GetCatTitleSize()) + BAND_PAD
-end
+function mod.CompactBandHeight(size) return (size or GetCatTitleSize()) + BAND_PAD end
 
 -- The bank display ("grid" | "list" | "compact") from the bank profile keys:
 -- List View keeps its own switch and wins; bankCompactView adds Compact.
 function mod.BankDisplayMode(profile)
-    if profile.bankListView == true then
-        return "list"
-    end
-    if profile.bankCompactView == true then
-        return "compact"
-    end
+    if profile.bankListView == true then return "list" end
+    if profile.bankCompactView == true then return "compact" end
     return "grid"
 end
 
@@ -143,32 +131,22 @@ local candN, candTop = 0, 0
 -- column count
 local function BlockW(g, cols, last)
     local wid = pLabel[g]
-    if cols > wid then
-        wid = cols
-    end
-    if not last and wid < MID_MIN_CELLS then
-        wid = MID_MIN_CELLS
-    end
-    if wid > pColumns then
-        wid = pColumns
-    end
+    if cols > wid then wid = cols end
+    if not last and wid < MID_MIN_CELLS then wid = MID_MIN_CELLS end
+    if wid > pColumns then wid = pColumns end
     return wid
 end
 
 -- Icon columns of a block held to k rows
 local function BandCols(g, scale)
     local s = pSize[g]
-    if s <= scale then
-        return 1
-    end
+    if s <= scale then return 1 end
     return ceil(s / scale)
 end
 
 local function Rows(g, cols)
     local s = pSize[g]
-    if s == 0 then
-        return 0
-    end
+    if s == 0 then return 0 end
     return ceil(s / cols)
 end
 
@@ -176,16 +154,10 @@ end
 -- last row holds a single icon. A block with no icons is never awkward.
 local function Awk(g, cols)
     local s = pSize[g]
-    if s == 0 then
-        return 0
-    end
+    if s == 0 then return 0 end
     local a = 0
-    if cols > 7 or cols < min(3, s) then
-        a = 1
-    end
-    if cols > 1 and s > cols and s % cols == 1 then
-        a = a + 1
-    end
+    if cols > 7 or cols < min(3, s) then a = 1 end
+    if cols > 1 and s > cols and s % cols == 1 then a = a + 1 end
     return a
 end
 
@@ -204,9 +176,7 @@ local function BandRows(i, jdx, key)
     local region = 0
     for m = i, jdx do
         local rowList = Rows(m, BandCols(m, key))
-        if rowList > region then
-            region = rowList
-        end
+        if rowList > region then region = rowList end
     end
     return region
 end
@@ -231,15 +201,11 @@ local function FitBand(i, jdx, key)
         -- A block at 0 has nothing to gain, and none wider than 7 columns
         -- scores below 1
         for wider = c + 1, (nowTime > 0) and min(pSize[m], pColumns) or 0 do
-            if wider > 7 and bestA <= 1 then
-                break
-            end
+            if wider > 7 and bestA <= 1 then break end
             local a = Awk(m, wider)
             if a < bestA then
                 bestC, bestA = wider, a
-                if a == 0 then
-                    break
-                end
+                if a == 0 then break end
             end
         end
         if bestC > 0 then
@@ -270,9 +236,7 @@ local function FitBand(i, jdx, key)
             local rowList, nowTime = Rows(m, c), Awk(m, c)
             for wider = c + 1, min(pSize[m], pColumns) do
                 -- None wider than 7 columns scores 0
-                if wider > 7 and nowTime == 0 then
-                    break
-                end
+                if wider > 7 and nowTime == 0 then break end
                 if Rows(m, wider) < rowList and Awk(m, wider) <= nowTime then
                     -- A block wider for its label (or the band's minimum)
                     -- takes its first columns free
@@ -291,9 +255,7 @@ local function FitBand(i, jdx, key)
     for m = i, jdx do
         local c = fbCols[m]
         local rowList = Rows(m, c)
-        if rowList > region then
-            region = rowList
-        end
+        if rowList > region then region = rowList end
         awk = awk + Awk(m, c)
     end
     return pBand + region * PITCH, awk
@@ -318,15 +280,9 @@ end
 -- Least height first, then least awkward, then fewest wrapped rows, then the
 -- order the candidates were made in
 local function CandBefore(a, b)
-    if candQ[a] ~= candQ[b] then
-        return candQ[a] < candQ[b]
-    end
-    if candA[a] ~= candA[b] then
-        return candA[a] < candA[b]
-    end
-    if candW[a] ~= candW[b] then
-        return candW[a] < candW[b]
-    end
+    if candQ[a] ~= candQ[b] then return candQ[a] < candQ[b] end
+    if candA[a] ~= candA[b] then return candA[a] < candA[b] end
+    if candW[a] ~= candW[b] then return candW[a] < candW[b] end
     return a < b
 end
 
@@ -351,17 +307,11 @@ local function Plan(num, result)
         for jdx = i, num do
             local s = pSize[jdx]
             local need = ceil(s / pColumns)
-            if need > kMin then
-                kMin = need
-            end
-            if s > kMax then
-                kMax = s
-            end
+            if need > kMin then kMin = need end
+            if s > kMax then kMax = s end
             -- Stop once even one-column blocks no longer fit (it only grows
             -- with j: the block that was last takes the band's minimum)
-            if jdx > i and before + GAP_EXTRA + BlockW(jdx, 1, true) * PITCH > pCap then
-                break
-            end
+            if jdx > i and before + GAP_EXTRA + BlockW(jdx, 1, true) * PITCH > pCap then break end
             before = before + GAP_EXTRA + BlockW(jdx, 1) * PITCH
             -- The fewest rows that fit; a single group takes what full width
             -- needs (at kMax every block is one column wide, which fits here)
@@ -380,9 +330,7 @@ local function Plan(num, result)
             Consider(i, jdx, k)
             local rowList = BandRows(i, jdx, k)
             for more = k + 1, kMax do
-                if BandRows(i, jdx, more) > rowList + LOOKS_ROWS then
-                    break
-                end
+                if BandRows(i, jdx, more) > rowList + LOOKS_ROWS then break end
                 -- The same block shapes as at more - 1 only add longer copies
                 -- of its plans
                 local differs = false
@@ -392,9 +340,7 @@ local function Plan(num, result)
                         break
                     end
                 end
-                if differs then
-                    Consider(i, jdx, more)
-                end
+                if differs then Consider(i, jdx, more) end
             end
         end
         for posX = candN + 1, candTop do
@@ -406,9 +352,7 @@ local function Plan(num, result)
         local first, lastA = kN + 1, nil
         for posX = 1, candN do
             local c = candOrd[posX]
-            if candQ[c] > limit then
-                break
-            end
+            if candQ[c] > limit then break end
             if not lastA or candA[c] < lastA then
                 lastA = candA[c]
                 rN = rN + 1
@@ -434,9 +378,7 @@ local function Plan(num, result)
             local c = fbCols[m]
             pCols[m], pWidth[m] = c, BlockW(m, c, m == jdx)
             local rowList = Rows(m, c)
-            if rowList > most then
-                most = rowList
-            end
+            if rowList > most then most = rowList end
         end
         pRows[nb] = most
         i, region = jdx + 1, rRest[region]
@@ -461,9 +403,7 @@ function mod.CompactPack(size, labelW, num, columns, bandH, startY, result)
         result.contentW = nil
         return 0, 0, startY
     end
-    if columns < 1 then
-        columns = 1
-    end
+    if columns < 1 then columns = 1 end
     -- Memo inputs: the group count, each group's cells and label width
     -- (rounded up to whole px, which keeps every label cell count), columns,
     -- bandH, LOOKS_ROWS and the slot pitch / gap
@@ -477,9 +417,7 @@ function mod.CompactPack(size, labelW, num, columns, bandH, startY, result)
     local band = 0
     for g = 1, num do
         local s, lw = size[g], ceil(labelW[g])
-        if lw > 0 then
-            band = bandH
-        end
+        if lw > 0 then band = bandH end
         if mSize[g] ~= s or mLabel[g] ~= lw then
             mSize[g], mLabel[g] = s, lw
             same = false
@@ -487,9 +425,7 @@ function mod.CompactPack(size, labelW, num, columns, bandH, startY, result)
     end
     -- The labels stay bandH tall at the band's top; the icons start below
     -- LABEL_BELOW more
-    if band > 0 then
-        band = band + LABEL_BELOW
-    end
+    if band > 0 then band = band + LABEL_BELOW end
     if not same then
         result._mN, result._mColumns, result._mBandH, result._mLooks = num, columns, bandH, LOOKS_ROWS
         result._mPitch, result._mGap = PITCH, GAP_EXTRA
@@ -522,12 +458,8 @@ function mod.CompactPack(size, labelW, num, columns, bandH, startY, result)
             groupCols[g], groupBand[g] = cols, b
             -- A label may run to the next block (less LABEL_PAD); the last
             -- one's room is set below, once the right edge is known
-            if g < last then
-                labelRoom[g] = wid + BLOCK_GAP - LABEL_PAD
-            end
-            if g == last and posX + wid > widest then
-                widest = posX + wid
-            end
+            if g < last then labelRoom[g] = wid + BLOCK_GAP - LABEL_PAD end
+            if g == last and posX + wid > widest then widest = posX + wid end
             local topY = posY - band
             for t = 0, s - 1 do
                 local row = floor(t / cols)
@@ -545,9 +477,7 @@ function mod.CompactPack(size, labelW, num, columns, bandH, startY, result)
     -- (out.contentW, the width a grid of `columns` would have otherwise).
     -- A band's last label may run to that edge, or a gap past its block.
     local edge = rightX
-    if nb > 0 and rightX - widest > 0 and rightX - widest < PITCH then
-        edge = widest
-    end
+    if nb > 0 and rightX - widest > 0 and rightX - widest < PITCH then edge = widest end
     result.contentW = edge + SPACING
     for b = 1, nb do
         local g = pLast[b]
@@ -575,9 +505,7 @@ do
         local s
         for skinData = lo, hi do
             local p = filePath[skinData]
-            if p then
-                s = s and (s .. ": " .. p) or p
-            end
+            if p then s = s and (s .. ": " .. p) or p end
         end
         return s or false
     end
@@ -601,12 +529,8 @@ do
                 for k = skinData + 1, maxDepth do
                     filePath[k] = nil
                 end
-                if skinData > maxDepth then
-                    maxDepth = skinData
-                end
-                if not freshMin or skinData < freshMin then
-                    freshMin = skinData
-                end
+                if skinData > maxDepth then maxDepth = skinData end
+                if not freshMin or skinData < freshMin then freshMin = skinData end
                 curDepth, chainLast = skinData, e
             else
                 if chainLast then
@@ -652,17 +576,13 @@ end
 local labelTipOpts = { anchorPoint = "BOTTOM", anchorTo = "TOPLEFT", anchorX = 0, anchorY = 4 }
 local function LabelOnEnter(self)
     local tipText = self._cut and self._text or nil
-    if self._hint then
-        tipText = tipText and (tipText .. "\n" .. self._hint) or self._hint
-    end
+    if self._hint then tipText = tipText and (tipText .. "\n" .. self._hint) or self._hint end
     if tipText then
         labelTipOpts.anchorX = self._shownW / 2
         CUI.ShowWidgetTooltip(self, tipText, labelTipOpts)
     end
 end
-local function LabelOnLeave()
-    CUI.HideWidgetTooltip()
-end
+local function LabelOnLeave() CUI.HideWidgetTooltip() end
 
 -- A label that takes mouse motion passes clicks and drops on (out of combat
 -- only, so one made in combat takes no mouse until a later paint): ns.PassClicks
@@ -671,9 +591,7 @@ local PassClicks = mod.PassClicks
 
 function mod.CompactLabel(pool, position, ownerFrame)
     local lf = pool[position]
-    if lf then
-        return lf
-    end
+    if lf then return lf end
     lf = CreateFrame("Frame", nil, ownerFrame)
     local fontStr = lf:CreateFontString(nil, "OVERLAY")
     fontStr:SetPoint("LEFT", lf, "LEFT", 0, 0)
@@ -733,23 +651,15 @@ function mod.CompactShowLabel(
         lf._label:SetText(textValue)
         lf._text = textValue
     end
-    if room < 1 then
-        room = 1
-    end
+    if room < 1 then room = 1 end
     reserveRight = reserveRight or 0
     local wid = room - reserveRight
-    if wid < 1 then
-        wid = 1
-    end
+    if wid < 1 then wid = 1 end
     -- Blocks are sized so a label keeps SPACING before the next block, while
     -- its room keeps LABEL_PAD: a text over by no more than the difference
     -- still shows whole
-    if textW > wid and textW <= wid + LABEL_PAD - SPACING then
-        wid = wid + LABEL_PAD - SPACING
-    end
-    if lf:GetParent() ~= hostFrame then
-        lf:SetParent(hostFrame)
-    end
+    if textW > wid and textW <= wid + LABEL_PAD - SPACING then wid = wid + LABEL_PAD - SPACING end
+    if lf:GetParent() ~= hostFrame then lf:SetParent(hostFrame) end
     lf:ClearAllPoints()
     lf:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", posX, posY)
     lf:SetSize(room, bandH)
@@ -803,9 +713,7 @@ local zonesOn = false
 
 -- Group g's label: "<a>: <b> (<n>)", or "<b> (<n>)" when a is false
 local function CountLabel(g, a, b, num)
-    if lblA[g] == a and lblB[g] == b and lblN[g] == num then
-        return lblText[g]
-    end
+    if lblA[g] == a and lblB[g] == b and lblN[g] == num then return lblText[g] end
     local textValue = a and (a .. ": " .. b .. " (" .. num .. ")") or (b .. " (" .. num .. ")")
     lblA[g], lblB[g], lblN[g], lblText[g] = a, b, num, textValue
     return textValue
@@ -875,9 +783,7 @@ function mod.CompactBagsSection(name, itemList, kind, assignKey, keepEmpty, hint
                 first = false
             end
         end
-        if not first then
-            return
-        end
+        if not first then return end
     end
     local clear = false
     hint = hint or false
@@ -889,9 +795,7 @@ function mod.CompactBagsSection(name, itemList, kind, assignKey, keepEmpty, hint
     end
     -- An empty section is dropped, but the Pinned block and an assignable
     -- category stay as a label-only block (a drop target)
-    if count == 0 and not pin and not assignKey and not keepEmpty then
-        return
-    end
+    if count == 0 and not pin and not assignKey and not keepEmpty then return end
     AddGroup(
         name ~= "" and CountLabel(gN + 1, false, name, count) or false,
         hint,
@@ -909,9 +813,7 @@ end
 -- slots included and mouse-enabled (drop targets)
 function mod.CompactBagsSlots(label, slots)
     local count = #slots
-    if count == 0 then
-        return
-    end
+    if count == 0 then return end
     AddGroup(label, false, true, false, false, false)
     for jdx = 1, count do
         AddCell(slots[jdx])
@@ -945,9 +847,7 @@ local syncedID, syncedLink, syncedExt
 
 -- Shows each placed zone that takes the cursor item, hides the others
 local function SyncZones()
-    if zoneN == 0 then
-        return
-    end
+    if zoneN == 0 then return end
     local cursorType, itemId, itemLink = GetCursorInfo()
     if cursorType ~= "item" or not itemId then
         itemId, itemLink = nil, nil
@@ -959,20 +859,14 @@ local function SyncZones()
     -- Memo inputs: the cursor item, its link and ext, and zoneDirty for the
     -- zones and their blocks (pins and assignments refresh, which places the
     -- zones again)
-    if not zoneDirty and itemId == syncedID and itemLink == syncedLink and ext == syncedExt then
-        return
-    end
+    if not zoneDirty and itemId == syncedID and itemLink == syncedLink and ext == syncedExt then return end
     zoneDirty, syncedID, syncedLink, syncedExt = false, itemId, itemLink, ext
-    if ext then
-        itemId = nil
-    end
+    if ext then itemId = nil end
     local pinned = false
     if itemId then
         wipe(zoneHeld)
         for i = 1, zoneItemN do
-            if zoneItem[i] == itemId then
-                zoneHeld[zoneItemKey[i]] = true
-            end
+            if zoneItem[i] == itemId then zoneHeld[zoneItemKey[i]] = true end
         end
         pinned = mod.IsItemPinned(mod.PinnedItems(), itemLink, itemId) and true or false
     end
@@ -986,9 +880,7 @@ local function SyncZones()
                 show = not zoneHeld[z._key]
             end
         end
-        if not show then
-            mod.EndPlusHover(z)
-        end
+        if not show then mod.EndPlusHover(z) end
         z:SetShown(show)
     end
 end
@@ -1019,9 +911,7 @@ end
 
 local function GetZone(i)
     local z = zones[i]
-    if z then
-        return z
-    end
+    if z then return z end
     z = mod.CreatePlusButton(CUI_Bags, nil)
     z:SetScript("OnReceiveDrag", ZoneDrop)
     z:SetScript("OnClick", ZoneDrop)
@@ -1049,12 +939,8 @@ local function PlaceZones(childFrame, startX, result, num)
             local hgt = result.groupH[g]
             -- A block with no icons also takes the empty space below its
             -- label, down to its band's bottom
-            if s == 0 then
-                hgt = max(result.bandH[result.groupBand[g]] - SPACING, result.labelBand)
-            end
-            if z:GetParent() ~= childFrame then
-                z:SetParent(childFrame)
-            end
+            if s == 0 then hgt = max(result.bandH[result.groupBand[g]] - SPACING, result.labelBand) end
+            if z:GetParent() ~= childFrame then z:SetParent(childFrame) end
             -- Above the item buttons and their overlays
             z:SetFrameLevel(childFrame:GetFrameLevel() + 20)
             z:ClearAllPoints()
@@ -1098,9 +984,7 @@ end
 -------------------------------------------------------------------------------
 -- The px width the last pass's layout gives the grid (CompactPack's
 -- out.contentW), or nil for the grid's own width.
-function mod.CompactBagsContentW()
-    return bagOut and bagOut.contentW
-end
+function mod.CompactBagsContentW() return bagOut and bagOut.contentW end
 
 -- Lays out and draws the pass's groups from startY down, then their drop
 -- zones; returns the advanced slotIdx and the content bottom (curY)
@@ -1122,16 +1006,12 @@ function mod.CompactBagsPlace(childFrame, startX, startY, columns, slotIdx)
     end
     mod.CompactHideLabels(bagLabels, k + 1)
     if num == 0 then
-        if bagOut then
-            bagOut.contentW = nil
-        end
+        if bagOut then bagOut.contentW = nil end
         PlaceZones(childFrame, startX, nil, 0)
         return slotIdx, startY
     end
 
-    if not bagOut then
-        bagOut = mod.CompactNewOut()
-    end
+    if not bagOut then bagOut = mod.CompactNewOut() end
     local result = bagOut
     local bandH = size + BAND_PAD
     local _, _, bottomY = mod.CompactPack(gSize, gPlanW, num, columns, bandH, startY, result)
