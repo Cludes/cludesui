@@ -43,9 +43,9 @@ end
 
 function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
+    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, RebuildAndReload =
         environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local SHORT_LABELS, UF_ImpCastGlowDesc, UNIT_DB_MAP, UpdatePreview =
+    local SHORT_LABELS, UF_ImpCastGlowDesc, UNIT_DB_MAP, RepaintPreview =
         environ.SHORT_LABELS, environ.UF_ImpCastGlowDesc, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, optionState = environ.db, environ.optState
     local W, SGetSupported, SSetSupported, SVal =
@@ -54,8 +54,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     local function SSetSupportedRowThen(key)
         return function(value)
             SSetSupported(key, value)
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
         end
     end
     local SValSupported = context.SValSupported
@@ -179,8 +179,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             function() return GetCastbarEnabled(optionState.selectedUnit) end,
             function(value)
                 SetCastbarEnabled(optionState.selectedUnit, value)
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 CUI:RefreshPage()
             end
         ),
@@ -196,8 +196,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         getValue = GetCastbarHeight,
         setValue = function(value)
             SetCastbarHeight(value)
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -231,7 +231,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             { r = unintC.r, g = unintC.g, b = unintC.b }
                     end
                 end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end,
             isSynced = function()
@@ -293,7 +293,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                                 { r = unintC.r, g = unintC.g, b = unintC.b }
                         end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                 end,
             },
@@ -316,8 +316,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 end,
                 set = function(value)
                     UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive = value
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
             },
             {
@@ -330,8 +330,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 get = function() return UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity or 100 end,
                 set = function(value)
                     UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity = value
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
             },
             -- Global (not per-frame, not synced): ONE db.profile key lifts every
@@ -344,7 +344,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 get = function() return saved.profile.raiseCastbarStrata ~= false end,
                 set = function(value)
                     saved.profile.raiseCastbarStrata = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
         }
@@ -371,8 +371,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 end,
                 set = function(value)
                     SSetSupported("castbarInterruptMidCastEnabled", value)
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                     -- Refresh so the inline Mid-Cast swatch greys/ungreys at once;
                     -- the cog popup stays open.
                     CUI:RefreshPage()
@@ -391,7 +391,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             get = function() return UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom == true end,
             set = function(value)
                 UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI.ReapplyMatchPads(optionState.selectedUnit .. "Castbar")
                 CUI:RefreshPage(true)
             end,
@@ -415,8 +415,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 end,
                 function(red, green, blue)
                     SSetSupported(colorKey, { r = red, g = green, b = blue })
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 false,
                 20
@@ -509,8 +509,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             getValue = GetShowIcon,
             setValue = function(value)
                 SetShowIcon(value)
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         }, {
             type = "slider",
@@ -521,8 +521,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             getValue = function() return math.floor(SValSupported("castBgAlpha", 0.5) * 100 + 0.5) end,
             setValue = function(value)
                 UNIT_DB_MAP[optionState.selectedUnit]().castBgAlpha = value / 100
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         })
         cursorY = cursorY - height
@@ -571,8 +571,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             UNIT_DB_MAP[optionState.selectedUnit]().castIconBorder = value
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -604,8 +604,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             else
                                 UNIT_DB_MAP[optionState.selectedUnit]().castbarIconInWidth = value
                             end
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                     -- Off: the custom border wraps the bar alone. The wrap
@@ -626,8 +626,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             UNIT_DB_MAP[optionState.selectedUnit]().castBorderWrapIcon = value
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                             CUI.ReapplyMatchPads(optionState.selectedUnit .. "Castbar")
                         end,
                     },
@@ -658,8 +658,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             UNIT_DB_MAP[optionState.selectedUnit]().castIconSeparator = value
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -681,8 +681,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             else
                                 UNIT_DB_MAP[optionState.selectedUnit]().castbarIconRight = value
                             end
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                     -- Needs a visible portrait and the icon shown; the stock
@@ -718,8 +718,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             else
                                 UNIT_DB_MAP[optionState.selectedUnit]().castbarIconOnPortrait = value
                             end
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -743,8 +743,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             else
                                 UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetX = value
                             end
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -768,8 +768,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             else
                                 UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetY = value
                             end
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     },
                 },
@@ -785,8 +785,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             end
             local bgSwSet = function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castBgColor = { r = red, g = green, b = blue }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end
             local bgSw, bgSwUpdate =
                 CUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
@@ -808,7 +808,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         unitCfg.castBgAlpha = bgA
                     end
                 end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end
             mod.UFO_UnitSync(region, "Bar Background", {
@@ -857,8 +857,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 then
                     cfg.showCastTarget = false
                 end
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         }, {
@@ -878,8 +878,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     cfg.showCastDuration = true
                     cfg.castDurationSide = value
                 end
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         })
@@ -922,7 +922,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     get = SValSupportedRow("castFitSpellName", false),
                     set = function(value)
                         SSetSupported("castFitSpellName", value)
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 },
             }
@@ -934,8 +934,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     get = SValSupportedRow("castCombineNameTarget", false),
                     set = function(value)
                         SSetSupported("castCombineNameTarget", value)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         -- Grey/ungrey the Spell Name dropdown immediately.
                         CUI:RefreshPage()
                     end,
@@ -955,8 +955,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor = { r = red, g = green, b = blue }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, false, 20)
             snSw:SetPoint("RIGHT", snRgn._lastInline or snRgn._control, "LEFT", -8, 0)
             snRgn._lastInline = snSw
@@ -1001,7 +1001,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     get = SValSupportedRow("castFullCraftTime", false),
                     set = function(value)
                         SSetSupported("castFullCraftTime", value)
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }
             end
@@ -1019,8 +1019,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor = { r = red, g = green, b = blue }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, false, 20)
             dtSw:SetPoint("RIGHT", dtRgn._lastInline or dtRgn._control, "LEFT", -8, 0)
             dtRgn._lastInline = dtSw
@@ -1073,8 +1073,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     cfg.castSpellTargetSide = value
                     if (cfg.castSpellNameSide or "left") == value then cfg.castSpellNameSide = "none" end
                 end
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         }, {
@@ -1130,8 +1130,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor =
                     { r = red, g = green, b = blue }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, false, 20)
             trgSw:SetPoint("RIGHT", trgRgn._lastInline or trgRgn._control, "LEFT", -8, 0)
             trgRgn._lastInline = trgSw
@@ -1157,7 +1157,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     hostFrame,
                     cursorY,
                     function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
-                    ReloadAndUpdate,
+                    RebuildAndReload,
                     optionState.selectedUnit .. "Castbar",
                     {
                         units = GROUP_UNIT_ORDER,
@@ -1176,8 +1176,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             impGlowDesc = UF_ImpCastGlowDesc(
                 function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
                 function()
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end
             )
             impGlowCfg = CUI.GlowOptions.DropdownSpec(
@@ -1194,8 +1194,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             function() return UNIT_DB_MAP[optionState.selectedUnit]() end,
             mod.UF_CastClassicKey(optionState.selectedUnit),
             function()
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
             {
                 units = GROUP_UNIT_ORDER,
@@ -1205,7 +1205,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                     local f = UNIT_DB_MAP[unit]
                     return f and f()
                 end,
-                reload = ReloadAndUpdate,
+                reload = RebuildAndReload,
             },
             optionState.selectedUnit .. "Castbar",
             impGlowCfg
@@ -1415,9 +1415,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
     local AttachDebuffModeWarn, DebuffModeDropdownCfg, Pix =
         environ.AttachDebuffModeWarn, environ.DebuffModeDropdownCfg, environ.PP
-    local RegisterWidgetRefresh, ReloadAndUpdate, SwapAuraSlot =
+    local RegisterWidgetRefresh, RebuildAndReload, SwapAuraSlot =
         environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SwapAuraSlot
-    local UF_PurgeGlowDesc, UNIT_DB_MAP, UNIT_LABELS_SUP, UpdatePreview =
+    local UF_PurgeGlowDesc, UNIT_DB_MAP, UNIT_LABELS_SUP, RepaintPreview =
         environ.UF_PurgeGlowDesc, environ.UNIT_DB_MAP, environ.UNIT_LABELS_SUP, environ.UpdatePreview
     local HideExhaustionRow = environ.HideExhaustionRow
     local buffAnchorOrder, buffAnchorValues = environ.buffAnchorOrder, environ.buffAnchorValues
@@ -1525,8 +1525,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 -- merged mode (which forces this dropdown to None).
                 cfg.debuffAnchorBuffs = nil
             end
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
             CUI:RefreshPage()
         end),
     }, {
@@ -1767,8 +1767,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         -- None <-> shown flip forces the full rebuild.
         setValue = CUI.DependentSetValue(function() return not DebuffsOff() end, function(value)
             SwapAuraSlot(UNIT_DB_MAP[optionState.selectedUnit](), "debuffAnchor", value)
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
             CUI:RefreshPage()
         end),
     }, {
@@ -1790,8 +1790,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         local maxImpRow
         if optionState.selectedUnit ~= "player" then
             maxImpRow = mod.UFO_MaxImportantRow(SDB, function()
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, 20, 20)
         end
         local debuffCogRows = mod.UFO_AuraSettingsRows(
@@ -2038,8 +2038,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         -- A style pick returns the icons to their legacy step; clear a
                         -- set exact size (false travels through mirror sync, nil would not).
                         if cfg.auraBorderSizePx then cfg.auraBorderSizePx = false end
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         -- The Width / Height Offset row exists only under a textured style.
                         CUI:RefreshPage(true)
                     end,
@@ -2055,8 +2055,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         getPx = function() return SGet("auraBorderSizePx") end,
                         setPx = function(value) SDB().auraBorderSizePx = value end,
                         apply = function()
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     })
                 )
@@ -2078,8 +2078,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         getY = function() return SGet("auraBorderTextureOffsetY") end,
                         setY = function(value) SDB().auraBorderTextureOffsetY = value end,
                         apply = function()
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                         end,
                     })
                     _, height = W:DualRow(
@@ -2196,8 +2196,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         cfg.auraBorderG = green
                         cfg.auraBorderB = blue
                         cfg.auraBorderA = a
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                     end,
                     true,
                     20
@@ -2285,7 +2285,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     unitLabel .. " Debuff Filter",
                     optionState.selectedUnit,
                     SDB,
-                    ReloadAndUpdate,
+                    RebuildAndReload,
                     { disabled = DebuffsOff, disabledTooltip = "Debuffs", requireState = "displayed" }
                 )
             end
@@ -2359,7 +2359,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                         local ed = mod._pabFilterEditor
                                         if ed and not ed._ufReloadHook then
                                             ed._ufReloadHook = true
-                                            ed:HookScript("OnHide", function() ReloadAndUpdate() end)
+                                            ed:HookScript("OnHide", function() RebuildAndReload() end)
                                         end
                                     end
                                 end,
@@ -2389,7 +2389,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                                 if not next(ps.buffBlacklist) then ps.buffBlacklist = nil end
                                             end
                                         end,
-                                        onChanged = function() ReloadAndUpdate() end,
+                                        onChanged = function() RebuildAndReload() end,
                                     })
                                 end,
                             },
@@ -2471,7 +2471,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 -- modes). Lanes persist across mode flips (the hide lane
                                 -- subtracts in both modes).
                                 ps.buffHasDuration = nil
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                                 return
                             end
@@ -2480,7 +2480,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 -- Mutually exclusive with All Buffs (its own broad-content
                                 -- mode); lanes persist.
                                 if value then ps.buffShowAll = false end
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                                 return
                             end
@@ -2500,7 +2500,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 end
                             end
                             if ps.buffFilters and not next(ps.buffFilters) then ps.buffFilters = nil end
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             -- Non-force: runs only the registered lightweight refresh
                             -- callbacks (the empty-selection warning below) in place,
                             -- without closing this open dropdown.
@@ -2549,8 +2549,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 -- Not buffHasDuration: that is the player's broad
                                 -- mode, which copies can have left on this unit.
                                 saved.buffDurOnly = value or nil
-                                ReloadAndUpdate()
-                                UpdatePreview()
+                                RebuildAndReload()
+                                RepaintPreview()
                                 return
                             end
                             local sk = BUFF_NEG_SKEYS[keyName]
@@ -2560,8 +2560,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 saved.buffNegClasses[sk] = value and true or nil
                                 if not next(saved.buffNegClasses) then saved.buffNegClasses = nil end
                                 if value then saved[BUFF_FILTER_KEYS[keyName]] = nil end
-                                ReloadAndUpdate()
-                                UpdatePreview()
+                                RebuildAndReload()
+                                RepaintPreview()
                                 return
                             end
                             if value and sk and saved.buffNegClasses then
@@ -2742,7 +2742,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 else
                                     ps.debuffHideExhaustion = false
                                 end
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                                 return
                             end
@@ -2753,7 +2753,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 if keyName == "__matchAll" then wanted = "all" end
                                 if ps.debuffFilterMatch == wanted then return end
                                 ps.debuffFilterMatch = wanted
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                                 return
                             end
@@ -2767,7 +2767,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 -- subtracts in both modes; the show lane goes dormant
                                 -- while All Debuffs is on).
                                 ps.debuffShowAll = value
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                                 return
                             end
@@ -2776,7 +2776,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                 -- with All Debuffs or the Show picks; alone it is the
                                 -- timed catch-all.
                                 ps.debuffHasDuration = value or nil
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                                 return
                             end
@@ -2794,7 +2794,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                                     if not next(ps.debuffNegClasses) then ps.debuffNegClasses = nil end
                                 end
                             end
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             -- Non-force: runs only the registered lightweight refresh
                             -- callbacks (the empty-selection warning below) in place,
                             -- without closing this open dropdown.
@@ -2861,10 +2861,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             get = function() return SDB().debuffHasDuration == true end,
                             set = function(value)
                                 SDB().debuffHasDuration = value or nil
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
-                        HideExhaustionRow(SDB, ReloadAndUpdate),
+                        HideExhaustionRow(SDB, RebuildAndReload),
                     },
                 })
             end
@@ -2886,7 +2886,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             { "none", "fill", "full", "gradient", "gradient_sharp", "gradient_reverse" }
         local function ApplyDispelOverlay()
             if mod.UpdatePlayerDispelOverlay then mod.UpdatePlayerDispelOverlay() end
-            UpdatePreview()
+            RepaintPreview()
         end
         -- Palette edits: the overlay and border copies (DispelRefresh), and
         -- with Use Dispel Colors on also the player debuff rings and the
@@ -3017,7 +3017,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 optionState,
                 "showDispelOverlayPreview",
                 "dispel overlay",
-                UpdatePreview
+                RepaintPreview
             )
         end
         -- Inline cog on Dispel Overlay: Overlay Opacity

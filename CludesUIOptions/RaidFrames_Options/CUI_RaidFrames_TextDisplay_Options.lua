@@ -110,7 +110,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         return cursorY
     end
     local environ = mod._RFO_OptEnv
-    local SVal, SWrite, ReloadAndUpdate = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
+    local SVal, SWrite, RebuildAndReload = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
     local TEXTS, POSITIONS, POS_INDEX = mod.RF_TEXTS, mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX
     local POS = CUI.POSITION_GRID_VALUES
     local LEVEL_DEFAULT = mod.RF_LEVEL_DEFAULT
@@ -144,7 +144,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     end
     local function Notify(tbl) mod._rfTextNotify = { page = options.page, key = tbl.id } end
     local function ApplyTextDisplay()
-        ReloadAndUpdate()
+        RebuildAndReload()
         CUI:RefreshPage(true)
     end
 
@@ -316,7 +316,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 return 1, 1, 1, 1
             end, function(red, green, blue)
                 SWrite(tbl.col, { r = red, g = green, b = blue })
-                ReloadAndUpdate()
+                RebuildAndReload()
             end, "custom", true, "Custom Color")
             AddColorSwatch(function()
                 local _, classTok = UnitClass("player")

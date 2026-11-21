@@ -55,7 +55,7 @@ local function BuildVisualIndicators(
     local environ = mod._RFO_OptEnv
     local saved, floor, IsPreviewOff, MissingGlowDesc =
         environ.db, environ.floor, environ.IsPreviewOff, environ.MissingGlowDesc
-    local optionState, Pix, ReloadAndUpdate, SGet =
+    local optionState, Pix, RebuildAndReload, SGet =
         environ.optState, environ.PP, environ.ReloadAndUpdate, environ.SGet
     local SSet, SVal, SWrite = environ.SSet, environ.SVal, environ.SWrite
     -- A row getter over SVal: the key's value, or the default given.
@@ -910,7 +910,7 @@ local function BuildVisualIndicators(
                         get = SValRow("statusShowAFK", false),
                         set = function(val)
                             SSet("statusShowAFK", val)
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                     {
@@ -942,7 +942,7 @@ local function BuildVisualIndicators(
                 return 1, 1, 1, 1
             end, function(red, green, blue)
                 SWrite("statusTextColor", { r = red, g = green, b = blue })
-                ReloadAndUpdate()
+                RebuildAndReload()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
@@ -1213,7 +1213,7 @@ local function BuildVisualIndicators(
                     return 1, 1, 1, 0.75
                 end, function(red, green, blue, a)
                     SWrite("groupNumberColor", { r = red, g = green, b = blue, a = a })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, true, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
@@ -1595,7 +1595,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue, a)
                     SWrite("dispelColorMagic", { r = red, g = green, b = blue, a = a or 1 })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
             {
@@ -1608,7 +1608,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue, a)
                     SWrite("dispelColorCurse", { r = red, g = green, b = blue, a = a or 1 })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
             {
@@ -1621,7 +1621,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue, a)
                     SWrite("dispelColorDisease", { r = red, g = green, b = blue, a = a or 1 })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
             {
@@ -1634,7 +1634,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue, a)
                     SWrite("dispelColorPoison", { r = red, g = green, b = blue, a = a or 1 })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
             {
@@ -1647,7 +1647,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue, a)
                     SWrite("dispelColorBleed", { r = red, g = green, b = blue, a = a or 1 })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
         },
@@ -1753,7 +1753,7 @@ local function BuildVisualIndicators(
                     return 17 / 255, 17 / 255, 17 / 255, 1
                 end, function(red, green, blue)
                     SWrite("topNameBarBgColor", { r = red, g = green, b = blue })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, false, 20)
                 bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = bgSwatch
@@ -1842,7 +1842,7 @@ local function BuildVisualIndicators(
                     return 1, 1, 1, 1
                 end, function(red, green, blue)
                     SWrite("topNameBarTextColor", { r = red, g = green, b = blue })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, "custom", true, "Custom Color")
                 AddTNBSwatch(function()
                     local _, classTok = UnitClass("player")
@@ -3043,7 +3043,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue)
                     SWrite("statusColorOffline", { r = red, g = green, b = blue })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
             {
@@ -3056,7 +3056,7 @@ local function BuildVisualIndicators(
                 end,
                 setValue = function(red, green, blue)
                     SWrite("statusColorDead", { r = red, g = green, b = blue })
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             },
         },
@@ -3084,7 +3084,7 @@ local function BuildVisualIndicators(
             -- Reload after changing strata to restore child frame levels.
             SWrite("frameStrata", val)
             if mod.ApplyFrameStrata then mod.ApplyFrameStrata() end
-            ReloadAndUpdate()
+            RebuildAndReload()
         end,
     })
     cursorY = cursorY - height

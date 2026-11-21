@@ -43,9 +43,9 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         environ.npDispelGlowDesc
     local npPandemicGlowDesc = environ.npPandemicGlowDesc
     local pairs, pcall, plates, Pix = environ.pairs, environ.pcall, environ.plates, environ.PP
-    local RefreshAllAuras, RefreshAllPlates, SECTION_AURA, SECTION_ENEMY_NP =
+    local RefreshAllAuras, RedrawPlates, SECTION_AURA, SECTION_ENEMY_NP =
         environ.RefreshAllAuras, environ.RefreshAllPlates, environ.SECTION_AURA, environ.SECTION_ENEMY_NP
-    local SECTION_FRIENDLY, SECTION_MISC, UpdatePreview =
+    local SECTION_FRIENDLY, SECTION_MISC, RepaintPreview =
         environ.SECTION_FRIENDLY, environ.SECTION_MISC, environ.UpdatePreview
     local W = CludesUI.Widgets
     local cursorY = yOffset
@@ -300,7 +300,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                         for _, fp in pairs(mod.friendlyPlates) do
                             fp:ApplyTarget()
                         end
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
             },
@@ -1095,7 +1095,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             -- its cfg pass re-drives both buff group filter strings and
             -- parks/unparks the plain remainder group.
             RefreshAllAuras()
-            UpdatePreview()
+            RepaintPreview()
             C_Timer.After(0, function() CludesUI:RefreshPage() end)
         end,
     }
@@ -1121,7 +1121,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     set = function(val)
                         DB().npEnemyBuffDispelByMe = val or nil
                         RefreshAllAuras()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
             },
@@ -1146,8 +1146,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         getValue = DBValOr("hashLineEnabled", false),
         setValue = function(val)
             DB().hashLineEnabled = val
-            RefreshAllPlates()
-            UpdatePreview()
+            RedrawPlates()
+            RepaintPreview()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -1161,8 +1161,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         getValue = function() return DBVal("hashLinePercent") or defaultSet.hashLinePercent end,
         setValue = function(val)
             DB().hashLinePercent = val
-            RefreshAllPlates()
-            UpdatePreview()
+            RedrawPlates()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -1195,8 +1195,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end
         local hashColorSet = function(red, green, blue)
             DB().hashLineColor = { r = red, g = green, b = blue }
-            RefreshAllPlates()
-            UpdatePreview()
+            RedrawPlates()
+            RepaintPreview()
         end
         local leftRegion = row._leftRegion
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
@@ -1368,7 +1368,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         getValue = DBValIs("focusLetterEnabled"),
         setValue = function(val)
             DB().focusLetterEnabled = val
-            RefreshAllPlates()
+            RedrawPlates()
             CludesUI:RefreshPage()
         end,
     })
@@ -1405,7 +1405,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     get = GetFocusLetterAnchor,
                     set = function(val)
                         DB().focusLetterAnchor = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -1417,7 +1417,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     get = function() return DBVal("focusLetterSize") or defaultSet.focusLetterSize end,
                     set = function(val)
                         DB().focusLetterSize = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -1429,7 +1429,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     get = function() return DBVal("focusLetterX") or defaultSet.focusLetterX end,
                     set = function(val)
                         DB().focusLetterX = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -1441,7 +1441,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     get = function() return DBVal("focusLetterY") or defaultSet.focusLetterY end,
                     set = function(val)
                         DB().focusLetterY = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
             },
@@ -1570,7 +1570,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         setValue = function(val)
             DB().hideEnemyNameWhileCasting = val
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -1601,7 +1601,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         setValue = function(val)
             DB().nameRaidMarkerEnabled = val
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -1634,7 +1634,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     set = function(val)
                         DB().nameRaidMarkerSize = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
             },

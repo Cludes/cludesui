@@ -198,7 +198,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         environ.DB, environ.DBVal, environ.defaults, environ.GetNPOptOutline
     local hbtOrder, hbtValues, optionState, pairs =
         environ.hbtOrder, environ.hbtValues, environ.optState, environ.pairs
-    local plates, Pix, UpdatePreview, RefreshAllPlates =
+    local plates, Pix, RepaintPreview, RedrawPlates =
         environ.plates, environ.PP, environ.UpdatePreview, environ.RefreshAllPlates
     local GetElementAtPosition, RefreshAllSlots, SetElementAtPosition, SetTextElementAtSlot =
         context.GetElementAtPosition,
@@ -256,7 +256,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end
                 mod.RefreshBorder()
                 mod.RefreshBorderColor()
-                UpdatePreview()
+                RepaintPreview()
                 -- Force rebuild so the Custom Border row shows/hides and rows below reflow.
                 CludesUI:RefreshPage(true)
             end,
@@ -280,7 +280,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().borderSize = val
                 mod.RefreshBorder()
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
     )
@@ -321,14 +321,14 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             DB().cornerRadius = val
                             mod.RefreshBorder()
                             mod.RefreshCastBorder()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                 }, function() return DBVal("cornerMask") end, function(val)
                     DB().cornerMask = val
                     mod.RefreshBorder()
                     mod.RefreshCastBorder()
-                    UpdatePreview()
+                    RepaintPreview()
                 end),
                 "Join Cast Bar",
                 "While a cast shows, rounds the health bar and the cast bar under it as one shape.",
@@ -337,7 +337,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     DB().cornerJoinCast = val
                     mod.RefreshBorder()
                     mod.RefreshCastBorder()
-                    UpdatePreview()
+                    RepaintPreview()
                 end
             ),
         })
@@ -378,7 +378,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         mod.RefreshBorder()
                         mod.RefreshCastBorder()
                     end
-                    UpdatePreview()
+                    RepaintPreview()
                     -- Show Seam Line's and Corner Radius's disabled states follow this toggle.
                     CludesUI:RefreshPage()
                 end,
@@ -407,7 +407,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 set = function(val)
                     DB().wrapBorderSeam = val
                     mod.ApplyBorderWrapToAll()
-                    UpdatePreview()
+                    RepaintPreview()
                 end,
             }
         end
@@ -437,7 +437,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local borderColorSet = function(red, green, blue)
             DB().borderColor = { r = red, g = green, b = blue }
             mod.RefreshBorderColor()
-            UpdatePreview()
+            RepaintPreview()
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
             leftRegion,
@@ -478,7 +478,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classicLevelSize = val
                 mod.RefreshAllSettings()
-                UpdatePreview()
+                RepaintPreview()
             end,
         }, {
             type = "slider",
@@ -491,7 +491,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classicSkullSize = val
                 mod.RefreshAllSettings()
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
         cursorY = cursorY - height
@@ -513,7 +513,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             set = function(val)
                                 DB()[xKey] = val
                                 mod.RefreshAllSettings()
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                         },
                         {
@@ -526,7 +526,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             set = function(val)
                                 DB()[yKey] = val
                                 mod.RefreshAllSettings()
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                         },
                     },
@@ -571,7 +571,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     if defSz then DB().customBorderSize = defSz end
                     if DB().customBorderSizePx then DB().customBorderSizePx = false end
                     mod.RefreshBorder()
-                    UpdatePreview()
+                    RepaintPreview()
                     -- Full rebuild: the Width/Height Offset row below exists only for a textured style.
                     CludesUI:RefreshPage(true)
                 end,
@@ -589,7 +589,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     setPx = function(val) DB().customBorderSizePx = val end,
                     apply = function()
                         mod.RefreshBorder()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 })
             )
@@ -613,7 +613,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     setY = function(val) DB().customBorderOffsetY = val end,
                     apply = function()
                         mod.RefreshBorder()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 })
                 _, height = W:DualRow(
@@ -655,7 +655,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         set = function(val)
                             DB().customBorderShiftX = (val == 0 and nil or val)
                             mod.RefreshBorder()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -675,7 +675,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         set = function(val)
                             DB().customBorderShiftY = (val == 0 and nil or val)
                             mod.RefreshBorder()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -689,7 +689,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         set = function(val)
                             DB().customBorderBehind = val
                             mod.RefreshBorder()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                 },
@@ -722,7 +722,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             DB().auraIconCustomBorder = val
                             -- Fingerprint-gated aura restyle (the cast-lockout icon included).
                             mod.NPC_ReloadAll()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -747,7 +747,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             -- Re-applies every plate's appearance (pooled plates too), which
                             -- builds or turns off the icon border.
                             mod.RefreshAllSettings()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -761,7 +761,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         set = function(val)
                             DB().castIconSeparator = val
                             mod.RefreshAllSettings()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                 },
@@ -782,7 +782,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 DB().customBorderColor = { r = red, g = green, b = blue }
                 if a ~= nil then DB().customBorderAlpha = a end
                 mod.RefreshBorderColor()
-                UpdatePreview()
+                RepaintPreview()
             end
             local cbSwatch, cbUpdateSwatch = CludesUI.BuildColorSwatch(
                 rightRegion,
@@ -866,7 +866,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 for _, backing in pairs(plates) do
                     backing.healthBG:SetColorTexture(color.r, color.g, color.b, val / 100)
                 end
-                UpdatePreview()
+                RepaintPreview()
             end,
         }),
         {
@@ -880,7 +880,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 -- Selecting a style sets opacity to that style's default (Blizzard/Stripes 80%, Clean 30%); slider tweaks from there.
                 DB().absorbAlpha = math.floor(((mod.NP_ABSORB_STYLE_ALPHA[val] or 0.8) * 100) + 0.5)
                 mod.ApplyAbsorbStyleAll()
-                UpdatePreview()
+                RepaintPreview()
                 -- Refresh so the color swatch enables/disables (Blizzard = off).
                 CludesUI:RefreshPage()
             end,
@@ -900,7 +900,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 backing.healthBG:SetColorTexture(red, green, blue, a)
             end
-            UpdatePreview()
+            RepaintPreview()
         end
         local cbSwatch, cbUpdateSwatch = CludesUI.BuildColorSwatch(
             leftRegion,
@@ -939,7 +939,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     set = function(val)
                         DB().absorbAlpha = val
                         mod.ApplyAbsorbStyleAll()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 -- Same placements as the unit frames' Absorb Rendering cog, except
@@ -961,7 +961,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     set = function(val)
                         DB().absorbEdgeMode = val
                         mod.ApplyAbsorbStyleAll()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
             },
@@ -978,7 +978,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         local acColorSet = function(red, green, blue)
             DB().absorbColor = { r = red, g = green, b = blue }
             mod.ApplyAbsorbStyleAll()
-            UpdatePreview()
+            RepaintPreview()
         end
         local acSwatch, acUpdateSwatch =
             CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, acColorGet, acColorSet, nil, 20)
@@ -1020,7 +1020,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         eyeButton:SetScript("OnClick", function()
             optionState.showAbsorbPreview = not optionState.showAbsorbPreview
             RefreshAbsorbEye()
-            UpdatePreview()
+            RepaintPreview()
         end)
         eyeButton:SetScript("OnEnter", function(self) CludesUI.SetGlyphAlpha(self, 0.7) end)
         eyeButton:SetScript("OnLeave", function(self) CludesUI.SetGlyphAlpha(self, 0.4) end)
@@ -1042,7 +1042,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().healthBarTexture = val
                 RefreshAllTextures()
-                UpdatePreview()
+                RepaintPreview()
             end,
         },
         mod.NP_BlizzOnlyGate({
@@ -1054,7 +1054,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().castBarTexture = val
                 RefreshAllTextures()
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
     )
@@ -1064,7 +1064,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local function TexBgApply()
             RefreshAllTextures()
-            UpdatePreview()
+            RepaintPreview()
         end
         local blizz = mod.NP_BlizzOnly()
         local function TexBgCog(region, kind)
@@ -1095,7 +1095,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().foreverHideLevelBox = (not val) or nil
                 mod.RefreshAllSettings()
-                UpdatePreview()
+                RepaintPreview()
             end,
         }, CludesUI.BlankRowCfg())
         cursorY = cursorY - height
@@ -2315,7 +2315,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     function CoreCog.Sections(posKey)
         local function redraw()
             RefreshAllSlots()
-            UpdatePreview()
+            RepaintPreview()
         end
         local function Lacks(keyName)
             return function() return not CoreHas(posKey, keyName) end
@@ -2815,7 +2815,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             optionState.showClassificationPreview = show
             optionState.showQuestTextPreview = show
             RefreshIcon()
-            UpdatePreview()
+            RepaintPreview()
         end)
         eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
@@ -2924,13 +2924,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         mod.RefreshAllSettings()
         -- Rebuild: the list and the Core Text Coloring section follow the
         -- slotted elements (a slot change can also clear another slot).
-        UpdatePreview()
+        RepaintPreview()
         CludesUI:RefreshPage(true)
     end
 
     local function TextOffsetRefresh()
         mod.RefreshAllSettings()
-        UpdatePreview()
+        RepaintPreview()
     end
 
     -- Text slot X/Y offset helpers (parallel to CorePosXGet etc.)
@@ -2991,13 +2991,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     cogOpts.widthSet = function(val)
                         DB().enemyNameWidthPct = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end
                     cogOpts.wrapGet = function() return DBVal("enemyNameWrap") == true end
                     cogOpts.wrapSet = function(val)
                         DB().enemyNameWrap = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end
                 end
             else
@@ -3008,13 +3008,13 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                     cogOpts.widthSet = function(val)
                         DB()[widthKey] = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end
                     cogOpts.wrapGet = function() return DBVal(wrapKey) == true end
                     cogOpts.wrapSet = function(val)
                         DB()[wrapKey] = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end
                 end
                 cogOpts.toggleLabel = "Show % Decimal"
@@ -3022,7 +3022,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 cogOpts.toggleSet = function(val)
                     DB()[slotKey .. "PctDecimal"] = val
                     mod.RefreshAllSettings()
-                    UpdatePreview()
+                    RepaintPreview()
                 end
             end
             -- Target of Target, the standalone level and Custom (its template writes the
@@ -3052,7 +3052,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 cogOpts.dropdown2Set = function(val)
                     DB()[nfKey] = (val ~= "full") and val or nil
                     mod.RefreshAllSettings()
-                    UpdatePreview()
+                    RepaintPreview()
                 end
             end
             -- Per-slot strata (partner request): standard strata dropdown,
@@ -3061,7 +3061,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             cogOpts.strataSet = function(val)
                 DB()[slotKey .. "Strata"] = val
                 mod.RefreshAllSettings()
-                UpdatePreview()
+                RepaintPreview()
             end
             ShowCogPopup(self, cogOpts)
         end
@@ -3158,7 +3158,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         saved[T .. "ColorMode"] = nil
         if mod.NP_SlotColorMode(T, saved) ~= mode then saved[T .. "ColorMode"] = mode end
         mod.RefreshAllSettings()
-        UpdatePreview()
+        RepaintPreview()
         -- The moved text's new cell reports the write to Spec Overrides.
         optionState._npNotifySlot = T
         CludesUI:RefreshPage(true)
@@ -3277,7 +3277,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 function(val)
                     DB()[fk] = val
                     mod.RefreshAllSettings()
-                    UpdatePreview()
+                    RepaintPreview()
                 end
             )
         end

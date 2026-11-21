@@ -15,7 +15,7 @@ local CreateFrame = CUI._Pool.CreateFrame
 -- Shared, context-aware POWER section builder; mirrors the health one. ctx.cfg() -> power table (DB().primary Simple, per-spec override Advanced).
 function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     local environ = mod._CURB_OptEnv
-    local DB, Pix, Refresh, SmoothRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
+    local DB, Pix, Refresh, GentleRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local RefreshPower, RebuildPower, AddFormBarBtn, AddFormTextBtn =
         environ.RefreshPower, environ.RebuildPower, environ.AddFormBarBtn, environ.AddFormTextBtn
     local BuildHashCog, BuildThresholdSettingsButton =
@@ -120,7 +120,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             disabledTooltip = phTip,
             rawTooltip = phRaw,
             getValue = ConfGetter("height", 16),
-            setValue = ConfSetter("height", SmoothRefresh, true),
+            setValue = ConfSetter("height", GentleRefresh, true),
         }, {
             type = "slider",
             text = "Width",
@@ -131,7 +131,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             disabledTooltip = pwTip,
             rawTooltip = pwRaw,
             getValue = ConfGetter("width", 220),
-            setValue = ConfSetter("width", SmoothRefresh, true),
+            setValue = ConfSetter("width", GentleRefresh, true),
         })
         cursorY = cursorY - height
         if not context.advanced and context.syncRows then
@@ -148,7 +148,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         local val = profile.primary.height or 16
                         profile.secondary.pipHeight = val
                         profile.health.height = val
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -178,7 +178,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         local val = profile.primary.width or 220
                         profile.secondary.pipWidth = val
                         profile.health.width = val
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -389,7 +389,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         local rowCfg = rowConf()
                         if not rowCfg then return end
                         rowCfg.borderR, rowCfg.borderG, rowCfg.borderB, rowCfg.borderA = red, green, blue, a
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     true,
@@ -642,7 +642,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     pwrBsRow._rightRegion,
                     DB,
                     "primary",
-                    SmoothRefresh,
+                    GentleRefresh,
                     function()
                         return {
                             context.syncRows.powerBorder,
@@ -677,7 +677,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end
                         apply(profile.secondary)
                         apply(profile.health)
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
@@ -721,7 +721,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         profile.health.cornerRadius = cr
                         profile.health.cornerMask = cm
                         mod.ERB_CopyBorderPx(profile.health, profile.primary)
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
@@ -878,7 +878,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         if not rowCfg then return end
                         rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA =
                             red, green, blue, a
-                        SmoothRefresh()
+                        GentleRefresh()
                     end,
                 },
                 {
@@ -894,7 +894,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         if not rowCfg then return end
                         rowCfg.fillR, rowCfg.fillG, rowCfg.fillB = red, green, blue
                         RebuildPower()
-                        SmoothRefresh()
+                        GentleRefresh()
                     end,
                     onClick = function(self)
                         local rowCfg = rowConf()
@@ -953,7 +953,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     local val = profile.primary.barAlpha or 1
                     profile.secondary.barAlpha = val
                     profile.health.barAlpha = val
-                    SmoothRefresh()
+                    GentleRefresh()
                     CUI:RefreshPage()
                 end,
                 isSynced = function()
@@ -1123,7 +1123,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA =
                             red, green, blue, a
                         RebuildPower()
-                        SmoothRefresh()
+                        GentleRefresh()
                     end,
                     onClick = function(self)
                         local rowCfg = rowConf()
@@ -1246,7 +1246,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 pageBotY = function() return cursorY end,
                 refreshFn = function()
                     RefreshPower()
-                    SmoothRefresh()
+                    GentleRefresh()
                 end,
                 rebuildFn = function() RebuildPower() end,
                 disabledFn = powerBarOff,
@@ -1276,7 +1276,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                                     if ent then
                                         ent.thresholdPartialOnly = val
                                         RefreshPower()
-                                        SmoothRefresh()
+                                        GentleRefresh()
                                     end
                                 end,
                             },

@@ -126,7 +126,7 @@ CUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Refresh helpers
     ---------------------------------------------------------------------------
-    local function RefreshAllPlates()
+    local function RedrawPlates()
         -- Color Casting Enemies repaints its tint colors (its swatches, Modify Out of Combat).
         if mod.NP_CastTintsDirty then mod.NP_CastTintsDirty() end
         for _, backing in pairs(plates) do
@@ -203,13 +203,13 @@ CUI.AtOptionsLogin(function()
     -- Only while the preview is on screen: setters of other pages and the panel's
     -- show callback reach it from any page, and the Display page's cache restore
     -- updates it when it shows again.
-    local function UpdatePreview()
+    local function RepaintPreview()
         local preview = optionState.activePreview
         if preview and preview.Update and preview:IsVisible() then preview:Update() end
     end
 
     -- Refresh the preview every time the panel is reopened
-    CUI:RegisterOnShow(UpdatePreview)
+    CUI:RegisterOnShow(RepaintPreview)
 
     ---------------------------------------------------------------------------
     --  Glow sites: the Dispel, Pandemic, Important Cast and Cast Targets You glows as shared glow
@@ -222,7 +222,7 @@ CUI.AtOptionsLogin(function()
         -- page runs it once per Apply.
         local function RefreshAuraGlows()
             RefreshAllAuras()
-            UpdatePreview()
+            RepaintPreview()
         end
         -- Engine aura buttons (no Auto-Cast/Shape); an unset color is the
         -- suite default (gold).
@@ -586,7 +586,7 @@ CUI.AtOptionsLogin(function()
                 if mod.ApplySlotStrata then mod.ApplySlotStrata(backing) end
             end
             mod.NP_RefreshFriendlyFaction()
-            UpdatePreview()
+            RepaintPreview()
             CUI:RefreshPage()
         end
 
@@ -1414,7 +1414,7 @@ CUI.AtOptionsLogin(function()
         PP = Pix,
         RandomizePreviewValues = RandomizePreviewValues,
         RefreshAllAuras = RefreshAllAuras,
-        RefreshAllPlates = RefreshAllPlates,
+        RefreshAllPlates = RedrawPlates,
         SECTION_AURA = SECTION_AURA,
         SECTION_CASTBAR = SECTION_CASTBAR,
         SECTION_ENEMY = SECTION_ENEMY,
@@ -1426,7 +1426,7 @@ CUI.AtOptionsLogin(function()
         SetPVFont = SetPVFont,
         THREAT_PCT_POSITION_ORDER = THREAT_PCT_POSITION_ORDER,
         THREAT_PCT_POSITIONS = THREAT_PCT_POSITIONS,
-        UpdatePreview = UpdatePreview,
+        UpdatePreview = RepaintPreview,
     }
 
     ---------------------------------------------------------------------------

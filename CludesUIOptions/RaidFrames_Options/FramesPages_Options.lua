@@ -371,7 +371,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
     local environ = mod._RFO_OptEnv
     local allGrowthOrder, BuildPreviewModeRow, BuildVisualSections, db =
         environ.allGrowthOrder, environ.BuildPreviewModeRow, environ.BuildVisualSections, environ.db
-    local growthValues, KeepGrowthPerpendicular, Pix, ReloadAndUpdate =
+    local growthValues, KeepGrowthPerpendicular, Pix, RebuildAndReload =
         environ.growthValues, environ.KeepGrowthPerpendicular, environ.PP, environ.ReloadAndUpdate
     local groupGrowthValues, groupGrowthOrder, ReadGroupGrowth =
         environ.groupGrowthValues, environ.groupGrowthOrder, environ.ReadGroupGrowth
@@ -483,7 +483,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             end
                         end
                         -- Full reload on drag end applies indicator scaling.
-                        if not CUI._sliderDragging then ReloadAndUpdate() end
+                        if not CUI._sliderDragging then RebuildAndReload() end
                     end,
                 }, {
                     type = "slider",
@@ -512,7 +512,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             end
                         end
                         -- Full reload on drag end applies indicator scaling.
-                        if not CUI._sliderDragging then ReloadAndUpdate() end
+                        if not CUI._sliderDragging then RebuildAndReload() end
                     end,
                 })
                 cursorY = cursorY - hgt
@@ -615,7 +615,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                             end
                             if not anyTier then db.profile.raidSizeOverrides = nil end
                         end
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CUI:RefreshPage(true)
                     end)
                 end
@@ -635,7 +635,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     end
                     local function TierGrowthChanged()
                         -- ReloadAndUpdate reloads the live frames (including the growth-corner anchor) AND re-shows the active size preview, so the two never diverge.
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end
                     -- Custom switch boundary per tier (consumed by
                     -- ns._RFResolveTierOverride): lower tiers set the highest
@@ -700,7 +700,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                                 set = function(value)
                                     EnsureTierOv()[tb.key] = value
                                     -- Re-resolves the live tier against the new boundary.
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                             {
@@ -878,7 +878,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         width = db.profile.frameWidth or 125,
                         height = db.profile.frameHeight or 60,
                     }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage(true)
                 end,
             }, autoResizeSlot)
@@ -985,7 +985,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     set = function(value)
                         if value and not mod.RF_CompactEligible(db.profile) then return end
                         db.profile.raidCompactMode = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CUI:RefreshPage()
                     end,
                     disabled = CompactBlocked,
@@ -1006,7 +1006,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     set = function(value)
                         if value and not mod.RF_CompactOn(db.profile, false) then return end
                         db.profile.raidGridMode = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CUI:RefreshPage()
                     end,
                     disabled = GridBlocked,
@@ -1042,7 +1042,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 -- A style pick returns the size to its step: clear a set exact size.
                 if SGetPx("borderSizePx", "borderSize") then SWrite("borderSizePx", false) end
                 -- Rebuild: the offset row below exists only for a textured style.
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage(true)
             end,
         }),
@@ -1053,7 +1053,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             getTex = function() return SGet("borderTexture") or "solid" end,
             getPx = function() return SGetPx("borderSizePx", "borderSize") end,
             setPx = function(value) SWrite("borderSizePx", value) end,
-            apply = ReloadAndUpdate,
+            apply = RebuildAndReload,
         }))
     )
     cursorY = cursorY - hgt
@@ -1145,7 +1145,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, function(red, green, blue, a)
             SWrite("borderColor", { r = red, g = green, b = blue })
             SWrite("borderAlpha", a)
-            ReloadAndUpdate()
+            RebuildAndReload()
         end, true, 20)
         borderSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = borderSwatch
@@ -1194,7 +1194,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             setX = function(value) SetOffset("borderTextureOffset", value, false) end,
             getY = function() return SGet("borderTextureOffsetY") end,
             setY = function(value) SetOffset("borderTextureOffsetY", value, true) end,
-            apply = ReloadAndUpdate,
+            apply = RebuildAndReload,
         })
         _, hgt = W:DualRow(hostFrame, cursorY, StockGate(ocfgL), StockGate(ocfgR))
         cursorY = cursorY - hgt
@@ -1267,7 +1267,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             getTex = HlTex,
             getPx = function() return SGetPx("hoverBorderSizePx", "hoverBorderSize") end,
             setPx = function(value) SWrite("hoverBorderSizePx", value) end,
-            apply = ReloadAndUpdate,
+            apply = RebuildAndReload,
         })
         local targetPx = CUI.BorderPxSliderCfg({
             getStep = function() return SVal("targetBorderSize", 1) end,
@@ -1275,7 +1275,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
             getTex = HlTex,
             getPx = function() return SGetPx("targetBorderSizePx", "targetBorderSize") end,
             setPx = function(value) SWrite("targetBorderSizePx", value) end,
-            apply = ReloadAndUpdate,
+            apply = RebuildAndReload,
         })
         local hlCog = CUI.BuildInlineCog(rightRegion, {
             title = "Highlight Border",
@@ -1315,7 +1315,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, function(red, green, blue, a)
             SWrite("hoverBorderColor", { r = red, g = green, b = blue })
             SWrite("hoverBorderAlpha", a)
-            ReloadAndUpdate()
+            RebuildAndReload()
         end, true, 20)
         hoverSwatch:SetPoint("RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
         local hoverAnchor = rightRegion._lastInline or rightRegion._control -- memo: what Hover hangs from
@@ -1328,7 +1328,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, function(red, green, blue, a)
             SWrite("targetBorderColor", { r = red, g = green, b = blue })
             SWrite("targetBorderAlpha", a)
-            ReloadAndUpdate()
+            RebuildAndReload()
         end, true, 20)
         targetSwatch:SetPoint("RIGHT", rightRegion._lastInline, "LEFT", -8, 0)
         rightRegion._lastInline = targetSwatch
@@ -1421,7 +1421,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 CUI:RefreshPage() -- the sibling dropdown may have just changed
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
-            ReloadAndUpdate()
+            RebuildAndReload()
         end,
     }, {
         type = "dropdown",
@@ -1441,7 +1441,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 CUI:RefreshPage() -- the sibling dropdown may have just changed
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
-            ReloadAndUpdate()
+            RebuildAndReload()
         end,
     })
     cursorY = cursorY - hgt
@@ -1457,7 +1457,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 set = function(value)
                     if InCombatLockdown() then return end
                     db.profile.groupGrowthCentered = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
                 disabled = function() return CenterBlocked(SVal("groupGrowth", "RIGHT")) end,
                 disabledTooltip = CenterBlockedTip,
@@ -1502,7 +1502,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                 readRoles = function() return SVal("roleOrder", { "TANK", "HEALER", "DAMAGER" }) end,
                 writeRoles = function(ro)
                     db.profile.roleOrder = ro
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
         end
@@ -1552,7 +1552,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     get = function() return db.profile.prioritizeClass end,
                     set = function(value)
                         db.profile.prioritizeClass = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     disabled = FsOwns,
                     disabledTooltip = "FrameSort sets the order while Sort By is FrameSort.",
@@ -1565,7 +1565,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     items = GetClassItems,
                     set = function(keyList)
                         db.profile.classOrder = keyList
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     disabled = function() return not db.profile.prioritizeClass or FsOwns() end,
                 },
@@ -1642,7 +1642,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     db.profile.visibleGroups = { true, true, true, true, true, true, false, false }
                 end
                 db.profile.visibleGroups[keyName] = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end
 
             local checkDrop, cbDDRefresh
@@ -1660,7 +1660,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         setOrder = function(sequence)
                             if InCombatLockdown() or db.profile.mergeGroups then return end
                             db.profile.groupOrder = sequence
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                         summaryLabel = function(movable, _, getFn)
                             local visible = {}
@@ -1718,7 +1718,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     set = function(value)
                         if InCombatLockdown() then return end
                         db.profile.customGroupOrder = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         if cogShow and cogShow._popupFrame then cogShow._popupFrame:Hide() end
                         CUI:RefreshPage(true)
                     end,

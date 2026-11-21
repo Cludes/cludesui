@@ -14,7 +14,7 @@ if not mod then return end -- module disabled: no options page
 local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local environ = mod._NPO_OptEnv
     local DB, DBVal, defaultSet = environ.DB, environ.DBVal, environ.defaults
-    local Pix, UpdatePreview, RefreshAllPlates = environ.PP, environ.UpdatePreview, environ.RefreshAllPlates
+    local Pix, RepaintPreview, RedrawPlates = environ.PP, environ.UpdatePreview, environ.RefreshAllPlates
 
     -- The assigned texts in position order. While none is assigned the section
     -- is not built at all (no header, no spacer).
@@ -65,7 +65,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                 saved[slotKey .. "ColorMode"] = nil
                 if mod.NP_SlotColorMode(slotKey, saved) ~= val then saved[slotKey .. "ColorMode"] = val end
                 mod.RefreshAllSettings()
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage(true)
             end,
         }
@@ -91,7 +91,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         local function Mode() return mod.NP_SlotColorMode(slotKey, DB()) end
         local function ApplyColoring()
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
         end
 
         -- Level | Name and Name | Level: the part colours on a cog beside the
@@ -205,8 +205,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                     -- Read live by the per-unit painter, so a health colour pass repaints.
                     function(red, green, blue)
                         DB()[key] = { r = red, g = green, b = blue }
-                        RefreshAllPlates()
-                        UpdatePreview()
+                        RedrawPlates()
+                        RepaintPreview()
                         for idx = 1, #npcSwatchUpdates do
                             npcSwatchUpdates[idx]()
                         end

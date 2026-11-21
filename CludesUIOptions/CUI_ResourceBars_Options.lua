@@ -1839,7 +1839,7 @@ CUI.AtOptionsLogin(function()
     end
 
     -- At once (scale and offset changes animate).
-    local function SmoothRefresh()
+    local function GentleRefresh()
         Refresh()
         UpdatePreviewHeader()
     end
@@ -5259,7 +5259,7 @@ CUI.AtOptionsLogin(function()
         DB = DB,
         PP = Pix,
         Refresh = Refresh,
-        SmoothRefresh = SmoothRefresh,
+        SmoothRefresh = GentleRefresh,
         RefreshHealth = RefreshHealth,
         RebuildHealth = RebuildHealth,
         AddFormBarBtn = AddFormBarBtn,

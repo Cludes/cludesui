@@ -867,7 +867,7 @@ CUI.AtLogin(function()
         ---------------------------------------------------------------------------
         local GetFFD = mod.GetFFD
 
-        local function ReloadAndUpdate()
+        local function RebuildAndReload()
             if ReloadFrames then ReloadFrames() end
             -- Preview refresh keeps health values, updates layout/colors.
             if mod.previewActive and mod.previewActive() and mod.ShowPreview then mod.ShowPreview() end
@@ -916,7 +916,7 @@ CUI.AtLogin(function()
                 db.profile[key] = val
             end
             if mod._BumpAbsorbGen then mod._BumpAbsorbGen() end
-            ReloadAndUpdate()
+            RebuildAndReload()
         end
         local function SVal(key, default)
             if
@@ -972,7 +972,7 @@ CUI.AtLogin(function()
                     excludes = { [4] = true },
                     caps = { mode = true, params = true, bg = true },
                     defaultColor = CUI.Glows.DEFAULT_COLOR,
-                    onChange = ReloadAndUpdate,
+                    onChange = RebuildAndReload,
                     disabled = function() return read("showMissingBuffs", true) == false end,
                     disabledTooltip = "Missing Buffs",
                     get = function(f)
@@ -2093,7 +2093,7 @@ CUI.AtLogin(function()
             optState = optionState,
             PP = Pix,
             ReadGroupGrowth = ReadGroupGrowth,
-            ReloadAndUpdate = ReloadAndUpdate,
+            ReloadAndUpdate = RebuildAndReload,
             SGet = SGet,
             SGetPx = SGetPx,
             SSet = SSet,

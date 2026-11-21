@@ -1028,7 +1028,7 @@ end
 -- Options preview: one of our own frames, styled by the same Layout as a live bubble.
 local previewFrame, previewOnResize
 
-local function UpdatePreview(force)
+local function RepaintPreview(force)
     if not previewFrame or not (force or previewFrame:IsVisible()) then return end
     local conf = Cfg()
     local nameList = conf.showName
@@ -1052,13 +1052,13 @@ function CB.ShowPreview(hostFrame, onResize)
     previewFrame:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
     previewFrame:Show()
     previewOnResize = nil
-    UpdatePreview(true)
+    RepaintPreview(true)
     previewOnResize = onResize
     return previewFrame
 end
 
 function CB.RefreshStyle()
-    UpdatePreview()
+    RepaintPreview()
     if not isActive or suspended then return end
     local conf = Cfg()
     if not conf then return end
@@ -1086,7 +1086,7 @@ end
 -- The structural pass: anything that can change WHETHER we draw, or which of Blizzard's
 -- switches we hold. Called from the options page for those settings, and once at login.
 function CB.Refresh()
-    UpdatePreview()
+    RepaintPreview()
     local on = Enabled()
     -- Ahead of both calls below: SetActive registers events off these very values, and
     -- AssertCVars is the first thing that could overwrite a switch we are about to read.

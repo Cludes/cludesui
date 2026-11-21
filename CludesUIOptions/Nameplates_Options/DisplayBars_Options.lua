@@ -23,9 +23,9 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         environ.defaults, environ.displayCastIcons, environ.hbtOrder, environ.hbtValues
     local LazyColorPreviewBar, npImpCastGlowDesc, optionState, pairs =
         environ.LazyColorPreviewBar, environ.npImpCastGlowDesc, environ.optState, environ.pairs
-    local plates, Pix, RefreshAllPlates, SECTION_CASTBAR =
+    local plates, Pix, RedrawPlates, SECTION_CASTBAR =
         environ.plates, environ.PP, environ.RefreshAllPlates, environ.SECTION_CASTBAR
-    local UpdatePreview, npCastTargetGlowDesc = environ.UpdatePreview, environ.npCastTargetGlowDesc
+    local RepaintPreview, npCastTargetGlowDesc = environ.UpdatePreview, environ.npCastTargetGlowDesc
     local asFallback, atFallback, AuraDurationVal, CogPopupOpen =
         context.asFallback, context.atFallback, context.AuraDurationVal, context.CogPopupOpen
     local LiveApplyAuraText, RefreshAllTextures, ShowCogPopup =
@@ -70,7 +70,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 backing:UpdateNameWidth()
             end
             if mod.ApplyNamePlateClickArea then mod.ApplyNamePlateClickArea() end
-            UpdatePreview()
+            RepaintPreview()
         end,
     }, {
         type = "slider",
@@ -100,7 +100,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 end
             end
             if mod.ApplyNamePlateClickArea then mod.ApplyNamePlateClickArea() end
-            UpdatePreview()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -123,7 +123,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 mod.LayoutCastIcon(backing, val)
                 backing.castSpark:SetHeight(val)
             end
-            UpdatePreview()
+            RepaintPreview()
         end,
     }, {
         type = "toggle",
@@ -136,7 +136,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         setValue = function(val)
             DB().showCastIcon = val
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
             CUI:RefreshPage()
         end,
     })
@@ -171,7 +171,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                                 backing.castIconFrame:SetScale(val)
                             end
                         end
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -184,7 +184,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().castIconOffsetX = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -197,7 +197,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().castIconOffsetY = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -215,7 +215,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().castbarIconInWidth = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -233,7 +233,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().castIconOnRight = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -251,7 +251,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().castIconFullSize = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -269,7 +269,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().hideCastIconBorder = val and true or false
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -292,7 +292,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                                 mod.ApplyCastIconBorder(backing)
                             end
                         end
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
             },
@@ -319,7 +319,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, backing in pairs(plates) do
                     backing.castBG:SetColorTexture(color.r, color.g, color.b, val / 100)
                 end
-                UpdatePreview()
+                RepaintPreview()
             end,
         }),
         CUI.BlizzStyle.Gate("nameplates", {
@@ -333,7 +333,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().castBorderSize = val
                 mod.RefreshCastBorder()
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
     )
@@ -350,7 +350,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 backing.castBG:SetColorTexture(red, green, blue, a)
             end
-            UpdatePreview()
+            RepaintPreview()
         end
         local castBgSwatch, castBgUpdateSwatch = CUI.BuildColorSwatch(
             leftRegion,
@@ -375,7 +375,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local castBorderColorSet = function(red, green, blue)
             DB().castBorderColor = { r = red, g = green, b = blue }
             mod.RefreshCastBorderColor()
-            UpdatePreview()
+            RepaintPreview()
         end
         local cbSwatch, cbUpdateSwatch = CUI.BuildColorSwatch(
             rightRegion,
@@ -413,7 +413,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 DB().castTimerSide = val
             end
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
             CUI:RefreshPage()
         end,
     }, {
@@ -431,7 +431,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 mod.LayoutCastBar(backing, barW, castH)
             end
-            UpdatePreview()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -446,7 +446,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 if backing.castTimer then backing.castTimer:SetTextColor(red, green, blue, 1) end
             end
-            UpdatePreview()
+            RepaintPreview()
         end
 
         -- Inline cog for Cast Timer Size / X / Y
@@ -459,19 +459,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     xSet = function(val)
                         DB().castTimerOffsetX = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     yGet = function() return DBVal("castTimerOffsetY") or defaultSet.castTimerOffsetY end,
                     ySet = function(val)
                         DB().castTimerOffsetY = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     sizeGet = function() return DBVal("castTimerSize") or defaultSet.castTimerSize end,
                     sizeSet = function(val)
                         DB().castTimerSize = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     sizeMin = 6,
                     sizeMax = 20,
@@ -515,8 +515,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function() return DBColor("castBar") end,
                 setValue = function(red, green, blue)
                     DB().castBar = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
-                    UpdatePreview()
+                    RedrawPlates()
+                    RepaintPreview()
                 end,
             }),
             {
@@ -524,7 +524,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function() return DBColor("interruptReady") end,
                 setValue = function(red, green, blue)
                     DB().interruptReady = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             mod.NP_BlizzOnlyGate({
@@ -532,7 +532,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function() return DBColor("castBarUninterruptible") end,
                 setValue = function(red, green, blue)
                     DB().castBarUninterruptible = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             }),
             {
@@ -540,7 +540,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function() return DBColor("castBarImportant") end,
                 setValue = function(red, green, blue)
                     DB().castBarImportant = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
                 disabled = function()
                     local saved = DB()
@@ -650,7 +650,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().castBarShieldEnabled = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -669,7 +669,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         for _, backing in pairs(plates) do
                             if backing.castSpark then backing.castSpark:SetShown(val ~= false) end
                         end
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
                 {
@@ -685,7 +685,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().importantCastColorEnabled = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                         CUI:RefreshPage()
                     end,
                 },
@@ -702,7 +702,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().importantCastKickReadyAsInterruptible = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                     disabled = function()
                         local saved = DB()
@@ -794,7 +794,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             end,
             setValue = function(val)
                 DB().interruptedFlashEnabled = val
-                RefreshAllPlates()
+                RedrawPlates()
                 -- Rebuild so the inline flash colour swatch greys/ungreys.
                 C_Timer.After(0, function() CUI:RefreshPage() end)
             end,
@@ -852,7 +852,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     function(red, green, blue)
                         DB().interruptedFlashColor = { r = red, g = green, b = blue }
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                     nil,
                     20
@@ -939,7 +939,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 backing:ApplyTarget()
             end
-            UpdatePreview()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -1004,7 +1004,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, fp in pairs(mod.friendlyPlates) do
                     fp:ApplyTarget()
                 end
-                UpdatePreview()
+                RepaintPreview()
                 if paintTargetBorder then paintTargetBorder() end
                 if paintTargetGlow then paintTargetGlow() end
                 if refreshTargetHighlightCog then refreshTargetHighlightCog() end
@@ -1042,7 +1042,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -1057,7 +1057,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -1075,7 +1075,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -1101,7 +1101,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             for _, fp in pairs(mod.friendlyPlates) do
                                 fp:ApplyTarget()
                             end
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                         disabled = function() return not mod.GetTargetGlowBorderSize() end,
                         disabledTooltip = function()
@@ -1131,7 +1131,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, fp in pairs(mod.friendlyPlates) do
                     fp:ApplyTarget()
                 end
-                UpdatePreview()
+                RepaintPreview()
             end,
             nil,
             20
@@ -1162,7 +1162,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
-                UpdatePreview()
+                RepaintPreview()
             end,
             nil,
             20
@@ -1209,7 +1209,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             if backing.leftArrow then Pix.Size(backing.leftArrow, aw, ah) end
                             if backing.rightArrow then Pix.Size(backing.rightArrow, aw, ah) end
                         end
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 },
             },
@@ -1244,7 +1244,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
-                UpdatePreview()
+                RepaintPreview()
                 paintArrowSwatches()
             end,
             nil,
@@ -1259,7 +1259,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
-                UpdatePreview()
+                RepaintPreview()
                 paintArrowSwatches()
                 return
             end
@@ -1287,7 +1287,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 backing:ApplyTarget()
             end
-            UpdatePreview()
+            RepaintPreview()
             paintArrowSwatches()
         end)
         CUI.HoverTip(classColorSwatch, "Class Color")
@@ -1319,7 +1319,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         eyeButton:SetScript("OnClick", function()
             optionState.showTargetGlowPreview = not optionState.showTargetGlowPreview
             RefreshTargetGlowEye()
-            UpdatePreview()
+            RepaintPreview()
         end)
         eyeButton:SetScript("OnEnter", function(self) CUI.SetGlyphAlpha(self, 0.7) end)
         eyeButton:SetScript("OnLeave", function(self) CUI.SetGlyphAlpha(self, 0.4) end)
@@ -1356,7 +1356,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
 
     local targetPreview, focusPreview
     local function RefreshFocusPreview()
-        RefreshAllPlates()
+        RedrawPlates()
         if focusPreview and focusPreview.UpdateOverlay then focusPreview.UpdateOverlay() end
     end
 
@@ -1371,7 +1371,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end,
         setValue = function(val)
             DB().targetColorEnabled = val
-            RefreshAllPlates()
+            RedrawPlates()
             if targetPreview then
                 if val then
                     targetPreview.SetColorOverride(nil)
@@ -1393,7 +1393,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end,
         setValue = function(val)
             DB().focusColorEnabled = val
-            RefreshAllPlates()
+            RedrawPlates()
             if focusPreview then
                 if val then
                     focusPreview.SetColorOverride(nil)
@@ -1414,7 +1414,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local targetColorGet = function() return DBColor("target") end
         local targetColorSet = function(red, green, blue)
             DB().target = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
             if targetPreview then targetPreview.UpdateColor() end
         end
         local colorSwatch, paintSwatch = CUI.BuildColorSwatch(
@@ -1443,7 +1443,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local focusColorGet = function() return DBColor("focus") end
         local focusColorSet = function(red, green, blue)
             DB().focus = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
             if focusPreview then focusPreview.UpdateColor() end
         end
         local colorSwatch, paintSwatch = CUI.BuildColorSwatch(
@@ -1514,7 +1514,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         getValue = function() return DBVal("targetOverlayTexture") or defaultSet.targetOverlayTexture end,
         setValue = function(val)
             DB().targetOverlayTexture = val
-            RefreshAllPlates()
+            RedrawPlates()
             if targetPreview and targetPreview.UpdateOverlay then targetPreview.UpdateOverlay() end
             CUI:RefreshPage()
         end,
@@ -1526,7 +1526,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         getValue = function() return DBVal("focusOverlayTexture") or defaultSet.focusOverlayTexture end,
         setValue = function(val)
             DB().focusOverlayTexture = val
-            RefreshAllPlates()
+            RedrawPlates()
             if focusPreview and focusPreview.UpdateOverlay then focusPreview.UpdateOverlay() end
             CUI:RefreshPage()
         end,
@@ -1555,7 +1555,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().targetOverlayAlpha = val / 100
-                        RefreshAllPlates()
+                        RedrawPlates()
                         if targetPreview and targetPreview.UpdateOverlay then
                             targetPreview.UpdateOverlay()
                         end
@@ -1571,7 +1571,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         DB().targetOverlayFullBgAlpha = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                         if targetPreview and targetPreview.UpdateOverlay then
                             targetPreview.UpdateOverlay()
                         end
@@ -1603,7 +1603,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
         local targetTexColorSet = function(red, green, blue)
             DB().targetOverlayColor = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
             if targetPreview and targetPreview.UpdateOverlay then targetPreview.UpdateOverlay() end
         end
         local colorSwatch, paintSwatch = CUI.BuildColorSwatch(
@@ -1688,7 +1688,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
         local focusTexColorSet = function(red, green, blue)
             DB().focusOverlayColor = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
             if focusPreview and focusPreview.UpdateOverlay then focusPreview.UpdateOverlay() end
         end
         local colorSwatch, paintSwatch = CUI.BuildColorSwatch(
@@ -1845,7 +1845,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().hoverOverlayTexture = val
                 mod.RefreshHoverEffect()
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         }, {
@@ -1948,7 +1948,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             set = function(red, green, blue)
                                 DB().hoverColor = { r = red, g = green, b = blue }
                                 mod.RefreshHoverEffect()
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                         },
                         {
@@ -1965,7 +1965,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             set = function(val)
                                 DB().hoverAlpha = val / 100
                                 mod.RefreshHoverEffect()
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                         },
                         {
@@ -2081,7 +2081,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         set = function(val)
                             DB().hoverOverlayFullBgAlpha = val
                             mod.RefreshHoverEffect()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                 },
@@ -2111,7 +2111,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             function(val)
                 DB().showClassPower = val
                 mod.ApplyClassPowerSetting()
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
             end
         ),
@@ -2132,7 +2132,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 setValue = function(red, green, blue)
                     DB().classPowerCustomColor = { r = red, g = green, b = blue }
                     mod.RefreshClassPower()
-                    UpdatePreview()
+                    RepaintPreview()
                 end,
                 onClick = function(self)
                     local val = DBVal("classPowerClassColors")
@@ -2140,7 +2140,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     if val then
                         DB().classPowerClassColors = false
                         mod.RefreshClassPower()
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -2168,7 +2168,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 onClick = function()
                     DB().classPowerClassColors = true
                     mod.RefreshClassPower()
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -2193,7 +2193,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classPowerPos = val
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
             end,
             order = { "top", "bottom" },
         }, {
@@ -2206,7 +2206,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classPowerScale = val
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
         cursorY = cursorY - height
@@ -2226,13 +2226,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         xSet = function(val)
                             DB().classPowerXOffset = val
                             mod.RefreshClassPower()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                         yGet = function() return DBVal("classPowerYOffset") or defaultSet.classPowerYOffset end,
                         ySet = function(val)
                             DB().classPowerYOffset = val
                             mod.RefreshClassPower()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     })
                 end,
@@ -2252,7 +2252,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classPowerGap = val
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
             end,
         }, {
             type = "colorpicker",
@@ -2265,7 +2265,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(red, green, blue, a)
                 DB().classPowerBgColor = { r = red, g = green, b = blue, a = a }
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
         cursorY = cursorY - height
@@ -2309,7 +2309,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classPowerShape = val
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
             end,
         }, {
             type = "toggle",
@@ -2318,7 +2318,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().classPowerBorder = val
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         })
@@ -2335,7 +2335,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local colorSet = function(red, green, blue)
                 DB().classPowerBorderColor = { r = red, g = green, b = blue, a = 1 }
                 mod.RefreshClassPower()
-                UpdatePreview()
+                RepaintPreview()
             end
 
             CUI.BuildInlineCog(region, {
@@ -2355,7 +2355,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         set = function(val)
                             DB().classPowerBorderSize = val
                             mod.RefreshClassPower()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                 },
@@ -2422,14 +2422,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 setValue = function(val)
                     DB()[rowConf.key] = val
                     LiveApplyAuraText()
-                    UpdatePreview()
+                    RepaintPreview()
                 end,
                 order = timerPosOrder,
             }
         end
         local function ApplyDurationText()
             LiveApplyAuraText()
-            UpdatePreview()
+            RepaintPreview()
         end
         local function AttachDurationTools(regionFrame, kind)
             local rowConf = durationTypes[kind]
@@ -2515,7 +2515,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             setValue = function(val)
                 DB().auraStackTextPosition = val
                 LiveApplyAuraText()
-                UpdatePreview()
+                RepaintPreview()
             end,
             order = timerPosOrder,
         })
@@ -2533,7 +2533,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local asColorSet = function(red, green, blue)
                 DB().auraStackTextColor = { r = red, g = green, b = blue }
                 LiveApplyAuraText()
-                UpdatePreview()
+                RepaintPreview()
             end
 
             -- RIGHT: Aura Stacks inline cog (Size / X / Y)
@@ -2550,7 +2550,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         set = function(val)
                             DB().auraStackTextSize = val
                             LiveApplyAuraText()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -2563,7 +2563,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         set = function(val)
                             DB().auraStackTextX = val
                             LiveApplyAuraText()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                     {
@@ -2576,7 +2576,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         set = function(val)
                             DB().auraStackTextY = val
                             LiveApplyAuraText()
-                            UpdatePreview()
+                            RepaintPreview()
                         end,
                     },
                 },
@@ -2612,7 +2612,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 if ts == val then DB().castTargetSide = "none" end
             end
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
             CUI:RefreshPage()
         end,
     }, {
@@ -2630,7 +2630,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 if nss == val then DB().castNameSide = "none" end
             end
             mod.RefreshAllSettings()
-            UpdatePreview()
+            RepaintPreview()
             CUI:RefreshPage()
         end,
     })
@@ -2643,7 +2643,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 if backing.castName then backing.castName:SetTextColor(red, green, blue, 1) end
             end
-            UpdatePreview()
+            RepaintPreview()
         end
 
         -- LEFT: Spell Name inline cog for X/Y offset
@@ -2656,19 +2656,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     xSet = function(val)
                         DB().castNameOffsetX = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     yGet = function() return DBVal("castNameOffsetY") or defaultSet.castNameOffsetY end,
                     ySet = function(val)
                         DB().castNameOffsetY = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     sizeGet = function() return DBVal("castNameSize") or defaultSet.castNameSize end,
                     sizeSet = function(val)
                         DB().castNameSize = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     sizeMin = 6,
                     sizeMax = 20,
@@ -2688,20 +2688,20 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             DB().castNameWidthPct = val
                         end
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     wrapGet = function() return DBVal("castNameWrap") == true end,
                     wrapSet = function(val)
                         DB().castNameWrap = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     toggleLabel = "Combine Spell Name and Target",
                     toggleGet = function() return DBVal("castCombineNameTarget") == true end,
                     toggleSet = function(val)
                         DB().castCombineNameTarget = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                 })
@@ -2733,19 +2733,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     xSet = function(val)
                         DB().castTargetOffsetX = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     yGet = function() return DBVal("castTargetOffsetY") or defaultSet.castTargetOffsetY end,
                     ySet = function(val)
                         DB().castTargetOffsetY = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     sizeGet = function() return DBVal("castTargetSize") or defaultSet.castTargetSize end,
                     sizeSet = function(val)
                         DB().castTargetSize = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     sizeMin = 6,
                     sizeMax = 20,
@@ -2755,13 +2755,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     widthSet = function(val)
                         DB().castTargetWidthPct = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                     wrapGet = function() return DBVal("castTargetWrap") == true end,
                     wrapSet = function(val)
                         DB().castTargetWrap = val
                         mod.RefreshAllSettings()
-                        UpdatePreview()
+                        RepaintPreview()
                     end,
                 })
             end,
@@ -2790,7 +2790,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 backing:UpdateHealth()
             end
-            UpdatePreview()
+            RepaintPreview()
             CUI:RefreshPage()
         end)
         CUI.HoverTip(ccSwatch, "Class Color")
@@ -2802,7 +2802,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             for _, backing in pairs(plates) do
                 backing:UpdateHealth()
             end
-            UpdatePreview()
+            RepaintPreview()
         end
         local stateSwatch, stUpdate = CUI.BuildColorSwatch(
             rightRegion,
@@ -2824,7 +2824,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 for _, backing in pairs(plates) do
                     backing:UpdateHealth()
                 end
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
                 return
             end

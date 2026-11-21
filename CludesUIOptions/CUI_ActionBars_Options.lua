@@ -267,7 +267,7 @@ CUI.AtOptionsLogin(function()
     local function IsPreviewHintDismissed() return CludesUIDB and CludesUIDB.previewHintDismissed end
 
     -- Lightweight refresh: re-read settings, update visuals.
-    local function UpdatePreview()
+    local function RepaintPreview()
         -- Recover activePreview from this module's header preview slot if lost
         -- (e.g. page cache restore)
         if not optionState.activePreview and CUI._abHeaderPreview then
@@ -296,7 +296,7 @@ CUI.AtOptionsLogin(function()
         end
     end
 
-    CUI:RegisterOnShow(UpdatePreview)
+    CUI:RegisterOnShow(RepaintPreview)
 
     -- Rebuild the preview on spec change (new talent group).
     do
@@ -630,7 +630,7 @@ CUI.AtOptionsLogin(function()
             if applyFn then applyFn(PickedBarKey()) end
             CUI:RefreshPage()
         end
-        local function SUpdatePreview() UpdatePreview() end
+        local function SUpdatePreview() RepaintPreview() end
 
         -- The stock spacing lives in the offset boxes, not in the placement. A
         -- position pick swaps the old placement's spacing for the new one's on each
@@ -1000,7 +1000,7 @@ CUI.AtOptionsLogin(function()
         end,
         onPageCacheRestore = function(page)
             if page == PAGE_DISPLAY then
-                UpdatePreview()
+                RepaintPreview()
                 ShowEditOverlay(PickedBarKey())
                 local dismissed = IsPreviewHintDismissed()
                 if _abPreviewHintFS then

@@ -1593,7 +1593,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     local _colorPagePreviews, DB, DBColor, DBVal =
         environ._colorPagePreviews, environ.DB, environ.DBColor, environ.DBVal
     local defaultSet, optionState, pairs, Pix = environ.defaults, environ.optState, environ.pairs, environ.PP
-    local RefreshAllPlates, SECTION_ENEMY, SECTION_THREAT, THREAT_PCT_POSITION_ORDER =
+    local RedrawPlates, SECTION_ENEMY, SECTION_THREAT, THREAT_PCT_POSITION_ORDER =
         environ.RefreshAllPlates,
         environ.SECTION_ENEMY,
         environ.SECTION_THREAT,
@@ -1651,7 +1651,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("enemyInCombat") end,
                 setValue = function(red, green, blue)
                     DB().enemyInCombat = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -1659,7 +1659,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("caster") end,
                 setValue = function(red, green, blue)
                     DB().caster = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -1667,7 +1667,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("miniboss") end,
                 setValue = function(red, green, blue)
                     DB().miniboss = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -1675,7 +1675,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("boss") end,
                 setValue = function(red, green, blue)
                     DB().boss = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
         },
@@ -1744,7 +1744,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().owBasicColoring = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -1753,7 +1753,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     get = function() return DBColor("owBasicColor") end,
                     set = function(red, green, blue)
                         DB().owBasicColor = { r = red, g = green, b = blue }
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                     disabled = isOWOff,
                     disabledTooltip = "Simple Coloring When Not In M+",
@@ -1773,7 +1773,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("neutral") end,
                 setValue = function(red, green, blue)
                     DB().neutral = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -1788,7 +1788,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(red, green, blue)
                     DB().miniEnemy = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
         },
@@ -1816,7 +1816,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end
         local questColorSet = function(red, green, blue)
             DB().questMobColor = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
         end
         local isQuestOff = function() return DBVal("questMobColorEnabled") ~= true end
         local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
@@ -1855,7 +1855,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().miniColoringMPlusOnly = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
             },
@@ -1870,7 +1870,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         getValue = function() return DBVal("castingEnemyColors") == true end,
         setValue = function(val)
             DB().castingEnemyColors = val
-            RefreshAllPlates()
+            RedrawPlates()
             CUI:RefreshPage()
         end,
         tooltip = "Enemies not colored as Spell Casters take the Interruptible Caster or Uninterruptible Caster color once they cast a spell that can or cannot be interrupted.",
@@ -1880,7 +1880,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         getValue = function() return DBVal("enemyPlayerEnemyColor") == true end,
         setValue = function(val)
             DB().enemyPlayerEnemyColor = val
-            RefreshAllPlates()
+            RedrawPlates()
         end,
         tooltip = "Enemy players take the Enemies color instead of their class color.",
     })
@@ -1907,7 +1907,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 get = function(colorKey) return DBVal(prefixText .. colorKey) end,
                 set = function(colorKey, val)
                     DB()[prefixText .. colorKey] = val
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             }
         end
@@ -1926,7 +1926,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("castingIntColor") end,
                 setValue = function(red, green, blue)
                     DB().castingIntColor = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -1934,7 +1934,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("castingUnintColor") end,
                 setValue = function(red, green, blue)
                     DB().castingUnintColor = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
         }, { disabled = isCastingOff, disabledTooltip = "Color Casting Enemies" })
@@ -1989,7 +1989,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("tankLosingAggro") end,
                 setValue = function(red, green, blue)
                     DB().tankLosingAggro = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -1997,7 +1997,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("tankNoAggro") end,
                 setValue = function(red, green, blue)
                     DB().tankNoAggro = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
         },
@@ -2069,7 +2069,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("dpsHasAggro") end,
                 setValue = function(red, green, blue)
                     DB().dpsHasAggro = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
             {
@@ -2077,7 +2077,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function() return DBColor("dpsNearAggro") end,
                 setValue = function(red, green, blue)
                     DB().dpsNearAggro = { r = red, g = green, b = blue }
-                    RefreshAllPlates()
+                    RedrawPlates()
                 end,
             },
         },
@@ -2094,7 +2094,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             DB().dpsNoAggroEnabled = val
-            RefreshAllPlates()
+            RedrawPlates()
             CUI:RefreshPage()
         end,
     })
@@ -2135,7 +2135,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local dpsNoAggroColorGet = function() return DBColor("dpsNoAggro") end
         local dpsNoAggroColorSet = function(red, green, blue)
             DB().dpsNoAggro = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
         end
 
         -- Inline cog: independent "Override Mini-Boss colors" / "Override Caster colors" / "Override Boss colors" toggles promote the DPS No Aggro color above that single mob-type color (kept separate for contrast); dimmed while off.
@@ -2160,7 +2160,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().dpsNoAggroOverrideMiniBoss = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -2175,7 +2175,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().dpsNoAggroOverrideCaster = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -2190,7 +2190,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().dpsNoAggroOverrideBoss = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
             },
@@ -2228,7 +2228,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             DB().classicTankAggro = val
-            RefreshAllPlates()
+            RedrawPlates()
             CUI:RefreshPage()
         end,
     }, {
@@ -2244,7 +2244,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             DB().tankHasAggroEnabled = val
-            RefreshAllPlates()
+            RedrawPlates()
             CUI:RefreshPage()
         end,
     })
@@ -2256,7 +2256,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local aggroColorGet = function() return DBColor("tankHasAggro") end
         local aggroColorSet = function(red, green, blue)
             DB().tankHasAggro = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
         end
         local colorSwatch, updateSwatch = CUI.BuildColorSwatch(
             region,
@@ -2276,7 +2276,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local tankAggroColorGet = function() return DBColor("tankHasAggro") end
         local tankAggroColorSet = function(red, green, blue)
             DB().tankHasAggro = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
         end
 
         -- Inline cog "Override Mini-Boss and Caster colors" promotes the tank has-aggro color above the mini-boss/caster priority steps; dimmed while Has Aggro is off.
@@ -2301,7 +2301,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().tankHasAggroOverrideMobType = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
                 {
@@ -2316,7 +2316,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         DB().tankHasAggroOverrideBoss = val
-                        RefreshAllPlates()
+                        RedrawPlates()
                     end,
                 },
             },
@@ -2395,7 +2395,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             DB().offTankAggroEnabled = val
-            RefreshAllPlates()
+            RedrawPlates()
             CUI:RefreshPage()
         end,
     }, offTankRightCfg)
@@ -2407,7 +2407,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local otColorGet = function() return DBColor("offTankAggro") end
         local otColorSet = function(red, green, blue)
             DB().offTankAggro = { r = red, g = green, b = blue }
-            RefreshAllPlates()
+            RedrawPlates()
         end
         local colorSwatch, updateSwatch =
             CUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, otColorGet, otColorSet, nil, 20)
@@ -2487,7 +2487,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 elseif keyName == "name" then
                     DB().threatColorName = val
                 end
-                RefreshAllPlates()
+                RedrawPlates()
                 -- Health Bar gates the No Aggro and Has Aggro cogs.
                 CUI:RefreshPage()
             end

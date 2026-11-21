@@ -62,7 +62,7 @@ end
 -- Hash Lines row hosts the shared editor (env.BuildThresholdSettingsButton).
 function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
     local environ = mod._CURB_OptEnv
-    local DB, Pix, SmoothRefresh, RefreshClass =
+    local DB, Pix, GentleRefresh, RefreshClass =
         environ.DB, environ.PP, environ.SmoothRefresh, environ.RefreshClass
     local RebuildClass, RebuildPower, AddFormBarBtn, AddFormTextBtn =
         environ.RebuildClass, environ.RebuildPower, environ.AddFormBarBtn, environ.AddFormTextBtn
@@ -182,7 +182,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     local profile = DB()
                     if not profile then return end
                     profile.secondary.guardianShowHashLines = val
-                    SmoothRefresh()
+                    GentleRefresh()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -317,7 +317,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
             if val == "VERTICAL" then val = "VERTICAL_DOWN" end
             return val
         end,
-        setValue = ConfSetter("pipOrientation", SmoothRefresh, true),
+        setValue = ConfSetter("pipOrientation", GentleRefresh, true),
     })
     cursorY = cursorY - height
     -- Class Resource cog: Simple only (Hide Power Bar if Resource is a row of
@@ -387,7 +387,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
             disabledTooltip = chTip,
             rawTooltip = chRaw,
             getValue = ConfGetter("pipHeight", 20),
-            setValue = ConfSetter("pipHeight", SmoothRefresh, true),
+            setValue = ConfSetter("pipHeight", GentleRefresh, true),
         }, {
             type = "slider",
             text = "Width",
@@ -398,7 +398,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
             disabledTooltip = cwTip,
             rawTooltip = cwRaw,
             getValue = ConfGetter("pipWidth", 214),
-            setValue = ConfSetter("pipWidth", SmoothRefresh, true),
+            setValue = ConfSetter("pipWidth", GentleRefresh, true),
         })
         cursorY = cursorY - height
         if not context.advanced and context.syncRows then
@@ -415,7 +415,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local val = profile.secondary.pipHeight or 20
                         profile.primary.height = val
                         profile.health.height = val
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -444,7 +444,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local totalW = profile.secondary.pipWidth or 214
                         profile.primary.width = totalW
                         profile.health.width = totalW
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -658,7 +658,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local rowCfg = rowConf()
                         if not rowCfg then return end
                         rowCfg.borderR, rowCfg.borderG, rowCfg.borderB, rowCfg.borderA = red, green, blue, a
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     true,
@@ -931,7 +931,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     classBsRow._rightRegion,
                     DB,
                     "secondary",
-                    SmoothRefresh,
+                    GentleRefresh,
                     function()
                         return {
                             context.syncRows.classBorder,
@@ -966,7 +966,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         end
                         apply(profile.primary)
                         apply(profile.health)
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
@@ -1011,7 +1011,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         profile.health.cornerRadius = cr
                         profile.health.cornerMask = cm
                         mod.ERB_CopyBorderPx(profile.health, profile.secondary)
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
@@ -1128,7 +1128,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 disabled = classBarOff,
                 disabledTooltip = "Class Resource",
                 getValue = ConfGetter("pipSpacing", 3),
-                setValue = ConfSetter("pipSpacing", SmoothRefresh),
+                setValue = ConfSetter("pipSpacing", GentleRefresh),
             }, {
                 type = "slider",
                 text = "Empty Bar Overlay",
@@ -1168,7 +1168,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local rowCfg = rowConf()
                         if not rowCfg then return end
                         rowCfg.gapR, rowCfg.gapG, rowCfg.gapB, rowCfg.gapA = red, green, blue, a
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     true,
@@ -1204,7 +1204,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local rowCfg = rowConf()
                         if not rowCfg then return end
                         rowCfg.gapColorEnabled = val and true or nil
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -1278,7 +1278,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 if not rowCfg then return end
                 rowCfg.fillOpacity = val
                 RebuildClass()
-                SmoothRefresh()
+                GentleRefresh()
             end,
         })
         cursorY = cursorY - height
@@ -1318,7 +1318,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             rowCfg.chargedR, rowCfg.chargedG = cr, cg
                             rowCfg.chargedB, rowCfg.chargedA = checkBtn, ca
                             RebuildClass()
-                            SmoothRefresh()
+                            GentleRefresh()
                         end,
                     },
                 },
@@ -1341,7 +1341,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         if not rowCfg then return end
                         rowCfg.fillR, rowCfg.fillG, rowCfg.fillB = red, green, blue
                         RebuildClass()
-                        SmoothRefresh()
+                        GentleRefresh()
                     end,
                     onClick = function(self)
                         local rowCfg = rowConf()
@@ -1453,7 +1453,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local val = profile.secondary.barAlpha or 1
                         profile.primary.barAlpha = val
                         profile.health.barAlpha = val
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -1782,7 +1782,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 pageBotExtra = 50,
                 refreshFn = RefreshClass,
                 rebuildFn = RebuildClass,
-                swatchRefreshFn = SmoothRefresh,
+                swatchRefreshFn = GentleRefresh,
                 disabledFn = classBarOff,
                 disabledTip = "Class Resource",
                 defaultR = 0x0c / 255,
@@ -2099,7 +2099,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             rowCfg.runesRechargeG = green
                             rowCfg.runesRechargeB = blue
                             rowCfg.runesRechargeA = a
-                            SmoothRefresh()
+                            GentleRefresh()
                         end,
                         true,
                         20
@@ -2195,7 +2195,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             rowCfg.enhanceOverflowR = red
                             rowCfg.enhanceOverflowG = green
                             rowCfg.enhanceOverflowB = blue
-                            SmoothRefresh()
+                            GentleRefresh()
                         end,
                         false,
                         20

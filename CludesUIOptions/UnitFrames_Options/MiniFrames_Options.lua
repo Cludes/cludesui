@@ -58,7 +58,7 @@ local function BuildMiniTextAndSize(
     local environ = mod._UFO_OptEnv
     local AddDarkModeBlock, BuildBarTexDropdown, BuildInactiveNotice, Pix =
         environ.AddDarkModeBlock, environ.BuildBarTexDropdown, environ.BuildInactiveNotice, environ.PP
-    local RegisterWidgetRefresh, ReloadAndUpdate, saved, healthTextOrder =
+    local RegisterWidgetRefresh, RebuildAndReload, saved, healthTextOrder =
         environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.db, environ.healthTextOrder
     local healthTextOrderBoss, healthTextValues = environ.healthTextOrderBoss, environ.healthTextValues
     local TexBgRowCfg = environ.TexBgRowCfg
@@ -69,7 +69,7 @@ local function BuildMiniTextAndSize(
     local function MGet(settingKey) return unitSettings[settingKey] end
     local function MSet(settingKey, val)
         unitSettings[settingKey] = val
-        ReloadAndUpdate()
+        RebuildAndReload()
     end
     -- Row setters over MSet: the key written with the row's value.
     local function MSetRow(settingKey)
@@ -168,7 +168,7 @@ local function BuildMiniTextAndSize(
                 end,
                 setValue = function(value)
                     unitSettings.frameStrata = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }
         end
@@ -189,7 +189,7 @@ local function BuildMiniTextAndSize(
                 else
                     unitSettings.healthBarTexture = value
                 end
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         }, rightSlot)
         posY = posY - height
@@ -199,7 +199,7 @@ local function BuildMiniTextAndSize(
             CUI.BuildInlineCog(barTexRow._leftRegion, {
                 title = "Texture Settings",
                 rows = {
-                    TexBgRowCfg(function() return unitSettings end, ReloadAndUpdate, unitName),
+                    TexBgRowCfg(function() return unitSettings end, RebuildAndReload, unitName),
                 },
             })
         end
@@ -225,7 +225,7 @@ local function BuildMiniTextAndSize(
                 function(keyName) return unitSettings[hbKeyMap[keyName]] and true or false end,
                 function(keyName, value)
                     unitSettings[hbKeyMap[keyName]] = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     if UpdateHBSwatchVis then UpdateHBSwatchVis() end
                 end
             )
@@ -241,7 +241,7 @@ local function BuildMiniTextAndSize(
             end, function(red, green, blue, a)
                 unitSettings.bossHoverBorderColor = { r = red, g = green, b = blue }
                 unitSettings.bossHoverBorderAlpha = a
-                ReloadAndUpdate()
+                RebuildAndReload()
             end, true, 20)
             hoverSwatch:SetPoint("RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
             rightRegion._lastInline = hoverSwatch
@@ -253,7 +253,7 @@ local function BuildMiniTextAndSize(
             end, function(red, green, blue, a)
                 unitSettings.bossTargetBorderColor = { r = red, g = green, b = blue }
                 unitSettings.bossTargetBorderAlpha = a
-                ReloadAndUpdate()
+                RebuildAndReload()
             end, true, 20)
             targetSwatch:SetPoint("RIGHT", rightRegion._lastInline, "LEFT", -8, 0)
             rightRegion._lastInline = targetSwatch
@@ -279,7 +279,7 @@ local function BuildMiniTextAndSize(
     -- while the style reads Inherit. Full pairs, so Strata | Dark Mode below
     -- stays the section's last row.
     if unitName == "boss" then
-        posY = posY - mod.UF_BossFrameBorderRows(W, hostFrame, posY, unitSettings, ReloadAndUpdate)
+        posY = posY - mod.UF_BossFrameBorderRows(W, hostFrame, posY, unitSettings, RebuildAndReload)
     end
 
     -- Dark Mode for this frame alone, as on the Main Frames page (unset follows the
@@ -323,7 +323,7 @@ local function BuildMiniTextAndSize(
             getValue = function() return unitSettings.frameStrata or saved.profile.frameStrata or "MEDIUM" end,
             setValue = function(value)
                 unitSettings.frameStrata = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         }, darkCfg)
         posY = posY - height
@@ -351,7 +351,7 @@ local function BuildMiniTextAndSize(
                 end,
                 setValue = function(value)
                     unitSettings.borderSizeOverride = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }),
             {
@@ -397,7 +397,7 @@ local function BuildMiniTextAndSize(
             getValue = function() return math.floor((unitSettings.blizzScale or 1) * 100 + 0.5) end,
             setValue = function(value)
                 unitSettings.blizzScale = value / 100
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         }
     elseif options.hideBarWidth then
@@ -415,7 +415,7 @@ local function BuildMiniTextAndSize(
             getValue = function() return unitSettings.frameWidth end,
             setValue = function(value)
                 unitSettings.frameWidth = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
     end
@@ -434,7 +434,7 @@ local function BuildMiniTextAndSize(
             getValue = function() return unitSettings.healthHeight end,
             setValue = function(value)
                 unitSettings.healthHeight = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         }),
         rightSlot
@@ -487,7 +487,7 @@ local function BuildMiniTextAndSize(
                     end,
                     setValue = function(red, green, blue)
                         unitSettings.customFillColor = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     onClick = function(self)
                         if UnitVal("healthClassColored", false) then
@@ -495,7 +495,7 @@ local function BuildMiniTextAndSize(
                                 unitSettings.customFillColor = { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
                             end
                             unitSettings.healthClassColored = false
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage()
                             return
                         end
@@ -517,7 +517,7 @@ local function BuildMiniTextAndSize(
                     setValue = function() end,
                     onClick = function()
                         unitSettings.healthClassColored = true
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function() return UnitVal("healthClassColored", false) and 1 or 0.3 end,
@@ -562,7 +562,7 @@ local function BuildMiniTextAndSize(
                     colorDefault = { r = 37 / 255, g = 193 / 255, b = 29 / 255 },
                     customTip = "Custom Colored Fill",
                     seed = true,
-                    apply = ReloadAndUpdate,
+                    apply = RebuildAndReload,
                 })
             end
 
@@ -584,7 +584,7 @@ local function BuildMiniTextAndSize(
                     colorKey = "customBgColor",
                     colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
                     customTip = "Custom Background Color",
-                    apply = ReloadAndUpdate,
+                    apply = RebuildAndReload,
                 })
             end
         end
@@ -612,7 +612,7 @@ local function BuildMiniTextAndSize(
         getValue = function() return unitSettings.healthReverseFill end,
         setValue = function(value)
             unitSettings.healthReverseFill = value
-            ReloadAndUpdate()
+            RebuildAndReload()
         end,
     }
     if unitName == "boss" then
@@ -649,12 +649,12 @@ local function BuildMiniTextAndSize(
                     end,
                     setValue = function(red, green, blue)
                         unitSettings.customBgColor = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     onClick = function(self)
                         if UnitVal("bgClassColored", false) then
                             unitSettings.bgClassColored = false
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage()
                             return
                         end
@@ -674,7 +674,7 @@ local function BuildMiniTextAndSize(
                     setValue = function() end,
                     onClick = function()
                         unitSettings.bgClassColored = true
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function() return UnitVal("bgClassColored", false) and 1 or 0.3 end,
@@ -695,7 +695,7 @@ local function BuildMiniTextAndSize(
             getValue = function() return unitSettings.healthVerticalFill end,
             setValue = function(value)
                 unitSettings.healthVerticalFill = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage(true)
             end,
         }),
@@ -715,7 +715,7 @@ local function BuildMiniTextAndSize(
             getValue = function() return unitSettings.blizzShowLevel ~= false end,
             setValue = function(value)
                 unitSettings.blizzShowLevel = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
@@ -900,7 +900,7 @@ local function BuildMiniTextAndSize(
                             end
                         end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage(true)
                 end,
             },
@@ -946,7 +946,7 @@ local function BuildMiniTextAndSize(
                         unitSettings[settingKey .. "ColorR"] = red
                         unitSettings[settingKey .. "ColorG"] = green
                         unitSettings[settingKey .. "ColorB"] = blue
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     nil,
                     20
@@ -1017,7 +1017,7 @@ local function BuildMiniTextAndSize(
         page = unitName == "boss" and "Boss Frames" or "Mini Frames",
         db = function() return unitSettings end,
         liveDB = function() return saved.profile[unitName] end,
-        apply = ReloadAndUpdate,
+        apply = RebuildAndReload,
     })
 
     -- POWER BAR section (mini units with a power bar: boss, and the pet on WoW Forever).
@@ -1113,7 +1113,7 @@ local function BuildMiniTextAndSize(
                 colorKey = "customPowerBgColor",
                 colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
                 customTip = "Custom Background Color",
-                apply = ReloadAndUpdate,
+                apply = RebuildAndReload,
             })
         end
         -- Inline Power Colored + Custom fill swatches on Fill Color (right
@@ -1137,7 +1137,7 @@ local function BuildMiniTextAndSize(
             powerSwatch._eabOrigClick = powerSwatch:GetScript("OnClick")
             powerSwatch:SetScript("OnClick", function()
                 unitSettings.powerPercentPowerColor = true
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end)
             powerSwatch:HookScript(
@@ -1165,7 +1165,7 @@ local function BuildMiniTextAndSize(
             end
             local fSet = function(red, green, blue)
                 unitSettings.customPowerFillColor = { r = red, g = green, b = blue }
-                ReloadAndUpdate()
+                RebuildAndReload()
             end
             local fillSwatch, fillSwatchUpdate =
                 CUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, fGet, fSet, false, 20)
@@ -1173,7 +1173,7 @@ local function BuildMiniTextAndSize(
             fillSwatch:SetScript("OnClick", function(self)
                 if UnitVal("powerPercentPowerColor", true) ~= false then
                     unitSettings.powerPercentPowerColor = false
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                     return
                 end
@@ -1203,7 +1203,7 @@ local function BuildMiniTextAndSize(
                 unitSettings.powerPercentText = "center"
             end
             if value == "none" then unitSettings.powerPercentText = "none" end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CUI:RefreshPage()
             -- The page stays, so the menu is rebuilt for Custom's pencil.
             mod.UFO_RefreshMenus(pwrTextRow and pwrTextRow._leftRegion)
@@ -1260,7 +1260,7 @@ local function BuildMiniTextAndSize(
                 "powerText",
                 UnitVal("powerTextFormat", "perpp"),
                 function() return unitSettings end,
-                ReloadAndUpdate
+                RebuildAndReload
             )
         end
         -- Show % cog on Power Text (left)
@@ -1292,7 +1292,7 @@ local function BuildMiniTextAndSize(
                 end,
                 function(red, green, blue)
                     unitSettings.powerTextColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
                 false,
                 20
@@ -1303,7 +1303,7 @@ local function BuildMiniTextAndSize(
             customSw:SetScript("OnClick", function(self, ...)
                 if UnitVal("powerPercentTextPowerColor", false) then
                     unitSettings.powerPercentTextPowerColor = false
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                     return
                 end
@@ -1328,7 +1328,7 @@ local function BuildMiniTextAndSize(
             powerSw:SetScript("OnClick", function()
                 unitSettings.powerPercentTextPowerColor = true
                 unitSettings.powerTextColor = nil
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end)
             CUI.HoverTip(powerSw, "Power Colored Text")
@@ -1408,7 +1408,7 @@ local function BuildMiniTextAndSize(
                 function(red, green, blue, a)
                     unitSettings.powerBorderColor = { r = red, g = green, b = blue }
                     unitSettings.powerBorderAlpha = a
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
                 true,
                 20
@@ -1432,7 +1432,7 @@ end
 -- (Target of Target / Focus Target) adds the 2D / Class art choice.
 local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitName)
     local environ = mod._UFO_OptEnv
-    local ReloadAndUpdate, UpdatePreview, classThemeSubOrder, classThemeSubValues =
+    local RebuildAndReload, RepaintPreview, classThemeSubOrder, classThemeSubValues =
         environ.ReloadAndUpdate,
         environ.UpdatePreview,
         environ.classThemeSubOrder,
@@ -1445,8 +1445,8 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             get = function() return (unitSettings.portraitSide or "left") == "right" end,
             set = function(value)
                 unitSettings.portraitSide = value and "right" or "left"
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         },
     }
@@ -1460,8 +1460,8 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             set = function(value)
                 local function ApplyArt()
                     unitSettings.portraitMode = value
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end
                 if
                     value == "2d"
@@ -1487,8 +1487,8 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             get = function() return unitSettings.classThemeStyle or "modern" end,
             set = function(value)
                 unitSettings.classThemeStyle = value
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
             disabled = function() return unitSettings.portraitMode ~= "class" end,
             disabledTooltip = "This option requires Art Style to be set to Class",
@@ -1502,7 +1502,7 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             get = function() return unitSettings.portraitNonPlayerOn == true end,
             set = function(value)
                 unitSettings.portraitNonPlayerOn = value or nil
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         }
         -- No 3D here: a mini frame's fade never reaches a model (the
@@ -1515,7 +1515,7 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             get = function() return unitSettings.portraitNonPlayer == "none" and "none" or "2d" end,
             set = function(value)
                 unitSettings.portraitNonPlayer = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
             disabled = function()
                 return unitSettings.portraitMode ~= "class" or not unitSettings.portraitNonPlayerOn
@@ -1541,7 +1541,7 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
                 local function ApplyMirror()
                     unitSettings.portraitMirror = value or nil
                     mod.UF_RefreshPortraitMirror(unitName)
-                    UpdatePreview()
+                    RepaintPreview()
                 end
                 if
                     value
@@ -1580,8 +1580,8 @@ local function AttachPortraitSideCog(region, unitSettings, withArtStyle, unitNam
             get = function() return unitSettings.portraitSeparator == true end,
             set = function(value)
                 unitSettings.portraitSeparator = value or nil
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         }
     end
@@ -1608,7 +1608,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
         environ.BuildApplyAllRow,
         environ.MINI_GROUP_ORDER,
         environ.PromptReloadIfUnspawned
-    local ReloadAndUpdate, abs, saved = environ.ReloadAndUpdate, environ.abs, environ.db
+    local RebuildAndReload, abs, saved = environ.ReloadAndUpdate, environ.abs, environ.db
     unitSettings = unitSettings or saved.profile.targettarget
     unitName = unitName or "targettarget"
     local enableText = (unitName == "focustarget") and "Enable Focus Target" or "Enable Target of Target"
@@ -1633,7 +1633,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
             getValue = function() return saved.profile.enabledFrames[unitName] ~= false end,
             setValue = function(value)
                 saved.profile.enabledFrames[unitName] = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ unitName })
             end,
@@ -1645,7 +1645,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
             end,
             setValue = function(value)
                 unitSettings.showPortrait = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
@@ -1714,7 +1714,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
         environ.BuildApplyAllRow,
         environ.MINI_GROUP_ORDER,
         environ.PromptReloadIfUnspawned
-    local ReloadAndUpdate, UpdatePreview, abs, saved =
+    local RebuildAndReload, RepaintPreview, abs, saved =
         environ.ReloadAndUpdate, environ.UpdatePreview, environ.abs, environ.db
     local _, height
 
@@ -1730,7 +1730,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             getValue = function() return saved.profile.enabledFrames.pet ~= false end,
             setValue = function(value)
                 saved.profile.enabledFrames.pet = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "pet" })
             end,
@@ -1742,7 +1742,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             end,
             setValue = function(value)
                 saved.profile.pet.showPortrait = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
@@ -1778,7 +1778,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
         -- The live icon repaints itself; the preview mirrors it.
         local function applyHappiness()
             mod.UF_ApplyPetHappiness()
-            UpdatePreview()
+            RepaintPreview()
         end
         petOpts = {
             hasPowerBar = petPower,
@@ -1889,7 +1889,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
         end
         local function PSet(settingKey, value)
             saved.profile.pet[settingKey] = value
-            ReloadAndUpdate()
+            RebuildAndReload()
         end
         local function buffsOff() return saved.profile.pet.showBuffs == false end
         local function debuffsOff() return (saved.profile.pet.debuffAnchor or "none") == "none" end
@@ -1901,7 +1901,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
         local function PlaceAuras(settingKey)
             return CUI.DependentSetValue(anyOn, function(value)
                 SwapAuraSlot(saved.profile.pet, settingKey, value)
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end)
         end
@@ -1969,7 +1969,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                 setValue = function(value)
                     if value == saved.profile.pet.auraSource then return end
                     saved.profile.pet.auraSource = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                 end,
                 -- Slot marks follow the stored pick alone: the frame shown
@@ -2025,7 +2025,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             getValue = function() return P.showCastbar == true end,
             setValue = function(value)
                 P.showCastbar = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 local popFrame = mod.frames and mod.frames.pet
                 if value and popFrame and not popFrame.Castbar then
                     CUI:ShowConfirmPopup({
@@ -2049,7 +2049,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             getValue = function() return P.castbarWidth or 120 end,
             setValue = function(value)
                 P.castbarWidth = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
         posY = posY - height
@@ -2064,7 +2064,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             getValue = function() return P.castbarHeight or 12 end,
             setValue = function(value)
                 P.castbarHeight = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         }, {
             type = "toggle",
@@ -2075,7 +2075,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
             getValue = function() return P.castbarHideWhenInactive ~= false end,
             setValue = function(value)
                 P.castbarHideWhenInactive = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
         posY = posY - height
@@ -2136,7 +2136,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     local AttachDebuffModeWarn, AttachFrameSourceCog, DebuffModeDropdownCfg, Pix =
         environ.AttachDebuffModeWarn, environ.AttachFrameSourceCog, environ.DebuffModeDropdownCfg, environ.PP
     local HideExhaustionRow = environ.HideExhaustionRow
-    local PromptReloadIfUnspawned, ReloadAndUpdate, SwapAuraSlot, abs =
+    local PromptReloadIfUnspawned, RebuildAndReload, SwapAuraSlot, abs =
         environ.PromptReloadIfUnspawned, environ.ReloadAndUpdate, environ.SwapAuraSlot, environ.abs
     local buffAnchorOrder, buffAnchorValues, buffGrowthOrder, buffGrowthValues =
         environ.buffAnchorOrder, environ.buffAnchorValues, environ.buffGrowthOrder, environ.buffGrowthValues
@@ -2161,7 +2161,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             return 1, 1, 1
         end, function(red, green, blue)
             saved.profile.boss[settingKey] = { r = red, g = green, b = blue }
-            ReloadAndUpdate()
+            RebuildAndReload()
         end, false, 20)
         swatch:HookScript("OnEnter", function() CUI.ShowWidgetTooltip(swatch, tip) end)
         swatch:HookScript("OnLeave", function() CUI.HideWidgetTooltip() end)
@@ -2179,7 +2179,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     local function BossSet(settingKey, refreshAuras)
         return function(value)
             saved.profile.boss[settingKey] = value
-            ReloadAndUpdate()
+            RebuildAndReload()
             if refreshAuras and mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
         end
     end
@@ -2260,7 +2260,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 -- unregister). Frames never spawned this session no-op here
                 -- and hit the reload prompt below instead.
                 if mod.UF_SetBossFramesActive then mod.UF_SetBossFramesActive(value) end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "boss" })
             end,
@@ -2272,7 +2272,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             end,
             setValue = function(value)
                 saved.profile.boss.showPortrait = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
@@ -2301,7 +2301,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     getValue = function() return saved.profile.boss.bossStackDirection or "down" end,
                     setValue = function(value)
                         saved.profile.boss.bossStackDirection = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 },
                 -- Top-to-top step; Stack Direction sets the side, so no negatives.
@@ -2315,7 +2315,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     getValue = function() return math.abs(saved.profile.bossSpacing or 80) end,
                     setValue = function(value)
                         saved.profile.bossSpacing = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }
             )
@@ -2395,7 +2395,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     -- Location, so force that setting to None.
                     saved.profile.boss.showBuffs = false
                 end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                 if BossAuraRowsState() ~= lastState then
                     CUI:RefreshPage(true)
@@ -2415,7 +2415,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             getValue = function() return saved.profile.boss.simpleBuffCooldownTextSize or 14 end,
             setValue = function(value)
                 saved.profile.boss.simpleBuffCooldownTextSize = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
         rowY = rowY - hh
@@ -2456,7 +2456,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.buffMaxPerRow = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -2472,7 +2472,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.simpleBuffOffsetX = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -2488,7 +2488,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.simpleBuffOffsetY = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -2526,7 +2526,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function() return saved.profile.boss.simpleBuffShowCooldownText end,
                         set = function(value)
                             saved.profile.boss.simpleBuffShowCooldownText = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage()
                         end,
                     },
@@ -2630,7 +2630,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     -- Location, so force that setting to None.
                     saved.profile.boss.debuffAnchor = "none"
                 end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                 if BossAuraRowsState() ~= lastState then
                     CUI:RefreshPage(true)
@@ -2650,7 +2650,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             getValue = function() return saved.profile.boss.simpleDebuffCooldownTextSize or 14 end,
             setValue = function(value)
                 saved.profile.boss.simpleDebuffCooldownTextSize = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
         rowY = rowY - hh
@@ -2681,7 +2681,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     },
                     mod.UFO_MaxImportantRow(
                         function() return saved.profile.boss end,
-                        ReloadAndUpdate,
+                        RebuildAndReload,
                         20,
                         10
                     ),
@@ -2698,7 +2698,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.debuffMaxPerRow = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -2714,7 +2714,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.simpleDebuffOffsetX = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -2730,7 +2730,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.simpleDebuffOffsetY = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -2769,7 +2769,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function() return saved.profile.boss.simpleDebuffShowCooldownText end,
                         set = function(value)
                             saved.profile.boss.simpleDebuffShowCooldownText = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage()
                         end,
                     },
@@ -2864,7 +2864,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     cfg.showBuffs = true
                     SwapAuraSlot(cfg, "buffAnchor", value)
                 end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                 if BossAuraRowsState() ~= lastState then
                     CUI:RefreshPage(true)
@@ -2889,7 +2889,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             setValue = function(value)
                 local lastState = BossAuraRowsState()
                 SwapAuraSlot(saved.profile.boss, "debuffAnchor", value)
-                ReloadAndUpdate()
+                RebuildAndReload()
                 if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                 -- Full rebuild when either aura row's visibility flipped;
                 -- otherwise the fast refresh keeps dependent disabled
@@ -2946,7 +2946,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 getValue = function() return saved.profile.boss.buffSize or 22 end,
                 setValue = function(value)
                     saved.profile.boss.buffSize = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                 end,
             }, {
@@ -2961,7 +2961,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 getValue = function() return saved.profile.boss.buffCooldownTextSize or 10 end,
                 setValue = function(value)
                     saved.profile.boss.buffCooldownTextSize = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
             rowY = rowY - hh
@@ -3040,7 +3040,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             get = function() return saved.profile.boss.buffShowCooldownText end,
                             set = function(value)
                                 saved.profile.boss.buffShowCooldownText = value
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CUI:RefreshPage()
                             end,
                         },
@@ -3179,7 +3179,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     getValue = function() return saved.profile.boss.debuffSize or 22 end,
                     setValue = function(value)
                         saved.profile.boss.debuffSize = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                     end,
                 }, {
@@ -3194,7 +3194,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     getValue = function() return saved.profile.boss.debuffCooldownTextSize or 10 end,
                     setValue = function(value)
                         saved.profile.boss.debuffCooldownTextSize = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
                 rowY = rowY - hh
@@ -3275,7 +3275,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 get = function() return saved.profile.boss.debuffShowCooldownText end,
                                 set = function(value)
                                     saved.profile.boss.debuffShowCooldownText = value
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                     CUI:RefreshPage()
                                 end,
                             },
@@ -3356,7 +3356,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 local function BFieldThen(settingKey)
                     return function(value)
                         B[settingKey] = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end
                 end
                 local function BFieldOr(settingKey, default)
@@ -3392,7 +3392,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             -- A style pick returns the icons to their legacy step; clear a
                             -- set exact size (false travels through mirror sync, nil would not).
                             if B.auraBorderSizePx then B.auraBorderSizePx = false end
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                             -- The Width / Height Offset row exists only under a textured style.
                             CUI:RefreshPage(true)
@@ -3409,7 +3409,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             getPx = function() return B.auraBorderSizePx end,
                             setPx = function(value) B.auraBorderSizePx = value end,
                             apply = function()
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                             end,
                         })
@@ -3432,7 +3432,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             getY = function() return B.auraBorderTextureOffsetY end,
                             setY = function(value) B.auraBorderTextureOffsetY = value end,
                             apply = function()
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                             end,
                         })
@@ -3469,7 +3469,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 end,
                                 set = function(value)
                                     B.auraBorderTextureShiftX = value == 0 and nil or value
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                             {
@@ -3490,7 +3490,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 end,
                                 set = function(value)
                                     B.auraBorderTextureShiftY = value == 0 and nil or value
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                             {
@@ -3550,7 +3550,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             B.auraBorderG = green
                             B.auraBorderB = blue
                             B.auraBorderA = a
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                         true,
                         20
@@ -3595,7 +3595,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     "Boss Debuff Filter",
                     "boss",
                     BossS,
-                    ReloadAndUpdate,
+                    RebuildAndReload,
                     { disabled = filterOff, disabledTooltip = "Debuffs", requireState = "displayed" }
                 ),
                 bossFilterRightSlot
@@ -3610,7 +3610,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     disabled = filterOff,
                     disabledTooltip = "Debuffs",
                     requireState = "displayed",
-                    rows = { HideExhaustionRow(BossS, ReloadAndUpdate) },
+                    rows = { HideExhaustionRow(BossS, RebuildAndReload) },
                 })
             end
             -- Right slot: Boss Buff Filter (two-lane checkbox dropdown).
@@ -3639,7 +3639,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             bt.buffNegClasses[sk] = value and true or nil
                             if not next(bt.buffNegClasses) then bt.buffNegClasses = nil end
                             if value then bt[BUFF_FILTER_KEYS[keyName]] = nil end
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             return
                         end
                         if value and sk and bt.buffNegClasses then
@@ -3647,7 +3647,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             if not next(bt.buffNegClasses) then bt.buffNegClasses = nil end
                         end
                         bt[BUFF_FILTER_KEYS[keyName]] = value
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end
                 )
                 Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
@@ -3720,7 +3720,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.buffMaxPerRow = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                     {
@@ -3731,7 +3731,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function() return saved.profile.boss.buffDispelBorder == true end,
                         set = function(value)
                             saved.profile.boss.buffDispelBorder = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                 },
@@ -3771,7 +3771,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     },
                     mod.UFO_MaxImportantRow(
                         function() return saved.profile.boss end,
-                        ReloadAndUpdate,
+                        RebuildAndReload,
                         20,
                         10
                     ),
@@ -3786,7 +3786,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         end,
                         set = function(value)
                             saved.profile.boss.debuffMaxPerRow = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                 },
@@ -3827,7 +3827,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             getValue = function() return saved.profile.boss.showCastTarget == true end,
             setValue = function(value)
                 saved.profile.boss.showCastTarget = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
         rowY = rowY - hh
@@ -3871,7 +3871,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             getValue = function() return saved.profile.boss.raidMarkerEnabled ~= false end,
             setValue = function(value)
                 saved.profile.boss.raidMarkerEnabled = value
-                ReloadAndUpdate()
+                RebuildAndReload()
                 CUI:RefreshPage()
             end,
         }, {
@@ -3885,7 +3885,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             getValue = function() return saved.profile.boss.raidMarkerSize or 28 end,
             setValue = function(value)
                 saved.profile.boss.raidMarkerSize = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
         })
         rowY = rowY - hh
@@ -3936,7 +3936,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         local function BFieldThen(settingKey)
             return function(value)
                 B[settingKey] = value
-                ReloadAndUpdate()
+                RebuildAndReload()
             end
         end
         local function BFieldOr(settingKey, default)
@@ -3987,7 +3987,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 function() return B.showCastbar ~= false end,
                 function(value)
                     B.showCastbar = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                 end
             ),
@@ -4034,7 +4034,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function() return saved.profile.raiseCastbarStrata ~= false end,
                         set = function(value)
                             saved.profile.raiseCastbarStrata = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                     {
@@ -4051,7 +4051,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function() return B.castbarInterruptMidCastEnabled == true end,
                         set = function(value)
                             B.castbarInterruptMidCastEnabled = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage()
                         end,
                     },
@@ -4064,7 +4064,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = BFieldOr("castbarOffsetX", 0),
                         set = function(value)
                             B.castbarOffsetX = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -4077,7 +4077,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = BFieldOr("castbarOffsetY", 0),
                         set = function(value)
                             B.castbarOffsetY = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                         end,
                     },
@@ -4093,7 +4093,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function() return B.castBorderCustom == true end,
                         set = function(value)
                             B.castBorderCustom = value
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage(true)
                         end,
                     },
@@ -4113,7 +4113,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     end,
                     function(red, green, blue)
                         B[colorKey] = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     false,
                     20
@@ -4181,7 +4181,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 setValue = function(value)
                     if value > 0 and value < 30 then value = 30 end
                     B.castbarWidth = value
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     if mod.RefreshBossPreviewDebuffs then mod.RefreshBossPreviewDebuffs() end
                 end,
             })
@@ -4280,7 +4280,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 getValue = function() return math.floor((B.castBgAlpha or 0.5) * 100 + 0.5) end,
                 setValue = function(value)
                     B.castBgAlpha = value / 100
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
             rowY = rowY - hh
@@ -4293,7 +4293,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     return 0, 0, 0
                 end, function(red, green, blue)
                     B.castBgColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, false, 20)
                 swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 swatch:SetScript(
@@ -4324,7 +4324,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     then
                         B.showCastTarget = false
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                 end,
             }, {
@@ -4343,7 +4343,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         B.showCastDuration = true
                         B.castDurationSide = value
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage()
                 end,
             })
@@ -4388,7 +4388,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     return color.r, color.g, color.b
                 end, function(red, green, blue)
                     B.castSpellNameColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, false, 20)
                 swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = swatch
@@ -4433,7 +4433,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     return color.r, color.g, color.b
                 end, function(red, green, blue)
                     B.castDurationColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, false, 20)
                 swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = swatch
@@ -4442,7 +4442,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             -- styles all five boss cast bars; no unlock element, no sync links.
             if B.castBorderCustom == true then
                 rowY = rowY
-                    - mod.UF_CastBorderRows(Ww, profile, rowY, function() return B end, ReloadAndUpdate)
+                    - mod.UF_CastBorderRows(Ww, profile, rowY, function() return B end, RebuildAndReload)
             end
             -- Classic WoW UI: Border Size closes the section (odd last slot).
             rowY = rowY
@@ -4452,7 +4452,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     rowY,
                     function() return B end,
                     mod.UF_CastClassicKey("boss"),
-                    function() ReloadAndUpdate() end
+                    function() RebuildAndReload() end
                 )
         end -- close boss Cast Bar hidden-while-disabled gate
 

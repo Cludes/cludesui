@@ -24,7 +24,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
     local AddDarkModeBlock, GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh =
         environ.AddDarkModeBlock, environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh
-    local ReloadAndUpdate, UNIT_DB_MAP, UpdatePreview =
+    local RebuildAndReload, UNIT_DB_MAP, RepaintPreview =
         environ.ReloadAndUpdate, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, healthTextOrder, healthTextOrderPlayer, healthTextOrderTargetFocus =
         environ.db, environ.healthTextOrder, environ.healthTextOrderPlayer, environ.healthTextOrderTargetFocus
@@ -37,7 +37,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
     local function SSetRowThen(settingKey)
         return function(value)
             SSet(settingKey, value)
-            UpdatePreview()
+            RepaintPreview()
         end
     end
     local ReadSetting = context.SVal
@@ -113,8 +113,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 getValue = SValRow("healthReverseFill", false),
                 setValue = function(val)
                     SSet("healthReverseFill", val)
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
             }
         )
@@ -140,8 +140,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     get = SValRow("healthReverseFill", false),
                     set = function(val)
                         SSet("healthReverseFill", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                     end,
                 },
                 -- Vertical Fill swaps the bar's fill AXIS; Reverse Fill flips the
@@ -156,8 +156,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     -- re-label for the new axis (cog popups bake labels in too).
                     set = function(val)
                         SSet("healthVerticalFill", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage(true)
                     end,
                 },
@@ -190,8 +190,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end,
                 setValue = function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]().gradientColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
             },
             {
@@ -212,8 +212,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end,
                 setValue = function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]().customFillColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 onClick = function(self)
                     if ReadSetting("healthClassColored", true) then
@@ -225,7 +225,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
                         end
                         SSet("healthClassColored", false)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -254,7 +254,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 setValue = function() end,
                 onClick = function()
                     SSet("healthClassColored", true)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function() return ReadSetting("healthClassColored", true) and 1 or 0.3 end,
@@ -269,8 +269,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
         getValue = SValRow("customBgAlpha", 100),
         setValue = function(val)
             SSet("customBgAlpha", val)
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -293,8 +293,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
             customTip = "Custom Background Color",
             apply = function()
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         })
     end
@@ -314,7 +314,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     unitCfg.bgClassColored = bgClass
                 end
             end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CUI:RefreshPage()
         end
         mod.UFO_UnitSync(region, "Bar Background", {
@@ -379,7 +379,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     end
                 end
             end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CUI:RefreshPage()
         end
         mod.UFO_UnitSync(region, "Bar Color", {
@@ -445,8 +445,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     -- RefreshPage re-runs the stop swatches' show/hide pass.
                     set = function(val)
                         SSet("healthColorMode", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                 },
@@ -456,8 +456,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     get = SValRow("gradientEnabled", false),
                     set = function(val)
                         SSet("gradientEnabled", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                 },
@@ -469,8 +469,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     get = SValRow("gradientDir", "HORIZONTAL"),
                     set = function(val)
                         SSet("gradientDir", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                 },
@@ -513,8 +513,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 end,
                 function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]()[dropdown.key] = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 false,
                 18
@@ -598,7 +598,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             getValue = SValRow("blizzShowLevel", true),
             setValue = function(val)
                 SSet("blizzShowLevel", val)
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         }, { type = "label", text = "" })
@@ -677,7 +677,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if SGet("rightTextContent") == val then SSet("rightTextContent", "none") end
                     if SGet("centerTextContent") == val then SSet("centerTextContent", "none") end
                 end
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage(true)
             end,
         },
@@ -712,7 +712,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             end
                         end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage(true)
                 end
                 mod.UFO_UnitSync(region, "Left Text", {
@@ -831,12 +831,12 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     end,
                                     setValue = function(red, green, blue)
                                         SSet("leftTextTargetSepColor", { r = red, g = green, b = blue })
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     onClick = function(self)
                                         if ReadSetting("leftTextTargetSepClassColor", false) then
                                             SSet("leftTextTargetSepClassColor", false)
-                                            UpdatePreview()
+                                            RepaintPreview()
                                             return
                                         end
                                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -852,7 +852,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("leftTextTargetSepClassColor", true)
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     refreshAlpha = function()
                                         return ReadSetting("leftTextTargetSepClassColor", false) and 1 or 0.3
@@ -869,7 +869,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then val = ">" end
                                 SSet("leftTextTargetSep", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("leftTextContent", "name") ~= "nametotarget"
@@ -886,7 +886,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 SSet("leftTextTargetPrefix", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("leftTextContent", "name") ~= "targetname"
@@ -925,7 +925,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     -- Bespoke write: notify for exact Spec Overrides attribution (the
                     -- forced RefreshPage below would otherwise resync-absorb it).
                     CUI._NotifySettingWrite(leftClassSwatch, snapshot)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end)
                 CUI.HoverTip(leftClassSwatch, "Class Colored")
@@ -939,7 +939,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     SSet("leftTextColorR", red)
                     SSet("leftTextColorG", green)
                     SSet("leftTextColorB", blue)
-                    UpdatePreview()
+                    RepaintPreview()
                 end
                 local ltSwatch, ltUpdateSwatch = CUI.BuildColorSwatch(
                     leftRegion,
@@ -958,7 +958,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         local snapshot = CUI._SOAttribution(self)
                         SSet("leftTextClassColor", false)
                         CUI._NotifySettingWrite(self, snapshot)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -1009,7 +1009,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if SGet("leftTextContent") == val then SSet("leftTextContent", "none") end
                     if SGet("centerTextContent") == val then SSet("centerTextContent", "none") end
                 end
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage(true)
             end,
         },
@@ -1044,7 +1044,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             end
                         end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage(true)
                 end
                 mod.UFO_UnitSync(region, "Right Text", {
@@ -1166,12 +1166,12 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     end,
                                     setValue = function(red, green, blue)
                                         SSet("rightTextTargetSepColor", { r = red, g = green, b = blue })
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     onClick = function(self)
                                         if ReadSetting("rightTextTargetSepClassColor", false) then
                                             SSet("rightTextTargetSepClassColor", false)
-                                            UpdatePreview()
+                                            RepaintPreview()
                                             return
                                         end
                                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -1187,7 +1187,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("rightTextTargetSepClassColor", true)
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     refreshAlpha = function()
                                         return ReadSetting("rightTextTargetSepClassColor", false) and 1 or 0.3
@@ -1204,7 +1204,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then val = ">" end
                                 SSet("rightTextTargetSep", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("rightTextContent", "both") ~= "nametotarget"
@@ -1221,7 +1221,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 SSet("rightTextTargetPrefix", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("rightTextContent", "both") ~= "targetname"
@@ -1258,7 +1258,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     -- Bespoke write: notify for exact Spec Overrides attribution (the
                     -- forced RefreshPage below would otherwise resync-absorb it).
                     CUI._NotifySettingWrite(rightClassSwatch, snapshot)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end)
                 CUI.HoverTip(rightClassSwatch, "Class Colored")
@@ -1271,7 +1271,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     SSet("rightTextColorR", red)
                     SSet("rightTextColorG", green)
                     SSet("rightTextColorB", blue)
-                    UpdatePreview()
+                    RepaintPreview()
                 end
                 local rtSwatch, rtUpdateSwatch = CUI.BuildColorSwatch(
                     rightRegion,
@@ -1290,7 +1290,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         local snapshot = CUI._SOAttribution(self)
                         SSet("rightTextClassColor", false)
                         CUI._NotifySettingWrite(self, snapshot)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -1335,8 +1335,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             getValue = SValRow("centerTextContent", "none"),
             setValue = function(val)
                 SSet("centerTextContent", val)
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 CUI:RefreshPage(true)
             end,
         },
@@ -1371,7 +1371,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             end
                         end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage(true)
                 end
                 mod.UFO_UnitSync(region, "Center Text", {
@@ -1493,12 +1493,12 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     end,
                                     setValue = function(red, green, blue)
                                         SSet("centerTextTargetSepColor", { r = red, g = green, b = blue })
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     onClick = function(self)
                                         if ReadSetting("centerTextTargetSepClassColor", false) then
                                             SSet("centerTextTargetSepClassColor", false)
-                                            UpdatePreview()
+                                            RepaintPreview()
                                             return
                                         end
                                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -1515,7 +1515,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("centerTextTargetSepClassColor", true)
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     refreshAlpha = function()
                                         return ReadSetting("centerTextTargetSepClassColor", false) and 1
@@ -1533,7 +1533,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then val = ">" end
                                 SSet("centerTextTargetSep", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("centerTextContent", "none") ~= "nametotarget"
@@ -1550,7 +1550,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 SSet("centerTextTargetPrefix", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("centerTextContent", "none") ~= "targetname"
@@ -1582,7 +1582,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 ctClassSwatch:SetScript("OnClick", function()
                     if ReadSetting("centerTextContent", "none") == "none" then return end
                     SSet("centerTextClassColor", true)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end)
                 CUI.HoverTip(ctClassSwatch, "Class Colored")
@@ -1595,7 +1595,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     SSet("centerTextColorR", red)
                     SSet("centerTextColorG", green)
                     SSet("centerTextColorB", blue)
-                    UpdatePreview()
+                    RepaintPreview()
                 end
                 local ctSwatch, ctUpdateSwatch =
                     CUI.BuildColorSwatch(ctrRgn, ctrRgn:GetFrameLevel() + 5, ctSwGet, ctSwSet, nil, 20)
@@ -1606,7 +1606,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if ReadSetting("centerTextContent", "none") == "none" then return end
                     if ReadSetting("centerTextClassColor", false) then
                         SSet("centerTextClassColor", false)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -1642,8 +1642,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
             getValue = SValRow("extraTextContent", "none"),
             setValue = function(val)
                 SSet("extraTextContent", val)
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 CUI:RefreshPage(true)
             end,
         },
@@ -1679,7 +1679,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             end
                         end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CUI:RefreshPage(true)
                 end
                 mod.UFO_UnitSync(region, "Extra Text", {
@@ -1755,8 +1755,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                             get = SValRow("extraTextAlign", "left"),
                             set = function(val)
                                 SSet("extraTextAlign", val)
-                                ReloadAndUpdate()
-                                UpdatePreview()
+                                RebuildAndReload()
+                                RepaintPreview()
                             end,
                         },
                         {
@@ -1816,12 +1816,12 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     end,
                                     setValue = function(red, green, blue)
                                         SSet("extraTextTargetSepColor", { r = red, g = green, b = blue })
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     onClick = function(self)
                                         if ReadSetting("extraTextTargetSepClassColor", false) then
                                             SSet("extraTextTargetSepClassColor", false)
-                                            UpdatePreview()
+                                            RepaintPreview()
                                             return
                                         end
                                         if self._eabOrigClick then self._eabOrigClick(self) end
@@ -1837,7 +1837,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("extraTextTargetSepClassColor", true)
-                                        UpdatePreview()
+                                        RepaintPreview()
                                     end,
                                     refreshAlpha = function()
                                         return ReadSetting("extraTextTargetSepClassColor", false) and 1 or 0.3
@@ -1854,7 +1854,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then val = ">" end
                                 SSet("extraTextTargetSep", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("extraTextContent", "none") ~= "nametotarget"
@@ -1871,7 +1871,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 SSet("extraTextTargetPrefix", val)
-                                UpdatePreview()
+                                RepaintPreview()
                             end,
                             disabled = function()
                                 return ReadSetting("extraTextContent", "none") ~= "targetname"
@@ -1903,7 +1903,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 etClassSwatch:SetScript("OnClick", function()
                     if ReadSetting("extraTextContent", "none") == "none" then return end
                     SSet("extraTextClassColor", true)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end)
                 CUI.HoverTip(etClassSwatch, "Class Colored")
@@ -1916,7 +1916,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     SSet("extraTextColorR", red)
                     SSet("extraTextColorG", green)
                     SSet("extraTextColorB", blue)
-                    UpdatePreview()
+                    RepaintPreview()
                 end
                 local etSwatch, etUpdateSwatch =
                     CUI.BuildColorSwatch(etrRgn, etrRgn:GetFrameLevel() + 5, etSwGet, etSwSet, nil, 20)
@@ -1927,7 +1927,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     if ReadSetting("extraTextContent", "none") == "none" then return end
                     if ReadSetting("extraTextClassColor", false) then
                         SSet("extraTextClassColor", false)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -1959,8 +1959,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
         db = SDB,
         liveDB = SDB,
         apply = function()
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
         end,
     })
     sharedCenterTextRow = sharedTextRow
@@ -1973,16 +1973,16 @@ end
 
 function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
+    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, RebuildAndReload =
         environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local UNIT_DB_MAP, UpdatePreview, optionState =
+    local UNIT_DB_MAP, RepaintPreview, optionState =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.optState
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
     local function SSetRowThen(settingKey)
         return function(value)
             SSet(settingKey, value)
-            UpdatePreview()
+            RepaintPreview()
         end
     end
     local SSetSupported, ReadSetting, SValSupported =
@@ -2053,7 +2053,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             getValue = function() return mod.UF_StockHidesPower(SDB()) end,
             setValue = function(val)
                 SSet("blizzHidePower", val and true or false)
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         }
@@ -2067,8 +2067,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             getValue = SValSupportedRow("powerHeight", 6),
             setValue = function(val)
                 SSetSupported("powerHeight", val)
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         }
     end
@@ -2085,8 +2085,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             getValue = function() return blizzPower and "below" or ReadSetting("powerPosition", "below") end,
             setValue = function(val)
                 SSet("powerPosition", val)
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
                 -- Attached bars paint a Solid border: the power border's Width /
                 -- Height Offset row comes and goes with the detached state.
                 CUI:RefreshPage(true)
@@ -2149,7 +2149,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             for _, settingKey in ipairs(keyList) do
                 UNIT_DB_MAP[settingKey]().blizzHidePower = val
             end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CUI:RefreshPage()
         end
         mod.UFO_UnitSync(region, "Hide Power Bar", {
@@ -2185,8 +2185,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     get = SValRow("powerReverseFill", false),
                     set = function(val)
                         SSet("powerReverseFill", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                     end,
                 },
             },
@@ -2211,8 +2211,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         end
         -- If format is "none", clear position too
         if val == "none" then SSet("powerPercentText", "none") end
-        ReloadAndUpdate()
-        UpdatePreview()
+        RebuildAndReload()
+        RepaintPreview()
         CUI:RefreshPage()
         -- The page stays, so the menu is rebuilt for Custom's pencil.
         mod.UFO_RefreshMenus(sharedPowerRow2 and sharedPowerRow2._leftRegion)
@@ -2254,8 +2254,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             ReadSetting("powerTextFormat", "perpp"),
             SDB,
             function()
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end
         )
     end
@@ -2270,7 +2270,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 { none = true, curpp = true, curmaxpp = true },
                 function(val)
                     SSet("powerShowPercent", val)
-                    UpdatePreview()
+                    RepaintPreview()
                 end
             )
         )
@@ -2313,8 +2313,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 setValue = function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]().powerGradientColor =
                         { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
             },
             {
@@ -2328,14 +2328,14 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 setValue = function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]().customPowerFillColor =
                         { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 onClick = function(self)
                     local val = ReadSetting("powerPercentPowerColor", true)
                     if val then
                         SSet("powerPercentPowerColor", false)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -2355,7 +2355,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 onClick = function()
                     UNIT_DB_MAP[optionState.selectedUnit]().powerClassColored = false
                     SSet("powerPercentPowerColor", true)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -2379,7 +2379,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 onClick = function()
                     UNIT_DB_MAP[optionState.selectedUnit]().powerPercentPowerColor = true
                     SSet("powerClassColored", true)
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -2403,8 +2403,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         getValue = SValRow("customPowerBgAlpha", 100),
         setValue = function(val)
             SSet("customPowerBgAlpha", val)
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
         end,
     })
     cursorY = cursorY - height
@@ -2427,8 +2427,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
             customTip = "Custom Background Color",
             apply = function()
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end,
         })
     end
@@ -2448,7 +2448,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     unitCfg.powerBgPowerColored = bgPwr
                 end
             end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CUI:RefreshPage()
         end
         mod.UFO_UnitSync(region, "Bar Background", {
@@ -2505,7 +2505,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end
                 end
             end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CUI:RefreshPage()
         end
         mod.UFO_UnitSync(region, "Bar Color", {
@@ -2557,8 +2557,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     get = SValRow("powerGradientEnabled", false),
                     set = function(val)
                         SSet("powerGradientEnabled", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                 },
@@ -2570,8 +2570,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     get = SValRow("powerGradientDir", "HORIZONTAL"),
                     set = function(val)
                         SSet("powerGradientDir", val)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                 },
@@ -2589,8 +2589,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         getValue = SValRow("powerPercentText", "none"),
         setValue = function(val)
             SSet("powerPercentText", val)
-            ReloadAndUpdate()
-            UpdatePreview()
+            RebuildAndReload()
+            RepaintPreview()
         end,
     }, {
         type = "multiSwatch",
@@ -2606,14 +2606,14 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 end,
                 setValue = function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]().powerTextColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 onClick = function(self)
                     local val = ReadSetting("powerPercentTextPowerColor", false)
                     if val then
                         SSet("powerPercentTextPowerColor", false)
-                        UpdatePreview()
+                        RepaintPreview()
                         CUI:RefreshPage()
                         return
                     end
@@ -2635,7 +2635,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 onClick = function()
                     SSet("powerPercentTextPowerColor", true)
                     UNIT_DB_MAP[optionState.selectedUnit]().powerTextColor = nil
-                    UpdatePreview()
+                    RepaintPreview()
                     CUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -2751,7 +2751,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 -- A style pick returns the bar to its legacy step; clear a set
                 -- exact size (false travels through mirror sync, nil would not).
                 if SGet("powerBorderSizePx") then SDB().powerBorderSizePx = false end
-                ReloadAndUpdate()
+                RebuildAndReload()
                 -- The Width / Height Offset row exists only under a textured style.
                 CUI:RefreshPage(true)
             end,
@@ -2780,7 +2780,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 end,
                 getPx = function() return SGet("powerBorderSizePx") end,
                 setPx = function(val) SDB().powerBorderSizePx = val end,
-                apply = ReloadAndUpdate,
+                apply = RebuildAndReload,
             })
         )
     )
@@ -2806,7 +2806,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 setX = function(val) SDB().powerBorderOffsetX = val end,
                 getY = function() return SGet("powerBorderOffsetY") end,
                 setY = function(val) SDB().powerBorderOffsetY = val end,
-                apply = ReloadAndUpdate,
+                apply = RebuildAndReload,
             })
             _, height = W:DualRow(
                 hostFrame,
@@ -2839,7 +2839,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         SSet("powerBorderShiftX", val == 0 and nil or val)
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 },
                 {
@@ -2858,7 +2858,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end,
                     set = function(val)
                         SSet("powerBorderShiftY", val == 0 and nil or val)
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 },
                 {
@@ -2867,7 +2867,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     get = SValRow("powerBorderBehind", false),
                     set = function(val)
                         SSet("powerBorderBehind", val)
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 },
             },
@@ -2900,7 +2900,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().powerBorderColor = { r = red, g = green, b = blue }
                 UNIT_DB_MAP[optionState.selectedUnit]().powerBorderAlpha = a
-                ReloadAndUpdate()
+                RebuildAndReload()
             end,
             true,
             20
@@ -2925,7 +2925,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             getValue = function() return ReadSetting("powerCostPrediction", false) == true end,
             setValue = function(val)
                 SSet("powerCostPrediction", val)
-                UpdatePreview()
+                RepaintPreview()
                 CUI:RefreshPage()
             end,
         }, {
@@ -2939,14 +2939,14 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             end,
             setValue = function(red, green, blue)
                 SSet("powerCostColor", { r = red, g = green, b = blue })
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
         cursorY = cursorY - height
         -- Inline eyeball: preview the cost on the live preview. Session-only.
         if not CUI._prebuilding then
             local region = costRow._leftRegion
-            CUI.AddPreviewEye(region, mod, "_ufShowPowerCostPreview", "spell cost", UpdatePreview)
+            CUI.AddPreviewEye(region, mod, "_ufShowPowerCostPreview", "spell cost", RepaintPreview)
         end
     end
     if optionState.selectedUnit == "player" and CUI.IS_FOREVER == true then
@@ -3005,7 +3005,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                                 playerDB.powerTypeOverride.foreverDruid = nil
                             end
                             playerDB.foreverFormBar = (val == "both") or nil
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                             CUI:RefreshPage()
                         end
                     ),
@@ -3290,7 +3290,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     else
                         if playerDB.powerTypeOverride then playerDB.powerTypeOverride[spellRef] = nil end
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }, { type = "label", text = "" })
             cursorY = cursorY - height
@@ -3322,8 +3322,8 @@ end
 
 function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local RegisterWidgetRefresh, ReloadAndUpdate = environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local UNIT_DB_MAP, UpdatePreview, classPowerPosOrder, classPowerPosValues =
+    local RegisterWidgetRefresh, RebuildAndReload = environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
+    local UNIT_DB_MAP, RepaintPreview, classPowerPosOrder, classPowerPosValues =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.classPowerPosOrder, environ.classPowerPosValues
     local classPowerStyleOrder, classPowerStyleValues, optionState =
         environ.classPowerStyleOrder, environ.classPowerStyleValues, environ.optState
@@ -3399,13 +3399,13 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 if rogueKey then
                     UNIT_DB_MAP[optionState.selectedUnit]()[rogueKey] = val
                     if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower() end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 else
                     SSetSupported("classPowerStyle", val)
                     SSetSupported("showClassPowerBar", val ~= "none")
                     if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower(val) end
                 end
-                UpdatePreview()
+                RepaintPreview()
                 C_Timer.After(0, function()
                     local refreshList = CUI._widgetRefreshList
                     if refreshList then
@@ -3446,14 +3446,14 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                         UNIT_DB_MAP[optionState.selectedUnit]().classPowerCustomColor =
                             { r = red, g = green, b = blue }
                         if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower() end
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                     end,
                     onClick = function(self)
                         if SGetSupported("classPowerClassColor") then
                             SSetSupported("classPowerClassColor", false)
-                            ReloadAndUpdate()
-                            UpdatePreview()
+                            RebuildAndReload()
+                            RepaintPreview()
                             CUI:RefreshPage()
                             return
                         end
@@ -3474,8 +3474,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                     setValue = function() end,
                     onClick = function()
                         SSetSupported("classPowerClassColor", true)
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                         CUI:RefreshPage()
                     end,
                     refreshAlpha = function() return SGetSupported("classPowerClassColor") and 1 or 0.3 end,
@@ -3497,8 +3497,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 UNIT_DB_MAP[optionState.selectedUnit]().classPowerEmptyColor =
                     { r = red, g = green, b = blue, a = a or 1 }
                 if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower() end
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, true, 20)
             emptySwatch:SetPoint("RIGHT", ccRgn._lastInline or ccRgn._control, "LEFT", -6, 0)
             ccRgn._lastInline = emptySwatch
@@ -3564,8 +3564,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 setValue = function(val)
                     SSetSupported("classPowerPosition", val)
                     if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower() end
-                    UpdatePreview()
-                    UpdatePreview()
+                    RepaintPreview()
+                    RepaintPreview()
                 end,
             }, {
                 type = "slider",
@@ -3580,8 +3580,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 setValue = function(val)
                     SSetSupported("classPowerSize", val)
                     if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower() end
-                    UpdatePreview()
-                    UpdatePreview()
+                    RepaintPreview()
+                    RepaintPreview()
                 end,
             })
             cursorY = cursorY - height
@@ -3613,8 +3613,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                                 if mod.frames and mod.frames._toggleClassPower then
                                     mod.frames._toggleClassPower()
                                 end
-                                UpdatePreview()
-                                UpdatePreview()
+                                RepaintPreview()
+                                RepaintPreview()
                             end,
                         },
                         {
@@ -3629,8 +3629,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                                 if mod.frames and mod.frames._toggleClassPower then
                                     mod.frames._toggleClassPower()
                                 end
-                                UpdatePreview()
-                                UpdatePreview()
+                                RepaintPreview()
+                                RepaintPreview()
                             end,
                         },
                     },
@@ -3670,8 +3670,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 setValue = function(val)
                     SSetSupported("classPowerSpacing", val)
                     if mod.frames and mod.frames._toggleClassPower then mod.frames._toggleClassPower() end
-                    UpdatePreview()
-                    UpdatePreview()
+                    RepaintPreview()
+                    RepaintPreview()
                 end,
             }, {
                 type = "colorpicker",
@@ -3687,7 +3687,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 end,
                 setValue = function(red, green, blue, a)
                     SSetSupported("classPowerBgColor", { r = red, g = green, b = blue, a = a or 1 })
-                    UpdatePreview()
+                    RepaintPreview()
                 end,
             })
             cursorY = cursorY - height
@@ -3775,8 +3775,8 @@ end
 
 function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
-    local RegisterWidgetRefresh, ReloadAndUpdate = environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local UNIT_DB_MAP, UpdatePreview, saved, optionState =
+    local RegisterWidgetRefresh, RebuildAndReload = environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
+    local UNIT_DB_MAP, RepaintPreview, saved, optionState =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db, environ.optState
     local W, SApplySupport, SGetSupported, SSetSupported =
         context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
@@ -4101,7 +4101,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                                     b.showAbsorbs = false
                                 end
                             end
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                 },
@@ -4131,8 +4131,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 return 1, 1, 1, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().absorbColor = { r = red, g = green, b = blue }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
@@ -4182,7 +4182,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         -- absorb there so heal absorb shows in isolation). Session-only runtime flag.
         if not CUI._prebuilding then
             local region = healAbsorbRow._leftRegion
-            CUI.AddPreviewEye(region, optionState, "showHealAbsorbPreview", "heal absorb", UpdatePreview)
+            CUI.AddPreviewEye(region, optionState, "showHealAbsorbPreview", "heal absorb", RepaintPreview)
         end
         -- Inline cog: heal absorb placement (independent of shield absorb)
         do
@@ -4259,8 +4259,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 end,
                 function(red, green, blue)
                     UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 false,
                 20
@@ -4341,8 +4341,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             end, function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().absorbBarColor =
                     { r = red, g = green, b = blue, a = a }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, true, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
@@ -4412,8 +4412,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 function(red, green, blue, a)
                     UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbBarColor =
                         { r = red, g = green, b = blue, a = a }
-                    ReloadAndUpdate()
-                    UpdatePreview()
+                    RebuildAndReload()
+                    RepaintPreview()
                 end,
                 true,
                 20
@@ -4458,7 +4458,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         if not CUI._prebuilding then
             local region = maxHealthRow._leftRegion
             -- Eyeball: shows a reduced maximum on the preview (session-only flag).
-            CUI.AddPreviewEye(region, optionState, "showMaxHealthPreview", "max health", UpdatePreview)
+            CUI.AddPreviewEye(region, optionState, "showMaxHealthPreview", "max health", RepaintPreview)
             CUI.BuildInlineCog(region, {
                 title = "Max Health Rendering",
                 disabled = function() return SValSupported("maxHealthStyle", "none") == "none" end,
@@ -4482,8 +4482,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 return 0.7, 0.1, 0.1, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().maxHealthColor = { r = red, g = green, b = blue }
-                ReloadAndUpdate()
-                UpdatePreview()
+                RebuildAndReload()
+                RepaintPreview()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
@@ -4531,7 +4531,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         -- Inline eyeball: preview heal prediction on the live preview. Session-only.
         if not CUI._prebuilding then
             local region = healPredRow._leftRegion
-            CUI.AddPreviewEye(region, mod, "_ufShowHealPredPreview", "heal prediction", UpdatePreview)
+            CUI.AddPreviewEye(region, mod, "_ufShowHealPredPreview", "heal prediction", RepaintPreview)
         end
         if not CUI._prebuilding then
             local region = healPredRow._leftRegion
@@ -4545,8 +4545,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                     end,
                     function(red, green, blue)
                         UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
-                        UpdatePreview()
+                        RebuildAndReload()
+                        RepaintPreview()
                     end,
                     false,
                     20
@@ -4616,7 +4616,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             getValue = SValSupportedRow("healPredTexture", "health"),
             setValue = function(val)
                 SSetSupported("healPredTexture", val)
-                UpdatePreview()
+                RepaintPreview()
             end,
         })
         cursorY = cursorY - height

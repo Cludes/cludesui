@@ -11,7 +11,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- Bar Display page
 function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
-    local DB, Pix, Refresh, SmoothRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
+    local DB, Pix, Refresh, GentleRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local TexBgRowCfg = environ.TexBgRowCfg
     local RebuildClass, RebuildPower, RebuildHealth, _clickMappings =
         environ.RebuildClass, environ.RebuildPower, environ.RebuildHealth, environ._clickMappings
@@ -330,7 +330,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 profile.primary.bgA = a
                 profile.secondary.barBgA = a
             end
-            SmoothRefresh()
+            GentleRefresh()
             CludesUI:RefreshPage()
         end,
     })
@@ -377,7 +377,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 healthCfg.bgR, healthCfg.bgG, healthCfg.bgB, healthCfg.bgA
                             profile.secondary.barBgR, profile.secondary.barBgG, profile.secondary.barBgB, profile.secondary.barBgA =
                                 healthCfg.bgR, healthCfg.bgG, healthCfg.bgB, healthCfg.bgA
-                            SmoothRefresh()
+                            GentleRefresh()
                         end
                         CludesUI:RefreshPage(true)
                     end,
@@ -411,7 +411,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     profile.secondary.barBgR, profile.secondary.barBgG, profile.secondary.barBgB =
                         red, green, blue
                 end
-                SmoothRefresh()
+                GentleRefresh()
                 CludesUI:RefreshPage()
             end,
             nil,
@@ -444,7 +444,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     local profile = DB()
                     if not profile then return end
                     profile.health.bgA = value / 100
-                    SmoothRefresh()
+                    GentleRefresh()
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -462,7 +462,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     local profile = DB()
                     if not profile then return end
                     profile.primary.bgA = value / 100
-                    SmoothRefresh()
+                    GentleRefresh()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -483,7 +483,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         local profile = DB()
                         if not profile then return end
                         profile.health.bgR, profile.health.bgG, profile.health.bgB = red, green, blue
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     nil,
@@ -508,7 +508,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         local profile = DB()
                         if not profile then return end
                         profile.primary.bgR, profile.primary.bgG, profile.primary.bgB = red, green, blue
-                        SmoothRefresh()
+                        GentleRefresh()
                         CludesUI:RefreshPage()
                     end,
                     nil,
@@ -543,7 +543,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             local profile = DB()
             if not profile then return end
             profile.general.barTexture = value
-            SmoothRefresh()
+            GentleRefresh()
         end,
     }, {
         type = "dropdown",
@@ -559,7 +559,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             local profile = DB()
             if not profile then return end
             profile.general.frameStrata = value
-            SmoothRefresh()
+            GentleRefresh()
         end,
     })
     cursorY = cursorY - height
@@ -584,7 +584,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     if not profile then return end
                     local was = profile.splitTex == true
                     mod.ERB_SetBarTexture(profile, barId, val ~= "__match" and val)
-                    SmoothRefresh()
+                    GentleRefresh()
                     -- The Global Settings Textures page shows the health and power rows
                     -- only while one has its own texture: drop its cached build on a flip.
                     if (profile.splitTex == true) ~= was then
@@ -614,7 +614,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     local profile = DB()
                     if not profile then return end
                     profile[barId].frameStrata = val ~= "__match" and val or false
-                    SmoothRefresh()
+                    GentleRefresh()
                 end,
             }
         end
@@ -661,7 +661,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         RebuildClass()
                     end,
                 },
-                TexBgRowCfg("bars", SmoothRefresh),
+                TexBgRowCfg("bars", GentleRefresh),
             },
         })
         CludesUI.BuildInlineCog(textureRow._rightRegion, {
@@ -1133,7 +1133,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             end,
             onApply = function()
                 RebuildClass()
-                SmoothRefresh()
+                GentleRefresh()
             end,
         })
         cursorY = cursorY - cursorHeight
@@ -1163,7 +1163,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             end,
             onApply = function()
                 RebuildPower()
-                SmoothRefresh()
+                GentleRefresh()
             end,
         })
         cursorY = cursorY - cursorHeight
@@ -1748,7 +1748,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             end,
             onApply = function()
                 RebuildHealth()
-                SmoothRefresh()
+                GentleRefresh()
             end,
         })
         cursorY = cursorY - cursorHeight

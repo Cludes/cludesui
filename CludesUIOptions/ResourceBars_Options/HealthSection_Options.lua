@@ -17,7 +17,7 @@ local CreateFrame = CUI._Pool.CreateFrame
 -- false: the Advanced per-spec page was retired.
 function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     local environ = mod._CURB_OptEnv
-    local DB, Pix, Refresh, SmoothRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
+    local DB, Pix, Refresh, GentleRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local RefreshHealth, RebuildHealth, AddFormBarBtn, AddFormTextBtn =
         environ.RefreshHealth, environ.RebuildHealth, environ.AddFormBarBtn, environ.AddFormTextBtn
     local BuildHashCog, BuildThresholdSettingsButton =
@@ -468,7 +468,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             disabledTooltip = hhTip,
             rawTooltip = hhRaw,
             getValue = ConfGetter("height", 20),
-            setValue = ConfSetter("height", SmoothRefresh, true),
+            setValue = ConfSetter("height", GentleRefresh, true),
         }, {
             type = "slider",
             text = "Width",
@@ -479,7 +479,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             disabledTooltip = hwTip,
             rawTooltip = hwRaw,
             getValue = ConfGetter("width", 220),
-            setValue = ConfSetter("width", SmoothRefresh, true),
+            setValue = ConfSetter("width", GentleRefresh, true),
         })
         cursorY = cursorY - height
         if not context.advanced and context.syncRows then
@@ -496,7 +496,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         local val = profile.health.height or 20
                         profile.secondary.pipHeight = val
                         profile.primary.height = val
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -526,7 +526,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         local val = profile.health.width or 220
                         profile.secondary.pipWidth = val
                         profile.primary.width = val
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     isSynced = function()
@@ -738,7 +738,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         local rowCfg = rowConf()
                         if not rowCfg then return end
                         rowCfg.borderR, rowCfg.borderG, rowCfg.borderB, rowCfg.borderA = red, green, blue, a
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     true,
@@ -862,7 +862,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     hpBsRow._rightRegion,
                     DB,
                     "health",
-                    SmoothRefresh,
+                    GentleRefresh,
                     function()
                         return {
                             context.syncRows.healthBorder,
@@ -897,7 +897,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         apply(profile.secondary)
                         apply(profile.primary)
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
@@ -941,7 +941,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         profile.primary.cornerRadius = cr
                         profile.primary.cornerMask = cm
                         mod.ERB_CopyBorderPx(profile.primary, profile.health)
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
@@ -1082,7 +1082,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         if not rowCfg then return end
                         rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA =
                             red, green, blue, a
-                        SmoothRefresh()
+                        GentleRefresh()
                     end,
                 },
                 {
@@ -1098,7 +1098,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         if not rowCfg then return end
                         rowCfg.fillR, rowCfg.fillG, rowCfg.fillB = red, green, blue
                         if not rowCfg.customColored then rowCfg.customColored = true end
-                        SmoothRefresh()
+                        GentleRefresh()
                         CUI:RefreshPage()
                     end,
                     onClick = function(self)
@@ -1154,7 +1154,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     local val = profile.health.barAlpha or 1
                     profile.secondary.barAlpha = val
                     profile.primary.barAlpha = val
-                    SmoothRefresh()
+                    GentleRefresh()
                     CUI:RefreshPage()
                 end,
                 isSynced = function()
@@ -1288,7 +1288,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA =
                             red, green, blue, a
                         RebuildHealth()
-                        SmoothRefresh()
+                        GentleRefresh()
                     end,
                     onClick = function(self)
                         local rowCfg = rowConf()
@@ -1400,7 +1400,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 pageBotY = function() return cursorY end,
                 refreshFn = function()
                     RefreshHealth()
-                    SmoothRefresh()
+                    GentleRefresh()
                 end,
                 rebuildFn = function() RebuildHealth() end,
                 disabledFn = healthBarOff,
