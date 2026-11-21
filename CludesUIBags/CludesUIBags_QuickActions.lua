@@ -25,26 +25,20 @@ local FIRST_BAG, LAST_BAG = Enum.BagIndex.Backpack, Enum.BagIndex.ReagentBag -- 
 local SHADE_ALPHA = 0.7
 local ICON_ATLAS = "cursor_cast_64"
 
+-- A set of ids written as one list of numbers: [[ id id ... ]] -> { [id] = true }.
+local function IdSet(ids)
+    local set = {}
+    for id in ids:gmatch("%S+") do
+        set[tonumber(id)] = true
+    end
+    return set
+end
+
 -- WoW Forever's Comprehension scrolls (the items requiring that Mage skill)
-local SCROLLS = {
-    [211780] = true,
-    [211784] = true,
-    [211785] = true,
-    [211786] = true,
-    [211787] = true,
-    [211853] = true,
-    [211854] = true,
-    [211855] = true,
-    [213543] = true,
-    [213544] = true,
-    [213545] = true,
-    [213546] = true,
-    [213547] = true,
-    [281015] = true,
-    [281016] = true,
-    [281017] = true,
-    [281018] = true,
-}
+local SCROLLS = IdSet([[
+    211780 211784 211785 211786 211787 211853 211854 211855 213543 213544 213545 213546 213547
+    281015 281016 281017 281018
+]])
 
 local enabled -- the Quick Actions Icon is on (true or nil)
 local isActive -- the mode is on (true or nil)

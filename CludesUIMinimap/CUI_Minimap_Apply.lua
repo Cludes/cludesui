@@ -1,4 +1,13 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+-- A set of ids written as one list of numbers: [[ id id ... ]] -> { [id] = true }.
+local function IdSet(ids)
+    local set = {}
+    for id in ids:gmatch("%S+") do
+        set[tonumber(id)] = true
+    end
+    return set
+end
+
 -------------------------------------------------------------------------------
 --  CUI_Minimap_Apply.lua
 --
@@ -1151,16 +1160,9 @@ local function ApplyMinimap()
             local EVT = { [18] = true, [19] = true, [30] = true }
             local PVP = { [25] = true, [29] = true, [32] = true, [34] = true, [45] = true }
             local SCEN = { [12] = "S", [38] = "S", [11] = "HS", [39] = "HS", [40] = "MS" }
-            local GARRISON = {
-                [1152] = true,
-                [1153] = true,
-                [1154] = true,
-                [1158] = true,
-                [1159] = true,
-                [1160] = true,
-                [1330] = true,
-                [1331] = true,
-            }
+            local GARRISON = IdSet([[
+                1152 1153 1154 1158 1159 1160 1330 1331
+            ]])
             -- Difficulty (Reactive): letter colours by tier (normal/scenarios bronze like delves, heroic blue, mythic purple, keystones legendary orange).
             local REACTIVE_HEX = {
                 N = "c69b6d",

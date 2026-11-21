@@ -1188,57 +1188,25 @@ CUI.RegisterMigration({
     end,
 })
 
+-- A set of ids written as one list of numbers: [[ id id ... ]] -> { [id] = true }.
+local function IdSet(ids)
+    local set = {}
+    for id in ids:gmatch("%S+") do
+        set[tonumber(id)] = true
+    end
+    return set
+end
+
 -- Inline copy of every race's racial spell IDs (mirrors RACE_RACIALS in the CDM
 -- addon). Ghost CD bar cleanup needs this without depending on the CDM child
 -- addon (loads after this runner) or per-character _myRacialsSet. New race =
 -- update both.
-local CDM_ALL_RACIAL_SPELL_IDS = {
-    [7744] = true,
-    [20549] = true,
-    [20572] = true,
-    [33697] = true,
-    [33702] = true,
-    [202719] = true,
-    [50613] = true,
-    [25046] = true,
-    [69179] = true,
-    [80483] = true,
-    [155145] = true,
-    [129597] = true,
-    [232633] = true,
-    [28730] = true,
-    [20594] = true,
-    [26297] = true,
-    [28880] = true,
-    [59543] = true,
-    [59545] = true,
-    [121093] = true,
-    [59544] = true,
-    [370626] = true,
-    [59547] = true,
-    [59548] = true,
-    [59542] = true,
-    [416250] = true,
-    [58984] = true,
-    [59752] = true,
-    [265221] = true,
-    [20589] = true,
-    [69041] = true,
-    [68992] = true,
-    [69070] = true,
-    [107079] = true,
-    [274738] = true,
-    [255647] = true,
-    [256948] = true,
-    [287712] = true,
-    [291944] = true,
-    [312411] = true,
-    [312924] = true,
-    [357214] = true,
-    [368970] = true,
-    [436344] = true,
-    [1287685] = true,
-}
+local CDM_ALL_RACIAL_SPELL_IDS = IdSet([[
+    7744 20549 20572 33697 33702 202719 50613 25046 69179 80483 155145 129597 232633 28730 20594
+    26297 28880 59543 59545 121093 59544 370626 59547 59548 59542 416250 58984 59752 265221 20589
+    69041 68992 69070 107079 274738 255647 256948 287712 291944 312411 312924 357214 368970 436344
+    1287685
+]])
 
 CUI.RegisterMigration({
     id = "cdm_ghost_cd_bar_cleanup_v3",
