@@ -1,5 +1,6 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
-if CludesUI.IS_FOREVER then return end -- no premade group list on WoW Forever: no hooks, no API (the option rows are not built there)
+local CUI = CludesUI
+if CUI.IS_FOREVER then return end -- no premade group list on WoW Forever: no hooks, no API (the option rows are not built there)
 -------------------------------------------------------------------------------
 --  CludesUI_SignupHelpers.lua
 --  Premade group sign-up helpers. Quality of Life's and Group Finder's option
@@ -107,7 +108,7 @@ end
 
 -- Installs the hooks on first enable and matches the role-check event to the
 -- setting.
-CludesUI._applyQuickSignup = function()
+CUI._applyQuickSignup = function()
     if not ready then return end
     local enabled = CludesUIDB and CludesUIDB.quickSignup
     if enabled then InstallQuickSignupHooks() end
@@ -150,7 +151,7 @@ local function NoteEnabled() return CludesUIDB and CludesUIDB.persistSignupNote 
 
 local function CloseCopyField(focusTarget)
     if not copyHelper then return end
-    copyHelper.buttonText:SetText(CludesUI.L("Copy"))
+    copyHelper.buttonText:SetText(CUI.L("Copy"))
     if copyHelper.copyBox:IsShown() then
         hidingCopyField = true
         copyHelper.copyBox:Hide()
@@ -171,9 +172,9 @@ local function RefreshCopyHelper(dialog)
     end
 
     if not copyHelper then
-        local ACC = CludesUI.CLUDES_GREEN
-        local FONT = CludesUI.GetFontPath("main") or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-        local Pix = CludesUI.PP
+        local ACC = CUI.CLUDES_GREEN
+        local FONT = CUI.GetFontPath("main") or CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+        local Pix = CUI.PP
 
         local helper = CreateFrame("Frame", nil, dialog)
         helper:SetAllPoints(dialog)
@@ -187,12 +188,12 @@ local function RefreshCopyHelper(dialog)
         local buttonBg = btnFrame:CreateTexture(nil, "BACKGROUND")
         buttonBg:SetAllPoints()
         buttonBg:SetColorTexture(0.020, 0.025, 0.031, 0.92)
-        local buttonBorder = CludesUI.MakeBorder(btnFrame, ACC.r, ACC.g, ACC.b, 0.72, Pix)
+        local buttonBorder = CUI.MakeBorder(btnFrame, ACC.r, ACC.g, ACC.b, 0.72, Pix)
 
         local buttonText = btnFrame:CreateFontString(nil, "OVERLAY")
         buttonText:SetFont(FONT, 9, "")
         buttonText:SetPoint("CENTER", 0, 0)
-        buttonText:SetText(CludesUI.L("Copy"))
+        buttonText:SetText(CUI.L("Copy"))
         buttonText:SetTextColor(ACC.r, ACC.g, ACC.b, 0.92)
 
         local copyBox = CreateFrame("EditBox", nil, helper)
@@ -208,7 +209,7 @@ local function RefreshCopyHelper(dialog)
         local copyBg = copyBox:CreateTexture(nil, "BACKGROUND")
         copyBg:SetAllPoints()
         copyBg:SetColorTexture(0.020, 0.025, 0.031, 1)
-        CludesUI.MakeBorder(copyBox, ACC.r, ACC.g, ACC.b, 0.9, Pix)
+        CUI.MakeBorder(copyBox, ACC.r, ACC.g, ACC.b, 0.9, Pix)
         copyBox:Hide()
 
         copyBox:SetScript("OnEditFocusLost", function()
@@ -279,7 +280,7 @@ local function PatchedShow(self, resultID)
     StaticPopupSpecial_Show(self)
 end
 
-CludesUI.GetPersistentSignupNote = function() return SavedNote() end
+CUI.GetPersistentSignupNote = function() return SavedNote() end
 
 local function SyncPatch()
     if not ready then return end
@@ -303,13 +304,13 @@ local function SyncPatch()
     end
 end
 
-CludesUI.SetPersistentSignupNote = function(note)
+CUI.SetPersistentSignupNote = function(note)
     if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.signupNote = LimitNote(note)
     SyncPatch()
 end
 
-CludesUI._applyPersistSignupNote = SyncPatch
+CUI._applyPersistSignupNote = SyncPatch
 
 -------------------------------------------------------------------------------
 --  Login: apply the saved settings
@@ -320,10 +321,10 @@ boot:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
     -- Only while a module with the option rows is loaded; with neither, the
     -- API stays inert and nothing is hooked.
-    local hosts = CludesUI._ModuleNS
+    local hosts = CUI._ModuleNS
     if not (hosts.CludesUIQoL or hosts.CludesUIGroupFinder) then return end
     vanilla = LFGListApplicationDialog_Show
     ready = true
-    CludesUI._applyQuickSignup()
+    CUI._applyQuickSignup()
     SyncPatch()
 end)

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_FriendsKit.lua
 --  The friends list pieces two modules share, so neither keeps a copy: the
@@ -13,7 +14,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  runs, registers or builds until a host starts it.
 -------------------------------------------------------------------------------
 local Kit = {}
-CludesUI.FriendsKit = Kit
+CUI.FriendsKit = Kit
 
 local MEDIA = "Interface\\AddOns\\CludesUI\\media\\friends\\"
 
@@ -725,12 +726,12 @@ local function GetRegionIcon(miniRegion)
 end
 
 -- Public API
-CludesUI.GetRealmMiniRegion = GetRealmMiniRegion
-CludesUI.GetFriendMiniRegion = GetFriendMiniRegion
-CludesUI.GetFullRegion = GetFullRegion
-CludesUI.GetMyFullRegion = GetMyFullRegion
-CludesUI.GetRegionIcon = GetRegionIcon
-CludesUI.MINI_TO_FULL = MINI_TO_FULL
+CUI.GetRealmMiniRegion = GetRealmMiniRegion
+CUI.GetFriendMiniRegion = GetFriendMiniRegion
+CUI.GetFullRegion = GetFullRegion
+CUI.GetMyFullRegion = GetMyFullRegion
+CUI.GetRegionIcon = GetRegionIcon
+CUI.MINI_TO_FULL = MINI_TO_FULL
 
 -------------------------------------------------------------------------------
 --  Class colour escape per class file (lazy-built cache)
@@ -741,7 +742,7 @@ function Kit.ClassColorCode(class)
     if regionCode then return regionCode end
     local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
     if not cc then return nil end
-    regionCode = CludesUI.HexColor(cc.r, cc.g, cc.b)
+    regionCode = CUI.HexColor(cc.r, cc.g, cc.b)
     classColorCodes[class] = regionCode
     return regionCode
 end
@@ -796,7 +797,7 @@ Kit.ICON_STYLE_ORDER = {
 --  repaints through Kit.RedecorateTiles.
 -------------------------------------------------------------------------------
 -- External weak-keyed state. Never write custom keys onto a Blizzard frame.
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -------------------------------------------------------------------------------
 --  Tuning
@@ -881,7 +882,7 @@ local CLASS_ICON_SPRITE_TEX = {}
 for _, styleName in ipairs({ "modern", "dark", "light", "clean" }) do
     CLASS_ICON_SPRITE_TEX[styleName] = CLASS_ICON_SPRITE_BASE .. styleName .. ".tga"
 end
-local CLASS_SPRITE_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
+local CLASS_SPRITE_COORDS = CUI.CLASS_ICON_SPRITE_COORDS
 
 -- The class icon sprite sheet of a Class Icon Theme style (the tiles and the
 -- Friends module's legacy rows)
@@ -942,7 +943,7 @@ local function Enabled()
     return f ~= nil and f.enabled ~= false
 end
 
-local function FontPath() return (CludesUI.GetFontPath(host.fontKey)) or STANDARD_TEXT_FONT end
+local function FontPath() return (CUI.GetFontPath(host.fontKey)) or STANDARD_TEXT_FONT end
 
 local function GetClassFile(account)
     local gameInfo = account and account.gameAccountInfo
@@ -951,7 +952,7 @@ local function GetClassFile(account)
         local _, class = GetClassInfo(gameInfo.classID)
         if class then return class end
     end
-    if gameInfo.className then return CludesUI.ClassTokenFromLocalized(gameInfo.className) end
+    if gameInfo.className then return CUI.ClassTokenFromLocalized(gameInfo.className) end
     return nil
 end
 
@@ -1043,7 +1044,7 @@ local function SkinStructure(cardFrame)
     -- The three lines show friends' names and notes: font families (a family
     -- draws the scripts the chosen font lacks), never a plain SetFont.
     cardData.name = cardFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(cardData.name, FontPath(), TILE_NAME_SIZE, "", true)
+    CUI.SetFontFamily(cardData.name, FontPath(), TILE_NAME_SIZE, "", true)
     cardData.name:SetJustifyH("LEFT")
     cardData.name:SetWordWrap(false)
     -- Horizontal inset is re-resolved per paint in PaintCard (it follows the
@@ -1052,13 +1053,13 @@ local function SkinStructure(cardFrame)
 
     -- Character name + level, its own line under the Battle.net name.
     cardData.charLine = cardFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(cardData.charLine, FontPath(), TILE_CHAR_SIZE, "", true)
+    CUI.SetFontFamily(cardData.charLine, FontPath(), TILE_CHAR_SIZE, "", true)
     cardData.charLine:SetJustifyH("LEFT")
     cardData.charLine:SetWordWrap(false)
     cardData.charLine:SetPoint("TOPLEFT", cardData.name, "BOTTOMLEFT", 0, TILE_LINE_GAP)
 
     cardData.info = cardFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(cardData.info, FontPath(), TILE_INFO_SIZE, "", true)
+    CUI.SetFontFamily(cardData.info, FontPath(), TILE_INFO_SIZE, "", true)
     cardData.info:SetJustifyH("LEFT")
     cardData.info:SetWordWrap(false)
     -- Anchored per paint: it follows charLine when there is one, otherwise the
@@ -1144,7 +1145,7 @@ local function BuildCharLine(account)
         if SOCIAL_UI_RECENT_ALLIES_CARD_LEVEL_DISPLAY_FORMAT then
             levelString = format(SOCIAL_UI_RECENT_ALLIES_CARD_LEVEL_DISPLAY_FORMAT, lvl)
         else
-            levelString = CludesUI.Lf("(Level %d)", lvl)
+            levelString = CUI.Lf("(Level %d)", lvl)
         end
         local color = LocationColor(account)
         if color and color.WrapTextInColorCode then levelString = color:WrapTextInColorCode(levelString) end
@@ -1162,10 +1163,10 @@ local WOW_PROJECT_FOREVER = 18
 -- realmName suffix ("CAMWOWUS2Realm10RPPvP") -> ruleset, for a richPresence
 -- that names none: our own names, worded as the rich presence words them.
 local function RealmRuleset(suffix)
-    if suffix == "PvE" then return CludesUI.L("Normal") end
-    if suffix == "PvP" then return CludesUI.L("PvP") end
-    if suffix == "RP" then return CludesUI.L("Roleplay") end
-    if suffix == "RPPvP" then return CludesUI.L("Roleplay PvP") end
+    if suffix == "PvE" then return CUI.L("Normal") end
+    if suffix == "PvP" then return CUI.L("PvP") end
+    if suffix == "RP" then return CUI.L("Roleplay") end
+    if suffix == "RPPvP" then return CUI.L("Roleplay PvP") end
 end
 local function ForeverRuleset(account)
     local gameInfo = account and account.gameAccountInfo
@@ -1210,12 +1211,12 @@ local function BuildInfo(account)
         end
     end
     -- Legacy ||<tag>:Group|| tags are stripped from any note we display.
-    local note = CludesUI.StripFriendNoteTag(account.note)
+    local note = CUI.StripFriendNoteTag(account.note)
     if note then
         if textValue ~= "" then
             textValue = textValue .. "  |cff888888|  " .. note .. "|r"
         else
-            textValue = CludesUI.COLOR_CODES.DIM .. note .. "|r"
+            textValue = CUI.COLOR_CODES.DIM .. note .. "|r"
         end
     end
     return textValue
@@ -1390,8 +1391,8 @@ end
 -- d, the frame's FFD entry): shown while show is true and the friend plays in
 -- another region than ours, left of anchor (the frame's invite button) when
 -- there is one. The tooltip names the region.
-local function RegionOnEnter(self) CludesUI.ShowWidgetTooltip(self, self._regionLabel or "") end
-local function RegionOnLeave() CludesUI.HideWidgetTooltip() end
+local function RegionOnEnter(self) CUI.ShowWidgetTooltip(self, self._regionLabel or "") end
+local function RegionOnLeave() CUI.HideWidgetTooltip() end
 function Kit.UpdateRegionButton(widget, cardData, gameAccount, anchor, show)
     -- Same-region friends never carry a mark.
     local miniIcon = show
@@ -1719,7 +1720,7 @@ local function DecorateStockRow(btnFrame, restore)
     else
         details = C_FriendList.GetFriendInfoByIndex(btnFrame.id)
         if details and details.connected and details.className then
-            class = CludesUI.ClassTokenFromLocalized(details.className)
+            class = CUI.ClassTokenFromLocalized(details.className)
         end
     end
 

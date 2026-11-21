@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Session.lua
 --
@@ -111,7 +112,7 @@ local function SampleAttribution()
     local count = f
     while count do
         if count._captureCfg then regionFrame = count end
-        if count._cuiOptionsPopup or count == CludesUI._colorPickerPopup then dialog = true end
+        if count._cuiOptionsPopup or count == CUI._colorPickerPopup then dialog = true end
         if count == _G.CludesUIFrame then inPanel = true end
         count = count:GetParent()
     end
@@ -129,7 +130,7 @@ end
 -- the page's tab label, section; nil while the module is not registered. The list
 -- rebuilds it live (BuildListRow); capture stores it for when the module is missing.
 local function BuildEntryCrumb(moduleName, element, page, section)
-    local modTitle = moduleName and CludesUI:GetModuleTitle(moduleName)
+    local modTitle = moduleName and CUI:GetModuleTitle(moduleName)
     if not modTitle then return nil end
     local parts = { L(modTitle) }
     if element then parts[#parts + 1] = L(element) end
@@ -203,7 +204,7 @@ end
 -- proof: a key the slot's getters read). Values are untouched. Same attribution,
 -- context and burst guards as AutoCapture below.
 local function RelabelOwnedSlot(ownedSet)
-    if CludesUI._prebuilding then return end
+    if CUI._prebuilding then return end
     local snapshot = _lastAttr.snap
     if not (snapshot and snapshot.cfg and (GetTime() - _lastAttr.time) < 3) then return end
     local section = snapshot.section
@@ -213,8 +214,8 @@ local function RelabelOwnedSlot(ownedSet)
     if not sStore then return end
     local conf = snapshot.cfg
     local slotLabel = tostring(conf.text or "?")
-    local moduleName = CludesUI:GetActiveModule()
-    local page = CludesUI:GetActivePage()
+    local moduleName = CUI:GetActiveModule()
+    local page = CUI:GetActivePage()
     local element = CurrentContext()
     for _, entry in ipairs(sStore) do
         if
@@ -237,7 +238,7 @@ end
 local function AutoCapture(changes, ownedSet)
     -- Hidden search prebuild: selector setters and lazy page seeding write
     -- db.profile from a pass the user never sees -- never capture them.
-    if CludesUI._prebuilding then return end
+    if CUI._prebuilding then return end
     -- Attribution required: without a known slot, absorb silently (background
     -- bookkeeping like drag positions must never become overrides). The 3-second
     -- window bounds this mouse-focus FALLBACK (the notified-write path attributes
@@ -284,10 +285,10 @@ local function AutoCapture(changes, ownedSet)
         if layerOwned then
             local state, textValue
             if layerOwned == "bm" then
-                state = CludesUI.SpecOverrides_BmOverlayState()
+                state = CUI.SpecOverrides_BmOverlayState()
                 textValue = L("Buff Manager changes on this page apply only to this override.")
             else
-                state = CludesUI.SpecOverrides_DmOverlayState()
+                state = CUI.SpecOverrides_DmOverlayState()
                 textValue = L("Debuff Manager changes on this page apply only to this override.")
             end
             -- No overlay = the fork IS live, so the edit landed in it. An overlay
@@ -321,8 +322,8 @@ local function AutoCapture(changes, ownedSet)
 
     local conf = snapshot.cfg
     local slotLabel = tostring(conf.text or "?")
-    local moduleName = CludesUI:GetActiveModule()
-    local page = CludesUI:GetActivePage()
+    local moduleName = CUI:GetActiveModule()
+    local page = CUI:GetActivePage()
     local element = CurrentContext()
 
     -- Session routing: a conditional session banks into the CONDITIONAL store
@@ -480,7 +481,7 @@ do
     --- applied carries the marker into every import that does not also take the overrides.
     --- In both cases nothing owns the key any more and the element would stay pinned on it
     --- with no path back.
-    function CludesUI.SpecOverrides_KeyIsOwned(storage, key)
+    function CUI.SpecOverrides_KeyIsOwned(storage, key)
         if type(storage) ~= "table" or type(key) ~= "string" then return false end
         return StoreHoldsKey(GetStore(), storage, key) or StoreHoldsKey(Cond.GetStore(), storage, key)
     end
@@ -494,7 +495,7 @@ end
 --- TABLE IDENTITY: AutoCapture attributes an entry by slot label, the exit sweep mints
 --- entries from the fkey alone with no slot fields, and only identity matches both
 --- shapes. Returns true when something was cleared.
-function CludesUI.SpecOverrides_ClearStoreKey(stores, key)
+function CUI.SpecOverrides_ClearStoreKey(stores, key)
     if type(stores) ~= "table" or type(key) ~= "string" then return false end
     local condRun = Cond._edit
     if not (_editGroup or condRun) then return false end
@@ -589,11 +590,11 @@ local function WatchTick()
     if not (rootFrame and rootFrame:IsShown()) then return end
     -- Folded to the mini window: nothing on the panel can be edited, so skip the
     -- profile diff; the unfold re-baselines the snapshot (RegisterOnCollapse below).
-    if CludesUI._panelCollapsed then return end
+    if CUI._panelCollapsed then return end
     -- Hidden search prebuild mid-session: its selector setters and lazy page
     -- seeding write db.profile; absorb the whole tick (resync) so those writes
     -- can never diff into captures.
-    if CludesUI._prebuilding then
+    if CUI._prebuilding then
         _watchSnap = SnapshotProfiles()
         return
     end
@@ -637,7 +638,7 @@ end
 -- Unfolding from the mini window: absorb whatever changed the profiles while the
 -- panel was folded (WatchTick skipped them), so the first widget edit after it
 -- (ProcessNotifiedWrites diffs against the same snapshot) captures only itself.
-CludesUI:RegisterOnCollapse(function(enabled)
+CUI:RegisterOnCollapse(function(enabled)
     if not enabled and (_editGroup or Cond._edit) and _watchSnap then _watchSnap = SnapshotProfiles() end
 end)
 
@@ -651,10 +652,10 @@ local function OnPageRebuilt()
     if ApplyEditOverlay then ApplyEditOverlay() end -- chrome-page suppression
     if EnsurePanelHideHook then EnsurePanelHideHook() end
     -- The toolbar button disables on excluded pages; re-evaluate per page.
-    if CludesUI._specOvBtnPageState then CludesUI._specOvBtnPageState() end
+    if CUI._specOvBtnPageState then CUI._specOvBtnPageState() end
     -- BM passive chrome follows page navigation: shows on the Buff Manager page
     -- with a live fork, clears when leaving it.
-    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then CludesUI.SpecOverrides_UpdateBmPassiveChrome() end
+    if CUI.SpecOverrides_UpdateBmPassiveChrome then CUI.SpecOverrides_UpdateBmPassiveChrome() end
     if not _editGroup and not _defaultView then
         C_Timer.After(0, function()
             -- _unlockRoundtrip: the post-unlock page restore rebuilds pages before the
@@ -691,7 +692,7 @@ local function ProcessNotifiedWrites()
     _lastAttr.busy = false
     if not (_editGroup or Cond._edit) or not _watchSnap then return end
     -- Prebuild writes are never user edits: absorb via resync (see WatchTick).
-    if CludesUI._prebuilding then
+    if CUI._prebuilding then
         _watchSnap = SnapshotProfiles()
         return
     end
@@ -767,7 +768,7 @@ local function MaybeWarnDefaultEdit(widget, snapshot)
         return
     end
     -- Hidden search prebuild: selector setters run on pages the user never sees.
-    if CludesUI._prebuilding then return end
+    if CUI._prebuilding then return end
     if _warnWatch and _warnWatch._pending then return end
     -- Only a slot the last gold walk marked as overridden qualifies (from the
     -- notifier's snapshot when it took one, else the frame as it stands now).
@@ -822,7 +823,7 @@ end
 --- opens and hands it to _NotifySettingWrite with each later write: it names
 --- that slot even after a rebuild dressed the widget again for another one).
 --- Returns detached (marked as a snapshot), or nil when no slot holds frame.
-function CludesUI._SOAttribution(widget, detached)
+function CUI._SOAttribution(widget, detached)
     if type(widget) ~= "table" then return nil end
     local into = detached
     if into == nil then
@@ -854,10 +855,10 @@ end
 --- Called by the widget factory whenever any options widget writes a value.
 --- snap: the slot snapshot the factory took before the setter ran (optional;
 --- a detached one stands alone, with no frame).
-function CludesUI._NotifySettingWrite(widget, snapshot)
+function CUI._NotifySettingWrite(widget, snapshot)
     -- The written slot's inline cog takes notice (the cog notice in
     -- CludesUI_Widgets_RowAddons.lua, defined once the options load).
-    local cogNotice = CludesUI._CogWriteNotice
+    local cogNotice = CUI._CogWriteNotice
     if cogNotice then cogNotice(widget) end
     -- Conditional sessions capture through this path too. Without them in the gate they
     -- fall back to watcher/exit-sweep capture only, losing edits whenever a setter's
@@ -909,7 +910,7 @@ SweepUncaptured = function(set)
             if type(original) == "table" then original = nil end
             local record = {
                 label = PrettyKey(change.fkey),
-                crumb = (CludesUI:GetModuleTitle(change.folder)) or change.folder,
+                crumb = (CUI:GetModuleTitle(change.folder)) or change.folder,
                 module = change.folder,
                 group = set.id,
                 values = { default = { [change.fkey] = (original == nil) and NIL_SENT or original } },
@@ -939,7 +940,7 @@ EnsurePanelHideHook = function()
         -- normally below (values bank safely; only the SELECTION is remembered). A
         -- hide with no session leaves any pending stash untouched -- the panel can
         -- flash shown/hidden while unlock force-closes.
-        if CludesUI._unlockReturnModule ~= nil then
+        if CUI._unlockReturnModule ~= nil then
             if _editGroup then
                 _unlockRoundtrip = { kind = "spec", id = _editGroup.id }
             elseif Cond._edit then
@@ -949,13 +950,13 @@ EnsurePanelHideHook = function()
         if ExitGroupEdit then ExitGroupEdit() end
         if Cond.ExitEdit then Cond.ExitEdit() end
         if ExitDefaultView then ExitDefaultView() end
-        if CludesUI._specOvCardsPopup then CludesUI._specOvCardsPopup:Hide() end
+        if CUI._specOvCardsPopup then CUI._specOvCardsPopup:Hide() end
         if Cond._cardsPopup then Cond._cardsPopup:Hide() end
         -- Name/icon popups parent to UIParent and would survive the panel closing; their
         -- Create/Save buttons enter an edit session, and a session entered with the
         -- panel HIDDEN snapshots before the deferred page rebuild's lazy seeding, so the
         -- exit sweep adopts those seeds as phantom captures. Close them with the panel.
-        if CludesUI._specOvNamePopup then CludesUI._specOvNamePopup:Hide() end
+        if CUI._specOvNamePopup then CUI._specOvNamePopup:Hide() end
         if Cond._namePopup then Cond._namePopup:Hide() end
         -- The condition picker leads into the name popup and holds a key
         -- capture that must not stay up into combat: it closes too.
@@ -980,7 +981,7 @@ EnsurePanelHideHook = function()
                         end
                     end
                 elseif rt.kind == "cond" and Cond.EnterEdit then
-                    local cgroups = CludesUI.Conditions_GetGroups and CludesUI.Conditions_GetGroups()
+                    local cgroups = CUI.Conditions_GetGroups and CUI.Conditions_GetGroups()
                     for _, group in ipairs(cgroups or {}) do
                         if group.id == rt.id then
                             Cond.EnterEdit(group)
@@ -998,7 +999,7 @@ end
 local function EnsureEditBanner()
     if banner then return banner end
     -- The panel body, so the banner hides with the window when it collapses.
-    local rootFrame = CludesUI._panelBody or UIParent
+    local rootFrame = CUI._panelBody or UIParent
     banner = CreateFrame("Frame", nil, rootFrame)
     banner:SetSize(680, 44)
     -- Sits ON TOP of the visible panel: banner bottom flush with the window's
@@ -1011,22 +1012,22 @@ local function EnsureEditBanner()
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.05, 0.05, 0.06, 0.92)
     -- Rounded gold outline, as the Unlock Mode override banner.
-    CludesUI.MakeRoundedBorder(banner, EDIT_R, EDIT_G, EDIT_B, 0.7, backdrop)
+    CUI.MakeRoundedBorder(banner, EDIT_R, EDIT_G, EDIT_B, 0.7, backdrop)
     editBannerText = banner:CreateFontString(nil, "OVERLAY")
-    editBannerText:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
+    editBannerText:SetFont(CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 13, "")
     editBannerText:SetPoint("TOPLEFT", banner, "TOPLEFT", 16, -8)
     editBannerText:SetTextColor(EDIT_R, EDIT_G, EDIT_B, 1)
     bannerStatus = banner:CreateFontString(nil, "OVERLAY")
-    bannerStatus:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
+    bannerStatus:SetFont(CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
     bannerStatus:SetPoint("BOTTOMLEFT", banner, "BOTTOMLEFT", 16, 7)
     bannerStatus:SetTextColor(1, 1, 1, 0.6)
     local finished = CreateFrame("Button", nil, banner)
     finished:SetSize(74, 24)
     finished:SetPoint("RIGHT", banner, "RIGHT", -12, 0)
-    local dbg = CludesUI.SolidTex(finished, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+    local dbg = CUI.SolidTex(finished, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
     dbg:SetAllPoints()
-    local dbrd = CludesUI.MakeRoundedBorder(finished, 1, 1, 1, 0.22, dbg)
-    local dlbl = CludesUI.MakeFont(finished, 11, nil, 1, 1, 1, 0.9)
+    local dbrd = CUI.MakeRoundedBorder(finished, 1, 1, 1, 0.22, dbg)
+    local dlbl = CUI.MakeFont(finished, 11, nil, 1, 1, 1, 0.9)
     dlbl:SetPoint("CENTER")
     dlbl:SetText(L("Done"))
     finished:SetScript("OnEnter", function()
@@ -1057,7 +1058,7 @@ ShowEditBanner = function(set)
     SetEditStatus(L("Any setting you change now applies only to this group's specs."), 1, 1, 0.6)
     banner:Show()
     -- Lock excluded modules on the sidebar for the session's duration.
-    if CludesUI.RefreshSidebarOverrideLocks then CludesUI.RefreshSidebarOverrideLocks() end
+    if CUI.RefreshSidebarOverrideLocks then CUI.RefreshSidebarOverrideLocks() end
 end
 
 HideEditBanner = function()
@@ -1085,7 +1086,7 @@ local function ShowEditOverlay(isShown)
     if isShown and not editOverlay then
         local rootFrame = _G.CludesUIFrame
         if not rootFrame then return end
-        editOverlay = CreateFrame("Frame", nil, CludesUI._panelBody)
+        editOverlay = CreateFrame("Frame", nil, CUI._panelBody)
         editOverlay:SetAllPoints(rootFrame)
         editOverlay:SetFrameLevel(rootFrame:GetFrameLevel() + 1)
         editOverlay:EnableMouse(false)
@@ -1111,7 +1112,7 @@ TeardownEditSession = function()
     UpdateEditLocks() -- release threshold/hands-off locks
     RequestGoldWalk() -- clear conflict-red marks back to gold
     -- Unlock the sidebar (session over for either system).
-    if CludesUI.RefreshSidebarOverrideLocks then CludesUI.RefreshSidebarOverrideLocks() end
+    if CUI.RefreshSidebarOverrideLocks then CUI.RefreshSidebarOverrideLocks() end
 end
 SetTeardownEditSession(TeardownEditSession)
 
@@ -1121,18 +1122,18 @@ SetTeardownEditSession(TeardownEditSession)
 -- this only fills the no-session case and cleans up after itself.
 local _bmPassiveChrome = false
 
-function CludesUI.SpecOverrides_UpdateBmPassiveChrome()
+function CUI.SpecOverrides_UpdateBmPassiveChrome()
     if _editGroup or Cond._edit then return end -- real session owns chrome
-    local kindName = CludesUI.SpecOverrides_BmPageLockInfo() or nil
+    local kindName = CUI.SpecOverrides_BmPageLockInfo() or nil
     local status = L("Buff Manager changes on this page apply only to this override.")
-    local nameFn = CludesUI.SpecOverrides_BmActiveInfo
+    local nameFn = CUI.SpecOverrides_BmActiveInfo
     if not kindName then
         -- Same chrome serves the Debuff Manager page (one page is active at a
         -- time, so the two locks can never both report).
-        kindName = CludesUI.SpecOverrides_DmPageLockInfo() or nil
+        kindName = CUI.SpecOverrides_DmPageLockInfo() or nil
         if kindName then
             status = L("Debuff Manager changes on this page apply only to this override.")
-            nameFn = CludesUI.SpecOverrides_DmActiveInfo
+            nameFn = CUI.SpecOverrides_DmActiveInfo
         end
     end
     if kindName then
@@ -1152,7 +1153,7 @@ function CludesUI.SpecOverrides_UpdateBmPassiveChrome()
     end
     -- The toolbar glyph's lock state tracks the same signal (fork created or
     -- deleted mid-page never goes through a page selection).
-    if CludesUI._specOvBtnPageState then CludesUI._specOvBtnPageState() end
+    if CUI._specOvBtnPageState then CUI._specOvBtnPageState() end
 end
 
 -------------------------------------------------------------------------------
@@ -1173,13 +1174,13 @@ EnterDefaultView = function()
     local storage = GetStore()
     if not storage or #storage == 0 then return end
     -- Bank the real spec's live edits first, then swap the defaults in.
-    CludesUI.SpecOverrides_HarvestCurrent()
+    CUI.SpecOverrides_HarvestCurrent()
     SetDefaultView(true)
     local changedSet = WriteDefaultValues()
     if changedSet then RunRefreshers(changedSet) end
     -- FORCED rebuild: default values may drive different page structure than
     -- the spec values they replaced.
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
     UpdateIndicator()
 end
 SetEnterDefaultView(EnterDefaultView)
@@ -1214,13 +1215,13 @@ end
 --- load-bearing: EnterDefaultView harvests through HarvestCurrent, which resolves
 --- the applied gid, so re-entering first would bank the INCOMING conditional's
 --- live values into the OUTGOING group's maps.
-function CludesUI.SpecOverrides_SuspendDefaultView()
+function CUI.SpecOverrides_SuspendDefaultView()
     if not _defaultView then return false end
     ExitDefaultView()
     return true
 end
 
-function CludesUI.SpecOverrides_ResumeDefaultView()
+function CUI.SpecOverrides_ResumeDefaultView()
     if PanelShown() then EnterDefaultView() end
 end
 
@@ -1244,17 +1245,17 @@ ExitGroupEdit = function(noRecheck)
     -- FORCED rebuild: restored values can change page STRUCTURE (sections
     -- shown/hidden by a visibility dropdown); the fast refresh only re-reads
     -- widget values and would leave stale structure on screen.
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
     RequestGoldWalk()
     -- Back to Default Editing Mode: the open panel returns to the baseline.
     if PanelShown() then EnterDefaultView() end
     -- A condition flip raised mid-session was deferred (the handler bails while
     -- a session holds swapped values live); resolve it now, like ExitEdit.
-    if not noRecheck and CludesUI.Conditions_Recheck then CludesUI.Conditions_Recheck() end
+    if not noRecheck and CUI.Conditions_Recheck then CUI.Conditions_Recheck() end
     -- WoW Forever: a group created or deleted while this session was open can
     -- move the spec the class acts as; the user finishing applies it (never a
     -- preamble exit).
-    if CludesUI.IS_FOREVER and not noRecheck then CludesUI._SO_ForeverConverge() end
+    if CUI.IS_FOREVER and not noRecheck then CUI._SO_ForeverConverge() end
 end
 SetExitGroupEdit(ExitGroupEdit)
 
@@ -1264,12 +1265,12 @@ SetExitGroupEdit(ExitGroupEdit)
 --- (Conditions_MarkStale + Recheck) must never find a live session -- the
 --- transition handler refuses under one, stranding the incoming profile
 --- un-overlaid until the next zone change.
-function CludesUI.SpecOverrides_CloseEditSessions()
+function CUI.SpecOverrides_CloseEditSessions()
     -- Unlock-open window: remember the active session so the post-unlock reopen
     -- restores it. Same stash the panel-hide hook takes, but OpenUnlockMode closes
     -- sessions BEFORE the panel hides (the value snapshot must be taken over
     -- canonical live data), so the hook finds no session and would lose the roundtrip.
-    if CludesUI._unlockReturnModule ~= nil then
+    if CUI._unlockReturnModule ~= nil then
         if _editGroup then
             _unlockRoundtrip = { kind = "spec", id = _editGroup.id }
         elseif Cond._edit then
@@ -1299,15 +1300,15 @@ EnterGroupEdit = function(set, force)
     do
         local lockType, lockGroup
         local lockLabel = "Buff Manager"
-        if CludesUI.SpecOverrides_BmPageLockInfo then
-            lockType, lockGroup = CludesUI.SpecOverrides_BmPageLockInfo()
+        if CUI.SpecOverrides_BmPageLockInfo then
+            lockType, lockGroup = CUI.SpecOverrides_BmPageLockInfo()
         end
-        if not lockType and CludesUI.SpecOverrides_DmPageLockInfo then
-            lockType, lockGroup = CludesUI.SpecOverrides_DmPageLockInfo()
+        if not lockType and CUI.SpecOverrides_DmPageLockInfo then
+            lockType, lockGroup = CUI.SpecOverrides_DmPageLockInfo()
             if lockType then lockLabel = "Debuff Manager" end
         end
         if lockType and not force and not (lockType == "spec" and lockGroup == set.id) then
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = string.format(L("%s Override Active"), L(lockLabel)),
                 message = string.format(
                     L(
@@ -1329,13 +1330,13 @@ EnterGroupEdit = function(set, force)
     -- Leave the Default view (banks default edits, restores spec values), then
     -- bank the real spec's live edits and swap the group in.
     ExitDefaultView()
-    CludesUI.SpecOverrides_HarvestCurrent()
+    CUI.SpecOverrides_HarvestCurrent()
     SetEditGroup(set)
     local changedSet = WriteGroupValues(set)
     if changedSet then RunRefreshers(changedSet) end
     -- FORCED rebuild (structure may differ under the group's values); runs
     -- before the snapshot so lazy page seeding is absorbed.
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
     _watchSnap = SnapshotProfiles()
     SetEnterSnap(_watchSnap) -- session baseline for the exit sweep
     _sessionIgnored = {}
@@ -1420,7 +1421,7 @@ function Cond.SweepUncapturedEdit(group)
             if type(original) == "table" then original = nil end
             local record = {
                 label = PrettyKey(change.fkey),
-                crumb = (CludesUI:GetModuleTitle(change.folder)) or change.folder,
+                crumb = (CUI:GetModuleTitle(change.folder)) or change.folder,
                 module = change.folder,
                 group = group.id,
                 values = { default = { [change.fkey] = (original == nil) and NIL_SENT or original } },
@@ -1443,8 +1444,8 @@ Cond.ExitEdit = function(noRestore, noRecheck)
     -- Release the Buff Manager session swap FIRST: banks the session's BM edits
     -- into the group's fork while live still holds them, then puts the runtime
     -- layer back (skipped on noRestore: the transition's ApplyBm does it).
-    CludesUI.SpecOverrides_BmSessionRelease(noRestore and true or false)
-    CludesUI.SpecOverrides_DmSessionRelease(noRestore and true or false)
+    CUI.SpecOverrides_BmSessionRelease(noRestore and true or false)
+    CUI.SpecOverrides_DmSessionRelease(noRestore and true or false)
     local group = Cond._edit
     Cond._edit = nil
     Cond.SweepUncapturedEdit(group)
@@ -1454,7 +1455,7 @@ Cond.ExitEdit = function(noRestore, noRecheck)
     if not noRestore then
         -- Canonical live = spec values + the APPLIED conditional's overlay.
         local t2 =
-            Cond.WriteValues(CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil)
+            Cond.WriteValues(CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil)
         if t2 then
             changedSet = changedSet or {}
             for key in pairs(t2) do
@@ -1463,24 +1464,24 @@ Cond.ExitEdit = function(noRestore, noRecheck)
         end
         if changedSet then RunRefreshers(changedSet) end
         -- FORCED rebuild: see ExitGroupEdit (stale structure otherwise).
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
         RequestGoldWalk()
         if PanelShown() then EnterDefaultView() end
         -- A mid-session condition flip was deferred (the transition handler
         -- bails during edit sessions); resolve it now.
-        if not noRecheck and CludesUI.Conditions_Recheck then CludesUI.Conditions_Recheck() end
+        if not noRecheck and CUI.Conditions_Recheck then CUI.Conditions_Recheck() end
         -- WoW Forever: a group created or deleted while this session was open
         -- can move the spec the class acts as; the user finishing applies it.
         -- Only with the panel shown: the panel-hide hook also ends this session
         -- when a Customize Unlock Mode click hides the panel, and unlock mode
         -- opens before an apply's layer flush lands.
-        if CludesUI.IS_FOREVER and not noRecheck and PanelShown() then CludesUI._SO_ForeverConverge() end
+        if CUI.IS_FOREVER and not noRecheck and PanelShown() then CUI._SO_ForeverConverge() end
     else
         -- The transition re-applies only the spec layer, and its conditional
         -- recheck is a no-op while the applied group holds: put the applied
         -- overlay back over the session's values here (spec-owned fkeys skip).
         local t2 =
-            Cond.WriteValues(CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil)
+            Cond.WriteValues(CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil)
         if t2 then RunRefreshers(t2) end
     end
     if Cond.RefreshCards then Cond.RefreshCards() end
@@ -1495,15 +1496,15 @@ Cond.EnterEdit = function(group, force)
     do
         local lockType, lockGroup
         local lockLabel = "Buff Manager"
-        if CludesUI.SpecOverrides_BmPageLockInfo then
-            lockType, lockGroup = CludesUI.SpecOverrides_BmPageLockInfo()
+        if CUI.SpecOverrides_BmPageLockInfo then
+            lockType, lockGroup = CUI.SpecOverrides_BmPageLockInfo()
         end
-        if not lockType and CludesUI.SpecOverrides_DmPageLockInfo then
-            lockType, lockGroup = CludesUI.SpecOverrides_DmPageLockInfo()
+        if not lockType and CUI.SpecOverrides_DmPageLockInfo then
+            lockType, lockGroup = CUI.SpecOverrides_DmPageLockInfo()
             if lockType then lockLabel = "Debuff Manager" end
         end
         if lockType and not force and not (lockType == "cond" and lockGroup == group.id) then
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = string.format(L("%s Override Active"), L(lockLabel)),
                 message = string.format(
                     L(
@@ -1532,7 +1533,7 @@ Cond.EnterEdit = function(group, force)
         -- (no spec restore) -- that IS our baseline.
         ExitDefaultView(false)
     else
-        CludesUI.SpecOverrides_HarvestCurrent()
+        CUI.SpecOverrides_HarvestCurrent()
         changedSet = WriteDefaultValues()
     end
     Cond._edit = group
@@ -1545,7 +1546,7 @@ Cond.EnterEdit = function(group, force)
     end
     if changedSet then RunRefreshers(changedSet) end
     -- FORCED rebuild (structure may differ under the conditional's values).
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
     _watchSnap = SnapshotProfiles()
     SetEnterSnap(_watchSnap)
     _sessionIgnored = {}

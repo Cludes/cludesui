@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Filter.lua
 --  Unlock Mode element filter: which overlays a typed filter keeps. The box
@@ -37,7 +38,7 @@ end
 local function FilterKeeps(words, labelText)
     if not words then return true end
     if HasAllWords(words, labelText) then return true end
-    local isShown = CludesUI.L(labelText)
+    local isShown = CUI.L(labelText)
     return isShown ~= labelText and HasAllWords(words, isShown) or false
 end
 
@@ -94,11 +95,11 @@ CUI_NS.unlockParts.Filter = function(LM)
             end
         end
         -- Ghosts hide themselves in their sync; a refresh brings the kept ones back.
-        if CludesUI._RefreshFallbackGhosts then CludesUI._RefreshFallbackGhosts() end
-        if CludesUI._RefreshOverrideGhosts then CludesUI._RefreshOverrideGhosts() end
+        if CUI._RefreshFallbackGhosts then CUI._RefreshFallbackGhosts() end
+        if CUI._RefreshOverrideGhosts then CUI._RefreshOverrideGhosts() end
         -- Resting alpha: one hidden during the open fade-in missed its ramp (a running fade resets it).
-        if CludesUI._SetFallbackGhostsAlpha then CludesUI._SetFallbackGhostsAlpha(1) end
-        if CludesUI._SetOverrideGhostsAlpha then CludesUI._SetOverrideGhostsAlpha(1) end
+        if CUI._SetFallbackGhostsAlpha then CUI._SetFallbackGhostsAlpha(1) end
+        if CUI._SetOverrideGhostsAlpha then CUI._SetOverrideGhostsAlpha(1) end
     end
 
     -- The toolbar's box: applies the typed text and says whether a filter is set.

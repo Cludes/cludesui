@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_RoundedCorners.lua
 --
@@ -70,7 +71,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  slider's track, fill and thumb) and CludesUI.MakeRoundedBorder
 --  (MakeBorder's API: dropdowns and their lists, value boxes, cog boxes).
 -------------------------------------------------------------------------------
-if not CludesUI then return end
+if not CUI then return end
 
 local MEDIA = "Interface\\AddOns\\CludesUI\\media\\rounded\\"
 local GLOW_EDGE = "Interface\\AddOns\\CludesUI\\media\\borders\\glow-border"
@@ -127,7 +128,7 @@ local EMPTY = {}
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local status = setmetatable({}, { __mode = "k" }) -- owner -> rounding state
 -- border container -> its Solid parts: a container outlives an owner's state
@@ -139,13 +140,13 @@ local byBorder = setmetatable({}, { __mode = "k" }) -- border frame -> state
 local ownTex = setmetatable({}, { __mode = "k" }) -- our pieces, never masked
 local hooked = false
 
-CludesUI.ROUNDED_MAX_RADIUS = MAX_RADIUS
-function CludesUI.RoundedStyleOK(style) return STYLE_OK[style or "solid"] == true end
+CUI.ROUNDED_MAX_RADIUS = MAX_RADIUS
+function CUI.RoundedStyleOK(style) return STYLE_OK[style or "solid"] == true end
 
 -- Options: appends the four corner toggles of a Corner Radius cog to rows.
 -- get / set read and write the round corners bits (nil reads as all).
 local CORNER_LABELS = { "Top Left", "Top Right", "Bottom Left", "Bottom Right" }
-function CludesUI.RoundedCornerRows(rowList, get, set)
+function CUI.RoundedCornerRows(rowList, get, set)
     for idx = 1, 4 do
         local b = CORNERS[idx].bit
         rowList[#rowList + 1] = {
@@ -164,7 +165,7 @@ end
 -- Options: the Join toggle for a bar that can sit right above or below its
 -- partner (a detached power bar, a nameplate cast bar). applies() returns
 -- true while the toggle applies; nil = always.
-function CludesUI.RoundedJoinRow(rowList, labelText, tooltip, get, set, applies, need)
+function CUI.RoundedJoinRow(rowList, labelText, tooltip, get, set, applies, need)
     rowList[#rowList + 1] = {
         type = "toggle",
         label = labelText,
@@ -179,7 +180,7 @@ end
 
 -- Two bars joined one above the other share one outline: the upper bar takes
 -- the top corners, the lower one the bottom corners. Returns upper, lower.
-function CludesUI.RoundedJoinCorners(cornerList)
+function CUI.RoundedJoinCorners(cornerList)
     local m = cornerList or ALL_CORNERS
     return bit.band(m, 3), bit.band(m, 12)
 end
@@ -588,7 +589,7 @@ local function Clear(state)
         state.clip = nil
     end
     state.on = nil
-    CludesUI.RegisterPxReapply(state.owner, nil)
+    CUI.RegisterPxReapply(state.owner, nil)
 end
 
 local function OnBorderColor(borderFrame, red, green, blue, a)
@@ -605,7 +606,7 @@ local function OnBorderColor(borderFrame, red, green, blue, a)
         end
     end
 end
-CludesUI.RoundedBorderColor = OnBorderColor
+CUI.RoundedBorderColor = OnBorderColor
 
 -- The scale-dependent half of a pass: the radius the shape allows, what the
 -- border draws now (Solid strips, a glow backdrop, or nothing) and the body
@@ -625,7 +626,7 @@ local function Fit(state)
     -- its own shown flag says nothing (a nameplate cast bar between casts).
     local container = edgeTex
         and (edgeTex == state.owner or edgeTex:IsShown())
-        and CludesUI.PP.GetBorders(edgeTex)
+        and CUI.PP.GetBorders(edgeTex)
     local edge = container
             and container._top
             and container:IsShown()
@@ -647,7 +648,7 @@ local function Fit(state)
         end
         return cornerRadius, innerTex, container, nil
     end
-    local backdrop = edgeTex and CludesUI._bdBorderData[edgeTex]
+    local backdrop = edgeTex and CUI._bdBorderData[edgeTex]
     local glowFrame = state.glowStyle and backdrop and backdrop:IsShown() and backdrop or nil
     return cornerRadius, innerTex, nil, glowFrame
 end
@@ -688,7 +689,7 @@ local function DropStale(ownerFrame, state)
         end
         local clip = state.clip
         if clip and not (managed and managed(clip)) then clip:SetClipsChildren(true) end
-        CludesUI.RegisterPxReapply(ownerFrame, nil)
+        CUI.RegisterPxReapply(ownerFrame, nil)
     end
     if state.border and byBorder[state.border] == state then byBorder[state.border] = nil end
     status[ownerFrame] = nil
@@ -705,7 +706,7 @@ Refit = function(ownerFrame)
     Paint(state, cornerRadius, innerTex, container, glowFrame)
 end
 
-function CludesUI.RoundCorners(ownerFrame, cornerRadius, options)
+function CUI.RoundCorners(ownerFrame, cornerRadius, options)
     if not ownerFrame then return end
     local state = DropStale(ownerFrame, status[ownerFrame])
     cornerRadius = min(floor(tonumber(cornerRadius) or 0), MAX_RADIUS)
@@ -724,7 +725,7 @@ function CludesUI.RoundCorners(ownerFrame, cornerRadius, options)
     end
     if not hooked then
         hooked = true
-        hooksecurefunc(CludesUI, "SetBorderStyleColor", OnBorderColor)
+        hooksecurefunc(CUI, "SetBorderStyleColor", OnBorderColor)
     end
     state.radius, state.corners = cornerRadius, cornerList
     state.glowStyle = style == "glow" or style == "shadow"
@@ -759,14 +760,14 @@ function CludesUI.RoundCorners(ownerFrame, cornerRadius, options)
     Paint(state, r, innerTex, container, glowFrame)
     if not state.on then
         state.on = true
-        CludesUI.RegisterPxReapply(ownerFrame, Refit)
+        CUI.RegisterPxReapply(ownerFrame, Refit)
     end
 end
 
 -- A RoundCorners pass with only opts.corners changed: the body keeps its
 -- textures, so the mask is reshaped in place (Refit) instead of walked again.
 -- A body texture left without the mask needs the walk's retry: full pass.
-function CludesUI.RoundedSetCorners(ownerFrame, cornerList)
+function CUI.RoundedSetCorners(ownerFrame, cornerList)
     local state = ownerFrame and DropStale(ownerFrame, status[ownerFrame])
     if not (state and state.on) or state.missed then return false end
     cornerList = cornerList and floor(tonumber(cornerList) or ALL_CORNERS) % 16 or ALL_CORNERS
@@ -802,7 +803,7 @@ local PILL = PathTable("pill-%d.tga")
 local CIRCLE = PathTable("circle-%d.tga")
 local ART_MIN, ART_MAX = 2, 48
 
-function CludesUI.SetPillArt(texture, hgt)
+function CUI.SetPillArt(texture, hgt)
     if hgt < ART_MIN then
         hgt = ART_MIN
     elseif hgt > ART_MAX then
@@ -814,7 +815,7 @@ function CludesUI.SetPillArt(texture, hgt)
     texture:SetTextureSliceMode(STRETCHED)
 end
 
-function CludesUI.SetCircleArt(texture, d)
+function CUI.SetCircleArt(texture, d)
     if d < ART_MIN then
         d = ART_MIN
     elseif d > ART_MAX then
@@ -853,7 +854,7 @@ local function FitLayer(Lay)
         layers[drawLayer] = nil
         return
     end
-    local px = CludesUI.PP.perfect
+    local px = CUI.PP.perfect
     if Lay.px ~= px then
         Lay.px = px
         drawLayer:SetScale(px)
@@ -885,7 +886,7 @@ local function FitNewLayers()
     end
 end
 
-function CludesUI.MakePixelLayer(hostFrame, fit)
+function CUI.MakePixelLayer(hostFrame, fit)
     local drawLayer = POOL.CreateFrame("Frame", nil, hostFrame)
     drawLayer:SetIgnoreParentScale(true)
     drawLayer:SetAllPoints(hostFrame)
@@ -909,8 +910,8 @@ local function RefitLayers()
         if drawLayer:IsVisible() then FitLayer(Lay) end
     end
 end
-if not CludesUI._onScaleChanged then CludesUI._onScaleChanged = {} end
-CludesUI._onScaleChanged[#CludesUI._onScaleChanged + 1] = RefitLayers
+if not CUI._onScaleChanged then CUI._onScaleChanged = {} end
+CUI._onScaleChanged[#CUI._onScaleChanged + 1] = RefitLayers
 
 -- CludesUI.MakeRoundedBorder(parent, r, g, b, a, body, radius, clip, width) is the
 -- rounded form of CludesUI.MakeBorder for the settings controls, with the
@@ -1150,8 +1151,8 @@ local function InnerMask(o)
     return innerMask
 end
 
-function CludesUI.MakeRoundedBorder(hostFrame, red, green, blue, a, body, cornerRadius, clip, width)
-    local o = CludesUI.MakePixelLayer(hostFrame, FitOutline)
+function CUI.MakeRoundedBorder(hostFrame, red, green, blue, a, body, cornerRadius, clip, width)
+    local o = CUI.MakePixelLayer(hostFrame, FitOutline)
     local drawLayer = o._frame
     local fillTex = drawLayer:CreateTexture(nil, "BORDER", nil, 7)
     fillTex:SetAllPoints(drawLayer)
@@ -1186,7 +1187,7 @@ end
 -- 1 x 1 and takes the radius as given). The mask is the parent's, so body
 -- is the parent's texture or a descendant's; it keeps the mask through
 -- SetColorTexture. Returns the mask.
-function CludesUI.RoundBody(hostFrame, body, cornerRadius)
+function CUI.RoundBody(hostFrame, body, cornerRadius)
     local halfSize = HalfSide(body)
     cornerRadius = cornerRadius or HouseRadius(halfSize)
     if halfSize and halfSize > 1 then
@@ -1225,11 +1226,11 @@ end
 
 local function CardClip(o, texture) MaskWhenLoaded(texture, InnerMask(o)) end
 
-function CludesUI.MakeRoundedCard(hostFrame, brdA, bgA, accentH, red, green, blue)
+function CUI.MakeRoundedCard(hostFrame, brdA, bgA, accentH, red, green, blue)
     local backdrop = hostFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(red or CARD_R, green or CARD_G, blue or CARD_B, bgA or 0.5)
-    local o = CludesUI.MakeRoundedBorder(hostFrame, 1, 1, 1, brdA or 0.12, backdrop)
+    local o = CUI.MakeRoundedBorder(hostFrame, 1, 1, 1, brdA or 0.12, backdrop)
     o.bg, o.Clip = backdrop, CardClip
     if accentH then
         -- One unit is one pixel on the layer, as the outline's hole.
@@ -1260,10 +1261,10 @@ end
 --  accent cap along the top and 1px edges, over the sidebar's own background
 --  texture bg (which it repaints).
 -------------------------------------------------------------------------------
-function CludesUI.OutlineButton(button, backdrop, primary)
+function CUI.OutlineButton(button, backdrop, primary)
     local function Colour()
         if primary then
-            local color = CludesUI.CLUDES_GREEN
+            local color = CUI.CLUDES_GREEN
             return color.r, color.g, color.b
         end
         return 1, 1, 1
@@ -1271,7 +1272,7 @@ function CludesUI.OutlineButton(button, backdrop, primary)
     local rest, lit = primary and 0.7 or 0.22, primary and 1 or 0.45
     local red, green, blue = Colour()
     backdrop:SetColorTexture(red, green, blue, 0.06)
-    local brd = CludesUI.MakeRoundedBorder(button, red, green, blue, rest, backdrop, 2)
+    local brd = CUI.MakeRoundedBorder(button, red, green, blue, rest, backdrop, 2)
     local function Label()
         for _, regionFrame in ipairs({ button:GetRegions() }) do
             if regionFrame:GetObjectType() == "FontString" then return regionFrame end
@@ -1292,13 +1293,13 @@ end
 
 -- AccentCap(frame): the house accent line along a menu's or popup's top
 -- edge (2px), repainted with the current accent each time the frame shows.
-function CludesUI.AccentCap(widget)
+function CUI.AccentCap(widget)
     local cap = widget:CreateTexture(nil, "OVERLAY", nil, 7)
     cap:SetPoint("TOPLEFT")
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)
     local function Paint()
-        local color = CludesUI.CLUDES_GREEN
+        local color = CUI.CLUDES_GREEN
         cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     end
     Paint()
@@ -1306,7 +1307,7 @@ function CludesUI.AccentCap(widget)
     return cap
 end
 
-function CludesUI.CardSidebar(outer, backdrop)
+function CUI.CardSidebar(outer, backdrop)
     backdrop:SetColorTexture(1, 1, 1, 0.025)
     local function Line(a)
         local tex = outer:CreateTexture(nil, "ARTWORK")
@@ -1314,7 +1315,7 @@ function CludesUI.CardSidebar(outer, backdrop)
         return tex
     end
     local cap = outer:CreateTexture(nil, "ARTWORK")
-    local color = CludesUI.CLUDES_GREEN
+    local color = CUI.CLUDES_GREEN
     cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     cap:SetPoint("TOPLEFT")
     cap:SetPoint("TOPRIGHT")

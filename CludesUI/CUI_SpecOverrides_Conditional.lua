@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Conditional.lua
 --
@@ -96,7 +97,7 @@ local EXCLUDED_CONTEXTS = {
 }
 
 local CondKit = {}
-CludesUI._CondOv = CondKit
+CUI._CondOv = CondKit
 
 -- Condition icon art (media\icons\overrides). battleground uses the horde crest
 -- art; the toolbar button rests on the dungeons icon.
@@ -112,7 +113,7 @@ CondKit.ICONS = {
 }
 
 --- True while EITHER override editing session (spec or conditional) is live.
-function CludesUI.SpecOverrides_EditSessionActive() return (_editGroup ~= nil) or (CondKit._edit ~= nil) end
+function CUI.SpecOverrides_EditSessionActive() return (_editGroup ~= nil) or (CondKit._edit ~= nil) end
 
 --- Overlay policy for the Raid Frames Buff Manager page, evaluated at page build.
 --- nil = no overlay (Default view / no session, or the edited group's fork is live
@@ -120,7 +121,7 @@ function CludesUI.SpecOverrides_EditSessionActive() return (_editGroup ~= nil) o
 ---   { mode = "activate"|"info", kind = "spec"|"cond", gid, text, sub }
 --- "info" blocks the whole page: edits there would land in whatever layer is live
 --- and bank to the WRONG owner at the next harvest.
-function CludesUI.SpecOverrides_BmOverlayState()
+function CUI.SpecOverrides_BmOverlayState()
     local group, kindName
     if _editGroup then
         group, kindName = _editGroup, "spec"
@@ -171,7 +172,7 @@ function CludesUI.SpecOverrides_BmOverlayState()
         -- PURE query: report a stale live pointer (fresh login ordering) via the second
         -- return; BmPagePrelude performs the heal/session engage. A session-applied
         -- fork IS the live layer even though the runtime pointer does not say so.
-        local liveNow = CludesUI._bmSessionGid and ("cond:" .. CludesUI._bmSessionGid)
+        local liveNow = CUI._bmSessionGid and ("cond:" .. CUI._bmSessionGid)
             or (bmStore and bmStore.active)
         return nil, liveNow ~= liveKey
     end
@@ -196,7 +197,7 @@ end
 --- (baseline) Buff Manager, every other override that already has its own
 --- Buff Manager, then the two presets. Returns values, order for a dropdown.
 --- Keys: "main" | "spec:<gid>" | "cond:<gid>" | "default" | "empty".
-function CludesUI.SpecOverrides_BmSeedSources(kindName, groupId)
+function CUI.SpecOverrides_BmSeedSources(kindName, groupId)
     local values, sequence = {}, {}
     local function Add(key, labelText)
         values[key] = labelText
@@ -207,15 +208,15 @@ function CludesUI.SpecOverrides_BmSeedSources(kindName, groupId)
     if bmStore and bmStore.layouts then
         for _, group in ipairs(GetGroups() or {}) do
             if bmStore.layouts[group.id] ~= nil and not (kindName == "spec" and group.id == groupId) then
-                Add("spec:" .. group.id, CludesUI.Lf("Copy from %1$s Buff Manager", group.name or "?"))
+                Add("spec:" .. group.id, CUI.Lf("Copy from %1$s Buff Manager", group.name or "?"))
             end
         end
     end
     local condStore = GetCondBmStore()
-    if condStore and condStore.layouts and CludesUI.Conditions_GetGroups then
-        for _, group in ipairs(CludesUI.Conditions_GetGroups() or {}) do
+    if condStore and condStore.layouts and CUI.Conditions_GetGroups then
+        for _, group in ipairs(CUI.Conditions_GetGroups() or {}) do
             if condStore.layouts[group.id] ~= nil and not (kindName == "cond" and group.id == groupId) then
-                Add("cond:" .. group.id, CludesUI.Lf("Copy from %1$s Buff Manager", group.name or "?"))
+                Add("cond:" .. group.id, CUI.Lf("Copy from %1$s Buff Manager", group.name or "?"))
             end
         end
     end
@@ -227,7 +228,7 @@ end
 --- READ-ONLY: the override groups with their own Buff Manager (kind "bm") or
 --- Debuff Manager ("dm"): spec group ids, then condition group ids, each list
 --- in creation order.
-function CludesUI.SpecOverrides_ManagerForkOwners(kindName)
+function CUI.SpecOverrides_ManagerForkOwners(kindName)
     local bmStore, condStore
     if kindName == "dm" then
         bmStore, condStore = GetDmStore(), GetCondDmStore()
@@ -241,7 +242,7 @@ function CludesUI.SpecOverrides_ManagerForkOwners(kindName)
         end
     end
     if condStore and condStore.layouts then
-        for _, group in ipairs(CludesUI.Conditions_GetGroups() or {}) do
+        for _, group in ipairs(CUI.Conditions_GetGroups() or {}) do
             if condStore.layouts[group.id] ~= nil then cond[#cond + 1] = group.id end
         end
     end
@@ -252,13 +253,13 @@ end
 --- content builds. Heals a stale live layer (so the page renders the edited
 --- group's fork; the heal skips the page repaint because THIS build is the
 --- repaint) and returns the overlay state (nil = no overlay).
-function CludesUI.SpecOverrides_BmPagePrelude()
+function CUI.SpecOverrides_BmPagePrelude()
     -- Outside any session: ensure the runtime layer the page is about to edit is
     -- actually LIVE. A spec owning a BM fork gets it auto-activated here; a stale
     -- pointer (login ordering, interrupted session) heals instead of letting the
     -- page edit an off-screen layer ("changing settings does nothing" with no error).
     if not _editGroup and not CondKit._edit then
-        CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), false, true)
+        CUI.SpecOverrides_ApplyBm(CurrentSpecID(), false, true)
     end
     -- Editing-as-conditional with an existing fork that is not the runtime layer
     -- (condition not met right now): engage the session swap so the page and
@@ -269,7 +270,7 @@ function CludesUI.SpecOverrides_BmPagePrelude()
         if
             condStore
             and condStore.layouts[CondKit._edit.id]
-            and CludesUI._bmSessionGid ~= CondKit._edit.id
+            and CUI._bmSessionGid ~= CondKit._edit.id
             and not BmOwnerGid(CurrentSpecID())
         then
             local bmStore = GetBmStore()
@@ -278,11 +279,11 @@ function CludesUI.SpecOverrides_BmPagePrelude()
             end
         end
     end
-    local status, needHeal = CludesUI.SpecOverrides_BmOverlayState()
-    if needHeal then CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), true, true) end
+    local status, needHeal = CUI.SpecOverrides_BmOverlayState()
+    if needHeal then CUI.SpecOverrides_ApplyBm(CurrentSpecID(), true, true) end
     -- Re-evaluate passive chrome on EVERY BM page build: fork deletion,
     -- activation, and heals all rebuild this page without a SelectPage.
-    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then CludesUI.SpecOverrides_UpdateBmPassiveChrome() end
+    if CUI.SpecOverrides_UpdateBmPassiveChrome then CUI.SpecOverrides_UpdateBmPassiveChrome() end
     return status
 end
 
@@ -294,8 +295,8 @@ end
 --- otherwise from live. Other overrides and the two presets seed a fresh layer,
 --- which must then be PAINTED when the new fork becomes the live one (the main
 --- copy is already what is on screen).
-function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
-    local status = CludesUI.SpecOverrides_BmOverlayState()
+function CUI.SpecOverrides_ActivateBm(kindName, groupId, source)
+    local status = CUI.SpecOverrides_BmOverlayState()
     if not status or status.mode ~= "activate" or status.kind ~= kindName or status.gid ~= groupId then
         return
     end
@@ -328,7 +329,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
     end
     local seeded = SeedLayerFor(source)
     local current = CurrentSpecID()
-    CludesUI.SpecOverrides_HarvestBmLayout()
+    CUI.SpecOverrides_HarvestBmLayout()
     -- Virgin-store baseline seed: the first-ever BM layer must capture the
     -- shared baseline from the pre-fork live state (live IS the baseline when
     -- no layer is active), or leaving the fork later has nothing to restore and
@@ -360,10 +361,10 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
             -- WoW Forever: the new fork serves the current spec's bucket;
             -- published before the paint below, or re-driven with no paint
             -- (RefreshPage below rebuilds the page).
-            if CludesUI.IS_FOREVER then
-                local fvPrev = CludesUI._SO_SetForkSpec(false, groupId, current)
-                if not needPaint and fvPrev ~= CludesUI.SpecOverrides_BmForkSpecID then
-                    CludesUI._SO_ForkReDrive(false, true)
+            if CUI.IS_FOREVER then
+                local fvPrev = CUI._SO_SetForkSpec(false, groupId, current)
+                if not needPaint and fvPrev ~= CUI.SpecOverrides_BmForkSpecID then
+                    CUI._SO_ForkReDrive(false, true)
                 end
             end
             -- Baseline-seeded fork while a conditional was live (the
@@ -388,7 +389,7 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
             end
         end
         condStore.layouts[groupId] = snapshot
-        local ag = CludesUI.Conditions_ActiveGroup and CludesUI.Conditions_ActiveGroup()
+        local ag = CUI.Conditions_ActiveGroup and CUI.Conditions_ActiveGroup()
         if ag and ag.id == groupId then
             -- In-context creation: the fork is the runtime layer from here. A
             -- non-main seed differs from what is on screen -> paint it.
@@ -400,12 +401,12 @@ function CludesUI.SpecOverrides_ActivateBm(kindName, groupId, source)
             BmSessionEngage(groupId)
         end
     end
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
 end
 
 --- Overlay policy for the Debuff Manager page (mirror of BmOverlayState;
 --- same eligibility rules and returns).
-function CludesUI.SpecOverrides_DmOverlayState()
+function CUI.SpecOverrides_DmOverlayState()
     local group, kindName
     if _editGroup then
         group, kindName = _editGroup, "spec"
@@ -450,7 +451,7 @@ function CludesUI.SpecOverrides_DmOverlayState()
         end
     end
     if forked and allowed then
-        local liveNow = CludesUI._dmSessionGid and ("cond:" .. CludesUI._dmSessionGid)
+        local liveNow = CUI._dmSessionGid and ("cond:" .. CUI._dmSessionGid)
             or (bmStore and bmStore.active)
         return nil, liveNow ~= liveKey
     end
@@ -473,16 +474,16 @@ end
 
 --- Page-build entry point for the Debuff Manager page (mirror of
 --- BmPagePrelude): call FIRST, before any content builds.
-function CludesUI.SpecOverrides_DmPagePrelude()
+function CUI.SpecOverrides_DmPagePrelude()
     if not _editGroup and not CondKit._edit then
-        CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), false, true)
+        CUI.SpecOverrides_ApplyDm(CurrentSpecID(), false, true)
     end
     if CondKit._edit then
         local condStore = GetCondDmStore()
         if
             condStore
             and condStore.layouts[CondKit._edit.id]
-            and CludesUI._dmSessionGid ~= CondKit._edit.id
+            and CUI._dmSessionGid ~= CondKit._edit.id
             and not DmOwnerGid(CurrentSpecID())
         then
             local bmStore = GetDmStore()
@@ -491,21 +492,21 @@ function CludesUI.SpecOverrides_DmPagePrelude()
             end
         end
     end
-    local status, needHeal = CludesUI.SpecOverrides_DmOverlayState()
-    if needHeal then CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), true, true) end
-    if CludesUI.SpecOverrides_UpdateBmPassiveChrome then CludesUI.SpecOverrides_UpdateBmPassiveChrome() end
+    local status, needHeal = CUI.SpecOverrides_DmOverlayState()
+    if needHeal then CUI.SpecOverrides_ApplyDm(CurrentSpecID(), true, true) end
+    if CUI.SpecOverrides_UpdateBmPassiveChrome then CUI.SpecOverrides_UpdateBmPassiveChrome() end
     return status
 end
 
 --- Creates the edited group's DM fork (mirror of SpecOverrides_ActivateBm,
 --- including the virgin-store baseline seed and conditional seeding rules).
-function CludesUI.SpecOverrides_ActivateDm(kindName, groupId)
-    local status = CludesUI.SpecOverrides_DmOverlayState()
+function CUI.SpecOverrides_ActivateDm(kindName, groupId)
+    local status = CUI.SpecOverrides_DmOverlayState()
     if not status or status.mode ~= "activate" or status.kind ~= kindName or status.gid ~= groupId then
         return
     end
     local current = CurrentSpecID()
-    CludesUI.SpecOverrides_HarvestDmLayout()
+    CUI.SpecOverrides_HarvestDmLayout()
     do
         local bmStore = GetDmStore(true)
         if bmStore and not bmStore.baselineLayout and not bmStore.active then
@@ -527,10 +528,10 @@ function CludesUI.SpecOverrides_ActivateDm(kindName, groupId)
             bmStore.active = groupId
             -- WoW Forever: the new fork serves the current spec's bucket
             -- (see SpecOverrides_ActivateBm).
-            if CludesUI.IS_FOREVER then
-                local fvPrev = CludesUI._SO_SetForkSpec(true, groupId, current)
-                if not fromCond and fvPrev ~= CludesUI.SpecOverrides_DmForkSpecID then
-                    CludesUI._SO_ForkReDrive(true, true)
+            if CUI.IS_FOREVER then
+                local fvPrev = CUI._SO_SetForkSpec(true, groupId, current)
+                if not fromCond and fvPrev ~= CUI.SpecOverrides_DmForkSpecID then
+                    CUI._SO_ForkReDrive(true, true)
                 end
             end
             if fromCond then DmApplyLayer(bmStore.layouts[groupId], true) end
@@ -547,14 +548,14 @@ function CludesUI.SpecOverrides_ActivateDm(kindName, groupId)
             if not snapshot then return end
         end
         condStore.layouts[groupId] = snapshot
-        local ag = CludesUI.Conditions_ActiveGroup and CludesUI.Conditions_ActiveGroup()
+        local ag = CUI.Conditions_ActiveGroup and CUI.Conditions_ActiveGroup()
         if ag and ag.id == groupId then
             if bmStore then bmStore.active = "cond:" .. groupId end
         else
             DmSessionEngage(groupId)
         end
     end
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
 end
 
 --- True for module folders excluded wholesale from the override systems (drives
@@ -567,14 +568,14 @@ do
     local _, mod = ...
     mod = mod.__cuiCoreNS or mod -- standalone builds: the core's own table (CludesUI.lua)
 
-    function CludesUI.SpecOverrides_ModuleExcluded(moduleFolder)
+    function CUI.SpecOverrides_ModuleExcluded(moduleFolder)
         return (type(moduleFolder) == "string" and EXCLUDED_CONTEXTS[moduleFolder] == true)
             or mod.IsPluginKey(moduleFolder)
     end
 
     --- True when a module page is excluded (page-scoped entry, or the whole
     --- module). Drives the page-tab lock while a session is active.
-    function CludesUI.SpecOverrides_PageExcluded(module, page)
+    function CUI.SpecOverrides_PageExcluded(module, page)
         if mod.IsPluginKey(module) then return true end
         local ex = module and EXCLUDED_CONTEXTS[module]
         if ex == true then return true end
@@ -819,7 +820,7 @@ function CondKit.ApplyValues()
     if CondKit._edit then
         groupId = CondKit._edit.id
     else
-        groupId = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid()
+        groupId = CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid()
     end
     -- forSession while a session is open: without it the spec-wins gate skips
     -- spec-owned fkeys and the session view is never repainted over whatever a
@@ -860,7 +861,7 @@ end
 ---     had none, wipe yours".
 ---   * Buff Manager forks: Raid Frames data, so per-module -- replaced (or cleared)
 ---     when RF is imported, kept when it is not.
-function CludesUI.SpecOverrides_MergeImportedStores(combined, pulled)
+function CUI.SpecOverrides_MergeImportedStores(combined, pulled)
     local function maxNumericId(groups)
         local m = 0
         for _, group in ipairs(groups or {}) do
@@ -1202,7 +1203,7 @@ end
 --- while live still holds the pure imported values. folderSet limits the re-bank
 --- to the given addon folders (partial imports: kept folders' profile tables can
 --- hold ACTIVE override values, which must never be banked as defaults); nil = all.
-function CludesUI.SpecOverrides_RebaselineDefaults(folderSet)
+function CUI.SpecOverrides_RebaselineDefaults(folderSet)
     -- Never re-bank while an editing view holds swapped values live (the import
     -- flow closes sessions first; this guards any other caller).
     if _editGroup or _defaultView or CondKit._edit then return end
@@ -1262,7 +1263,7 @@ function CondKit.PruneEntries()
         if
             not dropKey
             and record.group ~= nil
-            and not (CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(record.group))
+            and not (CUI.Conditions_GroupById and CUI.Conditions_GroupById(record.group))
         then
             dropKey = true
         end
@@ -1302,20 +1303,20 @@ local function CondTransitionBody(oldGid, newGid, setUp)
     -- settings (sizes) that a later harvest would bank into the OUTGOING layer's
     -- elems. Re-resolution uses the NEW applied gid, passed explicitly (the engine
     -- updates its pointer only after this handler succeeds).
-    if not setUp and CludesUI.SpecOverrides_HarvestUnlockLayout then
-        CludesUI.SpecOverrides_HarvestUnlockLayout()
+    if not setUp and CUI.SpecOverrides_HarvestUnlockLayout then
+        CUI.SpecOverrides_HarvestUnlockLayout()
     end
-    if not setUp and CludesUI.SpecOverrides_HarvestBmLayout then CludesUI.SpecOverrides_HarvestBmLayout() end
-    if not setUp and CludesUI.SpecOverrides_HarvestDmLayout then CludesUI.SpecOverrides_HarvestDmLayout() end
+    if not setUp and CUI.SpecOverrides_HarvestBmLayout then CUI.SpecOverrides_HarvestBmLayout() end
+    if not setUp and CUI.SpecOverrides_HarvestDmLayout then CUI.SpecOverrides_HarvestDmLayout() end
     local touched = CondKit.WriteValues(newGid)
-    if CludesUI.SpecOverrides_ApplyUnlock then
+    if CUI.SpecOverrides_ApplyUnlock then
         CondKit._resolveOverride = newGid or false -- false = explicit none
         -- Forced on establish: the incoming raw stores may hold the layer that
         -- was live at export/save time while the imported active pointer was
         -- reset, and a nil==nil early-out would strand them.
-        CludesUI.SpecOverrides_ApplyUnlock(CurrentSpecID(), setUp)
-        CludesUI.SpecOverrides_ApplyBm(CurrentSpecID(), setUp)
-        CludesUI.SpecOverrides_ApplyDm(CurrentSpecID(), setUp)
+        CUI.SpecOverrides_ApplyUnlock(CurrentSpecID(), setUp)
+        CUI.SpecOverrides_ApplyBm(CurrentSpecID(), setUp)
+        CUI.SpecOverrides_ApplyDm(CurrentSpecID(), setUp)
         CondKit._resolveOverride = nil
     end
     if touched then RunRefreshers(touched) end
@@ -1335,7 +1336,7 @@ end
 -- advanced, so live is canonical here as on every other boundary. Refusing instead
 -- would strand the flip whenever the panel is open -- for the Dark Mode condition
 -- that is ALWAYS (its only inputs are options widgets).
-function CludesUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
+function CUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
     if _inTransition or _editGroup or CondKit._edit then return false end
     -- NON-RE-ENTRANT: the refresh fan-out in CondTransitionBody can reach RefreshAllAddons
     -- (unmapped-folder fallback, module internals), whose tail calls
@@ -1352,7 +1353,7 @@ function CludesUI.SpecOverrides_CondTransition(oldGid, newGid, setUp)
     local success = xpcall(CondTransitionBody, geterrorhandler(), oldGid, newGid, setUp)
     CondKit._resolveOverride = nil
     _condBusy = false
-    if not success and CludesUI.Conditions_MarkStale then CludesUI.Conditions_MarkStale() end
+    if not success and CUI.Conditions_MarkStale then CUI.Conditions_MarkStale() end
     return success, not success
 end
 
@@ -1362,7 +1363,7 @@ end
 function CondKit.ResolveGid()
     local shade = CondKit._resolveOverride
     if shade ~= nil then return shade or nil end
-    return CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
+    return CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil
 end
 
 Inner.Cond, Inner.EXCLUDED_CONTEXTS = CondKit, EXCLUDED_CONTEXTS

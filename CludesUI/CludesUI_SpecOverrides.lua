@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_SpecOverrides.lua
 --
@@ -42,7 +43,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 
 -- Editing-spec GROUP buckets of the Buff Manager, Debuff Manager and Player
 -- Aura Bars pages, in menu order. Names run through L() at build time.
-CludesUI.SPEC_GROUP_BUCKETS = {
+CUI.SPEC_GROUP_BUCKETS = {
     {
         key = "allspecs",
         name = "All Specs",
@@ -61,9 +62,9 @@ CludesUI.SPEC_GROUP_BUCKETS = {
     { key = "dps", name = "All DPS (Non-Aug)", icon = "Interface\\Icons\\Ability_DualWield" },
     { key = "healers", name = "All Healers/Aug", icon = "Interface\\Icons\\Spell_Holy_Renew" },
 }
-CludesUI.SPEC_GROUP_BUCKET_INFO = {}
-for _, group in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
-    CludesUI.SPEC_GROUP_BUCKET_INFO[group.key] = group
+CUI.SPEC_GROUP_BUCKET_INFO = {}
+for _, group in ipairs(CUI.SPEC_GROUP_BUCKETS) do
+    CUI.SPEC_GROUP_BUCKET_INFO[group.key] = group
 end
 
 -- Editing-spec roster: the group buckets, "---a", then every spec in the
@@ -73,29 +74,29 @@ end
 -- WoW Forever: All Specs, "---a", then one row per class keyed by the
 -- bucket that class edits (foreverKeyFor(classToken); a nil key skips the
 -- class). No role buckets there and lead is not called.
-function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
+function CUI.BuildSpecBucketRoster(lead, foreverKeyFor)
     local values, sequence, icons, classes = {}, {}, {}, {}
-    if CludesUI.IS_FOREVER then
-        local all = CludesUI.SPEC_GROUP_BUCKET_INFO.allspecs
-        values.allspecs = CludesUI.L(all.name)
+    if CUI.IS_FOREVER then
+        local all = CUI.SPEC_GROUP_BUCKET_INFO.allspecs
+        values.allspecs = CUI.L(all.name)
         sequence[1] = "allspecs"
         icons.allspecs = all.icon
-        local entries = CludesUI.ForeverClasses()
+        local entries = CUI.ForeverClasses()
         for idx = 1, #entries do
             local token = entries[idx]
             local key = foreverKeyFor and foreverKeyFor(token)
             if key and values[key] == nil then
                 if #sequence == 1 then sequence[2] = "---a" end
-                values[key] = CludesUI.ForeverClassName(token)
+                values[key] = CUI.ForeverClassName(token)
                 sequence[#sequence + 1] = key
-                icons[key] = CludesUI.ForeverClassIcon(token)
+                icons[key] = CUI.ForeverClassIcon(token)
                 classes[key] = token
             end
         end
         return values, sequence, icons, classes
     end
-    for _, group in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
-        values[group.key] = CludesUI.L(group.name)
+    for _, group in ipairs(CUI.SPEC_GROUP_BUCKETS) do
+        values[group.key] = CUI.L(group.name)
         sequence[#sequence + 1] = group.key
         icons[group.key] = group.icon
     end
@@ -120,8 +121,8 @@ end
 
 -- Right-click "Add To" items: the roster minus dividers, the edited bucket
 -- (selKey, the source) disabled. foreverKeyFor: see BuildSpecBucketRoster.
-function CludesUI.SpecBucketMenuItems(selKey, lead, foreverKeyFor)
-    local values, sequence, icons = CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
+function CUI.SpecBucketMenuItems(selKey, lead, foreverKeyFor)
+    local values, sequence, icons = CUI.BuildSpecBucketRoster(lead, foreverKeyFor)
     local itemList = {}
     for idx = 1, #sequence do
         local key = sequence[idx]
@@ -268,8 +269,8 @@ local GLYPH_SPRITE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\gly
 local MODERN_SPRITE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\modern.tga"
 -- Generic multi-spec group icon (standalone image, not a sprite)
 local MULTISPEC_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\multispec.png"
-local CLASS_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
-local CLASS_ORDER = CludesUI.CLASS_TOKEN_ORDER
+local CLASS_COORDS = CUI.CLASS_ICON_SPRITE_COORDS
+local CLASS_ORDER = CUI.CLASS_TOKEN_ORDER
 -- Modern role icons (shipped with RaidFrames; loaded by path, no addon dep)
 local ROLE_MEDIA = "Interface\\AddOns\\CludesUIRaidFrames\\Media\\"
 local ROLE_ICONS = {
@@ -279,7 +280,7 @@ local ROLE_ICONS = {
 }
 local ROLE_ORDER = { "TANK", "HEALER", "DAMAGER" }
 
-local L = function(s) return CludesUI.L(s) or s end
+local L = function(s) return CUI.L(s) or s end
 
 -- Forward declarations
 local RequestGoldWalk -- assigned by CUI_SpecOverrides_Borders.lua
@@ -288,19 +289,19 @@ local _editGroup = nil -- group table ref while "editing as" is active
 -------------------------------------------------------------------------------
 --  Small utilities
 -------------------------------------------------------------------------------
-local DeepCopy = CludesUI.Lite.DeepCopy
+local DeepCopy = CUI.Lite.DeepCopy
 
 -- WoW Forever reports one spec per class; there the player is the first
 -- retail spec of the class (class order) that a group of the active profile
 -- holds, else the class's first spec. nil until the client knows its spec.
 local function CurrentSpecID()
-    local ident = CludesUI._specID
+    local ident = CUI._specID
     if not ident or ident == 0 then
-        CludesUI._RefreshSpecID()
-        ident = CludesUI._specID
+        CUI._RefreshSpecID()
+        ident = CUI._specID
     end
-    if CludesUI.IS_FOREVER and ident and ident ~= 0 then
-        return CludesUI.SpecFor(ident, CludesUI._SO_InAnyGroup)
+    if CUI.IS_FOREVER and ident and ident ~= 0 then
+        return CUI.SpecFor(ident, CUI._SO_InAnyGroup)
     end
     return (ident and ident ~= 0) and ident or nil
 end
@@ -308,10 +309,10 @@ end
 local function SpecName(specID)
     -- WoW Forever: a retail spec ID reads "Spec - Class" from the shared spec
     -- table; a WoW Forever spec ID reads as its class.
-    if CludesUI.IS_FOREVER then
-        local token = CludesUI.SpecClassOf(specID)
+    if CUI.IS_FOREVER then
+        local token = CUI.SpecClassOf(specID)
         if token then
-            local sn, cn = CludesUI.RetailSpecName(specID), CludesUI.ForeverClassName(token)
+            local sn, cn = CUI.RetailSpecName(specID), CUI.ForeverClassName(token)
             return sn and (sn .. " - " .. cn) or cn
         end
     end
@@ -331,7 +332,7 @@ end
 -------------------------------------------------------------------------------
 --  Storage
 -------------------------------------------------------------------------------
-local function GetProfileRoot() return CludesUI.GetActiveProfileData() end
+local function GetProfileRoot() return CUI.GetActiveProfileData() end
 
 local function GetStore(create)
     local prof = GetProfileRoot()
@@ -375,13 +376,13 @@ end
 
 -- CurrentSpecID's WoW Forever predicate (CurrentSpecID is declared above
 -- this local), and the current spec for Unlock Mode (loads before this file).
-CludesUI._SO_InAnyGroup = SpecInAnyGroup
-CludesUI.SpecOverrides_CurrentSpecID = CurrentSpecID
+CUI._SO_InAnyGroup = SpecInAnyGroup
+CUI.SpecOverrides_CurrentSpecID = CurrentSpecID
 
 -- WoW Forever: card tooltip lines for a group. A class held whole reads as
 -- the class; a partial class lists its specs; a group holding specs of the
 -- player's class but not the one this character uses says so.
-function CludesUI._SO_ForeverGroupNames(specs, curSpec)
+function CUI._SO_ForeverGroupNames(specs, curSpec)
     specs = specs or {}
     local set, result, done = {}, {}, {}
     for _, ident in ipairs(specs) do
@@ -390,8 +391,8 @@ function CludesUI._SO_ForeverGroupNames(specs, curSpec)
     local player = select(2, UnitClass("player"))
     local inactive = false
     for _, ident in ipairs(specs) do
-        local token = CludesUI.SpecClassOf(ident)
-        local ids = CludesUI.ForeverClassSpecIDs(token)
+        local token = CUI.SpecClassOf(ident)
+        local ids = CUI.ForeverClassSpecIDs(token)
         if not ids then
             result[#result + 1] = SpecName(ident) -- a class WoW Forever lacks
         elseif not done[token] then
@@ -404,7 +405,7 @@ function CludesUI._SO_ForeverGroupNames(specs, curSpec)
                 end
             end
             if whole then
-                result[#result + 1] = CludesUI.ForeverClassName(token)
+                result[#result + 1] = CUI.ForeverClassName(token)
             else
                 for idx = 1, #ids do
                     if set[ids[idx]] then result[#result + 1] = SpecName(ids[idx]) end
@@ -497,7 +498,7 @@ end
 --  Live profile access by fkey
 -------------------------------------------------------------------------------
 local function DBFor(folder)
-    local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local reg = CUI.Lite and CUI.Lite._dbRegistry
     if not reg then return nil end
     for _, saved in ipairs(reg) do
         if saved.folder == folder then return saved.profile end
@@ -587,7 +588,7 @@ end
 
 -- WoW Forever: the buff clear mark (CludesUI_Migration.lua) is bookkeeping,
 -- never a setting. The loop above guaranteed the Unit Frames set exists.
-if CludesUI.FvBW then SETTING_BLACKLIST.CludesUIUnitFrames[CludesUI.FvBW.KEY] = true end
+if CUI.FvBW then SETTING_BLACKLIST.CludesUIUnitFrames[CUI.FvBW.KEY] = true end
 
 -- The lanes come from the shared VIS_OPT_KEYS, never a copy, so one added later
 -- cannot silently become capturable again. Lazy because this file can load first;
@@ -595,7 +596,7 @@ if CludesUI.FvBW then SETTING_BLACKLIST.CludesUIUnitFrames[CludesUI.FvBW.KEY] = 
 local _visLanesDone = false
 local function EnsureVisLaneBlacklist()
     if _visLanesDone then return end
-    local keyList = CludesUI.VIS_OPT_KEYS
+    local keyList = CUI.VIS_OPT_KEYS
     if not keyList then return end
     for idx = 1, #VIS_OV_FOLDERS do
         local set = SETTING_BLACKLIST[VIS_OV_FOLDERS[idx]]
@@ -689,8 +690,8 @@ local function MatchOwnedFKey(fkey)
     -- group layer did not; default 360 overwrote the layer's 280). UnlockBaselineLinks
     -- returns nil when live IS baseline (already covered above). Looked up via the
     -- namespace, not a local, because the function is defined in CUI_SpecOverrides_Layers.lua.
-    if CludesUI.SpecOverrides_UnlockBaselineLinks then
-        local _, bw, bh = CludesUI.SpecOverrides_UnlockBaselineLinks()
+    if CUI.SpecOverrides_UnlockBaselineLinks then
+        local _, bw, bh = CUI.SpecOverrides_UnlockBaselineLinks()
         if bw and size ~= "h" and bw[details.elem] ~= nil then return true end
         if bh and size ~= "w" and bh[details.elem] ~= nil then return true end
     end
@@ -708,7 +709,7 @@ local function NumAllowedFKey(fkey)
         or fkey:sub(1, #RAID_SIZE_OV_PREFIX) == RAID_SIZE_OV_PREFIX
 end
 
-function CludesUI.SpecOverrides_OnCDMBarsRestructured()
+function CUI.SpecOverrides_OnCDMBarsRestructured()
     local function sweep(storage, rebuild)
         if not storage then return end
         local removed = false
@@ -734,7 +735,7 @@ function CludesUI.SpecOverrides_OnCDMBarsRestructured()
         if removed and rebuild then rebuild() end
     end
     sweep(GetStore(), RebuildFKeyIndex)
-    if CludesUI._CondOv then sweep(CludesUI._CondOv.GetStore(), CludesUI._CondOv.RebuildIndex) end
+    if CUI._CondOv then sweep(CUI._CondOv.GetStore(), CUI._CondOv.RebuildIndex) end
     RequestGoldWalk()
 end
 
@@ -772,7 +773,7 @@ end
 local function HasRegisteredDefault(fkey)
     local folder, filePath = SplitFKey(fkey)
     if not folder or not filePath then return false end
-    local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local reg = CUI.Lite and CUI.Lite._dbRegistry
     if not reg then return false end
     local t
     for _, saved in ipairs(reg) do
@@ -876,7 +877,7 @@ local function RunRefreshers(folders)
             fallback = true
         end
     end
-    if fallback and CludesUI.RefreshAllAddons then CludesUI.RefreshAllAddons() end
+    if fallback and CUI.RefreshAllAddons then CUI.RefreshAllAddons() end
 end
 
 -- Main-chunk locals the CUI_SpecOverrides_*.lua files re-import by name.

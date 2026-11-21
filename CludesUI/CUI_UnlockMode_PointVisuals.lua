@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Shared dot art and passive connection endpoints. Nothing is built until used.
 local _, mod = ...
 mod = mod.__cuiCoreNS or mod
@@ -10,7 +11,7 @@ visuals.idleSize, visuals.hoverSize = 8, 12
 local defaultSet = { point = { 1, 1, 1, 1 }, border = { 0, 0, 0, 1 }, line = { 1, 0.2, 0.2, 1 } }
 local dots
 
-function CludesUI.GetPointAnchorColor(kind)
+function CUI.GetPointAnchorColor(kind)
     local colors = CludesUIDB and CludesUIDB.unlockPointColors
     local color = colors and colors[kind] or defaultSet[kind]
     return unpack(color)
@@ -18,13 +19,13 @@ end
 
 function visuals.ColorDot(art, alpha)
     art.colorAlpha = alpha
-    local red, green, blue, a = CludesUI.GetPointAnchorColor("point")
+    local red, green, blue, a = CUI.GetPointAnchorColor("point")
     art.fill:SetVertexColor(red, green, blue, a * alpha)
-    red, green, blue, a = CludesUI.GetPointAnchorColor("border")
+    red, green, blue, a = CUI.GetPointAnchorColor("border")
     art.border:SetVertexColor(red, green, blue, a * alpha)
 end
 
-function CludesUI.SetPointAnchorColor(kind, red, green, blue, a)
+function CUI.SetPointAnchorColor(kind, red, green, blue, a)
     if not defaultSet[kind] then return end
     CludesUIDB.unlockPointColors = CludesUIDB.unlockPointColors or {}
     CludesUIDB.unlockPointColors[kind] = { red, green, blue, a }
@@ -36,7 +37,7 @@ function CludesUI.SetPointAnchorColor(kind, red, green, blue, a)
 end
 
 function visuals.SizeDot(art, size)
-    local pp = CludesUI.PP
+    local pp = CUI.PP
     local px = pp.perfect / art:GetEffectiveScale()
     if art.dotSize == size and art.pixelSize == px then return end
     art.dotSize, art.pixelSize = size, px
@@ -98,7 +99,7 @@ local function ShowPoint(index, mover, anchorPoint, alpha)
         marker:SetPoint("CENTER", mover, anchorPoint)
         marker.point, marker.mover = anchorPoint, mover
     end
-    local pp = CludesUI.PP
+    local pp = CUI.PP
     local size = visuals.idleSize * pp.perfect / marker:GetEffectiveScale()
     visuals.SizeDot(marker, size)
     marker:SetAlpha(alpha)

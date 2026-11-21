@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Bar.lua
 --  Layout Mode's toolbar, CludesUI's own: a strip across the top of the
@@ -35,7 +36,7 @@ local LOGO = "Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png"
 
 CUI_NS.unlockParts.Bar = function(LM)
     local mod = CUI_NS
-    local L = CludesUI.L
+    local L = CUI.L
     local movers = LM.movers
     local FONT = LM.FONT_PATH
 
@@ -43,8 +44,8 @@ CUI_NS.unlockParts.Bar = function(LM)
 
     -- The bar's accent: gold while a spec-override layout is being edited.
     local function Accent()
-        if CludesUI._specialUnlockGroup then return 1, 0.82, 0.30 end
-        local color = CludesUI.CLUDES_GREEN
+        if CUI._specialUnlockGroup then return 1, 0.82, 0.30 end
+        local color = CUI.CLUDES_GREEN
         return color.r, color.g, color.b
     end
 
@@ -162,7 +163,7 @@ CUI_NS.unlockParts.Bar = function(LM)
 
     -- The controls the help chip lists, keys in the accent colour.
     local function HelpText()
-        local hex = CludesUI.HexColor(Accent())
+        local hex = CUI.HexColor(Accent())
         local function Line(key, what) return hex .. L(key) .. "|r: " .. L(what) end
         local lines = {
             Line("Shift + Drag", "Move it on one axis only."),
@@ -173,8 +174,8 @@ CUI_NS.unlockParts.Bar = function(LM)
             Line("Hold Shift", "Hide this bar."),
         }
         -- The Overlap Cycling key, by the setting's own label; none while it is disabled.
-        local method = CludesUI.GetUnlockOverlapMethod()
-        local overlap = method ~= "disabled" and CludesUI.UNLOCK_OVERLAP_LABELS[method]
+        local method = CUI.GetUnlockOverlapMethod()
+        local overlap = method ~= "disabled" and CUI.UNLOCK_OVERLAP_LABELS[method]
         if overlap then lines[#lines + 1] = Line(overlap, "Cycle through overlapping elements.") end
         return table.concat(lines, "\n")
     end
@@ -223,7 +224,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             if LM.unlockTipFrame and LM.unlockTipFrame:IsShown() then return end
             local toUI = ownerFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
             local side = (ownerFrame:GetLeft() * toUI + 250 > UIParent:GetRight()) and "RIGHT" or "LEFT"
-            CludesUI.ShowWidgetTooltip(ownerFrame, textValue, {
+            CUI.ShowWidgetTooltip(ownerFrame, textValue, {
                 anchorPoint = "TOP" .. side,
                 anchorTo = "BOTTOM" .. side,
                 justify = justify,
@@ -273,7 +274,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             local backdrop = host:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(1, 1, 1, 0.04)
-            local brd = CludesUI.MakeRoundedBorder(host, 1, 1, 1, 0.12, backdrop, 2)
+            local brd = CUI.MakeRoundedBorder(host, 1, 1, 1, 0.12, backdrop, 2)
             outlines[#outlines + 1] = brd
             return brd
         end
@@ -341,7 +342,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             local function ShowTip()
                 Tip(
                     button,
-                    CludesUI.HexColor(Accent())
+                    CUI.HexColor(Accent())
                         .. L(def.name)
                         .. "|r  "
                         .. L(def.state())
@@ -357,7 +358,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             button:SetScript("OnLeave", function()
                 hover = false
                 Paint()
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
             button:SetScript("OnClick", function()
                 def.click()
@@ -405,7 +406,7 @@ CUI_NS.unlockParts.Bar = function(LM)
             local button = Control("Button", wid, BTN_H)
             local backdrop = button:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
-            local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.3, backdrop, 2)
+            local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.3, backdrop, 2)
             outlines[#outlines + 1] = brd
             local labelText = button:CreateFontString(nil, "OVERLAY")
             labelText:SetFont(FONT, 10, "OUTLINE, SLUG")
@@ -462,8 +463,8 @@ CUI_NS.unlockParts.Bar = function(LM)
         local box = Control("Frame", BOX_MIN, BTN_H)
         local boxBg = box:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
-        boxBg:SetColorTexture(CludesUI.SL_INPUT_R, CludesUI.SL_INPUT_G, CludesUI.SL_INPUT_B, 0.9)
-        local boxBrd = CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.2, boxBg, 2)
+        boxBg:SetColorTexture(CUI.SL_INPUT_R, CUI.SL_INPUT_G, CUI.SL_INPUT_B, 0.9)
+        local boxBrd = CUI.MakeRoundedBorder(box, 1, 1, 1, 0.2, boxBg, 2)
         outlines[#outlines + 1] = boxBrd
         local edit = CreateFrame("EditBox", nil, box)
         edit:SetAllPoints()
@@ -511,7 +512,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         end)
         edit:SetScript("OnLeave", function()
             PaintFilter()
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         funnel:SetScript("OnEnter", function(self)
             PaintFilter()
@@ -519,7 +520,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         end)
         funnel:SetScript("OnLeave", function()
             PaintFilter()
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         funnel:SetScript("OnClick", function() edit:SetFocus() end)
         edit:SetScript("OnEscapePressed", function(self)
@@ -559,7 +560,7 @@ CUI_NS.unlockParts.Bar = function(LM)
         end)
         help:SetScript("OnLeave", function(self)
             self.Paint(false)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         local exit = MakeTextButton("Exit", 60, false, function() mod.RequestClose(false) end)
         local save = MakeTextButton("Save & Exit", 92, true, function() mod.RequestClose(true) end)
@@ -662,7 +663,7 @@ CUI_NS.unlockParts.Bar = function(LM)
                 repaint[idx](red, green, blue)
             end
         end
-        CludesUI.RegAccent({
+        CUI.RegAccent({
             type = "callback",
             fn = function() LM.PaintBanner() end,
         })
@@ -765,10 +766,10 @@ CUI_NS.unlockParts.Bar = function(LM)
             edit:SetText("")
             LM.FilterReset()
             filtering = false
-            local ownerFrame = CludesUI._WidgetTooltipOwner()
+            local ownerFrame = CUI._WidgetTooltipOwner()
             for idx = 1, #controls do
                 if controls[idx] == ownerFrame then
-                    CludesUI.HideWidgetTooltip(true)
+                    CUI.HideWidgetTooltip(true)
                     break
                 end
             end
@@ -780,5 +781,5 @@ CUI_NS.unlockParts.Bar = function(LM)
     end
 
     -- Stable anchor for other addons that stack controls under the bar.
-    function CludesUI:GetUnlockModeTopBarAnchor() return LM.hudFrame and LM.hudFrame._hoverZone end
+    function CUI:GetUnlockModeTopBarAnchor() return LM.hudFrame and LM.hudFrame._hoverZone end
 end

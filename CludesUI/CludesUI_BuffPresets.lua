@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CludesUI_BuffPresets.lua
 --  THE single curation source for the 10 buff filter presets (Defensives,
@@ -624,12 +625,12 @@ local RETAIL_PRESETS = {
 }
 
 local RUNNING, OTHER
-if CludesUI.IS_FOREVER == true then
+if CUI.IS_FOREVER == true then
     RUNNING, OTHER = ForeverCatalogue(), RETAIL_PRESETS
 else
     RUNNING, OTHER = RETAIL_PRESETS, ForeverCatalogue()
 end
-CludesUI.BUFF_PRESETS = RUNNING
+CUI.BUFF_PRESETS = RUNNING
 
 -- Profiles travel between retail and WoW Forever (exported on one client,
 -- imported on the other, and back). Both consumers keep what only the other
@@ -656,9 +657,9 @@ local function IdSets(presets)
     end
     return sets
 end
-CludesUI.BUFF_PRESET_IDS = IdSets(RUNNING)
-CludesUI.BUFF_PRESET_OTHER_IDS = IdSets(OTHER)
-CludesUI.BUFF_PRESET_OTHER_FILTERS = OTHER.filters
+CUI.BUFF_PRESET_IDS = IdSets(RUNNING)
+CUI.BUFF_PRESET_OTHER_IDS = IdSets(OTHER)
+CUI.BUFF_PRESET_OTHER_FILTERS = OTHER.filters
 
 -- WoW Forever buff families: one per group buff, every spell that gives it.
 -- Read by the Raid Frames Missing Buffs indicator and by Aura Buff Reminders
@@ -668,8 +669,8 @@ CludesUI.BUFF_PRESET_OTHER_FILTERS = OTHER.filters
 -- first; ids = every spell that applies it (ranks, group version, NPC and
 -- item casts, i.e. every spell of those names on the client). Built on WoW
 -- Forever only.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.FOREVER_BUFF_FAMILIES = {
+if CUI.IS_FOREVER == true then
+    CUI.FOREVER_BUFF_FAMILIES = {
         fort = {
             names = { 1243, 21562 },
             single = { 1243, 1244, 1245, 2791, 10937, 10938 },
@@ -823,8 +824,8 @@ end
 -- shares the name the readers compare). While one is queued the Resource
 -- Bars swing timer paints its melee rows and the Cooldown Manager lights the
 -- attack's icons. Built on WoW Forever only: retail has no such attacks.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.FOREVER_NEXT_SWING = {
+if CUI.IS_FOREVER == true then
+    CUI.FOREVER_NEXT_SWING = {
         WARRIOR = { 78, 845 }, -- Heroic Strike, Cleave
         DRUID = { 6807 }, -- Maul
         HUNTER = { 2973 }, -- Raptor Strike
@@ -841,7 +842,7 @@ end
 -- Read by the Cooldown Manager presets and Damage Meters' spell history. Built
 -- on both clients; WoW Forever offers only the Healthstone family, whose items
 -- there are FOREVER_HEALTHSTONES.
-CludesUI.CONSUMABLES = {
+CUI.CONSUMABLES = {
     lights_potential = {
         itemID = 241308,
         altItemIDs = { 245898, 245897, 241309 },
@@ -899,7 +900,7 @@ CludesUI.CONSUMABLES = {
 -- Raid preparation buffs (retail): the flask, augment rune and vantus rune
 -- buffs, and the raid buffs by the class that casts them. Read by AuraBuff
 -- Reminders and Quality of Life's Raid Buff Check.
-CludesUI.RAID_PREP_IDS = {
+CUI.RAID_PREP_IDS = {
     flask = {
         1235110,
         1235108,
@@ -998,8 +999,8 @@ CludesUI.RAID_PREP_IDS = {
 -- WoW Forever's healthstones after the Minor stone (5512, still the family's
 -- identity): the Major, Greater, Healthstone and Lesser tiers, each a base
 -- stone and two improved-talent stones, then the improved Minor stones.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.FOREVER_HEALTHSTONES = {
+if CUI.IS_FOREVER == true then
+    CUI.FOREVER_HEALTHSTONES = {
         9421,
         19012,
         19013,

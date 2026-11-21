@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode.lua
 --  Unlock Mode: animated transition, grid overlay, draggable movers, snap
@@ -13,13 +14,13 @@ local ABAR = mod.EAB -- may be nil if loaded by a non-ActionBars addon
 --  Registration API -- on the CludesUI global so ALL addons share one
 --  table regardless of which copy of this file runs.
 -------------------------------------------------------------------------------
-if not CludesUI._unlockRegisteredElements then
-    CludesUI._unlockRegisteredElements = {}
-    CludesUI._unlockRegisteredOrder = {}
-    CludesUI._unlockRegistrationDirty = true
+if not CUI._unlockRegisteredElements then
+    CUI._unlockRegisteredElements = {}
+    CUI._unlockRegisteredOrder = {}
+    CUI._unlockRegistrationDirty = true
 end
 
-if not CludesUI.RegisterUnlockElements then
+if not CUI.RegisterUnlockElements then
     -- Normalize short field aliases (savePos) to the long names used
     -- throughout unlock mode (savePosition).
     local FIELD_ALIASES = {
@@ -28,7 +29,7 @@ if not CludesUI.RegisterUnlockElements then
         clearPos = "clearPosition",
         applyPos = "applyPosition",
     }
-    function CludesUI:RegisterUnlockElements(elements, folder)
+    function CUI:RegisterUnlockElements(elements, folder)
         for _, elem in ipairs(elements) do
             for short, long in pairs(FIELD_ALIASES) do
                 if elem[short] and not elem[long] then elem[long] = elem[short] end
@@ -41,12 +42,12 @@ if not CludesUI.RegisterUnlockElements then
         self._unlockRegistrationDirty = true
         -- Fresh registration flushes spec-override unlock layers' deferred writes
         -- for late/conditional registrants (party/raid containers, CDM bars).
-        if CludesUI.SpecOverrides_UnlockPokeFlush then CludesUI.SpecOverrides_UnlockPokeFlush() end
+        if CUI.SpecOverrides_UnlockPokeFlush then CUI.SpecOverrides_UnlockPokeFlush() end
     end
 end
 
-if not CludesUI.UnregisterUnlockElement then
-    function CludesUI:UnregisterUnlockElement(key)
+if not CUI.UnregisterUnlockElement then
+    function CUI:UnregisterUnlockElement(key)
         self._unlockRegisteredElements[key] = nil
         self._unlockRegistrationDirty = true
     end
@@ -54,19 +55,19 @@ end
 
 -- Cross-addon listeners fire on real session open/close only; close passes
 -- "exit"/"save"/"discard" as arg 2. Combat suspension does not end the session.
-if not CludesUI._unlockModeListeners then CludesUI._unlockModeListeners = {} end
+if not CUI._unlockModeListeners then CUI._unlockModeListeners = {} end
 
-if not CludesUI.RegisterUnlockModeListener then
-    function CludesUI:RegisterUnlockModeListener(ownerFrame, listener)
+if not CUI.RegisterUnlockModeListener then
+    function CUI:RegisterUnlockModeListener(ownerFrame, listener)
         self._unlockModeListeners[ownerFrame] = listener
         if self._unlockModeSessionActive then pcall(listener, true) end
     end
 
-    function CludesUI:UnregisterUnlockModeListener(ownerFrame) self._unlockModeListeners[ownerFrame] = nil end
+    function CUI:UnregisterUnlockModeListener(ownerFrame) self._unlockModeListeners[ownerFrame] = nil end
 
-    function CludesUI:IsUnlockModeActive() return self._unlockModeSessionActive == true end
+    function CUI:IsUnlockModeActive() return self._unlockModeSessionActive == true end
 
-    function CludesUI:_NotifyUnlockModeListeners(isActive, closeAction)
+    function CUI:_NotifyUnlockModeListeners(isActive, closeAction)
         self._unlockModeSessionActive = isActive == true
         for _, listener in pairs(self._unlockModeListeners) do
             pcall(listener, self._unlockModeSessionActive, closeAction)
@@ -76,19 +77,19 @@ end
 
 -- Already loaded by another addon: bail (registration API above is idempotent;
 -- state/frames/animations below must exist only once).
-if CludesUI._unlockModeLoaded then return end
-CludesUI._unlockModeLoaded = true
+if CUI._unlockModeLoaded then return end
+CUI._unlockModeLoaded = true
 
 -- Overlap cycling in Unlock Mode: "disabled", or the wheel alone ("scroll",
 -- the default) or with Shift / Ctrl / Alt held ("shiftscroll" /
 -- "controlscroll" / "altscroll").
-function CludesUI.GetUnlockOverlapMethod()
+function CUI.GetUnlockOverlapMethod()
     local saved = CludesUIDB
     return (saved and saved.unlockOverlapMethod) or "scroll"
 end
 -- Each method's label: the Global Settings dropdown and the top bar's controls
 -- help (CUI_UnlockMode_Session.lua) read it, each through L().
-CludesUI.UNLOCK_OVERLAP_LABELS = {
+CUI.UNLOCK_OVERLAP_LABELS = {
     disabled = "Disabled",
     scroll = "Scroll",
     shiftscroll = "Shift + Scroll",
@@ -100,13 +101,13 @@ CludesUI.UNLOCK_OVERLAP_LABELS = {
 --  Anchor reapply stub (pre-EnsureLoaded): lets child addons (CDM) reposition
 --  anchored elements at login before the full body loads; deferred block replaces it.
 -------------------------------------------------------------------------------
-if not CludesUI.ReapplyOwnAnchor then
-    CludesUI.ReapplyOwnAnchor = function(key)
+if not CUI.ReapplyOwnAnchor then
+    CUI.ReapplyOwnAnchor = function(key)
         if not CludesUIDB or not CludesUIDB.unlockAnchors then return end
         local details = CludesUIDB.unlockAnchors[key]
         if not details or not details.target then return end
 
-        local elems = CludesUI._unlockRegisteredElements
+        local elems = CUI._unlockRegisteredElements
         local childElem = elems and elems[key]
         if childElem and childElem.ownsPosition then return end
         local targetElem = elems and elems[details.target]
@@ -177,8 +178,8 @@ if not CludesUI.ReapplyOwnAnchor then
 
         -- No explicit snap: center came from pixel-aligned target edges/dims; snapping here adds 1px drift from float dust.
         pcall(function()
-            CludesUI.ClearFramePoints(childBar)
-            CludesUI.SetFramePoint(childBar, "CENTER", UIParent, "CENTER", centerX, centerY)
+            CUI.ClearFramePoints(childBar)
+            CUI.SetFramePoint(childBar, "CENTER", UIParent, "CENTER", centerX, centerY)
         end)
     end
 end
@@ -187,8 +188,8 @@ end
 --  Early stub: NotifyElementResized -- grow-direction-aware repositioning before
 --  unlock mode fully loads; deferred block overwrites it.
 -------------------------------------------------------------------------------
-if not CludesUI.NotifyElementResized then
-    CludesUI.NotifyElementResized = function(key)
+if not CUI.NotifyElementResized then
+    CUI.NotifyElementResized = function(key)
         if not CludesUIDB then return end
         -- Skip if anchored (early ReapplyOwnAnchor handles those)
         local anchors = CludesUIDB.unlockAnchors
@@ -196,13 +197,13 @@ if not CludesUI.NotifyElementResized then
 
         local growDir
         if key == "EQT_Tracker" then
-            local get = CludesUI.GetQuestTrackerGrowDir
+            local get = CUI.GetQuestTrackerGrowDir
             growDir = get and get() or "DOWN"
         elseif key:sub(1, 4) == "CDM_" then
             local rawKey = key:sub(5)
-            local cdm = CludesUI.Lite
-                and CludesUI.Lite.GetAddon
-                and CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
+            local cdm = CUI.Lite
+                and CUI.Lite.GetAddon
+                and CUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
                 for _, bar in ipairs(cdmBars.bars) do
@@ -214,9 +215,9 @@ if not CludesUI.NotifyElementResized then
                 end
             end
         else
-            local eab = CludesUI.Lite
-                and CludesUI.Lite.GetAddon
-                and CludesUI.Lite.GetAddon("CludesUIActionBars", true)
+            local eab = CUI.Lite
+                and CUI.Lite.GetAddon
+                and CUI.Lite.GetAddon("CludesUIActionBars", true)
             local cfg = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[key]
             if cfg then
                 local g = (cfg.growDirection or "up"):upper()
@@ -225,7 +226,7 @@ if not CludesUI.NotifyElementResized then
         end
         if not growDir or growDir == "CENTER" then return end
 
-        local elems = CludesUI._unlockRegisteredElements
+        local elems = CUI._unlockRegisteredElements
         local elem = elems and elems[key]
         local widget = elem and elem.getFrame and elem.getFrame(key)
         if not widget or not widget:GetCenter() then return end
@@ -234,9 +235,9 @@ if not CludesUI.NotifyElementResized then
         if elem and elem.loadPosition then
             place = elem.loadPosition(key)
         else
-            local eab = CludesUI.Lite
-                and CludesUI.Lite.GetAddon
-                and CludesUI.Lite.GetAddon("CludesUIActionBars", true)
+            local eab = CUI.Lite
+                and CUI.Lite.GetAddon
+                and CUI.Lite.GetAddon("CludesUIActionBars", true)
             local saved = eab and eab.db and eab.db.profile and eab.db.profile.barPositions
             place = saved and saved[key]
         end
@@ -270,15 +271,15 @@ if not CludesUI.NotifyElementResized then
 
         -- No explicit snap: cx +/- dim/2 reproduces the pixel-aligned edge within float epsilon; snapping can round the wrong way (1px drift/reload).
         pcall(function()
-            CludesUI.ClearFramePoints(widget)
-            CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
+            CUI.ClearFramePoints(widget)
+            CUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
         end)
     end
 end
 
 -- Early stub: IsUnlockAnchored -- true if the key has an anchor target in the DB; deferred block overwrites it.
-if not CludesUI.IsUnlockAnchored then
-    CludesUI.IsUnlockAnchored = function(unlockKey)
+if not CUI.IsUnlockAnchored then
+    CUI.IsUnlockAnchored = function(unlockKey)
         if not CludesUIDB or not CludesUIDB.unlockAnchors then return false end
         local ai = CludesUIDB.unlockAnchors[unlockKey]
         return ai and ai.target and true or false
@@ -295,12 +296,12 @@ do
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         C_Timer.After(1.5, function()
             -- CDM already ran EnsureUnlockCore and fires the pass itself.
-            if CludesUI._applySavedPositions then return end
+            if CUI._applySavedPositions then return end
             -- No CDM: run the deferred block and fire the same pass.
-            CludesUI:EnsureUnlockCore()
-            if CludesUI.ApplyAllWidthHeightMatches then CludesUI.ApplyAllWidthHeightMatches() end
-            if CludesUI._applySavedPositions then CludesUI._applySavedPositions() end
-            if CludesUI.ReapplyAllUnlockAnchorsForced then CludesUI.ReapplyAllUnlockAnchorsForced() end
+            CUI:EnsureUnlockCore()
+            if CUI.ApplyAllWidthHeightMatches then CUI.ApplyAllWidthHeightMatches() end
+            if CUI._applySavedPositions then CUI._applySavedPositions() end
+            if CUI.ReapplyAllUnlockAnchorsForced then CUI.ReapplyAllUnlockAnchorsForced() end
         end)
     end)
 end
@@ -322,8 +323,8 @@ do
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        CludesUI:EnsureUnlockCore()
-        if CludesUI._applySavedPositions then CludesUI._applySavedPositions() end
+        CUI:EnsureUnlockCore()
+        if CUI._applySavedPositions then CUI._applySavedPositions() end
     end)
 end
 
@@ -348,7 +349,7 @@ do
             "H",
         },
     }
-    function CludesUI.IsScreenEdgeKey(key) return EDGES[key] ~= nil end
+    function CUI.IsScreenEdgeKey(key) return EDGES[key] ~= nil end
 
     local strips = {}
     local function GetStrip(key) return strips[key] end
@@ -377,7 +378,7 @@ do
             noSizeMatchTarget = true,
         }
     end
-    CludesUI:RegisterUnlockElements(elements)
+    CUI:RegisterUnlockElements(elements)
 
     -- Linked children sit at absolute offsets from UIParent's center, so any change
     -- of UIParent's size in units (aspect ratio, window size, UI scale) leaves them
@@ -386,7 +387,7 @@ do
     local watch = CreateFrame("Frame", nil, UIParent)
     watch:SetAllPoints(UIParent)
     watch:SetScript("OnSizeChanged", function()
-        local propagate = CludesUI.PropagateAnchorChain
+        local propagate = CUI.PropagateAnchorChain
         if not propagate then return end
         for key in pairs(EDGES) do
             propagate(key)
@@ -397,7 +398,7 @@ end
 -- DEFERRED: heavy body (4900+ lines) runs on first EnsureUnlockCore() call
 -- (PLAYER_LOGIN / CDM setup / unlock-mode open / EnsureLoaded). Own slot, not
 -- _deferredInits: login must run this WITHOUT loading the options addon.
-CludesUI._unlockCoreInit = function()
+CUI._unlockCoreInit = function()
     local LM = {} -- unlock state and late-bound functions shared across the unlock files
     local floor = math.floor
     local abs = math.abs
@@ -410,7 +411,7 @@ CludesUI._unlockCoreInit = function()
     local function round(num) return num + (2 ^ 52 + 2 ^ 51) - (2 ^ 52 + 2 ^ 51) end
 
     -- Pixel-perfect snap: round a value to the nearest physical pixel boundary.
-    local Pix = CludesUI and CludesUI.PP
+    local Pix = CUI and CUI.PP
     local function pxSnap(posX)
         if not Pix then return round(posX) end
         local m = Pix.mult or 1
@@ -423,9 +424,9 @@ CludesUI._unlockCoreInit = function()
 
     -- Blank or restore a bar frame's alpha around a resize. Action Bars tracks the
     -- alpha of the bars it fades instead of reading it back, so it is told.
-    function CludesUI._UnlockSetBarAlpha(widget, a)
+    function CUI._UnlockSetBarAlpha(widget, a)
         widget:SetAlpha(a)
-        local note = CludesUI._EABNoteAlpha
+        local note = CUI._EABNoteAlpha
         if note then note(widget, a) end
     end
 
@@ -433,21 +434,21 @@ CludesUI._unlockCoreInit = function()
     -- flush moves; hides the bar frame meanwhile to prevent a visual jump.
     local function DeferMoverSync(m, syncFn, barFrame)
         if not m then return end
-        if barFrame then CludesUI._UnlockSetBarAlpha(barFrame, 0) end
+        if barFrame then CUI._UnlockSetBarAlpha(barFrame, 0) end
         syncFn(m)
         C_Timer.After(0, function()
             if m then syncFn(m) end
-            if barFrame then CludesUI._UnlockSetBarAlpha(barFrame, 1) end
+            if barFrame then CUI._UnlockSetBarAlpha(barFrame, 1) end
         end)
     end
 
     -- After a setWidth/setHeight rebuild snaps the bar to its stored position mid-unlock,
     -- re-place it at the mover's current screen position (else resizing makes it jump).
     -- On CludesUI to avoid an upvalue in CreateMover (Lua 5.1 limit: 60).
-    function CludesUI.RepositionBarToMover(barId)
+    function CUI.RepositionBarToMover(barId)
         if not LM.isUnlocked then return end
-        if CludesUI.IsPointAnchored(barId) then
-            CludesUI.ReapplyOwnAnchor(barId)
+        if CUI.IsPointAnchored(barId) then
+            CUI.ReapplyOwnAnchor(barId)
             return
         end
         local m = LM.movers[barId]
@@ -462,8 +463,8 @@ CludesUI._unlockCoreInit = function()
         -- converted into the bar's own scale (SetPoint offsets use the bar's scale).
         local ratio = m:GetEffectiveScale() / barScale
         pcall(function()
-            CludesUI.ClearFramePoints(bar)
-            CludesUI.SetFramePoint(bar, "CENTER", UIParent, "BOTTOMLEFT", mX * ratio, mY * ratio)
+            CUI.ClearFramePoints(bar)
+            CUI.SetFramePoint(bar, "CENTER", UIParent, "BOTTOMLEFT", mX * ratio, mY * ratio)
         end)
     end
 
@@ -472,7 +473,7 @@ CludesUI._unlockCoreInit = function()
     -------------------------------------------------------------------------------
     --  Constants
     -------------------------------------------------------------------------------
-    local FONT_PATH = (CludesUI.GetFontPath("extras"))
+    local FONT_PATH = (CUI.GetFontPath("extras"))
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     -- At very low UI scale the overlays/top bar are hard to read, so they're nudged up.
@@ -496,11 +497,11 @@ CludesUI._unlockCoreInit = function()
     end
 
     -- Local aliases for the shared registration tables
-    local registeredElements = CludesUI._unlockRegisteredElements
-    local registeredOrder = CludesUI._unlockRegisteredOrder
+    local registeredElements = CUI._unlockRegisteredElements
+    local registeredOrder = CUI._unlockRegisteredOrder
 
     local function RebuildRegisteredOrder()
-        if not CludesUI._unlockRegistrationDirty then return end
+        if not CUI._unlockRegistrationDirty then return end
         wipe(registeredOrder)
         for key, _ in pairs(registeredElements) do
             registeredOrder[#registeredOrder + 1] = key
@@ -512,7 +513,7 @@ CludesUI._unlockCoreInit = function()
             if oa ~= ob then return oa < ob end
             return lhs < rhs
         end)
-        CludesUI._unlockRegistrationDirty = false
+        CUI._unlockRegistrationDirty = false
     end
 
     -------------------------------------------------------------------------------
@@ -523,7 +524,7 @@ CludesUI._unlockCoreInit = function()
     local guidePool = {} -- reusable alignment guide lines
     local movers = {} -- { [barKey] = moverFrame }
     LM.isUnlocked = false
-    function CludesUI.IsUnlockModeActive() return LM.isUnlocked end
+    function CUI.IsUnlockModeActive() return LM.isUnlocked end
     LM.gridMode = "dimmed" -- "disabled", "dimmed", "bright"
     LM.snapEnabled = true -- magnet/snap state (runtime); must precede SnapPosition
     local lockAnimFrame -- lock assembly animation (close)
@@ -595,30 +596,30 @@ CludesUI._unlockCoreInit = function()
         return function()
             -- Direct setter (if options module already built) + pending flag consumed
             -- at Bar Display page build. Mirrors the unit-frame path.
-            if CludesUI._setActionBarKey then CludesUI._setActionBarKey(key) end
-            CludesUI._pendingActionBarSelect = key
+            if CUI._setActionBarKey then CUI._setActionBarKey(key) end
+            CUI._pendingActionBarSelect = key
         end
     end
     local function SelectUnitFrame(unitToken)
         return function()
             -- Direct setter (if init already ran) + pending flag (consumed at page build)
-            if CludesUI._setUnitFrameUnit then CludesUI._setUnitFrameUnit(unitToken) end
-            CludesUI._pendingUnitSelect = unitToken
+            if CUI._setUnitFrameUnit then CUI._setUnitFrameUnit(unitToken) end
+            CUI._pendingUnitSelect = unitToken
         end
     end
     -- Mini-frame pre-select factory (ToT/FoT/Pet/Boss live on "Mini Frames" with
     -- their own dropdown). On CludesUI, not file-local, to avoid a local in this limit-sensitive deferred function.
-    CludesUI._SelectMiniUnit = function(unitToken)
+    CUI._SelectMiniUnit = function(unitToken)
         return function()
-            if CludesUI._setMiniUnit then CludesUI._setMiniUnit(unitToken) end
-            CludesUI._pendingMiniSelect = unitToken
+            if CUI._setMiniUnit then CUI._setMiniUnit(unitToken) end
+            CUI._pendingMiniSelect = unitToken
         end
     end
     -- Capture entries registered before this deferred body runs (DataBars writes
     -- per-bar EDB_ keys at PLAYER_LOGIN, which fires first); merged back below so this
     -- assignment never wipes them. Namespace-stashed: function is at its local/upvalue cap.
-    CludesUI._elemMapPre = CludesUI._ELEMENT_SETTINGS_MAP
-    CludesUI._ELEMENT_SETTINGS_MAP = {
+    CUI._elemMapPre = CUI._ELEMENT_SETTINGS_MAP
+    CUI._ELEMENT_SETTINGS_MAP = {
         -- Main frames: "Main Frames" page; dropdown pre-selected to the unit.
         ["player"] = {
             module = "CludesUIUnitFrames",
@@ -646,21 +647,21 @@ CludesUI._unlockCoreInit = function()
             module = "CludesUIUnitFrames",
             page = "Mini Frames",
             sectionName = "HEALTH BAR",
-            preSelectFn = CludesUI._SelectMiniUnit("pet"),
+            preSelectFn = CUI._SelectMiniUnit("pet"),
             highlightText = "Bar Height",
         },
         ["targettarget"] = {
             module = "CludesUIUnitFrames",
             page = "Mini Frames",
             sectionName = "HEALTH BAR",
-            preSelectFn = CludesUI._SelectMiniUnit("targettarget"),
+            preSelectFn = CUI._SelectMiniUnit("targettarget"),
             highlightText = "Bar Height",
         },
         ["focustarget"] = {
             module = "CludesUIUnitFrames",
             page = "Mini Frames",
             sectionName = "HEALTH BAR",
-            preSelectFn = CludesUI._SelectMiniUnit("focustarget"),
+            preSelectFn = CUI._SelectMiniUnit("focustarget"),
             highlightText = "Bar Height",
         },
         -- Boss frames live on their own "Boss Frames" page (no unit dropdown).
@@ -704,7 +705,7 @@ CludesUI._unlockCoreInit = function()
             module = "CludesUIUnitFrames",
             page = "Mini Frames",
             sectionName = "CAST BAR",
-            preSelectFn = CludesUI._SelectMiniUnit("pet"),
+            preSelectFn = CUI._SelectMiniUnit("pet"),
             highlightText = "Show Cast Bar",
         },
 
@@ -991,11 +992,11 @@ CludesUI._unlockCoreInit = function()
         ["CDM_"] = { module = "CludesUICooldownManager", page = "CDM Bars" },
         ["TBB_"] = { module = "CludesUICooldownManager", page = "Tracking Bars" },
     }
-    if CludesUI._elemMapPre then
-        for key, val in pairs(CludesUI._elemMapPre) do
-            if CludesUI._ELEMENT_SETTINGS_MAP[key] == nil then CludesUI._ELEMENT_SETTINGS_MAP[key] = val end
+    if CUI._elemMapPre then
+        for key, val in pairs(CUI._elemMapPre) do
+            if CUI._ELEMENT_SETTINGS_MAP[key] == nil then CUI._ELEMENT_SETTINGS_MAP[key] = val end
         end
-        CludesUI._elemMapPre = nil
+        CUI._elemMapPre = nil
     end
 
     -- Width Match / Height Match / Anchor To pick modes: only one active at a time; picker mover stored here.
@@ -1008,11 +1009,11 @@ CludesUI._unlockCoreInit = function()
     LM.growDropdownCatcher = nil -- click-catcher behind grow dropdown
 
     -- Cursor speed tracking for hover intent detection (stored on CludesUI to avoid upvalue pressure)
-    CludesUI._unlockCursorX = 0
-    CludesUI._unlockCursorY = 0
-    CludesUI._unlockCursorSpeed = 0 -- pixels/sec at UIParent scale
-    CludesUI._unlockHoverSpeedThresh = 80 * 80 -- squared px/sec threshold (avoids sqrt each frame)
-    CludesUI._unlockHoverIntentDelay = 0.12 -- seconds to wait after settling before expanding
+    CUI._unlockCursorX = 0
+    CUI._unlockCursorY = 0
+    CUI._unlockCursorSpeed = 0 -- pixels/sec at UIParent scale
+    CUI._unlockHoverSpeedThresh = 80 * 80 -- squared px/sec threshold (avoids sqrt each frame)
+    CUI._unlockHoverIntentDelay = 0.12 -- seconds to wait after settling before expanding
 
     -------------------------------------------------------------------------------
     --  Split parts (CUI_UnlockMode_*.lua): share the stable names above through
@@ -1066,14 +1067,14 @@ CludesUI._unlockCoreInit = function()
     mod.CloseUnlockMode = mod.CloseUnlockMode
 
     -- Expose on the global CludesUI so SelectPage can intercept "Unlock Mode"
-    if CludesUI then
-        CludesUI._openUnlockMode = mod.OpenUnlockMode
-        function CludesUI:OpenUnlockMode() mod.OpenUnlockMode() end
+    if CUI then
+        CUI._openUnlockMode = mod.OpenUnlockMode
+        function CUI:OpenUnlockMode() mod.OpenUnlockMode() end
     end
 
     -- Toggle helper + active flag alias used by options pages
-    if CludesUI and not CludesUI.ToggleUnlockMode then
-        function CludesUI:ToggleUnlockMode()
+    if CUI and not CUI.ToggleUnlockMode then
+        function CUI:ToggleUnlockMode()
             if LM.isUnlocked then
                 mod.CloseUnlockMode()
             else
@@ -1085,14 +1086,14 @@ CludesUI._unlockCoreInit = function()
 
     -- When the options panel tries to show while unlock mode is active,
     -- close unlock mode first (with save flow), then re-show the panel after.
-    if CludesUI and CludesUI.RegisterOnShow then
-        CludesUI:RegisterOnShow(function()
+    if CUI and CUI.RegisterOnShow then
+        CUI:RegisterOnShow(function()
             if LM.isUnlocked then
                 -- Hide the panel immediately -- it shouldn't show during unlock mode
-                local panelFrame = CludesUI._mainFrame
+                local panelFrame = CUI._mainFrame
                 if panelFrame then panelFrame:Hide() end
                 -- Close unlock mode, then re-open the panel after
-                mod.CloseUnlockMode(function() CludesUI:Toggle() end)
+                mod.CloseUnlockMode(function() CUI:Toggle() end)
             end
         end)
     end
@@ -1106,15 +1107,15 @@ CludesUI._unlockCoreInit = function()
         if LM.PointPicker.Active() then LM.CancelPickMode() end
         LM.combatSuspended = true
         preCombatChanges = LM.hasChanges and true or false
-        if CludesUI._HideFallbackGhosts then CludesUI._HideFallbackGhosts() end
-        if CludesUI._HideOverrideGhosts then CludesUI._HideOverrideGhosts() end
+        if CUI._HideFallbackGhosts then CUI._HideFallbackGhosts() end
+        if CUI._HideOverrideGhosts then CUI._HideOverrideGhosts() end
 
         -- Restore objective tracker
         if LM.objTrackerWasVisible then
             local objTracker = _G.ObjectiveTrackerFrame
             if objTracker then
                 objTracker:SetAlpha(1)
-                local wasEnabled = CludesUI._GetFFD(objTracker).unlockMouseWasEnabled
+                local wasEnabled = CUI._GetFFD(objTracker).unlockMouseWasEnabled
                 if objTracker.EnableMouse then
                     pcall(objTracker.EnableMouse, objTracker, wasEnabled and true or false)
                 end
@@ -1130,12 +1131,12 @@ CludesUI._unlockCoreInit = function()
 
         -- Hide unlock UI without clearing state
         LM.isUnlocked = false
-        CludesUI._unlockActive = false
-        CludesUI._unlockModeActive = false
+        CUI._unlockActive = false
+        CUI._unlockModeActive = false
 
         -- Override anchors re-engage for the fight (isUnlocked is false now);
         -- ResumeAfterCombat's sweep releases them again for editing.
-        if CludesUI._ReapplyOverrideAnchors then CludesUI._ReapplyOverrideAnchors() end
+        if CUI._ReapplyOverrideAnchors then CUI._ReapplyOverrideAnchors() end
 
         -- Re-check Dragon Riding's real visibility (it force-shows while
         -- _unlockActive is true so it can be edited off-mount; must run AFTER
@@ -1187,12 +1188,12 @@ CludesUI._unlockCoreInit = function()
 
         -- Re-enter unlock mode but skip snapshot/reset since we preserved state
         LM.isUnlocked = true
-        CludesUI._unlockActive = true
-        CludesUI._unlockModeActive = true
-        if CludesUI._RefreshFallbackGhosts then CludesUI._RefreshFallbackGhosts() end
+        CUI._unlockActive = true
+        CUI._unlockModeActive = true
+        if CUI._RefreshFallbackGhosts then CUI._RefreshFallbackGhosts() end
         -- Release override anchors back to baseline for editing (isUnlocked true).
-        if CludesUI._ReapplyOverrideAnchors then CludesUI._ReapplyOverrideAnchors() end
-        if CludesUI._RefreshOverrideGhosts then CludesUI._RefreshOverrideGhosts() end
+        if CUI._ReapplyOverrideAnchors then CUI._ReapplyOverrideAnchors() end
+        if CUI._RefreshOverrideGhosts then CUI._RefreshOverrideGhosts() end
 
         -- Re-check Dragon Riding's visibility now that _unlockActive is true again:
         -- SuspendForCombat's re-check hid the HUD for a dismounted player, and without
@@ -1229,18 +1230,18 @@ CludesUI._unlockCoreInit = function()
         -- Mirrors the OpenUnlockMode entry strip: provider enter hooks first (CDM's
         -- Additional Bar Offset may have re-applied to un-anchored bars during the
         -- combat-suspend window)...
-        CludesUI.RunAnchorShiftEnters()
+        CUI.RunAnchorShiftEnters()
         -- ...then strip any temporary anchor-target shift (e.g. "Shift Elements if
         -- No Resource"/"...if No Bars") that may have re-applied while
         -- _unlockActive was false. _unlockActive is true again above, so the
         -- providers return 0 and this snaps shifted children back BEFORE the movers
         -- re-sync below capture their positions.
-        if CludesUI.AnchorShiftWantsApply() and CludesUI.ReapplyAllUnlockAnchors then
+        if CUI.AnchorShiftWantsApply() and CUI.ReapplyAllUnlockAnchors then
             -- Force edge-preservation so custom-growth anchored bars snap to their fixed
             -- growth edge, not the center-offset position. Reset via pcall so it can't leak.
-            CludesUI._reapplyForceEdgePreserve = true
-            pcall(CludesUI.ReapplyAllUnlockAnchors)
-            CludesUI._reapplyForceEdgePreserve = false
+            CUI._reapplyForceEdgePreserve = true
+            pcall(CUI.ReapplyAllUnlockAnchors)
+            CUI._reapplyForceEdgePreserve = false
         end
 
         -- Re-sync all movers (Sync shows live ones and hides stale/hidden ones).
@@ -1258,7 +1259,7 @@ CludesUI._unlockCoreInit = function()
         -- was left by a previous drag or addon rebuild.
         C_Timer.After(0, function()
             for bk, m in pairs(movers) do
-                if not m._dragging then CludesUI.RecenterBarAnchor(bk) end
+                if not m._dragging then CUI.RecenterBarAnchor(bk) end
             end
         end)
     end

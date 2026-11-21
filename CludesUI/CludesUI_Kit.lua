@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_Kit.lua
 --  The house controls for module windows and on-screen frames, so every
@@ -21,21 +22,21 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  global font).
 -------------------------------------------------------------------------------
 local Kit = {}
-CludesUI.Kit = Kit
+CUI.Kit = Kit
 
 local BG = { 0.062, 0.070, 0.082 } -- the house popup fill
 local CONTROL_BG = { 0, 0, 0, 0.5 }
 local IDLE = { 0.82, 0.82, 0.82 }
 
-local function Pix() return CludesUI.PP end
+local function Pix() return CUI.PP end
 
 function Kit.Accent()
-    local color = CludesUI.CLUDES_GREEN
+    local color = CUI.CLUDES_GREEN
     if color then return color.r, color.g, color.b end
     return 0.30, 0.79, 0.94
 end
 
-function Kit.AccentHex() return CludesUI.HexColor(Kit.Accent()) end
+function Kit.AccentHex() return CUI.HexColor(Kit.Accent()) end
 
 --- Copies the accent into an { r, g, b } array the caller keeps (for colour
 --- tables a feature passes around); returns it.
@@ -58,7 +59,7 @@ function Kit.AccentText(fontStr, alpha)
     fontStr._kitAccent = true
 end
 
-function Kit.Font(fontStr, size, key, flags) CludesUI.ApplyModuleFont(fontStr, nil, size, key, flags) end
+function Kit.Font(fontStr, size, key, flags) CUI.ApplyModuleFont(fontStr, nil, size, key, flags) end
 
 local function Border(widget, red, green, blue, a)
     local pp = Pix()
@@ -93,11 +94,11 @@ function Kit.Glyph(hostFrame, textValue, onClick, tipText, key)
     widget:SetScript("OnClick", onClick)
     widget:SetScript("OnEnter", function(self)
         self.t:SetTextColor(Kit.Accent())
-        if tipText then CludesUI.ShowWidgetTooltip(self, tipText) end
+        if tipText then CUI.ShowWidgetTooltip(self, tipText) end
     end)
     widget:SetScript("OnLeave", function(self)
         self.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
-        if tipText then CludesUI.HideWidgetTooltip() end
+        if tipText then CUI.HideWidgetTooltip() end
     end)
     return widget
 end
@@ -176,11 +177,11 @@ function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
     Paint(false)
     widget:HookScript("OnEnter", function(self)
         Paint(true)
-        if options.tip then CludesUI.ShowWidgetTooltip(self, options.tip) end
+        if options.tip then CUI.ShowWidgetTooltip(self, options.tip) end
     end)
     widget:HookScript("OnLeave", function()
         Paint(false)
-        if options.tip then CludesUI.HideWidgetTooltip() end
+        if options.tip then CUI.HideWidgetTooltip() end
     end)
     if onClick then widget:SetScript("OnClick", onClick) end
     function widget:SetText(t) self.label:SetText(t) end
@@ -394,5 +395,5 @@ end
 function Kit.ContextMenu(ownerFrame, builder, options)
     local root = NewNode()
     builder(ownerFrame, root)
-    CludesUI.ShowContextMenu(ownerFrame, Items(root), options)
+    CUI.ShowContextMenu(ownerFrame, Items(root), options)
 end

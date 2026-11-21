@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Positions.lua
 --  Ghost overlays, override anchors, saved positions, grow-direction
@@ -131,7 +132,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             end
             -- Mirror the runtime growth-fixed-edge pin (UIParent-space dims = w,h)
             -- so the ghost previews exactly where the bar will land.
-            local gsx, gsy = CludesUI._FallbackGrowShift(childBarKey, itemLink.side, wid or 0, hgt or 0)
+            local gsx, gsy = CUI._FallbackGrowShift(childBarKey, itemLink.side, wid or 0, hgt or 0)
             snapX = snapX + gsx
             snapY = snapY + gsy
             -- Run the exact runtime pipeline (child-local conversion + dim-aware
@@ -142,7 +143,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 local scaleRatio = uiScale / childScale
                 local bx = (snapX - UIParent:GetWidth() / 2) * scaleRatio
                 local by = (snapY - UIParent:GetHeight() / 2) * scaleRatio
-                local PPg = Pix or (CludesUI and CludesUI.PP)
+                local PPg = Pix or (CUI and CUI.PP)
                 if PPg and PPg.SnapCenterForDim then
                     bx = PPg.SnapCenterForDim(bx, eb:GetWidth() or 0, childScale)
                     by = PPg.SnapCenterForDim(by, eb:GetHeight() or 0, childScale)
@@ -183,14 +184,14 @@ CUI_NS.unlockParts.Positions = function(LM)
             else
                 backdrop:SetColorTexture(wr, wg, wb, 0.10)
             end
-            ghost._brd = CludesUI.MakeBorder(ghost, wr, wg, wb, 0.6)
+            ghost._brd = CUI.MakeBorder(ghost, wr, wg, wb, 0.6)
 
             local labelFrame = CreateFrame("Frame", nil, ghost)
             labelFrame:SetAllPoints()
             labelFrame:SetClipsChildren(true)
             labelFrame:SetFrameLevel(ghost:GetFrameLevel() + 2)
             local fontStr = labelFrame:CreateFontString(nil, "OVERLAY")
-            CludesUI.PrimeFontShadow(fontStr, true)
+            CUI.PrimeFontShadow(fontStr, true)
             fontStr:SetFont(FONT_PATH, 10 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
             fontStr:SetTextColor(1, 1, 1, 0.75)
             fontStr:SetWordWrap(false)
@@ -201,8 +202,8 @@ CUI_NS.unlockParts.Positions = function(LM)
             ghost:SetScript("OnMouseDown", function(self, button)
                 if button ~= "LeftButton" then return end
                 -- One arrow-key target at a time across movers and BOTH ghost systems.
-                if CludesUI._DeselectSelectedMover then CludesUI._DeselectSelectedMover() end
-                local other = CludesUI[options.deselectOther]
+                if CUI._DeselectSelectedMover then CUI._DeselectSelectedMover() end
+                local other = CUI[options.deselectOther]
                 if other then other() end
                 if selectedGhost and selectedGhost ~= self then SetGhostSelected(selectedGhost, false) end
                 selectedGhost = self
@@ -249,7 +250,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                     local gs = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
                     local dw = (gr - gl) * gs
                     local dh = (gt - gb) * gs
-                    local gsx, gsy = CludesUI._FallbackGrowShift(self._childKey, itemLink.side, dw, dh)
+                    local gsx, gsy = CUI._FallbackGrowShift(self._childKey, itemLink.side, dw, dh)
                     itemLink.offsetX = (gl + gr) * 0.5 * gs - snapX - gsx
                     itemLink.offsetY = (gt + gb) * 0.5 * gs - snapY - gsy
                     LM.hasChanges = true
@@ -354,29 +355,29 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- 10%-whitened mover look: dark background (when dark overlays
                 -- are on) and accent border, both lerped a tenth of the way to white.
                 local ar, ag, ab = 1, 1, 1
-                if CludesUI.GetAccentColor then
-                    ar, ag, ab = CludesUI.GetAccentColor()
+                if CUI.GetAccentColor then
+                    ar, ag, ab = CUI.GetAccentColor()
                 end
                 return ar + (1 - ar) * 0.10, ag + (1 - ag) * 0.10, ab + (1 - ab) * 0.10, 1, 1, 1
             end,
             label = function(ghost, fontStr)
                 fontStr:SetText(
-                    CludesUI.L("Fallback") .. ": " .. (LM.GetBarLabel(ghost._childKey) or ghost._childKey)
+                    CUI.L("Fallback") .. ": " .. (LM.GetBarLabel(ghost._childKey) or ghost._childKey)
                 )
             end,
             deselectOther = "_DeselectOverrideGhosts",
         })
         local ghosts = ghostSet.ghosts
 
-        CludesUI._HideFallbackGhosts = ghostSet.HideAll
-        CludesUI._SetFallbackGhostsAlpha = ghostSet.SetAlpha
-        CludesUI._DeselectFallbackGhosts = ghostSet.Deselect
-        CludesUI._ClearFallbackGhostTempHides = ghostSet.ClearTempHides
-        CludesUI._NudgeSelectedFallbackGhost = ghostSet.Nudge
+        CUI._HideFallbackGhosts = ghostSet.HideAll
+        CUI._SetFallbackGhostsAlpha = ghostSet.SetAlpha
+        CUI._DeselectFallbackGhosts = ghostSet.Deselect
+        CUI._ClearFallbackGhostTempHides = ghostSet.ClearTempHides
+        CUI._NudgeSelectedFallbackGhost = ghostSet.Nudge
 
-        function CludesUI._RefreshFallbackGhosts()
+        function CUI._RefreshFallbackGhosts()
             if not LM.isUnlocked or not LM.unlockFrame then
-                CludesUI._HideFallbackGhosts()
+                CUI._HideFallbackGhosts()
                 return
             end
             local saved = GetAnchorDB()
@@ -434,14 +435,14 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- store shape: { [childKey] = { [gid] = { target, side, offsetX, offsetY } } }
         -- offsets are UIParent-space deltas from the side-snap point (ghost drags).
         local function Store(create)
-            local prof = CludesUI.GetActiveProfileData()
+            local prof = CUI.GetActiveProfileData()
             if not prof then return nil end
             if create and not prof.unlockOverrideAnchors then prof.unlockOverrideAnchors = {} end
             return prof.unlockOverrideAnchors
         end
 
         local function Groups()
-            local prof = CludesUI.GetActiveProfileData()
+            local prof = CUI.GetActiveProfileData()
             return prof and prof.specOverrideGroups
         end
 
@@ -452,15 +453,15 @@ CUI_NS.unlockParts.Positions = function(LM)
             return nil
         end
 
-        function CludesUI._OverrideAnchorEligible(childBarKey) return ELIGIBLE[childBarKey] or false end
+        function CUI._OverrideAnchorEligible(childBarKey) return ELIGIBLE[childBarKey] or false end
 
         -- Spec-override groups an Override Anchor may target: groups WITHOUT a
         -- custom unlock layout (a fork owns every position outright, so an
         -- override anchor there would be a dead setting).
-        function CludesUI._OverrideAnchorGroups()
+        function CUI._OverrideAnchorGroups()
             local groups = Groups()
             if not groups or #groups == 0 then return nil end
-            local prof = CludesUI.GetActiveProfileData()
+            local prof = CUI.GetActiveProfileData()
             local layouts = prof and prof.specUnlockOverrides and prof.specUnlockOverrides.layouts
             local result
             for _, ghost in ipairs(groups) do
@@ -472,7 +473,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             return result
         end
 
-        function CludesUI._HasOverrideAnchor(childBarKey, groupId)
+        function CUI._HasOverrideAnchor(childBarKey, groupId)
             local storage = Store()
             local ent = storage and storage[childBarKey]
             local shade = ent and ent[groupId]
@@ -488,18 +489,18 @@ CUI_NS.unlockParts.Positions = function(LM)
             local storage = Store()
             local ent = storage and storage[childBarKey]
             if not ent then return nil end
-            if CludesUI.SpecOverrides_UnlockActive and CludesUI.SpecOverrides_UnlockActive() ~= nil then
+            if CUI.SpecOverrides_UnlockActive and CUI.SpecOverrides_UnlockActive() ~= nil then
                 return nil
             end
-            local specID = CludesUI._specID
+            local specID = CUI._specID
             if not specID or specID == 0 then
-                CludesUI._RefreshSpecID()
-                specID = CludesUI._specID
+                CUI._RefreshSpecID()
+                specID = CUI._specID
             end
             if not specID or specID == 0 then return nil end
             -- WoW Forever: the spec the class acts as for Spec Overrides.
-            if CludesUI.IS_FOREVER and CludesUI.SpecOverrides_CurrentSpecID then
-                specID = CludesUI.SpecOverrides_CurrentSpecID() or specID
+            if CUI.IS_FOREVER and CUI.SpecOverrides_CurrentSpecID then
+                specID = CUI.SpecOverrides_CurrentSpecID() or specID
             end
             local groups = Groups()
             if not groups then return nil end
@@ -519,7 +520,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- of its target through the exact fallback pipeline -- absolute UIParent-
         -- space side-snap math, growth-edge pin, child-local conversion, dim-aware
         -- pixel snap, idempotent guard and child cascade.
-        function CludesUI._TryOverrideAnchor(childBarKey, childFrame)
+        function CUI._TryOverrideAnchor(childBarKey, childFrame)
             if LM.isUnlocked then return false end
             local groupId = ActiveGidFor(childBarKey)
             if not groupId then
@@ -536,7 +537,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             childFrame = childFrame or LM.GetBarFrame(childBarKey)
             if not childFrame then return true end
             if InCombatLockdown() and childFrame:IsProtected() then
-                CludesUI._AnchorPark.Park(childBarKey)
+                CUI._AnchorPark.Park(childBarKey)
                 return true
             end
             local tgt = LM.GetBarFrame(shade.target)
@@ -555,8 +556,8 @@ CUI_NS.unlockParts.Positions = function(LM)
             local targetMidX = (targetLeft + targetRight) / 2
             local tCY = (targetTop + targetBottom) / 2
             -- Growth-edge extent applies to the override target too.
-            if CludesUI._GetAnchorTargetExtent then
-                local ext = CludesUI._GetAnchorTargetExtent(shade.target, edgeSide)
+            if CUI._GetAnchorTargetExtent then
+                local ext = CUI._GetAnchorTargetExtent(shade.target, edgeSide)
                 if ext then
                     if edgeSide == "TOP" then
                         targetTop = ext
@@ -588,19 +589,19 @@ CUI_NS.unlockParts.Positions = function(LM)
             snapY = snapY + (shade.offsetY or 0)
             -- Keep the growth-fixed edge pinned on the cross axis (inert for
             -- center-growth / non-bar children), like the fallback apply.
-            local gsx, gsy = CludesUI._FallbackGrowShift(childBarKey, edgeSide, childW, childH)
+            local gsx, gsy = CUI._FallbackGrowShift(childBarKey, edgeSide, childW, childH)
             snapX = snapX + gsx
             snapY = snapY + gsy
             -- Temporary per-target visual shift (e.g. "Shift Elements if No
             -- Resource/Power"), mirroring the main anchor path.
-            if CludesUI._GetAnchorTargetShiftDir then
-                local dir, extraY = CludesUI._GetAnchorTargetShiftDir(shade.target, childBarKey)
+            if CUI._GetAnchorTargetShiftDir then
+                local dir, extraY = CUI._GetAnchorTargetShiftDir(shade.target, childBarKey)
                 if dir ~= 0 then snapY = snapY + dir * ((targetTop - targetBottom) + (extraY or 0)) end
             end
             local scaleRatio = uiScale / childScale
             local bCenterX = (snapX - UIParent:GetWidth() / 2) * scaleRatio
             local bCenterY = (snapY - UIParent:GetHeight() / 2) * scaleRatio
-            local PixKit = Pix or (CludesUI and CludesUI.PP)
+            local PixKit = Pix or (CUI and CUI.PP)
             if PixKit and PixKit.SnapCenterForDim then
                 bCenterX = PixKit.SnapCenterForDim(bCenterX, childFrame:GetWidth() or 0, childScale)
                 bCenterY = PixKit.SnapCenterForDim(bCenterY, childFrame:GetHeight() or 0, childScale)
@@ -627,8 +628,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 end
             end
             pcall(function()
-                CludesUI.ClearFramePoints(childFrame)
-                CludesUI.SetFramePoint(childFrame, "CENTER", UIParent, "CENTER", bCenterX, bCenterY)
+                CUI.ClearFramePoints(childFrame)
+                CUI.SetFramePoint(childFrame, "CENTER", UIParent, "CENTER", bCenterX, bCenterY)
             end)
             -- Children anchored to THIS element must follow it to the override spot.
             LM._pendingAnchorKeys[childBarKey] = "all"
@@ -643,18 +644,18 @@ CUI_NS.unlockParts.Positions = function(LM)
             local element = registeredElements[childBarKey]
             if element and element.applyPosition then pcall(element.applyPosition, childBarKey) end
             if
-                CludesUI.IsUnlockAnchored
-                and CludesUI.IsUnlockAnchored(childBarKey)
-                and CludesUI.ReapplyUnlockAnchor
+                CUI.IsUnlockAnchored
+                and CUI.IsUnlockAnchored(childBarKey)
+                and CUI.ReapplyUnlockAnchor
             then
-                CludesUI.ReapplyUnlockAnchor(childBarKey)
+                CUI.ReapplyUnlockAnchor(childBarKey)
             end
         end
 
         -- Engage/disengage sweep for unlock open/close and combat suspend/resume:
         -- every stored element re-tries (idempotent); keys the try released
         -- repaint through their normal owners.
-        function CludesUI._ReapplyOverrideAnchors()
+        function CUI._ReapplyOverrideAnchors()
             local storage = Store()
             local released
             for childBarKey in pairs(engagedKeys) do
@@ -663,7 +664,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             end
             if storage then
                 for childBarKey in pairs(storage) do
-                    if CludesUI._TryOverrideAnchor(childBarKey) and released then
+                    if CUI._TryOverrideAnchor(childBarKey) and released then
                         released[childBarKey] = nil
                     end
                 end
@@ -680,7 +681,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- the same element pick mode as regular anchoring. Re-picking the SAME
         -- target keeps the dragged offsets (only the side changed); a new target
         -- resets them, exactly like re-anchoring invalidates a fallback.
-        function CludesUI._SetOverrideAnchor(childBarKey, groupId, targetKey, edgeSide)
+        function CUI._SetOverrideAnchor(childBarKey, groupId, targetKey, edgeSide)
             if not childBarKey or not groupId or not targetKey or targetKey == childBarKey then return end
             local storage = Store(true)
             if not storage then return end
@@ -698,12 +699,12 @@ CUI_NS.unlockParts.Positions = function(LM)
                 offsetY = keepOff and prev.offsetY or nil,
             }
             LM.hasChanges = true
-            if CludesUI._RefreshOverrideGhosts then CludesUI._RefreshOverrideGhosts() end
+            if CUI._RefreshOverrideGhosts then CUI._RefreshOverrideGhosts() end
         end
 
         -- Enter element pick mode for an override anchor target: same flow as
         -- anchoring; the mover click dispatcher reads the pending group id.
-        function CludesUI._BeginOverrideAnchorPick(mover, groupId)
+        function CUI._BeginOverrideAnchorPick(mover, groupId)
             if not mover or not groupId then return end
             CancelPickMode()
             LM.pickMode = "overrideAnchor"
@@ -715,11 +716,11 @@ CUI_NS.unlockParts.Positions = function(LM)
             FadeOverlayForSelectElement(true)
         end
 
-        function CludesUI._OverridePickGid() return ovPickGid end
+        function CUI._OverridePickGid() return ovPickGid end
 
         -- Every stored override target for an element (any group) -- the pick
         -- handler's cycle walk expands through these edges.
-        function CludesUI._OverrideAnchorTargets(childBarKey)
+        function CUI._OverrideAnchorTargets(childBarKey)
             local storage = Store()
             local ent = storage and storage[childBarKey]
             if not ent then return nil end
@@ -735,7 +736,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         -- Elements currently RIDING an engaged override anchor on parentKey --
         -- PropagateAnchorChain re-applies them when that target moves/resizes.
-        function CludesUI._OverrideAnchorRiders(parentKey)
+        function CUI._OverrideAnchorRiders(parentKey)
             if not next(engagedKeys) then return nil end
             local storage = Store()
             if not storage then return nil end
@@ -751,7 +752,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             return result
         end
 
-        function CludesUI._ClearOverrideAnchor(childBarKey, groupId)
+        function CUI._ClearOverrideAnchor(childBarKey, groupId)
             local storage = Store()
             local ent = storage and storage[childBarKey]
             if ent then
@@ -759,7 +760,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 if not next(ent) then storage[childBarKey] = nil end
             end
             LM.hasChanges = true
-            if CludesUI._RefreshOverrideGhosts then CludesUI._RefreshOverrideGhosts() end
+            if CUI._RefreshOverrideGhosts then CUI._RefreshOverrideGhosts() end
         end
 
         ---------------------------------------------------------------------------
@@ -809,15 +810,15 @@ CUI_NS.unlockParts.Positions = function(LM)
         })
         local ghosts = ghostSet.ghosts
 
-        CludesUI._HideOverrideGhosts = ghostSet.HideAll
-        CludesUI._SetOverrideGhostsAlpha = ghostSet.SetAlpha
-        CludesUI._DeselectOverrideGhosts = ghostSet.Deselect
-        CludesUI._ClearOverrideGhostTempHides = ghostSet.ClearTempHides
-        CludesUI._NudgeSelectedOverrideGhost = ghostSet.Nudge
+        CUI._HideOverrideGhosts = ghostSet.HideAll
+        CUI._SetOverrideGhostsAlpha = ghostSet.SetAlpha
+        CUI._DeselectOverrideGhosts = ghostSet.Deselect
+        CUI._ClearOverrideGhostTempHides = ghostSet.ClearTempHides
+        CUI._NudgeSelectedOverrideGhost = ghostSet.Nudge
 
-        function CludesUI._RefreshOverrideGhosts()
+        function CUI._RefreshOverrideGhosts()
             if not LM.isUnlocked or not LM.unlockFrame then
-                CludesUI._HideOverrideGhosts()
+                CUI._HideOverrideGhosts()
                 return
             end
             local storage = Store()
@@ -862,8 +863,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- Automatic captures that bank live geometry into saved data skip such a bar
     -- and retry on a later pass; explicit user moves (drag, nudge, link changes)
     -- still capture it. Every other element, and a bar not yet clamped, is false.
-    CludesUI._RectHeldByClamp = function(key, frame)
-        local abKeys = CludesUI._abBarKeys
+    CUI._RectHeldByClamp = function(key, frame)
+        local abKeys = CUI._abBarKeys
         if not (abKeys and abKeys[key]) then return false end
         if not (frame and frame:IsClampedToScreen()) then return false end
         local l, r, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
@@ -889,7 +890,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- side's target edge (honoring the growth-edge extent override); a perpendicular
     -- side pins to the near edge, chosen once by which half of the target the fixed
     -- edge sits in, so runtime straddling can never flip it.
-    CludesUI._unlockCaptureGrowPin = function(childBarKey, anchorInfo, edgeSide)
+    CUI._unlockCaptureGrowPin = function(childBarKey, anchorInfo, edgeSide)
         if not anchorInfo or not anchorInfo.target then return false end
         if anchorInfo.mode == "POINT" then return false end
         local childFrame = LM.GetBarFrame(childBarKey)
@@ -901,13 +902,13 @@ CUI_NS.unlockParts.Positions = function(LM)
         local uiScale = UIParent:GetEffectiveScale()
         local childScale = childFrame:GetEffectiveScale()
         local targetScale = targetBar:GetEffectiveScale()
-        local snapF = (CludesUI.PP and CludesUI.PP.Snap) or function(val) return math.floor(val + 0.5) end
+        local snapF = (CUI.PP and CUI.PP.Snap) or function(val) return math.floor(val + 0.5) end
         local targetLeft = (targetBar:GetLeft() or 0) * targetScale / uiScale
         local targetRight = (targetBar:GetRight() or 0) * targetScale / uiScale
         local targetTop = (targetBar:GetTop() or 0) * targetScale / uiScale
         local targetBottom = (targetBar:GetBottom() or 0) * targetScale / uiScale
-        if CludesUI._GetAnchorTargetExtent then
-            local ext = CludesUI._GetAnchorTargetExtent(anchorInfo.target, edgeSide)
+        if CUI._GetAnchorTargetExtent then
+            local ext = CUI._GetAnchorTargetExtent(anchorInfo.target, edgeSide)
             if ext then
                 if edgeSide == "TOP" then
                     targetTop = ext
@@ -932,7 +933,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 refX = "RIGHT"
             -- A screen edge spans the full width: hold against the screen's horizontal
             -- center like every other element on that edge, not its left or right.
-            elseif CludesUI.IsScreenEdgeKey(anchorInfo.target) then
+            elseif CUI.IsScreenEdgeKey(anchorInfo.target) then
                 refX = "CENTER"
             else
                 refX = (fixedX < targetMidX) and "LEFT" or "RIGHT"
@@ -952,7 +953,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 refY = "BOTTOM"
             -- A screen edge spans the full height: hold against the screen's vertical
             -- center like every other element on that edge, not its top or bottom.
-            elseif CludesUI.IsScreenEdgeKey(anchorInfo.target) then
+            elseif CUI.IsScreenEdgeKey(anchorInfo.target) then
                 refY = "CENTER"
             else
                 refY = (fixedY < tCY) and "BOTTOM" or "TOP"
@@ -971,7 +972,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- apply it. A getter registered here folds it into the computed position instead
     -- of correcting afterwards, which would defeat the idempotent guard below and reposition the anchor every pass forever.
     local function ExtraAnchorOffset(childBarKey)
-        local tbl = CludesUI._anchorExtraOffset
+        local tbl = CUI._anchorExtraOffset
         local func = tbl and tbl[childBarKey]
         if not func then return 0, 0 end
         local success, dx, dy = pcall(func, childBarKey)
@@ -979,12 +980,12 @@ CUI_NS.unlockParts.Positions = function(LM)
         return dx, dy
     end
     -- On CludesUI for CreateMover's cog menu (Lua 5.1 limit: 60 upvalues).
-    CludesUI._ExtraAnchorOffset = ExtraAnchorOffset
+    CUI._ExtraAnchorOffset = ExtraAnchorOffset
 
     -- A screen edge governs exactly one axis: left/right hold X, top/bottom hold Y.
     -- That is what lets an element carry two anchors -- the primary one (an element or
     -- a screen edge) keeps whichever axis no ai.edge claims. Returns "X", "Y" or nil.
-    CludesUI._ScreenEdgeAxis = function(key)
+    CUI._ScreenEdgeAxis = function(key)
         if key == "SCREEN_LEFT" or key == "SCREEN_RIGHT" then return "X" end
         if key == "SCREEN_TOP" or key == "SCREEN_BOTTOM" then return "Y" end
         return nil
@@ -994,7 +995,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- the anchored side, center on the cross axis. The element's own extra offset (the
     -- raid container's per-tier offset) comes out, because every anchored apply folds
     -- it back in. Returns nil when either rect is missing.
-    CludesUI._CaptureAnchorOffsets = function(childBarKey, targetKey, edgeSide)
+    CUI._CaptureAnchorOffsets = function(childBarKey, targetKey, edgeSide)
         local details = GetAnchorInfo(childBarKey)
         if details and details.mode == "POINT" and details.target == targetKey then
             return mod.PointAnchors.Capture(childBarKey, details)
@@ -1022,12 +1023,12 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- menu shows WHERE the element will hold. Hovering a row previews it, a click
     -- flashes it. The textures hang on the unlock overlay and are reused, so they exist
     -- only while unlock mode is open.
-    CludesUI._ShowScreenEdgeMarker = function(edgeKey, flash)
+    CUI._ShowScreenEdgeMarker = function(edgeKey, flash)
         if not LM.unlockFrame then return end
-        local storage = CludesUI._screenEdgeMarkers
+        local storage = CUI._screenEdgeMarkers
         if not storage then
             storage = {}
-            CludesUI._screenEdgeMarkers = storage
+            CUI._screenEdgeMarkers = storage
         end
         -- Own host frame in the top strata: on the unlock overlay itself the line went
         -- behind every bar and frame that sits in a higher strata. It is a child of the
@@ -1075,18 +1076,18 @@ CUI_NS.unlockParts.Positions = function(LM)
     end
 
     -- Hover preview only: a flash owns the marker until its timer fires.
-    CludesUI._HideScreenEdgeMarker = function(edgeKey)
-        local storage = CludesUI._screenEdgeMarkers
+    CUI._HideScreenEdgeMarker = function(edgeKey)
+        local storage = CUI._screenEdgeMarkers
         local m = storage and storage[edgeKey]
         if m and not m._hideTimer then m:Hide() end
     end
 
     -- The single number a cross-axis screen edge needs: the capture above, reduced to
     -- the axis that edge governs.
-    CludesUI._CaptureScreenEdgeOffset = function(childBarKey, edgeKey, edgeSide)
-        local offX, offY = CludesUI._CaptureAnchorOffsets(childBarKey, edgeKey, edgeSide)
+    CUI._CaptureScreenEdgeOffset = function(childBarKey, edgeKey, edgeSide)
+        local offX, offY = CUI._CaptureAnchorOffsets(childBarKey, edgeKey, edgeSide)
         if offX == nil then return nil end
-        return (CludesUI._ScreenEdgeAxis(edgeKey) == "X") and offX or offY
+        return (CUI._ScreenEdgeAxis(edgeKey) == "X") and offX or offY
     end
 
     -- Anchor-target shift providers ("Shift Elements if No Resource" and kin):  -- cui-style: allow comment-budget
@@ -1103,19 +1104,19 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- calling an API): providers must register with ZERO load-order coupling --
     -- whichever file runs first creates the shared list, exactly like the
     -- _anchorExtraOffset registry and this file's own _unlockRegisteredElements.
-    CludesUI._anchorShiftProviders = CludesUI._anchorShiftProviders or {}
+    CUI._anchorShiftProviders = CUI._anchorShiftProviders or {}
     -- pcall-isolated: one provider erroring must not take the OTHER module's
     -- anchoring (or unlock entry) down with it.
-    CludesUI._GetAnchorTargetShiftDir = function(targetKey, childBarKey)
-        local t = CludesUI._anchorShiftProviders
+    CUI._GetAnchorTargetShiftDir = function(targetKey, childBarKey)
+        local t = CUI._anchorShiftProviders
         for idx = 1, #t do
             local success, dir, extraY = pcall(t[idx].dir, targetKey, childBarKey)
             if success and dir and dir ~= 0 then return dir, extraY end
         end
         return 0
     end
-    function CludesUI.AnchorShiftWantsApply()
-        local t = CludesUI._anchorShiftProviders
+    function CUI.AnchorShiftWantsApply()
+        local t = CUI._anchorShiftProviders
         for idx = 1, #t do
             local wid = t[idx].wants
             if wid then
@@ -1125,8 +1126,8 @@ CUI_NS.unlockParts.Positions = function(LM)
         end
         return false
     end
-    function CludesUI.RestoreAnchorShifts()
-        local t = CludesUI._anchorShiftProviders
+    function CUI.RestoreAnchorShifts()
+        local t = CUI._anchorShiftProviders
         for idx = 1, #t do
             local r = t[idx].restore
             if r then pcall(r) end
@@ -1138,8 +1139,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- UN-anchored bars) -- the anchored side is covered by the wants-gated
     -- ReapplyAllUnlockAnchors strip. Each hook self-gates, so providers with
     -- nothing active cost one function call.
-    function CludesUI.RunAnchorShiftEnters()
-        local t = CludesUI._anchorShiftProviders
+    function CUI.RunAnchorShiftEnters()
+        local t = CUI._anchorShiftProviders
         for idx = 1, #t do
             local e = t[idx].enter
             if e then pcall(e) end
@@ -1149,7 +1150,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     LM.ApplyAnchorPosition = function(childBarKey, targetKey, edgeSide, noMark, noMove, fromCascade)
         -- A screen edge is a fixed target, never a child: a stray link from bad data
         -- would re-point its strip and skew every screen-edge link.
-        if CludesUI.IsScreenEdgeKey(childBarKey) then return end
+        if CUI.IsScreenEdgeKey(childBarKey) then return end
         local childFrame = LM.GetBarFrame(childBarKey)
         local targetBar = LM.GetBarFrame(targetKey)
         if not childFrame then return end
@@ -1164,14 +1165,14 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Override anchor (opt-in, Resource Bars): while a spec-override group's
         -- stored position is engaged it owns this element outright -- it wins over
         -- the anchor link exactly like it wins over the saved position.
-        if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor(childBarKey, childFrame) then
+        if CUI._TryOverrideAnchor and CUI._TryOverrideAnchor(childBarKey, childFrame) then
             return
         end
         -- Fallback anchor (opt-in): a target configured away on this spec (no frame) or
         -- a pet frame with no pet positions the child at its stored fallback instead of leaving it wherever the default build put it.
         if
-            CludesUI._TryFallbackAnchor
-            and CludesUI._TryFallbackAnchor(childBarKey, targetKey, childFrame, targetBar)
+            CUI._TryFallbackAnchor
+            and CUI._TryFallbackAnchor(childBarKey, targetKey, childFrame, targetBar)
         then
             return
         end
@@ -1180,7 +1181,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- bounds stays safe even for a protected target (oUF), SetPoint is only called
         -- on the child. Park the key so the anchor reapplies when combat drops.
         if InCombatLockdown() and childFrame:IsProtected() then
-            CludesUI._AnchorPark.Park(childBarKey)
+            CUI._AnchorPark.Park(childBarKey)
             return
         end
 
@@ -1191,7 +1192,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- under its frame's aura stack) has secret edges under aura restriction:
         -- no compare or arithmetic may touch them. Park until regen.
         if issecretvalue and issecretvalue(tL0) then
-            CludesUI._AnchorPark.Park(childBarKey)
+            CUI._AnchorPark.Park(childBarKey)
             return
         end
         if not tL0 then return end
@@ -1224,8 +1225,8 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- direction, the edge follows the outermost visible member (top of the topmost
         -- bar of an upward-growing tracking bar group). Provider returns nil for every
         -- other target/side (keeping the frame's own bounds); cross-axis centering stays on the anchor frame.
-        if CludesUI._GetAnchorTargetExtent then
-            local ext = CludesUI._GetAnchorTargetExtent(targetKey, edgeSide)
+        if CUI._GetAnchorTargetExtent then
+            local ext = CUI._GetAnchorTargetExtent(targetKey, edgeSide)
             if ext then
                 if edgeSide == "TOP" then
                     targetTop = ext
@@ -1255,7 +1256,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 gw, gh = element.getSize(childBarKey)
             end
             if type(gw) ~= "number" or type(gh) ~= "number" or issecretvalue(gw) or issecretvalue(gh) then
-                CludesUI._AnchorPark.Park(childBarKey)
+                CUI._AnchorPark.Park(childBarKey)
                 return
             end
             cW0, cH0 = gw, gh
@@ -1321,7 +1322,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- Store the computed offset edge-to-edge, pixel-snapped. Skip when valid
             -- offsets exist: recomputing from live bounds accumulates float drift every login.
             if anchorInfo and (anchorInfo.offsetX == nil or anchorInfo.offsetY == nil) then
-                local snap = (CludesUI and CludesUI.PP and CludesUI.PP.Snap)
+                local snap = (CUI and CUI.PP and CUI.PP.Snap)
                     or function(val) return math.floor(val + 0.5) end
                 local edgeX, edgeY
                 if edgeSide == "LEFT" then
@@ -1361,7 +1362,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         local cdmEdgeAnchor
         local isCdmOrAB = not (anchorInfo and anchorInfo.mode == "POINT")
             and (
-                childBarKey:sub(1, 4) == "CDM_" or (CludesUI._abBarKeys and CludesUI._abBarKeys[childBarKey])
+                childBarKey:sub(1, 4) == "CDM_" or (CUI._abBarKeys and CUI._abBarKeys[childBarKey])
             )
         local isCDM = childBarKey:sub(1, 4) == "CDM_"
 
@@ -1391,12 +1392,12 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- Never from a clamp-held rect: the pin would bank the clamped spot.
                 if
                     anchorInfo.refFor ~= gd
-                    and CludesUI._unlockCaptureGrowPin
-                    and (CludesUI._settleReapplyInProgress or LM.isUnlocked)
-                    and not CludesUI._RectHeldByClamp(childBarKey, childFrame)
-                    and not CludesUI._RectHeldByClamp(targetKey, targetBar)
+                    and CUI._unlockCaptureGrowPin
+                    and (CUI._settleReapplyInProgress or LM.isUnlocked)
+                    and not CUI._RectHeldByClamp(childBarKey, childFrame)
+                    and not CUI._RectHeldByClamp(targetKey, targetBar)
                 then
-                    CludesUI._unlockCaptureGrowPin(childBarKey, anchorInfo, edgeSide)
+                    CUI._unlockCaptureGrowPin(childBarKey, anchorInfo, edgeSide)
                 end
                 if anchorInfo.refFor == gd then
                     if gd == "LEFT" or gd == "RIGHT" then
@@ -1427,8 +1428,8 @@ CUI_NS.unlockParts.Positions = function(LM)
         if
             not growPinned
             and isCdmOrAB
-            and (not LM.isUnlocked or CludesUI._reapplyForceEdgePreserve)
-            and (isCDM or childBarKey == "StanceBar" or not CludesUI._applyingSavedPositions)
+            and (not LM.isUnlocked or CUI._reapplyForceEdgePreserve)
+            and (isCDM or childBarKey == "StanceBar" or not CUI._applyingSavedPositions)
         then
             local growDirection = GetBarGrowDirActual(childBarKey)
             if growDirection and growDirection ~= "CENTER" then
@@ -1460,8 +1461,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- already-shifted live bounds and the injection below adds the shift a
                 -- second time -> continuous drift. Provider returns 0 for non-shift targets, so this is a no-op elsewhere.
                 local shiftActive = not LM.isUnlocked
-                    and CludesUI._GetAnchorTargetShiftDir
-                    and CludesUI._GetAnchorTargetShiftDir(targetKey, childBarKey) ~= 0
+                    and CUI._GetAnchorTargetShiftDir
+                    and CUI._GetAnchorTargetShiftDir(targetKey, childBarKey) ~= 0
                 -- Anchored CDM growth bars position from their absolute saved growth  -- cui-style: allow comment-budget
                 -- edge (savedEdge.x/.y, override block below). On login that's a PURE
                 -- absolute pin reading nothing live: the follow delta (dTX/dTY below)
@@ -1479,11 +1480,11 @@ CUI_NS.unlockParts.Positions = function(LM)
                     local cScale = childFrame:GetEffectiveScale()
                     local ratio = cScale / uiScale
                     local storedEdge
-                    if isCDM and CludesUI._cdmBarPositions then
-                        local sp = CludesUI._cdmBarPositions[childBarKey:sub(5)]
+                    if isCDM and CUI._cdmBarPositions then
+                        local sp = CUI._cdmBarPositions[childBarKey:sub(5)]
                         if sp then storedEdge = sp end
-                    elseif childBarKey == "StanceBar" and CludesUI._abBarPositions then
-                        local sp = CludesUI._abBarPositions[childBarKey]
+                    elseif childBarKey == "StanceBar" and CUI._abBarPositions then
+                        local sp = CUI._abBarPositions[childBarKey]
                         if sp then storedEdge = sp end
                     end
                     -- Follow: shift the absolute saved growth edge by how far the anchor  -- cui-style: allow comment-budget
@@ -1509,7 +1510,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                         (isCDM or childBarKey == "StanceBar")
                         and not shiftActive
                         and not LM.isUnlocked
-                        and CludesUI._anchorFollowReady
+                        and CUI._anchorFollowReady
                         and storedEdge
                     then
                         -- Corner-follow engages when the target's size is driven by a
@@ -1530,7 +1531,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                         local bTgtL, bTgtR = storedEdge.tgtL, storedEdge.tgtR
                         local bTgtT, bTgtB = storedEdge.tgtT, storedEdge.tgtB
                         if bTgtx == nil and bTgty == nil then
-                            local rt = CludesUI._anchorRtBaseline
+                            local rt = CUI._anchorRtBaseline
                             local b = rt and rt[childBarKey]
                             if b and (b.sx ~= storedEdge.x or b.sy ~= storedEdge.y or b.tgt ~= targetKey) then
                                 rt[childBarKey] = nil
@@ -1538,8 +1539,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                             end
                             if
                                 not b
-                                and CludesUI._settleReapplyInProgress
-                                and not CludesUI._RectHeldByClamp(targetKey, targetBar)
+                                and CUI._settleReapplyInProgress
+                                and not CUI._RectHeldByClamp(targetKey, targetBar)
                             then
                                 b = {
                                     sx = storedEdge.x,
@@ -1554,7 +1555,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                                 }
                                 if not rt then
                                     rt = {}
-                                    CludesUI._anchorRtBaseline = rt
+                                    CUI._anchorRtBaseline = rt
                                 end
                                 rt[childBarKey] = b
                             end
@@ -1668,17 +1669,17 @@ CUI_NS.unlockParts.Positions = function(LM)
                 elseif
                     hasAnchorTarget
                     and not shiftActive
-                    and CludesUI._abBarKeys
-                    and CludesUI._abBarKeys[childBarKey]
+                    and CUI._abBarKeys
+                    and CUI._abBarKeys[childBarKey]
                     and childBarKey ~= "StanceBar"
-                    and CludesUI._abBarPositions
+                    and CUI._abBarPositions
                 then
                     -- Corner-follow for an action bar grow child anchored across a target
                     -- whose matched axis is chain-driven to a content-sized bar. Keeps the
                     -- edge-offset cascade position above for every non-corner case; only the
                     -- perpendicular growth-edge coordinate is re-derived, from the bar's own
                     -- saved edge plus the persisted target baseline, to hold it against the moving near edge.
-                    local sp = CludesUI._abBarPositions[childBarKey]
+                    local sp = CUI._abBarPositions[childBarKey]
                     if sp then
                         local ratio = childFrame:GetEffectiveScale() / uiScale
                         local uw, uh = UIParent:GetSize()
@@ -1736,7 +1737,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- the edge-preservation paths, which all read the PRIMARY target.
         if anchorInfo and anchorInfo.edge and anchorInfo.edge.key then
             local eFrame = LM.GetBarFrame(anchorInfo.edge.key)
-            local eAxis = CludesUI._ScreenEdgeAxis(anchorInfo.edge.key)
+            local eAxis = CUI._ScreenEdgeAxis(anchorInfo.edge.key)
             if eFrame and eFrame:GetLeft() and eAxis then
                 local eS = eFrame:GetEffectiveScale() / uiScale
                 local eOff = anchorInfo.edge.offset or 0
@@ -1758,9 +1759,9 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Resource"). Applied to the final computed center only, never written to the
         -- saved ai.offsetX/offsetY. Magnitude is the target's live UIParent-space
         -- height (tT - tB), staying scale-correct. Provider returns 0 while unlock mode is active (and nil/0 until a feature opts in).
-        if not LM.isUnlocked and CludesUI._GetAnchorTargetShiftDir then
+        if not LM.isUnlocked and CUI._GetAnchorTargetShiftDir then
             -- extraY (optional 2nd return) tunes magnitude by N pixels in the shift direction; nil/0 keeps bar-height-only behavior.
-            local dir, extraY = CludesUI._GetAnchorTargetShiftDir(targetKey, childBarKey)
+            local dir, extraY = CUI._GetAnchorTargetShiftDir(targetKey, childBarKey)
             if dir ~= 0 then snapY = snapY + dir * ((targetTop - targetBottom) + (extraY or 0)) end
         end
 
@@ -1775,8 +1776,8 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Follow provider (opt-in): a frame the child anchors to instead of taking
         -- an absolute position, for a target edge the engine moves (see the branch below).
         local follow
-        if edgeSide == "BOTTOM" and CludesUI._GetAnchorFollowFrame then
-            follow = CludesUI._GetAnchorFollowFrame(childBarKey, targetKey, edgeSide)
+        if edgeSide == "BOTTOM" and CUI._GetAnchorFollowFrame then
+            follow = CUI._GetAnchorFollowFrame(childBarKey, targetKey, edgeSide)
         end
 
         -- Only move the actual bar frame when noMove is not set
@@ -1814,7 +1815,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- CENTER on that axis -> parity-aware snap (SnapCenterForDim), since an
                 -- odd-pixel child dimension needs a half-pixel center for both edges to
                 -- land whole (else odd-height/width anchored CDM bars shift half a pixel: cooldown swipes bleeding past borders).
-                local PixKit = CludesUI and CludesUI.PP
+                local PixKit = CUI and CUI.PP
                 if PixKit and PixKit.SnapForES then
                     local childW2 = childFrame:GetWidth() or 0
                     local childH2 = childFrame:GetHeight() or 0
@@ -1866,8 +1867,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 end
                 if not skip then
                     pcall(function()
-                        CludesUI.ClearFramePoints(childFrame)
-                        CludesUI.SetFramePoint(childFrame, cdmEdgeAnchor, UIParent, "CENTER", bEdgeX, bEdgeY)
+                        CUI.ClearFramePoints(childFrame)
+                        CUI.SetFramePoint(childFrame, cdmEdgeAnchor, UIParent, "CENTER", bEdgeX, bEdgeY)
                     end)
                     LM._pendingAnchorKeys[childBarKey] = "all"
                     ScheduleAnchorBatch()
@@ -1881,7 +1882,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- provider's static edge is where that point rests with nothing
                 -- stacked) and the engine does the following. The saved position
                 -- stays the resting one.
-                local PixKit = CludesUI and CludesUI.PP
+                local PixKit = CUI and CUI.PP
                 local exFX, exFY = ExtraAnchorOffset(childBarKey)
                 -- Resting centre, snapped and offset exactly like the CENTER branch
                 -- (it is what CommitPositions may read for this element).
@@ -1923,8 +1924,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 end
                 if not skip then
                     pcall(function()
-                        CludesUI.ClearFramePoints(childFrame)
-                        CludesUI.SetFramePoint(childFrame, "TOP", follow, "BOTTOM", fx, fy)
+                        CUI.ClearFramePoints(childFrame)
+                        CUI.SetFramePoint(childFrame, "TOP", follow, "BOTTOM", fx, fy)
                     end)
                     LM._pendingAnchorKeys[childBarKey] = "all"
                     ScheduleAnchorBatch()
@@ -1938,7 +1939,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 -- actually SetPoint'd. Snapping AFTER the check meant a bar whose snap
                 -- offset exceeds the 0.5px tolerance never matched (curX snapped, bCenter
                 -- not), so it re-SetPoint the same value every frame while sitting still.
-                local PixKit = CludesUI and CludesUI.PP
+                local PixKit = CUI and CUI.PP
                 if PixKit and PixKit.SnapCenterForDim then
                     -- The size read above (the stored one when the live rect was
                     -- secret: the bar is still on its followed edge until the SetPoint below).
@@ -1980,8 +1981,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                 end
                 if not skip then
                     pcall(function()
-                        CludesUI.ClearFramePoints(childFrame)
-                        CludesUI.SetFramePoint(childFrame, "CENTER", UIParent, "CENTER", bCenterX, bCenterY)
+                        CUI.ClearFramePoints(childFrame)
+                        CUI.SetFramePoint(childFrame, "CENTER", UIParent, "CENTER", bCenterX, bCenterY)
                     end)
                     LM._pendingAnchorKeys[childBarKey] = "all"
                     ScheduleAnchorBatch()
@@ -2016,7 +2017,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             elseif anchorInfo and (anchorInfo.offsetX == nil or anchorInfo.offsetY == nil) then
                 local actualHW = (bR - bL) / 2
                 local actualHH = (bT - bB) / 2
-                local snap = (CludesUI and CludesUI.PP and CludesUI.PP.Snap)
+                local snap = (CUI and CUI.PP and CUI.PP.Snap)
                     or function(val) return math.floor(val + 0.5) end
                 if edgeSide == "LEFT" then
                     anchorInfo.offsetX = snap((actualCX + actualHW) - targetLeft)
@@ -2062,7 +2063,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                     end
                 end
             end
-            local PPp = CludesUI and CludesUI.PP
+            local PPp = CUI and CUI.PP
             if PPp then
                 mX = PPp.Scale(mX)
                 mY = PPp.Scale(mY)
@@ -2076,7 +2077,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         -- Store in pending positions only during unlock mode, so anchor-computed
         -- positions don't pollute saved positions at login.
-        if not noMove and CludesUI._unlockActive then
+        if not noMove and CUI._unlockActive then
             -- CDM/AB growth bars store edge-format positions, so writing CENTER coords
             -- here would overwrite the correct edge data on Save & Exit. Mark them
             -- anchored so CommitPositions uses snapshot/loadPos (edge format).
@@ -2121,7 +2122,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         if not anchorDB then return end
         -- Alias keys share the parent's physical frame (a global tracking bar group's
         -- TBBG_ key rides its anchor bar's TBB_ hooks): children anchored to the alias must cascade whenever the frame moves/resizes.
-        local aliasKey = CludesUI._unlockKeyAliases and CludesUI._unlockKeyAliases[parentKey]
+        local aliasKey = CUI._unlockKeyAliases and CUI._unlockKeyAliases[parentKey]
         if aliasKey and not visited[aliasKey] then LM.PropagateAnchorChain(aliasKey, visited, changedAxis) end
         for childBarKey, details in pairs(anchorDB) do
             local primaryMatch = (details.target == parentKey)
@@ -2154,14 +2155,14 @@ CUI_NS.unlockParts.Positions = function(LM)
                     if dominated then
                         if
                             parentKey:sub(1, 4) == "CDM_"
-                            or (CludesUI._abBarKeys and CludesUI._abBarKeys[parentKey])
+                            or (CUI._abBarKeys and CUI._abBarKeys[parentKey])
                         then
                             local tg = GetBarGrowDirActual(parentKey)
                             if tg == "LEFT" or tg == "RIGHT" then dominated = false end
                         elseif
                             (
                                 childBarKey:sub(1, 4) == "CDM_"
-                                or (CludesUI._abBarKeys and CludesUI._abBarKeys[childBarKey])
+                                or (CUI._abBarKeys and CUI._abBarKeys[childBarKey])
                             )
                             and MatchH.ChainDrivenToBar(parentKey, "width")
                         then
@@ -2169,8 +2170,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                         end
                         if
                             dominated
-                            and CludesUI._abBarKeys
-                            and CludesUI._abBarKeys[childBarKey]
+                            and CUI._abBarKeys
+                            and CUI._abBarKeys[childBarKey]
                             and childBarKey ~= "StanceBar"
                             and MatchH.ChainDrivenToBar(parentKey, "width")
                         then
@@ -2182,14 +2183,14 @@ CUI_NS.unlockParts.Positions = function(LM)
                     if dominated then
                         if
                             parentKey:sub(1, 4) == "CDM_"
-                            or (CludesUI._abBarKeys and CludesUI._abBarKeys[parentKey])
+                            or (CUI._abBarKeys and CUI._abBarKeys[parentKey])
                         then
                             local tg = GetBarGrowDirActual(parentKey)
                             if tg == "UP" or tg == "DOWN" then dominated = false end
                         elseif
                             (
                                 childBarKey:sub(1, 4) == "CDM_"
-                                or (CludesUI._abBarKeys and CludesUI._abBarKeys[childBarKey])
+                                or (CUI._abBarKeys and CUI._abBarKeys[childBarKey])
                             )
                             and MatchH.ChainDrivenToBar(parentKey, "height")
                         then
@@ -2197,8 +2198,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                         end
                         if
                             dominated
-                            and CludesUI._abBarKeys
-                            and CludesUI._abBarKeys[childBarKey]
+                            and CUI._abBarKeys
+                            and CUI._abBarKeys[childBarKey]
                             and childBarKey ~= "StanceBar"
                             and MatchH.ChainDrivenToBar(parentKey, "height")
                         then
@@ -2218,13 +2219,13 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Override-anchor riders with no anchor entry of their own follow their
         -- engaged target through the same cascade. Idempotent: the try only pokes
         -- the deferred batch (for THEIR children) when the frame actually moves.
-        local ovRiders = CludesUI._OverrideAnchorRiders and CludesUI._OverrideAnchorRiders(parentKey)
+        local ovRiders = CUI._OverrideAnchorRiders and CUI._OverrideAnchorRiders(parentKey)
         if ovRiders then
             for idx = 1, #ovRiders do
                 local rk = ovRiders[idx]
                 if not visited[rk] then
                     visited[rk] = true
-                    CludesUI._TryOverrideAnchor(rk)
+                    CUI._TryOverrideAnchor(rk)
                 end
             end
         end
@@ -2232,7 +2233,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
     -- Expose so child addons (CDM) can trigger anchor updates after resize.
     -- changedAxis: "width", "height", or nil (nil = propagate all axes)
-    CludesUI.PropagateAnchorChain = function(key, changedAxis)
+    CUI.PropagateAnchorChain = function(key, changedAxis)
         local newAxis = changedAxis or "all"
         local existing = LM._pendingAnchorKeys[key]
         -- Merge axes: if different axes are pending, escalate to "all"
@@ -2246,7 +2247,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
     -- True if a given element key has an anchor relationship. ReloadFrames uses it to
     -- skip positioning anchored frames (the anchor system is their sole authority).
-    CludesUI.IsAnchored = function(key)
+    CUI.IsAnchored = function(key)
         local anchorDB = GetAnchorDB()
         if not anchorDB then return false end
         local details = anchorDB[key]
@@ -2255,7 +2256,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
     -- Synchronous self-anchor reapply: reposition an anchored element immediately (no
     -- deferred frame), removing the one-frame blink when a bar resizes and snaps back to its anchor edge.
-    CludesUI.ReapplyOwnAnchor = function(key)
+    CUI.ReapplyOwnAnchor = function(key)
         -- Skip while this element's mover is being dragged: the drag OnUpdate owns positioning and reapplying would snap the bar back.
         local m = movers[key]
         if m and m._dragging then return end
@@ -2270,7 +2271,7 @@ CUI_NS.unlockParts.Positions = function(LM)
 
     -- Reapply ALL unlock-mode anchors. Called when a target frame moves so
     -- anchored children follow. Computes positions from anchor offsets.
-    CludesUI.ReapplyAllUnlockAnchors = function()
+    CUI.ReapplyAllUnlockAnchors = function()
         local anchorDB = GetAnchorDB()
         if not anchorDB then return end
 
@@ -2327,7 +2328,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- bounds; this does the same without disturbing the DB. Wired into the CDM
     -- authoritative-pass trigger (ns._spellsReadyForApply) so it fires once at the same
     -- known-good moment used to retrigger width matches. Same dependency-sorted order; skips combat-protected children automatically.
-    CludesUI.ReapplyAllUnlockAnchorsForced = function()
+    CUI.ReapplyAllUnlockAnchorsForced = function()
         local anchorDB = GetAnchorDB()
         if not anchorDB then return end
 
@@ -2364,7 +2365,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 local targetBar = LM.GetBarFrame(details.target)
                 local rcElem = registeredElements[childBarKey]
                 if childFrame and inCombat and childFrame:IsProtected() then
-                    CludesUI._AnchorPark.Park(childBarKey)
+                    CUI._AnchorPark.Park(childBarKey)
                 end
                 if
                     childFrame
@@ -2378,8 +2379,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                     -- authoritative (edge format, width-independent, per LayoutBar).
                     local isABGrow = false
                     if
-                        CludesUI._abBarKeys
-                        and CludesUI._abBarKeys[childBarKey]
+                        CUI._abBarKeys
+                        and CUI._abBarKeys[childBarKey]
                         and childBarKey ~= "StanceBar"
                         and details.mode ~= "POINT"
                     then
@@ -2387,7 +2388,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                         isABGrow = gd and gd ~= "CENTER"
                     end
                     if not isABGrow then
-                        pcall(CludesUI.ClearFramePoints, childFrame)
+                        pcall(CUI.ClearFramePoints, childFrame)
                         LM.ApplyAnchorPosition(childBarKey, details.target, details.side, true)
                     end
                 end
@@ -2401,7 +2402,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- UIParent-space center (x, y) of childKey's anchor target, computed identically to
     -- ApplyAnchorPosition's tCX/tCY so a captured value is directly comparable to the
     -- runtime target center. CDM savePos stores it as the follow baseline (sp.tgtx/.tgty). nil if no anchor target or no screen bounds.
-    function CludesUI.GetAnchorTargetCenterUI(childBarKey)
+    function CUI.GetAnchorTargetCenterUI(childBarKey)
         local anchorDB = GetAnchorDB()
         local details = anchorDB and anchorDB[childBarKey]
         if not details or not details.target then return nil end
@@ -2420,7 +2421,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- computed identically to ApplyAnchorPosition's tL/tR/tT/tB. CDM/StanceBar savePos
     -- store them as sp.tgtL/.tgtR/.tgtT/.tgtB (follow baselines). Corner-follow gates on
     -- a CDM target, but StanceBar side-follow uses any target type, so edges are captured unconditionally. nil with no anchor target or screen bounds.
-    function CludesUI.GetAnchorTargetEdgesUI(childBarKey)
+    function CUI.GetAnchorTargetEdgesUI(childBarKey)
         local anchorDB = GetAnchorDB()
         local details = anchorDB and anchorDB[childBarKey]
         if not details or not details.target then return nil end
@@ -2439,7 +2440,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- import/switch, once all frames sit at their absolute positions. Moves nothing: it
     -- reads current screen positions and recomputes offsets so anchors stay correct for
     -- future drags. Skips offsets that already have valid values -- reading live bounds adds floating-point noise (SetPoint->GetLeft round-trip) and drifts 1px.
-    CludesUI.ResyncAnchorOffsets = function()
+    CUI.ResyncAnchorOffsets = function()
         local anchorDB = GetAnchorDB()
         if not anchorDB then return end
         for childBarKey, details in pairs(anchorDB) do
@@ -2644,7 +2645,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Snap the final position to the physical pixel grid, allowing for odd-dimension
         -- frames that need half-pixel centering. adjX/adjY and the dims are UIParent
         -- units, so snap against UIParent's grid, not the frame's own.
-        local PPap = CludesUI and CludesUI.PP
+        local PPap = CUI and CUI.PP
         if PPap and PPap.SnapCenterForDim then
             local es = uiScale
             if anchor == "CENTER" then
@@ -2665,23 +2666,23 @@ CUI_NS.unlockParts.Positions = function(LM)
         pcall(function()
             if InCombatLockdown() and widget:IsProtected() then
                 -- Keyed by frame so repeated calls overwrite instead of stacking
-                CludesUI._UnlockCombatQueue.Defer(widget, function()
+                CUI._UnlockCombatQueue.Defer(widget, function()
                     pcall(function()
-                        CludesUI.ClearFramePoints(widget)
-                        CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
+                        CUI.ClearFramePoints(widget)
+                        CUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
                     end)
                 end)
                 return
             end
-            CludesUI.ClearFramePoints(widget)
-            CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
+            CUI.ClearFramePoints(widget)
+            CUI.SetFramePoint(widget, anchor, UIParent, "CENTER", adjX, adjY)
         end)
         return true
     end
 
     -- Expose on CludesUI for child addons
-    CludesUI.ConvertToCenterPos = ConvertToCenterPos
-    CludesUI.ApplyCenterPosition = LM.ApplyCenterPosition
+    CUI.ConvertToCenterPos = ConvertToCenterPos
+    CUI.ApplyCenterPosition = LM.ApplyCenterPosition
 
     LM.SaveBarPosition = function(barId, anchorPoint, relPoint, posX, posY)
         -- Convert to CENTER/CENTER before storing. ConvertToCenterPos reads the live
@@ -2705,7 +2706,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         if not saved then return end
         saved[barId] = { point = cp, relPoint = crp, x = snapX, y = snapY }
     end
-    CludesUI.SaveBarPosition = LM.SaveBarPosition
+    CUI.SaveBarPosition = LM.SaveBarPosition
 
     local function LoadBarPosition(barId)
         -- Registered element?
@@ -2764,7 +2765,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         local vals = mod.BAR_DROPDOWN_VALUES
         return vals and vals[barId] or barId
     end
-    CludesUI.GetBarLabel = LM.GetBarLabel
+    CUI.GetBarLabel = LM.GetBarLabel
 
     -- Re-read one already-built mover's name from its registered element. Movers are  -- cui-style: allow comment-budget
     -- cached in `movers` for the session, and CreateMover captures the label into a
@@ -2779,7 +2780,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- right after RegisterUnlockElements. Returns false in that case, or true plus
     -- the text it applied -- callers can ignore both; the return exists so the
     -- refresh can be driven (and diagnosed) straight from a /dump.
-    function CludesUI.RefreshUnlockElementLabel(key)
+    function CUI.RefreshUnlockElementLabel(key)
         local m = movers[key]
         if not (m and m.UpdateLabel) then return false end
         m:UpdateLabel()
@@ -2807,22 +2808,22 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- Same registered extra offset fold as ApplyCenterPosition (pre-snap).
             local ex, ey = ExtraAnchorOffset(barId)
             px, py = px + ex, py + ey
-            local PixKit = CludesUI and CludesUI.PP
+            local PixKit = CUI and CUI.PP
             if PixKit and PixKit.SnapForES then
                 local es = widget:GetEffectiveScale()
                 px = PixKit.SnapForES(px, es)
                 py = PixKit.SnapForES(py, es)
             end
             pcall(function()
-                CludesUI.ClearFramePoints(widget)
-                CludesUI.SetFramePoint(widget, place.point, UIParent, place.relPoint or place.point, px, py)
+                CUI.ClearFramePoints(widget)
+                CUI.SetFramePoint(widget, place.point, UIParent, place.relPoint or place.point, px, py)
             end)
         end
         return true
     end
 
     local function RestorePositions()
-        CludesUI._applyingSavedPositions = true
+        CUI._applyingSavedPositions = true
         local inCombat = InCombatLockdown()
 
         -- Action bars: apply from the barPositions DB with lazy migration. Skipped in
@@ -2873,8 +2874,8 @@ CUI_NS.unlockParts.Positions = function(LM)
                         if anchorInfo and anchorInfo.target then unlockAnchored = true end
                     end
                     if
-                        CludesUI._TryOverrideAnchor
-                        and CludesUI._TryOverrideAnchor(key, LM.GetBarFrame(key))
+                        CUI._TryOverrideAnchor
+                        and CUI._TryOverrideAnchor(key, LM.GetBarFrame(key))
                     then
                     -- Override anchor owns this element's position while its
                     -- spec-override group is active (Resource Bars opt-in).
@@ -2968,7 +2969,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                         -- may not resolve within the retry window. Park the keys for a
                         -- reapply when combat drops instead of dropping them.
                         for childBarKey in pairs(unresolved) do
-                            CludesUI._AnchorPark.Park(childBarKey)
+                            CUI._AnchorPark.Park(childBarKey)
                         end
                     end
                 end
@@ -2976,30 +2977,30 @@ CUI_NS.unlockParts.Positions = function(LM)
             end
         end
 
-        CludesUI._applyingSavedPositions = false
-        CludesUI._abAnchorSuppressed = false
+        CUI._applyingSavedPositions = false
+        CUI._abAnchorSuppressed = false
 
         -- Arm the pet watcher when any stored fallback needs it (one cheap scan;
         -- the watcher frame only exists for users who opted into a fallback).
-        if CludesUI._EnsureFallbackWatchers then CludesUI._EnsureFallbackWatchers() end
+        if CUI._EnsureFallbackWatchers then CUI._EnsureFallbackWatchers() end
 
         -- If we skipped protected frames, re-run once combat drops
-        if inCombat then CludesUI._UnlockCombatQueue.Defer("ApplySavedPositions", RestorePositions) end
+        if inCombat then CUI._UnlockCombatQueue.Defer("ApplySavedPositions", RestorePositions) end
     end
 
     -- Expose for profile import/switch (called from CludesUI_Profiles.lua)
-    CludesUI._applySavedPositions = RestorePositions
+    CUI._applySavedPositions = RestorePositions
 
     -- Expose for unlock spec-overrides (position override removal / NIL apply)
-    CludesUI._UnlockClearSavedPosition = ClearBarPosition
+    CUI._UnlockClearSavedPosition = ClearBarPosition
 
     -- Expose so child addons (CDM, resource bars) can re-apply matches after
     -- their bars finish populating and have correct dimensions.
-    CludesUI.ApplyAllWidthHeightMatches = ApplyAllWidthHeightMatches
+    CUI.ApplyAllWidthHeightMatches = ApplyAllWidthHeightMatches
 
     -- Global check: is this unlock key anchored to another element?
     -- Any addon can call this to decide whether to skip positioning in BuildBars.
-    function CludesUI.IsUnlockAnchored(unlockKey)
+    function CUI.IsUnlockAnchored(unlockKey)
         local anchorDB = GetAnchorDB()
         local anchorInfo = anchorDB and anchorDB[unlockKey]
         return anchorInfo and anchorInfo.target and true or false
@@ -3008,7 +3009,7 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- Re-run an element's anchor. When the element's own state feeds the anchored
     -- position (see _anchorExtraOffset), that change must be pushed through the anchor
     -- rather than applied to the frame directly.
-    function CludesUI.ReapplyUnlockAnchor(unlockKey)
+    function CUI.ReapplyUnlockAnchor(unlockKey)
         local anchorDB = GetAnchorDB()
         local anchorInfo = anchorDB and anchorDB[unlockKey]
         if not (anchorInfo and anchorInfo.target) then return end
@@ -3036,14 +3037,14 @@ CUI_NS.unlockParts.Positions = function(LM)
                 C_Timer.After(0, function()
                     if InCombatLockdown() then
                         -- Reapply once combat drops instead of losing the position
-                        CludesUI._AnchorPark.ParkBarPos(barId)
+                        CUI._AnchorPark.ParkBarPos(barId)
                         return
                     end
                     -- Use centralized apply for grow-direction-aware positioning
                     if not LM.ApplyCenterPosition(barId, saved[barId]) then
                         pcall(function()
-                            CludesUI.ClearFramePoints(self)
-                            CludesUI.SetFramePoint(
+                            CUI.ClearFramePoints(self)
+                            CUI.SetFramePoint(
                                 self,
                                 saved[barId].point,
                                 UIParent,
@@ -3099,11 +3100,11 @@ CUI_NS.unlockParts.Positions = function(LM)
         ztFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
         ztFrame:SetScript("OnEvent", function(_, evt)
             if evt == "PLAYER_LEAVING_WORLD" then
-                CludesUI._zoneTransitionActive = true
+                CUI._zoneTransitionActive = true
             elseif evt == "PLAYER_ENTERING_WORLD" then
                 -- Hold the guard 2s after zone-in so CDM/ERB finish rebuilding
                 -- with final icon counts.
-                C_Timer.After(2, function() CludesUI._zoneTransitionActive = false end)
+                C_Timer.After(2, function() CUI._zoneTransitionActive = false end)
             end
         end)
     end
@@ -3126,7 +3127,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- emission should be found and fixed, not papered over with periodic re-applies that themselves cause visible shifts.
             C_Timer.After(1, function()
                 RestorePositions()
-                if CludesUI.ReapplyAllUnlockAnchors then CludesUI.ReapplyAllUnlockAnchors() end
+                if CUI.ReapplyAllUnlockAnchors then CUI.ReapplyAllUnlockAnchors() end
             end)
         end)
     end

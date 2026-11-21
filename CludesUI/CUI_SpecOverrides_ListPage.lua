@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_ListPage.lua
 --
@@ -49,17 +50,17 @@ end
 local function BuildListRow(host, rowY, item)
     -- Options page pool (CludesUI_FramePool.lua): on a pool host these rows
     -- are reset and dressed again by the next build (the list builders below).
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
+    local CreateFrame = CUI._Pool.CreateFrame
+    local CONTENT_PAD = CUI.CONTENT_PAD or 40
     local line = CreateFrame("Frame", nil, host)
     line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
     line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
 
-    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+    local label = CUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
     label:SetPoint("LEFT", line, "LEFT", 20, 0)
     label:SetText(L(item.label or "?"))
 
-    local trail = CludesUI.MakeFont(line, 11, nil, 1, 1, 1, 0.3)
+    local trail = CUI.MakeFont(line, 11, nil, 1, 1, 1, 0.3)
     trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
     -- Built from the entry's fields when it has a page, so a renamed module or
     -- tab label (or a client language switch) shows current names, not the
@@ -72,9 +73,9 @@ local function BuildListRow(host, rowY, item)
         local button = CreateFrame("Button", nil, line)
         button:SetSize(w or 110, 22)
         button:SetPoint("RIGHT", line, "RIGHT", xOff, 0)
-        CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-        local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
-        local caption = CludesUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
+        CUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+        local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
+        local caption = CUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
         caption:SetPoint("CENTER")
         caption:SetText(L(text))
         return button, brd
@@ -108,7 +109,7 @@ local function BuildListRow(host, rowY, item)
         end
         if ownerEntry then
             local og = GroupById(ownerEntry.group)
-            local warn = CludesUI.MakeFont(line, 11, nil, 1, 0.45, 0.45, 0.85)
+            local warn = CUI.MakeFont(line, 11, nil, 1, 0.45, 0.45, 0.85)
             warn:SetPoint("LEFT", trail, "RIGHT", 10, 0)
             warn:SetText(string.format(L("held by '%s'"), (og and og.name) or "?"))
             local hit = CreateFrame("Frame", nil, line)
@@ -117,7 +118,7 @@ local function BuildListRow(host, rowY, item)
             hit:SetScript(
                 "OnEnter",
                 function(self)
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
                         L(
                             "A spec override owns this setting, so this conditional value never applies outside an editing session. Remove the spec override to let it through."
@@ -125,7 +126,7 @@ local function BuildListRow(host, rowY, item)
                     )
                 end
             )
-            hit:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+            hit:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         end
     end
 
@@ -137,7 +138,7 @@ local function BuildListRow(host, rowY, item)
         if rmBrd and rmBrd.SetColor then rmBrd:SetColor(1, 1, 1, 0.22) end
     end)
     removeBtn:SetScript("OnClick", function()
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = isCondEntry and L("Remove Conditional Override") or L("Remove Spec Override"),
             message = string.format(
                 L("Remove '%s'? The setting keeps its current live value."),
@@ -161,7 +162,7 @@ local function BuildListRow(host, rowY, item)
                     RebuildFKeyIndex()
                 end
                 RequestGoldWalk()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
     end)
@@ -181,9 +182,9 @@ local function BuildListRow(host, rowY, item)
                 break
             end
         end
-        if mod and CludesUI:GetModuleTitle(mod) then
-            CludesUI:SelectModule(mod)
-            if item.page and CludesUI.SelectPage then CludesUI:SelectPage(item.page) end
+        if mod and CUI:GetModuleTitle(mod) then
+            CUI:SelectModule(mod)
+            if item.page and CUI.SelectPage then CUI:SelectPage(item.page) end
         end
     end)
 
@@ -195,18 +196,18 @@ end
 -- spec to the shared default. Removal is the only possible action -- no editing
 -- session can reach them.
 local function BuildStrandedRow(host, rowY, item, specID)
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
+    local CreateFrame = CUI._Pool.CreateFrame
+    local CONTENT_PAD = CUI.CONTENT_PAD or 40
     local line = CreateFrame("Frame", nil, host)
     line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
     line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
 
-    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+    local label = CUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
     label:SetPoint("LEFT", line, "LEFT", 20, 0)
     label:SetText(SpecName(specID))
 
     local owner = GroupById(item.group)
-    local trail = CludesUI.MakeFont(line, 11, nil, 1, 1, 1, 0.3)
+    local trail = CUI.MakeFont(line, 11, nil, 1, 1, 1, 0.3)
     trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
     trail:SetText(
         string.format(
@@ -219,9 +220,9 @@ local function BuildStrandedRow(host, rowY, item, specID)
     local removeBtn = CreateFrame("Button", nil, line)
     removeBtn:SetSize(116, 22)
     removeBtn:SetPoint("RIGHT", line, "RIGHT", -20, 0)
-    CludesUI.SolidTex(removeBtn, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-    local rmBrd = CludesUI.MakeRoundedBorder(removeBtn, 1, 1, 1, 0.22)
-    local rmLbl = CludesUI.MakeFont(removeBtn, 11, nil, 1, 1, 1, 0.8)
+    CUI.SolidTex(removeBtn, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+    local rmBrd = CUI.MakeRoundedBorder(removeBtn, 1, 1, 1, 0.22)
+    local rmLbl = CUI.MakeFont(removeBtn, 11, nil, 1, 1, 1, 0.8)
     rmLbl:SetPoint("CENTER")
     rmLbl:SetText(L("Remove Override"))
     removeBtn:SetScript("OnEnter", function()
@@ -231,7 +232,7 @@ local function BuildStrandedRow(host, rowY, item, specID)
         if rmBrd and rmBrd.SetColor then rmBrd:SetColor(1, 1, 1, 0.22) end
     end)
     removeBtn:SetScript("OnClick", function()
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L("Remove Stranded Override"),
             message = string.format(
                 L("Remove the stranded '%s' override for %s? The spec returns to the shared default."),
@@ -242,9 +243,9 @@ local function BuildStrandedRow(host, rowY, item, specID)
             cancelText = L("Cancel"),
             onConfirm = function()
                 item.values[specID] = nil
-                CludesUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID())
+                CUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID())
                 RequestGoldWalk()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
     end)
@@ -364,7 +365,7 @@ local function PruneOrphanEntries()
         -- where a synchronous Apply fires module refreshers (and can re-enter a page
         -- rebuild) mid-build. Safe to defer: PruneRedundantValues' live-guard refuses
         -- to GC a recorded default while live still differs, so nothing is lost.
-        C_Timer.After(0, function() CludesUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID()) end)
+        C_Timer.After(0, function() CUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID()) end)
     end
     if touched then RunRefreshers(touched) end
     if removed then
@@ -383,28 +384,28 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
     local heading = opts.title or "Delete Custom Layout Mode"
     local msgText = opts.message
         or "Delete the custom layout mode for '%s'? Its specs return to your default layout mode layout."
-    local removeFn = opts.removeFn or CludesUI.SpecOverrides_RemoveUnlockLayout
+    local removeFn = opts.removeFn or CUI.SpecOverrides_RemoveUnlockLayout
 
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
+    local CreateFrame = CUI._Pool.CreateFrame
+    local CONTENT_PAD = CUI.CONTENT_PAD or 40
     local line = CreateFrame("Frame", nil, host)
     line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
     line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
 
-    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+    local label = CUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
     label:SetPoint("LEFT", line, "LEFT", 20, 0)
     label:SetText(group.name or "?")
 
-    local trail = CludesUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
+    local trail = CUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
     trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
     trail:SetText(L(crumbText))
 
     local button = CreateFrame("Button", nil, line)
     button:SetSize(116, 22)
     button:SetPoint("RIGHT", line, "RIGHT", -20, 0)
-    CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-    local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
-    local caption = CludesUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
+    CUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+    local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
+    local caption = CUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
     caption:SetPoint("CENTER")
     caption:SetText(L("Delete"))
     button:SetScript("OnEnter", function()
@@ -414,14 +415,14 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
         if brd and brd.SetColor then brd:SetColor(1, 1, 1, 0.22) end
     end)
     button:SetScript("OnClick", function()
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L(heading),
             message = string.format(L(msgText), group.name or "?"),
             confirmText = L("Delete"),
             cancelText = L("Cancel"),
             onConfirm = function()
                 if removeFn then removeFn(group.id) end
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
     end)
@@ -434,9 +435,9 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
         local record = CreateFrame("Button", nil, line)
         record:SetSize(116, 22)
         record:SetPoint("RIGHT", button, "LEFT", -8, 0)
-        CludesUI.SolidTex(record, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-        local ebrd = CludesUI.MakeRoundedBorder(record, 1, 1, 1, 0.22)
-        local elbl = CludesUI.MakeFont(record, 11, nil, 1, 1, 1, 0.8)
+        CUI.SolidTex(record, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+        local ebrd = CUI.MakeRoundedBorder(record, 1, 1, 1, 0.22)
+        local elbl = CUI.MakeFont(record, 11, nil, 1, 1, 1, 0.8)
         elbl:SetPoint("CENTER")
         elbl:SetText(L("Edit"))
         record:SetScript("OnEnter", function()
@@ -448,7 +449,7 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
         record:SetScript("OnClick", function()
             -- Raid Frames must be registered to navigate to (same gate as the
             -- entry rows' Go to Setting).
-            if not (CludesUI:GetModuleTitle("CludesUIRaidFrames")) then return end
+            if not (CUI:GetModuleTitle("CludesUIRaidFrames")) then return end
             -- Both entry points refuse (own popup) when another fork holds the
             -- manager page; only navigate once the session actually opened.
             if opts.editKind == "cond" then
@@ -460,8 +461,8 @@ local function BuildUnlockLayoutRow(host, rowY, group, opts)
                 EnterGroupEdit(group)
                 if _editGroup ~= group then return end
             end
-            CludesUI:SelectModule("CludesUIRaidFrames")
-            CludesUI:SelectPage(opts.editPage)
+            CUI:SelectModule("CludesUIRaidFrames")
+            CUI:SelectPage(opts.editPage)
         end)
     end
 
@@ -473,7 +474,7 @@ local BM_ROW_SPEC = {
     crumb = "Custom Buff Manager",
     title = "Delete Custom Buff Manager",
     message = "Delete the custom Buff Manager for '%s'? Its specs return to your default Buff Manager.",
-    removeFn = function(gid) CludesUI.SpecOverrides_RemoveBmLayout(gid) end,
+    removeFn = function(gid) CUI.SpecOverrides_RemoveBmLayout(gid) end,
     editKind = "spec",
     editPage = "Buff Manager",
 }
@@ -481,7 +482,7 @@ local BM_ROW_COND = {
     crumb = "Custom Buff Manager",
     title = "Delete Custom Buff Manager",
     message = "Delete the custom Buff Manager for '%s'? Its conditions return to your default Buff Manager.",
-    removeFn = function(gid) CludesUI.Conditions_RemoveBmLayout(gid) end,
+    removeFn = function(gid) CUI.Conditions_RemoveBmLayout(gid) end,
     editKind = "cond",
     editPage = "Buff Manager",
 }
@@ -491,7 +492,7 @@ local DM_ROW_SPEC = {
     crumb = "Custom Debuff Manager",
     title = "Delete Custom Debuff Manager",
     message = "Delete the custom Debuff Manager for '%s'? Its specs return to your default Debuff Manager.",
-    removeFn = function(gid) CludesUI.SpecOverrides_RemoveDmLayout(gid) end,
+    removeFn = function(gid) CUI.SpecOverrides_RemoveDmLayout(gid) end,
     editKind = "spec",
     editPage = "Debuff Manager",
 }
@@ -499,7 +500,7 @@ local DM_ROW_COND = {
     crumb = "Custom Debuff Manager",
     title = "Delete Custom Debuff Manager",
     message = "Delete the custom Debuff Manager for '%s'? Its conditions return to your default Debuff Manager.",
-    removeFn = function(gid) CludesUI.Conditions_RemoveDmLayout(gid) end,
+    removeFn = function(gid) CUI.Conditions_RemoveDmLayout(gid) end,
     editKind = "cond",
     editPage = "Debuff Manager",
 }
@@ -523,7 +524,7 @@ local function PromoteGroupToProfile(group)
     -- tail must flush secure-frame repositioning synchronously before the reload, which
     -- lockdown blocks. Nothing is written yet, so refusing here is a clean abort.
     if InCombatLockdown() then
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L("In Combat"),
             message = L(
                 "Promoting an override reloads the UI and cannot run in combat. Leave combat and try again."
@@ -535,10 +536,10 @@ local function PromoteGroupToProfile(group)
     end
     -- The reload is asked for first in the click (RequestReload); the client
     -- reloads only once this function has finished, so every step below lands.
-    CludesUI.RequestReload()
+    CUI.RequestReload()
     -- Bank any open session and leave the Default view so the stores hold the
     -- freshest edits and live holds canonical spec values.
-    CludesUI.SpecOverrides_CloseEditSessions()
+    CUI.SpecOverrides_CloseEditSessions()
 
     -- 1) VALUES: the group's stored values become the recorded defaults.
     --    Resolution mirrors WriteGroupValues (first member spec's map, per-fkey
@@ -698,9 +699,9 @@ local function PromoteGroupToProfile(group)
     --    import converge: an error must not strand the cleanup half-done.
     local sid = CurrentSpecID()
     if sid then
-        pcall(CludesUI.SpecOverrides_ApplyUnlock, sid, true)
-        pcall(CludesUI.SpecOverrides_ApplyBm, sid, true)
-        pcall(CludesUI.SpecOverrides_ApplyDm, sid, true)
+        pcall(CUI.SpecOverrides_ApplyUnlock, sid, true)
+        pcall(CUI.SpecOverrides_ApplyBm, sid, true)
+        pcall(CUI.SpecOverrides_ApplyDm, sid, true)
     end
     -- 6) FLUSH before the reload asked for at the top. The converge's element
     --    writes are DEFERRED (FlushUnlock) and reloading inside that window
@@ -709,19 +710,19 @@ local function PromoteGroupToProfile(group)
     --    paints it back into module DBs. Flush synchronously (out of combat by
     --    the gate above); the reload then rebuilds every runtime cache, ticker
     --    and session structure clean.
-    pcall(CludesUI.SpecOverrides_FlushUnlock)
+    pcall(CUI.SpecOverrides_FlushUnlock)
 end
 
 --- Page builder for the "Spec Overrides" tab (called from the Profiles &
 --- Presets module registration).
-function CludesUI.SpecOverrides_BuildListPage(host, startY)
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local W = CludesUI.Widgets
+function CUI.SpecOverrides_BuildListPage(host, startY)
+    local CreateFrame = CUI._Pool.CreateFrame
+    local W = CUI.Widgets
     local rowY = startY
     -- Skip during a hidden search pre-build: the page is only indexed for its
     -- static labels, and pruning mutates saved profile data -- not something a
     -- read-only indexing pass may do as a side effect.
-    if not CludesUI._prebuilding then PruneOrphanEntries() end
+    if not CUI._prebuilding then PruneOrphanEntries() end
     local storeTbl = GetStore()
     local groupList = GetGroups() or {}
     local us = GetUnlockStore()
@@ -758,11 +759,11 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
     if (not storeTbl or #storeTbl == 0) and not layoutList and not bmList and not dmList then
         local _, h = W:SectionHeader(host, L("Spec Overrides"), rowY)
         rowY = rowY - h
-        local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
+        local CONTENT_PAD = CUI.CONTENT_PAD or 40
         local hintText = CreateFrame("Frame", nil, host)
         hintText:SetSize(host:GetWidth() - CONTENT_PAD * 2, 80)
         hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
-        local fs = CludesUI.MakeFont(hintText, 13, nil, 1, 1, 1, 0.5)
+        local fs = CUI.MakeFont(hintText, 13, nil, 1, 1, 1, 0.5)
         fs:SetPoint("TOPLEFT", hintText, "TOPLEFT", 20, -10)
         fs:SetWidth(hintText:GetWidth() - 40)
         fs:SetJustifyH("LEFT")
@@ -875,8 +876,8 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
         table.sort(stranded, function(a, button) return a.spec < button.spec end)
         local _, hh = W:SectionHeader(host, "Stranded Overrides", rowY)
         rowY = rowY - hh
-        local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-        local hintText = CludesUI.MakeFont(host, 11, nil, 1, 1, 1, 0.45)
+        local CONTENT_PAD = CUI.CONTENT_PAD or 40
+        local hintText = CUI.MakeFont(host, 11, nil, 1, 1, 1, 0.45)
         hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD + 20, rowY)
         hintText:SetWidth(host:GetWidth() - CONTENT_PAD * 2 - 40)
         hintText:SetJustifyH("LEFT")
@@ -898,8 +899,8 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
         rowY = rowY - 14
         local _, hh = W:SectionHeader(host, "Promote Override to Profile", rowY)
         rowY = rowY - hh
-        local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-        local hintText = CludesUI.MakeFont(host, 11, nil, 1, 1, 1, 0.45)
+        local CONTENT_PAD = CUI.CONTENT_PAD or 40
+        local hintText = CUI.MakeFont(host, 11, nil, 1, 1, 1, 0.45)
         hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD + 20, rowY)
         hintText:SetWidth(host:GetWidth() - CONTENT_PAD * 2 - 40)
         hintText:SetJustifyH("LEFT")
@@ -928,17 +929,17 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
         rowY = rowY - dh
         rowY = rowY - 6
         local BTN_W, BTN_H = 300, 38
-        local lerp = CludesUI.lerp
-        local DARK_BG = CludesUI.DARK_BG
+        local lerp = CUI.lerp
+        local DARK_BG = CUI.DARK_BG
         local btn = CreateFrame("Button", nil, host)
         btn:SetSize(BTN_W, BTN_H)
         btn:SetPoint("TOP", host, "TOP", 0, rowY)
         btn:SetFrameLevel(host:GetFrameLevel() + 5)
         btn:SetAlpha(0.85)
-        local bg = CludesUI.SolidTex(btn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
+        local bg = CUI.SolidTex(btn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         bg:SetAllPoints()
-        local brd = CludesUI.MakeRoundedBorder(btn, 0.8, 0.2, 0.2, 0.5, bg)
-        local caption = CludesUI.MakeFont(btn, 13, nil, 0.9, 0.3, 0.3)
+        local brd = CUI.MakeRoundedBorder(btn, 0.8, 0.2, 0.2, 0.5, bg)
+        local caption = CUI.MakeFont(btn, 13, nil, 0.9, 0.3, 0.3)
         caption:SetAlpha(0.7)
         caption:SetPoint("CENTER")
         caption:SetText(L("Promote Override & Delete ALL Overrides"))
@@ -973,7 +974,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
             -- The promote ends in a synchronous flush + ReloadUI, neither
             -- of which belongs in combat lockdown.
             if InCombatLockdown() then
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = L("In Combat"),
                     message = L(
                         "Promoting an override reloads the UI and cannot run in combat. Leave combat and try again."
@@ -1001,7 +1002,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
                 end
             end
             if missingList then
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = L("Enable Modules First"),
                     message = string.format(
                         L(
@@ -1014,7 +1015,7 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
                 })
                 return
             end
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = L("Promote Override to Profile"),
                 message = string.format(
                     L(
@@ -1036,13 +1037,13 @@ function CludesUI.SpecOverrides_BuildListPage(host, startY)
 end
 
 --- Page builder for the "Conditional Overrides" tab (mirror of the spec tab).
-function CludesUI.Conditions_BuildListPage(host, startY)
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local W = CludesUI.Widgets
+function CUI.Conditions_BuildListPage(host, startY)
+    local CreateFrame = CUI._Pool.CreateFrame
+    local W = CUI.Widgets
     local rowY = startY
     Cond.PruneEntries()
     local storeTbl = Cond.GetStore()
-    local groupList = CludesUI.Conditions_GetGroups() or {}
+    local groupList = CUI.Conditions_GetGroups() or {}
     local cs = Cond.GetUnlockStore()
 
     local layoutList
@@ -1084,11 +1085,11 @@ function CludesUI.Conditions_BuildListPage(host, startY)
     then
         local _, h = W:SectionHeader(host, L("Conditional Overrides"), rowY)
         rowY = rowY - h
-        local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
+        local CONTENT_PAD = CUI.CONTENT_PAD or 40
         local hintText = CreateFrame("Frame", nil, host)
         hintText:SetSize(host:GetWidth() - CONTENT_PAD * 2, 80)
         hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
-        local fs = CludesUI.MakeFont(hintText, 13, nil, 1, 1, 1, 0.5)
+        local fs = CUI.MakeFont(hintText, 13, nil, 1, 1, 1, 0.5)
         fs:SetPoint("TOPLEFT", hintText, "TOPLEFT", 20, -10)
         fs:SetWidth(hintText:GetWidth() - 40)
         fs:SetJustifyH("LEFT")
@@ -1106,22 +1107,22 @@ function CludesUI.Conditions_BuildListPage(host, startY)
         local _, hh = W:SectionHeader(host, "Custom Layout Modes", rowY)
         rowY = rowY - hh
         for _, group in ipairs(layoutList) do
-            local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
+            local CONTENT_PAD = CUI.CONTENT_PAD or 40
             local line = CreateFrame("Frame", nil, host)
             line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
             line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
-            local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+            local label = CUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
             label:SetPoint("LEFT", line, "LEFT", 20, 0)
             label:SetText(group.name or "?")
-            local trail = CludesUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
+            local trail = CUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
             trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
             trail:SetText(L("Custom Layout Mode"))
             local button = CreateFrame("Button", nil, line)
             button:SetSize(116, 22)
             button:SetPoint("RIGHT", line, "RIGHT", -20, 0)
-            CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-            local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
-            local caption = CludesUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
+            CUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+            local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
+            local caption = CUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
             caption:SetPoint("CENTER")
             caption:SetText(L("Delete"))
             button:SetScript("OnEnter", function()
@@ -1133,7 +1134,7 @@ function CludesUI.Conditions_BuildListPage(host, startY)
             local gid = group.id
             local gname = group.name or "?"
             button:SetScript("OnClick", function()
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = L("Delete Custom Layout Mode"),
                     message = string.format(
                         L(
@@ -1144,8 +1145,8 @@ function CludesUI.Conditions_BuildListPage(host, startY)
                     confirmText = L("Delete"),
                     cancelText = L("Cancel"),
                     onConfirm = function()
-                        CludesUI.Conditions_RemoveUnlockLayout(gid)
-                        CludesUI:RefreshPage(true)
+                        CUI.Conditions_RemoveUnlockLayout(gid)
+                        CUI:RefreshPage(true)
                     end,
                 })
             end)

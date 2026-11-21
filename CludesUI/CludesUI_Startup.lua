@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_Startup.lua
 --  Runs as early as possible (first file after the Lite framework).
@@ -26,20 +27,20 @@ do
         if InCombatLockdown() then
             -- Re-read the saved scale at drain: a UI Scale change made later in the
             -- same fight (SetUIScale) must not be undone by this older value.
-            CludesUI.CombatQueue.Defer(
+            CUI.CombatQueue.Defer(
                 "StartupScale",
                 function() SetScaleWhenSafe(CludesUIDB and CludesUIDB.ppUIScale or scale) end
             )
             return
         end
         UIParent:SetScale(scale)
-        if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then CludesUI.PP.UpdateMult() end
+        if CUI and CUI.PP and CUI.PP.UpdateMult then CUI.PP.UpdateMult() end
     end
 
     local function SyncMultOnly()
-        if CludesUI and CludesUI.PP then
-            if CludesUI.PP.UpdateMult then CludesUI.PP.UpdateMult() end
-            if CludesUI.PP.ResnapAllBorders then CludesUI.PP.ResnapAllBorders() end
+        if CUI and CUI.PP then
+            if CUI.PP.UpdateMult then CUI.PP.UpdateMult() end
+            if CUI.PP.ResnapAllBorders then CUI.PP.ResnapAllBorders() end
         end
     end
 
@@ -104,7 +105,7 @@ do
             end
 
             -- First-time path: just sync mult for child addon OnEnable
-            if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then CludesUI.PP.UpdateMult() end
+            if CUI and CUI.PP and CUI.PP.UpdateMult then CUI.PP.UpdateMult() end
         elseif evt == "UI_SCALE_CHANGED" then
             local saved = CludesUIDB and CludesUIDB.ppUIScale
             if saved then
@@ -154,7 +155,7 @@ do
                     local _, physH = GetPhysicalScreenSize()
                     if type(physH) == "number" and physH > 0 then
                         local seeded = max(1, min(physH / 1440, 2))
-                        CludesUIDB.panelScale = (CludesUI.SnapPanelScale(seeded)) or seeded
+                        CludesUIDB.panelScale = (CUI.SnapPanelScale(seeded)) or seeded
                     end
                 end
             end
@@ -165,7 +166,7 @@ do
             -- First-time install: apply scale with safety net.
             -- Apply scale multiple times to guarantee it sticks even on
             -- slow machines where Blizzard may reset it during init.
-            if CludesUI and CludesUI.PP and CludesUI.PP.UpdateMult then CludesUI.PP.UpdateMult() end
+            if CUI and CUI.PP and CUI.PP.UpdateMult then CUI.PP.UpdateMult() end
             SetScaleWhenSafe(scale)
             C_Timer.After(2, function()
                 if InCombatLockdown() then return end
@@ -221,12 +222,12 @@ local function ApplyUnitNameFont()
     local name = fonts and fonts.unitNameFont
     if not name or name == "" then return end
     local filePath = fonts.unitNameFontPath
-    if not ProbeFont(filePath) and CludesUI and CludesUI.ResolveFontName then
+    if not ProbeFont(filePath) and CUI and CUI.ResolveFontName then
         -- Advisory probe (see ApplyCombatTextFont): a live resolve of the saved
         -- name is better evidence than a probe that false-negatives on macOS
         -- and Linux, so prefer it over dropping the setting back to Blizzard's
         -- default.
-        local resolved = CludesUI.ResolveFontName(name)
+        local resolved = CUI.ResolveFontName(name)
         if resolved and resolved ~= "" then filePath = resolved end
     end
     if filePath and filePath ~= "" then _G.UNIT_NAME_FONT = filePath end
@@ -340,7 +341,7 @@ do
         local db = CludesUIDB
         local saved = db and db.fctFont
         if not saved or type(saved) ~= "string" or saved == "" then return end
-        if not CludesUI.CombatTextFontCoversLocale(saved) then return end
+        if not CUI.CombatTextFontCoversLocale(saved) then return end
         local fontFile = saved
         local smName = saved:match("^smf:(.+)")
         if smName then

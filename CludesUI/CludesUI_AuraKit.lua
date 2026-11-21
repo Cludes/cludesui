@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- CludesUI_AuraKit.lua Shared engine for the 12.1 aura container system. Every
 -- CludesUI module consumes aura displays through this file; modules never call
 -- AddAuraGroup / AddAuraSlot / button setters directly. Centralizing this gives us one
@@ -6,7 +7,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -- decoration presets, the restyle registry, and combat-safe creation.
 
 local Kit = {}
-CludesUI.AuraKit = Kit
+CUI.AuraKit = Kit
 
 local InCombatLockdown = InCombatLockdown
 local CreateFrame = CreateFrame
@@ -453,7 +454,7 @@ local function ApplyStyleToRegions(btnFrame, look)
     end
 
     if state.borderHost then
-        local Pix = CludesUI.PP
+        local Pix = CUI.PP
         local b = look.border
         if Pix and b then
             if shaped and look.shapeBorderPath then
@@ -461,8 +462,8 @@ local function ApplyStyleToRegions(btnFrame, look)
                 -- the secret-safe eight-slice texture set on this owned host.
                 -- Clear both before the shape ring takes over.
                 if state.borderMade then
-                    if CludesUI.ApplySecretSafeBorderStyle then
-                        CludesUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
+                    if CUI.ApplySecretSafeBorderStyle then
+                        CUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
                     else
                         Pix.HideBorder(state.borderHost)
                     end
@@ -479,7 +480,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 )
             else
                 Pix:HideMaskedShapeBorder(state.borderHost)
-                if b.texture and CludesUI.ApplyBorderStyle then
+                if b.texture and CUI.ApplyBorderStyle then
                     -- Aura buttons can expose restricted geometry. Give the owned
                     -- border host an explicit public size (change-guarded because
                     -- anchoring to the aura button is denied while restricted).
@@ -505,7 +506,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                             and (b.textureSize or b.size or 1)
                         or (b.size or 1)
                     -- b.edgePx: the surface's exact size (CludesUI.BorderPx), nil = legacy.
-                    CludesUI.ApplySecretSafeBorderStyle(
+                    CUI.ApplySecretSafeBorderStyle(
                         state.borderHost,
                         state,
                         appliedSize,
@@ -534,7 +535,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                     -- re-apply: the size-0 solid call unregisters it and hides the
                     -- edges (the strips and the host are shown again below).
                     if state._pxsbEdge then
-                        CludesUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
+                        CUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
                     else
                         local edges = state._secretBorderEdges
                         if edges then
@@ -572,7 +573,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             state.borderHost:Show()
         else
             if state._pxsbEdge then
-                CludesUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
+                CUI.ApplySecretSafeBorderStyle(state.borderHost, state, 0, 0, 0, 0, 0, "solid")
             end
             state.borderHost:Hide()
             if Pix then Pix:HideMaskedShapeBorder(state.borderHost) end
@@ -653,7 +654,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             and rb.texture ~= "solid"
             and (rb.textureSize or rb.size or 1) > 0
         then
-            ringFile = CludesUI.ResolveBorderTexture(look.dispelBorderTexture)
+            ringFile = CUI.ResolveBorderTexture(look.dispelBorderTexture)
         end
     end
     -- An exact-size ring rides the UI-scale re-apply (see pxRingStyles); d.akRingPx
@@ -663,14 +664,14 @@ local function ApplyStyleToRegions(btnFrame, look)
             state.akRingPx = true
             if state.styleKey and not pxRingStyles[state.styleKey] then
                 pxRingStyles[state.styleKey] = true
-                CludesUI.RegisterPxReapply(Kit, RestylePxRings)
+                CUI.RegisterPxReapply(Kit, RestylePxRings)
             end
         end
     elseif state.akRingPx then
         state.akRingPx = nil
         if state.styleKey and pxRingStyles[state.styleKey] then
             pxRingStyles[state.styleKey] = nil
-            if not next(pxRingStyles) then CludesUI.RegisterPxReapply(Kit, nil) end
+            if not next(pxRingStyles) then CUI.RegisterPxReapply(Kit, nil) end
         end
     end
     if
@@ -717,7 +718,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                 -- Same rules as the strips below: hidden, white tint base, and the
                 -- slice texcoords written ONCE here, before any registration turns
                 -- TexCoord, Alpha, VertexColor and Shown into engine aspects.
-                local uv = CludesUI.SECRET_BORDER_UV
+                local uv = CUI.SECRET_BORDER_UV
                 local ringTex = {}
                 for idx = 1, #RING_SLICES do
                     local styleId = RING_SLICES[idx]
@@ -879,7 +880,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             local px = look.shapeBorderSize or look.dispelBorderPx or 2
             local shapeKey = look.iconShape .. "|" .. px
             if state.akDispelGeom ~= shapeKey then
-                local PPx = CludesUI.PP
+                local PPx = CUI.PP
                 local bExp = 7 - math.min(px, 7)
                 -- Pcall'd like the icon's own reposition above: an uncaught error would
                 -- abort the rest of this function, and the geomKey guard would never
@@ -917,7 +918,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             if ringFile then
                 local rb = look.border
                 local sz = rb.textureSize or rb.size or 1
-                local edge, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(
+                local edge, aL, aT, aR, aB = CUI.SecretBorderGeometry(
                     state.dispelHolder,
                     sz,
                     rb.texture,
@@ -943,7 +944,7 @@ local function ApplyStyleToRegions(btnFrame, look)
                         for idx = 1, #RING_SLICES do
                             ringTex[idx]:ClearAllPoints()
                         end
-                        CludesUI.LayoutSecretBorderEdges(ringTex, holderFrame, edge, aL, aT, aR, aB)
+                        CUI.LayoutSecretBorderEdges(ringTex, holderFrame, edge, aL, aT, aR, aB)
                     end)
                     if success then
                         state.akRingEdge, state.akRingL, state.akRingT, state.akRingR, state.akRingB =
@@ -977,7 +978,7 @@ local function ApplyStyleToRegions(btnFrame, look)
             local t = px
             local eff = state.dispelHolder:GetEffectiveScale()
             if eff and eff > 0 then
-                local PPx = CludesUI.PP
+                local PPx = CUI.PP
                 t = px * ((PPx and PPx.perfect) or 0.75) / eff
             end
             if state.akDispelT ~= t then
@@ -2150,7 +2151,7 @@ function Kit.ApplyBlizzRoundArt(btnFrame, state, look, shaped)
         if look.blizzRoundNative then
             ringTex:SetAtlas(Kit.BLIZZ_ROUND_RING)
         else
-            CludesUI.StockAtlas(ringTex, Kit.BLIZZ_ROUND_RING)
+            CUI.StockAtlas(ringTex, Kit.BLIZZ_ROUND_RING)
         end
         if ringTex.SetSnapToPixelGrid then
             ringTex:SetSnapToPixelGrid(false)

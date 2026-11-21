@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Tools.lua
 --  Unlock Mode tools: accent color, grid overlay, alignment guides, snap,
@@ -26,7 +27,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     --  Accent color helper (reads live from CludesUI)
     -------------------------------------------------------------------------------
     local function GetAccent()
-        local eg = CludesUI and CludesUI.CLUDES_GREEN
+        local eg = CUI and CUI.CLUDES_GREEN
         if eg then return eg.r, eg.g, eg.b end
         return 76 / 255, 201 / 255, 240 / 255
     end
@@ -358,7 +359,7 @@ CUI_NS.unlockParts.Tools = function(LM)
 
     local function GetOrCreateSnapBorder(handle)
         if handle._snapBrd then return handle._snapBrd end
-        local brd = CludesUI.MakeBorder(handle, 1, 1, 1, 0)
+        local brd = CUI.MakeBorder(handle, 1, 1, 1, 0)
         -- Raise above the accent border
         brd._frame:SetFrameLevel(handle:GetFrameLevel() + 3)
         handle._snapBrd = brd
@@ -448,7 +449,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     local prevSnap = {} -- written by SnapPosition, read by ShowAlignmentGuides
     -- Expose whether each axis has an active edge snap so OnUpdate can skip
     -- SnapForES on that axis (the unsnapped value already matches the target edge).
-    CludesUI._snapAxisLocked = function() return prevSnap.lockX, prevSnap.lockY end
+    CUI._snapAxisLocked = function() return prevSnap.lockX, prevSnap.lockY end
 
     local function ShowAlignmentGuides(dragKey)
         HideAllGuides()
@@ -460,7 +461,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         local screenH = UIParent:GetHeight()
 
         -- Edge/center snap guide lines (1 physical pixel wide)
-        local PPg = CludesUI and CludesUI.PP
+        local PPg = CUI and CUI.PP
         local onePx = PPg and PPg.mult or 1
         if prevSnap.snapXPos then
             guideIdx = guideIdx + 1
@@ -675,8 +676,8 @@ CUI_NS.unlockParts.Tools = function(LM)
         local accR, accG, accB = GetAccent()
         -- Selecting a mover releases any selected fallback ghost (one arrow-key
         -- target at a time)
-        if CludesUI._DeselectFallbackGhosts then CludesUI._DeselectFallbackGhosts() end
-        if CludesUI._DeselectOverrideGhosts then CludesUI._DeselectOverrideGhosts() end
+        if CUI._DeselectFallbackGhosts then CUI._DeselectFallbackGhosts() end
+        if CUI._DeselectOverrideGhosts then CUI._DeselectOverrideGhosts() end
         -- Deselect previous
         if LM.selectedMover and LM.selectedMover ~= handle then
             LM.selectedMover._selected = false
@@ -744,13 +745,13 @@ CUI_NS.unlockParts.Tools = function(LM)
             if LM.pickModeMover == LM.selectedMover then CancelPickMode() end
         end
         LM.selectedMover = nil
-        if CludesUI._DeselectFallbackGhosts then CludesUI._DeselectFallbackGhosts() end
-        if CludesUI._DeselectOverrideGhosts then CludesUI._DeselectOverrideGhosts() end
+        if CUI._DeselectFallbackGhosts then CUI._DeselectFallbackGhosts() end
+        if CUI._DeselectOverrideGhosts then CUI._DeselectOverrideGhosts() end
     end
 
     -- Namespace bridge so the fallback ghost overlays (defined earlier in the
     -- file) can release a selected mover when a ghost is clicked.
-    CludesUI._DeselectSelectedMover = DeselectMover
+    CUI._DeselectSelectedMover = DeselectMover
 
     -- Selection flash: a 2 px accent border over the mover pulsed three times
     -- when Unlock Mode opens at an element (the options rows' Move in Unlock Mode
@@ -792,7 +793,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         if not handle or not handle._brd or not handle:IsShown() then return end
         if flashM and flashM ~= handle then EndFlash() end
         if not handle._selFlashBrd then
-            handle._selFlashBrd = CludesUI.MakeBorder(handle, 1, 1, 1, 0)
+            handle._selFlashBrd = CUI.MakeBorder(handle, 1, 1, 1, 0)
             Pix.SetBorderSize(handle._selFlashBrd._frame, 2)
         end
         -- The mover is raised on select, so the border takes its level each flash.
@@ -878,7 +879,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
     -- CreateMover is at Lua's 60-upvalue cap: its closures call this through the
     -- namespace table (already an upvalue there), like NudgeMover below.
-    CludesUI._unlockAttachMover = AttachMoverToBar
+    CUI._unlockAttachMover = AttachMoverToBar
 
     local function NudgeMover(deltaX, deltaY, targetMover, skipCollapse)
         local handle = targetMover or LM.selectedMover
@@ -904,7 +905,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             -- An axis held by the cross-axis screen edge takes the nudge there, or the
             -- next apply overwrites it from the untouched edge offset.
             if anchorInfo.edge and anchorInfo.edge.key then
-                local nAxis = CludesUI._ScreenEdgeAxis(anchorInfo.edge.key)
+                local nAxis = CUI._ScreenEdgeAxis(anchorInfo.edge.key)
                 if nAxis == "X" then
                     anchorInfo.edge.offset = (anchorInfo.edge.offset or 0) + deltaX
                 elseif nAxis == "Y" then
@@ -928,8 +929,8 @@ CUI_NS.unlockParts.Tools = function(LM)
             local pt, _, relPt, offX, offY = barFrame:GetPoint(1)
             if not pt then return end
             pcall(function()
-                CludesUI.ClearFramePoints(barFrame)
-                CludesUI.SetFramePoint(barFrame, pt, UIParent, relPt, offX + deltaX, offY + deltaY)
+                CUI.ClearFramePoints(barFrame)
+                CUI.SetFramePoint(barFrame, pt, UIParent, relPt, offX + deltaX, offY + deltaY)
             end)
             -- Keep the LOGICAL pending value exact for CENTER/CENTER elements: previous
             -- pending/stored value + the exact delta, never a live geometry read-back.
@@ -1010,7 +1011,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -- Exposed so the cog X/Y edit boxes can drive the SAME pixel-exact move the
     -- arrow keys use. Calling through the namespace table (already an upvalue in
     -- CreateMover) avoids adding NudgeMover as a new upvalue to that large closure.
-    CludesUI._unlockNudge = NudgeMover
+    CUI._unlockNudge = NudgeMover
 
     -- Grow-direction change for a growth bar in unlock mode, the cog's Grow row in
     -- one call: write the module's setting and relayout, put the bar's visual center
@@ -1019,7 +1020,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -- Shared with the anchor picker's corner rows, which set the direction AFTER
     -- placing the bar flush so the growth-edge hold captures from where it sits.
     -- On the namespace table like the nudge: CreateMover is at the upvalue cap.
-    CludesUI._unlockSetGrowDirection = function(barId, val)
+    CUI._unlockSetGrowDirection = function(barId, val)
         LM.hasChanges = true
 
         -- Capture the bar's visual center before changing grow
@@ -1032,7 +1033,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         -- Write to the bar's actual settings DB and rebuild layout
         if barId:sub(1, 4) == "CDM_" then
             local rawKey = barId:sub(5)
-            local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
+            local cdm = CUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
                 for _, barFrame in ipairs(cdmBars.bars) do
@@ -1042,22 +1043,22 @@ CUI_NS.unlockParts.Tools = function(LM)
                     end
                 end
             end
-            if CludesUI.LayoutCDMBar then CludesUI.LayoutCDMBar(rawKey) end
-            CludesUI.RecenterBarAnchor(barId)
+            if CUI.LayoutCDMBar then CUI.LayoutCDMBar(rawKey) end
+            CUI.RecenterBarAnchor(barId)
         elseif barId == "ERB_TotemBar" then
-            local erb = CludesUI.Lite.GetAddon("CludesUIResourceBars", true)
+            local erb = CUI.Lite.GetAddon("CludesUIResourceBars", true)
             local tb = erb and erb.db and erb.db.profile and erb.db.profile.totemBar
             if tb then tb.growDirection = val end
-            if CludesUI.LayoutTotemBar then CludesUI.LayoutTotemBar() end
-            CludesUI.RecenterBarAnchor(barId)
+            if CUI.LayoutTotemBar then CUI.LayoutTotemBar() end
+            CUI.RecenterBarAnchor(barId)
         elseif barId == "EABR_Reminders" then
-            if CludesUI.SetAuraBuffGrowDir then CludesUI.SetAuraBuffGrowDir(val) end
-            CludesUI.RecenterBarAnchor(barId)
+            if CUI.SetAuraBuffGrowDir then CUI.SetAuraBuffGrowDir(val) end
+            CUI.RecenterBarAnchor(barId)
         elseif barId:sub(1, 4) == "PAB_" then
-            local euf = CludesUI.Lite.GetAddon("CludesUIUnitFrames", true)
+            local euf = CUI.Lite.GetAddon("CludesUIUnitFrames", true)
             if euf and euf.SetGrowDirectionForBar then euf:SetGrowDirectionForBar(barId, val) end
         else
-            local eab = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
+            local eab = CUI.Lite.GetAddon("CludesUIActionBars", true)
             if eab and eab.SetGrowDirectionForBar then eab:SetGrowDirectionForBar(barId, val) end
         end
 
@@ -1071,13 +1072,13 @@ CUI_NS.unlockParts.Tools = function(LM)
                 if math.abs(deltaX) > 0.5 or math.abs(deltaY) > 0.5 then
                     local pt, relTo, relPt, offX, offY = barFrame:GetPoint(1)
                     if pt then
-                        CludesUI.ClearFramePoints(barFrame)
-                        CludesUI.SetFramePoint(barFrame, pt, relTo, relPt, offX + deltaX, offY + deltaY)
+                        CUI.ClearFramePoints(barFrame)
+                        CUI.SetFramePoint(barFrame, pt, relTo, relPt, offX + deltaX, offY + deltaY)
                     end
                 end
             end
         end
-        CludesUI.RecenterBarAnchor(barId)
+        CUI.RecenterBarAnchor(barId)
         -- Anchored bars: hold the new growth edge from where the bar sits NOW, the
         -- way the drag-stop path does after a drop. Left to the lazy capture, the
         -- next apply would read the rect BEFORE the move it was asked to make (a
@@ -1088,8 +1089,8 @@ CUI_NS.unlockParts.Tools = function(LM)
         if anchorInfo and anchorInfo.target then
             anchorInfo.refFor, anchorInfo.refX, anchorInfo.refY, anchorInfo.edgeOffX, anchorInfo.edgeOffY =
                 nil, nil, nil, nil, nil
-            if CludesUI._unlockCaptureGrowPin then
-                CludesUI._unlockCaptureGrowPin(barId, anchorInfo, anchorInfo.side)
+            if CUI._unlockCaptureGrowPin then
+                CUI._unlockCaptureGrowPin(barId, anchorInfo, anchorInfo.side)
             end
         end
         -- Store in pending (committed on Save & Exit)
@@ -1141,21 +1142,21 @@ CUI_NS.unlockParts.Tools = function(LM)
             if not direction then return end
             -- A selected fallback ghost answers the arrow keys with the exact
             -- same step math as movers (1 physical pixel; shift = 100).
-            if not LM.selectedMover and CludesUI._NudgeSelectedFallbackGhost then
-                local PPg = CludesUI and CludesUI.PP
+            if not LM.selectedMover and CUI._NudgeSelectedFallbackGhost then
+                local PPg = CUI and CUI.PP
                 local gStep = PPg and PPg.mult or 1
                 local gs = IsShiftKeyDown() and (100 * gStep) or gStep
-                if CludesUI._NudgeSelectedFallbackGhost(direction[1] * gs, direction[2] * gs) then
+                if CUI._NudgeSelectedFallbackGhost(direction[1] * gs, direction[2] * gs) then
                     self:SetPropagateKeyboardInput(false)
                     return
                 end
             end
             -- A selected override-anchor ghost answers the same way.
-            if not LM.selectedMover and CludesUI._NudgeSelectedOverrideGhost then
-                local PPo = CludesUI and CludesUI.PP
+            if not LM.selectedMover and CUI._NudgeSelectedOverrideGhost then
+                local PPo = CUI and CUI.PP
                 local oStep = PPo and PPo.mult or 1
                 local os = IsShiftKeyDown() and (100 * oStep) or oStep
-                if CludesUI._NudgeSelectedOverrideGhost(direction[1] * os, direction[2] * os) then
+                if CUI._NudgeSelectedOverrideGhost(direction[1] * os, direction[2] * os) then
                     self:SetPropagateKeyboardInput(false)
                     return
                 end
@@ -1163,7 +1164,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             if not LM.selectedMover then return end
             self:SetPropagateKeyboardInput(false)
             -- Scale by physical pixel size so each press moves exactly 1px
-            local PPn = CludesUI and CludesUI.PP
+            local PPn = CUI and CUI.PP
             local pxStep = PPn and PPn.mult or 1
             local step = IsShiftKeyDown() and (100 * pxStep) or pxStep
             -- When this element's cog/snap menu is open, keep the mover expanded
@@ -1309,7 +1310,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         {
             label = "Encounter Bar",
             frame = function() return _G.PlayerPowerBarAlt end,
-            showAlways = CludesUI.IS_FOREVER ~= true,
+            showAlways = CUI.IS_FOREVER ~= true,
             fallbackW = 240,
             fallbackH = 36,
             yOffset = 44,
@@ -1348,24 +1349,24 @@ CUI_NS.unlockParts.Tools = function(LM)
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.088, 0.098, 0.111, 0.95)
         -- Border: accent at idle, white on hover
-        local brd = CludesUI.MakeBorder(shade, accR, accG, accB, 0.6)
+        local brd = CUI.MakeBorder(shade, accR, accG, accB, 0.6)
         shade._brd = brd
         -- Label (always visible, same style as mover labels)
         local nameFs = shade:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(nameFs, true)
+        CUI.PrimeFontShadow(nameFs, true)
         nameFs:SetFont(FONT_PATH, 10 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
         nameFs:SetPoint("CENTER", shade, "CENTER", 0, 0)
         nameFs:SetTextColor(1, 1, 1, 0.75)
-        nameFs:SetText(CludesUI.L(def.label))
+        nameFs:SetText(CUI.L(def.label))
         nameFs:SetWordWrap(false)
         shade._nameFs = nameFs
         -- Action text (hidden at idle, fades in on hover)
         local actionText = shade:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(actionText, true)
+        CUI.PrimeFontShadow(actionText, true)
         actionText:SetFont(FONT_PATH, 9 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
         actionText:SetPoint("TOP", nameFs, "BOTTOM", 0, -2)
         actionText:SetTextColor(accR, accG, accB, 0.9)
-        actionText:SetText(CludesUI.L("Move via Blizz Edit Mode"))
+        actionText:SetText(CUI.L("Move via Blizz Edit Mode"))
         actionText:SetAlpha(0)
         shade._actionFs = actionText
         -- Clickable button sized to the action text only

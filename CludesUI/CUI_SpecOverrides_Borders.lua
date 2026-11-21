@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Borders.lua
 --
@@ -39,12 +40,12 @@ local RequestGoldWalk
 local _captureContexts = {}
 
 --- fn() -> display label of the module's currently selected element (or nil).
-function CludesUI.RegisterCaptureContext(folder, func)
+function CUI.RegisterCaptureContext(folder, func)
     if type(folder) == "string" and type(func) == "function" then _captureContexts[folder] = func end
 end
 
 local function CurrentContext()
-    local modFolder = CludesUI:GetActiveModule()
+    local modFolder = CUI:GetActiveModule()
     local ctxFn = modFolder and _captureContexts[modFolder]
     if not ctxFn then return nil end
     local success, context = pcall(ctxFn)
@@ -57,7 +58,7 @@ end
 -------------------------------------------------------------------------------
 local function SnapshotProfiles()
     local snap = {}
-    local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local reg = CUI.Lite and CUI.Lite._dbRegistry
     if not reg then return snap end
     for _, saved in ipairs(reg) do
         if saved.folder and type(saved.profile) == "table" then
@@ -89,7 +90,7 @@ end
 
 local function DiffProfiles(snap)
     local result = {}
-    local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local reg = CUI.Lite and CUI.Lite._dbRegistry
     if not reg then return result end
     for _, saved in ipairs(reg) do
         local old = saved.folder and snap[saved.folder]
@@ -117,17 +118,17 @@ end
 -------------------------------------------------------------------------------
 local _unlockValueSnap = nil
 
-function CludesUI.SpecOverrides_UnlockValueSnapBegin()
+function CUI.SpecOverrides_UnlockValueSnapBegin()
     _unlockValueSnap = nil
     local storage = GetStore()
     if not storage or #storage == 0 then return end
-    if CludesUI._specialUnlockGroup then return end
+    if CUI._specialUnlockGroup then return end
     _unlockValueSnap = SnapshotProfiles()
 end
 
-function CludesUI.SpecOverrides_UnlockValueSnapDiscard() _unlockValueSnap = nil end
+function CUI.SpecOverrides_UnlockValueSnapDiscard() _unlockValueSnap = nil end
 
-function CludesUI.SpecOverrides_UnlockValueSnapCommit()
+function CUI.SpecOverrides_UnlockValueSnapCommit()
     local snap = _unlockValueSnap
     _unlockValueSnap = nil
     if not snap then return end
@@ -156,11 +157,11 @@ end
 -- sections are outside the system, enforced where the section is known
 -- (AutoCapture attribution and entry pruning).
 local function IsExcludedContext(section)
-    local module = CludesUI:GetActiveModule()
+    local module = CUI:GetActiveModule()
     local ex = module and EXCLUDED_CONTEXTS[module]
     if ex == true then return true end
     if type(ex) == "table" then
-        local page = CludesUI:GetActivePage()
+        local page = CUI:GetActivePage()
         local pex = page and ex[page]
         if pex == true then return true end
         if type(pex) == "table" then return (section and pex[section]) and true or false end
@@ -175,8 +176,8 @@ end
 --- profile, be dropped by every capture gate as blacklisted, and strand there with
 --- nothing owning it. The editing-as overlay is decoration only (EnableMouse(false)),
 --- so nothing else stops such a click.
-function CludesUI.SpecOverrides_SlotOverridable()
-    if not CludesUI.SpecOverrides_EditSessionActive() then return false end
+function CUI.SpecOverrides_SlotOverridable()
+    if not CUI.SpecOverrides_EditSessionActive() then return false end
     return not IsExcludedContext()
 end
 
@@ -235,7 +236,7 @@ do
 end
 
 local function BeginTrace()
-    local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
+    local reg = CUI.Lite and CUI.Lite._dbRegistry
     if not reg or _traceReal then return false end
     _traceReal = {}
     for _, saved in ipairs(reg) do
@@ -282,8 +283,8 @@ local function MakeBorderHost(regionFrame, red, green, blue)
     local host = CreateFrame("Frame", nil, regionFrame)
     host:SetAllPoints()
     host:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
-    if CludesUI.PP and CludesUI.PP.CreateBorder then
-        CludesUI.PP.CreateBorder(host, red, green, blue, 0.9, 1, "OVERLAY", 7)
+    if CUI.PP and CUI.PP.CreateBorder then
+        CUI.PP.CreateBorder(host, red, green, blue, 0.9, 1, "OVERLAY", 7)
     end
     return host
 end
@@ -322,7 +323,7 @@ local function SetSlotMark(regionFrame, mode, conflictSpecID, condName, tipText)
         m:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
         m._blocker:SetFrameLevel(regionFrame:GetFrameLevel() + 45)
     end
-    local Pool = CludesUI._Pool
+    local Pool = CUI._Pool
     if mode == "gold" and not regionFrame._specOvGold then
         regionFrame._specOvGold = MakeBorderHost(regionFrame, GOLD_R, GOLD_G, GOLD_B)
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
@@ -356,11 +357,11 @@ local function SetSlotMark(regionFrame, mode, conflictSpecID, condName, tipText)
         badge:SetScript("OnEnter", function()
             ico:SetVertexColor(GOLD_R, GOLD_G, GOLD_B, 1)
             local t = regionFrame._specOvTip
-            if t and CludesUI.ShowWidgetTooltip then CludesUI.ShowWidgetTooltip(badge, t) end
+            if t and CUI.ShowWidgetTooltip then CUI.ShowWidgetTooltip(badge, t) end
         end)
         badge:SetScript("OnLeave", function()
             ico:SetVertexColor(GOLD_R, GOLD_G, GOLD_B, 0.85)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         badge:SetMouseClickEnabled(false)
         regionFrame._specOvHover = badge
@@ -378,11 +379,11 @@ local function SetSlotMark(regionFrame, mode, conflictSpecID, condName, tipText)
         tint:SetAllPoints()
         tint:SetColorTexture(0.9, 0.2, 0.2, 0.05)
         blocker:SetScript("OnEnter", function(self)
-            if self._tipText and CludesUI.ShowWidgetTooltip then
-                CludesUI.ShowWidgetTooltip(self, self._tipText)
+            if self._tipText and CUI.ShowWidgetTooltip then
+                CUI.ShowWidgetTooltip(self, self._tipText)
             end
         end)
-        blocker:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        blocker:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         host._blocker = blocker
         regionFrame._specOvRed = host
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
@@ -404,14 +405,14 @@ local function SetSlotMark(regionFrame, mode, conflictSpecID, condName, tipText)
         local backdrop = blocker:CreateTexture(nil, "OVERLAY")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(17 / 255, 15 / 255, 12 / 255, 1)
-        if CludesUI.PP and CludesUI.PP.CreateBorder then
-            CludesUI.PP.CreateBorder(blocker, GOLD_R, GOLD_G, GOLD_B, 0.9, 1, "OVERLAY", 7)
+        if CUI.PP and CUI.PP.CreateBorder then
+            CUI.PP.CreateBorder(blocker, GOLD_R, GOLD_G, GOLD_B, 0.9, 1, "OVERLAY", 7)
         end
-        local font = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-        local flag = (CludesUI.GetFontOutlineFlag()) or ""
+        local font = (CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+        local flag = (CUI.GetFontOutlineFlag()) or ""
         local labelText = blocker:CreateFontString(nil, "OVERLAY")
-        if CludesUI.PrimeFontShadow and CludesUI.GetFontUseShadow then
-            CludesUI.PrimeFontShadow(labelText, CludesUI.GetFontUseShadow())
+        if CUI.PrimeFontShadow and CUI.GetFontUseShadow then
+            CUI.PrimeFontShadow(labelText, CUI.GetFontUseShadow())
         end
         labelText:SetFont(font, 13, flag)
         labelText:SetTextColor(GOLD_R, GOLD_G, GOLD_B, 1)
@@ -420,11 +421,11 @@ local function SetSlotMark(regionFrame, mode, conflictSpecID, condName, tipText)
         labelText:SetJustifyH("CENTER")
         labelText:SetWordWrap(false)
         blocker:SetScript("OnEnter", function(self)
-            if self._tipText and CludesUI.ShowWidgetTooltip then
-                CludesUI.ShowWidgetTooltip(self, self._tipText)
+            if self._tipText and CUI.ShowWidgetTooltip then
+                CUI.ShowWidgetTooltip(self, self._tipText)
             end
         end)
-        blocker:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        blocker:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         host._blocker = blocker
         host._label = labelText
         regionFrame._specOvCondActive = host
@@ -503,11 +504,11 @@ end
 --       group through the resolution ladder (same oscillation, two groups).
 -- Spec-group sessions never lock these: spec activation does not read dark
 -- state, so a spec-captured dark flag settles in one apply.
-function CludesUI.SpecOverrides_DarkCondEditActive()
+function CUI.SpecOverrides_DarkCondEditActive()
     local g = Cond and Cond._edit
     if not g then return false end
     if g.conds and g.conds.darkmode then return true end
-    local groups = CludesUI.Conditions_GetGroups and CludesUI.Conditions_GetGroups()
+    local groups = CUI.Conditions_GetGroups and CUI.Conditions_GetGroups()
     if groups then
         for _, og in ipairs(groups) do
             if og.conds and og.conds.darkmode then return true end
@@ -516,7 +517,7 @@ function CludesUI.SpecOverrides_DarkCondEditActive()
     return false
 end
 
-function CludesUI.SpecOverrides_AttachEditLock(regionFrame, tipText, predicate)
+function CUI.SpecOverrides_AttachEditLock(regionFrame, tipText, predicate)
     if not regionFrame then return end
     local host = _editLocks[regionFrame]
     if not host then
@@ -529,16 +530,16 @@ function CludesUI.SpecOverrides_AttachEditLock(regionFrame, tipText, predicate)
         tint:SetAllPoints()
         tint:SetColorTexture(0.9, 0.2, 0.2, 0.05)
         blocker:SetScript("OnEnter", function(self)
-            if self._tipText and CludesUI.ShowWidgetTooltip then
-                CludesUI.ShowWidgetTooltip(self, self._tipText)
+            if self._tipText and CUI.ShowWidgetTooltip then
+                CUI.ShowWidgetTooltip(self, self._tipText)
             end
         end)
-        blocker:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+        blocker:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
         host._blocker = blocker
         _editLocks[regionFrame] = host
         -- On a region of the options page pool the lock rides on it: the region's
         -- reset hides it and leaves it inactive until the region is locked again.
-        local Pool = CludesUI._Pool
+        local Pool = CUI._Pool
         if Pool and Pool.Gen and Pool.Gen(regionFrame) then
             Pool.Attach(regionFrame, host, nil, function(hgt)
                 hgt._inactive = true
@@ -617,7 +618,7 @@ local function SlotTipFor(sink)
             end
             for key, m in pairs(ce.values) do
                 if type(key) == "number" and type(m) == "table" and m[fkey] ~= nil then
-                    local cg = CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(key)
+                    local cg = CUI.Conditions_GroupById and CUI.Conditions_GroupById(key)
                     if cg then
                         local tag = L("conditional")
                         if heldBy then tag = tag .. ", " .. string.format(L("held by '%s'"), heldBy) end
@@ -704,8 +705,8 @@ RequestGoldWalk = function()
             -- session (a session view shows session values, not the overlay).
             local condGid, condName
             if not _editGroup and not Cond._edit then
-                condGid = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
-                local g = condGid and CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(condGid)
+                condGid = CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil
+                local g = condGid and CUI.Conditions_GroupById and CUI.Conditions_GroupById(condGid)
                     or nil
                 if g then
                     condName = g.name

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_FriendsList.lua
 --  The custom friends list: rows of our own drawn over Blizzard's Social UI
@@ -73,11 +74,11 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  the ungrouped friends, sets Battle.net's favorite switch.
 -------------------------------------------------------------------------------
 local FL = {}
-CludesUI.FriendsList = FL
+CUI.FriendsList = FL
 
-local Kit = CludesUI.FriendsKit
+local Kit = CUI.FriendsKit
 local T = Kit._tile
-local IsSecret = CludesUI.IsSecret
+local IsSecret = CUI.IsSecret
 
 local TEMPLATE = "InlineHyperlinkFrameTemplate"
 -- name : account id : line id : chat type : chat target (the chat frame's own form)
@@ -516,9 +517,9 @@ local function Rebuild()
         head.first, head.last = idx == 1, idx == renderedCount
         local nameText = sortKey
         if sortKey == FAV then
-            nameText = FAVORITES or CludesUI.L("Favorites")
+            nameText = FAVORITES or CUI.L("Favorites")
         elseif sortKey == UNGROUPED then
-            nameText = FRIENDS or CludesUI.L("Friends")
+            nameText = FRIENDS or CUI.L("Friends")
         end
         head.label = ("%s  (%d/%d)"):format(nameText, onlineIn[sortKey] or 0, #entries)
         y = y + HEADER_H + ROW_GAP
@@ -662,7 +663,7 @@ local function MoveGroup(sortKey, dir)
 end
 
 local function PromptNewGroup(assignKey)
-    CludesUI:ShowInputPopup({
+    CUI:ShowInputPopup({
         title = "New Friend Group",
         message = "Enter a name for the new group:",
         placeholder = "Enter name...",
@@ -674,9 +675,9 @@ local function PromptNewGroup(assignKey)
 end
 
 local function PromptDeleteGroup(nameText)
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Delete Friend Group",
-        message = CludesUI.Lf(
+        message = CUI.Lf(
             "Delete the group %1$s? Its friends go back to Favorites or the Friends section.",
             nameText
         ),
@@ -719,10 +720,10 @@ local function FriendTooltip(record)
         num = num + 1
         tipBuf[num] = U.GetLastOnlineText(details)
     end
-    local note = CludesUI.StripFriendNoteTag(details.note)
+    local note = CUI.StripFriendNoteTag(details.note)
     if note then
         num = num + 1
-        tipBuf[num] = CludesUI.COLOR_CODES.DIM .. note .. "|r"
+        tipBuf[num] = CUI.COLOR_CODES.DIM .. note .. "|r"
     end
     local broadcast = U and U.BuildTooltipBroadcastText and U.BuildTooltipBroadcastText(details)
     if broadcast then
@@ -754,7 +755,7 @@ local function RowEnter(hitbox)
     if old then Light(old) end
     Light(frame)
     if frame.rec and frame.rec.info then
-        CludesUI.ShowWidgetTooltip(frame, FriendTooltip(frame.rec), TIP_OPTS)
+        CUI.ShowWidgetTooltip(frame, FriendTooltip(frame.rec), TIP_OPTS)
     end
 end
 
@@ -763,7 +764,7 @@ local function RowLeave(hitbox)
     if hoveredRow ~= frame then return end
     hoveredRow = nil
     Light(frame)
-    CludesUI.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 
 -------------------------------------------------------------------------------
@@ -859,13 +860,13 @@ local function InviteEnter(button)
         why = U.GetBattleNetFriendPartyInviteRestrictionText(button.restriction)
     end
     if why and why ~= "" then
-        why = CludesUI.COLOR_CODES.BAD .. why .. "|r"
+        why = CUI.COLOR_CODES.BAD .. why .. "|r"
         textValue = textValue ~= "" and (textValue .. "\n" .. why) or why
     end
-    if textValue ~= "" then CludesUI.ShowWidgetTooltip(button, textValue) end
+    if textValue ~= "" then CUI.ShowWidgetTooltip(button, textValue) end
 end
 
-local function InviteLeave() CludesUI.HideWidgetTooltip() end
+local function InviteLeave() CUI.HideWidgetTooltip() end
 
 -- The icon steps down and right while the button is held, as Blizzard's does
 local function InvitePress(button)
@@ -921,7 +922,7 @@ local function ShowAccountMenu(button, index)
             }
         end
     end
-    if #dropMenu > 0 then CludesUI.ShowContextMenu(button, dropMenu) end
+    if #dropMenu > 0 then CUI.ShowContextMenu(button, dropMenu) end
 end
 
 local function InviteClick(button)
@@ -1053,7 +1054,7 @@ local function MakeRow(slotFrame)
     frame.catch = catchFrame
     if InCombatLockdown() then
         unrouted[#unrouted + 1] = frame
-        CludesUI.CombatQueue.Defer("FriendsListRoute", RoutePending)
+        CUI.CombatQueue.Defer("FriendsListRoute", RoutePending)
     else
         RouteCatch(frame)
     end
@@ -1102,9 +1103,9 @@ local function StyleRow(frame)
         nameSize, lineSize = 13, 11
     end
     -- The kit's lines are font families (they show friends' names and notes)
-    CludesUI.SetFontFamily(data.name, font, nameSize, "", true)
-    CludesUI.SetFontFamily(data.charLine, font, lineSize, "", true)
-    CludesUI.SetFontFamily(data.info, font, lineSize, "", true)
+    CUI.SetFontFamily(data.name, font, nameSize, "", true)
+    CUI.SetFontFamily(data.charLine, font, lineSize, "", true)
+    CUI.SetFontFamily(data.info, font, lineSize, "", true)
     data.name:SetTextColor(1, 1, 1, 1)
     data.charLine:SetTextColor(1, 1, 1, 1)
     data.info:SetTextColor(1, 1, 1, 1)
@@ -1356,7 +1357,7 @@ local function PaintRow(frame, item)
     SetSelected(frame, record.id == selectedId)
 
     -- A reused row under the pointer shows the new friend's tooltip
-    if hoveredRow == frame then CludesUI.ShowWidgetTooltip(frame, FriendTooltip(record), TIP_OPTS) end
+    if hoveredRow == frame then CUI.ShowWidgetTooltip(frame, FriendTooltip(record), TIP_OPTS) end
 end
 
 -------------------------------------------------------------------------------
@@ -1365,9 +1366,9 @@ end
 local ICON_ALPHA, ICON_HOVER, ICON_OFF = 0.35, 0.7, 0.06
 
 local function AccentRGB()
-    local r, group, b = CludesUI.GetAccentColor()
+    local r, group, b = CUI.GetAccentColor()
     if r then return r, group, b end
-    local brandGreen = CludesUI.CLUDES_GREEN
+    local brandGreen = CUI.CLUDES_GREEN
     return brandGreen.r, brandGreen.g, brandGreen.b
 end
 
@@ -1375,18 +1376,18 @@ end
 -- is switched off (the first section's up arrow, the last one's down arrow)
 local function HeaderIconEnter(button)
     if button.off then
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
         return
     end
     button:SetAlpha(ICON_HOVER)
     local tipText = button.tip
     if type(tipText) == "function" then tipText = tipText(button) end
-    CludesUI.ShowWidgetTooltip(button, tipText)
+    CUI.ShowWidgetTooltip(button, tipText)
 end
 
 local function HeaderIconLeave(button)
     button:SetAlpha(button.off and ICON_OFF or ICON_ALPHA)
-    CludesUI.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 
 -- tip: the tooltip, or a function of the button that returns it
@@ -1444,8 +1445,8 @@ local RepaintHeaders -- defined with the header painter below
 -- names in view, and a cancel puts the old colour back.
 local function PickSectionColor(sortKey, anchor, onChange)
     if not sortKey or InCombatLockdown() then return end
-    CludesUI:EnsureLoaded()
-    if not CludesUI.ShowColorPicker then return end
+    CUI:EnsureLoaded()
+    if not CUI.ShowColorPicker then return end
     local colors = Store().friendGroupColors
     local was, picked = colors[sortKey], nil
     local function Set(color)
@@ -1454,13 +1455,13 @@ local function PickSectionColor(sortKey, anchor, onChange)
         if onChange then onChange() end
     end
     local r, group, b = SectionRGB(sortKey)
-    CludesUI:ShowColorPicker({
+    CUI:ShowColorPicker({
         r = r,
         g = group,
         b = b,
         hasOpacity = false,
         swatchFunc = function()
-            local dialog = CludesUI._colorPickerPopup
+            local dialog = CUI._colorPickerPopup
             if not dialog then return end
             picked = picked or {}
             picked.r, picked.g, picked.b = dialog:GetColorRGB()
@@ -1474,7 +1475,7 @@ end
 -- opens the colour picker, whose own OK and Cancel keep or drop the colour
 -- (the popup's buttons are the name's alone).
 local function PromptEditGroup(nameText)
-    CludesUI:ShowInputPopup({
+    CUI:ShowInputPopup({
         title = "Rename Friend Group",
         message = "Enter a new name for this group:",
         initialText = nameText,
@@ -1558,7 +1559,7 @@ local function PaintHeader(hgt, item)
         hgt.style = styleGen
         hgt.custom = nil
         hgt:SetWidth(rowW)
-        CludesUI.SetFontFamily(hgt.label, T.FontPath(), 12, "", true)
+        CUI.SetFontFamily(hgt.label, T.FontPath(), 12, "", true)
     end
     hgt.label:SetText(item.label)
     local r, group, b = SectionRGB(item.key)
@@ -1612,7 +1613,7 @@ local function HideUnseen(entries)
             frame.item, frame.rec = nil, nil
             if hoveredRow == frame then
                 hoveredRow = nil
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end
             frame:Hide()
         end
@@ -1815,10 +1816,10 @@ end
 local function PromptNote(ident)
     local details = C_BattleNet.GetAccountInfoByID(ident)
     if not details then return end
-    CludesUI:ShowInputPopup({
+    CUI:ShowInputPopup({
         title = "Set Note",
         message = "Enter a note for this friend:",
-        initialText = CludesUI.StripFriendNoteTag(details.note) or "",
+        initialText = CUI.StripFriendNoteTag(details.note) or "",
         placeholder = "Enter note...",
         confirmText = "Save",
         cancelText = "Cancel",
@@ -1829,7 +1830,7 @@ local function PromptNote(ident)
 end
 
 local function PromptRemove(ident)
-    CludesUI:ShowConfirmPopup({
+    CUI:ShowConfirmPopup({
         title = "Remove Friend",
         message = "Remove this friend from your friends list?",
         confirmText = "Remove",
@@ -1881,15 +1882,15 @@ local function AddMenuEntries(_, dropMenu, contextData)
     -- The friend entries Blizzard's menu offers only from its own list. No
     -- divider before them: they join its last section, as there. The
     -- favorite line does what the Favorites entries further down do.
-    dropMenu:CreateButton(SET_NOTE or CludesUI.L("Set Note"), function() PromptNote(ident) end)
+    dropMenu:CreateButton(SET_NOTE or CUI.L("Set Note"), function() PromptNote(ident) end)
     if current == FAV then
         dropMenu:CreateButton(
-            REMOVE_FAVORITE_STATUS or CludesUI.L("Remove Favorite"),
+            REMOVE_FAVORITE_STATUS or CUI.L("Remove Favorite"),
             function() PlaceFriend(ident, sortKey, UNGROUPED) end
         )
     else
         dropMenu:CreateButton(
-            ADD_FAVORITE_STATUS or CludesUI.L("Add Favorite"),
+            ADD_FAVORITE_STATUS or CUI.L("Add Favorite"),
             function() PlaceFriend(ident, sortKey, FAV) end
         )
     end
@@ -1900,12 +1901,12 @@ local function AddMenuEntries(_, dropMenu, contextData)
         and C_BattleNet.SetFriendTags
     then
         AddTagEntries(
-            dropMenu:CreateButton(SOCIAL_UI_BATTLE_NET_FRIEND_TAGS_LABEL or CludesUI.L("Tags")),
+            dropMenu:CreateButton(SOCIAL_UI_BATTLE_NET_FRIEND_TAGS_LABEL or CUI.L("Tags")),
             ident,
             details
         )
     end
-    dropMenu:CreateButton(REMOVE_FRIEND or CludesUI.L("Remove Friend"), function() PromptRemove(ident) end)
+    dropMenu:CreateButton(REMOVE_FRIEND or CUI.L("Remove Friend"), function() PromptRemove(ident) end)
 
     -- Our own sections, after them: Favorites and the custom groups alike,
     -- less the one the friend sits in
@@ -1914,13 +1915,13 @@ local function AddMenuEntries(_, dropMenu, contextData)
         dropMenu:CreateTitle("CludesUI")
         local grouped = current ~= UNGROUPED
         local sub =
-            dropMenu:CreateButton(grouped and CludesUI.L("Move to Group") or CludesUI.L("Add to Group"))
-        sub:CreateButton(CludesUI.L("New Group..."), function() PromptNewGroup(sortKey) end)
+            dropMenu:CreateButton(grouped and CUI.L("Move to Group") or CUI.L("Add to Group"))
+        sub:CreateButton(CUI.L("New Group..."), function() PromptNewGroup(sortKey) end)
         local entries = group.friendGroups
         if current ~= FAV or #entries > 0 then sub:CreateDivider() end
         if current ~= FAV then
             sub:CreateButton(
-                FAVORITES or CludesUI.L("Favorites"),
+                FAVORITES or CUI.L("Favorites"),
                 function() PlaceFriend(ident, sortKey, FAV) end
             )
         end
@@ -1933,7 +1934,7 @@ local function AddMenuEntries(_, dropMenu, contextData)
         if grouped then
             sub:CreateDivider()
             sub:CreateButton(
-                CludesUI.L("Remove from Group"),
+                CUI.L("Remove from Group"),
                 function() PlaceFriend(ident, sortKey, UNGROUPED) end
             )
         end
@@ -2008,7 +2009,7 @@ local function Build()
     end
 
     -- A new accent colour repaints the section names that follow it
-    CludesUI.RegAccent({
+    CUI.RegAccent({
         type = "callback",
         fn = function()
             if not isActive then return end
@@ -2021,7 +2022,7 @@ end
 local function WantActive()
     local parts = Settings()
     if not (parts and parts.enabled ~= false and parts.customTiles ~= false) then return false end
-    if not FL.Available() or CludesUI.PadGamepadUI() then return false end
+    if not FL.Available() or CUI.PadGamepadUI() then return false end
     if
         C_SocialRestrictions
         and C_SocialRestrictions.IsFriendsDisabled
@@ -2048,7 +2049,7 @@ local function ParkList()
     hoveredRow, selectedId = nil, nil
     wipe(favAsked)
     wipe(searchCollapsed)
-    CludesUI.HideWidgetTooltip()
+    CUI.HideWidgetTooltip()
 end
 
 -- The list stands down: Blizzard's own list shows again

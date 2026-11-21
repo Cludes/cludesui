@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_Uninstall.lua
 --  The game settings CludesUI changes that outlive it, and what puts them
@@ -129,14 +130,14 @@ end
 
 local CheckModules -- the login pass, below
 
-CludesUI.Lite.OnSavedVariablesLoaded(function()
+CUI.Lite.OnSavedVariablesLoaded(function()
     local r = type(CludesUIDB) == "table" and CludesUIDB[KEY]
     if type(r) == "table" then
         _fresh = r.fresh == true
     else
         -- A standalone may have built the store before any saved data loaded:
         -- when no saved data replaced it, that is a fresh account too.
-        _fresh = CludesUI.Lite.StoreFromBeforeLoad() or IsFreshAccount(CludesUIDB)
+        _fresh = CUI.Lite.StoreFromBeforeLoad() or IsFreshAccount(CludesUIDB)
     end
     -- The record is written at login, so a fresh account keeps its mark even
     -- when this session changes nothing.
@@ -149,7 +150,7 @@ CludesUI.Lite.OnSavedVariablesLoaded(function()
         -- After a reload in combat the module pass waits for it to end: some
         -- CVars cannot change in combat.
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer("UninstallModulePass", CheckModules)
+            CUI.CombatQueue.Defer("UninstallModulePass", CheckModules)
             return
         end
         CheckModules()
@@ -199,7 +200,7 @@ end
 --- SetCVar for every value CludesUI sets on its own. owner is the module
 --- that sets it (its addon folder name, also from its options page; nil for
 --- the parent): turning that module off puts the value back.
-function CludesUI.SetCVar(name, value, ownerFrame)
+function CUI.SetCVar(name, value, ownerFrame)
     if _uninstalled then return false end
     local before = GetCVar(name)
     local success = C_CVar.SetCVar(name, CVarString(value))
@@ -210,7 +211,7 @@ end
 
 --- For a CVar CludesUI holds only for a while: SetCVar, keeping what the
 --- record held before, which ReleaseCVar puts back.
-function CludesUI.HoldCVar(name, value, ownerFrame)
+function CUI.HoldCVar(name, value, ownerFrame)
     if _uninstalled then return false end
     local current = GetCVar(name)
     local root = _fresh ~= nil and current ~= nil and CVarScope(name)
@@ -220,7 +221,7 @@ function CludesUI.HoldCVar(name, value, ownerFrame)
         local e = root.cvar and root.cvar[key]
         snap = { e = e and { b = e.b, a = e.a, o = e.o } or false, v = current, o = ownerFrame }
     end
-    local success = CludesUI.SetCVar(name, value, ownerFrame)
+    local success = CUI.SetCVar(name, value, ownerFrame)
     if success and snap then Sub(root, "held")[key] = snap end
     return success
 end
@@ -228,7 +229,7 @@ end
 --- Ends a hold: writes value (what the CVar was when the hold began; nil
 --- writes nothing). Once the CVar is back at the value from before the hold,
 --- the record goes back as it was then. owner is the module, as for HoldCVar.
-function CludesUI.ReleaseCVar(name, value, ownerFrame)
+function CUI.ReleaseCVar(name, value, ownerFrame)
     local key = name:lower()
     -- After Uninstall the record is final, and what Uninstall put back stays.
     if _uninstalled then
@@ -272,7 +273,7 @@ end
 
 --- SetCVarBitfield likewise. Recorded per bit, so only the bits CludesUI
 --- set go back, never one the game set since.
-function CludesUI.SetCVarBitfield(name, index, value, ownerFrame)
+function CUI.SetCVarBitfield(name, index, value, ownerFrame)
     if _uninstalled then return false end
     local before = GetCVarBitfield(name, index)
     local success = C_CVar.SetCVarBitfield(name, index, value)
@@ -319,7 +320,7 @@ end
 --- The player changed a CVar while owner held it: the hold ends with no write,
 --- and the record goes back as it was before the hold, so neither Uninstall
 --- nor a later login puts the held value back over the player's.
-function CludesUI.DropHold(name, ownerFrame)
+function CUI.DropHold(name, ownerFrame)
     if _fresh == nil then return end
     local root = CVarScope(name)
     local key = name:lower()
@@ -337,7 +338,7 @@ end
 --- it), for owner to call at login, when it cannot still be running: put back
 --- as the module pass does, the value from before the hold only while the CVar
 --- still reads CludesUI's.
-function CludesUI.ReleaseStaleHold(name, ownerFrame)
+function CUI.ReleaseStaleHold(name, ownerFrame)
     if _uninstalled or _fresh == nil then return end
     local root = CVarScope(name)
     local key = name:lower()
@@ -468,19 +469,19 @@ local CHAR_LAYOUT = Enum and Enum.EditModeLayoutType and Enum.EditModeLayoutType
 
 --- Blizzard's Edit Mode is open: it saves its own copy of the layouts on
 --- exit, over anything written meanwhile.
-function CludesUI.EditModeOpen()
+function CUI.EditModeOpen()
     local emf = _G.EditModeManagerFrame
     if not emf then return false end
     return (emf.editModeActive or (emf.IsShown and emf:IsShown())) and true or false
 end
-local EditModeOpen = CludesUI.EditModeOpen
+local EditModeOpen = CUI.EditModeOpen
 
 --- The saved layouts with the presets first, as SaveLayouts takes them: it
 --- replaces the whole set, and activeLayout indexes that merged list, while
 --- C_EditMode.GetLayouts returns only the saved half. Returns the layout info
 --- and the number of presets, or nil when that cannot be built (never save a
 --- short list).
-function CludesUI.EditModeLayoutsForSave()
+function CUI.EditModeLayoutsForSave()
     local success, details = pcall(C_EditMode.GetLayouts)
     if not success or type(details) ~= "table" or type(details.layouts) ~= "table" then return nil end
     local mgr = EditModePresetLayoutManager
@@ -493,7 +494,7 @@ function CludesUI.EditModeLayoutsForSave()
     details.layouts = presets
     return details, numPresets
 end
-local LayoutsForSave = CludesUI.EditModeLayoutsForSave
+local LayoutsForSave = CUI.EditModeLayoutsForSave
 
 -- On a fresh account, the layouts there are when CludesUI first notes one:
 -- listed once for the account, and once for each character (its own
@@ -558,7 +559,7 @@ end
 --- copy of one it had changed); nil leaves that row as it is. pair names a
 --- setting that only means something together with this one (a size's
 --- hundreds and the rest): the two go back together or not at all.
-function CludesUI.NoteEditModeSetting(layout, sysInfo, setting, before, value, fallback, pair)
+function CUI.NoteEditModeSetting(layout, sysInfo, setting, before, value, fallback, pair)
     if _fresh == nil or before == nil then return end
     if type(layout) ~= "table" or type(layout.layoutName) ~= "string" then return end
     local e = EditModeEntry(layout, sysInfo, setting, before, fallback)
@@ -592,7 +593,7 @@ end
 --- NoteEditModeSetting) to anchor, its only anchor from then on: records the
 --- system's position then and anchor. Where the position from before is
 --- unknown, Uninstall leaves the system where it is.
-function CludesUI.NoteEditModeAnchor(layout, sysInfo, anchor)
+function CUI.NoteEditModeAnchor(layout, sysInfo, anchor)
     if _fresh == nil or type(anchor) ~= "table" then return end
     if type(sysInfo) ~= "table" or type(sysInfo.anchorInfo) ~= "table" then return end
     if type(layout) ~= "table" or type(layout.layoutName) ~= "string" then return end
@@ -694,7 +695,7 @@ end
 
 --- SetChatWindowSize for a font size CludesUI applies on its own (stored
 --- per character, like the window itself).
-function CludesUI.SetChatWindowSize(index, size)
+function CUI.SetChatWindowSize(index, size)
     if _uninstalled then return end
     local _, before = GetChatWindowInfo(index)
     SetChatWindowSize(index, size)
@@ -730,7 +731,7 @@ end
 --- the action the key had then, so Uninstall can hand it back. The latest
 --- action the player gave the key counts; an empty key or one of
 --- CludesUI's own commands never replaces it.
-function CludesUI.NoteBinding(key, before)
+function CUI.NoteBinding(key, before)
     if _fresh == nil or not key then return end
     local root
     if GetCurrentBindingSet() == 2 then
@@ -778,11 +779,11 @@ local _steps = {}
 
 --- Adds a step Uninstall runs before CludesUI turns off: for changes only
 --- its module knows how to undo.
-function CludesUI.OnUninstall(func) _steps[#_steps + 1] = func end
+function CUI.OnUninstall(func) _steps[#_steps + 1] = func end
 
 --- True when the record holds the settings from before CludesUI (false:
 --- they go back to the game's defaults instead).
-function CludesUI.UninstallKnowsOriginals()
+function CUI.UninstallKnowsOriginals()
     local r = type(CludesUIDB) == "table" and CludesUIDB[KEY]
     return type(r) == "table" and r.fresh == true
 end
@@ -802,7 +803,7 @@ end
 --- character; the caller reloads (CludesUI.RequestReload). Refused, with
 --- nothing changed, in combat (key bindings and protected CVars cannot change
 --- then) and while Edit Mode is open. Returns true when it ran.
-function CludesUI.Uninstall()
+function CUI.Uninstall()
     if _uninstalled or InCombatLockdown() or EditModeOpen() then return false end
     -- From here on nothing re-applies a setting, not even a handler the
     -- writes below wake.

@@ -1,8 +1,9 @@
 if CUI_CLIENT_BLOCKED then return end
+local CUI = CludesUI
 -- Shared opt-in shield glow. Callers own settings, event registration and visibility.
-local Pix = CludesUI.PP
+local Pix = CUI.PP
 local Glow = {}
-CludesUI.AbsorbGlow = Glow
+CUI.AbsorbGlow = Glow
 
 -- Glow Line Texture art: { file, blend mode, width, width in whole pixels }.
 Glow.art = {

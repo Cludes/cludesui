@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Harvest.lua
 --
@@ -267,7 +268,7 @@ end
 -- Defined here, after the locals it reads.
 function PxCo.Pair(storage, cond)
     if not storage then return end
-    local CO = CludesUI._CondOv
+    local CO = CUI._CondOv
     local didChange = false
     for _, record in ipairs(storage) do
         local groupDef = record.values and record.values.default
@@ -438,13 +439,13 @@ local function ApplyValuesFor(specId)
     -- While Editing-as (or the Default view) holds swapped values live, generic
     -- re-applies (e.g. a fallback RefreshAllAddons) must preserve the swap.
     if _editGroup then return WriteGroupValues(_editGroup) end
-    if CludesUI._CondOv and CludesUI._CondOv._edit then
+    if CUI._CondOv and CUI._CondOv._edit then
         -- Editing-as-conditional view: shared defaults with the session group's
         -- values overlaid (forSession: they show even over spec-owned fkeys).
         -- Falling through to WriteSpecValues repaints spec values into the open
         -- session and the exit bank records them as the conditional's edits.
         local changedSet = WriteDefaultValues()
-        local t2 = CludesUI._CondOv.WriteValues(CludesUI._CondOv._edit.id, true)
+        local t2 = CUI._CondOv.WriteValues(CUI._CondOv._edit.id, true)
         if t2 then
             changedSet = changedSet or {}
             for key in pairs(t2) do
@@ -460,26 +461,26 @@ end
 --- Values-only apply, called at the TOP of CludesUI.RefreshAllAddons so
 --- every profile swap / import picks the current spec's overrides up through
 --- the full refresh that follows. No refresh of its own.
-function CludesUI.SpecOverrides_ApplyValues(specId)
+function CUI.SpecOverrides_ApplyValues(specId)
     -- WoW Forever: re-resolve the spec the class acts as against the groups
     -- of the profile now active (a profile swap or import can move it).
-    if CludesUI.IS_FOREVER then specId = CurrentSpecID() or specId end
+    if CUI.IS_FOREVER then specId = CurrentSpecID() or specId end
     ApplyValuesFor(specId or _activeSpec or CurrentSpecID())
     -- Unlock layout overrides ride the same hook: stores must hold the current
     -- spec's effective layout before every module refresh that follows. Always
     -- keyed to the REAL spec -- editing-as swaps option values, never layout.
-    if CludesUI.SpecOverrides_ApplyUnlock then
-        CludesUI.SpecOverrides_ApplyUnlock(specId or _activeSpec or CurrentSpecID())
+    if CUI.SpecOverrides_ApplyUnlock then
+        CUI.SpecOverrides_ApplyUnlock(specId or _activeSpec or CurrentSpecID())
     end
-    if CludesUI.SpecOverrides_ApplyBm then
-        CludesUI.SpecOverrides_ApplyBm(specId or _activeSpec or CurrentSpecID())
+    if CUI.SpecOverrides_ApplyBm then
+        CUI.SpecOverrides_ApplyBm(specId or _activeSpec or CurrentSpecID())
     end
-    if CludesUI.SpecOverrides_ApplyDm then
-        CludesUI.SpecOverrides_ApplyDm(specId or _activeSpec or CurrentSpecID())
+    if CUI.SpecOverrides_ApplyDm then
+        CUI.SpecOverrides_ApplyDm(specId or _activeSpec or CurrentSpecID())
     end
     -- Conditional value overlay rides last (spec values always win their
     -- own fkeys; the two sets are disjoint by the ownership gate).
-    if CludesUI._CondOv then CludesUI._CondOv.ApplyValues() end
+    if CUI._CondOv then CUI._CondOv.ApplyValues() end
     -- Close the import window (see ImportProfile): this is the first apply on a
     -- session OTHER than the importing one (its runtime flag died at the ReloadUI).
     -- Converge live to the imported store's layer truth exactly once: the exported
@@ -491,7 +492,7 @@ function CludesUI.SpecOverrides_ApplyValues(specId)
     -- true baselineLayout; FlushUnlock's equality guards no-op once blob and bucket
     -- agree, and its pend overlay keeps post-clear boundary banks intent-true until
     -- the flush lands. Clear-first so an apply error can never wedge the window shut.
-    if not CludesUI._importGuardArmedNow then
+    if not CUI._importGuardArmedNow then
         local profileTbl = GetProfileRoot()
         if profileTbl and profileTbl._importEstablishPending then
             -- Resolve the spec BEFORE closing the window: a spec-less apply must leave
@@ -504,15 +505,15 @@ function CludesUI.SpecOverrides_ApplyValues(specId)
                 profileTbl._importEstablishPending = nil
                 -- One converge serves both windows: the forced apply below
                 -- also satisfies a pending reset-pointer converge.
-                CludesUI._unlockResetConvergePending = nil
-                if CludesUI.SpecOverrides_ApplyUnlock then
-                    pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
+                CUI._unlockResetConvergePending = nil
+                if CUI.SpecOverrides_ApplyUnlock then
+                    pcall(CUI.SpecOverrides_ApplyUnlock, spellRef, true)
                 end
-                if CludesUI.SpecOverrides_ApplyBm then
-                    pcall(CludesUI.SpecOverrides_ApplyBm, spellRef, true)
+                if CUI.SpecOverrides_ApplyBm then
+                    pcall(CUI.SpecOverrides_ApplyBm, spellRef, true)
                 end
-                if CludesUI.SpecOverrides_ApplyDm then
-                    pcall(CludesUI.SpecOverrides_ApplyDm, spellRef, true)
+                if CUI.SpecOverrides_ApplyDm then
+                    pcall(CUI.SpecOverrides_ApplyDm, spellRef, true)
                 end
             end
         end
@@ -525,12 +526,12 @@ function CludesUI.SpecOverrides_ApplyValues(specId)
     -- truth instead. Same contract as the import converge (spec resolved before
     -- clearing, clear-first, pcall'd). No ApplyBm -- the BM pointer is never
     -- reset, so it is never lied about.
-    if CludesUI._unlockResetConvergePending then
+    if CUI._unlockResetConvergePending then
         local spellRef = specId or _activeSpec or CurrentSpecID()
         if spellRef then
-            CludesUI._unlockResetConvergePending = nil
-            if CludesUI.SpecOverrides_ApplyUnlock then
-                pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
+            CUI._unlockResetConvergePending = nil
+            if CUI.SpecOverrides_ApplyUnlock then
+                pcall(CUI.SpecOverrides_ApplyUnlock, spellRef, true)
             end
         end
     end
@@ -539,24 +540,24 @@ end
 --- Full apply: values + targeted refresh of the touched addons.
 --- deferLogin: first-login call -- waits two frames so child addon OnEnable and
 --- deferred registrations complete first (mirrors the profile switcher).
-function CludesUI.SpecOverrides_Apply(specId, deferLogin)
+function CUI.SpecOverrides_Apply(specId, deferLogin)
     if deferLogin then
         C_Timer.After(0, function()
-            C_Timer.After(0, function() CludesUI.SpecOverrides_Apply(specId) end)
+            C_Timer.After(0, function() CUI.SpecOverrides_Apply(specId) end)
         end)
         return
     end
     -- WoW Forever: every caller means "the current spec"; the client's own
     -- spec ID never keys a group, so resolve the spec the class acts as.
-    if specId and CludesUI.IS_FOREVER then specId = CurrentSpecID() or specId end
+    if specId and CUI.IS_FOREVER then specId = CurrentSpecID() or specId end
     local changedSet = ApplyValuesFor(specId)
     if changedSet then RunRefreshers(changedSet) end
     -- Unlock layout overrides: a same-profile spec change never runs RefreshAllAddons,
     -- so this is its only unlock apply; on the profile-switch path ApplyValues already
     -- ran it and this repeat is a value-equal no-op.
-    if CludesUI.SpecOverrides_ApplyUnlock then CludesUI.SpecOverrides_ApplyUnlock(specId) end
-    if CludesUI.SpecOverrides_ApplyBm then CludesUI.SpecOverrides_ApplyBm(specId) end
-    if CludesUI.SpecOverrides_ApplyDm then CludesUI.SpecOverrides_ApplyDm(specId) end
+    if CUI.SpecOverrides_ApplyUnlock then CUI.SpecOverrides_ApplyUnlock(specId) end
+    if CUI.SpecOverrides_ApplyBm then CUI.SpecOverrides_ApplyBm(specId) end
+    if CUI.SpecOverrides_ApplyDm then CUI.SpecOverrides_ApplyDm(specId) end
     if UpdateIndicator then UpdateIndicator() end -- passive owner may change
     -- Spec changed with the cards popup open: rebuild so each group's unlock
     -- icon reflects the new spec's membership (the click handler re-checks
@@ -568,10 +569,10 @@ function CludesUI.SpecOverrides_Apply(specId, deferLogin)
     end
     -- Conditional overrides re-arm after every spec transition: the engine
     -- bails while the value system is mid-swap; this is its retry point.
-    if CludesUI.Conditions_Recheck then CludesUI.Conditions_Recheck() end
+    if CUI.Conditions_Recheck then CUI.Conditions_Recheck() end
     -- Import-window close + one-shot layer converge; contract identical to the
     -- copy in SpecOverrides_ApplyValues above.
-    if not CludesUI._importGuardArmedNow then
+    if not CUI._importGuardArmedNow then
         local profileTbl = GetProfileRoot()
         if profileTbl and profileTbl._importEstablishPending then
             local spellRef = specId or _activeSpec or CurrentSpecID()
@@ -579,26 +580,26 @@ function CludesUI.SpecOverrides_Apply(specId, deferLogin)
                 profileTbl._importEstablishPending = nil
                 -- One converge serves both windows: the forced apply below
                 -- also satisfies a pending reset-pointer converge.
-                CludesUI._unlockResetConvergePending = nil
-                if CludesUI.SpecOverrides_ApplyUnlock then
-                    pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
+                CUI._unlockResetConvergePending = nil
+                if CUI.SpecOverrides_ApplyUnlock then
+                    pcall(CUI.SpecOverrides_ApplyUnlock, spellRef, true)
                 end
-                if CludesUI.SpecOverrides_ApplyBm then
-                    pcall(CludesUI.SpecOverrides_ApplyBm, spellRef, true)
+                if CUI.SpecOverrides_ApplyBm then
+                    pcall(CUI.SpecOverrides_ApplyBm, spellRef, true)
                 end
-                if CludesUI.SpecOverrides_ApplyDm then
-                    pcall(CludesUI.SpecOverrides_ApplyDm, spellRef, true)
+                if CUI.SpecOverrides_ApplyDm then
+                    pcall(CUI.SpecOverrides_ApplyDm, spellRef, true)
                 end
             end
         end
     end
     -- Reset-pointer converge; same contract as the copy above.
-    if CludesUI._unlockResetConvergePending then
+    if CUI._unlockResetConvergePending then
         local spellRef = specId or _activeSpec or CurrentSpecID()
         if spellRef then
-            CludesUI._unlockResetConvergePending = nil
-            if CludesUI.SpecOverrides_ApplyUnlock then
-                pcall(CludesUI.SpecOverrides_ApplyUnlock, spellRef, true)
+            CUI._unlockResetConvergePending = nil
+            if CUI.SpecOverrides_ApplyUnlock then
+                pcall(CUI.SpecOverrides_ApplyUnlock, spellRef, true)
             end
         end
     end
@@ -606,22 +607,22 @@ end
 
 --- Spec transition entry point, called by the profile system's spec handler
 --- BEFORE any spec-profile switch.
-function CludesUI.SpecOverrides_OnSpecChanged(oldSpecID, newSpecID)
+function CUI.SpecOverrides_OnSpecChanged(oldSpecID, newSpecID)
     -- WoW Forever: the outgoing spec is the one whose values are live, the
     -- incoming one the spec the class acts as.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         if oldSpecID then oldSpecID = _activeSpec end
         if newSpecID then newSpecID = CurrentSpecID() or newSpecID end
     end
     -- Unlock layout: bank live into the outgoing layer FIRST, while live still
     -- belongs to the old state (the new spec's values/refreshers have not run
     -- yet). The per-spec layer apply rides ApplyUnlock later.
-    if CludesUI.SpecOverrides_HarvestUnlockLayout then CludesUI.SpecOverrides_HarvestUnlockLayout() end
-    if CludesUI.SpecOverrides_HarvestBmLayout then CludesUI.SpecOverrides_HarvestBmLayout() end
-    if CludesUI.SpecOverrides_HarvestDmLayout then CludesUI.SpecOverrides_HarvestDmLayout() end
+    if CUI.SpecOverrides_HarvestUnlockLayout then CUI.SpecOverrides_HarvestUnlockLayout() end
+    if CUI.SpecOverrides_HarvestBmLayout then CUI.SpecOverrides_HarvestBmLayout() end
+    if CUI.SpecOverrides_HarvestDmLayout then CUI.SpecOverrides_HarvestDmLayout() end
     -- An editing-as-conditional session banks and ends here; the transition
     -- re-establishes canonical live itself (noRestore).
-    if CludesUI._CondOv and CludesUI._CondOv.ExitEdit then CludesUI._CondOv.ExitEdit(true) end
+    if CUI._CondOv and CUI._CondOv.ExitEdit then CUI._CondOv.ExitEdit(true) end
     if _editGroup then
         -- Bank unsaved Editing-as changes (plus a sweep of uncaptured writes)
         -- to the group's members. Live holds group values, so the outgoing
@@ -652,12 +653,12 @@ end
 -- while an editing session holds its own values live (its exit converges)
 -- and while a spec transition is mid-flight (its apply resolves the new
 -- spec). Retail never calls this.
-function CludesUI._SO_ForeverConverge()
+function CUI._SO_ForeverConverge()
     local r = CurrentSpecID()
     if not r or r == _activeSpec or _inTransition then return end
-    if _editGroup or (CludesUI._CondOv and CludesUI._CondOv._edit) then return end
-    CludesUI.SpecOverrides_OnSpecChanged(_activeSpec, r)
-    CludesUI.SpecOverrides_Apply(r)
+    if _editGroup or (CUI._CondOv and CUI._CondOv._edit) then return end
+    CUI.SpecOverrides_OnSpecChanged(_activeSpec, r)
+    CUI.SpecOverrides_Apply(r)
 end
 
 --- Harvest the live values of the spec currently in the live db. Called on
@@ -665,13 +666,13 @@ end
 --- options-page edits are never lost. An active Editing-as session is banked
 --- to its group and ended, and canonical live data restored (the caller is
 --- about to snapshot or switch).
-function CludesUI.SpecOverrides_HarvestCurrent()
+function CUI.SpecOverrides_HarvestCurrent()
     if _inTransition then return end
     -- Unlock layout: bank live into its current layer (callers are about to
     -- snapshot or swap stores).
-    if CludesUI.SpecOverrides_HarvestUnlockLayout then CludesUI.SpecOverrides_HarvestUnlockLayout() end
-    if CludesUI.SpecOverrides_HarvestBmLayout then CludesUI.SpecOverrides_HarvestBmLayout() end
-    if CludesUI.SpecOverrides_HarvestDmLayout then CludesUI.SpecOverrides_HarvestDmLayout() end
+    if CUI.SpecOverrides_HarvestUnlockLayout then CUI.SpecOverrides_HarvestUnlockLayout() end
+    if CUI.SpecOverrides_HarvestBmLayout then CUI.SpecOverrides_HarvestBmLayout() end
+    if CUI.SpecOverrides_HarvestDmLayout then CUI.SpecOverrides_HarvestDmLayout() end
     -- An editing-as-conditional session: bank it and end it. ExitEdit restores
     -- canonical live, but with the panel shown its tail re-enters the Default view,
     -- which banks the real spec's values and swaps the DEFAULTS live -- harvesting the
@@ -682,11 +683,11 @@ function CludesUI.SpecOverrides_HarvestCurrent()
     -- frames out -- at LOGOUT it never lands, leaving the advanced active pointer to
     -- early-out the next login's apply with module position stores still on the OLD
     -- layer. Values still bank (Cond.HarvestEdit inside); only the flip waits.
-    if CludesUI._CondOv and CludesUI._CondOv._edit then
-        CludesUI._CondOv.ExitEdit(nil, true)
+    if CUI._CondOv and CUI._CondOv._edit then
+        CUI._CondOv.ExitEdit(nil, true)
         if not _defaultView then
             -- WoW Forever banks only a spec an apply made live.
-            Harvest(_activeSpec or ((not CludesUI.IS_FOREVER) and CurrentSpecID() or nil))
+            Harvest(_activeSpec or ((not CUI.IS_FOREVER) and CurrentSpecID() or nil))
             return
         end
     end
@@ -695,9 +696,9 @@ function CludesUI.SpecOverrides_HarvestCurrent()
     -- Banking while a session's swapped values sit live rebanks view-state
     -- values into the cond defaults (default poisoning).
     local function BankCond()
-        if CludesUI._CondOv then
-            CludesUI._CondOv.Harvest(
-                CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
+        if CUI._CondOv then
+            CUI._CondOv.Harvest(
+                CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil
             )
         end
     end
@@ -726,7 +727,7 @@ function CludesUI.SpecOverrides_HarvestCurrent()
     BankCond()
     -- WoW Forever banks only a spec an apply made live: before the first
     -- apply no resolved spec owns the live values.
-    Harvest(_activeSpec or ((not CludesUI.IS_FOREVER) and CurrentSpecID() or nil))
+    Harvest(_activeSpec or ((not CUI.IS_FOREVER) and CurrentSpecID() or nil))
 end
 
 -------------------------------------------------------------------------------
@@ -757,8 +758,8 @@ end
 --  RefreshAllAddons. The CURRENT shape is the layer model: see GetUnlockStore.
 -------------------------------------------------------------------------------
 
-CludesUI.SPECOV_NIL = NIL_SENT
-CludesUI._SPECOV_GOLD = { GOLD_R, GOLD_G, GOLD_B }
+CUI.SPECOV_NIL = NIL_SENT
+CUI._SPECOV_GOLD = { GOLD_R, GOLD_G, GOLD_B }
 
 local function GetUnlockStore(create)
     local profileTbl = GetProfileRoot()
@@ -783,9 +784,9 @@ end
 --- widget (the Style page's per-style slots and first-visit defaults) leaves
 --- such a setting alone, so the override keeps winning (an applied
 --- conditional's value would otherwise be banked over at logout). Read-only.
-function CludesUI.SpecOverrides_IsCaptured(moduleFolder, ...)
+function CUI.SpecOverrides_IsCaptured(moduleFolder, ...)
     local fieldKey = moduleFolder .. FS .. table.concat({ ... }, PS)
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     for pass = 1, 2 do
         local storage
         if pass == 1 then
@@ -822,12 +823,12 @@ end
 --- { kind = "cond", id = condition group id }, each once; empty when none
 --- does. One pass over both stores. Read-only, for options pages that tell
 --- apart where an override applies.
-function CludesUI.SpecOverrides_CapturedBy(moduleFolder, keyList)
+function CUI.SpecOverrides_CapturedBy(moduleFolder, keyList)
     local wanted = {}
     for idx = 1, #keyList do
         wanted[moduleFolder .. FS .. keyList[idx]] = true
     end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     local result, seen = {}, { spec = {}, cond = {} }
     for pass = 1, 2 do
         local storage, kind
@@ -859,7 +860,7 @@ function CludesUI.SpecOverrides_CapturedBy(moduleFolder, keyList)
     return result
 end
 
-function CludesUI.SpecOverrides_GroupById(groupId) return GroupById(groupId) end
+function CUI.SpecOverrides_GroupById(groupId) return GroupById(groupId) end
 
 --- READ-ONLY view-state probe: true ONLY while the panel's Default Editing
 --- Mode swap is live. Editing-as sessions (spec group or conditional)
@@ -867,9 +868,9 @@ function CludesUI.SpecOverrides_GroupById(groupId) return GroupById(groupId) end
 --- must stay OFF there ("click an override" keeps previewing that override).
 --- Only the Default view needs panel-closed effective resolution.
 --- (_CondOv, not the Cond local: Cond is declared in CUI_SpecOverrides_Conditional.lua.)
-function CludesUI.SpecOverrides_ViewActive()
+function CUI.SpecOverrides_ViewActive()
     if _editGroup then return false end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     if CondOv and CondOv._edit then return false end
     return _defaultView and true or false
 end
@@ -880,14 +881,14 @@ end
 --- baselineLayout for per-element fallback. Lets the RF real preview mirror the
 --- session's unlock positions (recorded layer elems; anchored containers use
 --- their recorded bookkeeping coordinates).
-function CludesUI.SpecOverrides_EditSessionUnlockLayer()
+function CUI.SpecOverrides_EditSessionUnlockLayer()
     local cfg = GetUnlockStore()
     if _editGroup then
         local layer = cfg and cfg.layouts and cfg.layouts[_editGroup.id]
         if layer then return layer, cfg.baselineLayout end
         return nil
     end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     local e = CondOv and CondOv._edit
     if e and e.id then
         local condStore = CondOv.GetUnlockStore and CondOv.GetUnlockStore()
@@ -900,12 +901,12 @@ end
 --- READ-ONLY: display name of the override session being edited (editing-as
 --- group or conditional), nil when none. Drives the preview chrome while a
 --- session's own values are on screen.
-function CludesUI.SpecOverrides_EditSessionName()
+function CUI.SpecOverrides_EditSessionName()
     if _editGroup then return _editGroup.name or _editGroup.label end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     local e = CondOv and CondOv._edit
-    if e and e.id and CludesUI.Conditions_GroupById then
-        local condGroup = CludesUI.Conditions_GroupById(e.id)
+    if e and e.id and CUI.Conditions_GroupById then
+        local condGroup = CUI.Conditions_GroupById(e.id)
         return condGroup and (condGroup.name or condGroup.label)
     end
     return nil
@@ -913,9 +914,9 @@ end
 
 --- READ-ONLY: the override session being edited as kind ("spec" | "cond")
 --- plus its group id, nil when none (EditSessionName's source).
-function CludesUI.SpecOverrides_EditSessionInfo()
+function CUI.SpecOverrides_EditSessionInfo()
     if _editGroup then return "spec", _editGroup.id end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     local e = CondOv and CondOv._edit
     if e and e.id then return "cond", e.id end
     return nil
@@ -924,7 +925,7 @@ end
 --- READ-ONLY owning group for a spec's VALUES: first group in creation order
 --- containing the spec. Unlock-layout ownership (OwnerGid) is a different,
 --- layout-carrying rule -- never use it for values.
-function CludesUI.SpecOverrides_OwningGroupFor(specId)
+function CUI.SpecOverrides_OwningGroupFor(specId)
     if not specId then return nil end
     for _, group in ipairs(GetGroups() or {}) do
         for _, spellRef in ipairs(group.specs or {}) do
@@ -944,7 +945,7 @@ end
 --- decoded conceptually BEFORE the table-type skip, so sentinel deletions
 --- always resolve. Returns (flatMap fkey->value or nil, specSrc, condSrc).
 --- ZERO writes, no store creation, safe from any module at any time.
-function CludesUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
+function CUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
     if not moduleFolder then return nil end
     local specId = CurrentSpecID()
     local result, specSrc, condSrc
@@ -964,7 +965,7 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
                         result = result or {}
                         result[fieldKey] = val
                         if not specSrc and m ~= record.values.default and m[fieldKey] ~= nil then
-                            local g = CludesUI.SpecOverrides_OwningGroupFor(specId)
+                            local g = CUI.SpecOverrides_OwningGroupFor(specId)
                             specSrc = (g and (g.name or g.label)) or L("Spec Override")
                         end
                     end
@@ -972,11 +973,11 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
             end
         end
     end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     if CondOv and CondOv.GetStore then
         local cstore = CondOv.GetStore()
         if cstore and #cstore > 0 then
-            local groupId = CludesUI.Conditions_AppliedGid and CludesUI.Conditions_AppliedGid() or nil
+            local groupId = CUI.Conditions_AppliedGid and CUI.Conditions_AppliedGid() or nil
             for _, record in ipairs(cstore) do
                 local map = groupId and record.values[groupId] or nil
                 for fieldKey, groupDef in pairs(record.values.default) do
@@ -996,8 +997,8 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
                             result = result or {}
                             result[fieldKey] = val
                             if fromCond and not condSrc then
-                                local condGroup = CludesUI.Conditions_GroupById
-                                    and CludesUI.Conditions_GroupById(groupId)
+                                local condGroup = CUI.Conditions_GroupById
+                                    and CUI.Conditions_GroupById(groupId)
                                 condSrc = condGroup and (condGroup.name or condGroup.label)
                             end
                         end
@@ -1010,7 +1011,7 @@ function CludesUI.SpecOverrides_PeekEffectiveValues(moduleFolder)
 end
 
 --- Active layer gid; nil = the baseline layout is live.
-function CludesUI.SpecOverrides_UnlockActive()
+function CUI.SpecOverrides_UnlockActive()
     local cfg = GetUnlockStore()
     return cfg and cfg.active or nil
 end
@@ -1038,14 +1039,14 @@ end
 --- live pointer lags membership and panel-open unlock-mode edits, and the RF
 --- real preview must show the layer that WOULD apply at the next boundary.
 --- Second return is baselineLayout for per-element fallback.
-function CludesUI.SpecOverrides_EffectiveUnlockLayer()
+function CUI.SpecOverrides_EffectiveUnlockLayer()
     local cfg = GetUnlockStore()
     if not cfg then return nil end
     local specId = CurrentSpecID()
     if not specId then return nil end
     local wanted = OwnerGid(specId)
     if wanted and cfg.layouts and cfg.layouts[wanted] then return cfg.layouts[wanted], cfg.baselineLayout end
-    local CondOv = CludesUI._CondOv
+    local CondOv = CUI._CondOv
     local cond = CondOv and CondOv.ResolveGid and CondOv.ResolveGid() or nil
     if cond then
         local condStore = CondOv.GetUnlockStore and CondOv.GetUnlockStore()

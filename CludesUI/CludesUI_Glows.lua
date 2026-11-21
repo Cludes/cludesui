@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_Glows.lua
 --  Shared glow rendering engine for the CludesUI addon suite.
@@ -7,8 +8,8 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Blackout (solid colour fill with adjustable transparency).
 --  Each addon attaches to CludesUI.Glows.* instead of duplicating engines.
 -------------------------------------------------------------------------------
-if not CludesUI then return end
-if CludesUI.Glows then return end -- already loaded by another addon
+if not CUI then return end
+if CUI.Glows then return end -- already loaded by another addon
 
 local floor = math.floor
 local min = math.min
@@ -240,7 +241,7 @@ local function _AntsResolveSize(self, glowData)
     -- Snap dimensions AND thickness to physical pixels so every edge renders
     -- the same whole-pixel thickness (unsnapped SetHeight/SetWidth lets some
     -- sides round thicker than others at fractional effective scale).
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     -- A degenerate scale chain (0 while layout is unresolved, or the
     -- SetScale(0.001) hide path) makes onePixel enormous, which collapses the
     -- snap below to w = h = 0 and turns the k divide into N/0. Every phase
@@ -1167,7 +1168,7 @@ end
 -- True (after deferring the button's style key to the restriction lift) when
 -- the bound host's button refuses our calls right now.
 local function BoundBlocked(rec)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if AK.CanTouchButton(rec.button) then return false end
     AK.DeferRestyle(rec.d.styleKey)
     return true
@@ -1177,7 +1178,7 @@ end
 -- others it holds are removed), then kicks when anything is wanted. n = 0
 -- hands every group back. true when all of it landed.
 local function SyncBoundHost(holder, rec, num)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     local btnFrame, glowData = rec.button, rec.d
     local success = true
     local a = holder._cuiAnimAnts
@@ -1482,7 +1483,7 @@ local function StopAnimatedAntsPublic(holder)
     return SyncBoundHost(holder, rec, 0)
 end
 
-CludesUI.Glows = {
+CUI.Glows = {
     STYLES = GLOW_STYLES,
 
     -- High-level API (recommended)
@@ -1521,7 +1522,7 @@ CludesUI.Glows = {
 --  then only resize, tint and toggle it.
 -------------------------------------------------------------------------------
 do
-    local GlowNS = CludesUI.Glows
+    local GlowNS = CUI.Glows
     local TEX = "Interface\\TargetingFrame\\UI-TargetingFrame-Stealable"
     -- Blizzard draws it 24 px on a 21 px buff icon.
     local SCALE = 24 / 21
@@ -1563,7 +1564,7 @@ end
 --  PrewarmEngineHost); Show/Hide then only re-anchor and toggle it.
 -------------------------------------------------------------------------------
 do
-    local GlowNS = CludesUI.Glows
+    local GlowNS = CUI.Glows
     local ATLAS = "UI-CooldownManager-PandemicBorder"
     GlowNS.PANDEMIC_BORDER = PANDEMIC_BORDER
 
@@ -1600,7 +1601,7 @@ end
 --  helpers only translate and render.
 -------------------------------------------------------------------------------
 do
-    local GlowNS = CludesUI.Glows
+    local GlowNS = CUI.Glows
 
     -- Suite default look ("default" color mode): gold for the drawn engines,
     -- the atlas's own untinted look for FlipBook styles.
@@ -1685,7 +1686,7 @@ do
         if mode == "default" then return nil end
         if mode == "class" then
             -- The palette colour (custom + Class Color Darken); an unknown class is white.
-            local color = CludesUI.GetClassColor(CludesUI._playerClass)
+            local color = CUI.GetClassColor(CUI._playerClass)
             return color.r, color.g, color.b
         end
         if red ~= nil then return red, green or 0, blue or 0 end
@@ -1822,7 +1823,7 @@ do
     -- live UIParent glow shows.
     GlowNS.PANEL_EXTRA = { panel = true }
     function GlowNS.PanelThickness(th)
-        local Pix, PPP = CludesUI.PP, CludesUI.PanelPP
+        local Pix, PPP = CUI.PP, CUI.PanelPP
         local px = math.floor(th / ((Pix and Pix.mult) or 1) + 0.5)
         if px < 1 then px = 1 end
         return px * ((PPP and PPP.mult) or 1)
@@ -2024,7 +2025,7 @@ do
     -- StartSpecGlow, which registers it.
     function GlowNS.BindEngineHost(holder, btnFrame, glowData, kickIcon)
         if not (holder and btnFrame and glowData) then return false end
-        local AK = CludesUI.AuraKit
+        local AK = CUI.AuraKit
         local rec = BOUND[holder]
         if not rec then
             if not (AK and AK.CanRunAnimations(btnFrame)) then return false end

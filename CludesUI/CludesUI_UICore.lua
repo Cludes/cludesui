@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_UICore.lua
 --  Always-resident UI primitives consumed by BOTH runtime code (bags, meters,
@@ -9,22 +10,22 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  surface is LoadOnDemand.
 -------------------------------------------------------------------------------
 
-local Pix = CludesUI.PanelPP
-local SolidTex = CludesUI.SolidTex
-local MakeFont = CludesUI.MakeFont
-local MakeBorder = CludesUI.MakeBorder
-local CLUDES_GREEN = CludesUI.CLUDES_GREEN
+local Pix = CUI.PanelPP
+local SolidTex = CUI.SolidTex
+local MakeFont = CUI.MakeFont
+local MakeBorder = CUI.MakeBorder
+local CLUDES_GREEN = CUI.CLUDES_GREEN
 
 -- Button visual constants
-local BTN_BG_R = CludesUI.BTN_BG_R
-local BTN_BG_G = CludesUI.BTN_BG_G
-local BTN_BG_B = CludesUI.BTN_BG_B
-local BTN_BG_A = CludesUI.BTN_BG_A
-local BTN_BG_HA = CludesUI.BTN_BG_HA
-local BTN_BRD_A = CludesUI.BTN_BRD_A
-local BTN_BRD_HA = CludesUI.BTN_BRD_HA
-local BTN_TXT_A = CludesUI.BTN_TXT_A
-local BTN_TXT_HA = CludesUI.BTN_TXT_HA
+local BTN_BG_R = CUI.BTN_BG_R
+local BTN_BG_G = CUI.BTN_BG_G
+local BTN_BG_B = CUI.BTN_BG_B
+local BTN_BG_A = CUI.BTN_BG_A
+local BTN_BG_HA = CUI.BTN_BG_HA
+local BTN_BRD_A = CUI.BTN_BRD_A
+local BTN_BRD_HA = CUI.BTN_BRD_HA
+local BTN_TXT_A = CUI.BTN_TXT_A
+local BTN_TXT_HA = CUI.BTN_TXT_HA
 
 -------------------------------------------------------------------------------
 --  Styled Buttons
@@ -43,14 +44,14 @@ local function MakeStyledButton(btn, textValue, fontSize, colours, onClick, squa
     if square then
         brd = MakeBorder(btn, c[9], c[10], c[11], c[12], Pix)
     else
-        brd = CludesUI.MakeRoundedBorder(btn, c[9], c[10], c[11], c[12], backdrop)
+        brd = CUI.MakeRoundedBorder(btn, c[9], c[10], c[11], c[12], backdrop)
     end
     local labelFS = MakeFont(btn, fontSize, nil, c[17], c[18], c[19])
     -- The resting alpha lives in the text colour, as the hover scripts below set it
     -- (a region alpha on top would multiply with it after the first hover).
     labelFS:SetTextColor(c[17], c[18], c[19], c[20])
     labelFS:SetPoint("CENTER")
-    labelFS:SetText(CludesUI.L(textValue))
+    labelFS:SetText(CUI.L(textValue))
     btn:SetScript("OnEnter", function()
         labelFS:SetTextColor(c[21], c[22], c[23], c[24])
         brd:SetColor(c[13], c[14], c[15], c[16])
@@ -121,9 +122,9 @@ local RB_COLOURS = {
     BTN_TXT_HA,
 }
 
-CludesUI.MakeStyledButton = MakeStyledButton
-CludesUI.WB_COLOURS = WB_COLOURS
-CludesUI.RB_COLOURS = RB_COLOURS
+CUI.MakeStyledButton = MakeStyledButton
+CUI.WB_COLOURS = WB_COLOURS
+CUI.RB_COLOURS = RB_COLOURS
 
 -------------------------------------------------------------------------------
 --  One-time tip callout
@@ -160,11 +161,11 @@ local function TipArrowTex(holderFrame, drawLayer, flyout, size, red, green, blu
     return tex
 end
 
-function CludesUI.BuildTipCallout(hostFrame, options)
+function CUI.BuildTipCallout(hostFrame, options)
     local pp = options.pp or Pix
     local strata = options.strata
     if strata == nil then strata = "FULLSCREEN_DIALOG" end
-    local accent = CludesUI.CLUDES_GREEN
+    local accent = CUI.CLUDES_GREEN
     local ar, ag, ab = accent.r, accent.g, accent.b
     local bgA = options.bgAlpha or 1
     local wid = options.width
@@ -248,7 +249,7 @@ local function TipFadeIn(self, dt)
     self._fadeT = t
     self:SetAlpha(t / 0.3)
 end
-function CludesUI.ShowTipCallout(tipText)
+function CUI.ShowTipCallout(tipText)
     tipText._fadeT = 0
     tipText:SetAlpha(0)
     tipText:Show()
@@ -260,13 +261,13 @@ local function DisabledTooltip(requirement, state)
     -- Already a whole sentence: skip the wrapper but still translate it (the
     -- catalog keys whole sentences; L() is identity on English/missing key).
     if type(requirement) == "string" and requirement:find("^This option") then
-        return CludesUI.L(requirement)
+        return CUI.L(requirement)
     end
     local verb = (state == "disabled") and "disabled" or "enabled"
     -- Positional template so wrapper sentence, requirement noun and verb each localize independently (translator controls word order).
-    return CludesUI.Lf("This option requires %1$s to be %2$s", CludesUI.L(requirement), CludesUI.L(verb))
+    return CUI.Lf("This option requires %1$s to be %2$s", CUI.L(requirement), CUI.L(verb))
 end
-CludesUI.DisabledTooltip = DisabledTooltip
+CUI.DisabledTooltip = DisabledTooltip
 
 -------------------------------------------------------------------------------
 --  Shared Tooltip  (single frame, lazily created, reused by all widgets)
@@ -275,7 +276,7 @@ local tipFrame
 -- The region the tooltip shows for (weak: never keeps it alive). The options page
 -- pool reads it to drop the tooltip of a region it reset under the cursor.
 local tooltipOwner = setmetatable({}, { __mode = "v" })
-function CludesUI._WidgetTooltipOwner() return tooltipOwner[1] end
+function CUI._WidgetTooltipOwner() return tooltipOwner[1] end
 
 local function GetTooltipFrame()
     if not tipFrame then
@@ -290,7 +291,7 @@ local function GetTooltipFrame()
         -- The panel font as a font family: the tooltip also shows friends' names
         -- and notes, whose scripts the panel font may lack.
         tipFrame.text = tipFrame:CreateFontString(nil, "OVERLAY")
-        CludesUI.SetFontFamily(tipFrame.text, CludesUI.EXPRESSWAY, 10, "", false)
+        CUI.SetFontFamily(tipFrame.text, CUI.EXPRESSWAY, 10, "", false)
         tipFrame.text:SetTextColor(1, 1, 1, 0.80)
         tipFrame.text:SetPoint("TOPLEFT", 8, -8)
         tipFrame.text:SetPoint("TOPRIGHT", -8, -8)
@@ -299,14 +300,14 @@ local function GetTooltipFrame()
         tipFrame:Hide()
     end
     -- Unified user-customizable background (shared with the Blizzard tooltip reskin via GetTooltipBg), re-applied each call so a settings change shows on the next tooltip. Border is fixed (not customizable).
-    tipFrame.bg:SetColorTexture(CludesUI.GetTooltipBg())
+    tipFrame.bg:SetColorTexture(CUI.GetTooltipBg())
     return tipFrame
 end
 
 -- True when the anchor lives in the options panel or a registered popup (cog/confirm), so its tooltip rides the user's panel-scale slider. In-game anchors (bags, minimap, meters) stay at scale 1.
 local function IsPanelFamilyAnchor(regionFrame)
-    local mf = CludesUI._mainFrame
-    local pops = CludesUI._popupFrames
+    local mf = CUI._mainFrame
+    local pops = CUI._popupFrames
     local node = regionFrame
     while node do
         if node == mf then return true end
@@ -358,7 +359,7 @@ local function ShowWidgetTooltip(labelText, textValue, options)
     else
         tip.text:SetJustifyH("CENTER")
     end
-    tip.text:SetText(CludesUI.L(textValue))
+    tip.text:SetText(CUI.L(textValue))
     -- Scale must be set before anchoring: the cursor branch divides by the tooltip's effective scale (reset to 1 in HideWidgetTooltip).
     local ttScaleMult = options and options.scale
     if not ttScaleMult then
@@ -488,12 +489,12 @@ local function HideWidgetTooltip(instant)
     tip._fadeOutAG:Play()
 end
 
-CludesUI.ShowWidgetTooltip = ShowWidgetTooltip
-CludesUI.HideWidgetTooltip = HideWidgetTooltip
+CUI.ShowWidgetTooltip = ShowWidgetTooltip
+CUI.HideWidgetTooltip = HideWidgetTooltip
 
 -- Runs setup once: at PLAYER_LOGIN, or right away when the player is already
 -- in (the options load on demand, after login).
-function CludesUI.AtLogin(setup)
+function CUI.AtLogin(setup)
     local listener = CreateFrame("Frame")
     listener:RegisterEvent("PLAYER_LOGIN")
     listener:SetScript("OnEvent", function(self)
@@ -505,27 +506,27 @@ end
 
 -- As AtLogin, for an options file's module registration: skipped when the
 -- module registry does not exist by then.
-function CludesUI.AtOptionsLogin(setup)
-    CludesUI.AtLogin(function()
-        if not CludesUI or not CludesUI.RegisterModule then return end
+function CUI.AtOptionsLogin(setup)
+    CUI.AtLogin(function()
+        if not CUI or not CUI.RegisterModule then return end
         setup()
     end)
 end
 
 -- The player's class colour as r, g, b (white when it cannot be read): the
 -- getValue of the options' "Class Colored" swatches.
-function CludesUI.PlayerClassRGB()
+function CUI.PlayerClassRGB()
     local _, classFile = UnitClass("player")
-    local cc = classFile and CludesUI.GetClassColor(classFile)
+    local cc = classFile and CUI.GetClassColor(classFile)
     if cc then return cc.r, cc.g, cc.b end
     return 1, 1, 1
 end
 
 -- Gives a widget a fixed hover tooltip, in place of any hover scripts it had. The show and hide go through CludesUI at hover
 -- time, as a hand-written pair of scripts would.
-function CludesUI.HoverTip(widget, text)
-    widget:SetScript("OnEnter", function() CludesUI.ShowWidgetTooltip(widget, text) end)
-    widget:SetScript("OnLeave", function() CludesUI.HideWidgetTooltip() end)
+function CUI.HoverTip(widget, text)
+    widget:SetScript("OnEnter", function() CUI.ShowWidgetTooltip(widget, text) end)
+    widget:SetScript("OnLeave", function() CUI.HideWidgetTooltip() end)
 end
 
 -------------------------------------------------------------------------------
@@ -533,40 +534,40 @@ end
 -------------------------------------------------------------------------------
 
 -- Theme API -- exposed so General Options can read/write
-CludesUI.DEFAULT_ACCENT =
-    { r = CludesUI.DEFAULT_ACCENT_R, g = CludesUI.DEFAULT_ACCENT_G, b = CludesUI.DEFAULT_ACCENT_B }
+CUI.DEFAULT_ACCENT =
+    { r = CUI.DEFAULT_ACCENT_R, g = CUI.DEFAULT_ACCENT_G, b = CUI.DEFAULT_ACCENT_B }
 
-CludesUI.GetAccentColor = function() return CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b end
+CUI.GetAccentColor = function() return CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b end
 
 --- Active theme name (default per client: CludesUI.DEFAULT_THEME)
-CludesUI.GetActiveTheme = function() return CludesUIDB and CludesUIDB.activeTheme or CludesUI.DEFAULT_THEME end
+CUI.GetActiveTheme = function() return CludesUIDB and CludesUIDB.activeTheme or CUI.DEFAULT_THEME end
 
 --- Internal: resolve the accent color for a given theme name
 local function ResolveThemeColor(skinName)
-    skinName = CludesUI._ResolveFactionTheme(skinName)
+    skinName = CUI._ResolveFactionTheme(skinName)
     if skinName == "Class Colored" then
-        local clr = CludesUI.GetRawClassColor(CludesUI._playerClass)
+        local clr = CUI.GetRawClassColor(CUI._playerClass)
         if clr then return clr.r, clr.g, clr.b end
-        return CludesUI.DEFAULT_ACCENT_R, CludesUI.DEFAULT_ACCENT_G, CludesUI.DEFAULT_ACCENT_B
+        return CUI.DEFAULT_ACCENT_R, CUI.DEFAULT_ACCENT_G, CUI.DEFAULT_ACCENT_B
     elseif skinName == "Custom Color" then
         local sa = CludesUIDB and CludesUIDB.accentColor
-        return sa and sa.r or CludesUI.DEFAULT_ACCENT_R,
-            sa and sa.g or CludesUI.DEFAULT_ACCENT_G,
-            sa and sa.b or CludesUI.DEFAULT_ACCENT_B
+        return sa and sa.r or CUI.DEFAULT_ACCENT_R,
+            sa and sa.g or CUI.DEFAULT_ACCENT_G,
+            sa and sa.b or CUI.DEFAULT_ACCENT_B
     else
-        local preset = CludesUI.THEME_PRESETS[skinName]
+        local preset = CUI.THEME_PRESETS[skinName]
         if preset then return preset.r, preset.g, preset.b end
-        return CludesUI.DEFAULT_ACCENT_R, CludesUI.DEFAULT_ACCENT_G, CludesUI.DEFAULT_ACCENT_B
+        return CUI.DEFAULT_ACCENT_R, CUI.DEFAULT_ACCENT_G, CUI.DEFAULT_ACCENT_B
     end
 end
-CludesUI.ResolveThemeColor = ResolveThemeColor
+CUI.ResolveThemeColor = ResolveThemeColor
 
 --- Internal: snap accent to all registered one-time elements (no transition). Colour objects are reused to avoid per-tick allocations.
 local _gradStart = CreateColor(0, 0, 0, 0)
 local _gradEnd = CreateColor(0, 0, 0, 0)
 
 local function UpdateAccentElements(red, green, blue)
-    for _, record in ipairs(CludesUI._accentElements) do
+    for _, record in ipairs(CUI._accentElements) do
         if record.type == "solid" and record.obj then
             record.obj:SetColorTexture(red, green, blue, record.a or 1)
         elseif record.type == "gradient" and record.obj then
@@ -589,32 +590,32 @@ local function ApplyAccentLive(red, green, blue)
     UpdateAccentElements(red, green, blue)
 
     -- The cached confirm popup repaints its accent parts
-    CludesUI._InvalidateConfirmPopup()
+    CUI._InvalidateConfirmPopup()
 
     -- Fast path only; a full rebuild would churn memory
-    CludesUI:RefreshPage()
+    CUI:RefreshPage()
 end
 
 --- SetActiveTheme: persists and applies with an animated transition. Changes only the options panel background; accent colour is independent (accent swatch / class colour toggle).
-CludesUI.SetActiveTheme = function(skinName)
+CUI.SetActiveTheme = function(skinName)
     if not CludesUIDB then CludesUIDB = {} end
     CludesUIDB.activeTheme = skinName
     CLUDES_GREEN._themeEnabled = true
     local red, green, blue = ResolveThemeColor(skinName)
 
-    if CludesUI._applyThemeBG then CludesUI._applyThemeBG(skinName, red, green, blue) end
+    if CUI._applyThemeBG then CUI._applyThemeBG(skinName, red, green, blue) end
 end
 
 --- SetAccentColor: persists accent color (per-profile) and applies live.
-CludesUI.SetAccentColor = function(red, green, blue)
+CUI.SetAccentColor = function(red, green, blue)
     if not CludesUIDB then CludesUIDB = {} end
     -- Persist on the active profile; the global root stays frozen as fallback.
-    CludesUI.SetActiveProfileAccent({ r = red, g = green, b = blue }, false)
+    CUI.SetActiveProfileAccent({ r = red, g = green, b = blue }, false)
     ApplyAccentLive(red, green, blue)
 end
 
 --- Applies accent live without persisting (custom/class accent mode switches).
-CludesUI.ApplyAccentColorLive = function(red, green, blue) ApplyAccentLive(red, green, blue) end
+CUI.ApplyAccentColorLive = function(red, green, blue) ApplyAccentLive(red, green, blue) end
 
 -------------------------------------------------------------------------------
 --  Per-profile UI accent color: lives per-profile as `cuiAccent`. Resolution
@@ -624,14 +625,14 @@ CludesUI.ApplyAccentColorLive = function(red, green, blue) ApplyAccentLive(red, 
 --  runtime, so profiles without cuiAccent keep their existing accent until
 --  edited. The CUI Options Theme (activeTheme / panel background) is separate and global.
 -------------------------------------------------------------------------------
-function CludesUI.GetActiveProfileData()
+function CUI.GetActiveProfileData()
     local saved = CludesUIDB
     if not saved or not saved.profiles then return nil end
     return saved.profiles[saved.activeProfile or "Default"]
 end
 
 -- Writer used by the accent swatch. `custom` and `useClass` are each optional; pass nil to leave unchanged.
-function CludesUI.SetActiveProfileAccent(custom, useClass)
+function CUI.SetActiveProfileAccent(custom, useClass)
     local saved = CludesUIDB
     if not saved then return end
     saved.profiles = saved.profiles or {}
@@ -647,8 +648,8 @@ function CludesUI.SetActiveProfileAccent(custom, useClass)
 end
 
 -- Swatch display helper: CURRENT profile's accent state, falling back to the frozen global root. `~= nil` on the bool so profile useClass=false correctly overrides a global useClass=true.
-function CludesUI.GetActiveAccentState()
-    local p = CludesUI.GetActiveProfileData()
+function CUI.GetActiveAccentState()
+    local p = CUI.GetActiveProfileData()
     local accent = p and p.cuiAccent
     local useClass
     if accent and accent.useClass ~= nil then
@@ -661,12 +662,12 @@ function CludesUI.GetActiveAccentState()
 end
 
 -- Accent for a given profile table. Returns useClass(bool), r, g, b. Order: profile cuiAccent -> frozen global root -> theme color (falling back to the default accent), which keeps a non-default theme with no custom accent looking unchanged.
-function CludesUI.ResolveProfileAccent(profileData)
-    local themeR, themeG, themeB = ResolveThemeColor(CludesUI.GetActiveTheme())
+function CUI.ResolveProfileAccent(profileData)
+    local themeR, themeG, themeB = ResolveThemeColor(CUI.GetActiveTheme())
     local accent = profileData and profileData.cuiAccent
     -- 1) per-profile
     if accent and accent.useClass then
-        local color = CludesUI.GetRawClassColor(CludesUI._playerClass)
+        local color = CUI.GetRawClassColor(CUI._playerClass)
         if color then return true, color.r, color.g, color.b end
     end
     if accent and accent.custom then
@@ -675,7 +676,7 @@ function CludesUI.ResolveProfileAccent(profileData)
     end
     -- 2) frozen global root -- ONLY when the profile has no explicit cuiAccent. An explicit per-profile opt-out (useClass=false, no custom yet) must NOT fall through to the global class color; it drops to the global custom/theme terminal below, matching the displayed Custom swatch state.
     if (not accent) and CludesUIDB and CludesUIDB.useClassAccentColor then
-        local color = CludesUI.GetRawClassColor(CludesUI._playerClass)
+        local color = CUI.GetRawClassColor(CUI._playerClass)
         if color then return true, color.r, color.g, color.b end
     end
     local gca = CludesUIDB and CludesUIDB.customAccentColor
@@ -685,34 +686,34 @@ function CludesUI.ResolveProfileAccent(profileData)
 end
 
 -- Live accent RGB for the active profile (used at login / on profile swap).
-function CludesUI.ResolveActiveAccent()
-    local _, red, green, blue = CludesUI.ResolveProfileAccent(CludesUI.GetActiveProfileData())
+function CUI.ResolveActiveAccent()
+    local _, red, green, blue = CUI.ResolveProfileAccent(CUI.GetActiveProfileData())
     return red, green, blue
 end
 
 -- Single live re-apply entrypoint: re-resolves the active profile's accent and applies it to CLUDES_GREEN + all registered elements without persisting.
-function CludesUI.RefreshAccent()
-    local red, green, blue = CludesUI.ResolveActiveAccent()
+function CUI.RefreshAccent()
+    local red, green, blue = CUI.ResolveActiveAccent()
     ApplyAccentLive(red, green, blue)
 end
 
 --- Class color for the current player
-CludesUI.GetPlayerClassColor = function()
-    local clr = CludesUI.GetRawClassColor(CludesUI._playerClass)
+CUI.GetPlayerClassColor = function()
+    local clr = CUI.GetRawClassColor(CUI._playerClass)
     if clr then return clr.r, clr.g, clr.b end
-    return CludesUI.DEFAULT_ACCENT_R, CludesUI.DEFAULT_ACCENT_G, CludesUI.DEFAULT_ACCENT_B
+    return CUI.DEFAULT_ACCENT_R, CUI.DEFAULT_ACCENT_G, CUI.DEFAULT_ACCENT_B
 end
 
 --- Clears the saved custom accent, reverting to the theme default.
-CludesUI.ResetAccentColor = function()
+CUI.ResetAccentColor = function()
     if CludesUIDB then CludesUIDB.accentColor = nil end
-    local skinName = CludesUI.GetActiveTheme()
+    local skinName = CUI.GetActiveTheme()
     local red, green, blue = ResolveThemeColor(skinName)
     ApplyAccentLive(red, green, blue)
 end
 
 --- Wipes all style/theme settings back to defaults; called by the global "Reset to Defaults" button before ReloadUI().
-CludesUI.ResetTheme = function()
+CUI.ResetTheme = function()
     if not CludesUIDB then return end
     CludesUIDB.accentColor = nil
     CludesUIDB.activeTheme = nil
@@ -812,8 +813,8 @@ local function CtxRoot(panelFrame) return panelFrame._root or panelFrame end
 
 -- Lit: hovered or active.
 local function CtxPaint(line, lit)
-    line._hl:SetColorTexture(1, 1, 1, lit and (CludesUI.DD_ITEM_HL_A or 0.08) or 0)
-    local ACC = lit and (line._panel._look.lit or CludesUI.CLUDES_GREEN)
+    line._hl:SetColorTexture(1, 1, 1, lit and (CUI.DD_ITEM_HL_A or 0.08) or 0)
+    local ACC = lit and (line._panel._look.lit or CUI.CLUDES_GREEN)
     if ACC then
         line._lbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
     else
@@ -831,7 +832,7 @@ local function CtxRowEnter(line)
     CtxPaint(line, true)
     if entry.tooltip then
         CtxRoot(line._panel)._tip = true
-        CludesUI.ShowWidgetTooltip(line, entry.tooltip)
+        CUI.ShowWidgetTooltip(line, entry.tooltip)
     end
     if entry.children then
         CtxShowSub(line, entry.children)
@@ -845,7 +846,7 @@ local function CtxRowLeave(line)
     local entry = line._item
     if entry.tooltip then
         CtxRoot(line._panel)._tip = nil
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end
     CtxPaint(line, entry.isActive)
     -- A submenu stays open while the pointer moved into it.
@@ -896,7 +897,7 @@ local function CtxPanelHidden(self)
     if _ctxOpen == self then _ctxOpen = nil end
     if self._tip then
         self._tip = nil
-        CludesUI.HideWidgetTooltip()
+        CUI.HideWidgetTooltip()
     end
 end
 
@@ -925,7 +926,7 @@ local function CtxPoll(self, dt)
 end
 
 local function CtxNewPanel(lookName, level)
-    local RS = CludesUI.RESKIN or {}
+    local RS = CUI.RESKIN or {}
     local p = CreateFrame("Frame", nil, UIParent)
     p:Hide()
     p:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -941,7 +942,7 @@ local function CtxNewPanel(lookName, level)
         lookName.ctxBg and (RS.CTX_ALPHA or 0.95) or (RS.QT_ALPHA or 0.97)
     )
     p._bg = backdrop
-    local PP_L = CludesUI.PP
+    local PP_L = CUI.PP
     if lookName.atlas and C_Texture.GetAtlasInfo(lookName.atlas) then
         local art = p:CreateTexture(nil, "BACKGROUND", nil, -1)
         art:SetAtlas(lookName.atlas)
@@ -1056,20 +1057,20 @@ local function CtxRemove(line)
             local tipText = r._item.removeTip
             if tipText then
                 CtxRoot(r._panel)._tip = true
-                CludesUI.ShowWidgetTooltip(self, tipText)
+                CUI.ShowWidgetTooltip(self, tipText)
             end
         end)
         removeBtn:SetScript("OnLeave", function(self)
             self.icon:SetAlpha(0.45)
             local r = self:GetParent()
             CtxRoot(r._panel)._tip = nil
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             CtxPaint(r, r._item.isActive)
         end)
         removeBtn:SetScript("OnClick", function(self)
             local r = self:GetParent()
             local func = r._item.onRemove
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
             CtxRoot(r._panel):Hide()
             func()
         end)
@@ -1106,18 +1107,18 @@ local function CtxLayout(panelFrame, itemList, minW, fontKey)
     if
         lookName.popupBorder
         and not panelFrame._art
-        and CludesUI._applyBlizzardConfiguredBorder
+        and CUI._applyBlizzardConfiguredBorder
         and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
     then
-        pcall(CludesUI._applyBlizzardConfiguredBorder, panelFrame, "popupMenu", 1)
+        pcall(CUI._applyBlizzardConfiguredBorder, panelFrame, "popupMenu", 1)
     end
-    local L, size = CludesUI.L, lookName.size
+    local L, size = CUI.L, lookName.size
     local fontFile, outline
     if fontKey then
-        fontFile, outline = CludesUI.GetFontPath(fontKey), CludesUI.GetFontOutlineFlag(fontKey)
+        fontFile, outline = CUI.GetFontPath(fontKey), CUI.GetFontOutlineFlag(fontKey)
     else
-        fontFile = (CludesUI.GetFontPath()) or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-        outline = (CludesUI.GetFontOutlineFlag()) or ""
+        fontFile = (CUI.GetFontPath()) or STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+        outline = (CUI.GetFontOutlineFlag()) or ""
     end
 
     -- Hide pooled rows past the current item count
@@ -1162,11 +1163,11 @@ local function CtxLayout(panelFrame, itemList, minW, fontKey)
         -- A row keeps the shadow a module font primed it with; clear it on
         -- the plain path.
         if fontKey and not lookName.plainFont then
-            CludesUI.ApplyModuleFont(labelFS, fontFile, size, fontKey, outline)
+            CUI.ApplyModuleFont(labelFS, fontFile, size, fontKey, outline)
             line._primed = true
         else
             if line._primed then
-                CludesUI.PrimeFontShadow(labelFS, false)
+                CUI.PrimeFontShadow(labelFS, false)
                 line._primed = nil
             end
             labelFS:SetFont(fontFile, size, outline)
@@ -1296,7 +1297,7 @@ local function ShowContextMenu(anchor, itemList, options)
     if (panelFrame._menuScale or 1) ~= menuScale then
         panelFrame._menuScale = menuScale
         panelFrame:SetScale(menuScale)
-        CludesUI.PP.SetBorderSize(panelFrame, 1)
+        CUI.PP.SetBorderSize(panelFrame, 1)
     end
 
     CtxLayout(panelFrame, itemList, options and options.minWidth, panelFrame._fontKey)
@@ -1331,12 +1332,12 @@ local function ShowContextMenu(anchor, itemList, options)
     end
 end
 
-CludesUI.ShowContextMenu = ShowContextMenu
+CUI.ShowContextMenu = ShowContextMenu
 
 -- The open menu's anchor (nil when none is open or it sits at the cursor).
-function CludesUI.ContextMenuOwner() return _ctxOpen and _ctxOpen._owner end
+function CUI.ContextMenuOwner() return _ctxOpen and _ctxOpen._owner end
 
-function CludesUI.CloseContextMenu()
+function CUI.CloseContextMenu()
     if _ctxOpen then _ctxOpen:Hide() end
 end
 
@@ -1352,14 +1353,14 @@ end
 --  Joined names are cached per name pair, so repaints build no strings.
 -------------------------------------------------------------------------------
 do
-    local IS_FOREVER = CludesUI.IS_FOREVER == true
+    local IS_FOREVER = CUI.IS_FOREVER == true
     local SEP = Constants
             and Constants.CharacterNameSeparatorConsts
             and Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
         or " "
     local joined = {} -- [name][surname] = the display string
 
-    function CludesUI.WithSurname(label, surname, ignorePreference)
+    function CUI.WithSurname(label, surname, ignorePreference)
         if not IS_FOREVER then return label end
         if issecretvalue(label) or issecretvalue(surname) then return label end
         if type(label) ~= "string" or type(surname) ~= "string" or surname == "" then return label end
@@ -1386,7 +1387,7 @@ do
     -- True for your own unit on WoW Forever while Blizzard's "My Surname" (UnitSurnameOwn)
     -- is off, when your name is your first name alone: the [name:last] and [target:last]
     -- tags show nothing for it, so "[name:first] [name:last]" reads as the first name.
-    function CludesUI.OwnSurnameHidden(unitToken)
+    function CUI.OwnSurnameHidden(unitToken)
         if not IS_FOREVER or not unitToken then return false end
         local PI = C_PlayerInfo
         if not (PI and PI.ShouldDisplaySurname) or PI.ShouldDisplaySurname() then return false end
@@ -1425,14 +1426,14 @@ do
             end
             return textValue
         end
-        CludesUI.Utf8Prefix = Utf8Prefix
+        CUI.Utf8Prefix = Utf8Prefix
 
         local function IsCount(modeName)
             return type(modeName) == "number" and modeName >= 1 and modeName == floor(modeName)
         end
-        function CludesUI.IsNameFormat(modeName) return short[modeName] ~= nil or IsCount(modeName) end
+        function CUI.IsNameFormat(modeName) return short[modeName] ~= nil or IsCount(modeName) end
 
-        function CludesUI.ShortName(label, modeName)
+        function CUI.ShortName(label, modeName)
             if issecretvalue(label) or type(label) ~= "string" then return label end
             local cache = short[modeName]
             if not cache then
@@ -1481,7 +1482,7 @@ do
         -- other mode, and a nil unit (an options preview), comes back as given.
         -- Retail returns every mode as given: its player names are one word,
         -- so there these two modes only ever shorten other names.
-        function CludesUI.UnitNameFormat(modeName, unitToken)
+        function CUI.UnitNameFormat(modeName, unitToken)
             if IS_FOREVER and unitToken and (modeName == "first" or modeName == "last") then
                 local isPlayer = UnitIsPlayer(unitToken)
                 if issecretvalue(isPlayer) or not isPlayer then return nil end
@@ -1511,7 +1512,7 @@ do
         -- A saved count's label, made when a dropdown reads it.
         local COUNT_LABEL = {
             __index = function(_, key)
-                if IsCount(key) then return CludesUI.Lf("%1$d Characters", key) end
+                if IsCount(key) then return CUI.Lf("%1$d Characters", key) end
             end,
         }
         local function ParseCount(textValue)
@@ -1519,18 +1520,18 @@ do
             if num and num <= MAX_COUNT and IsCount(num) then return num end
         end
         local function EnemyNote()
-            return CludesUI.L(
+            return CUI.L(
                 "Enemies' names will still show their full names in restricted content (M+/Raid)."
             )
         end
-        function CludesUI.NameFormatMenu(get, set, options)
+        function CUI.NameFormatMenu(get, set, options)
             local onSaved = options and options.onSaved
-            local warn = options and options.enemies and not CludesUI.IS_FOREVER
+            local warn = options and options.enemies and not CUI.IS_FOREVER
             local function Edit()
                 local current = get()
-                CludesUI:ShowInputPopup({
-                    title = CludesUI.L("Character Count"),
-                    message = CludesUI.L("Names show at most this many characters."),
+                CUI:ShowInputPopup({
+                    title = CUI.L("Character Count"),
+                    message = CUI.L("Names show at most this many characters."),
                     redWarning = warn and EnemyNote() or nil,
                     placeholder = "1 - " .. MAX_COUNT,
                     initialText = IsCount(current) and tostring(current) or "",
@@ -1538,7 +1539,7 @@ do
                     maxLetters = #tostring(MAX_COUNT),
                     validate = function(textValue)
                         if not ParseCount(textValue) then
-                            return CludesUI.Lf("Enter a number from %1$d to %2$d.", 1, MAX_COUNT)
+                            return CUI.Lf("Enter a number from %1$d to %2$d.", 1, MAX_COUNT)
                         end
                     end,
                     onConfirm = function(textValue)
@@ -1546,7 +1547,7 @@ do
                         if not num then return end
                         set(num)
                         if onSaved then onSaved() end
-                        CludesUI:RefreshPage()
+                        CUI:RefreshPage()
                     end,
                 })
             end
@@ -1554,7 +1555,7 @@ do
                 local old = get()
                 set(val)
                 if warn and val ~= "full" and val ~= old then
-                    CludesUI:ShowConfirmPopup({
+                    CUI:ShowConfirmPopup({
                         title = "Name Format",
                         message = EnemyNote(),
                         confirmText = "Okay",
@@ -1562,15 +1563,15 @@ do
                     })
                 end
             end
-            local values = CludesUI.TextTags.MenuValues(LABELS, Edit, {
+            local values = CUI.TextTags.MenuValues(LABELS, Edit, {
                 text = "Character Count",
                 selected = function() return IsCount(get()) end,
             })
             return setmetatable(values, COUNT_LABEL), ORDER, function() return get() or "full" end, SetValue
         end
-        CludesUI.NAME_FORMAT_MENU_W = MENU_W
-        function CludesUI.NameFormatCogRow(get, set, options)
-            local values, sequence, getValue, setValue = CludesUI.NameFormatMenu(
+        CUI.NAME_FORMAT_MENU_W = MENU_W
+        function CUI.NameFormatCogRow(get, set, options)
+            local values, sequence, getValue, setValue = CUI.NameFormatMenu(
                 get,
                 function(val) set((val ~= "full") and val or nil) end,
                 options
@@ -1601,7 +1602,7 @@ end
 --  The Threat Gap text: the formatted gap in aheadC or behindC by who leads,
 --  or white while colorOn is off (the same white memory).
 -------------------------------------------------------------------------------
-if CludesUI.IS_FOREVER then
+if CUI.IS_FOREVER then
     local aggR, aggG, aggB, lowR, lowG, lowB, fold
     local white -- [fs] = true while its last paint was plain white (weak keys)
 
@@ -1612,7 +1613,7 @@ if CludesUI.IS_FOREVER then
         fontStr:SetTextColor(1, 1, 1)
     end
 
-    function CludesUI.PaintThreatPct(fontStr, pct, status, isTanking, colorByThreat)
+    function CUI.PaintThreatPct(fontStr, pct, status, isTanking, colorByThreat)
         fontStr:SetFormattedText("%.0f%%", pct)
         if not colorByThreat then return PaintWhite(fontStr) end
         if type(status) == "number" and not issecretvalue(status) then
@@ -1634,7 +1635,7 @@ if CludesUI.IS_FOREVER then
         if white and white[fontStr] then white[fontStr] = nil end
     end
 
-    function CludesUI.PaintThreatGap(fontStr, textValue, ahead, colorOn, aheadC, behindC)
+    function CUI.PaintThreatGap(fontStr, textValue, ahead, colorOn, aheadC, behindC)
         fontStr:SetText(textValue)
         if not colorOn then return PaintWhite(fontStr) end
         local color = ahead and aheadC or behindC
@@ -1674,7 +1675,7 @@ end -- IS_FOREVER
 --    TrackOverlay(f)        keep the overlay layer shown while f is
 -------------------------------------------------------------------------------
 do
-    local IS_FOREVER = CludesUI.IS_FOREVER == true
+    local IS_FOREVER = CUI.IS_FOREVER == true
 
     local function ConsolePortPad()
         local cp = _G.ConsolePort
@@ -1721,12 +1722,12 @@ do
         return PadConnected()
     end
 
-    CludesUI.PadCP = ConsolePortPad
-    CludesUI.PadNative = PadNative
-    CludesUI.PadInUse = PadInUse
-    CludesUI.PadConnected = PadConnected
-    CludesUI.PadGamepadUI = PadGamepadUI
-    CludesUI.PadModeOn = PadModeOn
+    CUI.PadCP = ConsolePortPad
+    CUI.PadNative = PadNative
+    CUI.PadInUse = PadInUse
+    CUI.PadConnected = PadConnected
+    CUI.PadGamepadUI = PadGamepadUI
+    CUI.PadModeOn = PadModeOn
 
     -- Following PadModeOn(): one shared watcher for every feature that hides
     -- or shows something with the controller. Its frame is built at the first
@@ -1780,7 +1781,7 @@ do
             C_Timer.After(0, FlushPad)
         end
 
-        function CludesUI.WatchPad(ownerFrame, func)
+        function CUI.WatchPad(ownerFrame, func)
             if ownerFrame == nil or not func then return end
             if not watchFrame then
                 watchers, flushOwners = {}, {}
@@ -1799,7 +1800,7 @@ do
             watchers[ownerFrame] = func
         end
 
-        function CludesUI.UnwatchPad(ownerFrame)
+        function CUI.UnwatchPad(ownerFrame)
             if not watchers or ownerFrame == nil or watchers[ownerFrame] == nil then return end
             watchers[ownerFrame] = nil
             if next(watchers) == nil then watchFrame:UnregisterAllEvents() end
@@ -1809,7 +1810,7 @@ do
     -- Blizzard's own open-edge call (ShowUIPanel, the pause menu, single bags).
     -- Never turned off here: Back/Escape (CloseAllWindows) owns that edge. The
     -- controller UI addon drives the pointer itself, so it is left alone then.
-    function CludesUI.RaiseGamePadCursor()
+    function CUI.RaiseGamePadCursor()
         if not CanAutoSetGamePadCursorControl(true) then return end
         if ConsolePortPad() or PadGamepadUI() then return end
         SetGamePadCursorControl(true)
@@ -1819,8 +1820,8 @@ do
     -- stable global names; register once, while hidden, after the frame's last
     -- SetScript of OnShow/OnHide (the addon hooks those). Never remove one.
     local padRoots
-    local POOL = CludesUI._Pool -- the core's pool table (CludesUI_PixelPerfect.lua)
-    function CludesUI.RegisterPadFrame(frame)
+    local POOL = CUI._Pool -- the core's pool table (CludesUI_PixelPerfect.lua)
+    function CUI.RegisterPadFrame(frame)
         if not frame or not frame:GetName() then return end
         -- The addon hooks OnShow/OnHide once, and so does the escape-close
         -- registration (RegisterEscapeClose): on a frame of the options page pool
@@ -1837,7 +1838,7 @@ do
     end
 
     -- nodeignore / nodepass / nodepriority / hidekeyboard ... (v nil = true)
-    function CludesUI.PadHint(frame, attr, val)
+    function CUI.PadHint(frame, attr, val)
         if not frame or not ConsolePortPad() then return end
         if frame:IsProtected() and InCombatLockdown() then return end
         if val == nil then val = true end
@@ -1851,21 +1852,21 @@ do
     -- controller's cancel button presses, and onEscape (nil = hide the dimmer) is
     -- what Back runs. Call it just before the dimmer's Show (the Cooldown
     -- Manager's popups, the Talent Conditions picker).
-    function CludesUI.PadPopupOpen(dimmer, panelFrame, closeBtn, onEscape)
-        if dimmer._padReg or not CludesUI.PadInUse() then return end
+    function CUI.PadPopupOpen(dimmer, panelFrame, closeBtn, onEscape)
+        if dimmer._padReg or not CUI.PadInUse() then return end
         dimmer._padReg = true
-        CludesUI.PadHint(panelFrame, "nodepass")
+        CUI.PadHint(panelFrame, "nodepass")
         if closeBtn then panelFrame.CloseButton = closeBtn end
-        CludesUI.RegisterEscapeClose(dimmer, { padOnly = true, onEscape = onEscape })
+        CUI.RegisterEscapeClose(dimmer, { padOnly = true, onEscape = onEscape })
     end
 
-    function CludesUI.PadCursorShown()
+    function CUI.PadCursorShown()
         local cp = ConsolePortPad()
         return (cp and cp:IsCursorActive()) and true or false
     end
 
     -- Only while the cursor is already on screen; a no-op otherwise.
-    function CludesUI.PadFocus(node)
+    function CUI.PadFocus(node)
         local cp = ConsolePortPad()
         if cp and node then cp:SetCursorNodeIfActive(node) end
     end
@@ -1892,22 +1893,22 @@ do
         end
     end
 
-    function CludesUI.OverlayParent()
+    function CUI.OverlayParent()
         if drawLayer then return drawLayer end
         if not ConsolePortPad() then return UIParent end
         drawLayer = CreateFrame("Frame", "CludesUI_PadOverlayLayer", UIParent)
         drawLayer:SetAllPoints(UIParent)
         drawLayer:Hide()
         overlayOpen, overlayTracked = {}, {}
-        CludesUI._overlayLayer = drawLayer
-        CludesUI.RegisterPadFrame(drawLayer)
+        CUI._overlayLayer = drawLayer
+        CUI.RegisterPadFrame(drawLayer)
         return drawLayer
     end
 
     -- Every frame parented to OverlayParent() must be tracked (create it
     -- hidden, then call this after its scripts are set). No-op for any frame
     -- not parented to the layer.
-    function CludesUI.TrackOverlay(frame)
+    function CUI.TrackOverlay(frame)
         if not drawLayer or not frame or overlayTracked[frame] or frame:GetParent() ~= drawLayer then
             return
         end

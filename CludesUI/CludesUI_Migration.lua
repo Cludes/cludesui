@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CludesUI_Migration.lua -- loaded after CludesUI_Lite.lua, before
 --  CludesUI_Profiles.lua; runs at ADDON_LOADED for "CludesUI" (before
@@ -31,11 +32,11 @@ local floor = math.floor
 local _migrations = {} -- ordered registration list (1..N)
 local _migrationsById = {} -- id -> spec, for dedup + lookup
 local _migrationErrors = {} -- session-only error buffer for /cui migrations
-CludesUI._migrationErrors = _migrationErrors
+CUI._migrationErrors = _migrationErrors
 
 local VALID_SCOPES = { global = true, profile = true, specProfile = true }
 
-function CludesUI.RegisterMigration(specInfo)
+function CUI.RegisterMigration(specInfo)
     if type(specInfo) ~= "table" then error("RegisterMigration: spec must be a table", 2) end
     if type(specInfo.id) ~= "string" or specInfo.id == "" then
         error("RegisterMigration: spec.id must be a non-empty string", 2)
@@ -120,7 +121,7 @@ local function RunMigration(specInfo)
 end
 
 -- Public: run all migrations. Called once from the parent ADDON_LOADED handler.
-function CludesUI.RunRegisteredMigrations()
+function CUI.RunRegisteredMigrations()
     if not CludesUIDB then CludesUIDB = {} end
     if not (CludesUIDB.profiles and next(CludesUIDB.profiles)) then
         -- Fresh install (no SavedVariables yet) or the Reset All wipe (a table
@@ -153,7 +154,7 @@ end
 -- only to spell bindings). Now honored: creation defaults (hoverFriendly=true,
 -- hoverEnemy=false) would silently break enemy macros, so seed both flags true
 -- on existing bindings to stay unfiltered; toggles apply going forward.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "clickcast_macro_hover_reaction_v1",
     scope = "profile",
     description = "Keep existing hovercast macro bindings unfiltered now that Friendly/Enemy applies to them",
@@ -189,7 +190,7 @@ CludesUI.RegisterMigration({
 -- legacy "Frames + Hovercast" bindings so each path keeps its own behavior.
 -- Marker `reactionSeeded` keeps the pass idempotent (a post-migration
 -- false/false is a real user disable and must never be re-enabled).
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "clickcast_frame_spell_reaction_v1",
     scope = "global",
     description = "Preserve legacy click-cast reaction behavior when the Friendly/Enemy toggles become active for all reaction bindings",
@@ -335,7 +336,7 @@ local function SnapProfilePositions(profileRec)
 end
 
 -- Expose for profile import
-CludesUI.SnapProfilePositions = SnapProfilePositions
+CUI.SnapProfilePositions = SnapProfilePositions
 
 -- Flattens every per-profile spec-profile table into one array. After seeding
 -- (cdm_per_profile_spell_store_v1), CDM data lives at profiles[name].specProfiles,
@@ -394,7 +395,7 @@ do
         resourceBars._rbAdvMigrated = nil
     end
 
-    CludesUI.RegisterMigration({
+    CUI.RegisterMigration({
         id = "spec_overrides_fresh_start_v1",
         scope = "profile",
         description = "Wipe all spec override data (groups, value entries, unlock overrides) for the layer-model fresh start.",
@@ -413,7 +414,7 @@ do
     -- re-creates them. Guard: only re-arm when the store holds no RB-module
     -- entries, since cards created AFTER the wipe (early runner precedes RB
     -- init) would otherwise get duplicates.
-    CludesUI.RegisterMigration({
+    CUI.RegisterMigration({
         id = "rb_adv_remigrate_after_wipe_v1",
         scope = "profile",
         description = "Re-run the RB Advanced migration for profiles whose migrated spec override cards were wiped by the fresh start.",
@@ -433,7 +434,7 @@ end
 -- Captures made before numeric-segment path walkers existed banked NIL sentinels
 -- (reads missed numeric bars[i] keys); applying via the FIXED walkers would null
 -- live CDM settings on the next spec swap. Drop every CDM-bars capture from both stores.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_bars_capture_reset_v1",
     scope = "profile",
     description = "Drop corrupt CDM bar captures recorded by the pre-numeric-walker override builds.",
@@ -467,7 +468,7 @@ CludesUI.RegisterMigration({
 -- targeted refresher, so the unmapped-folder fallback escalates every apply
 -- into a full RefreshAllAddons (minutes of refresh under spec-change traffic).
 -- Folder is now blacklisted; strip its keys from both stores (empty default map = drop whole).
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "specov_strip_dragonriding_fkeys_v1",
     scope = "profile",
     description = "Strip stowaway Dragon Riding fkeys from spec/conditional override stores (unmapped-folder RefreshAllAddons storm).",
@@ -501,7 +502,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_per_profile_spell_store_v1",
     scope = "global",
     description = "Fork the shared per-spec CDM spell store into every profile so profile copies own independent CDM data.",
@@ -512,7 +513,7 @@ CludesUI.RegisterMigration({
         if assignments._perProfileSeeded then return end -- already converted
         local legacy = assignments.specProfiles -- old account-wide per-spec store
         if not assignments.profiles then assignments.profiles = {} end
-        local DeepCopy = CludesUI._DeepCopy or (CludesUI.Lite and CludesUI.Lite.DeepCopy)
+        local DeepCopy = CUI._DeepCopy or (CUI.Lite and CUI.Lite.DeepCopy)
         local function seedValue(label)
             if not label then return end
             if assignments.profiles[label] then return end -- idempotent: never clobber an existing bucket
@@ -537,7 +538,7 @@ CludesUI.RegisterMigration({
 -- backs up originals (seeding copied one CDM setup into every profile, else
 -- users would see a redundant layout each). Only auto-seeded buckets (no
 -- `meta`) are touched; user-created/imported layouts are left alone.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_consolidate_profile_layouts_v1",
     scope = "global",
     description = "Collapse identical auto-seeded per-profile CDM buckets into single spell layouts; keep distinct ones; dormant backup at spellAssignments._preConsolidateBackup.",
@@ -545,7 +546,7 @@ CludesUI.RegisterMigration({
         local saved = context.db
         local assignments = saved and saved.spellAssignments
         if not assignments or type(assignments.profiles) ~= "table" then return end
-        local DeepCopy = CludesUI._DeepCopy or (CludesUI.Lite and CludesUI.Lite.DeepCopy)
+        local DeepCopy = CUI._DeepCopy or (CUI.Lite and CUI.Lite.DeepCopy)
 
         -- Deep value-equality IGNORING "_"-prefixed bookkeeping keys (e.g.
         -- _migrations), so copies differing only in flags count as identical.
@@ -638,7 +639,7 @@ CludesUI.RegisterMigration({
 -- account-wide active layout. Behavior-identical (profiles stay bound to the
 -- layout they used; user detaches by removing bindings). Runs AFTER
 -- cdm_consolidate_profile_layouts_v1, inheriting deduped layouts+pointers.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_detach_spell_layouts_v1",
     scope = "global",
     description = "Convert per-profile active CDM spell layouts (activeLayoutByProfile) into opt-in profile bindings + a single account-wide active layout. Zero behavior change.",
@@ -696,7 +697,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "quest_tracker_blizzard_skin_rebuild_v1",
     scope = "global",
     description = "Archive obsolete custom-tracker keys (width/height/alignment/bg/font/color/zone/world/prey/topLine) into _legacy so they stop polluting questTracker defaults after the rebuild to a skin+QoL layer.",
@@ -759,7 +760,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "friend_notes_wipe_v1",
     scope = "global",
     description = "Wipe legacy bnetAccountID-keyed friendAssignments and friendNotes (sessions 15-17 rebuild).",
@@ -790,7 +791,7 @@ CludesUI.RegisterMigration({
 -- Pixel-perfect snapping splits global (unlock anchors, spec profiles) from
 -- per-profile (positions+sizes). Per-profile half runs on every profile incl.
 -- future imports; global half keeps its original flag so existing users skip it.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "pixel_perfect_comprehensive_v11",
     scope = "global",
     description = "Snap global unlock anchors and spec-profile TBB positions/sizes to the physical pixel grid.",
@@ -826,7 +827,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "pixel_perfect_profile_v1",
     scope = "profile",
     description = "Snap all per-profile positions and sizes to the physical pixel grid. Runs on each profile individually so imported profiles are covered.",
@@ -918,7 +919,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "rf_targeted_spells_bool_to_mode_v1",
     scope = "profile",
     description = "Convert RaidFrames PARTY Targeted Spells tsEnabled boolean to tsMode (false->never, true->whenHealing; nil leaves the default). Raid is NOT migrated -- it hard-defaults to never.",
@@ -939,7 +940,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "nameplates_miniboss_boss_color_split_v1",
     scope = "profile",
     description = "Split nameplate mini-boss/boss colors: seed the new 'boss' color from the user's existing 'miniboss' color so bosses keep their current color until changed.",
@@ -955,7 +956,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_power_border_size_zero_v1",
     scope = "profile",
     description = "Zero out Unit Frames per-unit powerBorderSize. The detached power bar border size only became functional this build; older non-zero values were set while the control did nothing, so clear them so each UI stays visually identical. Users can re-enable a border afterward.",
@@ -976,7 +977,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_pandemic_glow_color_table",
     scope = "profile",
     description = "Migrate CDM bar flat pandemicR/G/B keys into a pandemicGlowColor table, plus default pandemicGlowStyle.",
@@ -1001,7 +1002,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_repair_bar_keys_v1",
     scope = "profile",
     description = "Repair CDM bars that lost their `key` field via Lite DB delta-strip. Assigns missing core keys (cooldowns, utility, buffs) in order.",
@@ -1040,7 +1041,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_remove_misc_bars",
     scope = "profile",
     description = "Remove obsolete CDM bars with barType=='misc' and clear anchorTo references that pointed at them.",
@@ -1069,7 +1070,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_active_state_anim_none_to_hideactive",
     scope = "profile",
     description = "Rename CDM bar activeStateAnim value 'none' (No Animation) to 'hideActive' (Hide Active State).",
@@ -1088,7 +1089,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_mouseover_visibility_to_always",
     scope = "profile",
     description = "Rewrite CDM bar barVisibility 'mouseover' to 'always' (mouseover mode was removed).",
@@ -1105,7 +1106,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_strip_tbb_linked_frames",
     scope = "specProfile",
     description = "Strip stale _linkedFrame/_linkedCdID/_linkedGen fields from Tracked Buff Bar configs (legacy bloat from removed frame-tree serialization).",
@@ -1124,7 +1125,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_removed_spells_to_ghost_cd_bar",
     scope = "specProfile",
     description = "Move per-bar removedSpells (legacy filter mechanic) into the ghost CD bar's assignedSpells. The ghost bar replaced the per-bar removedSpells filter.",
@@ -1239,7 +1240,7 @@ local CDM_ALL_RACIAL_SPELL_IDS = {
     [1287685] = true,
 }
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_ghost_cd_bar_cleanup_v3",
     scope = "specProfile",
     description = "Strip junk entries from the ghost CD bar: negative IDs (presets/trinkets), racials, customs (best-effort), and duplicates of spells already on a real bar.",
@@ -1292,7 +1293,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_ghost_strip_racials_v1",
     scope = "specProfile",
     description = "Remove racial spells from ghost CD bar (racials should never be ghosted)",
@@ -1310,7 +1311,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_strip_legacy_spell_keys",
     scope = "specProfile",
     description = "Strip legacy trackedSpells/customSpells keys from CDM bar data. The current shape is bs.assignedSpells; legacy keys are no longer written by any code path.",
@@ -1331,7 +1332,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_consolidate_buff_bars",
     scope = "global",
     description = "Remove all extra (custom) buff bars across every parent profile, nil stale assignedSpells on the main buffs bar across every spec profile, and prune orphaned spell data for the deleted bars. Replaces the old _buffBarMigrationV2Done and _buffsBarCleanupV2 inline migrations.",
@@ -1382,7 +1383,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_wipe_legacy_glows_tbb_locations",
     scope = "global",
     description = "Wipe legacy bar glows / TBB / tbbPositions storage locations. The data was moved to per-spec storage in v5.5.7. No live code writes to these locations anymore -- they are dead bytes that the previous inline migration was still trying to copy out.",
@@ -1408,7 +1409,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_strip_position_based_glow_keys",
     scope = "specProfile",
     description = "Strip old position-based CDM bar glow assignment keys (101_*, 102_*) from barGlows.assignments. These were tied to bar index + button index and broke when CDM icons reordered during reanchor. The new format keys are cdm_<cooldownID>.",
@@ -1425,7 +1426,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_remove_discontinued_presets",
     scope = "specProfile",
     description = "Remove preset versions of discontinued spells (Bloodlust + variants, Time Spiral, warlock pets) from CDM bars and TBB bars. These presets were removed from the picker because they can't be tracked via cooldown detection.",
@@ -1489,7 +1490,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_strip_buff_bar_item_ids_v1",
     scope = "specProfile",
     description = "Remove item-ID (negative -itemID) entries from CDM buff bars. Buff bars track auras only (positive spell IDs); items can no longer be placed on them. CD/utility bars (which legitimately hold trinkets/potions) are left untouched.",
@@ -1538,7 +1539,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_unanchor_buff_bars",
     scope = "global",
     description = "Clear unlock anchors that target CDM buff/custom_buff bars or the Buff Reminders frame. Dynamic bars (resize with auras) cause cascading position shifts when used as anchor targets.",
@@ -1575,7 +1576,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_active_state_per_bar_to_per_icon",
     scope = "profile",
     description = "Promote per-bar activeStateAnim='hideActive' to per-icon activeSwipeMode='none' across every spec profile, then reset the bar-level value to 'blizzard'.",
@@ -1624,7 +1625,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_buff_assignedspells_reseed_v1",
     scope = "specProfile",
     description = "Clear buffs.assignedSpells so the unified model re-seeds from live icons (buff/CD unification).",
@@ -1644,7 +1645,7 @@ CludesUI.RegisterMigration({
 --  keys. Promote first non-"none" texture among player/target/focus (in order)
 --  to the global key, then strip per-unit overrides so none shadows it.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "v67_bar_texture_global",
     scope = "profile",
     description = "Promote per-unit healthBarTexture to a single global profile key.",
@@ -1681,7 +1682,7 @@ CludesUI.RegisterMigration({
 --  showed), but new QT's EvalVisibility reads it as "completely hide the
 --  tracker" -- an inherited false hid it with no way back (not exposed).
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "qt_minimap_ensure_enabled_v2",
     scope = "profile",
     description = "Ensure quest tracker / minimap have enabled=true and visibility=always when missing or false.",
@@ -1701,7 +1702,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "mt_bestruns_wipe_v1",
     scope = "global",
     description = "Wipe obsolete Mythic+ bestRuns data (feature removed). Clears CludesUIDB.global.bestRuns and every profile's addons.CludesUIMythicTimer.bestRuns.",
@@ -1718,7 +1719,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "power_color_defaults_v5",
     scope = "global",
     description = "Migrate users on old power color defaults (Mana/Rage/Focus/Energy) to new defaults",
@@ -1751,7 +1752,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "power_color_fury_to_classcolor_v1",
     scope = "global",
     description = "Migrate Fury (DH) power color from old purple default to DH class color (A330C9).",
@@ -1767,7 +1768,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "chat_mouseover_to_always_v1",
     scope = "global",
     description = "Migrate chat visibility from 'mouseover' to 'always' (mouseover removed, idle fade replaces it).",
@@ -1782,7 +1783,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "chat_bubbles_to_blizzskin_v1",
     scope = "profile",
     description = "Move Chat Bubbles settings from the Chat module profile to the profile root (Blizz UI Enhanced).",
@@ -1794,14 +1795,14 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "np_border_cludes_to_simple_v3",
     scope = "profile",
     description = "No-op (superseded by np_border_v5).",
     body = function() end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "np_border_v5",
     scope = "profile",
     description = "Migrate borderStyle/simpleBorderSize to showBorder/borderSize. 'none' -> showBorder=false, everything else -> showBorder=true, borderSize=1.",
@@ -1820,7 +1821,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_absorb_style_dropdown_v1",
     scope = "profile",
     description = "Migrate showPlayerAbsorb from boolean toggle to style string dropdown. true -> 'striped', false/nil -> 'none'.",
@@ -1841,7 +1842,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_absorb_style_boolean_sweep_v1",
     scope = "profile",
     description = "Normalise any remaining boolean showPlayerAbsorb to a style string. uf_absorb_style_dropdown_v1 walked a fixed unit list and stamps per profile, so a profile that arrived AFTER it ran -- an import or a preset, both of which inherit the recipient's migration flags -- kept the legacy boolean.",
@@ -1865,13 +1866,13 @@ CludesUI.RegisterMigration({
 
 -- Remove the ghost buff bar (buff visibility is managed by Blizzard CDM settings): drop
 -- the bar entry from all profiles and the spell data from all spec profiles.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_remove_ghost_buff_bar_v1",
     scope = "profile",
     description = "Remove __ghost_buffs bar entry from cdmBars.bars array (original, wrong path).",
     body = function() end,
 })
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_remove_ghost_buff_bar_v2",
     scope = "profile",
     description = "Remove __ghost_buffs bar entry from cdmBars.bars array (correct path).",
@@ -1884,7 +1885,7 @@ CludesUI.RegisterMigration({
         end
     end,
 })
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_remove_ghost_buff_spelldata_v1",
     scope = "global",
     description = "Remove __ghost_buffs spell data from all spec profiles.",
@@ -1895,7 +1896,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "rf_split_absorb_edge_mode_v1",
     scope = "profile",
     description = "Split the shared Raid Frames absorbFromRightEdge toggle into independent absorbEdgeMode / healAbsorbEdgeMode (overlay/right/left) per bar.",
@@ -1916,7 +1917,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_castbar_standalone_v1",
     scope = "profile",
     description = "Resolve castbar width=0 to real frame width and set default unlock anchors for standalone cast bars.",
@@ -1965,7 +1966,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "mythic_timer_default_pos_to_otf_v2",
     scope = "profile",
     description = "Wipe M+ Timer position if it matches the old hardcoded default (0,0) so the new OTF-based default kicks in.",
@@ -1985,7 +1986,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "np_stacking_spacing_50_to_75_v2",
     scope = "profile",
     description = "Bump nameplate stacking spacing from old default 50 to 75 for better separation.",
@@ -2001,7 +2002,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "break_blizz_owned_anchors_v1",
     scope = "global",
     description = "Remove anchor relationships involving MicroBar, BagBar, and QueueStatus (Blizzard-owned frames that cannot participate in anchor chains).",
@@ -2017,7 +2018,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "ab_queuestatus_reset_visibility_v1",
     scope = "profile",
     description = "Reset stale QueueStatus (LFG eye) visibility/mouseover settings to neutral. CUI used to control the eye's visibility but now only controls its position; old saved values (e.g. barVisibility 'mouseover' with mouseoverAlpha 0) could leave the eye permanently invisible with no UI left to restore it.",
@@ -2040,7 +2041,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_per_unit_portrait_style_v1",
     scope = "profile",
     description = "Copy global portraitStyle into player/target/focus per-unit tables.",
@@ -2055,7 +2056,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_split_totpet_into_tot_focus_v1",
     scope = "profile",
     description = "Split shared totPet unit-frame settings into independent targettarget and focustarget tables.",
@@ -2084,7 +2085,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_boss_simple_text_seed_v1",
     scope = "profile",
     description = "Seed boss simple-display cooldown-text show/size from customized regular keys so old profiles keep their text settings under the default-on Simple Display.",
@@ -2121,7 +2122,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "charsheet_default_enabled_v1",
     scope = "global",
     description = "Preserve disabled default for existing users when flipping themedCharacterSheet to default-on.",
@@ -2143,7 +2144,7 @@ CludesUI.RegisterMigration({
 --    Horizontal: LEFT->LEFT, RIGHT->RIGHT, TOP->CENTER, BOTTOM->CENTER
 --    Vertical:   TOP->UP, BOTTOM->DOWN, LEFT->CENTER, RIGHT->CENTER
 -------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "unlock_grow_independent_v1",
     scope = "profile",
     description = "Set explicit growDirection on anchored CDM/AB bars to match their anchor side.",
@@ -2205,7 +2206,7 @@ CludesUI.RegisterMigration({
 -- SetSize preserves the fixed edge with no re-anchoring; growEdge is promoted
 -- into the primary fields, everything else stays as-is.
 -------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_clear_stale_growedge_v1",
     scope = "profile",
     description = "Convert CDM bar positions to direct edge-anchor format.",
@@ -2232,7 +2233,7 @@ CludesUI.RegisterMigration({
 -- anchorFirstRow pinned the leading perpendicular edge (TOP horizontal, LEFT
 -- vertical), equivalent to "DOWN"/"RIGHT"; unset stays unset (centered growth default).
 -------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_row_grow_direction_v1",
     scope = "profile",
     description = "Migrate CDM anchorFirstRow booleans to the rowGrowDirection enum.",
@@ -2255,7 +2256,7 @@ CludesUI.RegisterMigration({
 -- Migrates per-profile secondary threshold settings into thresholdSpecs:
 -- thresholdEnabled becomes an "All Specs" entry carrying existing values; disabled leaves array empty.
 -------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "resource_bars_threshold_specs_v1",
     scope = "profile",
     description = "Migrate secondary threshold settings into per-spec thresholdSpecs entries.",
@@ -2279,7 +2280,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "resource_bars_power_threshold_specs_v1",
     scope = "profile",
     description = "Migrate power bar threshold settings into per-spec thresholdSpecs entries.",
@@ -2307,7 +2308,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "resource_bars_health_threshold_specs_v1",
     scope = "profile",
     description = "Migrate health bar threshold settings into per-spec thresholdSpecs entries.",
@@ -2334,7 +2335,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "ab_default_grow_to_center_v1",
     scope = "profile",
     description = "Convert AB bars with default UP growth to CENTER (UP now has real edge preservation).",
@@ -2355,7 +2356,7 @@ CludesUI.RegisterMigration({
 -- off (its conditions left over from before) starts with none, off as before.
 -- Both old keys go, so a second pass, or a profile born after the change (a
 -- fresh install's first profile reaches this pass unstamped), finds nothing.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "ab_advanced_fade_conditions_v1",
     scope = "profile",
     description = "Advanced Fade is on while a condition is checked: carry the conditions of bars whose switch was on to advancedFadeConditions and drop the switch and the old conditions key.",
@@ -2383,7 +2384,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "enhance_five_bar_off_existing_v1",
     scope = "profile",
     description = "Existing profiles default enhanceFiveBar to false; new installs get true from defaults.",
@@ -2394,7 +2395,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "auto_open_containers_preserve_v1",
     scope = "global",
     description = "Preserve autoOpenContainers for existing users after default changed from on to off.",
@@ -2412,7 +2413,7 @@ CludesUI.RegisterMigration({
 --  Bags profile migration: copy flat CludesUIDB root keys into each
 --  profile's addons.CludesUIBags so the Bags module can use NewDB().
 -------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "bags_to_profile_v1",
     scope = "global",
     description = "Migrate Bags settings from CludesUIDB root to per-profile storage.",
@@ -2496,7 +2497,7 @@ CludesUI.RegisterMigration({
 -- the per-profile bags table. Imported profiles inherit migration flags and skip
 -- this, so ApplyProfileData (CludesUI_Profiles.lua) forward-copies the legacy
 -- key before DeepMergeDefaults.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "bags_default_bag_type_v1",
     scope = "profile",
     description = "Convert legacy bagDefaultOneBag boolean into the bagDefaultBagType string (all/onebag/multibag).",
@@ -2510,7 +2511,7 @@ CludesUI.RegisterMigration({
 })
 
 -- Close Bags on Mail Close became the Mailbox row of Auto Close Bags.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "bags_mail_close_to_auto_close_v1",
     scope = "global",
     description = "Move the retired Close Bags on Mail Close off state into every profile's Auto Close Bags.",
@@ -2536,7 +2537,7 @@ CludesUI.RegisterMigration({
 -- installs and future profiles; every already-existing profile keeps it off
 -- unless its user had turned it on. Same mechanism as the Guardian Ironfur
 -- migration below.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "bags_hide_pinned_existing_off_v1",
     scope = "global",
     description = "Pin Bags' Hide Items in Their Categories OFF for existing users' profiles; fresh installs and future profiles inherit the new ON default.",
@@ -2566,8 +2567,8 @@ CludesUI.RegisterMigration({
 -- start with Recent Items off; every already-existing profile keeps All Items and
 -- Recent Items on unless its user had changed them. Registered on the Forever
 -- client only, the one whose defaults changed.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.RegisterMigration({
+if CUI.IS_FOREVER == true then
+    CUI.RegisterMigration({
         id = "bags_forever_defaults_existing_v1",
         scope = "global",
         description = "Pin Bags' Default Selected Bag to All Items and Show Recent Items ON for existing WoW Forever profiles; fresh installs and future profiles inherit MultiBag and Recent Items off.",
@@ -2598,7 +2599,7 @@ end
 -- already-existing profile OFF. Runs at parent ADDON_LOADED BEFORE any child NewDB
 -- populates CludesUIDB.profiles, so only SavedVariables profiles (existing
 -- users) are present; fresh installs have none and inherit ON (global scope runs once).
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "resourcebars_guardian_ironfur_existing_off_v1",
     scope = "global",
     description = "Pin the Guardian Druid Ironfur bar OFF for existing users' profiles; fresh installs and future profiles inherit the new ON default.",
@@ -2630,7 +2631,7 @@ CludesUI.RegisterMigration({
 -- Prot Warrior Ignore Pain bar ships ON (DEFAULTS.secondary.protIgnorePainBar=true)
 -- for new installs; existing users expect no class resource bar, so pin every
 -- already-existing profile OFF. Same mechanism as the Guardian Ironfur migration above.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "resourcebars_protwar_ignorepain_existing_off_v1",
     scope = "global",
     description = "Pin the Prot Warrior Ignore Pain bar OFF for existing users' profiles; fresh installs and future profiles inherit the new ON default.",
@@ -2662,7 +2663,7 @@ CludesUI.RegisterMigration({
 -- Group Finder's Colored Group Names (search.nameColors) defaults off for fresh
 -- installs and future profiles; every already-existing profile keeps it on unless
 -- its user had turned it off. Same mechanism as the Guardian Ironfur migration.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "groupfinder_name_colors_existing_on_v1",
     scope = "global",
     description = "Pin Group Finder's Colored Group Names ON for existing users' profiles; fresh installs and future profiles inherit the new OFF default.",
@@ -2693,7 +2694,7 @@ CludesUI.RegisterMigration({
 -- (*.castbarIconInWidth = true). Existing users expect the icon OUTSIDE the width
 -- (to the LEFT), so pin every already-existing profile OFF, same mechanism as the
 -- Guardian Ironfur migration. Nameplates have their own setting, NOT touched.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_castbar_icon_in_width_existing_off_v1",
     scope = "global",
     description = "Pin cast-bar icon-in-width OFF for existing users' Unit Frames profiles; fresh installs and future profiles inherit the new ON default. Nameplates unaffected.",
@@ -2742,7 +2743,7 @@ CludesUI.RegisterMigration({
 -- and is skipped -- no bucket creation needed. Party frames share these keys
 -- (no party_ border section exists); per-spec overrides are out of scope,
 -- matching the sibling existing-off migrations.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "rf_borderless_highlight_existing_off_v1",
     scope = "global",
     description = "Pin Raid Frames Hover/Target Border OFF for existing profiles running Border Size 0, so the new borderless highlight stays opt-in for veterans; fresh installs and border'd profiles inherit the live defaults.",
@@ -2775,7 +2776,7 @@ CludesUI.RegisterMigration({
 -- they land on the stock gold; stored colors on every other style (and the
 -- per-type color toggle) are untouched, and any color picked after this
 -- migration is honored as usual.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "np_dispel_abg_color_gold_v1",
     scope = "global",
     description = "Reset stored Dispel Glow colors to the stock gold for profiles using the Action Button Glow style, since the color now tints the new halo rather than the old bare ants.",
@@ -2815,7 +2816,7 @@ CludesUI.RegisterMigration({
 -- logout, so mirroring exactly them adds zero new overwrite exposure, while profiles
 -- outside it may hold deliberately divergent data. Registered LAST so it runs after the
 -- older Bags data-move migration, landing multi-version jumps in the new shape.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "sync_reset_for_mirror_groups_v2",
     scope = "global",
     description = "Reset all profile sync links for the mirror-group rework (profile data untouched; sync is re-enabled via the module sync icons). The Bags group carries over its previous members only.",
@@ -2850,14 +2851,14 @@ CludesUI.RegisterMigration({
 -- "Save Colors Per Profile" mode starts identical everywhere. Global
 -- CludesUIDB.customColors stays the source of truth while the mode is off.
 -- One-time overwrite: prior per-profile snapshots were inert, nothing is lost.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "global_colors_per_profile_seed_v1",
     scope = "global",
     description = "Seed every profile's customColors from the global table for the opt-in per-profile colours mode.",
     body = function(context)
         local saved = context.db
         if not saved or type(saved.customColors) ~= "table" or type(saved.profiles) ~= "table" then return end
-        local DeepCopy = CludesUI._DeepCopy or (CludesUI.Lite and CludesUI.Lite.DeepCopy)
+        local DeepCopy = CUI._DeepCopy or (CUI.Lite and CUI.Lite.DeepCopy)
         if not DeepCopy then return end
         for _, profileSaved in pairs(saved.profiles) do
             if type(profileSaved) == "table" then profileSaved.customColors = DeepCopy(saved.customColors) end
@@ -2871,14 +2872,14 @@ CludesUI.RegisterMigration({
 -- CludesUIQoL.lua). Seeds EVERY existing profile from the old
 -- values, DeepCopy so each owns independent color/position tables. Root keys
 -- stay as the read-time fallback + dormant backup; per-key nil guard = re-run safe.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "qol_secondary_stats_fps_per_profile_v1",
     scope = "global",
     description = "Seed every profile's QoL data with the formerly account-wide Secondary Stats + FPS settings.",
     body = function(context)
         local saved = context.db
         if not saved or type(saved.profiles) ~= "table" then return end
-        local DeepCopy = CludesUI._DeepCopy or (CludesUI.Lite and CludesUI.Lite.DeepCopy)
+        local DeepCopy = CUI._DeepCopy or (CUI.Lite and CUI.Lite.DeepCopy)
         if not DeepCopy then return end
         local KEYS = {
             "showSecondaryStats",
@@ -2920,7 +2921,7 @@ CludesUI.RegisterMigration({
 -- Tertiary visibility now lives entirely in the reorderable Stats to Show
 -- checklist. Preserve the removed toggle's effective state for every profile:
 -- checked enables all three tertiary rows; unchecked leaves all three hidden.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "qol_tertiary_stats_checklist_v1",
     scope = "profile",
     description = "Convert Show Tertiary Stats into the per-stat visibility checklist.",
@@ -2951,7 +2952,7 @@ CludesUI.RegisterMigration({
 -- (a partial one would reset global font/outline mode next switch; getter
 -- fallback covers reads). Root keys stay as that fallback (getters in
 -- CludesUI.lua) + dormant backup; nil guard = re-run safe.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "fonts_slug_iconoutline_per_profile_v1",
     scope = "global",
     description = "Seed every profile's fonts DB with the formerly account-wide Disable Slug Outline + Outline Icon Text settings.",
@@ -2985,7 +2986,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "blizzskin_reskin_master_split_v1",
     scope = "global",
     description = "Split the old 'Reskin Blizzard Elements' master (customTooltips) into independent Reskin Popups and Menus + per-window reskins, seeding each from the old master value once so what is reskinned stays exactly the same.",
@@ -3006,7 +3007,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "blizzskin_widget_bars_seed_v1",
     scope = "global",
     description = "Seed the new Reskin Widget Bars toggle from existing chrome preferences: on only when Reskin Tooltips AND Reskin Popups and Menus are both on, so accounts that turned those off do not get newly skinned HUD bars.",
@@ -3026,7 +3027,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "texture_kringel_diamonds_to_blinkii_v1",
     scope = "profile",
     description = "Rename the saved 'kringel-diamonds' bar texture value to its replacement 'blinkii-diamonds' across Unit Frames, Raid Frames, Nameplates, Resource Bars, and Damage Meters.",
@@ -3062,7 +3063,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "purge_anchor_debug_log_v1",
     scope = "global",
     description = "Remove the temporary _anchorDebugLog table left in the central DB by the combat-reload anchor diagnostics.",
@@ -3071,7 +3072,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "minimap_coords_mode_position_v1",
     scope = "profile",
     description = "Convert the minimap 'Show Coordinates Below Map' toggle into coordsMode/coordsPosition dropdown values, preserving each user's current coordinate behavior.",
@@ -3103,7 +3104,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "minimap_clock_location_mode_v2",
     scope = "profile",
     description = "Convert the minimap Clock Inside / Zone Inside toggles into clockMode/locationMode dropdown values (none/inside/edge). Elements hidden via the removed Show Blizzard Elements Zone/Clock checkboxes become 'none'. Replaces the never-shipped _v1 (deleted).",
@@ -3133,7 +3134,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "minimap_omnium_folio_mode_v1",
     scope = "profile",
     description = "Convert the minimap Show Omnium Folio toggle into the omniumFolioMode dropdown (never/hover/always), preserving each user's current visibility.",
@@ -3209,7 +3210,7 @@ local function CdmBarFamilyKey(barId, barsCfg)
     return "spellSettingsCD"
 end
 
-function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
+function CUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
     if type(specProfile) ~= "table" then return end
     local barSpellMap = specProfile.barSpells
     if type(barSpellMap) ~= "table" then return end
@@ -3311,7 +3312,7 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
     end
 end
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_spell_settings_tiers_v1",
     scope = "specProfile",
     description = "Move CDM per-spell icon settings from per-bar spellSettings into per-spec family stores (settings now travel with the spell across bars), and promote Sync All Bar Buttons bars into bar-level Apply-to-Bar settings.",
@@ -3319,7 +3320,7 @@ CludesUI.RegisterMigration({
         local profileTbl = CludesUIDB.profiles and CludesUIDB.profiles[context.profileName]
         local cdmStore = profileTbl and profileTbl.addons and profileTbl.addons.CludesUICooldownManager
         local barsCfg = cdmStore and cdmStore.cdmBars and cdmStore.cdmBars.bars
-        CludesUI.MigrateCdmSpellSettingsShape(context.specProfile, barsCfg)
+        CUI.MigrateCdmSpellSettingsShape(context.specProfile, barsCfg)
     end,
 })
 
@@ -3333,7 +3334,7 @@ CludesUI.RegisterMigration({
 -- assignedSpells conversion (plain id -> hosted marker) is NOT done here: it needs live
 -- viewer/catalog data to tell buff and cooldown forms apart, so the options panel
 -- normalizes it lazily (EnsureAssignedSpells).
-function CludesUI.MigrateCdmHostedBuffSettings(specProfile)
+function CUI.MigrateCdmHostedBuffSettings(specProfile)
     if type(specProfile) ~= "table" or type(specProfile.barSpells) ~= "table" then return end
     local stCD = specProfile.spellSettingsCD
     if type(stCD) ~= "table" then return end
@@ -3363,11 +3364,11 @@ function CludesUI.MigrateCdmHostedBuffSettings(specProfile)
     end
 end
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_hosted_buff_settings_v1",
     scope = "specProfile",
     description = "Move hosted-buff per-spell icon settings from the CD family store to the BUFF family store (hosted buffs now share the buff-family settings entry with the buffs bar, independent of the same spell's cooldown icon).",
-    body = function(context) CludesUI.MigrateCdmHostedBuffSettings(context.specProfile) end,
+    body = function(context) CUI.MigrateCdmHostedBuffSettings(context.specProfile) end,
 })
 
 -- Converts the per-bar "Custom Active State Decimals" (bd.faDecimals*) into the
@@ -3384,7 +3385,7 @@ CludesUI.RegisterMigration({
 --    (never covered by the old toggle).
 -- Old bd.faDecimals* keys are consumed in the same pass. Shared with profile
 -- import so old-format strings transform immediately.
-function CludesUI.MigrateCdmThresholdText(cdmStore, specProfiles)
+function CUI.MigrateCdmThresholdText(cdmStore, specProfiles)
     local barsCfg = cdmStore and cdmStore.cdmBars and cdmStore.cdmBars.bars
     if type(barsCfg) ~= "table" then return end
     for _, edge in ipairs(barsCfg) do
@@ -3499,7 +3500,7 @@ function CludesUI.MigrateCdmThresholdText(cdmStore, specProfiles)
     end
 end
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_threshold_text_v1",
     scope = "global",
     description = "Replace the per-bar Custom Active State Decimals with per-spell Threshold Text: opted-in bars' custom spell/item members get per-spell Threshold Seconds/Decimals (+ Color) stamps, and the old bar keys are removed.",
@@ -3514,7 +3515,7 @@ CludesUI.RegisterMigration({
             if type(cdmStore) == "table" then
                 local specBucket = type(saProfiles) == "table" and saProfiles[profileName]
                 local specList = type(specBucket) == "table" and specBucket.specProfiles or nil
-                CludesUI.MigrateCdmThresholdText(cdmStore, specList)
+                CUI.MigrateCdmThresholdText(cdmStore, specList)
             end
         end
     end,
@@ -3529,7 +3530,7 @@ CludesUI.RegisterMigration({
 -- Numeric-format legacy arrays are skipped -- reconcile discards that format
 -- outright, so there's no order to preserve. Shared with profile import so
 -- orders exported from older builds stay protected.
-function CludesUI.MigrateCdmBuffOrderUserFlag(specProfile)
+function CUI.MigrateCdmBuffOrderUserFlag(specProfile)
     local barConf = type(specProfile) == "table"
         and type(specProfile.barSpells) == "table"
         and specProfile.barSpells.buffs
@@ -3539,11 +3540,11 @@ function CludesUI.MigrateCdmBuffOrderUserFlag(specProfile)
     end
 end
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_buff_order_user_flag_v1",
     scope = "specProfile",
     description = "Protect pre-existing manually-arranged Tracked Buffs orders from the live-path Blizzard-order resync by stamping _buffDisplayOrderUserModified on every stable-key buffDisplayOrder.",
-    body = function(context) CludesUI.MigrateCdmBuffOrderUserFlag(context.specProfile) end,
+    body = function(context) CUI.MigrateCdmBuffOrderUserFlag(context.specProfile) end,
 })
 
 -- M+ Timer Enemy Forces bar shared barTexture/barBgTexture with the main timer
@@ -3551,7 +3552,7 @@ CludesUI.RegisterMigration({
 -- from the old shared ones on every existing profile so Forces looks unchanged;
 -- fresh installs inherit the "none" default. Runs once, only seeds when the new
 -- key is unset, so a later reset is respected.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "mythictimer_split_forces_bar_texture_v1",
     scope = "global",
     description = "Give the M+ Timer Forces bar its own texture keys, seeded from the shared bar texture so existing users' Forces bar is unchanged.",
@@ -3574,7 +3575,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_clear_stale_attached_power_border_v1",
     scope = "profile",
     description = "Zero stale powerBorderSize on attached power bars so the new attached divider does not appear uninvited for users who set a border size while detached and later reattached.",
@@ -3605,7 +3606,7 @@ CludesUI.RegisterMigration({
 -- so old export strings keep their claims. Mirrors ns.CD_CLAIM_MARKER_BASE /
 -- ns.CdClaimMarker in the CDM addon (-(3000000000 + cooldownID)); inlined rather
 -- than called because CDM loads AFTER the login migration runs.
-function CludesUI.MigrateCdmBuffCdClaims(specProfile)
+function CUI.MigrateCdmBuffCdClaims(specProfile)
     local CD_CLAIM_MARKER_BASE = 3000000000
     local barSpellMap = type(specProfile) == "table" and specProfile.barSpells
     if type(barSpellMap) ~= "table" then return end
@@ -3633,14 +3634,14 @@ function CludesUI.MigrateCdmBuffCdClaims(specProfile)
     end
 end
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "cdm_buff_cd_claim_markers",
     scope = "specProfile",
     description = "Convert collided-buff cooldownID claims (bs.assignedBuffCdIDs, a side-table with no order) into cd-claim markers stored inside assignedSpells, so a claimed slot gets a real position and can be drag-reordered like any other tracked buff.",
-    body = function(context) CludesUI.MigrateCdmBuffCdClaims(context.specProfile) end,
+    body = function(context) CUI.MigrateCdmBuffCdClaims(context.specProfile) end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "qol_movement_alert_precision_normalize_v2",
     scope = "profile",
     description = 'Normalize Movement Alert precision to a clean 0 or 1. A legacy numeric-input control could leave a non-binary value -- the string "1", or a stored -0 -- that the Show Decimal toggle mishandled and that built an invalid "%.-0f" format string. Normalized unconditionally (no type guard) because -0 is a number, so the earlier number-only guard skipped it. Positive -> 1 (decimals on); zero/negative/garbage -> 0 (off).',
@@ -3664,7 +3665,7 @@ migrationFrame:SetScript("OnEvent", function(self, event, addonName)
     --  right scope (global/profile/specProfile), pcall-wrapping each body and
     --  stamping per-scope flags on success.
     ---------------------------------------------------------------------------
-    CludesUI.RunRegisteredMigrations()
+    CUI.RunRegisteredMigrations()
 
     -- DM fontSize split into leftFontSize + rightFontSize. DeepMergeDefaults fills
     -- the new keys with 11 before the runtime fallback (c.leftFontSize or
@@ -3829,7 +3830,7 @@ do
         enabled = true,
     }
 
-    local DeepCopyT = CludesUI.Lite.DeepCopy
+    local DeepCopyT = CUI.Lite.DeepCopy
 
     local function DeepEq(a, b)
         if a == b then return true end
@@ -3964,14 +3965,14 @@ do
 
     --- Migrates one profile root table (CludesUIDB.profiles[name] shape:
     --- .addons.CludesUIResourceBars + spec-override tables at root).
-    function CludesUI.MigrateRBAdvancedProfile(profileTbl)
+    function CUI.MigrateRBAdvancedProfile(profileTbl)
         if type(profileTbl) ~= "table" then return end
         local resourceBars = profileTbl.addons and profileTbl.addons.CludesUIResourceBars
         if type(resourceBars) ~= "table" then return end
         if resourceBars._rbAdvMigrated then return end
         -- Defaults are mandatory for effective-value comparison: without them (RB
         -- not loaded) do nothing and leave the flag unset so it runs when RB inits.
-        local DEFS = CludesUI._RBSectionDefaults
+        local DEFS = CUI._RBSectionDefaults
         if type(DEFS) ~= "table" then return end
         resourceBars._rbAdvMigrated = true
 
@@ -4186,7 +4187,7 @@ end
 -- into permanent account-wide storage; nothing is lost since each character re-records
 -- on login/next scan. Folder literals contain "CludesUI", which the standalone
 -- packager renames to the build token, matching each build's stored profile keys.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "per_character_data_account_wide_v1",
     scope = "global",
     description = "Drop leaked per-character data (Info Bar gold ledger, QoL upgrade-calc state) from every stored profile; both are account-wide now.",
@@ -4226,7 +4227,7 @@ CludesUI.RegisterMigration({
 --   AT OR BELOW 1440p -- nothing was broken, seed is 1.0 anyway, so a stored
 --   value can only be a genuine preference. Left alone, except v1-seed residue
 --   (physH/1080): a value matching v1's output ON a save carrying v1's stamp.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "panel_scale_highdpi_reset_v3",
     scope = "global",
     description = "Reset the options-panel scale on displays above 1440p to the corrected default, and seed it elsewhere.",
@@ -4241,7 +4242,7 @@ CludesUI.RegisterMigration({
         -- honest: a display rounding back to 1.00 has nothing to correct and must
         -- not fire the overwrite branch.
         local wasSeeded = math.max(1, math.min(physH / 1440, 2))
-        if CludesUI.SnapPanelScale then wasSeeded = CludesUI.SnapPanelScale(wasSeeded) end
+        if CUI.SnapPanelScale then wasSeeded = CUI.SnapPanelScale(wasSeeded) end
 
         if wasSeeded > 1 then
             -- Above the reference: one-time reset (see above).
@@ -4268,7 +4269,7 @@ CludesUI.RegisterMigration({
 --  pop in on update. Pin existing profiles to None; the player default is now
 --  false too, so only users who opt back in see it.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_player_cast_target_none_v1",
     scope = "profile",
     description = "Pin the player castbar spell target to None (it never displayed before the fix).",
@@ -4299,7 +4300,7 @@ CludesUI.RegisterMigration({
 --  stops the value reviving later. An override live in BOTH mappings (both
 --  sections custom, the normal case) is left untouched.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "rf_dispellable_debuff_party_section_v1",
     scope = "profile",
     description = "Clear dispellableDebuff* party overrides whose live/dormant state would flip when the keys moved to the Dispels sync section.",
@@ -4335,7 +4336,7 @@ CludesUI.RegisterMigration({
 --  stops the value reviving later. An override live under BOTH mappings (the
 --  normal both-custom case) is left untouched.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "rf_threat_border_party_section_v2",
     scope = "profile",
     description = "Clear a party threat border override whose live/dormant state would flip when threatBorderSize moved to the Health Bar sync section.",
@@ -4373,15 +4374,15 @@ CludesUI.RegisterMigration({
 --  deliberate pick alone. Fresh installs never reach this body; GetFontsDB seeds
 --  the correct default for them directly.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "ru_cyrillic_font_optin_v1",
     scope = "global",
     description = "Pin existing Cyrillic-locale installs to the system glyph font so the newly selectable bundled Cyrillic faces stay opt-in.",
     body = function(context)
-        if CludesUI.LOCALE_SCRIPT ~= "cyrillic" then return end
+        if CUI.LOCALE_SCRIPT ~= "cyrillic" then return end
         local fontMap = context.db and context.db.fonts
         if not fontMap then return end -- fresh install: GetFontsDB seeds it
-        if fontMap.global == "Expressway" then fontMap.global = CludesUI.SYSTEM_FONT_KEY end
+        if fontMap.global == "Expressway" then fontMap.global = CUI.SYSTEM_FONT_KEY end
     end,
 })
 
@@ -4390,7 +4391,7 @@ CludesUI.RegisterMigration({
 --  13 Nov 2026). A profile that placed the old CludesUIMinimapButton on the
 --  minimap button row keeps that place under the new name.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "minimap_button_libdbicon_v1",
     scope = "profile",
     description = "Move the CludesUI minimap button's button-row placement to its LibDBIcon name.",
@@ -4410,7 +4411,7 @@ CludesUI.RegisterMigration({
 --  a short while from 11 Nov 2026). Installs and profiles left on Barlow
 --  Condensed go back to Expressway once; it stays in the font list to pick.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "default_font_back_to_expressway_v1",
     scope = "global",
     description = "Move the saved global font from Barlow Condensed back to Expressway, the default again.",
@@ -4420,7 +4421,7 @@ CludesUI.RegisterMigration({
     end,
 })
 
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "default_font_back_to_expressway_profile_v1",
     scope = "profile",
     description = "Move a profile's global font from Barlow Condensed back to Expressway, the default again.",
@@ -4438,7 +4439,7 @@ CludesUI.RegisterMigration({
 --  same threshold behavior in Moonkin they had before, with a separate entry
 --  to customize going forward.
 --------------------------------------------------------------------------------
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "erb_power_form_mode_moonkin_bucket_v1",
     scope = "profile",
     description = "Give the Power Bar's per-form threshold mode its own Moonkin entry instead of sharing Caster's.",
@@ -4456,7 +4457,7 @@ CludesUI.RegisterMigration({
             end
         end
         if not manaEntry then return end
-        local moonkinEntry = CludesUI.Lite.DeepCopy(manaEntry)
+        local moonkinEntry = CUI.Lite.DeepCopy(manaEntry)
         moonkinEntry.formKey = "moonkin"
         entries[#entries + 1] = moonkinEntry
     end,
@@ -4466,7 +4467,7 @@ CludesUI.RegisterMigration({
 -- used to share the "mana"/Caster bucket, so disabling Caster there also hid
 -- Moonkin. Seed moonkin=true wherever mana=true so that choice survives.
 -- Class Resource is skipped: its Caster choice never applied in Moonkin Form.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "erb_moonkin_form_bucket_v1",
     scope = "profile",
     description = "Preserve existing Moonkin bar/text visibility now that Moonkin has its own per-form bucket separate from Caster.",
@@ -4491,7 +4492,7 @@ CludesUI.RegisterMigration({
 -- column direction, so the runtime silently substitutes one instead of honoring
 -- Group Growth. The options UI now prevents new conflicting pairs; this fixes up
 -- profiles that already saved one.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "rf_merge_groups_growth_axis_v1",
     scope = "profile",
     description = "For Raid Frames profiles with Merge Groups on, bump Unit Growth off Group Growth's axis (base and per-tier overrides) so the merged flat header has a valid column direction.",
@@ -4528,7 +4529,7 @@ CludesUI.RegisterMigration({
 -- nothing else was reachable from the old menu. Runs per profile and the flag rides
 -- on the profile data, so a profile IMPORTED from an older build is fixed up on the
 -- pass after it lands rather than staying wrong forever.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "np_important_cast_glow_style_reindex_v1",
     scope = "profile",
     description = "Re-point the saved Important Cast Glow style from the old two-entry numbering (4 = Auto-Cast Shine) onto the PANDEMIC_GLOW_STYLES index (3).",
@@ -4547,7 +4548,7 @@ CludesUI.RegisterMigration({
 -- other combination derives its old display from the untouched legacy keys
 -- (ns.UF_DebuffFilterMode in CUI_UnitFrames_AuraContainers.lua). An explicit
 -- mode is never touched, so a re-run is a no-op.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_debuff_filter_tracked_only_v1",
     scope = "profile",
     description = "Pin target/focus/boss Debuff Filters that had nothing checked but carried Tracked Auras (they rendered only those spells) to the Only Tracked Auras mode.",
@@ -4580,7 +4581,7 @@ CludesUI.RegisterMigration({
 -- Visibility no longer touches it and the visibility pass hides the frame at runtime
 -- instead, so clear the flag the old pairing left behind. player/target/focus have no
 -- Enable toggle of their own, so a stored false there can only have come from it.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "uf_visibility_never_keeps_frame_v1",
     scope = "profile",
     description = 'Clear the enabledFrames flag Visibility "Never" used to write for player/target/focus, so the frame is built and a Spec Override can lift the hide without a reload.',
@@ -4631,7 +4632,7 @@ CludesUI.RegisterMigration({
 -- GLOBAL on purpose: a profile stamp rides exports, so an old string would get the
 -- RECIPIENT's factor frozen in; imports after this ran are read as UI units.
 -- Per-profile stamps keep it idempotent when a full-account import resets flags.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "dm_bar_height_ui_units_v1",
     scope = "global",
     description = "Convert Damage Meters bar height and Spell History bar height/icon size from physical pixels to UI units, keeping every existing profile's rendered size.",
@@ -4696,7 +4697,7 @@ CludesUI.RegisterMigration({
 -- gated on existing profiles: a fresh install stamps and never runs it, so a new
 -- user's deliberate Always choice is never flipped, and a stamped profile keeps
 -- its stamp through exports.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "swing_timer_visibility_in_combat_v1",
     scope = "global",
     description = "Move the Swing Timer's visibility from Always to In Combat, the new default.",
@@ -4737,7 +4738,7 @@ CludesUI.RegisterMigration({
 -- the latency zone keeps its old red where no colour was stored (GO's default
 -- is white). Per profile: no current setting writes the old keys, so a profile
 -- imported later from an older string migrates on its next load.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "swing_timer_indicators_v1",
     scope = "profile",
     description = "Move the Swing Timer's indicator toggles into Attack State and Movement Guide.",
@@ -4770,8 +4771,8 @@ CludesUI.RegisterMigration({
 -- already on Classic gets at its first load with this build); a slot without
 -- it restores the default. Existing accounts only: a fresh install stamps it
 -- without running.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.RegisterMigration({
+if CUI.IS_FOREVER == true then
+    CUI.RegisterMigration({
         id = "swing_timer_style_slots_v1",
         scope = "global",
         description = "Save the Swing Timer's texture into the Resource Bars style slots saved before it joined them.",
@@ -4801,7 +4802,7 @@ end
 -- CludesUI.SpellIDOn). An account from before keeps it off: its unset value
 -- is written off. Existing users ONLY: a fresh install or Reset ALL has no
 -- profiles yet, is genesis-stamped, and takes the new default.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "spellid_default_on_v1",
     scope = "global",
     description = "Keep Spell ID on Tooltip off for existing users after its default changed from off to on.",
@@ -4817,7 +4818,7 @@ CludesUI.RegisterMigration({
 -- groups at its first login) starts with it seen. A fresh install or Reset ALL
 -- is genesis-stamped and sees it, and so does an account that turns Bags on
 -- for the first time later.
-CludesUI.RegisterMigration({
+CUI.RegisterMigration({
     id = "bags_category_tip_existing_seen_v1",
     scope = "global",
     description = "Mark the Bags category drag tip as seen for existing Bags users, so only new users see it.",
@@ -4833,8 +4834,8 @@ CludesUI.RegisterMigration({
 -- Confirmation for White Items became Delete Without Confirming. An account
 -- with either on keeps it as Common; both old keys go. Registered on the
 -- Forever client only, where Junk Items exists.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.RegisterMigration({
+if CUI.IS_FOREVER == true then
+    CUI.RegisterMigration({
         id = "junk_items_quality_settings_v1",
         scope = "global",
         description = "Move the Junk Items white-item toggles into Maximum Quality and Delete Without Confirming.",
@@ -4850,7 +4851,7 @@ if CludesUI.IS_FOREVER == true then
 end
 
 -- WoW Forever CDM spell store repairs for imported and switched profiles.
-if CludesUI.IS_FOREVER == true then
+if CUI.IS_FOREVER == true then
     local GHOST_CD = "__ghost_cd"
     local DEFAULT_BARS = {
         { key = "cooldowns", barType = "cooldowns" },
@@ -4931,17 +4932,17 @@ if CludesUI.IS_FOREVER == true then
     -- default layout at the next login. Drop it only while it holds no more
     -- than that, and only when the key the class reads next holds a layout.
     -- An imported bucket stays: it is the sharer's, its Hidden CDs stripped.
-    CludesUI.RegisterMigration({
+    CUI.RegisterMigration({
         id = "cdm_forever_drop_shadowing_spec_v1",
         scope = "specProfile",
         description = "Drop a Forever spec key CDM bucket holding only Blizzard's layout that hides a retail-keyed layout of the same class.",
         body = function(context)
             local ident = tonumber(context.specKey)
-            local cls = ident and CludesUI.SpecClassOf(ident)
-            if not cls or CludesUI.FOREVER_CLASS_SPEC[cls] ~= ident then return end
+            local cls = ident and CUI.SpecClassOf(ident)
+            if not cls or CUI.FOREVER_CLASS_SPEC[cls] ~= ident then return end
             if context.specProfile._importGhostMode or HoldsPlayerEdits(context.specProfile) then return end
             local specList = CludesUIDB.spellAssignments.profiles[context.profileName].specProfiles
-            local nextKey = CludesUI.ForeverClassSpec(cls, CludesUI.SpecHasStringEntry, specList)
+            local nextKey = CUI.ForeverClassSpec(cls, CUI.SpecHasStringEntry, specList)
             if HoldsLayout(specList[tostring(nextKey)]) then specList[context.specKey] = nil end
         end,
     })
@@ -4958,7 +4959,7 @@ if CludesUI.IS_FOREVER == true then
     -- under any rank. Import ghosting compared IDs only, so it hid the rank a
     -- frame showed when the layout listed another rank of the spell on a
     -- visible cooldown bar.
-    CludesUI.RegisterMigration({
+    CUI.RegisterMigration({
         id = "cdm_forever_ghost_rank_aliases_v1",
         scope = "specProfile",
         description = "Unhide spells the ghost CD bar holds under another rank of a spell placed on a visible cooldown bar.",
@@ -5091,7 +5092,7 @@ do
         end
     end
 
-    CludesUI.RegisterMigration({
+    CUI.RegisterMigration({
         id = "pab_shaped_icon_zoom_v1",
         scope = "profile",
         description = "Player Aura Bars: Icon Zoom 6 on bars with a custom Icon Shape left at 0 by the old shaped-icon over-zoom.",
@@ -5185,7 +5186,7 @@ do
     end
     -- Two independent client checks: the suite's flag and the raw interface
     -- number. Tested here and again inside every function that writes.
-    local function OnForeverClient() return CludesUI ~= nil and CludesUI.IS_FOREVER == true and TocForever() end
+    local function OnForeverClient() return CUI ~= nil and CUI.IS_FOREVER == true and TocForever() end
 
     if OnForeverClient() then
         local KEY = "fvBuffWipe"
@@ -5225,7 +5226,7 @@ do
         -- Failures go to the migration error log, read at failure time; nothing
         -- is printed.
         local function Log(err)
-            local t = CludesUI._migrationErrors
+            local t = CUI._migrationErrors
             if type(t) == "table" then
                 t[#t + 1] = {
                     id = "forever_buff_wipe",
@@ -5663,7 +5664,7 @@ do
             if type(p) ~= "table" or type(b) ~= "table" then return false end
             if b[SEED_KEY] ~= nil or b[KEY] == nil then return false end
             -- An editing session holds a conditional fork live: decided after it.
-            if CludesUI._bmSessionGid ~= nil then return false end
+            if CUI._bmSessionGid ~= nil then return false end
             local idList = {}
             local entryList = type(b.filters) == "table" and b.filters.list
             if type(entryList) == "table" then
@@ -5794,7 +5795,7 @@ do
             if modeName == "import" then TrustForks(profileSaved) end
         end
 
-        CludesUI.FvBW = FvBW
+        CUI.FvBW = FvBW
 
         -- Login sweep (Player Aura Bars): every stored profile, at this addon's
         -- own ADDON_LOADED -- in the suite before any child opens its profile --
@@ -5846,12 +5847,12 @@ end
 do
     local FLAG = "forever_snapshot_legacy_v1"
     -- The full-account import keeps the recipient's mark (CludesUI_Profiles.lua).
-    CludesUI._FvSnapFlag = FLAG
+    CUI._FvSnapFlag = FLAG
 
     local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
-        return CludesUI ~= nil
-            and CludesUI.IS_FOREVER == true
+        return CUI ~= nil
+            and CUI.IS_FOREVER == true
             and type(tocVersion) == "number"
             and tocVersion >= 16000
             and tocVersion < 20000
@@ -5907,7 +5908,7 @@ do
     end
 
     if OnForeverClient() then
-        CludesUI.Lite.OnSavedVariablesLoaded(function()
+        CUI.Lite.OnSavedVariablesLoaded(function()
             if not OnForeverClient() then return end
             local saved = CludesUIDB
             if type(saved) ~= "table" then
@@ -5958,8 +5959,8 @@ do
 
     local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
-        return CludesUI ~= nil
-            and CludesUI.IS_FOREVER == true
+        return CUI ~= nil
+            and CUI.IS_FOREVER == true
             and type(tocVersion) == "number"
             and tocVersion >= 16000
             and tocVersion < 20000
@@ -5984,7 +5985,7 @@ do
     end
 
     if OnForeverClient() then
-        CludesUI.Lite.OnSavedVariablesLoaded(function()
+        CUI.Lite.OnSavedVariablesLoaded(function()
             if not OnForeverClient() then return end
             local saved = CludesUIDB
             if type(saved) ~= "table" then
@@ -6032,8 +6033,8 @@ do
 
     local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
-        return CludesUI ~= nil
-            and CludesUI.IS_FOREVER == true
+        return CUI ~= nil
+            and CUI.IS_FOREVER == true
             and type(tocVersion) == "number"
             and tocVersion >= 16000
             and tocVersion < 20000
@@ -6064,7 +6065,7 @@ do
     end
 
     if OnForeverClient() then
-        CludesUI.Lite.OnSavedVariablesLoaded(function()
+        CUI.Lite.OnSavedVariablesLoaded(function()
             if not OnForeverClient() then return end
             local saved = CludesUIDB
             if type(saved) ~= "table" then
@@ -6112,8 +6113,8 @@ do
 
     local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
-        return CludesUI ~= nil
-            and CludesUI.IS_FOREVER == true
+        return CUI ~= nil
+            and CUI.IS_FOREVER == true
             and type(tocVersion) == "number"
             and tocVersion >= 16000
             and tocVersion < 20000
@@ -6166,7 +6167,7 @@ do
     end
 
     if OnForeverClient() then
-        CludesUI.Lite.OnSavedVariablesLoaded(function()
+        CUI.Lite.OnSavedVariablesLoaded(function()
             if not OnForeverClient() then return end
             local saved = CludesUIDB
             if type(saved) ~= "table" then

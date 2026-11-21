@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Nine-point picking lives on movers; gameplay frames receive no mouse hooks.
 local _, mod = ...
 mod = mod.__cuiCoreNS or mod
@@ -22,7 +23,7 @@ mod.unlockParts.PointPicker = function(LM)
         if not mover or not mover:IsShown() or mover._tempHidden then return false end
         local key = mover._barKey
         local elem = LM.registeredElements[key]
-        if not elem or CludesUI.IsScreenEdgeKey(key) then return false end
+        if not elem or CUI.IsScreenEdgeKey(key) then return false end
         if source then
             if elem.noAnchorTo or elem.ownsPosition or mod.IsMoverPosLocked(key) then return false end
             if elem.isAnchored and elem.isAnchored(key) then return false end
@@ -67,7 +68,7 @@ mod.unlockParts.PointPicker = function(LM)
                 if details and details.fallback and details.fallback.target then
                     stack[#stack + 1] = details.fallback.target
                 end
-                local overrides = CludesUI._OverrideAnchorTargets and CludesUI._OverrideAnchorTargets(key)
+                local overrides = CUI._OverrideAnchorTargets and CUI._OverrideAnchorTargets(key)
                 if overrides then
                     for idx = 1, #overrides do
                         stack[#stack + 1] = overrides[idx]
@@ -112,14 +113,14 @@ mod.unlockParts.PointPicker = function(LM)
                 btnFrame:EnableMouse(false)
             end
             if source._showPickText then
-                source._showPickText(CludesUI.L("Click a point on another element"))
+                source._showPickText(CUI.L("Click a point on another element"))
             end
             return
         end
         if set ~= targetSet or LM.pickMode ~= "pointAnchor" or not sourcePoint then return end
         local target = set.mover
         if not CanLink(source, target) then
-            Reject(target, CludesUI.L("This point anchor is unavailable or would create a circular anchor"))
+            Reject(target, CUI.L("This point anchor is unavailable or would create a circular anchor"))
             return
         end
         local childKey, targetKey = source._barKey, target._barKey
@@ -132,7 +133,7 @@ mod.unlockParts.PointPicker = function(LM)
             offsetY = 0,
         }
         if not PA.Center(childKey, LM.GetBarFrame(childKey), details, LM.GetBarFrame(targetKey)) then
-            Reject(target, CludesUI.L("This element's position is not available yet"))
+            Reject(target, CUI.L("This element's position is not available yet"))
             return
         end
         LM.CancelPickMode()
@@ -167,15 +168,15 @@ mod.unlockParts.PointPicker = function(LM)
         set:EnableMouse(false)
         set.buttons = {}
         local labels = {
-            TOPLEFT = CludesUI.L("Top Left"),
-            TOP = CludesUI.L("Top"),
-            TOPRIGHT = CludesUI.L("Top Right"),
-            LEFT = CludesUI.L("Left"),
-            CENTER = CludesUI.L("Center"),
-            RIGHT = CludesUI.L("Right"),
-            BOTTOMLEFT = CludesUI.L("Bottom Left"),
-            BOTTOM = CludesUI.L("Bottom"),
-            BOTTOMRIGHT = CludesUI.L("Bottom Right"),
+            TOPLEFT = CUI.L("Top Left"),
+            TOP = CUI.L("Top"),
+            TOPRIGHT = CUI.L("Top Right"),
+            LEFT = CUI.L("Left"),
+            CENTER = CUI.L("Center"),
+            RIGHT = CUI.L("Right"),
+            BOTTOMLEFT = CUI.L("Bottom Left"),
+            BOTTOM = CUI.L("Bottom"),
+            BOTTOMRIGHT = CUI.L("Bottom Right"),
         }
         for _, anchorPoint in ipairs(PA.order) do
             local btnFrame = CreateFrame("Button", nil, set)
@@ -198,13 +199,13 @@ mod.unlockParts.PointPicker = function(LM)
                 btnFrame.hovered = true
                 set.mover._pointHandleHovered = btnFrame
                 UpdateDot(btnFrame, true)
-                CludesUI.ShowWidgetTooltip(btnFrame, labels[anchorPoint])
+                CUI.ShowWidgetTooltip(btnFrame, labels[anchorPoint])
             end)
             btnFrame:SetScript("OnLeave", function()
                 btnFrame.hovered = nil
                 if set.mover._pointHandleHovered == btnFrame then set.mover._pointHandleHovered = nil end
                 UpdateDot(btnFrame, true)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
                 local leave = set.mover:GetScript("OnLeave")
                 if leave then
                     leave(set.mover)
@@ -213,7 +214,7 @@ mod.unlockParts.PointPicker = function(LM)
                 end
             end)
             btnFrame:SetScript("OnHide", function()
-                if btnFrame.hovered then CludesUI.HideWidgetTooltip() end
+                if btnFrame.hovered then CUI.HideWidgetTooltip() end
                 if set.mover and set.mover._pointHandleHovered == btnFrame then
                     set.mover._pointHandleHovered = nil
                 end
@@ -221,7 +222,7 @@ mod.unlockParts.PointPicker = function(LM)
                 UpdateDot(btnFrame, false)
             end)
             btnFrame:SetScript("OnClick", function(_, mouse)
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
                 if mouse == "RightButton" then
                     LM.CancelPickMode()
                 else
@@ -306,7 +307,7 @@ mod.unlockParts.PointPicker = function(LM)
     end
 
     function picker.Cancel()
-        if sourceSet and sourceSet:IsShown() then CludesUI.HideWidgetTooltip() end
+        if sourceSet and sourceSet:IsShown() then CUI.HideWidgetTooltip() end
         if sourceSet then sourceSet:Hide() end
         if targetSet then targetSet:Hide() end
         sourcePoint = nil

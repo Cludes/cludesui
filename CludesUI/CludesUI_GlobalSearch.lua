@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_GlobalSearch.lua
 --  Unified fuzzy search across every registered CludesUI sub-addon's
@@ -22,16 +23,16 @@ local BREADCRUMB_ARROW = " |TInterface\\AddOns\\CludesUI\\media\\icons\\cui-arro
 -- Display name of a registered module. Plugin modules read as
 -- "Section > Module" so results name the plugin they belong to.
 local function ModuleLabel(moduleConfig, moduleFolder)
-    local title = CludesUI.L(moduleConfig.title or moduleFolder)
+    local title = CUI.L(moduleConfig.title or moduleFolder)
     if moduleConfig._pluginLabel then
-        return CludesUI.L(moduleConfig._pluginLabel) .. BREADCRUMB_ARROW .. title,
+        return CUI.L(moduleConfig._pluginLabel) .. BREADCRUMB_ARROW .. title,
             moduleConfig._pluginLabel .. " " .. title
     end
     return title, title
 end
 
 -- A page's name as its tab shows it (CUI_NS.GetTabLabel), localized.
-local function PageLabel(moduleFolder, pageEntry) return CludesUI.L(mod.GetTabLabel(moduleFolder, pageEntry)) end
+local function PageLabel(moduleFolder, pageEntry) return CUI.L(mod.GetTabLabel(moduleFolder, pageEntry)) end
 
 -------------------------------------------------------------------------------
 --  Index storage
@@ -42,7 +43,7 @@ local _seenKeys = {}
 -- Registered by TagOptionRow / SectionHeader as each option row / section
 -- header is built during normal navigation, and by the one-time pre-build
 -- pass below for pages nobody has opened yet this session.
-function CludesUI._RegisterSearchEntry(
+function CUI._RegisterSearchEntry(
     label,
     localLabel,
     tipText,
@@ -56,7 +57,7 @@ function CludesUI._RegisterSearchEntry(
     -- Opt-out for whole UI regions: a builder sets this around widget
     -- construction it wants excluded from the search entirely (e.g. the QoL
     -- Macro Factory, whose rows must never be indexed or deep-linked).
-    if CludesUI._searchIndexSuppress then return end
+    if CUI._searchIndexSuppress then return end
     -- Composite labels (DualRow/TripleRow with an empty slot) can come in as whitespace
     -- only (e.g. a single joining space with nothing on either side) -- trim before the
     -- emptiness check so those don't register as inert, unmatchable junk entries.
@@ -183,10 +184,10 @@ end
 local KIND_RANK = { page = 1 }
 -- The sidebar's order is its groups' (read at load, before any other addon runs);
 -- every key outside them (plugins, other addons' pages) takes 1000.
-local _moduleRank = { [CludesUI.GLOBAL_KEY] = 0 }
+local _moduleRank = { [CUI.GLOBAL_KEY] = 0 }
 do
     local num = 0
-    for _, group in ipairs(CludesUI.ADDON_GROUPS) do
+    for _, group in ipairs(CUI.ADDON_GROUPS) do
         for _, moduleFolder in ipairs(group.members) do
             num = num + 1
             _moduleRank[moduleFolder] = num
@@ -237,7 +238,7 @@ local function BuildCoarseCandidates()
                 -- A relabeled tab stays findable by its page identity too.
                 local pageText = pageCaption
                 if mod.GetTabLabel(moduleFolder, pageEntry) ~= pageEntry then
-                    pageText = pageCaption .. " " .. CludesUI.L(pageEntry)
+                    pageText = pageCaption .. " " .. CUI.L(pageEntry)
                 end
                 _coarseCandidates[#_coarseCandidates + 1] = {
                     kind = "page",
@@ -280,14 +281,14 @@ local function BuildModuleAliases()
         _moduleAliases[#_moduleAliases + 1] = { alias = aliasName, folder = moduleFolder }
     end
     for moduleFolder, moduleConfig in pairs(mod.modules or {}) do
-        Add(moduleConfig.title and CludesUI.L(moduleConfig.title), moduleFolder)
+        Add(moduleConfig.title and CUI.L(moduleConfig.title), moduleFolder)
         -- A plugin's section label filters to all of that plugin's modules.
-        if moduleConfig._pluginLabel then Add(CludesUI.L(moduleConfig._pluginLabel), moduleFolder) end
+        if moduleConfig._pluginLabel then Add(CUI.L(moduleConfig._pluginLabel), moduleFolder) end
     end
-    if CludesUI.ADDON_ROSTER then
-        for _, record in ipairs(CludesUI.ADDON_ROSTER) do
+    if CUI.ADDON_ROSTER then
+        for _, record in ipairs(CUI.ADDON_ROSTER) do
             if mod.modules and mod.modules[record.folder] then
-                Add(record.display and CludesUI.L(record.display), record.folder)
+                Add(record.display and CUI.L(record.display), record.folder)
             end
         end
     end
@@ -387,7 +388,7 @@ local QUERY_SYNONYMS = {
     { "compact", { "bag display", "bank display" } },
 }
 -- WoW Forever's Name Format (first or last names; Forever Essentials > General).
-if CludesUI.IS_FOREVER then QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = { "surname", { "name format" } } end
+if CUI.IS_FOREVER then QUERY_SYNONYMS[#QUERY_SYNONYMS + 1] = { "surname", { "name format" } } end
 local SYNONYM_MIN_PREFIX = 3
 
 local function SearchIndex(searchText, maxResults)
@@ -655,16 +656,16 @@ local function MakeAbsorber() return setmetatable({}, _absorberMeta) end
 -- frame; the absorber parent is shared, so the pass tracks it here), and
 -- the selector context comes from the same global the live path uses.
 local function RegisterAbsorbed(labelText, tooltipText, isSection)
-    if not CludesUI._RegisterSearchEntry then return end
+    if not CUI._RegisterSearchEntry then return end
     if type(labelText) ~= "string" or labelText == "" then return end
-    local loc = CludesUI.L(labelText)
-    local sel = CludesUI._buildingSelector
-    CludesUI._RegisterSearchEntry(
+    local loc = CUI.L(labelText)
+    local sel = CUI._buildingSelector
+    CUI._RegisterSearchEntry(
         labelText,
         loc ~= labelText and loc or nil,
         type(tooltipText) == "string" and tooltipText or nil,
-        CludesUI._buildingModule,
-        CludesUI._buildingPage,
+        CUI._buildingModule,
+        CUI._buildingPage,
         isSection and labelText or _absSection,
         sel and sel.setter,
         sel and sel.key,
@@ -719,7 +720,7 @@ function AbsorberW:WideButton(hostFrame, textValue, yOffset, onClick, btnWidth)
 end
 function AbsorberW:DualRow(hostFrame, yOffset, leftConfig, rightConfig)
     -- A row the live factory hides for Blizzard Style has nothing to find.
-    local BS = CludesUI.BlizzStyle
+    local BS = CUI.BlizzStyle
     if BS and BS.RowHidden and BS.RowHidden(leftConfig, rightConfig) then return MakeAbsorber(), 0 end
     RegisterAbsorbed(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
     RegisterAbsorbed(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
@@ -795,7 +796,7 @@ function AbsorberW:Spacer(hostFrame, yOffset, height) return MakeAbsorber(), hei
 -- added per the maintenance contract.
 setmetatable(AbsorberW, {
     __index = function(_, key)
-        if CludesUI.IsDevModeActive() then
+        if CUI.IsDevModeActive() then
             print(
                 "|cffff6060CUI GlobalSearch:|r no absorber stub for W:"
                     .. tostring(key)
@@ -822,14 +823,14 @@ local function PrebuildOnce(moduleConfig, moduleFolder, pageEntry, selectorSette
         wrapper:SetSize(1030, 4000)
         _absWrapper = wrapper
     end
-    CludesUI._buildingModule = moduleFolder
-    CludesUI._buildingPage = pageEntry
-    CludesUI._prebuilding = true
+    CUI._buildingModule = moduleFolder
+    CUI._buildingPage = pageEntry
+    CUI._prebuilding = true
 
     -- Isolate the shared widget-refresh registry so this off-screen build's
     -- widgets can never leak their refresh closures into whatever page the
     -- user is actually looking at (or into that page's cache snapshot).
-    local refreshSnap = CludesUI._SnapshotAndClearWidgetRefreshList()
+    local refreshSnap = CUI._SnapshotAndClearWidgetRefreshList()
     -- buildPage functions call some live game APIs (currency lists, class info)
     -- directly during construction, not only inside getValue closures. pcall so one
     -- module's edge case can never block indexing the rest; any such page simply falls
@@ -840,11 +841,11 @@ local function PrebuildOnce(moduleConfig, moduleFolder, pageEntry, selectorSette
     -- inside their bodies -- verified no file-scope captures 2026-08-03),
     -- and restored on EVERY exit before anything else can read it.
     _absSection = nil
-    local realWidgets = CludesUI.Widgets
-    CludesUI.Widgets = AbsorberW
+    local realWidgets = CUI.Widgets
+    CUI.Widgets = AbsorberW
     local success, err = pcall(moduleConfig.buildPage, pageEntry, wrapper, -6)
-    CludesUI.Widgets = realWidgets
-    if not success and CludesUI.IsDevModeActive() then
+    CUI.Widgets = realWidgets
+    if not success and CUI.IsDevModeActive() then
         print(
             "|cffff6060CUI GlobalSearch:|r prebuild failed for "
                 .. tostring(moduleFolder)
@@ -854,7 +855,7 @@ local function PrebuildOnce(moduleConfig, moduleFolder, pageEntry, selectorSette
                 .. tostring(err)
         )
     end
-    if refreshSnap then CludesUI._RestoreWidgetRefreshList(refreshSnap) end
+    if refreshSnap then CUI._RestoreWidgetRefreshList(refreshSnap) end
 
     -- Some buildPage implementations register cleanup (event listeners, etc.) via
     -- parent:HookScript("OnHide", ...), expecting it to fire once the user navigates
@@ -866,10 +867,10 @@ local function PrebuildOnce(moduleConfig, moduleFolder, pageEntry, selectorSette
     -- depend on this to clean them up.
     wrapper:Hide()
 
-    CludesUI._buildingModule = nil
-    CludesUI._buildingPage = nil
-    CludesUI._buildingSelector = nil
-    CludesUI._prebuilding = nil
+    CUI._buildingModule = nil
+    CUI._buildingPage = nil
+    CUI._buildingSelector = nil
+    CUI._prebuilding = nil
 end
 
 -- One job = ONE hidden page build. Selector variants are expanded into
@@ -888,12 +889,12 @@ local function PrebuildJob(task)
     if not (mod.pageCache and mod.pageCache[cacheKey] and not mod.pageCache[cacheKey].stale) then
         local savedMethods = {}
         for _, name in ipairs(_CONTENT_HEADER_METHODS) do
-            savedMethods[name] = CludesUI[name]
-            CludesUI[name] = function() end
+            savedMethods[name] = CUI[name]
+            CUI[name] = function() end
         end
         PrebuildOnce(moduleConfig, task.folder, task.page, task.selectorSetter, task.selectorKey)
         for _, name in ipairs(_CONTENT_HEADER_METHODS) do
-            CludesUI[name] = savedMethods[name]
+            CUI[name] = savedMethods[name]
         end
     end
     -- Set on the LAST variant job of a page: restore whatever the player actually had
@@ -964,7 +965,7 @@ local function RunPrebuildPass(onComplete)
         -- A full page build is a multi-millisecond main-thread hit; never do
         -- that during combat. Pause the pass and resume once combat ends.
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer(StepJob, function() C_Timer.After(0.05, StepJob) end)
+            CUI.CombatQueue.Defer(StepJob, function() C_Timer.After(0.05, StepJob) end)
             return
         end
         -- As many builds as fit in a small per-frame budget (at least one),
@@ -1011,9 +1012,9 @@ local MAX_VISIBLE_RESULTS = 12
 local function GetModuleDisplayName(moduleFolder)
     local moduleConfig = mod.modules and mod.modules[moduleFolder]
     if moduleConfig and moduleConfig.title then return (ModuleLabel(moduleConfig, moduleFolder)) end
-    if CludesUI.ADDON_ROSTER then
-        for _, record in ipairs(CludesUI.ADDON_ROSTER) do
-            if record.folder == moduleFolder then return CludesUI.L(record.display) end
+    if CUI.ADDON_ROSTER then
+        for _, record in ipairs(CUI.ADDON_ROSTER) do
+            if record.folder == moduleFolder then return CUI.L(record.display) end
         end
     end
     return moduleFolder
@@ -1054,8 +1055,8 @@ local function JumpToResult(record, sidebarSearchBox)
     -- just means no scroll/glow happens -- the page is left exactly as the player
     -- already had it, not blanked out.
     if record.kind == "page" or not record.section then
-        CludesUI:SelectModule(record.module)
-        CludesUI:SelectPage(record.page)
+        CUI:SelectModule(record.module)
+        CUI:SelectPage(record.page)
     else
         -- Some pages (CDM Bars, Action Bars Display, Unit Frames) show
         -- entirely different content depending on an internal selector --
@@ -1068,7 +1069,7 @@ local function JumpToResult(record, sidebarSearchBox)
         if record.selectorSetter and record.selectorKey then
             preSelectFn = function() record.selectorSetter(record.selectorKey) end
         end
-        CludesUI:NavigateToElementSettings(
+        CUI:NavigateToElementSettings(
             record.module,
             record.page,
             record.section,
@@ -1082,13 +1083,13 @@ end
 
 local function EnsureSearchUI()
     if _searchUIBuilt then return end
-    local clickArea = CludesUI._clickArea
-    local sidebarSearchBox = CludesUI._sidebarSearchBox
+    local clickArea = CUI._clickArea
+    local sidebarSearchBox = CUI._sidebarSearchBox
     if not clickArea or not sidebarSearchBox then return end
     _searchUIBuilt = true
 
-    local Pix = CludesUI.PanelPP or CludesUI.PP
-    local fontFile = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+    local Pix = CUI.PanelPP or CUI.PP
+    local fontFile = (CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
 
     -- Results popup, anchored below the existing sidebar search box.
     dialog = CreateFrame("Frame", nil, clickArea)
@@ -1101,18 +1102,18 @@ local function EnsureSearchUI()
     local popupBg = dialog:CreateTexture(nil, "BACKGROUND")
     popupBg:SetAllPoints()
     popupBg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-    dialog._brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.12, popupBg)
+    dialog._brd = CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.12, popupBg)
     -- House look: an accent cap; hovered and selected results take an accent wash.
     local cap = dialog:CreateTexture(nil, "ARTWORK", nil, 3)
     cap:SetPoint("TOPLEFT")
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)
     dialog:HookScript("OnShow", function()
-        local color = CludesUI.CLUDES_GREEN
+        local color = CUI.CLUDES_GREEN
         cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     end)
     local function Wash(texture, enabled)
-        local color = CludesUI.CLUDES_GREEN
+        local color = CUI.CLUDES_GREEN
         texture:SetColorTexture(color.r, color.g, color.b, enabled and 0.16 or 0)
     end
 
@@ -1132,7 +1133,7 @@ local function EnsureSearchUI()
         highlight:SetColorTexture(1, 1, 1, 0)
 
         local labelFS = line:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(labelFS, true)
+        CUI.PrimeFontShadow(labelFS, true)
         labelFS:SetFont(fontFile, 14, "")
         labelFS:SetTextColor(0.85, 0.85, 0.88, 1)
         labelFS:SetPoint("LEFT", line, "LEFT", 8, 8)
@@ -1141,7 +1142,7 @@ local function EnsureSearchUI()
         labelFS:SetWordWrap(false)
 
         local sub = line:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(sub, true)
+        CUI.PrimeFontShadow(sub, true)
         sub:SetFont(fontFile, 12, "")
         sub:SetTextColor(1, 1, 1, 0.45)
         sub:SetPoint("LEFT", line, "LEFT", 8, -9)
@@ -1189,27 +1190,27 @@ local function EnsureSearchUI()
         -- Less Common" section renders force-expanded with no link line; clearing the
         -- box collapses them back to their session state (transitions rebuild -- see
         -- SetLessCommonSearchActive in CludesUI_Widgets.lua).
-        if CludesUI.SetLessCommonSearchActive then CludesUI.SetLessCommonSearchActive(searchText ~= "") end
+        if CUI.SetLessCommonSearchActive then CUI.SetLessCommonSearchActive(searchText ~= "") end
         if searchText ~= "" then StartPrebuild() end
         results = SearchIndex(searchText, MAX_VISIBLE_RESULTS)
         -- Accent-colored "Page:"/"Section:" prefixes. Hex is computed per
         -- search, so a live accent change is picked up on the next keystroke.
-        local ACC = CludesUI.CLUDES_GREEN
-        local accentHex = ACC and CludesUI.HexColor(ACC.r, ACC.g, ACC.b) or CludesUI.COLOR_CODES.WHITE
+        local ACC = CUI.CLUDES_GREEN
+        local accentHex = ACC and CUI.HexColor(ACC.r, ACC.g, ACC.b) or CUI.COLOR_CODES.WHITE
         for idx, line in ipairs(resultRows) do
             local record = results[idx]
             if record then
                 if record.kind == "page" then
                     -- Coarse whole-page result: prefixed like sections so it
                     -- reads as "go to this page", not a specific option on it.
-                    line._label:SetText(accentHex .. CludesUI.L("Page") .. ":|r " .. record.displayLabel)
+                    line._label:SetText(accentHex .. CUI.L("Page") .. ":|r " .. record.displayLabel)
                     line._sub:SetText(record.moduleLabel)
                 elseif record.isSection then
                     local name = TitleCaseSection(record.label)
                     if record.labelLoc then
                         name = name .. "  (" .. TitleCaseSection(record.labelLoc) .. ")"
                     end
-                    line._label:SetText(accentHex .. CludesUI.L("Section") .. ":|r " .. name)
+                    line._label:SetText(accentHex .. CUI.L("Section") .. ":|r " .. name)
                     line._sub:SetText(
                         JoinBreadcrumb(
                             GetModuleDisplayName(record.module),
@@ -1241,8 +1242,8 @@ local function EnsureSearchUI()
             -- shown literally so the query cannot inject escape codes.
             local line = resultRows[1]
             local q = searchText:gsub("||", "|"):gsub("|", "||")
-            line._label:SetText(CludesUI.Lf("No results for %s", '"' .. q .. '"'))
-            line._sub:SetText(CludesUI.L("Check the spelling or try a different word"))
+            line._label:SetText(CUI.Lf("No results for %s", '"' .. q .. '"'))
+            line._sub:SetText(CUI.L("Check the spelling or try a different word"))
             line._hl:SetColorTexture(1, 1, 1, 0)
             line:SetScript("OnClick", nil)
             line:EnableMouse(false)
@@ -1300,9 +1301,9 @@ end
 --  standard same-addon method wrapping from a later-loaded file.
 -------------------------------------------------------------------------------
 for _, methodName in ipairs({ "Show", "Toggle", "ShowModule" }) do
-    local original = CludesUI[methodName]
+    local original = CUI[methodName]
     if original then
-        CludesUI[methodName] = function(self, ...)
+        CUI[methodName] = function(self, ...)
             original(self, ...)
             EnsureSearchUI()
         end

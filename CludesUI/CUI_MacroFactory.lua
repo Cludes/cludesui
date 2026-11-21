@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_MacroFactory.lua
 --  The Macro Factory: the macro definitions and the macro writer, the
@@ -10,7 +11,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -- The options page pool's table (CludesUI_PixelPerfect.lua makes it; the
 -- options addon fills it in place): read through this file local, never the
 -- public slot.
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 -------------------------------------------------------------------------------
 --  Set Focus extras -- auto raid marker, ping and group announce
@@ -48,7 +49,7 @@ local function OptionDisplayName(opt, noRequest)
         if num then return num end
         if not noRequest then C_Item.RequestLoadItemDataByID(ids[1]) end
     end
-    return CludesUI.L(opt.label)
+    return CUI.L(opt.label)
 end
 
 -- Page reuse (CludesUIOptions/CludesUI_FramePool.lua): the owner of the
@@ -167,7 +168,7 @@ local GENERAL_DEFS = {
                 -- baked when written, so a later game-language switch keeps
                 -- the old wording until a toggle is touched -- inherent to
                 -- macros).
-                local focusWord = (CludesUI.L("Focus")) or "Focus"
+                local focusWord = (CUI.L("Focus")) or "Focus"
                 lines[#lines + 1] = saved.autoMark and ("/p " .. focusWord .. ": {rt" .. mark .. "} %f")
                     or ("/p " .. focusWord .. ": %f")
             end
@@ -320,7 +321,7 @@ local function UpdateMacro(def, saved)
     local position = GetMacroIndexByName(def.name)
     if position ~= 0 then
         if InCombatLockdown() then
-            CludesUI.CombatQueue.Defer("MacroFactory:" .. def.name, function()
+            CUI.CombatQueue.Defer("MacroFactory:" .. def.name, function()
                 local i = GetMacroIndexByName(def.name)
                 if i == 0 then return end
                 local body = BuildMacroBody(def, GetMacroDB(def.name))
@@ -382,7 +383,7 @@ itemUpkeep:SetScript("OnEvent", function(self, evt)
     end
     -- PLAYER_ENTERING_WORLD and UPDATE_MACROS: one look each.
     self:UnregisterEvent(evt)
-    if CludesUI.IS_FOREVER or not CludesUI._ModuleNS["CludesUIQoL"] then return end
+    if CUI.IS_FOREVER or not CUI._ModuleNS["CludesUIQoL"] then return end
     if self:IsEventRegistered("BAG_UPDATE_DELAYED") then return end
     for i = 1, #ITEM_DEFS do
         if GetMacroIndexByName(ITEM_DEFS[i].name) ~= 0 then
@@ -395,7 +396,7 @@ end)
 itemUpkeep:RegisterEvent("PLAYER_ENTERING_WORLD")
 itemUpkeep:RegisterEvent("UPDATE_MACROS")
 
-function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
+function CUI.BuildMacroFactory(hostFrame, startY, Pix)
     -- The options frame pool: this file is resident, and the options addon
     -- (whose Quality of Life page is the only caller of this builder) fills
     -- the table in place when it loads.
@@ -408,8 +409,8 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
     local SPEC_ICON_GAP = 70
     local FIRST_ICON_Y = -34
     local ROW_STRIDE = 66
-    local fontFile = CludesUI.GetFontPath() or STANDARD_TEXT_FONT
-    local ACC = CludesUI.CLUDES_GREEN
+    local fontFile = CUI.GetFontPath() or STANDARD_TEXT_FONT
+    local ACC = CUI.CLUDES_GREEN
     local posY = startY
 
     ---------------------------------------------------------------------------
@@ -1568,7 +1569,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
         titleFS:SetFont(fontFile, 16, "")
         titleFS:SetTextColor(1, 1, 1, 1)
         titleFS:SetPoint("TOP", boxHolder, "TOPLEFT", centerX, 0)
-        titleFS:SetText(CludesUI.L(title))
+        titleFS:SetText(CUI.L(title))
 
         local numIcons = #defs
         local totalRows = math.ceil(numIcons / perRow)
@@ -1598,7 +1599,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             sc:SetSize(halfW, contentH)
             scrollFrame:SetScrollChild(sc)
 
-            CludesUI.AttachSmoothScrollbar(
+            CUI.AttachSmoothScrollbar(
                 scrollFrame,
                 { rightInset = 70, topInset = 32, bottomInset = 8, panelWheel = true }
             )
@@ -1636,7 +1637,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             hoverBdr:SetPoint("TOPLEFT", btn, "TOPLEFT", -1, 1)
             hoverBdr:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 1, -1)
             hoverBdr:SetFrameLevel(btn:GetFrameLevel() + 2)
-            local accR, accG, accB = CludesUI.GetAccentColor()
+            local accR, accG, accB = CUI.GetAccentColor()
             Pix.CreateBorder(hoverBdr, accR, accG, accB, 1, 2)
             hoverBdr:Hide()
             btn._hoverBdr = hoverBdr
@@ -1651,7 +1652,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             labelFS:SetWidth(ICON_SIZE + gap - 8)
             labelFS:SetWordWrap(false)
             labelFS:SetJustifyH("CENTER")
-            labelFS:SetText(CludesUI.L(def.label):gsub("\n", " "))
+            labelFS:SetText(CUI.L(def.label):gsub("\n", " "))
             btn._label = labelFS
 
             -- Flash system (OnUpdate, no AnimationGroup)
@@ -1690,7 +1691,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             end)
             local function PlayFlash()
                 flashElapsed = 0
-                flashFS:SetText(CludesUI.L("Macro Created"))
+                flashFS:SetText(CUI.L("Macro Created"))
                 flashFS:SetTextColor(1, 1, 1, 0)
                 flashFS:Show()
                 btn._label:Hide()
@@ -1764,12 +1765,12 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                 local mBg = menuFrame:CreateTexture(nil, "BACKGROUND")
                 mBg:SetAllPoints()
                 mBg:SetColorTexture(
-                    CludesUI.DD_BG_R,
-                    CludesUI.DD_BG_G,
-                    CludesUI.DD_BG_B,
-                    CludesUI.DD_BG_HA or 0.92
+                    CUI.DD_BG_R,
+                    CUI.DD_BG_G,
+                    CUI.DD_BG_B,
+                    CUI.DD_BG_HA or 0.92
                 )
-                CludesUI.MakeRoundedBorder(menuFrame, 1, 1, 1, CludesUI.DD_BRD_A, mBg, nil, true)
+                CUI.MakeRoundedBorder(menuFrame, 1, 1, 1, CUI.DD_BRD_A, mBg, nil, true)
                 local mY = -4
 
                 -- Create/Delete action row
@@ -1787,9 +1788,9 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                 aHL:SetColorTexture(1, 1, 1, 0)
                 local function RefAct()
                     if MacroExists() then
-                        aL:SetText(CludesUI.L("|cffff4444Delete Macro|r"))
+                        aL:SetText(CUI.L("|cffff4444Delete Macro|r"))
                     else
-                        aL:SetText(CludesUI.L("Create Macro"))
+                        aL:SetText(CUI.L("Create Macro"))
                     end
                 end
                 RefAct()
@@ -1833,17 +1834,17 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                 local tBg = tB:CreateTexture(nil, "BACKGROUND")
                 tBg:SetAllPoints()
                 tBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                local tBrd = CludesUI.MakeRoundedBorder(tB, 0.4, 0.4, 0.4, 0.6, tBg)
+                local tBrd = CUI.MakeRoundedBorder(tB, 0.4, 0.4, 0.4, 0.6, tBg)
                 local tCk = tB:CreateTexture(nil, "ARTWORK")
                 Pix.SetInside(tCk, tB, 2, 2)
                 tCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                 tCk:SetSnapToPixelGrid(false)
-                CludesUI.RoundBody(tB, tCk, 2)
+                CUI.RoundBody(tB, tCk, 2)
                 local tL = tR:CreateFontString(nil, "OVERLAY")
                 tL:SetFont(fontFile, 13, "")
                 tL:SetTextColor(0.75, 0.75, 0.75, 1)
                 tL:SetPoint("LEFT", tR, "LEFT", 12, 0)
-                tL:SetText(CludesUI.L("Show Tooltip"))
+                tL:SetText(CUI.L("Show Tooltip"))
                 local tHL = tR:CreateTexture(nil, "ARTWORK")
                 tHL:SetAllPoints()
                 tHL:SetColorTexture(1, 1, 1, 0)
@@ -1905,17 +1906,17 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                         local xBg = xB:CreateTexture(nil, "BACKGROUND")
                         xBg:SetAllPoints()
                         xBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                        local xBrd = CludesUI.MakeRoundedBorder(xB, 0.4, 0.4, 0.4, 0.6, xBg)
+                        local xBrd = CUI.MakeRoundedBorder(xB, 0.4, 0.4, 0.4, 0.6, xBg)
                         local xCk = xB:CreateTexture(nil, "ARTWORK")
                         Pix.SetInside(xCk, xB, 2, 2)
                         xCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                         xCk:SetSnapToPixelGrid(false)
-                        CludesUI.RoundBody(xB, xCk, 2)
+                        CUI.RoundBody(xB, xCk, 2)
                         local xL = xR:CreateFontString(nil, "OVERLAY")
                         xL:SetFont(fontFile, 13, "")
                         xL:SetTextColor(0.75, 0.75, 0.75, 1)
                         xL:SetPoint("LEFT", xR, "LEFT", 12, 0)
-                        xL:SetText(CludesUI.L(xt.label))
+                        xL:SetText(CUI.L(xt.label))
                         local xHL = xR:CreateTexture(nil, "ARTWORK")
                         xHL:SetAllPoints()
                         xHL:SetColorTexture(1, 1, 1, 0)
@@ -1966,7 +1967,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                         cL:SetFont(fontFile, 13, "")
                         cL:SetTextColor(0.75, 0.75, 0.75, 1)
                         cL:SetPoint("LEFT", cR, "LEFT", 12, 0)
-                        cL:SetText(CludesUI.L(xc.label))
+                        cL:SetText(CUI.L(xc.label))
 
                         local cAr = cR:CreateFontString(nil, "OVERLAY")
                         cAr:SetFont(fontFile, 9, "")
@@ -2016,8 +2017,8 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             entries:Hide()
                             local lBg = entries:CreateTexture(nil, "BACKGROUND")
                             lBg:SetAllPoints()
-                            lBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
-                            CludesUI.MakeRoundedBorder(entries, 1, 1, 1, CludesUI.DD_BRD_A, lBg, nil, true)
+                            lBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, 0.98)
+                            CUI.MakeRoundedBorder(entries, 1, 1, 1, CUI.DD_BRD_A, lBg, nil, true)
                             for oi = 1, 8 do
                                 local oY = -2 - (oi - 1) * LRH
                                 local oR = CreateFrame("Button", nil, entries)
@@ -2094,7 +2095,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                     hfs:SetFont(fontFile, 10, "")
                     hfs:SetTextColor(1, 1, 1, 0.25)
                     hfs:SetPoint("CENTER")
-                    hfs:SetText(CludesUI.L("Drag to Reorder"))
+                    hfs:SetText(CUI.L("Drag to Reorder"))
                     mY = mY - HH
 
                     -- Checkbox rows with drag reorder
@@ -2127,12 +2128,12 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                         local rBg = rb:CreateTexture(nil, "BACKGROUND")
                         rBg:SetAllPoints()
                         rBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                        local rBrd = CludesUI.MakeRoundedBorder(rb, 0.4, 0.4, 0.4, 0.6, rBg)
+                        local rBrd = CUI.MakeRoundedBorder(rb, 0.4, 0.4, 0.4, 0.6, rBg)
                         local rCk = rb:CreateTexture(nil, "ARTWORK")
                         Pix.SetInside(rCk, rb, 2, 2)
                         rCk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                         rCk:SetSnapToPixelGrid(false)
-                        CludesUI.RoundBody(rb, rCk, 2)
+                        CUI.RoundBody(rb, rCk, 2)
                         local rHL = row:CreateTexture(nil, "ARTWORK")
                         rHL:SetAllPoints()
                         rHL:SetColorTexture(1, 1, 1, 0)
@@ -2336,31 +2337,31 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
             btn:SetScript("OnEnter", function(self)
                 self._hoverBdr:Show()
-                local fullName = CludesUI.L(def.label):gsub("\n", " ")
+                local fullName = CUI.L(def.label):gsub("\n", " ")
                 if def.tooltip then
-                    local status = self._isGray and CludesUI.L("|cff888888Created|r")
-                        or CludesUI.L("|cff888888Click to create|r")
-                    CludesUI.ShowWidgetTooltip(
+                    local status = self._isGray and CUI.L("|cff888888Created|r")
+                        or CUI.L("|cff888888Click to create|r")
+                    CUI.ShowWidgetTooltip(
                         self,
-                        fullName .. "\n" .. CludesUI.L(def.tooltip) .. "\n" .. status
+                        fullName .. "\n" .. CUI.L(def.tooltip) .. "\n" .. status
                     )
                 elseif self._isGray then
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
-                        fullName .. "\n" .. CludesUI.L("|cff888888Created. Right-click to configure.|r")
+                        fullName .. "\n" .. CUI.L("|cff888888Created. Right-click to configure.|r")
                     )
                 else
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
                         fullName
                             .. "\n"
-                            .. CludesUI.L("|cff888888Click to create. Right-click to configure.|r")
+                            .. CUI.L("|cff888888Click to create. Right-click to configure.|r")
                     )
                 end
             end)
             btn:SetScript("OnLeave", function(self)
                 self._hoverBdr:Hide()
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
             btn:SetScript("OnClick", function(self, btnFrame)
                 if btnFrame == "RightButton" then
@@ -2395,11 +2396,11 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
         BuildMacroGroup(
             activeSpecDefs,
             "RIGHT",
-            (activeSpecName or CludesUI.L("Spec"))
+            (activeSpecName or CUI.L("Spec"))
                 .. " "
                 .. activeClassName
                 .. " "
-                .. CludesUI.L("Macro Factory"),
+                .. CUI.L("Macro Factory"),
             SPEC_ICONS_PER_ROW,
             SPEC_ICON_GAP,
             MAX_SPEC_VISIBLE_ROWS
@@ -2409,7 +2410,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
         emptyFS:SetFont(fontFile, 16, "")
         emptyFS:SetTextColor(1, 1, 1, 0.25)
         emptyFS:SetPoint("CENTER", boxHolder, "TOPLEFT", halfW + halfW / 2, -SECTION_H / 2)
-        emptyFS:SetText(CludesUI.L("No spec macros for ") .. (activeSpecName or CludesUI.L("this spec")))
+        emptyFS:SetText(CUI.L("No spec macros for ") .. (activeSpecName or CUI.L("this spec")))
         emptyFS:SetJustifyH("CENTER")
     end
 
@@ -2465,10 +2466,10 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
 
     -- Remember this build so a spec change can rebuild just this section in place
     -- (constant SECTION_H keeps the rest of the page from shifting).
-    local mf = CludesUI._macroFactory
+    local mf = CUI._macroFactory
     if not mf then
         mf = {}
-        CludesUI._macroFactory = mf
+        CUI._macroFactory = mf
     end
     mf.parent, mf.startY, mf.PP = hostFrame, startY, Pix
     mf.container = boxHolder
@@ -2484,8 +2485,8 @@ end
 -- is constant, so there is no visible gap or layout shift. Works whether
 -- the options panel is open (user sees it refresh) or closed (the cached page's
 -- section is updated in place, so reopening already shows the new spec).
-function CludesUI.RefreshMacroFactory()
-    local mf = CludesUI._macroFactory
+function CUI.RefreshMacroFactory()
+    local mf = CUI._macroFactory
     if not mf or not mf.parent or not mf.parent.IsObjectType then return end
     -- PLAYER_SPECIALIZATION_CHANGED can fire several times for one switch; skip
     -- the rebuild if the spec that's already built hasn't actually changed.
@@ -2497,9 +2498,9 @@ function CludesUI.RefreshMacroFactory()
     -- Keep macro-factory rows out of the global search index, same as the
     -- original BuildQoLPage call site does. pcall so an error mid-rebuild can't
     -- leave the global suppress flag stuck on.
-    CludesUI._searchIndexSuppress = true
-    pcall(CludesUI.BuildMacroFactory, mf.parent, mf.startY, mf.PP)
-    CludesUI._searchIndexSuppress = nil
+    CUI._searchIndexSuppress = true
+    pcall(CUI.BuildMacroFactory, mf.parent, mf.startY, mf.PP)
+    CUI._searchIndexSuppress = nil
 
     -- A new section (constant SECTION_H, same anchor) was built before the old
     -- one is dropped, so there is no gap or layout shift -- both apply in one
@@ -2514,8 +2515,8 @@ end
 -- kept section and the menu it owns hide, and a spec change finds nothing
 -- built to refresh. The next build dresses the section again (the pool shows
 -- it as it resets it).
-function CludesUI.ParkMacroFactory()
-    local mf = CludesUI._macroFactory
+function CUI.ParkMacroFactory()
+    local mf = CUI._macroFactory
     if not mf then return end
     if MF.openMenu then
         if MF.openMenu:IsShown() then MF.openMenu:Hide() end
@@ -2529,10 +2530,10 @@ end
 -- Factory section's suggestions and the open page's spec-dependent controls.
 -- So the watcher listens only while the panel is shown, to the player's own
 -- spec alone, and an open catches up on a change made while it was closed.
-CludesUI._macroSpecWatcher = CludesUI._macroSpecWatcher or CreateFrame("Frame")
-CludesUI._macroSpecWatcher:UnregisterAllEvents()
+CUI._macroSpecWatcher = CUI._macroSpecWatcher or CreateFrame("Frame")
+CUI._macroSpecWatcher:UnregisterAllEvents()
 do
-    local watcher = CludesUI._macroSpecWatcher
+    local watcher = CUI._macroSpecWatcher
     local seenSpecID
     local function CurrentSpecID()
         local position = C_SpecializationInfo.GetSpecialization()
@@ -2540,14 +2541,14 @@ do
     end
     local function OnSpecChanged()
         seenSpecID = CurrentSpecID()
-        CludesUI.RefreshMacroFactory()
+        CUI.RefreshMacroFactory()
         -- Also re-run the active page's in-place widget refreshers so other
         -- spec-dependent controls update, as the old per-build event frame did.
         -- No-arg (fast path) => re-reads values only, no frame teardown, no flash.
-        CludesUI:RefreshPage()
+        CUI:RefreshPage()
     end
     watcher:SetScript("OnEvent", OnSpecChanged)
-    CludesUI:RegisterOnShow(function()
+    CUI:RegisterOnShow(function()
         watcher:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
         -- The first open builds its pages for the current spec already.
         if seenSpecID ~= nil and CurrentSpecID() ~= seenSpecID then
@@ -2556,5 +2557,5 @@ do
             seenSpecID = CurrentSpecID()
         end
     end)
-    CludesUI:RegisterOnHide(function() watcher:UnregisterEvent("PLAYER_SPECIALIZATION_CHANGED") end)
+    CUI:RegisterOnHide(function() watcher:UnregisterEvent("PLAYER_SPECIALIZATION_CHANGED") end)
 end

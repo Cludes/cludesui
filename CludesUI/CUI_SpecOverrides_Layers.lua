@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_SpecOverrides_Layers.lua
 --
@@ -54,7 +55,7 @@ Inner.refreshCardsSetters[#Inner.refreshCardsSetters + 1] = function(val) Refres
 -------------------------------------------------------------------------------
 
 local function LiteProfileOf(folder)
-    local valueA = CludesUI.Lite and CludesUI.Lite.GetAddon(folder, true)
+    local valueA = CUI.Lite and CUI.Lite.GetAddon(folder, true)
     return valueA and valueA.db and valueA.db.profile or nil
 end
 
@@ -63,10 +64,10 @@ local function LayerSkipsKey(elemKey)
     if elemKey:sub(1, 4) == "CDM_" or elemKey:sub(1, 4) == "TBB_" or elemKey:sub(1, 5) == "TBBG_" then
         return true
     end
-    local abk = CludesUI._abBarKeys
+    local abk = CUI._abBarKeys
     if abk and abk[elemKey] then return true end
     -- One spot for every spec (MakeUnlockElement's noSpecLayout).
-    local elementList = CludesUI._unlockRegisteredElements
+    local elementList = CUI._unlockRegisteredElements
     local element = elementList and elementList[elemKey]
     return (element and element.noSpecLayout) and true or false
 end
@@ -145,7 +146,7 @@ local function HarvestLayer(carry, base)
             end
         end
     end
-    local elementList = CludesUI._unlockRegisteredElements
+    local elementList = CUI._unlockRegisteredElements
     if elementList then
         for elemKey, element in pairs(elementList) do
             if not LayerSkipsKey(elemKey) then
@@ -313,7 +314,7 @@ local function ApplyLayer(layerRec, baseLayer)
                 anchors[key] = details
             end
         end
-        CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
+        CUI._anchorLinksStamp = (CUI._anchorLinksStamp or 0) + 1
         local wm = CludesUIDB.unlockWidthMatch
         if not wm then
             wm = {}
@@ -512,7 +513,7 @@ end
 --- -- by apply time the value system has already written the NEW spec's data into
 --- module configs, so a harvest here would bank it into the OLD layer (the
 --- transition harvest in OnSpecChanged/HarvestCurrent runs while live is still old).
-function CludesUI.SpecOverrides_ApplyUnlock(specId, force)
+function CUI.SpecOverrides_ApplyUnlock(specId, force)
     local store = GetUnlockStore()
     if not store then return end
     specId = specId or _activeSpec or CurrentSpecID()
@@ -526,10 +527,10 @@ function CludesUI.SpecOverrides_ApplyUnlock(specId, force)
     else
         -- TIER 2: the applied conditional group's layout (namespaced pointer
         -- "cond:<gid>" -- one pointer, one harvest target, one heal path).
-        local condition = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid()
+        local condition = CUI._CondOv and CUI._CondOv.ResolveGid and CUI._CondOv.ResolveGid()
             or nil
         if condition then
-            local condStore = CludesUI._CondOv.GetUnlockStore()
+            local condStore = CUI._CondOv.GetUnlockStore()
             if condStore and condStore.layouts[condition] then
                 wanted = "cond:" .. condition
                 goal = condStore.layouts[condition]
@@ -599,11 +600,11 @@ end
 --- layer, else the baseline). Runs at every transition boundary while live
 --- still belongs to the outgoing state: spec change, profile
 --- switch/export/logout, and unlock Save & Exit.
-function CludesUI.SpecOverrides_HarvestUnlockLayout(userCommit)
+function CUI.SpecOverrides_HarvestUnlockLayout(userCommit)
     local store = GetUnlockStore()
     if not store then return end
     -- Zero-cost for non-users: nothing to bank into until a layer exists.
-    local condStore = CludesUI._CondOv and CludesUI._CondOv.GetUnlockStore()
+    local condStore = CUI._CondOv and CUI._CondOv.GetUnlockStore()
     if
         not store.active
         and not next(store.layouts)
@@ -617,7 +618,7 @@ function CludesUI.SpecOverrides_HarvestUnlockLayout(userCommit)
     -- layer-valued module data. Banking it anywhere (especially into baselineLayout
     -- via the reset active pointer) poisons the store; skip until the pending
     -- establish converges, then banks resume on the next boundary.
-    if CludesUI.Conditions_EstablishPending and CludesUI.Conditions_EstablishPending() then return end
+    if CUI.Conditions_EstablishPending and CUI.Conditions_EstablishPending() then return end
     -- Import window (see ImportProfile): from an imported profile's activation until
     -- the first apply of a LATER session, the store holds the exporter's layers
     -- verbatim while live geometry is mid-import residue (inherited link tables,
@@ -643,9 +644,9 @@ function CludesUI.SpecOverrides_HarvestUnlockLayout(userCommit)
     -- layer's positions into baselineLayout via the nil pointer. Fail-open like the
     -- import window, user-commit bypass included: a Save & Exit layout is
     -- live-authoritative by definition.
-    if CludesUI._unlockResetConvergePending then
+    if CUI._unlockResetConvergePending then
         if userCommit then
-            CludesUI._unlockResetConvergePending = nil
+            CUI._unlockResetConvergePending = nil
         else
             return
         end
@@ -654,7 +655,7 @@ function CludesUI.SpecOverrides_HarvestUnlockLayout(userCommit)
     -- swapped values, not the active layer's state (value writes resize bars); banking
     -- that geometry poisons the layer bucket. Fail-open: skip, next clean boundary
     -- banks. (_CondOv, not the Cond local: Cond lives in CUI_SpecOverrides_Conditional.lua.)
-    if _defaultView or _editGroup or (CludesUI._CondOv and CludesUI._CondOv._edit) then return end
+    if _defaultView or _editGroup or (CUI._CondOv and CUI._CondOv._edit) then return end
     -- Resolve the live layer's owning bucket: group layer (numeric active),
     -- conditional layer ("cond:<gid>" active), else baseline.
     local condGroupKey = type(store.active) == "string" and tonumber(store.active:match("^cond:(%d+)$"))
@@ -685,7 +686,7 @@ function CludesUI.SpecOverrides_HarvestUnlockLayout(userCommit)
     -- late registration: party+raid containers, CDM bars mid-rebuild).
     -- Absence from the registry means "unknown right now", never "deleted".
     if previous and previous.elems then
-        local elementList = CludesUI._unlockRegisteredElements
+        local elementList = CUI._unlockRegisteredElements
         for elemKey, record in pairs(previous.elems) do
             if snapshot.elems[elemKey] == nil and not (elementList and elementList[elemKey]) then
                 snapshot.elems[elemKey] = DeepCopy(record)
@@ -731,7 +732,7 @@ end
 --- is LIVE the snapshot must come from the stored baseline, never the live
 --- (group-valued) globals. Returns nil when live IS baseline. The 4th/5th
 --- returns are the baseline's match extras (width, height), empty when none.
-function CludesUI.SpecOverrides_UnlockBaselineLinks()
+function CUI.SpecOverrides_UnlockBaselineLinks()
     local store = GetUnlockStore()
     if store and store.active and store.baselineLayout then
         return store.baselineLayout.anchors or {},
@@ -753,10 +754,10 @@ end
 --- arms a runtime converge flag: layout banks stay suppressed until one forced
 --- apply paints the pointer's truth (consumed in the Apply/ApplyValues tails
 --- beside the import converge). Never arms for a pointer that was already nil.
-function CludesUI.SpecOverrides_UnlockResetActive(profileRoot)
+function CUI.SpecOverrides_UnlockResetActive(profileRoot)
     local store = profileRoot and profileRoot.specUnlockOverrides
     if not store then return end
-    if store.active ~= nil then CludesUI._unlockResetConvergePending = true end
+    if store.active ~= nil then CUI._unlockResetConvergePending = true end
     store.active = nil
 end
 
@@ -765,15 +766,15 @@ end
 --- so the screen reflects the swapped stores. Called from OnSpecSwitchComplete
 --- (after CDM's spec rebuild) and from a two-frame fallback timer for paths
 --- where that never fires.
-function CludesUI.SpecOverrides_FlushUnlock()
+function CUI.SpecOverrides_FlushUnlock()
     -- Combat defer: both halves reposition SECURE unit frames (savePosition closures
     -- re-anchor boss chains; the settle SetPoints unit buttons), blocked in lockdown as
     -- ADDON_ACTION_BLOCKED. Hold ALL pending state untouched and re-run once at
     -- PLAYER_REGEN_ENABLED (the settle is idempotent, only measures post-rebuild geometry).
     if InCombatLockdown() then
         _unlockFlushScheduled = true -- keeps ScheduleUnlockFlush deduped
-        CludesUI.CombatQueue.Defer("SpecOverridesFlushUnlock", function()
-            if _unlockFlushScheduled then CludesUI.SpecOverrides_FlushUnlock() end
+        CUI.CombatQueue.Defer("SpecOverridesFlushUnlock", function()
+            if _unlockFlushScheduled then CUI.SpecOverrides_FlushUnlock() end
         end)
         return
     end
@@ -787,8 +788,8 @@ function CludesUI.SpecOverrides_FlushUnlock()
         -- setWidth/setHeight writes on unlock mode being active; the layer flush
         -- restores sizes OUTSIDE unlock mode and must pass those gates or the
         -- restore silently no-ops ("matched width bleeds to the default layout").
-        CludesUI._unlockLayerApplying = true
-        local elementList = CludesUI._unlockRegisteredElements
+        CUI._unlockLayerApplying = true
+        local elementList = CUI._unlockRegisteredElements
         for elemKey, record in pairs(pend) do
             local element = elementList and elementList[elemKey]
             if not element then
@@ -871,7 +872,7 @@ function CludesUI.SpecOverrides_FlushUnlock()
                 end
             end
         end
-        CludesUI._unlockLayerApplying = nil
+        CUI._unlockLayerApplying = nil
     end
     if keep then _unlockDeferredElemLayout = keep end
     -- Missing means baseline: elements the incoming layer carried no entry for
@@ -881,8 +882,8 @@ function CludesUI.SpecOverrides_FlushUnlock()
     -- retained for the registration poke like kept pend entries.
     if _unlockDeferredElemFallback then
         local fb = _unlockDeferredElemFallback
-        local elementList = CludesUI._unlockRegisteredElements
-        CludesUI._unlockLayerApplying = true
+        local elementList = CUI._unlockRegisteredElements
+        CUI._unlockLayerApplying = true
         for elemKey, record in pairs(fb) do
             if (pend and pend[elemKey] ~= nil) or (keep and keep[elemKey] ~= nil) then
                 fb[elemKey] = nil -- the layer owns this key
@@ -954,7 +955,7 @@ function CludesUI.SpecOverrides_FlushUnlock()
                 fb[elemKey] = nil -- applied once; live drift owns it from here
             end
         end
-        CludesUI._unlockLayerApplying = nil
+        CUI._unlockLayerApplying = nil
         if not next(fb) then _unlockDeferredElemFallback = nil end
     end
     -- Element sizes live in MODULE settings (the same keys the value system
@@ -967,8 +968,8 @@ function CludesUI.SpecOverrides_FlushUnlock()
     -- mid-transition (that apply is imminent).
     if wroteLayerSizes and not _inTransition then
         local touched = ApplyValuesFor(_activeSpec or CurrentSpecID())
-        if CludesUI._CondOv then
-            local t2 = CludesUI._CondOv.ApplyValues()
+        if CUI._CondOv then
+            local t2 = CUI._CondOv.ApplyValues()
             if t2 then
                 touched = touched or {}
                 for key in pairs(t2) do
@@ -980,15 +981,15 @@ function CludesUI.SpecOverrides_FlushUnlock()
     end
     if not _unlockSettleWanted then return end
     -- Never fight an open unlock session; its own save/close flows settle.
-    if CludesUI._unlockModeActive then return end
+    if CUI._unlockModeActive then return end
     _unlockSettleWanted = false
-    if CludesUI.ApplyAllWidthHeightMatches then pcall(CludesUI.ApplyAllWidthHeightMatches) end
-    if CludesUI._applySavedPositions then pcall(CludesUI._applySavedPositions) end
-    if CludesUI.ResyncAnchorOffsets then pcall(CludesUI.ResyncAnchorOffsets) end
-    if CludesUI.ReapplyAllUnlockAnchorsForced then
-        CludesUI._reapplyForceEdgePreserve = true
-        pcall(CludesUI.ReapplyAllUnlockAnchorsForced)
-        CludesUI._reapplyForceEdgePreserve = false
+    if CUI.ApplyAllWidthHeightMatches then pcall(CUI.ApplyAllWidthHeightMatches) end
+    if CUI._applySavedPositions then pcall(CUI._applySavedPositions) end
+    if CUI.ResyncAnchorOffsets then pcall(CUI.ResyncAnchorOffsets) end
+    if CUI.ReapplyAllUnlockAnchorsForced then
+        CUI._reapplyForceEdgePreserve = true
+        pcall(CUI.ReapplyAllUnlockAnchorsForced)
+        CUI._reapplyForceEdgePreserve = false
     end
 end
 
@@ -1000,7 +1001,7 @@ ScheduleUnlockFlush = function()
     -- from OnSpecSwitchComplete; whichever runs first wins, the other no-ops.
     C_Timer.After(0, function()
         C_Timer.After(0, function()
-            if _unlockFlushScheduled then CludesUI.SpecOverrides_FlushUnlock() end
+            if _unlockFlushScheduled then CUI.SpecOverrides_FlushUnlock() end
         end)
     end)
 end
@@ -1008,7 +1009,7 @@ end
 --- Re-flush poke from RegisterUnlockElements: deferred layer writes whose
 --- elements were missing become applicable the moment they register. The
 --- schedule is deduped, so a registration burst costs one flush.
-function CludesUI.SpecOverrides_UnlockPokeFlush()
+function CUI.SpecOverrides_UnlockPokeFlush()
     if
         (_unlockDeferredElemLayout and next(_unlockDeferredElemLayout))
         or (_unlockDeferredElemFallback and next(_unlockDeferredElemFallback))
@@ -1021,7 +1022,7 @@ end
 
 --- Deletes a group's custom unlock layout. When it is the ACTIVE layer, the
 --- baseline layout is applied back to live.
-function CludesUI.SpecOverrides_RemoveUnlockLayout(groupKeyId)
+function CUI.SpecOverrides_RemoveUnlockLayout(groupKeyId)
     local store = GetUnlockStore()
     if not store or store.layouts[groupKeyId] == nil then return false end
     store.layouts[groupKeyId] = nil
@@ -1030,7 +1031,7 @@ function CludesUI.SpecOverrides_RemoveUnlockLayout(groupKeyId)
         if store.baselineLayout then
             ApplyLayer(store.baselineLayout)
             _unlockSettleWanted = true
-            CludesUI.SpecOverrides_FlushUnlock()
+            CUI.SpecOverrides_FlushUnlock()
         end
     end
     return true
@@ -1040,8 +1041,8 @@ end
 
 --- Deletes a conditional group's custom unlock layout; when live, the
 --- baseline layout is applied back. Mirrors SpecOverrides_RemoveUnlockLayout.
-function CludesUI.Conditions_RemoveUnlockLayout(condGroupKey)
-    local condStore = CludesUI._CondOv and CludesUI._CondOv.GetUnlockStore()
+function CUI.Conditions_RemoveUnlockLayout(condGroupKey)
+    local condStore = CUI._CondOv and CUI._CondOv.GetUnlockStore()
     if not condStore or condStore.layouts[condGroupKey] == nil then return false end
     condStore.layouts[condGroupKey] = nil
     local store = GetUnlockStore()
@@ -1050,7 +1051,7 @@ function CludesUI.Conditions_RemoveUnlockLayout(condGroupKey)
         if store.baselineLayout then
             ApplyLayer(store.baselineLayout)
             _unlockSettleWanted = true
-            CludesUI.SpecOverrides_FlushUnlock()
+            CUI.SpecOverrides_FlushUnlock()
         end
     end
     return true
@@ -1083,7 +1084,7 @@ local function GetBmStore(create)
     -- WoW Forever: the one-time buff clear of the fork stores, before anything
     -- banks into or applies from them ("fvBuffWipe" is its frozen mark,
     -- CludesUI_Migration.lua). A marked store costs one field read.
-    local fv = CludesUI.FvBW
+    local fv = CUI.FvBW
     if fv and store.fvBuffWipe == nil then fv.BmForks(profileTbl) end
     return store
 end
@@ -1099,7 +1100,7 @@ local function GetCondBmStore(create)
     end
     store.layouts = store.layouts or {}
     -- WoW Forever: the one-time buff clear of the fork stores (see GetBmStore).
-    local fv = CludesUI.FvBW
+    local fv = CUI.FvBW
     if fv and store.fvBuffWipe == nil then fv.BmForks(profileTbl) end
     return store
 end
@@ -1180,7 +1181,7 @@ end
 --- Banks the LIVE Buff Manager into the layer it belongs to (active group
 --- layer, conditional layer, else baseline). Runs at every transition boundary
 --- while live still belongs to the outgoing state.
-function CludesUI.SpecOverrides_HarvestBmLayout()
+function CUI.SpecOverrides_HarvestBmLayout()
     local store = GetBmStore()
     if not store then return end
     -- Zero-cost for non-users: nothing to bank into until a fork exists.
@@ -1206,7 +1207,7 @@ function CludesUI.SpecOverrides_HarvestBmLayout()
     -- fork, never the runtime pointer's layer. Covers every transition boundary
     -- funneling through here (logout, export, profile switch) without touching
     -- the runtime pointer.
-    local sessGid = CludesUI._bmSessionGid
+    local sessGid = CUI._bmSessionGid
     if sessGid then
         if condStore and condStore.layouts[sessGid] then condStore.layouts[sessGid] = snapshot end
         return
@@ -1239,25 +1240,25 @@ end
 --- and edits: specID when want is a spec group's id and specID a retail spec
 --- of the player's class, else nil. Returns the previous value. Runtime
 --- only; callers gate on Forever.
-function CludesUI._SO_SetForkSpec(dm, wanted, specId)
+function CUI._SO_SetForkSpec(dm, wanted, specId)
     local val = nil
     if
         type(wanted) == "number"
         and specId
-        and CludesUI.IsPlayerSpec(specId)
-        and CludesUI.RetailSpecName(specId)
+        and CUI.IsPlayerSpec(specId)
+        and CUI.RetailSpecName(specId)
     then
         val = specId
     end
     local previous
     if dm then
-        previous = CludesUI.SpecOverrides_DmForkSpecID
-        CludesUI.SpecOverrides_DmForkSpecID = val
-        CludesUI._SO_DmForkSeeded = true
+        previous = CUI.SpecOverrides_DmForkSpecID
+        CUI.SpecOverrides_DmForkSpecID = val
+        CUI._SO_DmForkSeeded = true
     else
-        previous = CludesUI.SpecOverrides_BmForkSpecID
-        CludesUI.SpecOverrides_BmForkSpecID = val
-        CludesUI._SO_BmForkSeeded = true
+        previous = CUI.SpecOverrides_BmForkSpecID
+        CUI.SpecOverrides_BmForkSpecID = val
+        CUI._SO_BmForkSeeded = true
     end
     return previous
 end
@@ -1265,15 +1266,15 @@ end
 --- WoW Forever: re-drives the aura containers after a fork spec moved with
 --- no paint, and rebuilds the open manager page unless noPage (the caller is
 --- a page build, or rebuilds the page itself).
-function CludesUI._SO_ForkReDrive(dm, noPage)
+function CUI._SO_ForkReDrive(dm, noPage)
     if _G._CURF_BMRefresh then _G._CURF_BMRefresh(dm or noPage) end
     if
         dm
         and not noPage
-        and CludesUI:GetActiveModule() == "CludesUIRaidFrames"
-        and CludesUI:GetActivePage() == "Debuff Manager"
+        and CUI:GetActiveModule() == "CludesUIRaidFrames"
+        and CUI:GetActivePage() == "Debuff Manager"
     then
-        CludesUI:RefreshPage(true)
+        CUI:RefreshPage(true)
     end
 end
 
@@ -1281,11 +1282,11 @@ end
 --- fork, else the applied conditional's fork, else the baseline. Mirrors
 --- SpecOverrides_ApplyUnlock (incl. the force flag for establish transitions);
 --- NEVER harvests here.
-function CludesUI.SpecOverrides_ApplyBm(specId, force, skipPageRefresh)
+function CUI.SpecOverrides_ApplyBm(specId, force, skipPageRefresh)
     local store = GetBmStore()
     if not store then
         -- WoW Forever: no spec fork is live on a profile without the store.
-        if CludesUI.IS_FOREVER then CludesUI._SO_SetForkSpec(false, nil) end
+        if CUI.IS_FOREVER then CUI._SO_SetForkSpec(false, nil) end
         return
     end
     -- Import window: NO apply may run between the store merge and the post-reload
@@ -1305,7 +1306,7 @@ function CludesUI.SpecOverrides_ApplyBm(specId, force, skipPageRefresh)
     if wanted then
         goal = store.layouts[wanted]
     else
-        local condition = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid()
+        local condition = CUI._CondOv and CUI._CondOv.ResolveGid and CUI._CondOv.ResolveGid()
             or nil
         if condition then
             local condStore = GetCondBmStore()
@@ -1320,13 +1321,13 @@ function CludesUI.SpecOverrides_ApplyBm(specId, force, skipPageRefresh)
     -- the open Buff Manager page when it moved. Put back below when the
     -- pointer does not move.
     local prevFallback
-    if CludesUI.IS_FOREVER then
-        CludesUI._SO_SeedForkSpec(false)
-        prevFallback = CludesUI._SO_SetForkSpec(false, wanted, specId)
+    if CUI.IS_FOREVER then
+        CUI._SO_SeedForkSpec(false)
+        prevFallback = CUI._SO_SetForkSpec(false, wanted, specId)
     end
     if wanted == store.active and not force then
-        if CludesUI.IS_FOREVER and prevFallback ~= CludesUI.SpecOverrides_BmForkSpecID then
-            CludesUI._SO_ForkReDrive(false, skipPageRefresh)
+        if CUI.IS_FOREVER and prevFallback ~= CUI.SpecOverrides_BmForkSpecID then
+            CUI._SO_ForkReDrive(false, skipPageRefresh)
         end
         return
     end
@@ -1349,8 +1350,8 @@ function CludesUI.SpecOverrides_ApplyBm(specId, force, skipPageRefresh)
     end
     -- WoW Forever: the pointer did not move, so the spec goes back to the
     -- one the live layer serves.
-    if CludesUI.IS_FOREVER and store.active ~= wanted then
-        CludesUI.SpecOverrides_BmForkSpecID = type(store.active) == "number" and prevFallback or nil
+    if CUI.IS_FOREVER and store.active ~= wanted then
+        CUI.SpecOverrides_BmForkSpecID = type(store.active) == "number" and prevFallback or nil
     end
 end
 
@@ -1367,36 +1368,36 @@ end
 
 --- Applies the conditional's fork as the session-live BM layer. Idempotent.
 local function BmSessionEngage(groupKey)
-    if CludesUI._bmSessionGid == groupKey then return end
+    if CUI._bmSessionGid == groupKey then return end
     local condStore = GetCondBmStore()
     local layerRec = condStore and condStore.layouts[groupKey]
     if not layerRec then return end
     -- Flag only on a LANDED paint: a session flag over unswapped live banks
     -- the runtime layer's content into the fork at release.
     if BmApplyLayer(layerRec, true) then -- callers run during a page build
-        CludesUI._bmSessionGid = groupKey
+        CUI._bmSessionGid = groupKey
     end
 end
 
 --- Banks the session's live edits into the fork and restores the runtime
 --- layer. noApply: a transition is about to apply the runtime layer itself.
-function CludesUI.SpecOverrides_BmSessionRelease(noApply)
-    local groupKey = CludesUI._bmSessionGid
+function CUI.SpecOverrides_BmSessionRelease(noApply)
+    local groupKey = CUI._bmSessionGid
     if not groupKey then return end
     local condStore = GetCondBmStore()
     if condStore and condStore.layouts[groupKey] then
         local snapshot = BmHarvestLayer()
         if snapshot then condStore.layouts[groupKey] = snapshot end
     end
-    CludesUI._bmSessionGid = nil
-    if not noApply then CludesUI.SpecOverrides_ApplyBm(_activeSpec or CurrentSpecID(), true, true) end
+    CUI._bmSessionGid = nil
+    if not noApply then CUI.SpecOverrides_ApplyBm(_activeSpec or CurrentSpecID(), true, true) end
 end
 
 --- Name of the override group whose Buff Manager fork is LIVE (session-applied
 --- conditional first, then the runtime pointer), or nil when live is the
 --- baseline. Drives the BM page's "Override Active" label.
-function CludesUI.SpecOverrides_BmActiveInfo()
-    local groupKey = CludesUI._bmSessionGid
+function CUI.SpecOverrides_BmActiveInfo()
+    local groupKey = CUI._bmSessionGid
     local isCond = groupKey ~= nil
     if not groupKey then
         local store = GetBmStore()
@@ -1411,7 +1412,7 @@ function CludesUI.SpecOverrides_BmActiveInfo()
     if not groupKey then return nil end
     local groupRec
     if isCond then
-        groupRec = CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(groupKey)
+        groupRec = CUI.Conditions_GroupById and CUI.Conditions_GroupById(groupKey)
     else
         groupRec = GroupById(groupKey)
     end
@@ -1422,12 +1423,12 @@ end
 --- when not on that page / live is the baseline. The page is hard-bound to the
 --- live fork (the prelude force-activates it), so every consumer (card locks,
 --- session-entry blocks, passive chrome) keys off this.
-function CludesUI.SpecOverrides_BmPageLockInfo()
-    local mod = CludesUI:GetActiveModule()
+function CUI.SpecOverrides_BmPageLockInfo()
+    local mod = CUI:GetActiveModule()
     if mod ~= "CludesUIRaidFrames" then return nil end
-    local page = CludesUI:GetActivePage()
+    local page = CUI:GetActivePage()
     if page ~= "Buff Manager" then return nil end
-    if CludesUI._bmSessionGid then return "cond", CludesUI._bmSessionGid end
+    if CUI._bmSessionGid then return "cond", CUI._bmSessionGid end
     local store = GetBmStore()
     local valueA = store and store.active
     if type(valueA) == "number" then return "spec", valueA end
@@ -1439,11 +1440,11 @@ function CludesUI.SpecOverrides_BmPageLockInfo()
 end
 
 --- True while the Buff Manager page is bound to a live fork (any kind).
-function CludesUI.SpecOverrides_BmPageLocked() return CludesUI.SpecOverrides_BmPageLockInfo() ~= nil end
+function CUI.SpecOverrides_BmPageLocked() return CUI.SpecOverrides_BmPageLockInfo() ~= nil end
 
 --- Deletes a group's custom Buff Manager; when it is the ACTIVE layer the
 --- baseline is applied back to live.
-function CludesUI.SpecOverrides_RemoveBmLayout(groupKeyId)
+function CUI.SpecOverrides_RemoveBmLayout(groupKeyId)
     local store = GetBmStore()
     if not store or store.layouts[groupKeyId] == nil then return false end
     store.layouts[groupKeyId] = nil
@@ -1451,21 +1452,21 @@ function CludesUI.SpecOverrides_RemoveBmLayout(groupKeyId)
         -- WoW Forever: the baseline serves no fork spec; cleared before the
         -- paint (its refresh reads it), put back when the paint fails.
         local prevFallback
-        if CludesUI.IS_FOREVER then prevFallback = CludesUI._SO_SetForkSpec(false, nil) end
+        if CUI.IS_FOREVER then prevFallback = CUI._SO_SetForkSpec(false, nil) end
         -- Pointer moves only with a landed paint (or nothing to restore).
         if not store.baselineLayout or BmApplyLayer(store.baselineLayout) then
             store.active = nil
             -- Nothing painted: the frames move to the class's bucket.
-            if prevFallback and not store.baselineLayout then CludesUI._SO_ForkReDrive(false) end
-        elseif CludesUI.IS_FOREVER then
-            CludesUI.SpecOverrides_BmForkSpecID = prevFallback
+            if prevFallback and not store.baselineLayout then CUI._SO_ForkReDrive(false) end
+        elseif CUI.IS_FOREVER then
+            CUI.SpecOverrides_BmForkSpecID = prevFallback
         end
     end
     return true
 end
 
 --- Conditional twin of SpecOverrides_RemoveBmLayout.
-function CludesUI.Conditions_RemoveBmLayout(condGroupKey)
+function CUI.Conditions_RemoveBmLayout(condGroupKey)
     local condStore = GetCondBmStore()
     if not condStore or condStore.layouts[condGroupKey] == nil then return false end
     condStore.layouts[condGroupKey] = nil
@@ -1475,9 +1476,9 @@ function CludesUI.Conditions_RemoveBmLayout(condGroupKey)
     end
     -- Deleted while session-applied (cards popup is reachable mid-session):
     -- drop the flag and put the runtime layer back, discarding the orphan.
-    if CludesUI._bmSessionGid == condGroupKey then
-        CludesUI._bmSessionGid = nil
-        CludesUI.SpecOverrides_ApplyBm(_activeSpec or CurrentSpecID(), true)
+    if CUI._bmSessionGid == condGroupKey then
+        CUI._bmSessionGid = nil
+        CUI.SpecOverrides_ApplyBm(_activeSpec or CurrentSpecID(), true)
     end
     return true
 end
@@ -1488,7 +1489,7 @@ end
 --- foreign pointer converges via the establish force-apply. Only a pointer at a
 --- DELETED layout is healed -- nil-ing a consistent pointer makes the next
 --- harvest bank fork data into the baseline.
-function CludesUI.SpecOverrides_BmResetActive(profileRoot)
+function CUI.SpecOverrides_BmResetActive(profileRoot)
     local store = profileRoot and profileRoot.specBmOverrides
     if not store or store.active == nil then return end
     local valueA = store.active
@@ -1583,7 +1584,7 @@ end
 --- Banks the LIVE Debuff Manager into the layer it belongs to. Runs at every
 --- transition boundary while live still belongs to the outgoing state (mirror
 --- of SpecOverrides_HarvestBmLayout).
-function CludesUI.SpecOverrides_HarvestDmLayout()
+function CUI.SpecOverrides_HarvestDmLayout()
     local store = GetDmStore()
     if not store then return end
     local condStore = GetCondDmStore()
@@ -1601,7 +1602,7 @@ function CludesUI.SpecOverrides_HarvestDmLayout()
     end
     local snapshot = DmHarvestLayer()
     if not snapshot then return end
-    local sessGid = CludesUI._dmSessionGid
+    local sessGid = CUI._dmSessionGid
     if sessGid then
         if condStore and condStore.layouts[sessGid] then condStore.layouts[sessGid] = snapshot end
         return
@@ -1633,10 +1634,10 @@ end
 --- its bucket before the deferred login apply (and through a /reload in
 --- combat, which defers that apply). Latched even when nothing publishes:
 --- after it the value moves only through a path that re-drives the frames.
-function CludesUI._SO_SeedForkSpec(dm)
+function CUI._SO_SeedForkSpec(dm)
     if dm then
-        if CludesUI._SO_DmForkSeeded then return end
-    elseif CludesUI._SO_BmForkSeeded then
+        if CUI._SO_DmForkSeeded then return end
+    elseif CUI._SO_BmForkSeeded then
         return
     end
     local wanted, current, ownerFrame
@@ -1660,16 +1661,16 @@ function CludesUI._SO_SeedForkSpec(dm)
             end
         end
     end
-    CludesUI._SO_SetForkSpec(dm, ownerFrame == wanted and ownerFrame or nil, current)
+    CUI._SO_SetForkSpec(dm, ownerFrame == wanted and ownerFrame or nil, current)
 end
 
 --- Swaps the live Debuff Manager to the given spec's layer (mirror of
 --- SpecOverrides_ApplyBm). NEVER harvests here.
-function CludesUI.SpecOverrides_ApplyDm(specId, force, skipPageRefresh)
+function CUI.SpecOverrides_ApplyDm(specId, force, skipPageRefresh)
     local store = GetDmStore()
     if not store then
         -- WoW Forever: no spec fork is live on a profile without the store.
-        if CludesUI.IS_FOREVER then CludesUI._SO_SetForkSpec(true, nil) end
+        if CUI.IS_FOREVER then CUI._SO_SetForkSpec(true, nil) end
         return
     end
     -- Import window: same suppression as SpecOverrides_ApplyBm (pre-reload
@@ -1685,7 +1686,7 @@ function CludesUI.SpecOverrides_ApplyDm(specId, force, skipPageRefresh)
     if wanted then
         goal = store.layouts[wanted]
     else
-        local condition = CludesUI._CondOv and CludesUI._CondOv.ResolveGid and CludesUI._CondOv.ResolveGid()
+        local condition = CUI._CondOv and CUI._CondOv.ResolveGid and CUI._CondOv.ResolveGid()
             or nil
         if condition then
             local condStore = GetCondDmStore()
@@ -1699,13 +1700,13 @@ function CludesUI.SpecOverrides_ApplyDm(specId, force, skipPageRefresh)
     -- twin); with no paint, re-drive the frames and the open Debuff Manager
     -- page when it moved.
     local prevFallback
-    if CludesUI.IS_FOREVER then
-        CludesUI._SO_SeedForkSpec(true)
-        prevFallback = CludesUI._SO_SetForkSpec(true, wanted, specId)
+    if CUI.IS_FOREVER then
+        CUI._SO_SeedForkSpec(true)
+        prevFallback = CUI._SO_SetForkSpec(true, wanted, specId)
     end
     if wanted == store.active and not force then
-        if CludesUI.IS_FOREVER and prevFallback ~= CludesUI.SpecOverrides_DmForkSpecID then
-            CludesUI._SO_ForkReDrive(true, skipPageRefresh)
+        if CUI.IS_FOREVER and prevFallback ~= CUI.SpecOverrides_DmForkSpecID then
+            CUI._SO_ForkReDrive(true, skipPageRefresh)
         end
         return
     end
@@ -1719,41 +1720,41 @@ function CludesUI.SpecOverrides_ApplyDm(specId, force, skipPageRefresh)
         store.active = wanted
     end
     -- WoW Forever: the pointer did not move (see the BM twin).
-    if CludesUI.IS_FOREVER and store.active ~= wanted then
-        CludesUI.SpecOverrides_DmForkSpecID = type(store.active) == "number" and prevFallback or nil
+    if CUI.IS_FOREVER and store.active ~= wanted then
+        CUI.SpecOverrides_DmForkSpecID = type(store.active) == "number" and prevFallback or nil
     end
 end
 
 --- Applies the conditional's fork as the session-live DM layer (mirror of
 --- BmSessionEngage; runtime-only flag, never persisted).
 local function DmSessionEngage(groupKey)
-    if CludesUI._dmSessionGid == groupKey then return end
+    if CUI._dmSessionGid == groupKey then return end
     local condStore = GetCondDmStore()
     local layerRec = condStore and condStore.layouts[groupKey]
     if not layerRec then return end
     if DmApplyLayer(layerRec, true) then -- flag only on a landed paint
-        CludesUI._dmSessionGid = groupKey
+        CUI._dmSessionGid = groupKey
     end
 end
 
 --- Banks the session's live edits into the fork and restores the runtime
 --- layer. noApply: a transition is about to apply the runtime layer itself.
-function CludesUI.SpecOverrides_DmSessionRelease(noApply)
-    local groupKey = CludesUI._dmSessionGid
+function CUI.SpecOverrides_DmSessionRelease(noApply)
+    local groupKey = CUI._dmSessionGid
     if not groupKey then return end
     local condStore = GetCondDmStore()
     if condStore and condStore.layouts[groupKey] then
         local snapshot = DmHarvestLayer()
         if snapshot then condStore.layouts[groupKey] = snapshot end
     end
-    CludesUI._dmSessionGid = nil
-    if not noApply then CludesUI.SpecOverrides_ApplyDm(_activeSpec or CurrentSpecID(), true, true) end
+    CUI._dmSessionGid = nil
+    if not noApply then CUI.SpecOverrides_ApplyDm(_activeSpec or CurrentSpecID(), true, true) end
 end
 
 --- Name of the override group whose Debuff Manager fork is LIVE, or nil when
 --- live is the baseline.
-function CludesUI.SpecOverrides_DmActiveInfo()
-    local groupKey = CludesUI._dmSessionGid
+function CUI.SpecOverrides_DmActiveInfo()
+    local groupKey = CUI._dmSessionGid
     local isCond = groupKey ~= nil
     if not groupKey then
         local store = GetDmStore()
@@ -1768,7 +1769,7 @@ function CludesUI.SpecOverrides_DmActiveInfo()
     if not groupKey then return nil end
     local groupRec
     if isCond then
-        groupRec = CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(groupKey)
+        groupRec = CUI.Conditions_GroupById and CUI.Conditions_GroupById(groupKey)
     else
         groupRec = GroupById(groupKey)
     end
@@ -1777,12 +1778,12 @@ end
 
 --- kind + gid of the fork LIVE on the Debuff Manager page, or nil when not
 --- on that page / live is the baseline (mirror of BmPageLockInfo).
-function CludesUI.SpecOverrides_DmPageLockInfo()
-    local mod = CludesUI:GetActiveModule()
+function CUI.SpecOverrides_DmPageLockInfo()
+    local mod = CUI:GetActiveModule()
     if mod ~= "CludesUIRaidFrames" then return nil end
-    local page = CludesUI:GetActivePage()
+    local page = CUI:GetActivePage()
     if page ~= "Debuff Manager" then return nil end
-    if CludesUI._dmSessionGid then return "cond", CludesUI._dmSessionGid end
+    if CUI._dmSessionGid then return "cond", CUI._dmSessionGid end
     local store = GetDmStore()
     local valueA = store and store.active
     if type(valueA) == "number" then return "spec", valueA end
@@ -1794,32 +1795,32 @@ function CludesUI.SpecOverrides_DmPageLockInfo()
 end
 
 --- True while the Debuff Manager page is bound to a live fork (any kind).
-function CludesUI.SpecOverrides_DmPageLocked() return CludesUI.SpecOverrides_DmPageLockInfo() ~= nil end
+function CUI.SpecOverrides_DmPageLocked() return CUI.SpecOverrides_DmPageLockInfo() ~= nil end
 
 --- Deletes a group's custom Debuff Manager; when it is the ACTIVE layer the
 --- baseline is applied back to live.
-function CludesUI.SpecOverrides_RemoveDmLayout(groupKeyId)
+function CUI.SpecOverrides_RemoveDmLayout(groupKeyId)
     local store = GetDmStore()
     if not store or store.layouts[groupKeyId] == nil then return false end
     store.layouts[groupKeyId] = nil
     if store.active == groupKeyId then
         -- WoW Forever: the baseline serves no fork spec (see the BM twin).
         local prevFallback
-        if CludesUI.IS_FOREVER then prevFallback = CludesUI._SO_SetForkSpec(true, nil) end
+        if CUI.IS_FOREVER then prevFallback = CUI._SO_SetForkSpec(true, nil) end
         if not store.baselineLayout or DmApplyLayer(store.baselineLayout) then
             store.active = nil
             -- Nothing painted: the frames and the open Debuff Manager page
             -- move to the class's bucket.
-            if prevFallback and not store.baselineLayout then CludesUI._SO_ForkReDrive(true) end
-        elseif CludesUI.IS_FOREVER then
-            CludesUI.SpecOverrides_DmForkSpecID = prevFallback
+            if prevFallback and not store.baselineLayout then CUI._SO_ForkReDrive(true) end
+        elseif CUI.IS_FOREVER then
+            CUI.SpecOverrides_DmForkSpecID = prevFallback
         end
     end
     return true
 end
 
 --- Conditional twin of SpecOverrides_RemoveDmLayout.
-function CludesUI.Conditions_RemoveDmLayout(condGroupKey)
+function CUI.Conditions_RemoveDmLayout(condGroupKey)
     local condStore = GetCondDmStore()
     if not condStore or condStore.layouts[condGroupKey] == nil then return false end
     condStore.layouts[condGroupKey] = nil
@@ -1827,16 +1828,16 @@ function CludesUI.Conditions_RemoveDmLayout(condGroupKey)
     if store and store.active == ("cond:" .. condGroupKey) then
         if not store.baselineLayout or DmApplyLayer(store.baselineLayout) then store.active = nil end
     end
-    if CludesUI._dmSessionGid == condGroupKey then
-        CludesUI._dmSessionGid = nil
-        CludesUI.SpecOverrides_ApplyDm(_activeSpec or CurrentSpecID(), true)
+    if CUI._dmSessionGid == condGroupKey then
+        CUI._dmSessionGid = nil
+        CUI.SpecOverrides_ApplyDm(_activeSpec or CurrentSpecID(), true)
     end
     return true
 end
 
 --- Orphan-heal for a stored profile's DM pointer (import/restore path);
 --- same only-heal-dangling policy as SpecOverrides_BmResetActive.
-function CludesUI.SpecOverrides_DmResetActive(profileRoot)
+function CUI.SpecOverrides_DmResetActive(profileRoot)
     local store = profileRoot and profileRoot.specDmOverrides
     if not store or store.active == nil then return end
     local valueA = store.active
@@ -1863,16 +1864,16 @@ end
 --- mirror of "member spec required" for spec groups) and the current spec's own
 --- group has NO layout (spec layers void conditionals entirely). First click forks
 --- from live (= baseline, since no layer is applied) behind a confirm popup.
-function CludesUI.Conditions_EnterUnlockForGroup(groupRec)
-    if type(groupRec) == "number" then groupRec = CludesUI.Conditions_GroupById(groupRec) end
+function CUI.Conditions_EnterUnlockForGroup(groupRec)
+    if type(groupRec) == "number" then groupRec = CUI.Conditions_GroupById(groupRec) end
     if not groupRec then return end
     -- Dark Mode groups are values-only: no unlock layer may ever exist for them
     -- (the card never builds the button; this is the belt guard).
     if groupRec.conds and groupRec.conds.darkmode then return end
-    if CludesUI._unlockModeActive then return end
+    if CUI._unlockModeActive then return end
     local current = CurrentSpecID()
     if OwnerGid(current) then
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L("Customize Layout Mode"),
             message = L(
                 "Your current spec has its own custom layout mode, so conditional layout modes never apply to it. Swap to a spec without one to customize this."
@@ -1882,9 +1883,9 @@ function CludesUI.Conditions_EnterUnlockForGroup(groupRec)
         })
         return
     end
-    local activeG = CludesUI.Conditions_ActiveGroup and CludesUI.Conditions_ActiveGroup()
+    local activeG = CUI.Conditions_ActiveGroup and CUI.Conditions_ActiveGroup()
     if not activeG or activeG.id ~= groupRec.id then
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L("Customize Layout Mode"),
             message = L(
                 "This conditional is not active right now. Meet one of its conditions first (for example, enter the dungeon) so you can arrange the layout in its real context."
@@ -1894,11 +1895,11 @@ function CludesUI.Conditions_EnterUnlockForGroup(groupRec)
         })
         return
     end
-    local condStore = CludesUI._CondOv.GetUnlockStore(true)
+    local condStore = CUI._CondOv.GetUnlockStore(true)
     local store = GetUnlockStore(true)
     if not condStore or not store then return end
     if condStore.layouts[groupRec.id] == nil then
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L("Customize Layout Mode"),
             message = L(
                 "This will create a fully unique layout mode for this conditional group. Changes made to your default layout mode will no longer affect it."
@@ -1910,7 +1911,7 @@ function CludesUI.Conditions_EnterUnlockForGroup(groupRec)
                 -- Bank live into its current owner (the baseline: the guards
                 -- above ensure no layer is applied), fork it, activate in place
                 -- (live is byte-identical to the new layer).
-                CludesUI.SpecOverrides_HarvestUnlockLayout()
+                CUI.SpecOverrides_HarvestUnlockLayout()
                 -- Virgin-store baseline seed: without it there is nothing to
                 -- restore when the condition ends (see the spec fork twin in
                 -- SpecOverrides_EnterUnlockForGroup).
@@ -1919,7 +1920,7 @@ function CludesUI.Conditions_EnterUnlockForGroup(groupRec)
                 end
                 condStore.layouts[groupRec.id] = HarvestLayer(store.baselineLayout)
                 store.active = "cond:" .. groupRec.id
-                CludesUI.Conditions_EnterUnlockForGroup(groupRec)
+                CUI.Conditions_EnterUnlockForGroup(groupRec)
             end,
         })
         return
@@ -1927,14 +1928,14 @@ function CludesUI.Conditions_EnterUnlockForGroup(groupRec)
     -- Layout exists but is not the live layer yet (fresh login before any
     -- flip): route through the engine so the layer applies first.
     if store.active ~= ("cond:" .. groupRec.id) then
-        if CludesUI.Conditions_Recheck then CludesUI.Conditions_Recheck() end
+        if CUI.Conditions_Recheck then CUI.Conditions_Recheck() end
         if GetUnlockStore().active ~= ("cond:" .. groupRec.id) then return end
     end
     if _editGroup then ExitGroupEdit(true) end
-    local panelFrame = CludesUI._mainFrame
+    local panelFrame = CUI._mainFrame
     if panelFrame and panelFrame:IsShown() then panelFrame:Hide() end
     C_Timer.After(0, function()
-        if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+        if CUI._openUnlockMode then CUI._openUnlockMode() end
     end)
 end
 
@@ -1944,7 +1945,7 @@ end
 --- a member (unlock always shows the current spec's layout). The FIRST click is
 --- the fork moment and asks for confirmation; afterwards it just opens unlock
 --- mode, which edits the group's (active) layer.
-function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
+function CUI.SpecOverrides_EnterUnlockForGroup(groupRec)
     if type(groupRec) == "number" then groupRec = GroupById(groupRec) end
     if not groupRec then return end
     local current = CurrentSpecID()
@@ -1956,7 +1957,7 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
         end
     end
     if not member then return end
-    if CludesUI._unlockModeActive then return end
+    if CUI._unlockModeActive then return end
     -- Exclusive layer ownership: when ANOTHER group's layout already provides this
     -- spec's unlock mode, refuse fork creation AND editing here. A fork born under a
     -- non-owner group can never apply to this spec; it sits dead until a group or
@@ -1965,7 +1966,7 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
         local own = OwnerGid(current)
         if own and own ~= groupRec.id then
             local og = GroupById(own)
-            CludesUI:ShowConfirmPopup({
+            CUI:ShowConfirmPopup({
                 title = L("Customize Layout Mode"),
                 message = string.format(
                     L(
@@ -1982,7 +1983,7 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
     local store = GetUnlockStore(true)
     if not store then return end
     if store.layouts[groupRec.id] == nil then
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = L("Customize Layout Mode"),
             message = L(
                 "This will create a fully unique layout mode for this override group. Changes made to your default layout mode will no longer affect these specs."
@@ -1994,7 +1995,7 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
                 if not storeB or storeB.layouts[groupRec.id] ~= nil then return end
                 -- Fork from the current live layout: bank live into its owner
                 -- first (keeps that layer current).
-                CludesUI.SpecOverrides_HarvestUnlockLayout()
+                CUI.SpecOverrides_HarvestUnlockLayout()
                 -- First-ever layer on a virgin store: capture the shared BASELINE from
                 -- the pre-fork live layout (live IS the baseline when no layer is
                 -- active). Without it, a non-member spec taking over has nothing to
@@ -2023,11 +2024,11 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
                     if fromCond or fromOtherGroup then
                         ApplyLayer(storeB.layouts[groupRec.id], storeB.baselineLayout)
                         _unlockSettleWanted = true
-                        CludesUI.SpecOverrides_FlushUnlock()
+                        CUI.SpecOverrides_FlushUnlock()
                     end
                 end
                 if RefreshCardsPopup then RefreshCardsPopup() end
-                CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
+                CUI.SpecOverrides_EnterUnlockForGroup(groupRec)
             end,
         })
         return
@@ -2035,10 +2036,10 @@ function CludesUI.SpecOverrides_EnterUnlockForGroup(groupRec)
     -- Editing-as and unlock sessions never coexist. Banking the panel session
     -- first also restores canonical live values.
     if _editGroup then ExitGroupEdit(true) end
-    local panelFrame = CludesUI._mainFrame
+    local panelFrame = CUI._mainFrame
     if panelFrame and panelFrame:IsShown() then panelFrame:Hide() end
     C_Timer.After(0, function()
-        if CludesUI._openUnlockMode then CludesUI._openUnlockMode() end
+        if CUI._openUnlockMode then CUI._openUnlockMode() end
     end)
 end
 

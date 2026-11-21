@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CUI_UnlockMode_Session.lua
 --  Unlock Mode session: top banner HUD, save / revert, spec overrides,
@@ -180,7 +181,7 @@ CUI_NS.unlockParts.Session = function(LM)
 
         -- Snapshot growth directions so we can revert on discard
         wipe(snapshotGrowDirs)
-        local cdmStore = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
+        local cdmStore = CUI.Lite.GetAddon("CludesUICooldownManager", true)
         local cdmBarCfg = cdmStore and cdmStore.db and cdmStore.db.profile and cdmStore.db.profile.cdmBars
         if cdmBarCfg and cdmBarCfg.bars then
             for _, barFrame in ipairs(cdmBarCfg.bars) do
@@ -191,7 +192,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 end
             end
         end
-        local eab = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
+        local eab = CUI.Lite.GetAddon("CludesUIActionBars", true)
         local abBars = eab and eab.db and eab.db.profile and eab.db.profile.bars
         if abBars then
             local abGrowKeys =
@@ -208,7 +209,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- sits). Spec-override baseline capture prefers these raw copies. Namespace
         -- table: this body is inside the deferred-init closure, at the 200-local cap.
         local rawSnap = {}
-        CludesUI._unlockSnapRawPos = rawSnap
+        CUI._unlockSnapRawPos = rawSnap
         local cdmPos = cdmStore
             and cdmStore.db
             and cdmStore.db.profile
@@ -220,8 +221,8 @@ CUI_NS.unlockParts.Session = function(LM)
             end
         end
         local abPos = LM.GetPositionDB()
-        if abPos and CludesUI._abBarKeys then
-            for bk in pairs(CludesUI._abBarKeys) do
+        if abPos and CUI._abBarKeys then
+            for bk in pairs(CUI._abBarKeys) do
                 local e = abPos[bk]
                 if e then rawSnap[bk] = CopyTable(e) end
             end
@@ -237,7 +238,7 @@ CUI_NS.unlockParts.Session = function(LM)
     do
         local overrideBanner
         local function UpdateSpecOvBanner()
-            local g = CludesUI._specialUnlockGroup
+            local g = CUI._specialUnlockGroup
             if not g or not LM.unlockFrame then
                 if overrideBanner then overrideBanner:Hide() end
                 return
@@ -251,7 +252,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 backdrop:SetAllPoints()
                 backdrop:SetColorTexture(0.16, 0.12, 0.04, 0.92)
                 overrideBanner._brd =
-                    CludesUI.MakeRoundedBorder(overrideBanner, 199 / 255, 166 / 255, 90 / 255, 0.7, backdrop)
+                    CUI.MakeRoundedBorder(overrideBanner, 199 / 255, 166 / 255, 90 / 255, 0.7, backdrop)
                 local fontStr = overrideBanner:CreateFontString(nil, "OVERLAY")
                 fontStr:SetFont(FONT_PATH, 12, "OUTLINE, SLUG")
                 fontStr:SetPoint("CENTER")
@@ -260,7 +261,7 @@ CUI_NS.unlockParts.Session = function(LM)
             end
             overrideBanner._text:SetText(
                 string.format(
-                    CludesUI.L("Customizing Layout Mode: %s (changes apply only to this group's specs)"),
+                    CUI.L("Customizing Layout Mode: %s (changes apply only to this group's specs)"),
                     g.name or "?"
                 )
             )
@@ -272,7 +273,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Layer model: a custom unlock mode is a whole-layout fork, so there are no
         -- per-element gold marks or conflict locks anymore -- the gold frame variant
         -- and this banner carry the state; this refresh keeps the banner current and hides stale per-element markers on pooled movers.
-        CludesUI._unlockRefreshSpecOvMarks = function()
+        CUI._unlockRefreshSpecOvMarks = function()
             UpdateSpecOvBanner()
             for _, m in pairs(handles) do
                 if m._specOvBrd then m._specOvBrd:Hide() end
@@ -285,7 +286,7 @@ CUI_NS.unlockParts.Session = function(LM)
     local function CommitPositions()
         -- Suppress per-save rebuilds (e.g. CDM's BuildAllCDMBars) so that
         -- all positions are written first, then a single rebuild runs at the end.
-        CludesUI._propagatingSave = true
+        CUI._propagatingSave = true
         for barId, place in pairs(pendingPositions) do
             if place == "RESET" then
                 ClearBarPosition(barId)
@@ -334,7 +335,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 end
             end
         end
-        CludesUI._propagatingSave = false
+        CUI._propagatingSave = false
 
         -- Force edge-preservation across the save rebuild + reapply below. These run
         -- while isUnlocked is still true (DoClose clears it only AFTER CommitPositions
@@ -344,7 +345,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- growth edge lands off the freshly-saved edge and the bar visibly snaps back
         -- until /reload. Setting the flag makes both passes read cdmBarPositions
         -- exactly like the login/reload apply. Mirrors OpenUnlockMode's entry reapply; pcall-wrapped and reset in all cases so it can never leak.
-        CludesUI._reapplyForceEdgePreserve = true
+        CUI._reapplyForceEdgePreserve = true
 
         -- Single rebuild now that all positions are committed.
         -- CDM savePos normally calls BuildAllCDMBars per save, but we
@@ -361,14 +362,14 @@ CUI_NS.unlockParts.Session = function(LM)
         -- coords (saved by CommitPositions) to their correct anchor-relative position
         -- immediately. Without this, anchored bars sit at stale coords until a deferred
         -- ScheduleAnchorBatch corrects them, causing a visible jump on the next resize.
-        if CludesUI.ReapplyAllUnlockAnchorsForced then pcall(CludesUI.ReapplyAllUnlockAnchorsForced) end
+        if CUI.ReapplyAllUnlockAnchorsForced then pcall(CUI.ReapplyAllUnlockAnchorsForced) end
 
-        CludesUI._reapplyForceEdgePreserve = false
+        CUI._reapplyForceEdgePreserve = false
 
         -- Persist unlock layout into the active profile so it survives reloads
         -- without requiring a manual profile switch.
-        if CludesUIDB and CludesUI.GetProfilesDB then
-            local pdb = CludesUI.GetProfilesDB()
+        if CludesUIDB and CUI.GetProfilesDB then
+            local pdb = CUI.GetProfilesDB()
             local activeName = pdb.activeProfile or "Default"
             local profileData = pdb.profiles and pdb.profiles[activeName]
             if profileData then
@@ -384,15 +385,15 @@ CUI_NS.unlockParts.Session = function(LM)
                 -- snapshot must carry the shared BASELINE links, not the live
                 -- (group-valued) globals; the stored baseline layout provides
                 -- them. When the baseline itself is live, live is the source.
-                if CludesUI.SpecOverrides_UnlockBaselineLinks then
-                    local ba, bw, bh = CludesUI.SpecOverrides_UnlockBaselineLinks()
+                if CUI.SpecOverrides_UnlockBaselineLinks then
+                    local ba, bw, bh = CUI.SpecOverrides_UnlockBaselineLinks()
                     if ba then
                         snapshot.anchors = CopyTable(ba)
                         snapshot.widthMatch = CopyTable(bw)
                         snapshot.heightMatch = CopyTable(bh)
                         -- The baseline's match extras ride with its links (4th and
                         -- 5th returns); a baseline without extras carries none.
-                        local _, _, _, bwx, bhx = CludesUI.SpecOverrides_UnlockBaselineLinks()
+                        local _, _, _, bwx, bhx = CUI.SpecOverrides_UnlockBaselineLinks()
                         snapshot.widthMatchExtra = CopyTable(bwx or {})
                         snapshot.heightMatchExtra = CopyTable(bhx or {})
                     end
@@ -402,21 +403,21 @@ CUI_NS.unlockParts.Session = function(LM)
         end
         -- The active spec's tracked buff bar links and extras into their spec bucket,
         -- so a profile restore before the next bar build cannot swap older ones in.
-        if CludesUI._TBBBankUnlockLinks then CludesUI._TBBBankUnlockLinks() end
+        if CUI._TBBBankUnlockLinks then CUI._TBBBankUnlockLinks() end
 
         -- Bank CAPTURED settings the session edited (cog size inputs) into
         -- values.default -- a normal unlock session edits the shared baseline, exactly
         -- like the panel's Default Editing Mode. Without this the next value apply
         -- reverts the user's unlock-mode resize (the sticky harvest deliberately never adopts foreign live diffs).
-        if CludesUI.SpecOverrides_UnlockValueSnapCommit then
-            pcall(CludesUI.SpecOverrides_UnlockValueSnapCommit)
+        if CUI.SpecOverrides_UnlockValueSnapCommit then
+            pcall(CUI.SpecOverrides_UnlockValueSnapCommit)
         end
 
         -- Bank the freshly-saved live layout into its owning spec-override layer (the
         -- active group layer, else the stored baseline). Wholesale harvest -- no
         -- per-aspect routing exists. true = user commit: banks even inside the post-import suppression window (and closes it).
-        if CludesUI.SpecOverrides_HarvestUnlockLayout then
-            local okH, errH = pcall(CludesUI.SpecOverrides_HarvestUnlockLayout, true)
+        if CUI.SpecOverrides_HarvestUnlockLayout then
+            local okH, errH = pcall(CUI.SpecOverrides_HarvestUnlockLayout, true)
             if not okH then
                 print("|cffff6060[CludesUI]|r Unlock layer harvest failed: " .. tostring(errH))
             end
@@ -429,12 +430,12 @@ CUI_NS.unlockParts.Session = function(LM)
 
         -- Cancel: unlock-session value edits are discarded too (the module store may
         -- keep the cog-edited size until the next value apply restores the recorded default -- correct for a discard).
-        if CludesUI.SpecOverrides_UnlockValueSnapDiscard then
-            CludesUI.SpecOverrides_UnlockValueSnapDiscard()
+        if CUI.SpecOverrides_UnlockValueSnapDiscard then
+            CUI.SpecOverrides_UnlockValueSnapDiscard()
         end
 
         -- 1) Restore all DB state from snapshots (suppress rebuilds)
-        CludesUI._propagatingSave = true
+        CUI._propagatingSave = true
 
         local saved = LM.GetPositionDB()
         if saved then
@@ -442,7 +443,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 if not registeredElements[barId] then
                     -- Prefer the verbatim pre-session entry (saved edge PLUS the tgt*
                     -- follow baselines): the coordinate-only snapshot would strip the baselines from grow bars on every cancel, costing a bless cycle before target-follow works again.
-                    local rawSnap = CludesUI._unlockSnapRawPos and CludesUI._unlockSnapRawPos[barId]
+                    local rawSnap = CUI._unlockSnapRawPos and CUI._unlockSnapRawPos[barId]
                     local snapshot = snapshotPositions[barId]
                     if rawSnap then
                         saved[barId] = CopyTable(rawSnap)
@@ -476,7 +477,7 @@ CUI_NS.unlockParts.Session = function(LM)
             end
         end
 
-        CludesUI._propagatingSave = false
+        CUI._propagatingSave = false
 
         -- 2) Restore anchor data before repositioning
         local anchorStore = GetAnchorDB()
@@ -506,7 +507,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 }
             end
             -- The restored links may hold a pet-target fallback again.
-            CludesUI._EnsureFallbackWatchers()
+            CUI._EnsureFallbackWatchers()
         end
 
         -- 3) Restore element sizes
@@ -578,7 +579,7 @@ CUI_NS.unlockParts.Session = function(LM)
             local val = snapGrow == false and nil or snapGrow
             if barKey:sub(1, 4) == "CDM_" then
                 local rawKey = barKey:sub(5)
-                local cdmA = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
+                local cdmA = CUI.Lite.GetAddon("CludesUICooldownManager", true)
                 local cdmB = cdmA and cdmA.db and cdmA.db.profile and cdmA.db.profile.cdmBars
                 if cdmB and cdmB.bars then
                     for _, barFrame in ipairs(cdmB.bars) do
@@ -589,7 +590,7 @@ CUI_NS.unlockParts.Session = function(LM)
                     end
                 end
             else
-                local eabA = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
+                local eabA = CUI.Lite.GetAddon("CludesUIActionBars", true)
                 local abB = eabA and eabA.db and eabA.db.profile and eabA.db.profile.bars
                 if abB and abB[barKey] then abB[barKey].growDirection = val end
             end
@@ -621,8 +622,8 @@ CUI_NS.unlockParts.Session = function(LM)
                     elseif snapshot and not snapshot._fromLiveFrame then
                         if not LM.ApplyCenterPosition(barId, snapshot) then
                             pcall(function()
-                                CludesUI.ClearFramePoints(barFrame)
-                                CludesUI.SetFramePoint(
+                                CUI.ClearFramePoints(barFrame)
+                                CUI.SetFramePoint(
                                     barFrame,
                                     snapshot.point,
                                     UIParent,
@@ -646,13 +647,13 @@ CUI_NS.unlockParts.Session = function(LM)
         -- offsets + live width instead of the just-restored saved edge -- the bar
         -- visibly snaps off its reverted position. Mirrors the CommitPositions fix.
         if anchorStore then
-            CludesUI._reapplyForceEdgePreserve = true
+            CUI._reapplyForceEdgePreserve = true
             for childKey, details in pairs(anchorStore) do
                 if details.target and LM.GetBarFrame(childKey) and LM.GetBarFrame(details.target) then
                     pcall(LM.ApplyAnchorPosition, childKey, details.target, details.side)
                 end
             end
-            CludesUI._reapplyForceEdgePreserve = false
+            CUI._reapplyForceEdgePreserve = false
         end
     end
 
@@ -663,14 +664,14 @@ CUI_NS.unlockParts.Session = function(LM)
     local function CloseSession(closeAction)
         if not LM.isUnlocked then return end
         LM.isUnlocked = false
-        CludesUI._unlockActive = false
-        CludesUI._unlockModeActive = false
-        CludesUI:_NotifyUnlockModeListeners(false, closeAction or "exit")
-        if CludesUI._HideFallbackGhosts then CludesUI._HideFallbackGhosts() end
-        if CludesUI._HideOverrideGhosts then CludesUI._HideOverrideGhosts() end
+        CUI._unlockActive = false
+        CUI._unlockModeActive = false
+        CUI:_NotifyUnlockModeListeners(false, closeAction or "exit")
+        if CUI._HideFallbackGhosts then CUI._HideFallbackGhosts() end
+        if CUI._HideOverrideGhosts then CUI._HideOverrideGhosts() end
         -- Re-engage override anchors now that isUnlocked is false (the settle's
         -- position pass is the belt; this is deterministic and immediate).
-        if CludesUI._ReapplyOverrideAnchors then CludesUI._ReapplyOverrideAnchors() end
+        if CUI._ReapplyOverrideAnchors then CUI._ReapplyOverrideAnchors() end
 
         -- Notify action bars to restore Blizzard-owned frame anchors
         if _G._CUAB_UnlockModeClose then pcall(_G._CUAB_UnlockModeClose) end
@@ -688,7 +689,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- after _unlockActive is cleared above so the providers return non-zero and
         -- PropagateAnchorChain is no longer a no-op. Each provider gates itself so
         -- None = no work.
-        CludesUI.RestoreAnchorShifts()
+        CUI.RestoreAnchorShifts()
 
         -- Restore unit frame buffs/debuffs
         local UF_FRAME_NAMES = {
@@ -721,7 +722,7 @@ CUI_NS.unlockParts.Session = function(LM)
             local questTracker = _G.ObjectiveTrackerFrame
             if questTracker then
                 questTracker:SetAlpha(1)
-                local wasEnabled = CludesUI._GetFFD(questTracker).unlockMouseWasEnabled
+                local wasEnabled = CUI._GetFFD(questTracker).unlockMouseWasEnabled
                 if questTracker.EnableMouse then
                     pcall(questTracker.EnableMouse, questTracker, wasEnabled and true or false)
                 end
@@ -766,7 +767,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Collapse any expanded mover so it doesn't stay stuck on re-enter
         LM.hoveredMover = nil
         cogHoveredMover = nil
-        CludesUI._unlockCursorSpeed = 0
+        CUI._unlockCursorSpeed = 0
         for _, m in pairs(handles) do
             m._snapTarget = nil
             m._dragging = false
@@ -797,7 +798,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- End any special spec-override session and clear its mover marks (the
         -- banner is a child of unlockFrame, hidden with it above; the next
         -- session's mark refresh re-evaluates everything).
-        CludesUI._specialUnlockGroup = nil
+        CUI._specialUnlockGroup = nil
         for _, m in pairs(handles) do
             if m._specOvBrd then m._specOvBrd:Hide() end
             if m._specOvLock then m._specOvLock:Hide() end
@@ -826,7 +827,7 @@ CUI_NS.unlockParts.Session = function(LM)
             local userScale = (CludesUIDB and CludesUIDB.panelScale) or 1.0
             panelRealScale = baseScale * userScale
         end
-        local panelFrame = CludesUI and CludesUI._mainFrame
+        local panelFrame = CUI and CUI._mainFrame
         if panelFrame then
             panelFrame:SetScale(panelRealScale)
             panelFrame:SetAlpha(1)
@@ -834,32 +835,32 @@ CUI_NS.unlockParts.Session = function(LM)
         -- If there's a pending after-close callback, skip the default panel restore
         -- (the callback will handle opening the panel to the right page)
         if not pendingAfterClose then
-            if CludesUI then
+            if CUI then
                 -- Restore the module + page active before unlock mode opened (captured
                 -- by SelectPage("Unlock Mode") in CludesUI.lua). Do NOT show the panel
                 -- yet -- SelectModule/SelectPage cause Hide->Show cycles on the page
                 -- wrapper via HideAllChildren, and showing the panel first would add
                 -- extra cycles that leave EditBox text blank. Set up the page while hidden, then show once at the end.
-                local restoreModule = CludesUI._unlockReturnModule
-                local restorePage = CludesUI._unlockReturnPage
-                CludesUI._unlockReturnPage = nil
-                CludesUI._unlockReturnModule = nil
+                local restoreModule = CUI._unlockReturnModule
+                local restorePage = CUI._unlockReturnPage
+                CUI._unlockReturnPage = nil
+                CUI._unlockReturnModule = nil
                 if restoreModule then
-                    CludesUI:SelectModule(restoreModule)
-                    if restorePage and CludesUI.SelectPage then
-                        local currentPage = CludesUI:GetActivePage()
-                        if currentPage ~= restorePage then CludesUI:SelectPage(restorePage) end
+                    CUI:SelectModule(restoreModule)
+                    if restorePage and CUI.SelectPage then
+                        local currentPage = CUI:GetActivePage()
+                        if currentPage ~= restorePage then CUI:SelectPage(restorePage) end
                     end
                     -- NOW show the panel -- one clean Show, no prior cycling.
-                    CludesUI:Toggle()
+                    CUI:Toggle()
                 end
             end
         end
 
         -- Fire any pending after-close callback (e.g. from slash commands)
         if pendingAfterClose then
-            CludesUI._unlockReturnPage = nil
-            CludesUI._unlockReturnModule = nil
+            CUI._unlockReturnPage = nil
+            CUI._unlockReturnModule = nil
             local func = pendingAfterClose
             pendingAfterClose = nil
             func()
@@ -881,7 +882,7 @@ CUI_NS.unlockParts.Session = function(LM)
             return
         end
         -- Has unsaved changes -> show confirm popup
-        CludesUI:ShowConfirmPopup({
+        CUI:ShowConfirmPopup({
             title = "Unsaved Changes",
             frameLevel = (LM.moverOverlayLevel or 250) + 100,
             message = "You have unsaved position changes.\nWhat would you like to do?",
@@ -908,7 +909,7 @@ CUI_NS.unlockParts.Session = function(LM)
     --- Force-closes unlock mode DISCARDING the session. Called by the profile system
     --- on a spec transition: movers, snapshots, and pending edits all belong to the
     --- OUTGOING spec's layout, so saving them against the incoming spec would corrupt both baseline and spec-override data.
-    function CludesUI.ForceCloseUnlockDiscard()
+    function CUI.ForceCloseUnlockDiscard()
         -- A combat-suspended session is still open (it keeps its snapshots for the
         -- resume): reopen its state so the close below ends it.
         if LM.combatSuspended then
@@ -916,14 +917,14 @@ CUI_NS.unlockParts.Session = function(LM)
             LM.isUnlocked = true
         end
         if not LM.isUnlocked then return end
-        CludesUI.PrintError(
-            CludesUI.L("Layout changed: Layout Mode closed, unsaved layout changes discarded.")
+        CUI.PrintError(
+            CUI.L("Layout changed: Layout Mode closed, unsaved layout changes discarded.")
         )
         pendingAfterClose = nil
         -- Unconditional: RevertPositions only runs below when positions changed,
         -- but the value-edit snapshot must never survive a discard-close.
-        if CludesUI.SpecOverrides_UnlockValueSnapDiscard then
-            CludesUI.SpecOverrides_UnlockValueSnapDiscard()
+        if CUI.SpecOverrides_UnlockValueSnapDiscard then
+            CUI.SpecOverrides_UnlockValueSnapDiscard()
         end
         if LM.hasChanges then pcall(RevertPositions) end
         pcall(CloseSession, "discard")
@@ -1054,7 +1055,7 @@ CUI_NS.unlockParts.Session = function(LM)
                             guide:SetEndPoint("BOTTOMLEFT", UIParent, ex, ey)
                             local pointR, pointG, pointB, pointA
                             if details.mode == "POINT" then
-                                pointR, pointG, pointB, pointA = CludesUI.GetPointAnchorColor("line")
+                                pointR, pointG, pointB, pointA = CUI.GetPointAnchorColor("line")
                                 guide:SetVertexColor(pointR, pointG, pointB, pointA * 0.75 * ease)
                             else
                                 guide:SetVertexColor(1, 0.7, 0.3, 0.75 * ease)
@@ -1171,8 +1172,8 @@ CUI_NS.unlockParts.Session = function(LM)
             -- here loses the pointer as soon as the press ends. Unsaved changes
             -- keep the way back for the prompt's Save & Exit.
             if padAll and not LM.hasChanges then
-                CludesUI._unlockReturnModule = nil
-                CludesUI._unlockReturnPage = nil
+                CUI._unlockReturnModule = nil
+                CUI._unlockReturnPage = nil
             end
             mod.CloseUnlockMode()
         end
@@ -1214,13 +1215,13 @@ CUI_NS.unlockParts.Session = function(LM)
                 return
             end
             if
-                CludesUI._zoneTransitionActive
+                CUI._zoneTransitionActive
                 or UnitIsDeadOrGhost("player")
                 or (not HasFullControl() and not UnitOnTaxi("player"))
             then
                 return
             end
-            EscapeStep(CludesUI.PadNative() and CanAutoSetGamePadCursorControl(false))
+            EscapeStep(CUI.PadNative() and CanAutoSetGamePadCursorControl(false))
         end
 
         LM.unlockFrame:Hide()
@@ -1313,7 +1314,7 @@ CUI_NS.unlockParts.Session = function(LM)
         function A.Paint(special)
             local red, green, blue = 1, 0.82, 0.30
             if not special then
-                local color = CludesUI.CLUDES_GREEN
+                local color = CUI.CLUDES_GREEN
                 red, green, blue = color.r, color.g, color.b
             end
             logo:SetVertexColor(red, green, blue, 1)
@@ -1348,16 +1349,16 @@ CUI_NS.unlockParts.Session = function(LM)
 
         if not LM.unlockTipFrame then
             -- The shared tip callout, its arrow pointing up at the banner
-            local tipText = CludesUI.BuildTipCallout(UIParent, {
+            local tipText = CUI.BuildTipCallout(UIParent, {
                 width = 450,
                 height = 175,
-                pp = CludesUI.PP,
+                pp = CUI.PP,
                 strata = "TOOLTIP",
                 level = 900,
                 bgAlpha = 0.95,
                 font = FONT_PATH,
                 fontFlags = "OUTLINE, SLUG",
-                text = CludesUI.L(
+                text = CUI.L(
                     "This is where you can control the settings of Layout Mode.\n\nElements can be repositioned by dragging or arrow keys (+shift)\nAnchor, Height Match, or Width match any element.\nSnapping is based on closest element, but you can snap only to\n a specific element via right click or the settings icon."
                 ),
                 btnW = 80,
@@ -1376,13 +1377,13 @@ CUI_NS.unlockParts.Session = function(LM)
             LM.unlockTipFrame = tipText
         end
 
-        CludesUI.ShowTipCallout(LM.unlockTipFrame)
+        CUI.ShowTipCallout(LM.unlockTipFrame)
     end
 
     function mod.OpenUnlockMode()
         if LM.isUnlocked then return end
         if InCombatLockdown() then
-            print(CludesUI.L("|cffff6060[CludesUI]|r Cannot enter Layout Mode during combat."))
+            print(CUI.L("|cffff6060[CludesUI]|r Cannot enter Layout Mode during combat."))
             return
         end
         -- Standardized options-panel roundtrip: entering unlock mode by ANY means
@@ -1390,11 +1391,11 @@ CUI_NS.unlockParts.Session = function(LM)
         -- exactly like the sidebar Unlock Mode tab. Options-side entries capture their
         -- own return target BEFORE calling here, so only fill when unset. The game menu
         -- button never coexists with an open panel, so the IsShown gate is a natural no-op there.
-        if not CludesUI._unlockReturnModule then
-            local panelFrame = CludesUI._mainFrame
+        if not CUI._unlockReturnModule then
+            local panelFrame = CUI._mainFrame
             if panelFrame and panelFrame:IsShown() then
-                CludesUI._unlockReturnModule = CludesUI:GetActiveModule() or nil
-                CludesUI._unlockReturnPage = CludesUI:GetActivePage() or nil
+                CUI._unlockReturnModule = CUI:GetActiveModule() or nil
+                CUI._unlockReturnPage = CUI:GetActivePage() or nil
             end
         end
         -- Permanent gold variant: when the current spec's owning group has a custom
@@ -1402,18 +1403,18 @@ CUI_NS.unlockParts.Session = function(LM)
         -- that layer -- so every session shows the special visuals (gold frame/banner,
         -- size inputs hidden). Derived here, not at the card button, so opening unlock any way gets the right identity.
         do
-            local activeGid = CludesUI.SpecOverrides_UnlockActive and CludesUI.SpecOverrides_UnlockActive()
+            local activeGid = CUI.SpecOverrides_UnlockActive and CUI.SpecOverrides_UnlockActive()
                 or nil
             local g
             if type(activeGid) == "string" then
                 -- Conditional layer live ("cond:<gid>"): same gold identity, the
                 -- banner shows the conditional group's name.
                 local cid = tonumber(activeGid:match("^cond:(%d+)$"))
-                g = cid and CludesUI.Conditions_GroupById and CludesUI.Conditions_GroupById(cid) or nil
+                g = cid and CUI.Conditions_GroupById and CUI.Conditions_GroupById(cid) or nil
             elseif activeGid then
-                g = CludesUI.SpecOverrides_GroupById and CludesUI.SpecOverrides_GroupById(activeGid) or nil
+                g = CUI.SpecOverrides_GroupById and CUI.SpecOverrides_GroupById(activeGid) or nil
             end
-            CludesUI._specialUnlockGroup = g
+            CUI._specialUnlockGroup = g
         end
         -- Close any panel-side editing session/view BEFORE taking the value snapshot: the
         -- options panel doesn't hide until much later in this flow, so with the Default
@@ -1423,20 +1424,20 @@ CUI_NS.unlockParts.Session = function(LM)
         -- difference into values.default (defaults silently flipping to a group's
         -- values). Exiting the sessions here banks them properly and restores canonical
         -- spec values, so the snapshot below is clean. No-op when the panel is closed.
-        if CludesUI.SpecOverrides_CloseEditSessions then CludesUI.SpecOverrides_CloseEditSessions() end
+        if CUI.SpecOverrides_CloseEditSessions then CUI.SpecOverrides_CloseEditSessions() end
         -- Value-edit banking baseline: captured settings edited from unlock mode (cog
         -- size inputs) are Default-baseline edits; Save & Exit diffs against this
         -- snapshot and banks into values.default (special sessions skipped inside --
         -- their size inputs are hidden). Must run AFTER the special-group derivation above.
-        if CludesUI.SpecOverrides_UnlockValueSnapBegin then CludesUI.SpecOverrides_UnlockValueSnapBegin() end
+        if CUI.SpecOverrides_UnlockValueSnapBegin then CUI.SpecOverrides_UnlockValueSnapBegin() end
         -- Disable expandIfNoResource before _unlockActive is set so the
         -- Rebuild inside runs in normal gameplay state and the power bar
         -- is at its true stored height before movers capture positions.
         if _G._CURB_SuppressExpand then pcall(_G._CURB_SuppressExpand) end
 
         LM.isUnlocked = true
-        CludesUI._unlockActive = true
-        CludesUI._unlockModeActive = true
+        CUI._unlockActive = true
+        CUI._unlockModeActive = true
 
         -- Notify action bars to flip Blizzard-owned frame anchors for drag
         if _G._CUAB_UnlockModeOpen then pcall(_G._CUAB_UnlockModeOpen) end
@@ -1485,7 +1486,7 @@ CUI_NS.unlockParts.Session = function(LM)
             LM.objTrackerWasVisible = true
             -- Our state for Blizzard's tracker lives in the frame data table,
             -- never on the frame itself.
-            local otfd = CludesUI._GetFFD(questTracker)
+            local otfd = CUI._GetFFD(questTracker)
             otfd.unlockMouseWasEnabled = questTracker:IsMouseEnabled()
             questTracker:SetAlpha(0)
             if questTracker.EnableMouse then pcall(questTracker.EnableMouse, questTracker, false) end
@@ -1525,24 +1526,24 @@ CUI_NS.unlockParts.Session = function(LM)
         for _, shade in pairs(_blizzOwnedOverlays) do
             shade._tempHidden = nil
         end
-        if CludesUI._ClearFallbackGhostTempHides then CludesUI._ClearFallbackGhostTempHides() end
-        if CludesUI._ClearOverrideGhostTempHides then CludesUI._ClearOverrideGhostTempHides() end
+        if CUI._ClearFallbackGhostTempHides then CUI._ClearFallbackGhostTempHides() end
+        if CUI._ClearOverrideGhostTempHides then CUI._ClearOverrideGhostTempHides() end
         -- Strip provider-owned visual adjustments that live OUTSIDE the anchor
         -- system (CDM's Additional Bar Offset on un-anchored bars): each enter hook
         -- self-gates, so this is near-free when nothing is active.
-        CludesUI.RunAnchorShiftEnters()
+        CUI.RunAnchorShiftEnters()
         -- Strip any temporary anchor-target shift (e.g. "Shift Elements if No
         -- Resource"/"...if No Bars") so movers snapshot TRUE saved positions.
         -- _unlockActive is already true above, so the shift providers return 0 and
         -- this re-apply snaps shifted children back to their real positions. Gated so
         -- non-shift profiles do no extra work on unlock entry.
-        if CludesUI.AnchorShiftWantsApply() and CludesUI.ReapplyAllUnlockAnchors then
+        if CUI.AnchorShiftWantsApply() and CUI.ReapplyAllUnlockAnchors then
             -- Force edge-preservation for this reapply so custom-growth anchored bars
             -- snap to their fixed growth edge (their true saved position), not the
             -- center-offset position. Reset in all cases (pcall) so the flag can't leak.
-            CludesUI._reapplyForceEdgePreserve = true
-            pcall(CludesUI.ReapplyAllUnlockAnchors)
-            CludesUI._reapplyForceEdgePreserve = false
+            CUI._reapplyForceEdgePreserve = true
+            pcall(CUI.ReapplyAllUnlockAnchors)
+            CUI._reapplyForceEdgePreserve = false
         end
         SnapshotPositions()
 
@@ -1557,15 +1558,15 @@ CUI_NS.unlockParts.Session = function(LM)
         CreateUnlockFrame()
         CreateGrid(LM.unlockFrame)
         CreateHUD(LM.unlockFrame)
-        CludesUI:_NotifyUnlockModeListeners(true)
+        CUI:_NotifyUnlockModeListeners(true)
         CreateOpenAnimFrame(LM.unlockFrame)
 
         -- Special (spec-override) sessions paint the bar gold, normal sessions in
         -- the accent colour. Re-set every open: the bar is created once and reused.
-        if LM.PaintBanner then LM.PaintBanner(CludesUI._specialUnlockGroup) end
+        if LM.PaintBanner then LM.PaintBanner(CUI._specialUnlockGroup) end
 
         -- Capture the options panel frame for the shrink animation
-        local panelFrame = CludesUI and CludesUI._mainFrame
+        local panelFrame = CUI and CUI._mainFrame
         local panelStartW, panelStartH
         if panelFrame and panelFrame:IsShown() then
             panelStartW = panelFrame:GetWidth()
@@ -1577,9 +1578,9 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Controller Back steps out like Escape: registered with the escape proxy
         -- on the first open with a controller in use (padOnly: it counts only then),
         -- and never a controller-cursor root (a pointer-drag UI).
-        if not LM.unlockFrame._padEsc and CludesUI.PadInUse() then
+        if not LM.unlockFrame._padEsc and CUI.PadInUse() then
             LM.unlockFrame._padEsc = true
-            CludesUI.RegisterEscapeClose(LM.unlockFrame, {
+            CUI.RegisterEscapeClose(LM.unlockFrame, {
                 padOnly = true,
                 notOwned = true,
                 onEscape = LM.unlockFrame._padBack,
@@ -1600,7 +1601,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- emblem to land in it.
         local A = LM.openAnimFrame
         local emblem = A._emblem
-        A.Paint(CludesUI._specialUnlockGroup)
+        A.Paint(CUI._specialUnlockGroup)
         local startHalf = max(EMBLEM_HALF + 20, min(panelStartW, panelStartH) * 0.5)
         emblem:SetScale(1)
         emblem:ClearAllPoints()
@@ -1637,13 +1638,13 @@ CUI_NS.unlockParts.Session = function(LM)
         -- ticker spawns late registrations). The request is kept until the mover
         -- exists; the landing drops it after one more try.
         local function TryAutoSelect()
-            local autoKey = CludesUI._unlockAutoSelectKey
+            local autoKey = CUI._unlockAutoSelectKey
             if not autoKey then return end
             local m = handles[autoKey]
             if not m then return end
-            local autoFlash = CludesUI._unlockAutoSelectFlash
-            CludesUI._unlockAutoSelectKey = nil
-            CludesUI._unlockAutoSelectFlash = nil
+            local autoFlash = CUI._unlockAutoSelectFlash
+            CUI._unlockAutoSelectKey = nil
+            CUI._unlockAutoSelectFlash = nil
             SelectMover(m)
             if autoFlash then LM.FlashSelectHighlight(m) end
         end
@@ -1654,7 +1655,7 @@ CUI_NS.unlockParts.Session = function(LM)
         local gridStarted = false
 
         -- Reset cursor speed so the first hover isn't blocked by a stale value
-        CludesUI._unlockCursorSpeed = 0
+        CUI._unlockCursorSpeed = 0
 
         LM.unlockFrame:SetScript("OnUpdate", function(self, elapsed)
             -- Sample cursor position and compute speed for hover intent detection
@@ -1664,10 +1665,10 @@ CUI_NS.unlockParts.Session = function(LM)
                 nx = nx / scale
                 ny = ny / scale
                 if elapsed > 0 then
-                    local dx = nx - CludesUI._unlockCursorX
-                    local dy = ny - CludesUI._unlockCursorY
+                    local dx = nx - CUI._unlockCursorX
+                    local dy = ny - CUI._unlockCursorY
                     -- Store squared speed to avoid sqrt; TryExpand compares against squared threshold
-                    CludesUI._unlockCursorSpeed = (dx * dx + dy * dy) / (elapsed * elapsed)
+                    CUI._unlockCursorSpeed = (dx * dx + dy * dy) / (elapsed * elapsed)
 
                     -- After arrow-key nudge collapsed a mover, re-expand it
                     -- once the cursor moves and is still hovering the mover.
@@ -1684,8 +1685,8 @@ CUI_NS.unlockParts.Session = function(LM)
                         end
                     end
                 end
-                CludesUI._unlockCursorX = nx
-                CludesUI._unlockCursorY = ny
+                CUI._unlockCursorX = nx
+                CUI._unlockCursorY = ny
             end
 
             -- Selected movers are NOT auto re-expanded: expansion is purely
@@ -1753,7 +1754,7 @@ CUI_NS.unlockParts.Session = function(LM)
                         if handles[bk].RefreshAnchoredText then handles[bk]:RefreshAnchoredText() end
                     end
                     -- Spec-override gold borders / special-session locks + banner
-                    if CludesUI._unlockRefreshSpecOvMarks then CludesUI._unlockRefreshSpecOvMarks() end
+                    if CUI._unlockRefreshSpecOvMarks then CUI._unlockRefreshSpecOvMarks() end
 
                     -- Info overlays on Blizzard-owned elements (chat, micro, bags, encounter)
                     -- Start at alpha 0; the mover fade-in loop below handles them.
@@ -1764,18 +1765,18 @@ CUI_NS.unlockParts.Session = function(LM)
 
                     -- Fallback ghost overlays for elements with a fallback link
                     -- (spawn at 0 alpha; the mover fade-in loop below ramps them)
-                    if CludesUI._RefreshFallbackGhosts then
-                        CludesUI._RefreshFallbackGhosts()
-                        if CludesUI._SetFallbackGhostsAlpha then CludesUI._SetFallbackGhostsAlpha(0) end
+                    if CUI._RefreshFallbackGhosts then
+                        CUI._RefreshFallbackGhosts()
+                        if CUI._SetFallbackGhostsAlpha then CUI._SetFallbackGhostsAlpha(0) end
                     end
 
                     -- Override anchors release to baseline for the session (movers
                     -- edit the baseline; the gold ghosts edit the overrides), then
                     -- their ghosts spawn on the same fade curve.
-                    if CludesUI._ReapplyOverrideAnchors then CludesUI._ReapplyOverrideAnchors() end
-                    if CludesUI._RefreshOverrideGhosts then
-                        CludesUI._RefreshOverrideGhosts()
-                        if CludesUI._SetOverrideGhostsAlpha then CludesUI._SetOverrideGhostsAlpha(0) end
+                    if CUI._ReapplyOverrideAnchors then CUI._ReapplyOverrideAnchors() end
+                    if CUI._RefreshOverrideGhosts then
+                        CUI._RefreshOverrideGhosts()
+                        if CUI._SetOverrideGhostsAlpha then CUI._SetOverrideGhostsAlpha(0) end
                     end
 
                     -- Retry ticker: some addons (CDM) may not have their bar
@@ -1790,13 +1791,13 @@ CUI_NS.unlockParts.Session = function(LM)
                         end
                         -- Ask addons to re-register elements they may not have
                         -- registered yet (CDM bars that were still building, etc.)
-                        if CludesUI._unlockRegistrationDirty or retryAttempts <= 3 then
+                        if CUI._unlockRegistrationDirty or retryAttempts <= 3 then
                             if _G._CUCME_RegisterUnlock then _G._CUCME_RegisterUnlock() end
                             if _G._CUCME_RegisterTBBUnlock then _G._CUCME_RegisterTBBUnlock() end
                             -- Late-registering frames may satisfy a fallback
                             -- ghost that could not resolve at open.
-                            if CludesUI._RefreshFallbackGhosts then CludesUI._RefreshFallbackGhosts() end
-                            if CludesUI._RefreshOverrideGhosts then CludesUI._RefreshOverrideGhosts() end
+                            if CUI._RefreshFallbackGhosts then CUI._RefreshFallbackGhosts() end
+                            if CUI._RefreshOverrideGhosts then CUI._RefreshOverrideGhosts() end
                         end
                         RebuildRegisteredOrder()
                         local spawned = false
@@ -1831,8 +1832,8 @@ CUI_NS.unlockParts.Session = function(LM)
                         if spawned then
                             SortMoverFrameLevels()
                             ReapplyAllAnchors()
-                            if CludesUI._unlockRefreshSpecOvMarks then
-                                CludesUI._unlockRefreshSpecOvMarks()
+                            if CUI._unlockRefreshSpecOvMarks then
+                                CUI._unlockRefreshSpecOvMarks()
                             end
                         end
                         -- Stop once every mover is visible, or after timeout
@@ -1882,19 +1883,19 @@ CUI_NS.unlockParts.Session = function(LM)
                     end
                 end
                 -- Fallback ghosts fade in on the same curve (75% resting alpha)
-                if CludesUI._SetFallbackGhostsAlpha then
+                if CUI._SetFallbackGhostsAlpha then
                     if fadeTime > 0 then
-                        CludesUI._SetFallbackGhostsAlpha(min(1, fadeTime / GLITCH_DUR))
+                        CUI._SetFallbackGhostsAlpha(min(1, fadeTime / GLITCH_DUR))
                     else
-                        CludesUI._SetFallbackGhostsAlpha(0)
+                        CUI._SetFallbackGhostsAlpha(0)
                     end
                 end
                 -- Override anchor ghosts ride the same curve
-                if CludesUI._SetOverrideGhostsAlpha then
+                if CUI._SetOverrideGhostsAlpha then
                     if fadeTime > 0 then
-                        CludesUI._SetOverrideGhostsAlpha(min(1, fadeTime / GLITCH_DUR))
+                        CUI._SetOverrideGhostsAlpha(min(1, fadeTime / GLITCH_DUR))
                     else
-                        CludesUI._SetOverrideGhostsAlpha(0)
+                        CUI._SetOverrideGhostsAlpha(0)
                     end
                 end
 
@@ -1917,7 +1918,7 @@ CUI_NS.unlockParts.Session = function(LM)
                         panelHidden = true
                         panelFrame:SetScale(panelRealScale)
                         panelFrame:SetAlpha(1)
-                        CludesUI:Hide()
+                        CUI:Hide()
                     end
                 end
                 A.SetBrackets(startHalf + (EMBLEM_HALF - startHalf) * t)
@@ -1935,7 +1936,7 @@ CUI_NS.unlockParts.Session = function(LM)
                     panelFrame:SetScale(panelRealScale)
                     panelFrame:SetAlpha(1)
                 end
-                CludesUI:Hide()
+                CUI:Hide()
             end
             A._logo:SetSize(EMBLEM_LOGO, EMBLEM_LOGO)
             A._logo:SetAlpha(1)
@@ -2014,11 +2015,11 @@ CUI_NS.unlockParts.Session = function(LM)
             -- A requested mover not built when the movers faded in: one more try
             -- after the retry ticker's first pass, then the request is dropped.
             TryAutoSelect()
-            if CludesUI._unlockAutoSelectKey then
+            if CUI._unlockAutoSelectKey then
                 C_Timer.After(0.6, function()
                     TryAutoSelect()
-                    CludesUI._unlockAutoSelectKey = nil
-                    CludesUI._unlockAutoSelectFlash = nil
+                    CUI._unlockAutoSelectKey = nil
+                    CUI._unlockAutoSelectFlash = nil
                 end)
             end
 

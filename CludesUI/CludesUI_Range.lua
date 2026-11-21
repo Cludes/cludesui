@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_Range.lua
 --  Shared range-check engine for the suite's range consumers:
@@ -20,8 +21,8 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  live, so talent range extensions are reflected automatically) and a ladder
 --  of fixed-range harm items.
 -------------------------------------------------------------------------------
-if not CludesUI then return end
-if CludesUI.Range_SetActive then return end -- already loaded
+if not CUI then return end
+if CUI.Range_SetActive then return end -- already loaded
 
 local GetTime = GetTime
 
@@ -101,7 +102,7 @@ local function SpecAttackCutoff(holyPaladinMelee)
     -- check in Range_GetAttackCutoff before this cached value is read.
     -- Paladin, Hunter (min-range shots are excluded from the ladder), Warrior
     -- and Rogue stay at 5.
-    if CludesUI.IS_FOREVER == true then
+    if CUI.IS_FOREVER == true then
         if
             class == "DRUID"
             or class == "PRIEST"
@@ -149,7 +150,7 @@ end
 -- (spec/talent/spellbook churn): consumers call this at sweep/tick cadence and
 -- per-call GetSpecializationInfo re-derivation was measurable. Druid melee
 -- forms are the single live check. Holy Paladins can opt into melee range.
-function CludesUI.Range_GetAttackCutoff(customCutoff, holyPaladinMelee)
+function CUI.Range_GetAttackCutoff(customCutoff, holyPaladinMelee)
     customCutoff = tonumber(customCutoff)
     if customCutoff then
         customCutoff = math.floor((customCutoff + 2.5) / 5) * 5
@@ -160,7 +161,7 @@ function CludesUI.Range_GetAttackCutoff(customCutoff, holyPaladinMelee)
     if class == "DRUID" then
         -- WoW Forever orders the stance bar the vanilla way (Aquatic Form can sit
         -- between Bear and Cat), so it checks the form ID: Cat 1, Bear 5, Dire Bear 8.
-        if CludesUI.IS_FOREVER == true then
+        if CUI.IS_FOREVER == true then
             local fid = GetShapeshiftFormID()
             if fid == 1 or fid == 5 or fid == 8 then return 5 end
         elseif DRUID_MELEE_FORMS[GetShapeshiftForm()] then
@@ -298,14 +299,14 @@ end
 -- it must be gated up front. Hostile checks stay legal. Fails toward skipping the walk:
 -- a restricted query degrades to nil (no display) instead of a blocked action.
 local function ItemChecksAllowed(unitToken)
-    if not (InCombatLockdown() or (CludesUI.InProtectedInstance())) then return true end
+    if not (InCombatLockdown() or (CUI.InProtectedInstance())) then return true end
     local can = UnitCanAttack("player", unitToken)
     if issecretvalue and issecretvalue(can) then return false end
     return can == true
 end
 -- Shared with any other item-range reader (Quickdraw's usability tint) so the
 -- protection rule lives in one place.
-CludesUI.ItemRangeChecksAllowed = ItemChecksAllowed
+CUI.ItemRangeChecksAllowed = ItemChecksAllowed
 
 -------------------------------------------------------------------------------
 --  Queries
@@ -313,7 +314,7 @@ CludesUI.ItemRangeChecksAllowed = ItemChecksAllowed
 
 -- Largest spell-ladder rung the unit is BEYOND (0 = inside the smallest
 -- rung), or nil when no rung produced a usable answer. Displayed as "N+".
-function CludesUI.Range_LowerBound(unitToken)
+function CUI.Range_LowerBound(unitToken)
     if not unitToken or not UnitExists(unitToken) then return nil end
     if not (C_Spell and C_Spell.IsSpellInRange) then return nil end
     local nowTime = GetTime()
@@ -373,7 +374,7 @@ local function ItemWalk(unitToken, stopRange)
     return minY, maxY
 end
 
-function CludesUI.Range_ItemBracket(unitToken, stopRange)
+function CUI.Range_ItemBracket(unitToken, stopRange)
     if not unitToken or not UnitExists(unitToken) then return nil end
     if not (C_Item and C_Item.IsItemInRange) then return nil end
     if not ItemChecksAllowed(unitToken) then return nil end
@@ -400,7 +401,7 @@ end
 -- the cutoff -- a 40yd spell in a 30yd window answers true all the way to 40.
 -- Returns true/false, or nil when no probe answered -- the caller falls back
 -- to the item ladder.
-function CludesUI.Range_BeyondCutoff(unitToken, cutoff)
+function CUI.Range_BeyondCutoff(unitToken, cutoff)
     if not unitToken or not UnitExists(unitToken) then return nil end
     if not (C_Spell and C_Spell.IsSpellInRange) then return nil end
     EnsureLadder()
@@ -436,13 +437,13 @@ end
 -- class/spec) attack range; nil when no spell or item probe answered.
 -- Single-unit consumers only (crosshair "target"): the item fallback rides
 -- the shared single-slot cache. Sweeps use Range_SweepBeyond below.
-function CludesUI.Range_IsBeyondAttackRange(unitToken, cutoff)
-    cutoff = cutoff or CludesUI.Range_GetAttackCutoff()
+function CUI.Range_IsBeyondAttackRange(unitToken, cutoff)
+    cutoff = cutoff or CUI.Range_GetAttackCutoff()
     if cutoff > 5 then
-        local beyond = CludesUI.Range_BeyondCutoff(unitToken, cutoff)
+        local beyond = CUI.Range_BeyondCutoff(unitToken, cutoff)
         if beyond ~= nil then return beyond end
     end
-    local minY, maxY = CludesUI.Range_ItemBracket(unitToken, cutoff)
+    local minY, maxY = CUI.Range_ItemBracket(unitToken, cutoff)
     if minY == nil then return nil end
     -- A bracket that straddles the cutoff (the first in-range rung sits past
     -- it, the last out-of-range rung before it) cannot say which side the
@@ -462,9 +463,9 @@ end
 -- fade) by design rather than risking a blocked action.
 local sweepCache = { t = 0, cutoff = nil, v = {} }
 local SWEEP_TTL = 0.4
-function CludesUI.Range_SweepBeyond(unitToken, cutoff)
+function CUI.Range_SweepBeyond(unitToken, cutoff)
     if not unitToken or not UnitExists(unitToken) then return nil end
-    cutoff = cutoff or CludesUI.Range_GetAttackCutoff()
+    cutoff = cutoff or CUI.Range_GetAttackCutoff()
     local nowTime = GetTime()
     if (nowTime - sweepCache.t) > SWEEP_TTL or sweepCache.cutoff ~= cutoff then
         wipe(sweepCache.v)
@@ -477,7 +478,7 @@ function CludesUI.Range_SweepBeyond(unitToken, cutoff)
         return hit == 1
     end
     local beyond
-    if cutoff > 5 then beyond = CludesUI.Range_BeyondCutoff(unitToken, cutoff) end
+    if cutoff > 5 then beyond = CUI.Range_BeyondCutoff(unitToken, cutoff) end
     if beyond == nil and C_Item and C_Item.IsItemInRange and ItemChecksAllowed(unitToken) then
         local minY, maxY = ItemWalk(unitToken, cutoff)
         -- Same straddle rule as Range_IsBeyondAttackRange: unknown, not beyond.
@@ -497,7 +498,7 @@ end
 -- registers its invalidation events only while at least one consumer is
 -- active and drops them all at zero, so nothing here ever fires for users
 -- with every range feature disabled. Idempotent and cheap on repeat calls.
-function CludesUI.Range_SetActive(key, enabled)
+function CUI.Range_SetActive(key, enabled)
     enabled = enabled and true or nil
     if RangeKit.active[key] == enabled then return end
     RangeKit.active[key] = enabled

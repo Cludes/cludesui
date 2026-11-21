@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_Conditions.lua
 --  Conditional Overrides engine: condition definitions, the active-group
@@ -32,7 +33,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  twice during a fight).
 -------------------------------------------------------------------------------
 
-local L = function(s) return CludesUI.L(s) or s end
+local L = function(s) return CUI.L(s) or s end
 
 -------------------------------------------------------------------------------
 --  Condition definitions (ordered display list for the picker UI; the
@@ -44,9 +45,9 @@ local L = function(s) return CludesUI.L(s) or s end
 -- Global Settings > Colors; users commonly dark one without the other).
 -- That is exactly what the old main "Dark Mode" toggle read.
 local function _dmMainFilter(profile) return profile.id ~= "resourceBars" end
-local function DarkModeMasterOn() return (CludesUI.IsDarkModeAllOn(_dmMainFilter)) or false end
+local function DarkModeMasterOn() return (CUI.IsDarkModeAllOn(_dmMainFilter)) or false end
 
-CludesUI.CONDITIONS = {
+CUI.CONDITIONS = {
     { id = "keybind", label = "Keybind (out of combat)" },
     { id = "party", label = "Party (in a group, not a raid)" },
     { id = "dungeon", label = "Dungeon" },
@@ -71,8 +72,8 @@ CludesUI.CONDITIONS = {
 -- WoW Forever only: its Gamepad interface style has no retail counterpart
 -- (PadGamepadUI reads false there), so retail lists no row or icon for it; a
 -- group imported there with it checked simply never matches on it.
-if CludesUI.IS_FOREVER == true then
-    CludesUI.CONDITIONS[#CludesUI.CONDITIONS + 1] = {
+if CUI.IS_FOREVER == true then
+    CUI.CONDITIONS[#CUI.CONDITIONS + 1] = {
         id = "gamepad",
         label = "Gamepad Mode",
         tooltip = "Active while WoW's gamepad interface is on.",
@@ -94,13 +95,13 @@ local INSTANCE_COND = {
 --  key/keyOn only meaningful when conds.keybind; keyOn persists (profile).
 -------------------------------------------------------------------------------
 local function GetProfileRoot()
-    if not (CludesUIDB and CludesUI.GetProfilesDB) then return nil end
-    local pdb = CludesUI.GetProfilesDB()
+    if not (CludesUIDB and CUI.GetProfilesDB) then return nil end
+    local pdb = CUI.GetProfilesDB()
     local name = pdb.activeProfile or "Default"
     return pdb.profiles and pdb.profiles[name]
 end
 
-function CludesUI.Conditions_GetGroups(create)
+function CUI.Conditions_GetGroups(create)
     local prof = GetProfileRoot()
     if not prof then return nil end
     if not prof.condOverrideGroups then
@@ -110,8 +111,8 @@ function CludesUI.Conditions_GetGroups(create)
     return prof.condOverrideGroups
 end
 
-function CludesUI.Conditions_GroupById(groupId)
-    local groups = CludesUI.Conditions_GetGroups()
+function CUI.Conditions_GroupById(groupId)
+    local groups = CUI.Conditions_GetGroups()
     if not groups then return nil end
     for _, group in ipairs(groups) do
         if group.id == groupId then return group end
@@ -119,12 +120,12 @@ function CludesUI.Conditions_GroupById(groupId)
     return nil
 end
 
-function CludesUI.Conditions_NewGroupId()
+function CUI.Conditions_NewGroupId()
     -- PERSISTED counter, never max+1: deleted groups' per-gid value maps can survive on
     -- other groups' shared entries, and a reused id silently inherited the dead group's
     -- overrides. The counter seeds from max+1 once (legacy stores) and only ever grows.
     local prof = GetProfileRoot()
-    local groups = CludesUI.Conditions_GetGroups(true)
+    local groups = CUI.Conditions_GetGroups(true)
     local maxId = 0
     for _, group in ipairs(groups or {}) do
         if type(group.id) == "number" and group.id > maxId then maxId = group.id end
@@ -154,8 +155,8 @@ local function PartyGroup(groups)
 end
 
 --- The currently-ACTIVE conditional group per the ladder, or nil.
-function CludesUI.Conditions_ActiveGroup()
-    local groups = CludesUI.Conditions_GetGroups()
+function CUI.Conditions_ActiveGroup()
+    local groups = CUI.Conditions_GetGroups()
     if not groups or #groups == 0 then return nil end
     -- Tier 1: keybind toggles (explicit user action).
     for _, group in ipairs(groups) do
@@ -163,7 +164,7 @@ function CludesUI.Conditions_ActiveGroup()
     end
     -- Tier 2: WoW Forever's Gamepad interface style (an explicit input-mode
     -- switch, so it outranks the ambient tiers; always false on retail).
-    if CludesUI.PadGamepadUI() then
+    if CUI.PadGamepadUI() then
         for _, group in ipairs(groups) do
             if group.conds and group.conds.gamepad then return group end
         end
@@ -216,18 +217,18 @@ local _establish = false -- post profile-apply: apply-only, no harvests
 -- the overlay into the conditional DEFAULT maps -- permanent baseline loss on every
 -- /reload or login with a conditional active.
 local function PersistAppliedGid(groupId)
-    local prof = CludesUI.GetActiveProfileData()
+    local prof = CUI.GetActiveProfileData()
     if prof then prof.condAppliedGid = groupId end
 end
 
-function CludesUI.Conditions_AppliedGid()
+function CUI.Conditions_AppliedGid()
     if _appliedGid ~= nil then return _appliedGid end
     -- Stale windows (fresh login, profile-apply MarkStale before the establish Recheck
     -- lands): fall back to the persisted pointer, validated against the active
     -- profile's groups (a hand-edited or imported store may point at a deleted group).
-    local prof = CludesUI.GetActiveProfileData()
+    local prof = CUI.GetActiveProfileData()
     local groupId = prof and prof.condAppliedGid
-    if groupId and CludesUI.Conditions_GroupById(groupId) then return groupId end
+    if groupId and CUI.Conditions_GroupById(groupId) then return groupId end
     return nil
 end
 
@@ -238,7 +239,7 @@ end
 --- incoming raw data -- harvesting it would corrupt the new store) and
 --- forced even when no conditional is active (the incoming unlock stores
 --- may hold layer-valued data with a reset active pointer).
-function CludesUI.Conditions_MarkStale()
+function CUI.Conditions_MarkStale()
     _appliedGid = nil
     _flipPending = false
     _establish = true
@@ -249,14 +250,14 @@ end
 --- links restored over the incoming profile's layer-valued module data --
 --- and layout harvests must refuse to bank it (a second in-combat boundary
 --- otherwise baked the un-established state into baselineLayout).
-function CludesUI.Conditions_EstablishPending() return _establish end
+function CUI.Conditions_EstablishPending() return _establish end
 
-function CludesUI.Conditions_Recheck()
+function CUI.Conditions_Recheck()
     if InCombatLockdown() then
         _flipPending = true
         return
     end
-    local g = CludesUI.Conditions_ActiveGroup()
+    local g = CUI.Conditions_ActiveGroup()
     local groupId = g and g.id or nil
     -- Effective applied state: the runtime pointer, or -- in the stale
     -- windows (fresh login, MarkStale-to-establish) -- the persisted pointer
@@ -265,7 +266,7 @@ function CludesUI.Conditions_Recheck()
     -- conditional applied": the matching-condition login early-outed without
     -- adopting it, and the non-matching login handed the transition a nil
     -- oldGid, whose harvest banked the overlay into the DEFAULT maps.
-    local applied = CludesUI.Conditions_AppliedGid()
+    local applied = CUI.Conditions_AppliedGid()
     if groupId == applied and not _establish then
         -- Adopt a persisted pointer into the runtime on the no-op path so
         -- later compares and MarkStale operate on live state.
@@ -274,10 +275,10 @@ function CludesUI.Conditions_Recheck()
     end
     -- An open unlock session never survives a layout-owner change (same rule
     -- as spec changes): discard-close first, then transition.
-    if CludesUI._unlockModeSessionActive and CludesUI.ForceCloseUnlockDiscard then
-        CludesUI.ForceCloseUnlockDiscard()
+    if CUI._unlockModeSessionActive and CUI.ForceCloseUnlockDiscard then
+        CUI.ForceCloseUnlockDiscard()
     end
-    local handler = CludesUI.SpecOverrides_CondTransition
+    local handler = CUI.SpecOverrides_CondTransition
     if not handler then return end
     -- Consume the establish request BEFORE the handler runs: anything inside
     -- it (a nested RefreshAllAddons tail calls MarkStale) may raise a FRESH
@@ -293,8 +294,8 @@ function CludesUI.Conditions_Recheck()
     -- between. Establish transitions never harvest, so they run in place; only real
     -- flips need the roundtrip.
     local resumeView = false
-    if not est and CludesUI.SpecOverrides_SuspendDefaultView then
-        resumeView = CludesUI.SpecOverrides_SuspendDefaultView()
+    if not est and CUI.SpecOverrides_SuspendDefaultView then
+        resumeView = CUI.SpecOverrides_SuspendDefaultView()
     end
     if resumeView then
         -- Leaving the view restores the spec's values and runs the touched
@@ -302,12 +303,12 @@ function CludesUI.Conditions_Recheck()
         -- RefreshAllAddons -- whose tail re-enters this resolver and can
         -- converge the flip on its own. Re-read both ends so the handler
         -- never harvests live against an outgoing group it no longer holds.
-        g = CludesUI.Conditions_ActiveGroup()
+        g = CUI.Conditions_ActiveGroup()
         groupId = g and g.id or nil
-        applied = CludesUI.Conditions_AppliedGid()
+        applied = CUI.Conditions_AppliedGid()
         if groupId == applied then
             _appliedGid = applied
-            CludesUI.SpecOverrides_ResumeDefaultView()
+            CUI.SpecOverrides_ResumeDefaultView()
             return
         end
     end
@@ -325,8 +326,8 @@ function CludesUI.Conditions_Recheck()
     -- through HarvestCurrent, which banks against the APPLIED gid. Not after a
     -- handler error: live may hold half-applied incoming values, and the harvest
     -- would bank them into the outgoing group's maps.
-    if resumeView and not failed and CludesUI.SpecOverrides_ResumeDefaultView then
-        CludesUI.SpecOverrides_ResumeDefaultView()
+    if resumeView and not failed and CUI.SpecOverrides_ResumeDefaultView then
+        CUI.SpecOverrides_ResumeDefaultView()
     end
 end
 
@@ -338,23 +339,23 @@ end
 -------------------------------------------------------------------------------
 local _keyBtnPool = {}
 
-function CludesUI.Conditions_ToggleKey(groupId)
+function CUI.Conditions_ToggleKey(groupId)
     if InCombatLockdown() then return end
-    local g = CludesUI.Conditions_GroupById(groupId)
+    local g = CUI.Conditions_GroupById(groupId)
     if not g or not (g.conds and g.conds.keybind) then return end
     g.keyOn = not g.keyOn or nil
-    CludesUI.Conditions_Recheck()
+    CUI.Conditions_Recheck()
 end
 
-function CludesUI.Conditions_RebuildKeyBindings()
+function CUI.Conditions_RebuildKeyBindings()
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("ConditionsKeyBindings", CludesUI.Conditions_RebuildKeyBindings)
+        CUI.CombatQueue.Defer("ConditionsKeyBindings", CUI.Conditions_RebuildKeyBindings)
         return
     end
     for _, button in ipairs(_keyBtnPool) do
         ClearOverrideBindings(button)
     end
-    local groups = CludesUI.Conditions_GetGroups()
+    local groups = CUI.Conditions_GetGroups()
     if not groups then return end
     local idx = 0
     for _, group in ipairs(groups) do
@@ -367,7 +368,7 @@ function CludesUI.Conditions_RebuildKeyBindings()
                 _keyBtnPool[idx] = button
             end
             local groupId = group.id
-            button:SetScript("OnClick", function() CludesUI.Conditions_ToggleKey(groupId) end)
+            button:SetScript("OnClick", function() CUI.Conditions_ToggleKey(groupId) end)
             SetOverrideBindingClick(button, true, group.key, button:GetName())
         end
     end
@@ -389,7 +390,7 @@ evFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 -- client does not know errors at load, so the name is checked first (as the
 -- Action Bars and Quest Tracker registrations do).
 if
-    CludesUI.IS_FOREVER == true
+    CUI.IS_FOREVER == true
     and not (
         C_EventUtils
         and C_EventUtils.IsEventValid
@@ -402,19 +403,19 @@ evFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" then
         if _flipPending then
             _flipPending = false
-            CludesUI.Conditions_Recheck()
+            CUI.Conditions_Recheck()
         end
         return
     end
     if evt == "INPUT_DEVICE_INTERFACE_TRANSITION" then
         -- The style is read one frame after the transition event. A recheck
         -- in combat flags itself and the regen drain above re-resolves.
-        C_Timer.After(0, CludesUI.Conditions_Recheck)
+        C_Timer.After(0, CUI.Conditions_Recheck)
         return
     end
     if evt == "PLAYER_ENTERING_WORLD" then
         -- Bindings are per-profile data; re-assert after every load screen.
-        CludesUI.Conditions_RebuildKeyBindings()
+        CUI.Conditions_RebuildKeyBindings()
     end
-    CludesUI.Conditions_Recheck()
+    CUI.Conditions_Recheck()
 end)

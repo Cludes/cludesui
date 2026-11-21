@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 --------------------------------------------------------------------------------
 --  CludesUI_KickData.lua
 --  The interrupts of patch 12.1.5 and what each one's cooldown is for a given
@@ -28,7 +29,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 --  Pure data and lookups, nothing registered: CludesUI.KickData.
 --------------------------------------------------------------------------------
 local KD = {}
-CludesUI.KickData = KD
+CUI.KickData = KD
 
 local floor = math.floor
 

@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -- Explicit point relationships. Legacy side anchors keep their existing math.
 local _, mod = ...
 mod = mod.__cuiCoreNS or mod
@@ -34,10 +35,10 @@ local LABELS = {
 PA.LABELS = LABELS
 
 function PA.Description(details)
-    return CludesUI.Lf(
+    return CUI.Lf(
         "Point: %1$s to %2$s",
-        CludesUI.L(LABELS[details.sourcePoint] or "?"),
-        CludesUI.L(LABELS[details.targetPoint] or "?")
+        CUI.L(LABELS[details.sourcePoint] or "?"),
+        CUI.L(LABELS[details.targetPoint] or "?")
     )
 end
 
@@ -60,7 +61,7 @@ function PA.Valid(details)
         and Number(details.offsetY)
 end
 
-function CludesUI.GetUnlockAnchorSide(details)
+function CUI.GetUnlockAnchorSide(details)
     if not PA.Is(details) then return details and details.side end
     if not PA.Valid(details) then return end
     local s, t = POINTS[details.sourcePoint], POINTS[details.targetPoint]
@@ -75,23 +76,23 @@ function CludesUI.GetUnlockAnchorSide(details)
     end
 end
 
-function CludesUI.IsPointAnchored(key)
+function CUI.IsPointAnchored(key)
     local saved = CludesUIDB and CludesUIDB.unlockAnchors
     return saved and PA.Is(saved[key]) or false
 end
 
-function CludesUI.SetPointAnchorHandles(enabled)
+function CUI.SetPointAnchorHandles(enabled)
     CludesUIDB.unlockPointHandles = enabled and true or nil
     if not enabled and PA.cancelPicker then PA.cancelPicker() end
 end
 
 function PA.Frame(key)
-    local elem = CludesUI._unlockRegisteredElements[key]
+    local elem = CUI._unlockRegisteredElements[key]
     return elem and elem.getFrame and elem.getFrame(key)
 end
 
 local function Insets(key, widget)
-    local elem = CludesUI._unlockRegisteredElements[key]
+    local elem = CUI._unlockRegisteredElements[key]
     local l, r, t, b = 0, 0, 0, 0
     if elem and elem.getInsets then
         l, r, t, b = elem.getInsets(key)
@@ -113,7 +114,7 @@ end
 local function Dimensions(widget) return widget:GetWidth(), widget:GetHeight(), widget:GetEffectiveScale() end
 
 local function EdgeExtent(key, side, fallback)
-    local success, value = pcall(CludesUI._GetAnchorTargetExtent, key, side)
+    local success, value = pcall(CUI._GetAnchorTargetExtent, key, side)
     if not success then return end
     if issecretvalue and issecretvalue(value) then return end
     if value == nil then return fallback end
@@ -133,7 +134,7 @@ function PA.Rect(key, widget, target)
     if not safe or not il then return end
     local ratio = scale / UIParent:GetEffectiveScale()
     l, r, t, b = (l + il) * ratio, (r - ir) * ratio, (t - it) * ratio, (b + ib) * ratio
-    if target and CludesUI._GetAnchorTargetExtent then
+    if target and CUI._GetAnchorTargetExtent then
         l, r = EdgeExtent(key, "LEFT", l), EdgeExtent(key, "RIGHT", r)
         t, b = EdgeExtent(key, "TOP", t), EdgeExtent(key, "BOTTOM", b)
     end
@@ -179,8 +180,8 @@ function PA.Center(childKey, childFrame, details, target, wid, hgt)
 end
 
 local function WritePoint(widget, anchorPoint, rel, rp, posX, posY)
-    CludesUI.ClearFramePoints(widget)
-    CludesUI.SetFramePoint(widget, anchorPoint, rel, rp, posX, posY)
+    CUI.ClearFramePoints(widget)
+    CUI.SetFramePoint(widget, anchorPoint, rel, rp, posX, posY)
 end
 
 function PA.Capture(childKey, details, childFrame, target)
@@ -190,8 +191,8 @@ function PA.Capture(childKey, details, childFrame, target)
     local tx, ty = PA.Point(details.target, target, details.targetPoint, true)
     if not cx or not tx then return end
     local ex, ey = 0, 0
-    if CludesUI._ExtraAnchorOffset then
-        ex, ey = CludesUI._ExtraAnchorOffset(childKey)
+    if CUI._ExtraAnchorOffset then
+        ex, ey = CUI._ExtraAnchorOffset(childKey)
     end
     local ratio = childFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     return cx - tx - ex * ratio, cy - ty - ey * ratio
@@ -199,20 +200,20 @@ end
 
 -- Keep the selected native point fixed between resize notifications as well.
 function PA.Place(childKey, childFrame, details, cx, cy, wid, hgt)
-    local pp = CludesUI.PP
+    local pp = CUI.PP
     local scale = childFrame:GetEffectiveScale()
     local ratio = UIParent:GetEffectiveScale() / scale
     local bx, by = pp.SnapCenterForDim(cx * ratio, wid, scale), pp.SnapCenterForDim(cy * ratio, hgt, scale)
     local ex, ey = 0, 0
-    if CludesUI._ExtraAnchorOffset then
-        ex, ey = CludesUI._ExtraAnchorOffset(childKey)
+    if CUI._ExtraAnchorOffset then
+        ex, ey = CUI._ExtraAnchorOffset(childKey)
     end
     bx, by = bx + ex, by + ey
     local p = POINTS[details.sourcePoint]
     local posX, posY = bx + (p[1] - 0.5) * wid, by + (p[2] - 0.5) * hgt
     local rel, rp = UIParent, "CENTER"
-    if p and POINTS[details.targetPoint][2] == 0 and CludesUI._GetAnchorFollowFrame then
-        local follow = CludesUI._GetAnchorFollowFrame(childKey, details.target, "BOTTOM")
+    if p and POINTS[details.targetPoint][2] == 0 and CUI._GetAnchorFollowFrame then
+        local follow = CUI._GetAnchorFollowFrame(childKey, details.target, "BOTTOM")
         local tx, ty = PA.Point(details.target, PA.Frame(details.target), details.targetPoint, true)
         if follow and tx then
             rel, rp = follow, details.targetPoint
@@ -290,14 +291,14 @@ function PA.Recenter(key, LM)
 end
 
 -- Old builds reject version 4 rather than silently reading point links as sides.
-function CludesUI.LayoutExportVersion(value, seen)
+function CUI.LayoutExportVersion(value, seen)
     if type(value) ~= "table" then return 3 end
     if PA.Is(value) then return 4 end
     seen = seen or {}
     if seen[value] then return 3 end
     seen[value] = true
     for _, val in pairs(value) do
-        if type(val) == "table" and CludesUI.LayoutExportVersion(val, seen) == 4 then return 4 end
+        if type(val) == "table" and CUI.LayoutExportVersion(val, seen) == 4 then return 4 end
     end
     return 3
 end

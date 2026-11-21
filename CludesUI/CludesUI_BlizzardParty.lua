@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI_BlizzardParty.lua
 --  Shared "Hide Blizzard Party Panel" feature.
@@ -29,7 +30,7 @@ local function ApplyHideBlizzardPartyFrame()
     local mgr = CompactRaidFrameManager
     if not mgr then return end
     if InCombatLockdown() then
-        CludesUI.CombatQueue.Defer("BlizzardPartyPanel", ApplyHideBlizzardPartyFrame)
+        CUI.CombatQueue.Defer("BlizzardPartyPanel", ApplyHideBlizzardPartyFrame)
         return
     end
 
@@ -45,7 +46,7 @@ local function ApplyHideBlizzardPartyFrame()
     end
 end
 
-CludesUI._applyHideBlizzardPartyFrame = ApplyHideBlizzardPartyFrame
+CUI._applyHideBlizzardPartyFrame = ApplyHideBlizzardPartyFrame
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

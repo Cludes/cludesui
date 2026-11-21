@@ -1,4 +1,5 @@
 if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+local CUI = CludesUI
 -------------------------------------------------------------------------------
 --  CludesUI Shared Ticker
 --
@@ -54,7 +55,7 @@ if CUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (CludesUI_Clie
 -------------------------------------------------------------------------------
 
 local Tick = {}
-CludesUI.Tick = Tick
+CUI.Tick = Tick
 
 -- Build a driver instance around the given frame. The frame's creating context is what
 -- the engine bills, so callers wanting per-addon attribution MUST create the frame in
@@ -169,7 +170,7 @@ end
 -- child uses its own ns queue; CludesUI.CombatQueue is for the parent's files.
 local function QueueErrorHandler(err) return geterrorhandler()(err) end
 
-function CludesUI.NewCombatQueue(frame)
+function CUI.NewCombatQueue(frame)
     if not frame then frame = CreateFrame("Frame") end
     local fns, index, count = {}, {}, 0
     local q = {}
@@ -203,7 +204,7 @@ end
 
 -- The core's own queue. CludesUI_Startup.lua and CludesUI.lua load before
 -- this file, so they read it at the call, never as a load-time upvalue.
-CludesUI.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
+CUI.CombatQueue = CUI.NewCombatQueue(CreateFrame("Frame"))
 
 -- The shared driver: frame created here in the parent, so subscriber work is
 -- billed to the parent addon. Parent-owned subscribers only; children should
