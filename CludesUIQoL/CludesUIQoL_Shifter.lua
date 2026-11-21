@@ -1310,7 +1310,7 @@ end
 
 -- Each window by its own switch: claimed while it is on with a saved spot,
 -- released otherwise.
-local function InitLootWindows()
+local function SetupLootWindows()
     for index = 1, #LOOT_WINDOWS do
         SyncLootWindow(LOOT_WINDOWS[index])
     end
@@ -1820,7 +1820,7 @@ watcher:SetScript("OnEvent", function(self, evt, arg1)
             InitShifter()
         end
         RegisterLootUnlockElements()
-        InitLootWindows()
+        SetupLootWindows()
         RegisterTopBarUnlockElement()
         if TopBarEnabled() then
             CludesUI._InitShifterTopBar()
@@ -1881,12 +1881,12 @@ end
 
 -- Exposed for the options toggle (mid-session enable without /reload)
 function CludesUI._InitShifterLootWindows()
-    InitLootWindows()
+    SetupLootWindows()
 end
 
 -- Exposed for the options toggle, which turns its setting off first. The
 -- windows it governs go to the next placement owner, or back to Blizzard's
 -- own anchors; the capture bars follow the battleground switch.
 function CludesUI._DisableShifterLootWindows()
-    InitLootWindows()
+    SetupLootWindows()
 end

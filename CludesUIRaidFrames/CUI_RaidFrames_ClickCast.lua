@@ -1451,7 +1451,7 @@ end
 -- conditional for one leading /stopmacro, which runs the same.
 local MACRO_MAX = 255
 local GUARD_STOP = "/stopmacro [mounted][flying]\n"
-local function FitMacro(textValue, hover)
+local function TrimMacro(textValue, hover)
     if not textValue or #textValue <= MACRO_MAX then
         return textValue
     end
@@ -1479,7 +1479,7 @@ local function BuildMacroText(bindRec)
     if bindRec.type ~= "macro" then
         cleared = AddTargetingClears(plain)
     end
-    local base = FitMacro(cleared, hover) or FitMacro(plain, hover) or plain
+    local base = TrimMacro(cleared, hover) or TrimMacro(plain, hover) or plain
     if not bindRec.smartRez then
         return base
     end
@@ -1512,13 +1512,13 @@ local function BuildMacroText(bindRec)
     -- The richest form that fits: clears on every line, then on the action
     -- only, then none, then without the combat rez item.
     local rezText = table.concat(rez, "\n")
-    local textValue = FitMacro(Join(AddTargetingClears(rezText), cleared), hover)
-        or FitMacro(Join(rezText, cleared), hover)
-        or FitMacro(Join(rezText, plain), hover)
+    local textValue = TrimMacro(Join(AddTargetingClears(rezText), cleared), hover)
+        or TrimMacro(Join(rezText, cleared), hover)
+        or TrimMacro(Join(rezText, plain), hover)
     if not textValue and rezItemID then
         local spellList = BuildRezLines(bindRec, guardCond, false, true)
         if spellList and #spellList > 0 then
-            textValue = FitMacro(Join(table.concat(spellList, "\n"), plain), hover)
+            textValue = TrimMacro(Join(table.concat(spellList, "\n"), plain), hover)
         end
     end
     return textValue or base
@@ -3892,11 +3892,11 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         kbLbl:SetPoint("CENTER")
 
         local listening = false
-        local function RefreshLabel()
+        local function SyncKeyLabel()
             local bindKey = getCurrentKey and getCurrentKey()
             kbLbl:SetText(bindKey and mod.CC_FormatKey(bindKey) or CludesUI.L("Not Bound"))
         end
-        RefreshLabel()
+        SyncKeyLabel()
 
         -- Stops capturing: disables keyboard + wheel so the page scrolls
         -- normally again.
@@ -3904,7 +3904,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             listening = false
             keybindBtn:EnableKeyboard(false)
             keybindBtn:EnableMouseWheel(false)
-            RefreshLabel()
+            SyncKeyLabel()
         end
 
         -- Runs a key setter; false once it rendered the page again: that
@@ -3927,7 +3927,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     keybindBtn:EnableMouseWheel(true)
                 elseif btnFrame == "RightButton" then
                     if SetKey(onKeyClear) then
-                        RefreshLabel()
+                        SyncKeyLabel()
                     end
                 end
                 return
@@ -4007,7 +4007,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             end
         end)
 
-        keybindBtn._refresh = RefreshLabel
+        keybindBtn._refresh = SyncKeyLabel
         return keybindBtn
     end
 

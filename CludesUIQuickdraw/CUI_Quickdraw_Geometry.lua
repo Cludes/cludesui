@@ -153,7 +153,7 @@ end
 
 -- The carve below works in edges; everything else here works in centre and
 -- half-extent.
-local function BoxEdges(b)
+local function EdgesOf(b)
     return b.x - b.hw, b.x + b.hw, b.y - b.hh, b.y + b.hh
 end
 
@@ -201,8 +201,8 @@ local CARVE_MIN = 1
 -- block along the region's away axis, so cutting that axis first leaves every
 -- child in one piece rather than sliced into per-column strips.
 local function CarveBox(result, b, hole, splitY)
-    local bx0, bx1, by0, by1 = BoxEdges(b)
-    local hx0, hx1, hy0, hy1 = BoxEdges(hole)
+    local bx0, bx1, by0, by1 = EdgesOf(b)
+    local hx0, hx1, hy0, hy1 = EdgesOf(hole)
     if hx1 <= bx0 or hx0 >= bx1 or hy1 <= by0 or hy0 >= by1 then
         result[#result + 1] = b
         return
@@ -251,13 +251,13 @@ end
 -- the neighbour's own CENTRE: that is where a cursor aimed at the neighbour's
 -- icon lands, and the hole exists so that landing there is outside this claim.
 local function ClipHole(hole, cells)
-    local x0, x1, y0, y1 = BoxEdges(hole)
+    local x0, x1, y0, y1 = EdgesOf(hole)
     -- One side given away per pass, so four passes per child is the most that
     -- can be asked of it -- plus the pass that finds nothing left to answer.
     for _ = 1, 4 * (cells and #cells or 0) + 1 do
         local best, bx0, bx1, by0, by1
         for jdx = 1, (cells and #cells or 0) do
-            local qx0, qx1, qy0, qy1 = BoxEdges(cells[jdx])
+            local qx0, qx1, qy0, qy1 = EdgesOf(cells[jdx])
             if qx1 > x0 and qx0 < x1 and qy1 > y0 and qy0 < y1 then
                 local skinData = min(qx1 - x0, x1 - qx0, qy1 - y0, y1 - qy0)
                 if not best or skinData < best then

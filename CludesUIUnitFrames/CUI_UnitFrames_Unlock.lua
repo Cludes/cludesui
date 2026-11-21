@@ -48,7 +48,7 @@ local function RegisterUFUnlockElements()
         local elements = {}
         local orderBase = 100
 
-        local function Rebuild()
+        local function ReloadUnitFrames()
             mod.ReloadFrames()
         end
 
@@ -172,7 +172,7 @@ local function RegisterUFUnlockElements()
                         and not CludesUI._propagatingMatch
                         and not CludesUI._unlockLayerApplying
                     then
-                        Rebuild()
+                        ReloadUnitFrames()
                         return
                     end
                     local unitToken = (key == "boss") and "boss1" or key
@@ -224,7 +224,7 @@ local function RegisterUFUnlockElements()
                     if CludesUI._propagatingMatch and cfg.frameWidth == oldW then
                         return
                     end
-                    Rebuild()
+                    ReloadUnitFrames()
                 end,
                 setHeight = function(key, hgt)
                     if key == "classPower" then
@@ -238,7 +238,7 @@ local function RegisterUFUnlockElements()
                         and not CludesUI._propagatingMatch
                         and not CludesUI._unlockLayerApplying
                     then
-                        Rebuild()
+                        ReloadUnitFrames()
                         return
                     end
                     local unitToken = (key == "boss") and "boss1" or key
@@ -257,7 +257,7 @@ local function RegisterUFUnlockElements()
                     if CludesUI._propagatingMatch and cfg.healthHeight == oldH then
                         return
                     end
-                    Rebuild()
+                    ReloadUnitFrames()
                 end,
                 loadPos = function(key)
                     local place = saved.profile.positions[key]
@@ -434,7 +434,7 @@ local function RegisterUFUnlockElements()
         end
 
         -- Cast bar elements: standalone registration, no special-case branching
-        local function MakeCastBarElement(cbKey, unitKey, sequence)
+        local function CastBarElement(cbKey, unitKey, sequence)
             local function GetCBFrame()
                 local uf = frameList[unitKey]
                 return uf and uf.Castbar and uf.Castbar:GetParent()
@@ -619,16 +619,16 @@ local function RegisterUFUnlockElements()
         -- element's isHidden (mirrors the show setting), so toggling a cast bar
         -- on/off takes effect on the next unlock-mode open -- no /reload needed.
         if mod.GetUnitFrameSource("player") == "cui" then
-            elements[#elements + 1] = MakeCastBarElement("playerCastbar", "player", 10)
+            elements[#elements + 1] = CastBarElement("playerCastbar", "player", 10)
         end
         if mod.GetUnitFrameSource("target") == "cui" then
-            elements[#elements + 1] = MakeCastBarElement("targetCastbar", "target", 11)
+            elements[#elements + 1] = CastBarElement("targetCastbar", "target", 11)
         end
         if mod.GetUnitFrameSource("focus") == "cui" then
-            elements[#elements + 1] = MakeCastBarElement("focusCastbar", "focus", 12)
+            elements[#elements + 1] = CastBarElement("focusCastbar", "focus", 12)
         end
         if mod.GetUnitFrameSource("pet") == "cui" then
-            elements[#elements + 1] = MakeCastBarElement("petCastbar", "pet", 13)
+            elements[#elements + 1] = CastBarElement("petCastbar", "pet", 13)
         end
 
         CludesUI:RegisterUnlockElements(elements, "CludesUIUnitFrames")

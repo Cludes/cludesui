@@ -504,7 +504,7 @@ do
     -- uppercase K/M/B (ns.AbbreviateShortHealth), whatever the decimal options say.
     -- valueType: the Number Format type without a decimal config; boss frames
     -- read "bossHealth" instead.
-    local function MakeAbbrevHP(getHP, status, shortHealth, valueType)
+    local function ShortHealthFn(getHP, status, shortHealth, valueType)
         return function(unitToken)
             if not unitToken or not UnitExists(unitToken) then
                 return ""
@@ -534,9 +534,9 @@ do
         end
     end
 
-    TagFns.curhpshort = MakeAbbrevHP(UnitHealth, true, nil, "health")
-    TagFns.healthshort = MakeAbbrevHP(UnitHealth, true, true)
-    TagFns.maxhpshort = MakeAbbrevHP(UnitHealthMax, nil, nil, "maxHealth")
+    TagFns.curhpshort = ShortHealthFn(UnitHealth, true, nil, "health")
+    TagFns.healthshort = ShortHealthFn(UnitHealth, true, true)
+    TagFns.maxhpshort = ShortHealthFn(UnitHealthMax, nil, nil, "maxHealth")
 end
 
 do
@@ -1022,16 +1022,16 @@ do
                 pending = nil
                 RedrawNames()
             end
-            local function QueueRefresh()
+            local function QueueTextRefresh()
                 if pending then
                     return
                 end
                 pending = true
                 C_Timer.After(0, Flush)
             end
-            CN.RegisterCallback("CludesUIUnitFrames", "Name_Added", QueueRefresh)
-            CN.RegisterCallback("CludesUIUnitFrames", "Name_Update", QueueRefresh)
-            CN.RegisterCallback("CludesUIUnitFrames", "Name_Removed", QueueRefresh)
+            CN.RegisterCallback("CludesUIUnitFrames", "Name_Added", QueueTextRefresh)
+            CN.RegisterCallback("CludesUIUnitFrames", "Name_Update", QueueTextRefresh)
+            CN.RegisterCallback("CludesUIUnitFrames", "Name_Removed", QueueTextRefresh)
             RedrawNames()
         end)
     end

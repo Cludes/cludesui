@@ -182,7 +182,7 @@ end
 -------------------------------------------------------------------------------
 --  Keystone read / request
 -------------------------------------------------------------------------------
-local function RecordOwnKey()
+local function StoreOwnKey()
     local map, lvl = GetMyKeystone()
     local rating = 0
     if C_PlayerInfo and C_PlayerInfo.GetPlayerMythicPlusRatingSummary then
@@ -258,7 +258,7 @@ local function MakeSolid(hostFrame, layer, red, green, blue, a, sub)
     return tex
 end
 
-local function BuildPopup()
+local function MakePopup()
     if dialog then
         return dialog
     end
@@ -343,7 +343,7 @@ local function BuildPopup()
         refLocked = true
         refBtn:EnableMouse(false)
         refTex:SetAlpha(0.15)
-        RecordOwnKey()
+        StoreOwnKey()
         if IsInGroup() then
             QueryPartyKeys()
         end
@@ -391,7 +391,7 @@ local function AcquireRow(index)
     if rowFrames[index] then
         return rowFrames[index]
     end
-    local p = BuildPopup()
+    local p = MakePopup()
     local region = CreateFrame("Frame", nil, p._body)
     region:SetHeight(ROW_H)
 
@@ -473,7 +473,7 @@ local function AcquireSecHeader(index)
     if secHeaders[index] then
         return secHeaders[index]
     end
-    local p = BuildPopup()
+    local p = MakePopup()
     local hgt = CreateFrame("Frame", nil, p._body)
     hgt:SetHeight(HDR_H)
     hgt._label = MakeLabel(hgt, 10, "OUTLINE", 1, 1, 1, 0.56)
@@ -550,11 +550,11 @@ local function PopulateRow(region, e, ccMap)
 end
 
 ShowKeystonePopup = function()
-    RecordOwnKey()
+    StoreOwnKey()
     if not next(MAP_TELEPORT_SPELLS) then
         RebuildTeleportTables()
     end
-    local p = BuildPopup()
+    local p = MakePopup()
     local body = p._body
     local contentW = POPUP_W - PAD * 2
 
@@ -801,7 +801,7 @@ do
         if not enabled then
             return
         end
-        RecordOwnKey()
+        StoreOwnKey()
         QueryPartyKeys()
         ShowKeystonePopup()
         C_Timer.After(1.0, ShowKeystonePopup)

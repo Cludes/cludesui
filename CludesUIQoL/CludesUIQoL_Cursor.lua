@@ -129,7 +129,7 @@ local function ApplyReticle(profile, size, red, green, blue, a)
     reticleTex:Show()
 end
 
-local function Apply()
+local function ApplyCursorLook()
     if not frame or not t then
         return
     end
@@ -331,7 +331,7 @@ local function CursorGlueBody(rawX, rawY)
         frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX, posY)
     end
 end
-local function SetCursorGlue(on)
+local function GlueToCursor(on)
     local M = CludesUI and CludesUI.Mouse
     if not M then
         return
@@ -702,11 +702,11 @@ UpdateVisibility = function()
         lastX, lastY = cursorX, cursorY
         frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cursorX, cursorY)
         frame:Show()
-        SetCursorGlue(true)
+        GlueToCursor(true)
     elseif not showIt and visible then
         visible = false
         frame:Hide()
-        SetCursorGlue(false)
+        GlueToCursor(false)
     end
 
     -- Trail: hide dots and suppress spawning when circle is hidden
@@ -1543,7 +1543,7 @@ function ECL:OnInitialize()
 
     -- Expose for CUI_QoL_Cursor_Options.lua
     _G._CUCL_AceDB = self.db
-    _G._CUCL_Apply = Apply
+    _G._CUCL_Apply = ApplyCursorLook
     _G._CUCL_UpdateVisibility = UpdateVisibility
     _G._CUCL_ApplyCombatOnlyEvents = ApplyCombatOnlyEvents
     CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
@@ -1593,9 +1593,9 @@ function ECL:OnEnable()
     -- is SHOWN by default and isVisible initializes TRUE, so the first
     -- UpdateVisibility never takes a show TRANSITION -- subscribe here
     -- explicitly; UpdateVisibility owns both edges from then on.
-    SetCursorGlue(true)
+    GlueToCursor(true)
 
-    Apply()
+    ApplyCursorLook()
 
     -- Repaint when the accent lands: the lifecycle's PLAYER_LOGIN fires
     -- before the core resolves the profile accent, so Apply() above painted
@@ -1609,7 +1609,7 @@ function ECL:OnEnable()
                 return
             end
             if profile.useAccentColor then
-                Apply()
+                ApplyCursorLook()
             end
             if profile.gcd and profile.gcd.useAccentColor then
                 PaintGcdCircle()
@@ -1625,7 +1625,7 @@ function ECL:OnEnable()
         -- Re-apply the circle too: the RegAccent callback only lands if we
         -- registered before the core notified (event-dispatch order, not a
         -- guarantee). This runs past the login resolution either way.
-        Apply()
+        ApplyCursorLook()
         PaintGcdCircle()
         PaintCastCircle()
         ApplyTrail()

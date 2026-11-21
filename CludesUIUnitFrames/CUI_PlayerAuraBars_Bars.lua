@@ -732,7 +732,7 @@ local function BuffsContentSig(conf, spells, enchSlots)
     return table.concat(spells, ",") .. (enchSlots > 0 and ("|e" .. enchSlots) or "")
 end
 
-local function CreateBars()
+local function BuildBars()
     if not AK then
         SetAK(CludesUI and CludesUI.AuraKit)
     end
@@ -1583,7 +1583,7 @@ end
 Inner.ApplyContainerAnchorAndGrowth = ApplyContainerAnchorAndGrowth
 Inner.ApplyDefaultBarShown, Inner.ApplyLiveConfig = ApplyDefaultBarShown, ApplyLiveConfig
 Inner.BarAnchorOffset, Inner.BuffsContentSig = BarAnchorOffset, BuffsContentSig
-Inner.BuildContainerSpec, Inner.CornerFor, Inner.CreateBars = BuildContainerSpec, CornerFor, CreateBars
+Inner.BuildContainerSpec, Inner.CornerFor, Inner.CreateBars = BuildContainerSpec, CornerFor, BuildBars
 Inner.DeferRestrictedApply, Inner.MapElementSettings = DeferRestrictedApply, MapElementSettings
 Inner.MoverStorePos, Inner.QueuePABRegenApply = MoverStorePos, QueuePABRegenApply
 Inner.RebaseBarPositionToCenter, Inner.RegisterPABUnlock = RebaseBarPositionToCenter, RegisterPABUnlock

@@ -556,7 +556,7 @@ local function CompactHeight()
     return math.max(COMPACT_MIN_H, (profile and profile.compactHeight) or COMPACT_H)
 end
 
-local function WindowScale()
+local function ToolScale()
     local profile = P()
     return (profile and profile.scale) or 1
 end
@@ -732,7 +732,7 @@ end
 -- Solo counts as permitted. You are the only member, so nothing is being taken from
 -- anyone, and the game already no-ops whatever does not apply outside a group -- gating
 -- it ourselves would only make the panels dead on a target dummy for no reason.
-local function HasAssist()
+local function CanMark()
     if not IsInGroup() then
         return true
     end
@@ -754,7 +754,7 @@ mod.RT = {
     SkinPanelBg = SkinPanelBg,
     SkinPanelBorder = SkinPanelBorder,
     SkinButtonChrome = SkinButtonChrome,
-    HasAssist = HasAssist,
+    HasAssist = CanMark,
     AddFontOwner = function(markerOwner)
         fontOwners[#fontOwners + 1] = markerOwner
     end,
@@ -798,11 +798,11 @@ mod.RT = {
 -- express this: the gate is Lua's, it lands on the enabled attribute, and a
 -- promotion mid-combat is picked up on PLAYER_REGEN_ENABLED like every other
 -- Lua-side change (see the combat model in the header).
-local function AssistSuppressed()
+local function AssistHidden()
     if previewOn then
         return false
     end -- configuring the thing beats hiding it
-    return IsInRaid() and not HasAssist()
+    return IsInRaid() and not CanMark()
 end
 
 -- An optional button's switch, defaulting to shown for an unset profile.
@@ -813,7 +813,7 @@ end
 
 -- The Buff Check button needs Raid Buff Check on (and a retail client: the
 -- feature file publishes ns.ToggleBuffCheck only there).
-local function BuffCheckShown()
+local function BuffCheckOn()
     local profile = P()
     return profile and profile.showBuffCheck == true and profile.buffCheck == true and mod.ToggleBuffCheck ~= nil
 end
@@ -847,7 +847,7 @@ end
 -- `force` is for callers that have just built or rebuilt the buttons.
 local lastAssist, lastLeader, lastRaid
 local function RefreshPermissions(force)
-    local hasAssist, leader, raid = HasAssist(), IsLeader(), IsInRaid()
+    local hasAssist, leader, raid = CanMark(), IsLeader(), IsInRaid()
     if not force and hasAssist == lastAssist and leader == lastLeader and raid == lastRaid then
         return
     end
@@ -1093,7 +1093,7 @@ local function LayoutGroupContent()
     if ButtonShown("showRoleCheck") then
         Add(roleButton)
     end
-    if BuffCheckShown() then
+    if BuffCheckOn() then
         Add(buffButton)
     end
     if ButtonShown("showConvert") then
@@ -1394,7 +1394,7 @@ local function MakeCompactActionButton(hostFrame, labelText, tipBuilder, onClick
     return widget
 end
 
-local function CompactPullTime(slot)
+local function PullTimeFor(slot)
     local timeList = (P() and P().pullTimes) or {}
     local value = timeList[slot]
     if value == nil then
@@ -1432,7 +1432,7 @@ local function RefreshCompactPullState()
     if not compactPullButton then
         return
     end
-    local seconds = CompactPullTime(3) or CompactPullTime(2) or CompactPullTime(1)
+    local seconds = PullTimeFor(3) or PullTimeFor(2) or PullTimeFor(1)
     compactPullButton:SetShown(seconds ~= nil)
     if compactReady then
         compactReady:Show()
@@ -1462,7 +1462,7 @@ end
 -- host's SetAlphaFromBoolean, both of which take a secret from our code, and
 -- the client resolves it; a plain answer takes the same calls. Nothing is
 -- kept, so the next RAID_TARGET_UPDATE repaints from scratch.
-local function RefreshCompactMarkerState()
+local function SyncCompactMarkers()
     -- Hidden buttons are left alone: switching back to the band runs
     -- ApplyLayout, which ends by calling this.
     if ShowAs() ~= "compact" then
@@ -1498,7 +1498,7 @@ local function BuildCompactContent()
         if ButtonShown("showRoleCheck") then
             actions[#actions + 1] = { "Right Click", "Role Check" }
         end
-        if BuffCheckShown() then
+        if BuffCheckOn() then
             actions[#actions + 1] = { "Shift + Left Click", "Buff Check" }
         end
         return "Ready Check", actions
@@ -1507,7 +1507,7 @@ local function BuildCompactContent()
             if ButtonShown("showRoleCheck") then
                 InitiateRolePoll()
             end
-        elseif IsShiftKeyDown() and BuffCheckShown() then
+        elseif IsShiftKeyDown() and BuffCheckOn() then
             ToggleBuffCheck()
         else
             DoReadyCheck()
@@ -1515,9 +1515,9 @@ local function BuildCompactContent()
     end)
 
     compactPullButton = MakeCompactActionButton(compactFrame, "PT", function()
-        local a = CompactPullTime(1) or "off"
-        local b = CompactPullTime(2) or "off"
-        local c = CompactPullTime(3) or "off"
+        local a = PullTimeFor(1) or "off"
+        local b = PullTimeFor(2) or "off"
+        local c = PullTimeFor(3) or "off"
         return "Pull Timer",
             {
                 { "Left Click", "Pull " .. c },
@@ -1532,11 +1532,11 @@ local function BuildCompactContent()
         end
         local seconds
         if IsControlKeyDown() then
-            seconds = CompactPullTime(1)
+            seconds = PullTimeFor(1)
         elseif IsShiftKeyDown() then
-            seconds = CompactPullTime(2)
+            seconds = PullTimeFor(2)
         else
-            seconds = CompactPullTime(3) or CompactPullTime(2) or CompactPullTime(1)
+            seconds = PullTimeFor(3) or PullTimeFor(2) or PullTimeFor(1)
         end
         if seconds then
             StartPull(seconds)
@@ -1556,7 +1556,7 @@ local function BuildCompactContent()
     compactDivider:SetPoint("BOTTOM", compactPullButton, "BOTTOMLEFT", -COMPACT_DIVIDER_OFFSET, 2)
 
     RefreshCompactPullState()
-    RefreshCompactMarkerState()
+    SyncCompactMarkers()
 end
 
 -- The collapsed-state square: bg + border + the icon, expanding on click.
@@ -1694,7 +1694,7 @@ end
 
 -- Show-as arrangement. OOC only (Apply gates); the holders are plain frames,
 -- so the re-parent is an ordinary SetParent.
-local function ApplyLayout()
+local function LayoutTools()
     local profile = P()
     local displayAs = ShowAs()
     local windowGroup, windowMarkers = sectionList.Group, sectionList.Markers
@@ -1782,7 +1782,7 @@ local function ApplyLayout()
         windowMarkers._bgFit()
     end
     RefreshCompactPullState()
-    RefreshCompactMarkerState()
+    SyncCompactMarkers()
 end
 
 -- Positions round-trip through unlock mode's CENTER/CENTER convention.
@@ -1799,14 +1799,14 @@ local function DefaultPos(toolKey)
     local MARGIN = 20
     local topY = -MARGIN
     if toolKey == "Markers" then
-        topY = topY - (sectionList.Group:GetHeight() * WindowScale() + ROW_GAP)
+        topY = topY - (sectionList.Group:GetHeight() * ToolScale() + ROW_GAP)
     end
     -- Screen-space margin converted into the frame's own scaled units.
-    local s = WindowScale()
+    local s = ToolScale()
     return { point = "TOPLEFT", relPoint = "TOPLEFT", x = MARGIN / s, y = topY / s }
 end
 
-local function ApplySectionPosition(toolKey, unlockKey, posKey)
+local function PlaceSection(toolKey, unlockKey, posKey)
     local frame = sectionList[toolKey]
     if not frame then
         return
@@ -1853,12 +1853,12 @@ local function ApplyPositions()
     -- Window and Only Group & Pull ride pos.Group, Only Markers rides pos.Markers.
     local displayAs = ShowAs()
     if displayAs == "compact" then
-        ApplySectionPosition("Group", COMPACT_UNLOCK_KEY, "Compact")
+        PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
     elseif displayAs ~= "markers" then
-        ApplySectionPosition("Group")
+        PlaceSection("Group")
     end
     if displayAs == "two" or displayAs == "markers" then
-        ApplySectionPosition("Markers")
+        PlaceSection("Markers")
     end
 end
 
@@ -1894,7 +1894,7 @@ local function ApplyVisibility()
     -- included -- a raid without assist is a raid where nothing here works.
     local displayAs = ShowAs()
     local isCompact = displayAs == "compact"
-    local suppressed = AssistSuppressed()
+    local suppressed = AssistHidden()
     local shellOn = {
         Group = displayAs ~= "markers" and not suppressed,
         Markers = (displayAs == "two" or displayAs == "markers") and not suppressed,
@@ -1971,7 +1971,7 @@ local function ApplyToggleKeybind()
     -- The gate takes the binding with it rather than leaving a key that eats
     -- its own keypress: the snippet would refuse a disabled frame, and an
     -- override binding swallows whatever the key does otherwise.
-    if k and k ~= "" and ShowMode() ~= "never" and not AssistSuppressed() then
+    if k and k ~= "" and ShowMode() ~= "never" and not AssistHidden() then
         SetOverrideBindingClick(toggleBtn, false, k, "CludesUIRaidToolsToggle")
     end
 end
@@ -2196,7 +2196,7 @@ local function ApplyQuickFireBindings()
     if runState.qfBindingOwner then
         ClearOverrideBindings(runState.qfBindingOwner)
     end
-    if not profile or profile.quickFire ~= true or ShowMode() == "never" or AssistSuppressed() then
+    if not profile or profile.quickFire ~= true or ShowMode() == "never" or AssistHidden() then
         return
     end
 
@@ -2231,7 +2231,7 @@ end
 -- PLAYER_REGEN_ENABLED finishes the job. That is the module's standard
 -- deferral, not an omission.
 local function RefreshAssistGate()
-    if AssistSuppressed() ~= lastSuppressed then
+    if AssistHidden() ~= lastSuppressed then
         Apply()
     end
 end
@@ -2257,7 +2257,7 @@ local function EnsureEvents()
             -- A zone change repaints the band too: the markers it showed belong
             -- to the ground just left.
             if (evt == "RAID_TARGET_UPDATE" or evt == "PLAYER_ENTERING_WORLD") and ShowAs() == "compact" then
-                RefreshCompactMarkerState()
+                SyncCompactMarkers()
             end
             -- Both features share these events, but each only does work while
             -- enabled. An old Quick Fire frame can survive being disabled. An
@@ -2331,7 +2331,7 @@ local function RegisterUnlock()
                 end
                 -- Nothing to move while the assist gate has the whole feature
                 -- off the screen -- same opt-out as the modes below.
-                if AssistSuppressed() then
+                if AssistHidden() then
                     return nil
                 end
                 -- Offer exactly the shells the Show as choice puts on screen:
@@ -2351,7 +2351,7 @@ local function RegisterUnlock()
                 -- Unlock mode sizes the mover overlay in UIParent units, so
                 -- the Window Scale has to be folded in here -- GetWidth is the
                 -- frame's own (unscaled) size.
-                local s = WindowScale()
+                local s = ToolScale()
                 local frame = sectionList[toolKey]
                 if frame then
                     return frame:GetWidth() * s, frame:GetHeight() * s
@@ -2385,7 +2385,7 @@ local function RegisterUnlock()
                 end
                 profile.pos[toolKey] = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
-                    ApplySectionPosition(toolKey)
+                    PlaceSection(toolKey)
                 end
             end,
             loadPos = function()
@@ -2405,7 +2405,7 @@ local function RegisterUnlock()
                 if toolKey == "Group" and ShowAs() == "compact" then
                     return
                 end
-                ApplySectionPosition(toolKey)
+                PlaceSection(toolKey)
             end,
         })
     end
@@ -2416,7 +2416,7 @@ local function RegisterUnlock()
         group = "Raid Tools",
         order = 540,
         getFrame = function()
-            if ShowMode() == "never" or AssistSuppressed() or ShowAs() ~= "compact" then
+            if ShowMode() == "never" or AssistHidden() or ShowAs() ~= "compact" then
                 return nil
             end
             BuildSections()
@@ -2437,7 +2437,7 @@ local function RegisterUnlock()
             local Pix = CludesUI and CludesUI.PP
             profile.compactWidth = math.max(COMPACT_MIN_W, Pix and Pix.Snap(newW) or math.floor(newW + 0.5))
             if sectionList.Group then
-                ApplyLayout()
+                LayoutTools()
             end
         end,
         setHeight = function(_, newH)
@@ -2448,7 +2448,7 @@ local function RegisterUnlock()
             local Pix = CludesUI and CludesUI.PP
             profile.compactHeight = math.max(COMPACT_MIN_H, Pix and Pix.Snap(newH) or math.floor(newH + 0.5))
             if sectionList.Group then
-                ApplyLayout()
+                LayoutTools()
             end
         end,
         savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -2465,7 +2465,7 @@ local function RegisterUnlock()
             end
             profile.pos.Compact = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
-                ApplySectionPosition("Group", COMPACT_UNLOCK_KEY, "Compact")
+                PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
             end
         end,
         loadPos = function()
@@ -2481,7 +2481,7 @@ local function RegisterUnlock()
             if ShowAs() ~= "compact" then
                 return
             end
-            ApplySectionPosition("Group", COMPACT_UNLOCK_KEY, "Compact")
+            PlaceSection("Group", COMPACT_UNLOCK_KEY, "Compact")
         end,
     })
 
@@ -2539,9 +2539,9 @@ function Apply()
     -- Before ApplyLayout: it sizes the shells from GROUP_CONTENT_H, which the
     -- hidden buttons and the 0-second pull slots move.
     LayoutGroupContent()
-    ApplyLayout()
+    LayoutTools()
     -- One Window Scale for everything the feature draws.
-    local scale = WindowScale()
+    local scale = ToolScale()
     sectionList.Group:SetScale(scale)
     sectionList.Markers:SetScale(scale)
     iconButton:SetScale(scale)
@@ -2603,7 +2603,7 @@ SlashCmdList["CUIRAIDTOOLS"] = function()
     end
     -- The snippet would refuse anyway (enabled is false while the gate is
     -- shut); saying so beats a slash command that looks broken.
-    if AssistSuppressed() then
+    if AssistHidden() then
         CludesUI.Print(
             CludesUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "

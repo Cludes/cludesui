@@ -181,7 +181,7 @@ end
 -- Fill and text from live mana, in the Power Bar's text formats. force = the
 -- look or the visibility just changed: repaint and snap (no ease). A
 -- restricted read skips the clamp and the stamps and always rewrites.
-local function Paint(force)
+local function DrawMana(force)
     local scrollBar = DruidMana.sb
     local current = UnitPower("player", MANA)
     local mx = UnitPowerMax("player", MANA)
@@ -250,7 +250,7 @@ local function UpdateLive()
     if live then
         evf:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
         evf:RegisterUnitEvent("UNIT_MAXPOWER", "player")
-        Paint(true)
+        DrawMana(true)
     else
         evf:UnregisterEvent("UNIT_POWER_FREQUENT")
         evf:UnregisterEvent("UNIT_MAXPOWER")
@@ -268,7 +268,7 @@ local function CascadeSettled()
         CUI.PropagateAnchorChain("ERB_Power")
     end
 end
-local function NotifyExtent()
+local function ReportExtent()
     local sig = (DruidMana.shown and not DruidMana.parked and DruidMana.extSide) and DruidMana.extSig or nil
     if sig == DruidMana.extLast then
         return
@@ -292,7 +292,7 @@ local function Refresh()
         DruidMana.host:SetShown(isShown)
     end
     UpdateLive()
-    NotifyExtent()
+    ReportExtent()
 end
 
 evf:SetScript("OnEvent", function(_, evt, _, powerType)
@@ -303,7 +303,7 @@ evf:SetScript("OnEvent", function(_, evt, _, powerType)
         if Plain(powerType) and powerType and powerType ~= "MANA" then
             return
         end
-        Paint(false)
+        DrawMana(false)
     end
 end)
 
@@ -550,7 +550,7 @@ local function Teardown()
     DruidMana.cur, DruidMana.mx = nil, nil
     evf:UnregisterAllEvents()
     DruidMana.host:Hide()
-    NotifyExtent()
+    ReportExtent()
 end
 
 -------------------------------------------------------------------------------
@@ -591,7 +591,7 @@ function mod.FDM_Apply(pb, pp, g)
     -- Already live: the new look and text settings paint now (an edge into
     -- live painted in UpdateLive).
     if wasLive and DruidMana.live then
-        Paint(true)
+        DrawMana(true)
     end
 end
 
@@ -623,7 +623,7 @@ function mod.FDM_Parked(parked)
         return
     end
     DruidMana.parked = parked
-    NotifyExtent()
+    ReportExtent()
 end
 
 -- Anchor-target edge for the unlock anchor system: while this bar shows

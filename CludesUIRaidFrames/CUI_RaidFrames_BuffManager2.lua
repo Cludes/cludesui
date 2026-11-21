@@ -684,7 +684,7 @@ local function PresetIdsByKey(b)
 end
 
 -- Seeds the starter groups: group 1 center, healing corners top-left/right.
-local function SeedSpec(b, specKey)
+local function SeedSpecBucket(b, specKey)
     -- WoW Forever never runs this per-bucket seed: its own All Specs starter
     -- seed is placed once per store from EnsureFilters (CludesUI_Migration.lua).
     -- A seeded bucket with its arrays costs plain reads; anything else passes
@@ -759,7 +759,7 @@ function mod.BM2_SpecInds(key)
     local b = FilterStore()
     if not b then return nil, nil end
     local specKey = key or mod.BM2_SpecKey()
-    SeedSpec(b, specKey)
+    SeedSpecBucket(b, specKey)
     local specInfo = b.specs[specKey]
     if specInfo then
         -- Token normalization: the BM machinery expects UPPERCASE position/
@@ -815,7 +815,7 @@ function mod.BM2_SetInhDisabled(concreteKey, groupKey, ident, disabled)
     -- preset filters or its starter groups would bake empty assignments.
     local b = FilterStore()
     if not (b and concreteKey and groupKey and ident) then return end
-    SeedSpec(b, concreteKey)
+    SeedSpecBucket(b, concreteKey)
     local specInfo = b.specs[concreteKey]
     -- seeded[k] can outlive specs[k] (layer payloads/imports may prune empty
     -- bucket tables): re-create rather than index nil.
@@ -836,7 +836,7 @@ end
 function mod.BM2_CopyIndicator(srcInd, targetKey)
     local b = FilterStore()
     if not (b and srcInd and targetKey) then return nil end
-    SeedSpec(b, targetKey)
+    SeedSpecBucket(b, targetKey)
     local specInfo = b.specs[targetKey]
     if not specInfo then
         specInfo = { nextId = 1000001, inds = {} }
@@ -867,7 +867,7 @@ function mod.BM2_AddIndicator(indType, key)
     local store = Store()
     if not store then return nil end
     local specKey = key or mod.BM2_SpecKey()
-    SeedSpec(store, specKey)
+    SeedSpecBucket(store, specKey)
     local specInfo = store.specs[specKey]
     -- Growth must match the position the way the Position dropdown derives it
     -- (TOPLEFT -> RIGHT): CENTER growth centers the run ON the anchor, so a
@@ -1159,7 +1159,7 @@ function mod.BM2_SpecIndicators(frameKind)
     -- groupKey marks a GROUP bucket's contribution: the active spec's
     -- per-spec disable set drops those indicators here (render side); the
     -- indicator itself is untouched for every other spec.
-    local function Append(entries, idOffset, groupKey, bucket)
+    local function AppendEntries(entries, idOffset, groupKey, bucket)
         if not entries then return end
         local views  -- this bucket's stable views, fetched on first use
         for idx = 1, #entries do
@@ -1207,10 +1207,10 @@ function mod.BM2_SpecIndicators(frameKind)
     end
     -- For non-healer specs the active bucket IS the All Non Healers/Aug
     -- group, so its rows honor the per-spec disable set too.
-    Append(inds, nil, (not tracked) and "nonhealer" or nil, specKey)
-    Append(ownInds, 1000000, nil, specID and ("spec" .. specID))
-    Append(allInds, 2000000, "allspecs", "allspecs")
-    Append(roleInds, 3000000, roleKey, roleKey)
+    AppendEntries(inds, nil, (not tracked) and "nonhealer" or nil, specKey)
+    AppendEntries(ownInds, 1000000, nil, specID and ("spec" .. specID))
+    AppendEntries(allInds, 2000000, "allspecs", "allspecs")
+    AppendEntries(roleInds, 3000000, roleKey, roleKey)
     return result, specKey, "custom"
 end
 

@@ -1954,7 +1954,7 @@ local function BuffTipMode()
     return val
 end
 
-local function BmTipsOff()
+local function BuffTipsOff()
     local val = BuffTipMode()
     return not (val == false or val == "combat" or val == "cursor")
 end
@@ -1984,7 +1984,7 @@ local function BuildBmIconStyle(indicator, iconScale, px)
         stackOffY = indicator.stacksOffsetY or 2,
         alpha = (indicator.iconOpacity or 100) / 100,
         levelOffset = BM_FRAMELVL[indicator.frameLevel or "medium"] or 13,
-        noTooltips = BmTipsOff(),
+        noTooltips = BuffTipsOff(),
         tooltipCombatHide = BuffTipMode() == "combat",
         tooltipAnchor = (BuffTipMode() == "cursor") and "cursor" or nil,
         bmGlowInd = indicator,
@@ -2347,7 +2347,7 @@ local function BuildBmStyleFor(kindName, indicator, iconScale, px, spellId)
             stackColor = indicator.stacksTextColor,
             stackOffX = indicator.stacksOffsetX or -1,
             stackOffY = indicator.stacksOffsetY or 2,
-            noTooltips = BmTipsOff(),
+            noTooltips = BuffTipsOff(),
             tooltipCombatHide = BuffTipMode() == "combat",
             tooltipAnchor = (BuffTipMode() == "cursor") and "cursor" or nil,
             -- Squares share the display-level Icon Glow (same overlay child
@@ -2364,7 +2364,7 @@ local function BuildBmStyleFor(kindName, indicator, iconScale, px, spellId)
             height = 1,
             noRegions = true,
             ind = indicator,
-            noTooltips = BmTipsOff(),
+            noTooltips = BuffTipsOff(),
             tooltipCombatHide = BuffTipMode() == "combat",
             tooltipAnchor = (BuffTipMode() == "cursor") and "cursor" or nil,
             applyExtra = BmApplyBar,
@@ -3193,7 +3193,7 @@ end
 
 -- Parks every pool entry not re-bound by the current pass (count 0 +
 -- hidden; the parked flag keeps repeat parks free).
-local function BmParkUnbound(d, counters)
+local function ParkUnbound(d, counters)
     local pool = d.rfcBmPool
     if not pool then
         return
@@ -3278,7 +3278,7 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
 
     if not inds then
         d.rfcBmSig = sig
-        BmParkUnbound(d, nil) -- custom-side chain pool parks
+        ParkUnbound(d, nil) -- custom-side chain pool parks
         return
     end
 
@@ -3362,7 +3362,7 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
         end
     end
     d.rfcBmChain = chainContainers
-    BmParkUnbound(d, counters)
+    ParkUnbound(d, counters)
 
     d.rfcBmMeta = metaRec
     d.rfcBmSig = sig
@@ -3462,7 +3462,7 @@ local function BmRebindPendingChains(btnFrame, d, classFile)
         end
     end
     d.rfcBmChain = chainContainers
-    BmParkUnbound(d, counters)
+    ParkUnbound(d, counters)
     d.rfcBmMeta = metaRec
     d.rfcBmChainsPending = pending or nil
     -- Newly-bound chains default to full alpha; re-drive the trust gate so
@@ -4385,7 +4385,7 @@ end
 -- Full assist-gate sweep over every live button. Per-unit matching is
 -- unsafe (UnitIsUnit can return a SECRET boolean during group teardown),
 -- and the gate's same-state early-out makes a sweep near-free.
-local function AssistSweep()
+local function SweepAssist()
     for i = 1, #registry do
         local btnFrame = registry[i]
         local d = mod.GetFFD and mod.GetFFD(btnFrame)
@@ -4468,7 +4468,7 @@ bmRegen:SetScript("OnEvent", function(_, evt, arg1)
         -- Assistability can flip on zone transitions without a unit
         -- re-assignment (cross-faction members become assistable inside
         -- instances); re-evaluate the gate for every live button.
-        AssistSweep()
+        SweepAssist()
         return
     end
     if mod._rfcTotemDirty then
@@ -4524,7 +4524,7 @@ assistWatch:RegisterEvent("UNIT_FLAGS")
 local assistSweepPending = false
 local function AssistSweepDrain()
     assistSweepPending = false
-    AssistSweep()
+    SweepAssist()
 end
 assistWatch:SetScript("OnEvent", function(_, evt)
     -- Vehicle and cinematic-skip edges sweep IMMEDIATELY: they are rare (no
@@ -4536,7 +4536,7 @@ assistWatch:SetScript("OnEvent", function(_, evt)
         or evt == "UNIT_EXITED_VEHICLE"
         or evt == "CINEMATIC_STOP"
     then
-        AssistSweep()
+        SweepAssist()
         return
     end
     if assistSweepPending then

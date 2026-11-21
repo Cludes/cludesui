@@ -477,7 +477,7 @@ local function PvAuraPickFrame(set, auraType, minSlot)
 end
 
 -- Re-anchor all visible icons on a frame for CENTER growth
-local function PvAuraReanchorFrame(frameIndex, auraType)
+local function PvReanchorAuras(frameIndex, auraType)
     local frame = PvFrames()[frameIndex]
     if not frame then
         return
@@ -528,7 +528,7 @@ local function PvAuraTick()
                     mod._pvActiveAuras._stackKey = nil
                 end
                 PvAuraApply(details.frameIndex, details.auraType, details.slot)
-                PvAuraReanchorFrame(details.frameIndex, details.auraType)
+                PvReanchorAuras(details.frameIndex, details.auraType)
             else
                 local frame = PvFrames()[details.frameIndex]
                 if frame then
@@ -577,7 +577,7 @@ local function PvAuraTick()
                     -- Re-pack remaining debuffs so a surviving slot-2+ icon shifts
                     -- into the vacated first position immediately, instead of only
                     -- when that icon itself refreshes.
-                    PvAuraReanchorFrame(fi, "db")
+                    PvReanchorAuras(fi, "db")
                 end
                 mod._pvActiveAuras[fi .. ":db:1"] = nil
             end
@@ -632,7 +632,7 @@ local function PvAuraTick()
                     -- Re-pack all shown debuffs so slot 1 takes the first position
                     -- and any random slot-2+ debuff shifts right, rather than the
                     -- two overlapping when the pulse returns.
-                    PvAuraReanchorFrame(fi, "db")
+                    PvReanchorAuras(fi, "db")
                     mod._pvActiveAuras[key] = {
                         frameIndex = fi,
                         auraType = "db",
@@ -666,7 +666,7 @@ local function PvAuraTick()
                     end
                 end
                 if changed then
-                    PvAuraReanchorFrame(1, "db")
+                    PvReanchorAuras(1, "db")
                 end
             end
         end
@@ -683,14 +683,14 @@ local function PvAuraTick()
                 break
             end
             PvAuraApply(fi, "def", 1)
-            PvAuraReanchorFrame(fi, "def")
+            PvReanchorAuras(fi, "def")
         end
         -- Random debuffs use slot 2+
         if wantDb and PvAuraCountInGroup(set, "db", 2) < 1 then
             local fi = PvAuraPickFrame(set, "db", 2)
             if fi then
                 PvAuraApply(fi, "db", 2)
-                PvAuraReanchorFrame(fi, "db")
+                PvReanchorAuras(fi, "db")
             end
         end
     end
@@ -782,7 +782,7 @@ local function StopPvAuraTicker()
     end
 end
 
-Inner.PvActive, Inner.PvAuraReanchorFrame, Inner.PvFrames = PvActive, PvAuraReanchorFrame, PvFrames
+Inner.PvActive, Inner.PvAuraReanchorFrame, Inner.PvFrames = PvActive, PvReanchorAuras, PvFrames
 Inner.PvSettings, Inner.StartPvAuraTicker = PreviewCfg, StartPvAuraTicker
 Inner.StopPvAuraTicker = StopPvAuraTicker
 Inner.broken = false

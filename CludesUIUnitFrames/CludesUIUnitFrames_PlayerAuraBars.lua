@@ -672,7 +672,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
 
     -- Boss / Role / Can Apply: the engine field a link of one of those classes
     -- owns, else nil. Each is an exact NOT when set false (like isPriorityAura).
-    local function OwnedBool(cc)
+    local function OwnFlagOf(cc)
         if cc.isBossAura == true then
             return "isBossAura"
         end
@@ -704,7 +704,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             local class = candidateClasses[index]
             local cc = class.cand
             if cc and classEnabledFn(class) then
-                local bk = OwnedBool(cc)
+                local bk = OwnFlagOf(cc)
                 if cc.isFromPlayerOrPlayerPet == false then
                     npShown = true
                 elseif cc.isPriorityAura == true then
@@ -789,7 +789,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         end
         local ex = ExtraCand(
             cc.isPriorityAura == true
-                or OwnedBool(cc) ~= nil
+                or OwnFlagOf(cc) ~= nil
                 or (cc.includeDispelTypes ~= nil and not prOwned),
             dead
         )
@@ -908,7 +908,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 if cc.isPriorityAura == true then
                     prOwned = true
                 end
-                local bk = OwnedBool(cc)
+                local bk = OwnFlagOf(cc)
                 if bk then
                     boolOwned = boolOwned or {}
                     boolOwned[bk] = false
@@ -985,7 +985,7 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 if en and cc.isPriorityAura == true then
                     prOwned = true
                 end
-                local bk = en and OwnedBool(cc)
+                local bk = en and OwnFlagOf(cc)
                 if bk then
                     boolOwned = boolOwned or {}
                     boolOwned[bk] = false

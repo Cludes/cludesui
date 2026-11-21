@@ -31,7 +31,7 @@ mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX = POSITIONS, POS_INDEX
 -- One text: kind, label, and its keys. mode: the mode key (Health, Power, Heal
 -- Absorb); fmt: the template key (Custom); above: Show Above Icons (unset: as the
 -- name's). The level is drawn in the name's colour.
-local function Text(ident, kind, labelText, prefixText, mode)
+local function TextDef(ident, kind, labelText, prefixText, mode)
     return {
         id = ident,
         kind = kind,
@@ -72,14 +72,14 @@ local TEXTS = {
         col = "nameCustomColor",
         above = "levelTextAboveIcons",
     },
-    Text("hp", "hp", "Health Text", "healthText", true),
-    Text("hp2", "hp", "Second Health Text", "healthText2", true),
-    Text("pp", "pp", "Power Text", "powerText", true),
-    Text("ha", "ha", "Heal Absorb Text", "healAbsorbText", true),
+    TextDef("hp", "hp", "Health Text", "healthText", true),
+    TextDef("hp2", "hp", "Second Health Text", "healthText2", true),
+    TextDef("pp", "pp", "Power Text", "powerText", true),
+    TextDef("ha", "ha", "Heal Absorb Text", "healAbsorbText", true),
 }
 mod.RF_CUSTOM_TEXT_MAX = 4
 for num = 1, mod.RF_CUSTOM_TEXT_MAX do
-    local tbl = Text("custom" .. num, "custom", "Custom Text " .. num, "customText" .. num)
+    local tbl = TextDef("custom" .. num, "custom", "Custom Text " .. num, "customText" .. num)
     tbl.fmt = "customText" .. num .. "Format"
     TEXTS[#TEXTS + 1] = tbl
 end

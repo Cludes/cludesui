@@ -355,13 +355,13 @@ local function ApplyHouses(houses)
             where = where .. (where ~= "" and "  -  " or "") .. hgt.ownerName
         end
         row.info:SetText(where)
-        local val = row.visit
-        val:SetAttribute("house-neighborhood-guid", hgt.neighborhoodGUID)
-        val:SetAttribute("house-guid", hgt.houseGUID)
-        val:SetAttribute("house-plot-id", hgt.plotID and tostring(hgt.plotID) or nil)
+        local visitBtn = row.visit
+        visitBtn:SetAttribute("house-neighborhood-guid", hgt.neighborhoodGUID)
+        visitBtn:SetAttribute("house-guid", hgt.houseGUID)
+        visitBtn:SetAttribute("house-plot-id", hgt.plotID and tostring(hgt.plotID) or nil)
         local success = hgt.neighborhoodGUID and hgt.houseGUID and hgt.plotID
-        val:SetAlpha(success and 1 or 0.3)
-        val:EnableMouse(success and true or false)
+        visitBtn:SetAlpha(success and 1 or 0.3)
+        visitBtn:EnableMouse(success and true or false)
         row:Show()
     end
 end

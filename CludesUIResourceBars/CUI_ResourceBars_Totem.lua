@@ -31,7 +31,7 @@ local _totemOrigStrata
 
 -- Totem Bar: reparents Blizzard TotemFrame, repositions buttons in a clean
 -- row, adds overlay border frames (our own frames, never written to Blizzard).
-local function GetTotemSettings()
+local function TotemCfg()
     return ERB.db and ERB.db.profile and ERB.db.profile.totemBar
 end
 
@@ -45,7 +45,7 @@ end
 -- and unlock mode's menu from disagreeing. Unset (every existing profile) resolves to
 -- the orientation default, reproducing the pre-setting layout exactly.
 function CludesUI.GetTotemGrowDir()
-    local tb = GetTotemSettings()
+    local tb = TotemCfg()
     local vertical = tb and tb.orientation == "VERTICAL"
     local direction = (tb and tb.growDirection or (vertical and "DOWN" or "RIGHT")):upper()
     if vertical then
@@ -80,11 +80,11 @@ local function GetCooldownNumberFS(cd)
     return nil
 end
 
-local function LayoutTotemBar()
+local function PlaceTotemBar()
     if not totemBarFrame or not TotemFrame then
         return
     end
-    local tb = GetTotemSettings()
+    local tb = TotemCfg()
     if not tb or not tb.enabledClasses then
         return
     end
@@ -318,10 +318,10 @@ end
 
 -- Expose so unlock-mode's grow-direction menu can re-run the layout after
 -- changing totemBar.growDirection (LayoutTotemBar is file-local).
-CludesUI.LayoutTotemBar = LayoutTotemBar
+CludesUI.LayoutTotemBar = PlaceTotemBar
 
 local function BuildTotemBar()
-    local tb = GetTotemSettings()
+    local tb = TotemCfg()
     if not tb then
         return
     end
@@ -418,22 +418,22 @@ local function BuildTotemBar()
     -- Hook Blizzard updates (once)
     if not _totemHooked and TotemFrame then
         _totemHooked = true
-        local function OnTotemUpdate()
-            local cfg = GetTotemSettings()
+        local function OnTotemsChanged()
+            local cfg = TotemCfg()
             if cfg and cfg.enabledClasses then
-                LayoutTotemBar()
+                PlaceTotemBar()
             end
         end
-        hooksecurefunc(TotemFrame, "Update", OnTotemUpdate)
-        TotemFrame:HookScript("OnShow", OnTotemUpdate)
+        hooksecurefunc(TotemFrame, "Update", OnTotemsChanged)
+        TotemFrame:HookScript("OnShow", OnTotemsChanged)
         if TotemButtonMixin then
             hooksecurefunc(TotemButtonMixin, "OnLoad", function()
-                C_Timer.After(0, OnTotemUpdate)
+                C_Timer.After(0, OnTotemsChanged)
             end)
         end
     end
 
-    LayoutTotemBar()
+    PlaceTotemBar()
 end
 
 Inner.BuildTotemBar = BuildTotemBar

@@ -465,7 +465,7 @@ local function _defaultLeftOfBrezCenter()
     return brCX - (brSize * 0.5 + gap + myW * 0.5), brCY
 end
 
-local function ApplyPosition()
+local function PlaceLust()
     if not widget then
         return
     end
@@ -500,7 +500,7 @@ local function SeedDefaultPos()
     end
     local cx, cy = _defaultLeftOfBrezCenter()
     profile.pos = { centerX = cx, centerY = cy }
-    ApplyPosition()
+    PlaceLust()
 end
 _G._CUI_Bloodlust_SeedPos = SeedDefaultPos
 
@@ -623,7 +623,7 @@ end
 
 -- Countdown text for the overlay, deduped so we only SetText on a real change.
 local _lastBuffDurText
-local function _setBuffDur(s)
+local function _showBuffDuration(s)
     if s ~= _lastBuffDurText then
         buffDurationFS:SetText(s)
         _lastBuffDurText = s
@@ -640,7 +640,7 @@ local function _buffOnUpdate(_, elapsed)
         _buffExpiry = 0
         buffShade:SetScript("OnUpdate", nil)
         buffShade:Hide()
-        _setBuffDur("")
+        _showBuffDuration("")
         -- The window is part of the visibility rule (ShouldShow keeps the icon up
         -- for it even with "Show when Sated" off), so its end has to re-evaluate
         -- rather than wait for the next unrelated event.
@@ -654,7 +654,7 @@ local function _buffOnUpdate(_, elapsed)
     _buffAccum = 0
     -- Buff window is only 40s, so show plain seconds ("40", "39", ...) with no
     -- leading "0:". ceil keeps each number on screen for its full second.
-    _setBuffDur(tostring(math.ceil(remaining)))
+    _showBuffDuration(tostring(math.ceil(remaining)))
 end
 
 local function _showBuffOverlay()
@@ -666,7 +666,7 @@ local function _showBuffOverlay()
     _buffExpiry = GetTime() + 40
     _buffAccum = 0
     buffCd:SetCooldown(GetTime(), 40)
-    _setBuffDur("40")
+    _showBuffDuration("40")
     buffShade:Show()
     buffShade:SetScript("OnUpdate", _buffOnUpdate)
 end
@@ -690,7 +690,7 @@ local function _showReadyState()
     _readyShown = true
 end
 
-local function _hideReadyState()
+local function _clearReady()
     if not _readyShown then
         return
     end
@@ -703,7 +703,7 @@ end
 -- Grey the base icon while it shows a lockout (real or preview), never in the
 -- ready state. The 40s buff overlay is its own texture and stays in colour.
 local _lastDesat = false
-local function _syncDesat()
+local function _syncGrey()
     if not iconTexture then
         return
     end
@@ -720,7 +720,7 @@ local function _hideBuffOverlay()
         buffShade:SetScript("OnUpdate", nil)
         buffShade:Hide()
     end
-    _setBuffDur("")
+    _showBuffDuration("")
 end
 
 -------------------------------------------------------------------------------
@@ -803,7 +803,7 @@ local function _showPreviewLockout()
     if not widget then
         return
     end
-    _hideReadyState()
+    _clearReady()
     if _previewExpiry <= GetTime() then
         -- Once per cycle: re-setting the SAME values each poll is idempotent, but
         -- re-setting new ones would restart the swipe animation twice a second.
@@ -843,7 +843,7 @@ local function PollSated()
             end
             _showDuration("")
             _showReadyState()
-            _syncDesat()
+            _syncGrey()
             return
         end
         if _previewShown() then
@@ -852,7 +852,7 @@ local function PollSated()
             -- label when it is on, everything else previews the lockout, including
             -- the both-off case where the icon has no live state of its own.
             _showPreviewLockout()
-            _syncDesat()
+            _syncGrey()
             return
         end
         _showDuration("")
@@ -862,7 +862,7 @@ local function PollSated()
         -- Coming back from the ready state (normally the UNIT_AURA edge, but this
         -- poll is also the safety net for a missed one): restore the debuff icon
         -- and its swipe, not just the text.
-        _hideReadyState()
+        _clearReady()
         _applyActiveAura(auraInfo, auraSid)
     end
     local expiresAt = auraInfo.expirationTime
@@ -876,7 +876,7 @@ local function PollSated()
     else
         _showDuration("")
     end
-    _syncDesat()
+    _syncGrey()
 end
 
 function UpdateVisibility()
@@ -928,7 +928,7 @@ function _G._CUI_Bloodlust_SetPreviewOwner(frame)
     UpdateVisibility()
 end
 
-local function _refreshSated()
+local function _readSated()
     local auraInfo, spellRef = _findSated()
     _satedActive = (auraInfo ~= nil)
     if auraInfo then
@@ -950,7 +950,7 @@ local _eventFrame
 local function _onEvent(_, evt, _, updateInfo)
     if evt == "UNIT_AURA" then
         local was = _satedWasPresent
-        local present = _refreshSated()
+        local present = _readSated()
         _satedWasPresent = present
         -- Rising edge = lust was just cast. Arm the 40s active-buff overlay ONLY
         -- on a genuine incremental application: never on a full aura refresh
@@ -986,14 +986,14 @@ local function _onEvent(_, evt, _, updateInfo)
         -- would leave the fontstring on screen with the old icon behind it.
         _lustIconResolved = false
         _lustIconCache = nil
-        _hideReadyState()
+        _clearReady()
     elseif evt == "PLAYER_DEAD" then
         -- Buffs drop on death; hide the active-lust overlay even if 40s remain.
         _hideBuffOverlay()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         _lustIconResolved = false
         _lustIconCache = nil
-        _refreshSated()
+        _readSated()
         -- Baseline the edge tracker so a debuff already present on login/zone-in
         -- is NOT mistaken for a fresh cast (no buff overlay reconstruction), and
         -- suppress edges briefly while the zone's aura table settles.
@@ -1031,7 +1031,7 @@ end
 -------------------------------------------------------------------------------
 --  Frame creation
 -------------------------------------------------------------------------------
-local function CreateBloodlustFrame()
+local function BuildLustFrame()
     if widget then
         return widget
     end
@@ -1138,16 +1138,16 @@ local function ApplyLust()
         return
     end
     if not widget then
-        CreateBloodlustFrame()
+        BuildLustFrame()
     end
     ApplyShape()
     _applyBuffShape()
-    ApplyPosition()
+    PlaceLust()
     local profile = P()
     local enabled = profile and profile.enabled and (profile.visibility ~= "NEVER")
     _ensureEvents(enabled)
     if enabled then
-        _refreshSated()
+        _readSated()
         -- Baseline so a debuff already present when the tracker is enabled does
         -- not retroactively pop the 40s buff overlay.
         _satedWasPresent = _satedActive
@@ -1183,7 +1183,7 @@ local function RegisterUnlock()
             end,
             getFrame = function()
                 if not widget then
-                    CreateBloodlustFrame()
+                    BuildLustFrame()
                 end
                 return widget
             end,
@@ -1228,7 +1228,7 @@ local function RegisterUnlock()
             loadPos = loadPos,
             clearPos = clearPos,
             applyPos = function()
-                ApplyPosition()
+                PlaceLust()
             end,
         }),
     })
@@ -1258,7 +1258,7 @@ boot:SetScript("OnEvent", function(self)
         _G._CUI_Bloodlust_DB = function()
             return saved
         end
-        CreateBloodlustFrame()
+        BuildLustFrame()
         ApplyLust()
         RegisterUnlock()
     end

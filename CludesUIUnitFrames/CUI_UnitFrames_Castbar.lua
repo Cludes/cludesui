@@ -1688,7 +1688,7 @@ local function SetupShowOnCastBar(widget, unitToken)
 
     -- Read the hide-when-inactive flag dynamically so closures always reflect the
     -- current setting rather than a value captured at frame-creation time.
-    local function shouldHideWhenInactive()
+    local function hidesWhenIdle()
         local cfg = GetSettingsForUnit(unitToken)
         if not cfg then
             return true
@@ -1705,7 +1705,7 @@ local function SetupShowOnCastBar(widget, unitToken)
         iconBox:Hide()
     end
     if castBack then
-        if shouldHideWhenInactive() then
+        if hidesWhenIdle() then
             castBack:Hide()
         else
             castBack:Show()
@@ -1871,7 +1871,7 @@ local function SetupShowOnCastBar(widget, unitToken)
             self._iconFrame:Hide()
         end
         -- Read setting dynamically so changes take effect without a reload.
-        if shouldHideWhenInactive() then
+        if hidesWhenIdle() then
             local bgTex = self:GetParent()
             if bgTex then
                 bgTex:Hide()
@@ -1928,7 +1928,7 @@ local function SetupShowOnCastBar(widget, unitToken)
         if self._iconFrame then
             self._iconFrame:Hide()
         end
-        if shouldHideWhenInactive() then
+        if hidesWhenIdle() then
             local bgTex = self:GetParent()
             if bgTex then
                 bgTex:Hide()

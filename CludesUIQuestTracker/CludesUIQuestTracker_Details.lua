@@ -117,7 +117,7 @@ end
 local INNER = WIDTH - PAD * 2
 
 -- Wrapped text at x, y in the scrolled content; returns its height.
-local function AddText(value, x, y, size, red, green, blue, a)
+local function PlaceText(value, x, y, size, red, green, blue, a)
     nTexts = nTexts + 1
     local text = texts[nTexts]
     if not text then
@@ -140,7 +140,7 @@ end
 -- A section heading: small capitals in the accent colour.
 local function AddHeading(value, y)
     local red, green, blue = Accent()
-    return AddText(value:upper(), 0, y, 11, red, green, blue) + 6
+    return PlaceText(value:upper(), 0, y, 11, red, green, blue) + 6
 end
 
 -- An objective's mark: a tick when done, else a small accent square.
@@ -277,7 +277,7 @@ local function SetButtonOn(button, on)
     button:SetAlpha(on and 1 or 0.35)
 end
 
-local function UpdateButtons()
+local function SyncButtons()
     local focused = C_SuperTrack.GetSuperTrackedQuestID() == questID
     window.focus.label:SetText(focused and STOP_SUPER_TRACK_QUEST or SUPER_TRACK_QUEST)
     SetButtonOn(window.share, IsInGroup() and C_QuestLog.IsPushableQuest(questID))
@@ -327,7 +327,7 @@ function Refresh(force)
     end
     local q, fingerprint = Read(logIndex)
     if not force and fingerprint == drawn then
-        UpdateButtons()
+        SyncButtons()
         return
     end
     drawn = fingerprint
@@ -345,37 +345,37 @@ function Refresh(force)
             if o.text and o.text ~= "" then
                 AddMark(o.finished, y)
                 if o.finished then
-                    y = y + AddText(o.text, 18, y, 12, dr, dg, db, da) + 4
+                    y = y + PlaceText(o.text, 18, y, 12, dr, dg, db, da) + 4
                 else
-                    y = y + AddText(o.text, 18, y, 12, 1, 1, 1) + 4
+                    y = y + PlaceText(o.text, 18, y, 12, 1, 1, 1) + 4
                 end
             end
         end
         if objectivesText and objectivesText ~= "" then
-            y = y + 4 + AddText(objectivesText, 0, y + 4, 12, dr, dg, db, da)
+            y = y + 4 + PlaceText(objectivesText, 0, y + 4, 12, dr, dg, db, da)
         end
         y = y + 16
     end
     if q.description and q.description ~= "" then
         y = y + AddHeading(QUEST_DESCRIPTION, y)
-        y = y + AddText(q.description, 0, y, 12, 0.9, 0.9, 0.9) + 16
+        y = y + PlaceText(q.description, 0, y, 12, 0.9, 0.9, 0.9) + 16
     end
 
     local region = q.rewards
     if region then
         y = y + AddHeading(QUEST_REWARDS, y)
         if region.xp > 0 then
-            y = y + AddText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(region.xp), 0, y, 12, 1, 1, 1) + 4
+            y = y + PlaceText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(region.xp), 0, y, 12, 1, 1, 1) + 4
         end
         if region.money > 0 then
-            y = y + AddText(GetMoneyString(region.money), 0, y, 12, 1, 1, 1) + 4
+            y = y + PlaceText(GetMoneyString(region.money), 0, y, 12, 1, 1, 1) + 4
         end
         if #region.rewards > 0 then
             y = y + 4 + AddTiles(region.rewards, y + 4) + 4
         end
         if #region.choices > 0 then
             y = y + 8
-            y = y + AddText(REWARD_CHOICES, 0, y, 12, dr, dg, db, da) + 6
+            y = y + PlaceText(REWARD_CHOICES, 0, y, 12, dr, dg, db, da) + 6
             y = y + AddTiles(region.choices, y)
         end
         -- An item not cached yet: draw again when it loads, if still on this quest.
@@ -405,7 +405,7 @@ function Refresh(force)
     content:SetSize(INNER, math.max(1, y))
     local furthest = math.max(0, y - scroll:GetHeight())
     scroll:SetVerticalScroll(math.min(scroll:GetVerticalScroll(), furthest))
-    UpdateButtons()
+    SyncButtons()
 end
 
 -- Beside the tracker, on the side towards the middle of the screen.
@@ -543,7 +543,7 @@ local function Build()
                 window:Hide()
             end
         elseif event == "SUPER_TRACKING_CHANGED" or event == "GROUP_ROSTER_UPDATE" then
-            UpdateButtons()
+            SyncButtons()
         else
             Refresh()
         end

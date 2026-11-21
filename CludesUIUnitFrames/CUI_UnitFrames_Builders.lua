@@ -706,11 +706,11 @@ local function StyleFullFrame(widget, unitToken)
     widget.NameText = leftText
     widget.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc, ec)
+    local function SetTextTags(lc, rc, cc, ec)
         ApplyFrameTextTags(widget, unitToken, GetSettingsForUnit(unitToken), lc, rc, cc, ec)
     end
-    ApplyTextTags(leftContent, rightContent, centerContent, extraContent)
-    widget._applyTextTags = ApplyTextTags
+    SetTextTags(leftContent, rightContent, centerContent, extraContent)
+    widget._applyTextTags = SetTextTags
     local function ApplyTextPositions(s)
         ApplyFrameTextPositions(widget, unitToken, s, "both", 181)
     end
@@ -893,11 +893,11 @@ local function StyleFocusFrame(widget, unitToken)
     widget.NameText = leftText
     widget.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc, ec)
+    local function SetTextTags(lc, rc, cc, ec)
         ApplyFrameTextTags(widget, unitToken, GetSettingsForUnit(unitToken), lc, rc, cc, ec)
     end
-    ApplyTextTags(leftContent, rightContent, centerContent, extraContent)
-    widget._applyTextTags = ApplyTextTags
+    SetTextTags(leftContent, rightContent, centerContent, extraContent)
+    widget._applyTextTags = SetTextTags
     local function ApplyTextPositions(s)
         ApplyFrameTextPositions(widget, unitToken, s, "perhp", 181)
     end
@@ -1066,11 +1066,11 @@ local function StyleSimpleFrame(widget, unitToken)
     widget.NameText = leftText
     widget.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc)
+    local function SetTextTags(lc, rc, cc)
         ApplyFrameTextTags(widget, unitToken, GetSettingsForUnit(unitToken), lc, rc, cc)
     end
-    ApplyTextTags(leftContent, rightContent, centerContent)
-    widget._applyTextTags = ApplyTextTags
+    SetTextTags(leftContent, rightContent, centerContent)
+    widget._applyTextTags = SetTextTags
     local function ApplyTextPositions(s)
         ApplyFrameTextPositions(widget, unitToken, s, "none", 100)
     end
@@ -1221,11 +1221,11 @@ local function StyleBossFrame(widget, unitToken)
     widget.NameText = leftText
     widget.HealthValue = rightText
 
-    local function ApplyTextTags(lc, rc, cc, ec)
+    local function SetTextTags(lc, rc, cc, ec)
         ApplyFrameTextTags(widget, unitToken, GetSettingsForUnit(unitToken), lc, rc, cc, ec)
     end
-    ApplyTextTags(leftContent, rightContent, centerContent, extraContent)
-    widget._applyTextTags = ApplyTextTags
+    SetTextTags(leftContent, rightContent, centerContent, extraContent)
+    widget._applyTextTags = SetTextTags
     local function ApplyTextPositions(s)
         ApplyFrameTextPositions(widget, unitToken, s, "perhp", 100)
     end

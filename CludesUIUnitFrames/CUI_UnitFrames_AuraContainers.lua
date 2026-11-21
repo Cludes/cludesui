@@ -4525,7 +4525,7 @@ end
 -- engine only re-parses on UNIT_AURA or show/hide, so a target swap while the
 -- frame stays shown would display the previous unit's auras. Blizzard's own
 -- container exposes UpdateAllAuras for exactly this; poke it on unit changes.
-local function RefreshUnit(unitKey)
+local function RedrawUnit(unitKey)
     local record = registry[unitKey]
     if not record or record.building then
         return
@@ -4564,7 +4564,7 @@ function PetSwap.Sync(enabled)
         if not frame then
             frame = CreateFrame("Frame")
             frame:SetScript("OnEvent", function()
-                RefreshUnit("pet")
+                RedrawUnit("pet")
             end)
             PetSwap.frame = frame
         end
@@ -4617,7 +4617,7 @@ do
             if record.frame and mod.UF_ReloadAuraContainers then
                 mod.UF_ReloadAuraContainers(record.frame, "player")
             end
-            RefreshUnit("player")
+            RedrawUnit("player")
         end)
     end)
 end
@@ -4636,14 +4636,14 @@ unitWatcher:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_TARGET_CHANGED" then
         IncGate.Apply("target", true)
         PurgeGlow.Check("target", true)
-        RefreshUnit("target")
+        RedrawUnit("target")
     elseif evt == "PLAYER_FOCUS_CHANGED" then
         IncGate.Apply("focus", true)
         PurgeGlow.Check("focus", true)
-        RefreshUnit("focus")
+        RedrawUnit("focus")
     else
         for index = 1, 5 do
-            RefreshUnit("boss" .. index)
+            RedrawUnit("boss" .. index)
         end
     end
 end)

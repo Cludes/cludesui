@@ -1046,7 +1046,7 @@ end
 -- loading screen compares against. Set at enable, by ns.Refresh and by
 -- SpecSync.
 local activeSig
-local function ActiveSig()
+local function ActiveSignature()
     local sig = ""
     for i = 1, PaletteCount() do
         sig = sig .. (mod.PaletteActive(i) and "1" or "0")
@@ -1069,7 +1069,7 @@ local function SpecSync(_, _, unitToken)
         return
     end
     CludesUI._RefreshSpecID()
-    local sig = ActiveSig()
+    local sig = ActiveSignature()
     if sig == activeSig then
         return
     end
@@ -1272,7 +1272,7 @@ function mod.Refresh()
 
     RefreshFonts()
     QueuePush()
-    activeSig = ActiveSig()
+    activeSig = ActiveSignature()
 
     if liveView and liveView:GetFrame():IsShown() then
         -- Read the selection before Layout, which clears it.
@@ -1366,7 +1366,7 @@ function EQD:OnEnable()
     end
     mod.UpdateBindings()
     PushPalettes()
-    activeSig = ActiveSig()
+    activeSig = ActiveSignature()
     SetEventsEnabled(true)
 end
 

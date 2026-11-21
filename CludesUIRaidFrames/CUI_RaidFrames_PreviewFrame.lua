@@ -363,7 +363,7 @@ local function CreatePreviewFrame(index, party)
     bdrFrame:SetAllPoints(frame)
     bdrFrame:SetFrameLevel(frame:GetFrameLevel() + 8)
 
-    local function PvApplyBorderColor()
+    local function PvPaintBorder()
         if not Pix then
             return
         end
@@ -467,16 +467,16 @@ local function CreatePreviewFrame(index, party)
             mod.RF_ColorPowerDivider(frame._topNameBar._divider, red, green, blue, a)
         end
     end
-    frame._ApplyBorderColor = PvApplyBorderColor
+    frame._ApplyBorderColor = PvPaintBorder
 
     frame:EnableMouse(true)
     frame:SetScript("OnEnter", function()
         frame._hovered = true
-        PvApplyBorderColor()
+        PvPaintBorder()
     end)
     frame:SetScript("OnLeave", function()
         frame._hovered = false
-        PvApplyBorderColor()
+        PvPaintBorder()
     end)
 
     -- Threat border (aggro indicator)
@@ -502,7 +502,7 @@ local function CreatePreviewFrame(index, party)
             end
         end
         frame._isTarget = true
-        PvApplyBorderColor()
+        PvPaintBorder()
     end)
 
     -- Dispel border

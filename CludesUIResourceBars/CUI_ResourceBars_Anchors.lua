@@ -215,7 +215,7 @@ local function RegisterUnlockElements()
         tbl[key] = val
         Rebuild()
     end
-    local function LiveMove(key)
+    local function MoveLive(key)
         if RefreshAnchoredBarsForUnlockTarget then
             RefreshAnchoredBarsForUnlockTarget(key)
         end
@@ -302,7 +302,7 @@ local function RegisterUnlockElements()
                 return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
-            onLiveMove = LiveMove,
+            onLiveMove = MoveLive,
             savePos = save,
             loadPos = load,
             clearPos = clear,
@@ -396,7 +396,7 @@ local function RegisterUnlockElements()
                 return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
-            onLiveMove = LiveMove,
+            onLiveMove = MoveLive,
             savePos = save,
             loadPos = load,
             clearPos = clear,
@@ -503,7 +503,7 @@ local function RegisterUnlockElements()
                 return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
-            onLiveMove = LiveMove,
+            onLiveMove = MoveLive,
             savePos = save,
             loadPos = load,
             clearPos = clear,
@@ -942,7 +942,7 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
     growthDir = growthDir or "UP"
     local centered = (growCentered ~= false)
 
-    local function GetAnchorPoints()
+    local function AnchorPointsFor()
         if anchorPos == "left" then
             return "RIGHT", "LEFT"
         elseif anchorPos == "right" then
@@ -1019,7 +1019,7 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
         if not partyFrame then
             return false
         end
-        local framePoint, targetPoint = GetAnchorPoints()
+        local framePoint, targetPoint = AnchorPointsFor()
         widget:ClearAllPoints()
         widget:SetPoint(framePoint, partyFrame, targetPoint, offsetX, offsetY)
         return true
@@ -1028,7 +1028,7 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
         if not playerFrame then
             return false
         end
-        local framePoint, targetPoint = GetAnchorPoints()
+        local framePoint, targetPoint = AnchorPointsFor()
         widget:ClearAllPoints()
         widget:SetPoint(framePoint, playerFrame, targetPoint, offsetX, offsetY)
         return true
@@ -1040,7 +1040,7 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
     end
 
     widget:ClearAllPoints()
-    local framePoint, targetPoint = GetAnchorPoints()
+    local framePoint, targetPoint = AnchorPointsFor()
     local success
     success = pcall(widget.SetPoint, widget, framePoint, targetFrame, targetPoint, offsetX, offsetY)
     return success or false

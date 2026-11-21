@@ -84,7 +84,7 @@ local TITLE_MIN_W = 40 -- the narrowest a quest title gets, whatever the hooks r
 -- account DB, as the Forever file keeps its watch sets.
 -------------------------------------------------------------------------------
 local charDB
-local function CharDB()
+local function CharStore()
     if charDB then
         return charDB
     end
@@ -142,7 +142,7 @@ local function BuildList()
     wipe(sequence)
     wipe(seen)
     wipe(listRank)
-    local saved = CharDB()
+    local saved = CharStore()
     local untracked, pinned = saved.ctUntracked, saved.ctPinned
     local watched = seen
     for index = 1, C_QuestLog.GetNumQuestWatches() do
@@ -1048,7 +1048,7 @@ local function RunRowHooks(l, questId)
     end
 end
 
-local function Render()
+local function Draw()
     pending = false
     if not widget then
         return
@@ -1076,7 +1076,7 @@ local function Render()
         end
     end
     BuildList()
-    local isCollapsed = CharDB().ctCollapsed
+    local isCollapsed = CharStore().ctCollapsed
     local width = (TrackerCfg("customWidth") or DEF_WIDTH) - PAD * 2 - BAR_GAP
     childFrame:SetWidth(width)
     used = 0
@@ -1095,7 +1095,7 @@ local function Render()
         local focusRise = focusPx > 0 and math.ceil((focusPx - titleSize) / 2 + focusPx * 0.5) or 0
         local objX = math.max(OBJ_IND, titleX)
         local collapseDone = TrackerCfg("customCollapseCompleted")
-        local doneOpen = CharDB().ctDoneOpen
+        local doneOpen = CharStore().ctDoneOpen
         local lastZone
         local zr, zg, zb = ZoneRGB()
         for _, questId in ipairs(sequence) do
@@ -1220,7 +1220,7 @@ function Queue()
         return
     end
     pending = true
-    C_Timer.After(0, Render)
+    C_Timer.After(0, Draw)
 end
 TrackerNS.RefreshCustom = Queue
 
@@ -1254,14 +1254,14 @@ CludesUI.RefreshQuestTrackerRows = Queue
 -- through the secure overlay below, whose code edits the watch list.
 -------------------------------------------------------------------------------
 local function Untrack(questId)
-    local saved = CharDB()
+    local saved = CharStore()
     saved.ctUntracked[questId] = true
     saved.ctPinned[questId] = nil
     Queue()
 end
 
 local function TogglePin(questId)
-    local pinned = CharDB().ctPinned
+    local pinned = CharStore().ctPinned
     pinned[questId] = not pinned[questId] or nil
     Queue()
 end
@@ -1312,7 +1312,7 @@ local function ShowMenu(ownerFrame, questId)
     end
     itemList[#itemList + 1] = {
         noLoc = true,
-        text = CharDB().ctPinned[questId] and CludesUI.L("Unpin") or CludesUI.L("Pin to Top"),
+        text = CharStore().ctPinned[questId] and CludesUI.L("Unpin") or CludesUI.L("Pin to Top"),
         onClick = function()
             TogglePin(questId)
         end,
@@ -1356,7 +1356,7 @@ local function ShowMenu(ownerFrame, questId)
 end
 
 local function ToggleCollapsed(key)
-    local isCollapsed = CharDB().ctCollapsed
+    local isCollapsed = CharStore().ctCollapsed
     isCollapsed[key] = not isCollapsed[key] or nil
     Queue()
 end
@@ -1386,7 +1386,7 @@ function OnLineClick(self, btnFrame)
             return
         end
         if TrackerCfg("customCollapseCompleted") and C_QuestLog.IsComplete(ident) then
-            local open = CharDB().ctDoneOpen
+            local open = CharStore().ctDoneOpen
             open[ident] = not open[ident] or nil
             Queue()
         else
@@ -1869,7 +1869,7 @@ local function BuildFrame()
     widget:SetScript("OnShow", function()
         itemLayer:SetAlpha(widget:GetAlpha())
         if stale then
-            Render()
+            Draw()
         else
             SyncItems()
         end
@@ -2028,7 +2028,7 @@ local function Blocked()
     return TrackerCfg("enabled") == false or TrackerNS.IsSuppressed() or AutoHidden()
 end
 
-local function UpdateVisibility()
+local function SyncShown()
     if not widget then
         return
     end
@@ -2099,10 +2099,10 @@ eventTag:SetScript("OnEvent", function(_, eventName, questId, added)
     elseif eventName == "QUEST_WATCH_LIST_CHANGED" then
         -- Tracking it again in the quest log brings it back.
         if questId and added then
-            CharDB().ctUntracked[questId] = nil
+            CharStore().ctUntracked[questId] = nil
         end
     elseif eventName == "QUEST_REMOVED" and questId then
-        local saved = CharDB()
+        local saved = CharStore()
         saved.ctUntracked[questId] = nil
         saved.ctCollapsed[questId] = nil
         saved.ctDoneOpen[questId] = nil
@@ -2113,7 +2113,7 @@ eventTag:SetScript("OnEvent", function(_, eventName, questId, added)
             worldReady = true
         end
         inEncounter = eventName == "ENCOUNTER_START"
-        UpdateVisibility()
+        SyncShown()
     end
     if seedWait then
         SeedSoon()
@@ -2132,8 +2132,8 @@ function TrackerNS.InitCustom()
     TrackerNS.MuteBlizzardTracker()
     BuildFrame()
 
-    TrackerNS.UpdateVisibility = UpdateVisibility
-    TrackerNS.RefreshStateDriver = UpdateVisibility
+    TrackerNS.UpdateVisibility = SyncShown
+    TrackerNS.RefreshStateDriver = SyncShown
     TrackerNS.ApplyBackground = ApplyBackground
     TrackerNS.RefreshFonts = RefreshFonts
     TrackerNS.RestyleAll = function()
@@ -2153,7 +2153,7 @@ function TrackerNS.InitCustom()
     for _, event in ipairs(EVENTS) do
         eventTag:RegisterEvent(event)
     end
-    CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
+    CludesUI.RegisterVisibilityUpdater(SyncShown)
     CludesUI.RegisterMouseoverTarget(widget, function()
         return not Blocked() and CludesUI.VisWantsMouseover(TrackerNS.DB(), "visibility")
     end)
@@ -2234,10 +2234,10 @@ function TrackerNS.InitCustom()
         else
             PlaceTracker()
         end
-        Render()
+        Draw()
     end)
 
-    UpdateVisibility()
+    SyncShown()
     Queue()
 end
 

@@ -373,7 +373,7 @@ local function MakeHeader(b)
     local hgt = CreateFrame("Frame", nil, widget.table)
     hgt:SetHeight(HEAD_H)
     hgt.icons = {}
-    local function Icon(texture, tipText)
+    local function MakeIcon(texture, tipText)
         local hit = CreateFrame("Frame", nil, hgt)
         hit:SetSize(CELL_W, HEAD_H)
         hgt.icons[#hgt.icons + 1] = hit
@@ -390,10 +390,10 @@ local function MakeHeader(b)
             CludesUI.HideWidgetTooltip()
         end)
     end
-    Icon(C_Spell.GetSpellTexture(FLASK_BUFF_IDS[1]), CludesUI.L("Flask"))
-    Icon(WELL_FED_ICON, CludesUI.L("Food"))
-    Icon(C_Item.GetItemIconByID(RUNE_ITEM), CludesUI.L("Augment Rune"))
-    Icon(C_Item.GetItemIconByID(VANTUS_ITEM), CludesUI.L("Vantus Rune"))
+    MakeIcon(C_Spell.GetSpellTexture(FLASK_BUFF_IDS[1]), CludesUI.L("Flask"))
+    MakeIcon(WELL_FED_ICON, CludesUI.L("Food"))
+    MakeIcon(C_Item.GetItemIconByID(RUNE_ITEM), CludesUI.L("Augment Rune"))
+    MakeIcon(C_Item.GetItemIconByID(VANTUS_ITEM), CludesUI.L("Vantus Rune"))
     hgt.buffsLabel = Text(hgt, 11, 0.8, 0.8, 0.8)
     hgt.buffsLabel:SetText(CludesUI.L("Raid Buffs"))
     heads[b] = hgt
@@ -982,7 +982,7 @@ local function Flush()
     Render()
 end
 
-local function Schedule()
+local function QueueFlush()
     if not flushPending then
         flushPending = true
         C_Timer.After(0.2, Flush)
@@ -1021,21 +1021,21 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
             return
         end
         dirty[unitToken] = true
-        Schedule()
+        QueueFlush()
     elseif evt == "UNIT_CONNECTION" then
         -- Also who can provide the raid buffs.
         if not isMember[unitToken] then
             return
         end
         rosterDirty = true
-        Schedule()
+        QueueFlush()
     elseif evt == "GROUP_ROSTER_UPDATE" then
         if not IsInGroup() then
             widget:Hide()
             return
         end
         rosterDirty = true
-        Schedule()
+        QueueFlush()
     elseif evt == "READY_CHECK" then
         if RT.HasAssist() then
             Open()

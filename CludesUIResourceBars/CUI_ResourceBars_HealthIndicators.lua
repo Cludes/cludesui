@@ -143,7 +143,7 @@ end
 -- top for Vertical Up, the bottom for Vertical Down): the inner bar gives it up
 -- and the reduction overlay paints it. Fill-edge anchors follow secret health
 -- in the engine; clip frames split absorbs without reading that edge in Lua.
-local function Layout()
+local function LayoutIndicators()
     local inset = CludesUI.PP.mult * 0.25
     local wid = math.max(0, owner:GetWidth() - 2 * inset)
     local hgt = math.max(0, owner:GetHeight() - 2 * inset)
@@ -241,7 +241,7 @@ end
 -- Resource Bars); inert while every overlay is off.
 local function OnHostSized()
     if isActive then
-        Layout()
+        LayoutIndicators()
         local ab = barList.absorb
         if ab and ab._glowOn then
             Glow.Paint(ab, "player", UnitGetTotalAbsorbs("player"), scrollBar:GetHeight())
@@ -295,7 +295,7 @@ local function ApplyGlow(conf)
     g.host:Show()
 end
 
-local function PaintAbsorb()
+local function DrawAbsorb()
     local ab = barList.absorb
     local amount = UnitGetTotalAbsorbs("player")
     if absorbMode == "overlay" and overshieldMode == "never" then
@@ -317,7 +317,7 @@ local function PaintLoss()
         return
     end
     loss = val
-    Layout()
+    LayoutIndicators()
     local barFrame = barList.maxHealthLoss
     barFrame:SetValue(val)
     barFrame:SetShown(val > 0)
@@ -327,13 +327,13 @@ end
 -- compared, tested or combined here.
 eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "UNIT_ABSORB_AMOUNT_CHANGED" then
-        PaintAbsorb()
+        DrawAbsorb()
     elseif evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then
         barList.healAbsorb:SetValue(UnitGetTotalHealAbsorbs("player"))
     elseif evt == "UNIT_MAXHEALTH" then
         PaintMax()
         if on.absorb then
-            PaintAbsorb()
+            DrawAbsorb()
         end
     elseif evt == "UNIT_HEALTH" then
         Glow.Flip(barList.absorb, "player")
@@ -490,7 +490,7 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
 
     ApplyGlow(conf)
     loss = ReadLoss()
-    Layout()
+    LayoutIndicators()
 
     SetEventWanted("UNIT_ABSORB_AMOUNT_CHANGED", showA)
     SetEventWanted("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", showH)
@@ -501,7 +501,7 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
 
     PaintMax()
     if showA then
-        PaintAbsorb()
+        DrawAbsorb()
         barList.absorb:Show()
     end
     if showH then

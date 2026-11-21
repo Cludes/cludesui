@@ -62,14 +62,14 @@ end
 
 -- One re-anchor of the player auras on the next frame (a no-op unless they
 -- are bottom-anchored).
-local function Reanchor()
+local function RequestReanchor()
     if CUI.UF_RequestResourceReanchor then
         CUI.UF_RequestResourceReanchor()
     end
 end
 
 -- The form text's own setting; unset follows the power bar's.
-local function FormVal(cfg, key, base, def)
+local function FormSetting(cfg, key, base, def)
     local val = cfg[key]
     if val == nil then
         val = cfg[base]
@@ -159,7 +159,7 @@ end
 -- Shows the bar while the form runs on a power other than mana. A secret
 -- read keeps the last verdict. laidOut: the bar was just laid out, so a
 -- shown bar may have moved.
-local function Sync(laidOut)
+local function SyncFormBar(laidOut)
     local barFrame = FormState.bar
     if not barFrame then
         return
@@ -167,7 +167,7 @@ local function Sync(laidOut)
     local pt, token = UnitPowerType("player")
     if Secret(pt) or Secret(token) then
         if laidOut and FormState.shown then
-            Reanchor()
+            RequestReanchor()
         end
         return
     end
@@ -181,13 +181,13 @@ local function Sync(laidOut)
     barFrame:SetShown(show)
     if show ~= FormState.shown or (show and laidOut) then
         FormState.shown = show
-        Reanchor()
+        RequestReanchor()
     end
 end
 
 evf:SetScript("OnEvent", function(_, evt, _, token)
     if evt == "UNIT_DISPLAYPOWER" then
-        Sync()
+        SyncFormBar()
     elseif evt == "UNIT_MAXPOWER" or Secret(token) or token == FormState.token then
         Paint()
     end
@@ -219,8 +219,8 @@ end
 -- power is never mana).
 local function StyleText(s)
     local fontStr = FormState.bar.text
-    local place = FormVal(s, "foreverFormTextPos", "powerPercentText", "none")
-    local fmt = FormVal(s, "foreverFormTextFormat", "powerTextFormat", "perpp")
+    local place = FormSetting(s, "foreverFormTextPos", "powerPercentText", "none")
+    local fmt = FormSetting(s, "foreverFormTextFormat", "powerTextFormat", "perpp")
     if place == "none" or fmt == "none" then
         FormState.text = nil
         fontStr:Hide()
@@ -230,16 +230,16 @@ local function StyleText(s)
         or (fmt == "curmaxpp" and "curmax")
         or (fmt == "both" and "both")
         or "pct"
-    local sign = (FormVal(s, "foreverFormShowPercent", "powerShowPercent", true) ~= false) and "%%" or ""
+    local sign = (FormSetting(s, "foreverFormShowPercent", "powerShowPercent", true) ~= false) and "%%" or ""
     FormState.fmtPct, FormState.fmtBoth = "%d" .. sign, "%d | %d" .. sign
     CUI.ApplyModuleFont(
         fontStr,
         nil,
-        FormVal(s, "foreverFormTextSize", "powerPercentSize", 9),
+        FormSetting(s, "foreverFormTextSize", "powerPercentSize", 9),
         "unitFrames"
     )
-    local ox = FormVal(s, "foreverFormTextX", "powerPercentX", 0)
-    local oy = FormVal(s, "foreverFormTextY", "powerPercentY", 0)
+    local ox = FormSetting(s, "foreverFormTextX", "powerPercentX", 0)
+    local oy = FormSetting(s, "foreverFormTextY", "powerPercentY", 0)
     fontStr:ClearAllPoints()
     if place == "left" then
         fontStr:SetJustifyH("LEFT")
@@ -320,7 +320,7 @@ function mod.UF_ForeverFormBar(widget, power, cfg)
         end
         if FormState.shown then
             FormState.shown = false
-            Reanchor()
+            RequestReanchor()
         end
         return
     end
@@ -340,7 +340,7 @@ function mod.UF_ForeverFormBar(widget, power, cfg)
     Layout(widget, power, cfg)
     StyleText(cfg)
     evf:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
-    Sync(true)
+    SyncFormBar(true)
 end
 
 -- The form bar's own options re-apply only this bar: a full frame reload per
@@ -351,5 +351,5 @@ function mod.UF_ForeverFormBarRelayout()
     end
     Layout(FormState.frame, FormState.power, FormState.settings)
     StyleText(FormState.settings)
-    Sync(true)
+    SyncFormBar(true)
 end

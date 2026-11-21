@@ -87,7 +87,7 @@ do
     local PT_BY_UNIT = {}
 
     -- The settings the target frames are styled from: the party ones, as the Beside Owner pets.
-    local function PT_Source()
+    local function PT_Proxy()
         return mod._scaledPartyProxy
     end
 
@@ -366,7 +366,7 @@ do
 
     -- Include Own Target off: the header frame showing you drops its target frame's unit. Written here
     -- out of combat by the rule the party frames' unit snippet applies in combat (PF.OWNER_SNIPPET).
-    local function PT_SeedAttrs()
+    local function PT_SeedAttributes()
         local noself = (mod._ptEnabled and not PartyTgt.include) and true or nil
         local me = PartyTgt.me
         for _, widget in ipairs(mod._partyTargetFrames) do
@@ -400,7 +400,7 @@ do
         if InCombatLockdown() then
             mod._ptSelfDirty = true
         else
-            PT_SeedAttrs()
+            PT_SeedAttributes()
         end
         PT_CountWanted()
         mod._PT_RepaintVisible()
@@ -650,13 +650,13 @@ do
         local bc = p.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
         tbl[num + 1], tbl[num + 2], tbl[num + 3], tbl[num + 4] = p.partyTargetHealthColorMode, fc.r, fc.g, fc.b
         tbl[num + 5], tbl[num + 6], tbl[num + 7], tbl[num + 8] = p.partyTargetBgClassColored, bc.r, bc.g, bc.b
-        tbl[num + 9], tbl[num + 10] = p.partyTargetBgDarkness, PT_Source().smoothBars
+        tbl[num + 9], tbl[num + 10] = p.partyTargetBgDarkness, PT_Proxy().smoothBars
     end
 
     -- Textured Background on a target frame, from the party settings: the fixed health
     -- layer (the background follows the fill edge), shown while the fill is opaque.
     local function PT_TexBg(widget)
-        local s = PT_Source()
+        local s = PT_Proxy()
         local filePath = mod.RF_TexBgPath(s)
         if not (filePath or widget._rfTexBg) then
             return
@@ -692,7 +692,7 @@ do
         if not mod._ptEnabled then
             return
         end
-        local cfg = PT_Source()
+        local cfg = PT_Proxy()
         local texPath = ResolveHealthTexture(cfg)
         local changed, at = mod._PF.StyleChanged("pt", cfg, texPath, PT_FpExtra, PartyTgt.FP_N)
         if not changed then
@@ -821,7 +821,7 @@ do
         name:SetTextColor(1, 1, 1, 1)
 
         widget._ptOwner = ownerFrame
-        FB.src[widget] = PT_Source
+        FB.src[widget] = PT_Proxy
         widget:HookScript("OnShow", PT_OnShow)
         widget:HookScript("OnHide", PT_OnHide)
         widget:HookScript("OnEnter", PT_Enter)
@@ -870,7 +870,7 @@ do
     -- Include Own Target, applied: the self button's frame (built on first use) watched only while on,
     -- the attributes and unit snippet that gate the header frame showing you, and your target's
     -- listeners. Secure writes: out of combat; a combat call waits for the combat-end flush.
-    local function PT_ApplyInclude()
+    local function PT_SetInclude()
         if InCombatLockdown() then
             mod._ptSelfDirty = true
             return
@@ -897,7 +897,7 @@ do
             end
         end
         mod._ptNoSelf = (mod._ptEnabled and not inc) and true or nil
-        PT_SeedAttrs()
+        PT_SeedAttributes()
         mod.PF_SyncUnitSnippet()
         PT_CountWanted()
     end
@@ -906,7 +906,7 @@ do
     mod._PT_SyncSelf = function()
         mod._ptSelfDirty = nil
         if mod._ptEnabled then
-            PT_ApplyInclude()
+            PT_SetInclude()
         end
     end
 
@@ -950,7 +950,7 @@ do
             mod._PT_Layout()
             mod._PT_Restyle()
             mod._PT_RefreshAll()
-            PT_ApplyInclude()
+            PT_SetInclude()
             for _, widget in ipairs(mod._partyTargetFrames) do
                 if widget ~= PartyTgt.selfFrame then
                     RegisterUnitWatch(widget)
@@ -968,7 +968,7 @@ do
             -- Every listener and the ticker off; the gate attributes cleared, so a unit snippet kept for
             -- the pets leaves the target frames alone.
             PT_CountWanted()
-            PT_SeedAttrs()
+            PT_SeedAttributes()
             mod.PF_SyncUnitSnippet()
             -- The party frames close the pitch the frames held along the stack, and the attached
             -- groups take the room back.
@@ -989,7 +989,7 @@ do
     mod.PT_SetIncludeSelf = function(enabled)
         mod._ptInclDesired = enabled and true or false
         if mod._ptEnabled then
-            PT_ApplyInclude()
+            PT_SetInclude()
         end
     end
 
@@ -1062,7 +1062,7 @@ do
         if not frame then
             frame = CreateFrame("Frame", nil, hostFrame)
             FB.BuildVisuals(frame)
-            FB.src[frame] = PT_Source
+            FB.src[frame] = PT_Proxy
             local name = frame._nameText
             name:SetPoint("CENTER", frame._health, "CENTER", 0, 0)
             name:SetJustifyH("CENTER")
@@ -1076,7 +1076,7 @@ do
         local wid, hgt = specInfo.w, specInfo.h
         frame:SetSize(wid, hgt)
         FB.SizeVisuals(frame, wid, hgt)
-        local st = PT_Source()
+        local st = PT_Proxy()
         local health, backdrop, name = frame._health, frame._bg, frame._nameText
         health:SetStatusBarTexture(ResolveHealthTexture(st))
         local texture = health:GetStatusBarTexture()

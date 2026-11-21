@@ -307,7 +307,7 @@ local function SetSuppressed(hidden)
         )
     end
 end
-local function SetVehicleHidden(hidden)
+local function HideForVehicle(hidden)
     if vehicleHidden == hidden then
         return
     end
@@ -339,7 +339,7 @@ function ClearDegraded()
 end
 
 local cineFixPending = false
-local function ReapplyAllAfterCinematic()
+local function ReapplyAfterCinematic()
     if cineFixPending then
         return
     end
@@ -391,7 +391,7 @@ local function ReapplyAllAfterCinematic()
                     if PabAssistProbe() then
                         pabSettleTicker:Cancel()
                         pabSettleTicker = nil
-                        ReapplyAllAfterCinematic()
+                        ReapplyAfterCinematic()
                     end
                 end)
             end
@@ -445,8 +445,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
         if vehicleHidden then
             local probe = UnitUsingVehicle or UnitInVehicle
             if not probe("player") then
-                SetVehicleHidden(false)
-                ReapplyAllAfterCinematic()
+                HideForVehicle(false)
+                ReapplyAfterCinematic()
             end
         end
         -- Editing-spec buckets: the login reload can run before
@@ -460,11 +460,11 @@ initFrame:SetScript("OnEvent", function(self, evt)
         return
     end
     if evt == "UNIT_ENTERING_VEHICLE" or evt == "UNIT_ENTERED_VEHICLE" then
-        SetVehicleHidden(true)
+        HideForVehicle(true)
         return
     end
     if evt == "UNIT_EXITED_VEHICLE" then
-        SetVehicleHidden(false)
+        HideForVehicle(false)
     end
     if evt == "PLAYER_SPECIALIZATION_CHANGED" then
         -- Editing-spec bucket bars activate/park with the spec. Gated to
@@ -477,7 +477,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
         end
         return
     end
-    ReapplyAllAfterCinematic()
+    ReapplyAfterCinematic()
 end)
 
 -- Called by CreateBars once it has passed its own enabled check -- the only

@@ -1898,7 +1898,7 @@ end
 -- parked on a finished duration, its countdown off; a pending end-edge deadline
 -- finds the timer off and does nothing); the frame stays shown at alpha 0
 -- so anchored neighbours keep a valid rect (SetElementVisibility rule).
-local function Teardown()
+local function TearDownSwing()
     if not SwingState.built then
         return
     end
@@ -2038,7 +2038,7 @@ function mod.ST_UpdateVisibility()
         SwingState.ruled = ruled
         if not CludesUI._unlockActive then
             if ruled then
-                Teardown()
+                TearDownSwing()
             else
                 Resume(conf)
             end
@@ -2091,7 +2091,7 @@ function mod.ST_Apply()
     local conf = P()
     if not conf or not conf.enabled then
         SwingState.ruled = nil
-        Teardown()
+        TearDownSwing()
         return
     end
     SwingState.ruled = RuledOut(conf)
@@ -2113,7 +2113,7 @@ function mod.ST_Apply()
     ApplyPosition(conf)
     ApplyLook(conf)
     if park then
-        Teardown()
+        TearDownSwing()
         return
     end
     PaintQueue(conf)

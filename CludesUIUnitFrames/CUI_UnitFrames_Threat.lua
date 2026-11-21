@@ -200,7 +200,7 @@ if CludesUI.IS_FOREVER then
 
     -- The percent may be secret: only type() and issecretvalue() read it here
     -- (a readable 0 hides the text), then it goes straight to PaintThreatPct.
-    local function UpdateUnit(unitToken)
+    local function PaintUnitThreat(unitToken)
         local widget = frameList[unitToken]
         if not (widget and widget._textOverlay) then
             return
@@ -226,20 +226,20 @@ if CludesUI.IS_FOREVER then
         end
     end
 
-    local function UpdateAll()
-        UpdateUnit("target")
-        UpdateUnit("focus")
+    local function PaintAllThreat()
+        PaintUnitThreat("target")
+        PaintUnitThreat("focus")
     end
 
     local function OnEvent(_, evt, unitToken)
         if evt == "UNIT_THREAT_LIST_UPDATE" then
-            UpdateUnit(unitToken)
+            PaintUnitThreat(unitToken)
         elseif evt == "PLAYER_TARGET_CHANGED" then
-            UpdateUnit("target")
+            PaintUnitThreat("target")
         elseif evt == "PLAYER_FOCUS_CHANGED" then
-            UpdateUnit("focus")
+            PaintUnitThreat("focus")
         else
-            UpdateAll()
+            PaintAllThreat()
         end
     end
 
@@ -261,7 +261,7 @@ if CludesUI.IS_FOREVER then
                 watcher:UnregisterAllEvents()
             end
         end
-        UpdateAll()
+        PaintAllThreat()
     end
 
     -- Login and every real reload pass (profile switch, spec override, import):
@@ -271,11 +271,11 @@ if CludesUI.IS_FOREVER then
         if wanted ~= tpOn then
             mod.SetThreatPctEnabled(wanted)
         elseif wanted then
-            UpdateAll()
+            PaintAllThreat()
         end
     end
 
     -- Options setters of the position, size, offset and colour keys (the
     -- layout memo compares every layout input).
-    mod.RefreshThreatPct = UpdateAll
+    mod.RefreshThreatPct = PaintAllThreat
 end -- IS_FOREVER

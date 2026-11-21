@@ -70,7 +70,7 @@ SoulState.class = select(2, UnitClass("player"))
 --  Settings access
 -------------------------------------------------------------------------------
 
-local function P()
+local function SoulCfg()
     local ERB = mod.ERB
     local saved = ERB and ERB.db
     local profile = saved and saved.profile
@@ -85,7 +85,7 @@ end
 -- Counting GCDs before the window opens and counting Barrages inside it are
 -- different questions, so they are separately answerable.
 local function PhaseMode(phaseNum)
-    local profile = P()
+    local profile = SoulCfg()
     local m = profile and profile.countMode
     if m == "gcd" then
         return "gcd"
@@ -99,7 +99,7 @@ end
 -- Does any phase need a GCD length? Drives the one combat event this module
 -- registers, so a pure-seconds setup stays event-free in combat.
 local function NeedsGcd()
-    local profile = P()
+    local profile = SoulCfg()
     local m = profile and profile.countMode
     return m == "gcd" or m == "secondsGcd"
 end
@@ -107,7 +107,7 @@ end
 -- Seconds of Arcane Surge left at which "Soul in" starts showing. Floor 1,
 -- never 0: a 0 threshold would collide with the tenths breakpoint at 0.
 local function Thr()
-    local profile = P()
+    local profile = SoulCfg()
     local val = tonumber(profile and profile.threshold) or 5
     if val < 1 then
         val = 1
@@ -118,7 +118,7 @@ local function Thr()
 end
 
 local function TextSize()
-    local profile = P()
+    local profile = SoulCfg()
     local val = tonumber(profile and profile.textSize) or 24
     if val < 10 then
         val = 10
@@ -134,17 +134,17 @@ local function ProxySize()
 end
 
 local function PreColor()
-    local p = P() or {}
+    local p = SoulCfg() or {}
     return p.preR or 0.64, p.preG or 0.21, p.preB or 0.93
 end
 
 local function SoulColor()
-    local p = P() or {}
+    local p = SoulCfg() or {}
     return p.soulR or 0.64, p.soulG or 0.21, p.soulB or 0.93
 end
 
 local function LastColor()
-    local p = P() or {}
+    local p = SoulCfg() or {}
     return p.lastR or 1.0, p.lastG or 0.25, p.lastB or 0.25
 end
 
@@ -156,7 +156,7 @@ end
 -------------------------------------------------------------------------------
 
 local function GetASFont()
-    local profile = P()
+    local profile = SoulCfg()
     local cacheKey = (profile and profile.font) or "__global"
     if cacheKey ~= "__global" and CUI and CUI.ResolveFontName then
         local filePath = CUI.ResolveFontName(cacheKey)
@@ -168,7 +168,7 @@ local function GetASFont()
 end
 
 local function GetASOutline()
-    local profile = P()
+    local profile = SoulCfg()
     local modeName = (profile and profile.outlineMode) or "__global"
     if modeName == "outline" then
         return (CUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
@@ -662,7 +662,7 @@ local function PlaceProxy()
         return
     end
 
-    local profile = P()
+    local profile = SoulCfg()
     local place = (profile and profile.unlockPos) or DEFAULT_POS
     local point = place.point or "CENTER"
     local px, py = place.x or 0, place.y or 0
@@ -810,7 +810,7 @@ local function ShowPreview()
     SoulState.sampleHost:Show()
 end
 
-local function HideSample()
+local function HidePreview()
     if SoulState.sampleHost then
         SoulState.sampleHost:Hide()
     end
@@ -913,7 +913,7 @@ end
 -------------------------------------------------------------------------------
 
 local function OnForClass()
-    local profile = P()
+    local profile = SoulCfg()
     return (profile and profile.enabled and SoulState.class == "MAGE" and not FOREVER) and true or false
 end
 
@@ -949,7 +949,7 @@ local function GateOK()
 end
 
 local function Park()
-    HideSample()
+    HidePreview()
     if SoulState.proxy then
         SoulState.proxy:Hide()
     end
@@ -1120,7 +1120,7 @@ function mod.AS_Apply()
         ShowPreview()
         return
     end
-    HideSample()
+    HidePreview()
     -- Options page open, out of combat: the live preview, for any Mage (as
     -- unlock mode). The engine slots only for a Mage the gate passes.
     if SoulState.demoApplied and not SoulState.demoCombat then
@@ -1175,7 +1175,7 @@ function mod.AS_MakeUnlockElement(MK)
                     ShowPreview()
                 end
             else
-                HideSample()
+                HidePreview()
                 if mod.AS_Apply then
                     mod.AS_Apply()
                 end
@@ -1218,7 +1218,7 @@ function mod.AS_MakeUnlockElement(MK)
             if not anchorPoint then
                 return
             end
-            local profile = P()
+            local profile = SoulCfg()
             if not profile then
                 return
             end
@@ -1228,7 +1228,7 @@ function mod.AS_MakeUnlockElement(MK)
             end
         end,
         loadPos = function()
-            local profile = P()
+            local profile = SoulCfg()
             local place = profile and profile.unlockPos
             if place and place.point then
                 return {
@@ -1246,7 +1246,7 @@ function mod.AS_MakeUnlockElement(MK)
             }
         end,
         clearPos = function()
-            local profile = P()
+            local profile = SoulCfg()
             if profile then
                 profile.unlockPos = nil
             end

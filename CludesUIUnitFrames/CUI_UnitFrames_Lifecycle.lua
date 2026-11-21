@@ -319,7 +319,7 @@ do
         end
     end
 
-    local function UpdateTicker()
+    local function SyncTicker()
         local wanted = visCount > 0
         if wanted and not ticker then
             ticker = C_Timer.NewTicker(0.4, Tick)
@@ -345,16 +345,16 @@ do
                 frame:HookScript("OnShow", function(self)
                     visCount = visCount + 1
                     TickOne(self, unitToken)
-                    UpdateTicker()
+                    SyncTicker()
                 end)
                 frame:HookScript("OnHide", function(self)
                     visCount = math.max(0, visCount - 1)
                     self:SetAlpha(1)
-                    UpdateTicker()
+                    SyncTicker()
                 end)
             end
         end
-        UpdateTicker()
+        SyncTicker()
     end
 
     local eventFrame = CreateFrame("Frame")

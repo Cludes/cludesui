@@ -958,7 +958,7 @@ local function SafeGetBaseDuration(alertSpell)
     return 0
 end
 
-local function ResolvePlayerSpecId()
+local function PlayerSpecId()
     local specInfo = C_SpecializationInfo.GetSpecialization()
     if not specInfo then
         return nil
@@ -1029,7 +1029,7 @@ end
 
 local function GetPlayerMovementSpells()
     local classFile = select(2, UnitClass("player"))
-    local specId = ResolvePlayerSpecId()
+    local specId = PlayerSpecId()
     if not specId then
         return {}
     end
@@ -1222,7 +1222,7 @@ end
 
 local function LoadMovementSpells(fullReset)
     local classFile = select(2, UnitClass("player"))
-    local specId = ResolvePlayerSpecId()
+    local specId = PlayerSpecId()
 
     if fullReset then
         CancelAllRechargeTimers()
@@ -1430,7 +1430,7 @@ end
 -------------------------------------------------------------------------------
 --  Movement bar rendering
 -------------------------------------------------------------------------------
-local function CancelMovementCountdown()
+local function StopMovementCountdown()
     movementRepaintFrame:Hide()
 end
 
@@ -1462,7 +1462,7 @@ local function HideAlertDisplay(keepBuffLane)
     if buffAlertHost and not keepBuffLane then
         buffAlertHost:Hide()
     end
-    CancelMovementCountdown()
+    StopMovementCountdown()
 end
 
 -- The countdown number's format per precision (0 or 1 decimal).
@@ -2427,7 +2427,7 @@ local function StartMovementPreview()
     previewEnds = GetTime() + PREVIEW_CD
     -- The preview owns the display: stop the real poll loop (its state
     -- resumes from StopMovementPreview's CheckMovementCooldown call).
-    CancelMovementCountdown()
+    StopMovementCountdown()
     movementPreviewTicker = C_Timer.NewTicker(0.1, PreviewTick)
     PreviewTick()
 end
@@ -2521,7 +2521,7 @@ local function IsValidTimeSpiralProc(alertSpell)
         return false
     end
     local classFile = select(2, UnitClass("player"))
-    local specId = ResolvePlayerSpecId()
+    local specId = PlayerSpecId()
     local classData = MOVEMENT_ABILITIES[classFile]
     local specSpells = classData and specId and classData[specId]
     if CludesUI.IS_FOREVER and specId then
@@ -2697,7 +2697,7 @@ local function PollGateway()
 end
 CludesUI._CheckGatewayUsable = PollGateway
 
-local function StartGatewayPolling()
+local function StartGatewayTicker()
     StopGatewayTicker()
     local alertCfg = AlertCfg()
     if not alertCfg.gwEnabled then
@@ -2752,7 +2752,7 @@ local function ApplyGatewayFrame()
         StopGatewayTicker()
         gateFrame:Show()
     else
-        StartGatewayPolling()
+        StartGatewayTicker()
     end
 end
 CludesUI._applyGateway = ApplyGatewayFrame
@@ -2847,7 +2847,7 @@ local function UpdateEventRegistration()
         loadFrame:UnregisterEvent("UNIT_FACTION")
         loadFrame:UnregisterEvent("CINEMATIC_STOP")
         movementEventsRegistered = false
-        CancelMovementCountdown()
+        StopMovementCountdown()
     end
 
     if alertCfg.tsEnabled and not timeSpiralEventsRegistered then
@@ -2865,7 +2865,7 @@ local function UpdateEventRegistration()
     end
 
     if alertCfg.gwEnabled then
-        StartGatewayPolling()
+        StartGatewayTicker()
     else
         StopGatewayTicker()
         if not alertCfg.gwEnabled then
@@ -2894,7 +2894,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
             ApplyGatewayFrame()
             CheckMovementCooldown()
             C_Timer.After(0.5, function()
-                if ResolvePlayerSpecId() then
+                if PlayerSpecId() then
                     LoadMovementSpells(true)
                     CheckMovementCooldown()
                 end
@@ -3024,7 +3024,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         -- (No-op beyond a single CheckGatewayUsable call when Combat Only
         -- isn't set, since the ticker was never stopped in that case.)
         if alertCfg.gwEnabled then
-            StartGatewayPolling()
+            StartGatewayTicker()
         else
             PollGateway()
         end

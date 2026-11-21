@@ -155,7 +155,7 @@ local function GetOrCreateOverlayContainer()
     return oc
 end
 
-local function RefreshPreview()
+local function RedrawPreview()
     if not previewActive then
         return
     end
@@ -564,7 +564,7 @@ local function ShowPreview()
         end
     end
     if previewActive then
-        RefreshPreview()
+        RedrawPreview()
         return
     end
     if not containerFrame then
@@ -598,7 +598,7 @@ local function ShowPreview()
     InitPreviewHealthValues()
     BuildPreviewRoles()
 
-    RefreshPreview()
+    RedrawPreview()
     StartPvAuraTicker()
 end
 
@@ -681,7 +681,7 @@ local function ApplyPreviewMode()
     -- real frames faintly with NO block; real hides them fully + blocks.
     mod._SetRealFramesPreviewHidden(true)
     -- RefreshPreview handles reparenting, anchoring, and overlay sizing
-    RefreshPreview()
+    RedrawPreview()
 end
 
 mod.ApplyPreviewMode = ApplyPreviewMode

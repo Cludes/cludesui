@@ -373,7 +373,7 @@ local function CreateCustomClassPower(playerFrame, style)
 
     -- Update function
     local isSecretResource = (powerType == "SOUL_FRAGMENTS_VENGEANCE")
-    local function UpdatePips()
+    local function PaintPips()
         -- Bar-mode resources fill a single StatusBar instead of discrete pips.
         if isBarMode and staggerBar then
             if powerType == "BREWMASTER_STAGGER" then
@@ -603,7 +603,7 @@ local function CreateCustomClassPower(playerFrame, style)
             -- 10 Hz poll on the shared anim ticker (see ns._cpDriverTick):
             -- same cadence as the old OnUpdate accumulator without the
             -- per-render-frame entry tax.
-            mod._cpTickFn = UpdatePips
+            mod._cpTickFn = PaintPips
             mod._cpDriverTick.Start()
         end
 
@@ -619,7 +619,7 @@ local function CreateCustomClassPower(playerFrame, style)
             eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
         end
         eventFrame:SetScript("OnEvent", function()
-            UpdatePips()
+            PaintPips()
         end)
     else
         eventFrame:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
@@ -651,7 +651,7 @@ local function CreateCustomClassPower(playerFrame, style)
                 or evt == "COMBO_TARGET_CHANGED"
                 or (unitToken == "player")
             then
-                UpdatePips()
+                PaintPips()
             end
         end)
     end
@@ -661,8 +661,8 @@ local function CreateCustomClassPower(playerFrame, style)
         boxHolder:Hide()
     end
 
-    UpdatePips()
-    boxHolder._updatePips = UpdatePips
+    PaintPips()
+    boxHolder._updatePips = PaintPips
     boxHolder._pips = pips
     boxHolder._pipSize = pipSize
     boxHolder._pipH = pipH

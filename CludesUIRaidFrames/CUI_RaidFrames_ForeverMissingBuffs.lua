@@ -664,7 +664,7 @@ local function Layout(o, cfg, health, entries, num)
 end
 
 local paintList = {}
-local function PaintButton(button, skinData)
+local function PaintMissing(button, skinData)
     if not skinData.health then
         return
     end
@@ -721,15 +721,15 @@ local function PaintUnit(unitToken)
     local GetFFD = mod.GetFFD
     local b = mod._raidUnitToButton and mod._raidUnitToButton[unitToken]
     if b then
-        PaintButton(b, GetFFD(b))
+        PaintMissing(b, GetFFD(b))
     end
     b = mod._partyUnitToButton and mod._partyUnitToButton[unitToken]
     if b then
-        PaintButton(b, GetFFD(b))
+        PaintMissing(b, GetFFD(b))
     end
     b = mod._xfUnitToButton and mod._xfUnitToButton[unitToken]
     if b then
-        PaintButton(b, GetFFD(b))
+        PaintMissing(b, GetFFD(b))
     end
 end
 
@@ -740,7 +740,7 @@ local function PaintList(entries)
     local GetFFD = mod.GetFFD
     for index = 1, #entries do
         local b = entries[index]
-        PaintButton(b, GetFFD(b))
+        PaintMissing(b, GetFFD(b))
     end
 end
 
@@ -806,7 +806,7 @@ local function Flush()
     end
     local GetFFD = mod.GetFFD
     for btn in pairs(pendingBtns) do
-        PaintButton(btn, GetFFD(btn))
+        PaintMissing(btn, GetFFD(btn))
     end
     wipe(dirty)
     wipe(pendingBtns)
@@ -1047,7 +1047,7 @@ end
 -- Each reload path, per button: re-lay the icons from what is known (no
 -- look-ups), then settle the on/off state once for the whole pass.
 function mod.RF_FvMissingAnchor(button, skinData)
-    PaintButton(button, skinData)
+    PaintMissing(button, skinData)
     if not syncArmed then
         syncArmed = true
         C_Timer.After(0, Sync)

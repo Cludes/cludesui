@@ -2029,14 +2029,14 @@ local function InitBuffBarsPage(
                     pointer:SetPoint("RIGHT", line, "RIGHT", -8, 0)
                     pointer:SetTexture(MEDIA .. "icons\\right-arrow.png")
                     pointer:SetAlpha(0.7)
-                    local val = line:CreateFontString(nil, "OVERLAY")
-                    val:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                    val:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
-                    val:SetPoint("RIGHT", pointer, "LEFT", -6, 0)
-                    val:SetJustifyH("RIGHT")
-                    val:SetWordWrap(false)
-                    val:SetMaxLines(1)
-                    val:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                    local valueLabel = line:CreateFontString(nil, "OVERLAY")
+                    valueLabel:SetFont(FONT_PATH, 10, GetCDMOptOutline())
+                    valueLabel:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
+                    valueLabel:SetPoint("RIGHT", pointer, "LEFT", -6, 0)
+                    valueLabel:SetJustifyH("RIGHT")
+                    valueLabel:SetWordWrap(false)
+                    valueLabel:SetMaxLines(1)
+                    valueLabel:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     local highlight = line:CreateTexture(nil, "ARTWORK")
                     highlight:SetAllPoints()
                     highlight:SetColorTexture(1, 1, 1, 1)
@@ -2052,7 +2052,7 @@ local function InitBuffBarsPage(
                         else
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         end
-                        val:SetText(nameList[Get()] or Get())
+                        valueLabel:SetText(nameList[Get()] or Get())
                     end
                     Paint()
                     -- A sound set flips the 0-cost gate live and hooks the bar frames
@@ -2078,7 +2078,7 @@ local function InitBuffBarsPage(
                                 fly:Hide()
                             end
                         end
-                        flyouts[field] = flyouts[field] or Flyout(line, Get, Set, val)
+                        flyouts[field] = flyouts[field] or Flyout(line, Get, Set, valueLabel)
                         local fly = flyouts[field]
                         if not fly:IsShown() then
                             if fly._refresh then

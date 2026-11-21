@@ -788,7 +788,7 @@ function PipTextureHelpers.Configure(pip, x0, x1, span, orientation)
 end
 
 function PipTextureHelpers.Reset(pip)
-    local function Restore(barFrame)
+    local function RestoreClip(barFrame)
         if not (barFrame and barFrame._continuousClip) then
             return
         end
@@ -801,13 +801,13 @@ function PipTextureHelpers.Reset(pip)
             end
         end
     end
-    Restore(pip._rechargeBar)
-    Restore(pip._secretBar)
-    Restore(pip._secretThreshBar)
-    Restore(pip._bandResetBar)
+    RestoreClip(pip._rechargeBar)
+    RestoreClip(pip._secretBar)
+    RestoreClip(pip._secretThreshBar)
+    RestoreClip(pip._bandResetBar)
     if pip._bandBars then
         for k = 1, #pip._bandBars do
-            Restore(pip._bandBars[k])
+            RestoreClip(pip._bandBars[k])
         end
     end
     pip._fill:SetTexCoord(0, 1, 0, 1)
